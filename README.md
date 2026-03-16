@@ -1,3 +1,21 @@
+
+## Para arrancar y observaciones:
+
+Levantar Jetty:
+
+```
+root$ mvn compile
+webapp$ mvn jetty:run
+
+```
+Usar git por cli con ssh para bitbucket, mucho más cómodo
+
+
+
+---
+
+# Esto de abajo fue generado por Bitbucket
+
 **Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
 
 When you're done, you can delete the content in this README and update the file with details for others getting started with your repository.

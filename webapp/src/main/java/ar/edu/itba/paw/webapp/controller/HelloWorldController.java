@@ -1,16 +1,23 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.beans.factory.annotation.Autowired;
 import ar.edu.itba.paw.services.UserService;
 
 @Controller
 public class HelloWorldController {
 
-    private final UserService userService = new UserService();
+    private UserService userService;
+
+    @Autowired
+    public HelloWorldController(final UserService userService) {
+        this.userService = userService;
+    }
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
     public ModelAndView helloWorld() {

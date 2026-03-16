@@ -1,6 +1,9 @@
 package ar.edu.itba.paw.services;
 
-public class UserService {
+import org.springframework.stereotype.Service;
+
+@Service
+public class UserServiceImpl implements UserService {
     public Object createUser(final String email) {
         return email;
     }

@@ -8,40 +8,22 @@
   </parent>
 
   <groupId>ar.edu.itba.paw</groupId>
-  <artifactId>webapp</artifactId>
+  <artifactId>service-contracts</artifactId>
   <version>1.0-SNAPSHOT</version>
-  <packaging>war</packaging>
 
-  <name>webapp Maven Webapp</name>
+  <name>service-contracts</name>
   <!-- FIXME change it to the project's website -->
   <url>http://www.example.com</url>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-webmvc</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>ar.edu.itba.paw</groupId>
-      <artifactId>service-contracts</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>ar.edu.itba.paw</groupId>
-      <artifactId>services</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-  </dependencies>
-
   <build>
-    <finalName>webapp</finalName>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
       <plugins>
+        <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
           <version>3.4.0</version>
         </plugin>
-        <!-- see http://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_war_packaging -->
+        <!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
           <version>3.3.1</version>
@@ -55,8 +37,8 @@
           <version>3.3.0</version>
         </plugin>
         <plugin>
-          <artifactId>maven-war-plugin</artifactId>
-          <version>3.4.0</version>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.4.2</version>
         </plugin>
         <plugin>
           <artifactId>maven-install-plugin</artifactId>
@@ -66,16 +48,15 @@
           <artifactId>maven-deploy-plugin</artifactId>
           <version>3.1.2</version>
         </plugin>
+        <!-- site lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#site_Lifecycle -->
         <plugin>
-          <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-maven-plugin</artifactId>
-          <version>9.4.58.v20250814</version>
-          <configuration>
-            <scanIntervalSeconds>10</scanIntervalSeconds>
-            <port>8080</port>
-          </configuration>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.12.1</version>
         </plugin>
-
+        <plugin>
+          <artifactId>maven-project-info-reports-plugin</artifactId>
+          <version>3.6.1</version>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>

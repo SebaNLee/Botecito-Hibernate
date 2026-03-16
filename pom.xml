@@ -8,15 +8,14 @@
   <modules>
     <module>services</module>
     <module>webapp</module>
+    <module>service-contracts</module>
   </modules>
-
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
     <spring.version>5.3.33</spring.version>
   </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -24,7 +23,11 @@
         <artifactId>spring-webmvc</artifactId>
         <version>${spring.version}</version>
       </dependency>
-
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
       <!-- JUnit -->
       <dependency>
         <groupId>org.junit</groupId>
@@ -32,18 +35,6 @@
         <version>5.11.0</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
-        <scope>test</scope>
-      </dependency>
-      <!-- Optionally: parameterized tests support -->
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-params</artifactId>
-        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>

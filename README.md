@@ -4,7 +4,10 @@
 Levantar Jetty:
 
 ```
+root$ mvn install
 root$ mvn compile
+webapp$ mvn compile
+webapp$ mvn install
 webapp$ mvn jetty:run
 
 ```

@@ -8,12 +8,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Componentes - Demo</title>
-    <link rel="stylesheet" href="<c:url value='/css/components.css' />" />
+    <link rel="stylesheet" href="<c:url value='/css/components.css' />" /> <%-- TODO, shoudld remove this if Tailwind is used later --%>
 </head>
 <body>
 
-    <paw:heading level="1" text="Librería de Componentes" />
-    <p>Página de demostración de los Custom Tags JSP.</p>
+    <paw:heading level="2" text="TP0 - Librería de custom tags" />
 
     <!-- Headings -->
     <div class="demo-section">

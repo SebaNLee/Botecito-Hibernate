@@ -1,0 +1,68 @@
+Project = multi-module Maven web app
+
+root
+ ├ service-contracts
+ ├ services
+ ├ webapp
+ └ pom.xml (parent)
+
+
+---
+
+### Modules
+
+#  service-contracts
+- interfaces / DTO / shared types
+- no logic
+- used by services and webapp
+
+#  services
+- business logic
+- implementations of contracts
+- DB / repositories
+
+#  webapp
+- HTTP layer (Spring MVC)
+- controllers
+- config
+- JSP / css / web.xml
+- builds the WAR
+
+---
+
+### Build outputs
+
+service-contracts → jar
+services          → jar
+webapp            → war
+
+WAR is in:
+webapp/target/-.war
+
+WAR = full web app to run on server.
+
+---
+
+### Inside webapp
+
+src/main/java/.../webapp
+  controller    → HTTP endpoints
+
+src/main/webapp
+  index.jsp     → view
+  css/          → frontend
+  WEB-INF/
+    web.xml     → servlet config
+    tags/       → jsp components
+
+
+---
+
+### Flow
+
+browser → controller → service → DB
+                     ↓
+                   view (jsp)
+
+
+---

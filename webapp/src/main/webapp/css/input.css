@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* Scan JSP and tag templates (paths relative to this file) */
+@source "../**/*.jsp";
+@source "../WEB-INF/**/*.tag";
+@source "../**/*.html";

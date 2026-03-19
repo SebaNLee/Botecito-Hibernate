@@ -35,6 +35,26 @@
 
   <build>
     <finalName>webapp</finalName>
+    <plugins>
+      <plugin>
+        <groupId>io.github.4ndreidev</groupId>
+        <artifactId>tailwind-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>tailwind-compile</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <inputFile>${project.basedir}/src/main/webapp/css/input.css</inputFile>
+          <outputFile>${project.basedir}/src/main/webapp/css/tailwind.css</outputFile>
+          <minify>true</minify>
+        </configuration>
+      </plugin>
+    </plugins>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
       <plugins>
         <plugin>

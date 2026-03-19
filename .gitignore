@@ -23,6 +23,9 @@ dist/
 target/
 dist/
 
+# Tailwind generated output (plugin downloads binary to ~/.m2/tailwindcss)
+webapp/src/main/webapp/css/tailwind.css
+
 # JetBrains IDE
 .idea/
 

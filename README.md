@@ -11,6 +11,7 @@ root$ mvn install
 root$ mvn compile
 webapp$ mvn install
 webapp$ mvn compile
+webapp$ mvn tailwind:watch
 webapp$ mvn jetty:run
 
 ```

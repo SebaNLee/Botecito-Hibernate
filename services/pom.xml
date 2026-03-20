@@ -17,6 +17,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+    </dependency>
+    <dependency>
       <groupId>ar.edu.itba.paw</groupId>
       <artifactId>service-contracts</artifactId>
       <version>${project.version}</version>

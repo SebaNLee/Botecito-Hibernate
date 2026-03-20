@@ -15,6 +15,8 @@
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
     <spring.version>5.3.33</spring.version>
+    <spotless.maven.plugin.version>2.43.0</spotless.maven.plugin.version>
+    <lombok.version>1.18.42</lombok.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -36,10 +38,40 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>${lombok.version}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
   <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>${lombok.version}</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>${spotless.maven.plugin.version}</version>
+        <configuration>
+          <java>
+            <palantirJavaFormat/>
+            <removeUnusedImports/>
+          </java>
+        </configuration>
+      </plugin>
+    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>

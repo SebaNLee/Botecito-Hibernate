@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: java-maven-test-junit
+        name: JUnit tests run
+        entry: mvn test
+        language: system
+        pass_filenames: false

@@ -1,8 +1,14 @@
 repos:
   - repo: local
     hooks:
-      - id: java-maven-test-junit
-        name: JUnit tests run
+      - id: java-maven-spotless-apply
+        name: Applying Spotless (re-stages files, ignore Failed)
+        entry: bash -c 'mvn -q spotless:apply && git add "$@"' --
+        language: system
+        files: \.java$
+        pass_filenames: true
+      - id: java-maven-junit
+        name: Running JUnit tests...
         entry: mvn test
         language: system
         pass_filenames: false

@@ -6,7 +6,7 @@ TODO
 
 Java | JSP | JSTL | Tailwind | Spring | (TODO db)
 
-Jetty | (TODO Tomcat) |JUnit | Lombok | Spotless
+Jetty | (TODO Tomcat) | JUnit | Lombok | Spotless
 
 ## Devs:
 

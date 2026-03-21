@@ -16,6 +16,7 @@
     <maven.compiler.target>21</maven.compiler.target>
     <spring.version>5.3.33</spring.version>
     <spotless.maven.plugin.version>2.43.0</spotless.maven.plugin.version>
+    <spotbugs.maven.plugin.version>4.9.8.0</spotbugs.maven.plugin.version>
     <lombok.version>1.18.42</lombok.version>
   </properties>
   <dependencyManagement>
@@ -70,6 +71,11 @@
             <removeUnusedImports/>
           </java>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.github.spotbugs</groupId>
+        <artifactId>spotbugs-maven-plugin</artifactId>
+        <version>${spotbugs.maven.plugin.version}</version>
       </plugin>
     </plugins>
     <pluginManagement>

@@ -22,6 +22,7 @@ dist/
 # Maven
 target/
 dist/
+**/.factorypath
 
 # Tailwind generated output (plugin downloads binary to ~/.m2/tailwindcss)
 webapp/src/main/webapp/css/tailwind.css

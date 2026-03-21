@@ -12,3 +12,8 @@ repos:
         entry: mvn test
         language: system
         pass_filenames: false
+      - id: java-maven-spotbugs
+        name: Running SpotBugs checks...
+        entry: mvn -q -DskipTests compile spotbugs:check
+        language: system
+        pass_filenames: false

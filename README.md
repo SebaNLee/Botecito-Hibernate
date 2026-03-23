@@ -28,6 +28,13 @@ webapp$ mvn jetty:run
 
 ```
 
+O desde el root con:
+
+```bash
+./jetty start
+./jetty stop
+```
+
 Luego, probar con:
 
 ```
@@ -40,5 +47,3 @@ Otras notas:
 Usar git por cli con ssh para bitbucket, mucho más cómodo
 
 Para que sus commits cuenten para el contribution graph de GitHub, commitear con el mail que usan en GitHub. Al terminar la materia, se hace un clone de este repo a GitHub y se obtendrían los commits. Si quieren chequear que estén commiteando bien pueden verlo con `git log`.
-
-

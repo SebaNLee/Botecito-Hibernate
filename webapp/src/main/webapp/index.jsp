@@ -1,17 +1,29 @@
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %> <%@ taglib
-prefix="paw" tagdir="/WEB-INF/tags" %> <%@ page contentType="text/html;
-charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Componentes - Demo</title>
-    <link rel="stylesheet" href="<c:url value='/css/components.css' />" />
+    <title>Botecito</title>
+    <link rel="stylesheet" href="<c:url value='/css/components.css' />" />  <%-- TODO delete --%>
     <link rel="stylesheet" href="<c:url value='/css/tailwind.css' />" />
   </head>
   <body>
+    <paw:heading level="1" text="Botecito" />
+
+    <p>TODO landing</p>
+
+    <nav aria-label="Navegacion principal">
+      <a href="<c:url value='/marketplace' />" class="underline">Marketplace</a>
+    </nav>
+
+    <br/>
+    <br/>
+    <br/>
+
     <paw:heading level="2" text="TP0 - Librería de custom tags" />
 
     <!-- Headings -->

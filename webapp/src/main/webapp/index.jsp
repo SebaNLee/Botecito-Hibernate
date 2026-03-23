@@ -17,7 +17,7 @@
     <p>TODO landing</p>
 
     <nav aria-label="Navegacion principal">
-      <a href="<c:url value='/marketplace' />" class="underline">Marketplace</a>
+      <a class="underline" href="<c:url value='/marketplace' />">Marketplace</a>
     </nav>
 
     <br/>

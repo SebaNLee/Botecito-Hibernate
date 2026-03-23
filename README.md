@@ -32,6 +32,7 @@ O desde el root con:
 
 ```bash
 ./jetty start
+./jetty stop
 ```
 
 Luego, probar con:

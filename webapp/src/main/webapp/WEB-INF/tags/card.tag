@@ -8,17 +8,17 @@
 
 <c:set var="cardCssClass" value="${not empty cssClass ? cssClass : ''}" />
 
-<div class="card ${cardCssClass}">
+<div class="max-w-xs overflow-hidden rounded-lg border border-black/15 bg-white shadow ${cardCssClass}">
     <c:if test="${not empty imgSrc}">
-        <img class="card-img" src="${imgSrc}" alt="<c:out value='${name}' />" />
+        <img src="${imgSrc}" alt="<c:out value='${name}' />" class="block h-44 w-full object-cover" />
     </c:if>
-    <div class="card-body">
-        <h3 class="card-title"><c:out value="${name}" /></h3>
+    <div class="px-5 py-4">
+        <h3 class="mb-2 text-xl font-semibold"><c:out value="${name}" /></h3>
         <c:if test="${not empty price}">
-            <p class="card-price">$<c:out value="${price}" /></p>
+            <p class="mb-1 text-lg font-bold text-green-600">$<c:out value="${price}" /></p>
         </c:if>
         <c:if test="${not empty date}">
-            <p class="card-date"><c:out value="${date}" /></p>
+            <p class="text-sm opacity-50"><c:out value="${date}" /></p>
         </c:if>
     </div>
 </div>

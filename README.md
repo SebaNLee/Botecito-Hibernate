@@ -31,7 +31,7 @@ webapp$ mvn jetty:run
 O desde el root con:
 
 ```bash
-./start-jetty.sh
+./jetty start
 ```
 
 Luego, probar con:

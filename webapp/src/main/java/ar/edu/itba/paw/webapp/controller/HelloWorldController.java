@@ -15,17 +15,17 @@ public class HelloWorldController {
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
     public ModelAndView landing() {
-        return new ModelAndView("/index.jsp");
+        return new ModelAndView("index");
     }
 
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
     public ModelAndView marketplace() {
-        return new ModelAndView("/marketplace.jsp");
+        return new ModelAndView("marketplace");
     }
 
     @RequestMapping(value = "/marketplace/{item_id}", method = RequestMethod.GET)
     public ModelAndView marketplaceItem(@PathVariable("item_id") final String itemId) {
-        final ModelAndView mav = new ModelAndView("/marketplace-item.jsp");
+        final ModelAndView mav = new ModelAndView("/WEB-INF/views/marketplace-item.jsp");
         mav.addObject("itemId", itemId);
         return mav;
     }
@@ -47,7 +47,7 @@ public class HelloWorldController {
 
     @RequestMapping(value = "/class", method = RequestMethod.GET)
     public ModelAndView helloWorld() {
-        final ModelAndView mav = new ModelAndView("index.jsp");
+        final ModelAndView mav = new ModelAndView("helloworld/index");
         mav.addObject("message", "Hello World from Controller");
         return mav;
     }
@@ -57,7 +57,7 @@ public class HelloWorldController {
             @RequestParam("email") final String email,
             @RequestParam("password") final String password,
             @RequestParam("username") final String username) {
-        final ModelAndView mav = new ModelAndView("index.jsp");
+        final ModelAndView mav = new ModelAndView("helloworld/index");
         User user = userService.createUser(email, password, username);
         mav.addObject("message", "Hello World " + user.getUsername());
         return mav;
@@ -65,7 +65,7 @@ public class HelloWorldController {
 
     @RequestMapping(value = "/class/profile/{id:[0-9]+}", method = RequestMethod.GET)
     public ModelAndView helloWorld(@PathVariable("id") final int id) {
-        final ModelAndView mav = new ModelAndView("/index.jsp");
+        final ModelAndView mav = new ModelAndView("helloworld/index");
         mav.addObject("message", "This it the profile for " + id);
         return mav;
     }

@@ -61,23 +61,5 @@
       <h1 class="text-3xl font-bold underline text-violet-500">Hola</h1>
     </div>
 
-    <%--
-    ====================================
-    TODO reference, demo code from class
-    start
-    ====================================
-    --%>
-    
-    <h2>
-        <c:out value="${message}" />
-    </h2>
-    
-    <%--
-    ====================================
-    TODO reference, demo code from class
-    end
-    ====================================
-    --%>
-    
   </body>
 </html>

@@ -54,3 +54,7 @@ Thumbs.db
 
 # lolo _(:v\ )/_
 idea-lolo.txt
+
+# Eclipse
+# https://stackoverflow.com/questions/15927484/is-settings-org-eclipse-jdt-core-prefs-part-of-the-project
+**/.settings/org.eclipse.jdt.apt.core.prefs

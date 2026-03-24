@@ -38,8 +38,16 @@ O desde el root con:
 Luego, probar con:
 
 ```
-curl http://localhost:8080
-curl -X 'POST' http://localhost:8080/\?email\=foo@bar.com
+Clase 2:
+curl http://localhost:8080/class
+curl -X 'POST' http://localhost:8080/class/\?email\=foo@bar.com
+
+Clase 3:
+curl -d "email=test@paw.itba.edu.ar" -d "password=secret" -d "username=PAW" http://localhost:8080/class
+curl http://localhost:8080/class/profile/2342342
+
+
+Nota: el root de las rutas utilizadas en clases teóricas se cambió de / a /class
 ```
 
 Otras notas:

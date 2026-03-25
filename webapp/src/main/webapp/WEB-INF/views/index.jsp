@@ -60,6 +60,6 @@
     <div>
       <h1 class="text-3xl font-bold underline text-violet-500">Hola</h1>
     </div>
-    
+
   </body>
 </html>

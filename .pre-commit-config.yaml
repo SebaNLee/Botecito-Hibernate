@@ -7,8 +7,8 @@ repos:
         language: system
         files: \.java$
         pass_filenames: true
-      - id: java-maven-junit
-        name: Running JUnit tests...
+      - id: java-maven-test
+        name: Running Maven tests...
         entry: mvn test
         language: system
         pass_filenames: false

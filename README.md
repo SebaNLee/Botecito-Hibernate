@@ -45,9 +45,6 @@ curl -X 'POST' http://localhost:8080/class/\?email\=foo@bar.com
 Nota: el root de las rutas utilizadas en clases teóricas se cambió de / a /class (desde Clase 3)
 
 Clase 3:
-curl -d "email=test@paw.itba.edu.ar" -d "password=secret" -d "username=PAW" http://localhost:8080/class
-curl http://localhost:8080/class/profile/2342342
-
 PostgreSQL setup (ver clase 01:30:00 - 01:45:00):
 
     Ubuntu:

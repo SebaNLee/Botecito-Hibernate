@@ -50,6 +50,7 @@ public class UserJdbcDaoTest {
         Assertions.assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate, "users"));
     }
 
+    @Test
     public void testCreateUserWhenUserDoesNotExist2() {
         // 1. Arrange
         final String username = "[USERNAME]";

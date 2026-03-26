@@ -48,6 +48,8 @@ Clase 3:
 PostgreSQL setup (ver clase 01:30:00 - 01:45:00):
 
     Ubuntu:
+        install: sudo apt install postgresql postgresql-contrib
+
         check: pg_isready
         si no responde: sudo pg_createcluster 14 main --start
 

@@ -73,6 +73,10 @@ ALTER DATABASE paw OWNER TO pawdbuser;
 ALTER TABLE public.users OWNER TO pawdbuser;
 ```
 
+Uso de Flyway:
+
+Configurado para que, al levantar Jetty, Flyway aplique automaticamente las migraciones SQL (```V1__```, ```V2__```, etc.) y los ejecute en Postgres.
+
 Para chequear que esté corriendo Posgtres localmente:
 
 ```

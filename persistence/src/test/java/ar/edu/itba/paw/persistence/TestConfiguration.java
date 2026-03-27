@@ -44,7 +44,7 @@ public class TestConfiguration {
 
     private DatabasePopulator databasePopulator() {
         final ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
-        populator.addScript(new ClassPathResource("schema.sql"));
+        populator.addScript(new ClassPathResource("db/migration/V1__init.sql"));
         return populator;
     }
 }

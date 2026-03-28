@@ -1,14 +1,11 @@
 package ar.edu.itba.paw.webapp.config;
 
 import javax.sql.DataSource;
+import org.flywaydb.core.Flyway;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
-import org.springframework.jdbc.datasource.init.DataSourceInitializer;
-import org.springframework.jdbc.datasource.init.DatabasePopulator;
-import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
@@ -39,22 +36,44 @@ public class WebConfig implements WebMvcConfigurer {
         return dataSource;
     }
 
-    @Bean
-    public DataSourceInitializer dataSourceInitializer(final DataSource dataSource) {
-        final DataSourceInitializer initializer = new DataSourceInitializer();
-        initializer.setDataSource(dataSource);
-        initializer.setDatabasePopulator(databasePopulator());
-        return initializer;
-    }
-
-    private DatabasePopulator databasePopulator() {
-        final ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
-        populator.addScript(new ClassPathResource("schema.sql"));
-        return populator;
+    @Bean(initMethod = "migrate")
+    public Flyway flyway(final DataSource dataSource) {
+        return Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .baselineOnMigrate(true)
+                .load(); // TODO check this when migrating, configured to keep existing DB
     }
 
     @Override
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/css/**").addResourceLocations("/css/");
     }
+
+    // ====================================
+    // TODO reference, demo code from class
+    // start
+    // ====================================
+
+    // Note: the fragment below was replaced by Flyway
+    // (also migrated src/main/resources/schema.sql to src/main/resources/db/migration/V1_init.sql)
+
+    // @Bean
+    // public DataSourceInitializer dataSourceInitializer(final DataSource dataSource) {
+    //     final DataSourceInitializer initializer = new DataSourceInitializer();
+    //     initializer.setDataSource(dataSource);
+    //     initializer.setDatabasePopulator(databasePopulator());
+    //     return initializer;
+    // }
+
+    // private DatabasePopulator databasePopulator() {
+    //     final ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
+    //     populator.addScript(new ClassPathResource("schema.sql"));
+    //     return populator;
+    // }
+
+    // ====================================
+    // TODO reference, demo code from class
+    // start
+    // ====================================
 }

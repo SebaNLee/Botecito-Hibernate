@@ -31,12 +31,12 @@ public class HelloWorldController {
 
     @RequestMapping(value = "/test-mail", method = RequestMethod.GET)
     public ModelAndView testMail() {
-        return new ModelAndView("test-mail.jsp");
+        return new ModelAndView("test-mail");
     }
 
     @RequestMapping(value = "/test-mail", method = RequestMethod.POST)
     public ModelAndView sendTestMail(@RequestParam("email") final String email) {
-        final ModelAndView mav = new ModelAndView("test-mail.jsp");
+        final ModelAndView mav = new ModelAndView("test-mail");
         final String trimmedEmail = email == null ? "" : email.trim();
 
         mav.addObject("email", trimmedEmail);

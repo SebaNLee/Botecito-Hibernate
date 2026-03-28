@@ -101,14 +101,14 @@ print_log_tail() {
 }
 
 report_startup_failure() {
-  if [[ -f "$JETTY_LOG" ]] && rg -q "Address already in use" "$JETTY_LOG"; then
+  if [[ -f "$JETTY_LOG" ]] && grep -q "Address already in use" "$JETTY_LOG"; then
     echo "Jetty failed to start because port 8080 is already in use."
     echo "Stop the process using port 8080, or change the Jetty port in webapp/pom.xml."
-  elif [[ -f "$JETTY_LOG" ]] && rg -q "BUILD FAILURE" "$JETTY_LOG"; then
+  elif [[ -f "$JETTY_LOG" ]] && grep -q "BUILD FAILURE" "$JETTY_LOG"; then
     echo "Jetty failed during startup. See the log excerpt below."
   fi
 
-  if [[ -f "$TAILWIND_LOG" ]] && rg -q "watchman: not found" "$TAILWIND_LOG"; then
+  if [[ -f "$TAILWIND_LOG" ]] && grep -q "watchman: not found" "$TAILWIND_LOG"; then
     echo "Tailwind watch exited because 'watchman' is not installed."
     echo "That does not block Jetty startup, but CSS will not auto-rebuild in watch mode."
   fi

@@ -4,7 +4,6 @@ import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.UserService;
 import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +17,11 @@ public class HelloWorldController {
 
     private final MailService mailService;
     private final UserService userService;
+
+    public HelloWorldController(final MailService mailService, final UserService userService) {
+        this.mailService = mailService;
+        this.userService = userService;
+    }
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
     public ModelAndView landing() {
@@ -70,12 +74,6 @@ public class HelloWorldController {
 
     // Note: change class root directory from / to /class/
     // Example: /example from class would be /class/example
-
-    @Autowired
-    public HelloWorldController(final MailService mailService, final UserService userService) {
-        this.mailService = mailService;
-        this.userService = userService;
-    }
 
     @RequestMapping(value = "/class", method = RequestMethod.GET)
     public ModelAndView helloWorld() {

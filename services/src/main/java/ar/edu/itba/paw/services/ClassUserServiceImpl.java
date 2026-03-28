@@ -1,17 +1,17 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.persistence.UserDao;
+import ar.edu.itba.paw.persistence.ClassUserDao;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserServiceImpl implements UserService {
-    private UserDao userDao;
+public class ClassUserServiceImpl implements ClassUserService {
+    private ClassUserDao userDao;
 
     @Autowired
-    public UserServiceImpl(final UserDao userDao) {
+    public ClassUserServiceImpl(final ClassUserDao userDao) {
         this.userDao = userDao;
     }
 

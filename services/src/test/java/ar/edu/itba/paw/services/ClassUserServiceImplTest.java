@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.persistence.UserDao;
+import ar.edu.itba.paw.persistence.ClassUserDao;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -12,13 +12,13 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class UserServiceImplTest {
+public class ClassUserServiceImplTest {
 
     @InjectMocks
-    private UserServiceImpl userService;
+    private ClassUserServiceImpl userService;
 
     @Mock
-    private UserDao userDao;
+    private ClassUserDao userDao;
 
     @Test
     public void testFindByIdWhenUserExists() {

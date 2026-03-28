@@ -18,10 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = TestConfiguration.class)
-public class UserJdbcDaoTest {
+public class ClassUserJdbcDaoTest {
 
     @Autowired
-    private UserDao userDao;
+    private ClassUserDao userDao;
 
     @Autowired
     private DataSource dataSource;
@@ -47,7 +47,7 @@ public class UserJdbcDaoTest {
         Assertions.assertNotNull(user);
         Assertions.assertEquals(username, user.getUsername());
         Assertions.assertEquals(password, user.getPassword());
-        Assertions.assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate, "users"));
+        Assertions.assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate, "class_users"));
     }
 
     @Test
@@ -64,6 +64,6 @@ public class UserJdbcDaoTest {
         Assertions.assertNotNull(user);
         Assertions.assertEquals(username, user.getUsername());
         Assertions.assertEquals(password, user.getPassword());
-        Assertions.assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate, "users"));
+        Assertions.assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate, "class_users"));
     }
 }

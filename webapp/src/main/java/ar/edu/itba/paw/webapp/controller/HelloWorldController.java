@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.services.ClassUserService;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -39,10 +39,10 @@ public class HelloWorldController {
     // Note: change class root directory from / to /class/
     // Example: /example from class would be /class/example
 
-    private final UserService userService;
+    private final ClassUserService userService;
 
     @Autowired
-    public HelloWorldController(final UserService userService) {
+    public HelloWorldController(final ClassUserService userService) {
         this.userService = userService;
     }
 

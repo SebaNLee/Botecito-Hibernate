@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.models;
 
-public class User {
+public class ClassUser {
     private final Long id;
     private final String email;
     private final String password;
@@ -8,7 +8,7 @@ public class User {
 
     // TODO, could use Lombok
 
-    public User(Long id, String email, String password, String username) {
+    public ClassUser(Long id, String email, String password, String username) {
         this.id = id;
         this.email = email;
         this.password = password;
@@ -33,6 +33,6 @@ public class User {
 
     @Override
     public String toString() {
-        return "User [email=" + email + ", password=" + password + ", username=" + username + "]";
+        return "ClassUser [email=" + email + ", password=" + password + ", username=" + username + "]";
     }
 }

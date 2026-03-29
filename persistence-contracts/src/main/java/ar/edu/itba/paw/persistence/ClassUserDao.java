@@ -1,12 +1,12 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.models.ClassUser;
 import java.util.Optional;
 
 public interface ClassUserDao {
-    public User createUser(final String email, final String password, final String username);
+    ClassUser createClassUser(final String email, final String password, final String username);
 
-    Optional<User> findByEmail(final String email);
+    Optional<ClassUser> findClassUserByEmail(final String email);
 
-    Optional<User> findById(final long id);
+    Optional<ClassUser> findClassUserById(final long id);
 }

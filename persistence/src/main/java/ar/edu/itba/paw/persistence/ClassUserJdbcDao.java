@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.models.ClassUser;
 import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,8 +15,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class ClassUserJdbcDao implements ClassUserDao {
 
-    private static final RowMapper<User> USER_ROW_MAPPER = (ResultSet rs, int rowNum) ->
-            new User(rs.getLong("id"), rs.getString("email"), rs.getString("password"), rs.getString("username"));
+    private static final RowMapper<ClassUser> CLASS_USER_ROW_MAPPER = (ResultSet rs, int rowNum) ->
+            new ClassUser(rs.getLong("id"), rs.getString("email"), rs.getString("password"), rs.getString("username"));
 
     private final JdbcTemplate jdbcTemplate;
     private final SimpleJdbcInsert jdbcInsert;
@@ -29,25 +29,25 @@ public class ClassUserJdbcDao implements ClassUserDao {
     }
 
     @Override
-    public User createUser(final String email, final String password, final String username) {
+    public ClassUser createClassUser(final String email, final String password, final String username) {
         final Map<String, Object> values = new HashMap<>();
         values.put("email", email);
         values.put("password", password);
         values.put("username", username);
         final Number id = jdbcInsert.executeAndReturnKey(values);
 
-        return new User(id.longValue(), email, password, username);
+        return new ClassUser(id.longValue(), email, password, username);
     }
 
     @Override
-    public Optional<User> findByEmail(final String email) {
-        return jdbcTemplate.query("SELECT * FROM class_users WHERE email = ?", USER_ROW_MAPPER, email).stream()
+    public Optional<ClassUser> findClassUserByEmail(final String email) {
+        return jdbcTemplate.query("SELECT * FROM class_users WHERE email = ?", CLASS_USER_ROW_MAPPER, email).stream()
                 .findAny();
     }
 
     @Override
-    public Optional<User> findById(final long id) {
-        return jdbcTemplate.query("SELECT * FROM class_users WHERE id = ?", USER_ROW_MAPPER, id).stream()
+    public Optional<ClassUser> findClassUserById(final long id) {
+        return jdbcTemplate.query("SELECT * FROM class_users WHERE id = ?", CLASS_USER_ROW_MAPPER, id).stream()
                 .findAny();
     }
 }

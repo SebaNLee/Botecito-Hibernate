@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.models.ClassUser;
 import ar.edu.itba.paw.persistence.ClassUserDao;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,25 +8,25 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ClassUserServiceImpl implements ClassUserService {
-    private ClassUserDao userDao;
+    private final ClassUserDao classUserDao;
 
     @Autowired
-    public ClassUserServiceImpl(final ClassUserDao userDao) {
-        this.userDao = userDao;
+    public ClassUserServiceImpl(final ClassUserDao classUserDao) {
+        this.classUserDao = classUserDao;
     }
 
     @Override
-    public User createUser(final String email, final String password, final String username) {
-        return userDao.createUser(email, password, username);
+    public ClassUser createClassUser(final String email, final String password, final String username) {
+        return classUserDao.createClassUser(email, password, username);
     }
 
     @Override
-    public Optional<User> findByEmail(final String email) {
-        return userDao.findByEmail(email);
+    public Optional<ClassUser> findClassUserByEmail(final String email) {
+        return classUserDao.findClassUserByEmail(email);
     }
 
     @Override
-    public Optional<User> findById(final long id) {
-        return userDao.findById(id);
+    public Optional<ClassUser> findClassUserById(final long id) {
+        return classUserDao.findClassUserById(id);
     }
 }

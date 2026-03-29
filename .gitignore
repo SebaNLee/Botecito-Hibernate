@@ -19,6 +19,9 @@ dist/
 # Package files
 *.jar
 
+# Local dev runtime (./run.sh: logs, PID files)
+.run/
+
 # Maven
 target/
 dist/
@@ -26,6 +29,9 @@ dist/
 
 # Tailwind generated output (plugin downloads binary to ~/.m2/tailwindcss)
 webapp/src/main/webapp/css/tailwind.css
+
+# Cursor MCP (contains API keys; keep local only)
+.cursor/mcp.json
 
 # JetBrains IDE
 .idea/

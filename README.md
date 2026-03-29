@@ -2,110 +2,64 @@
 
 TODO
 
-## Stack:
+## Stack
 
-Java | JSP | JSTL | Tailwind | Spring | JDBC | PostgreSQL
+Java 21 · Spring · JSP/JSTL · Tailwind · JDBC · PostgreSQL · Jetty · Flyway · JUnit · Lombok · Spotless · Spotbugs
 
-Jetty | (TODO Tomcat) | JUnit | Lombok | Spotless | Spotbugs
+## Devs
 
-## Devs:
+### Requisitos (Ubuntu)
 
-pre-commit setup:
+```bash
+sudo apt update
+sudo apt install openjdk-21-jdk maven postgresql postgresql-contrib
 ```
-pip install pre-commit
+
+`java -version` debe ser 21.x.
+
+### Overview
+
+Aplicación web Spring MVC: vistas JSP, acceso a datos con JDBC contra PostgreSQL. Al arrancar Jetty, Flyway aplica migraciones en `webapp/src/main/resources/db/migration/`.
+
+La conexión a la base de datos está en `webapp/src/main/java/ar/edu/itba/paw/webapp/config/WebConfig.java` (URL, usuario y contraseña deben coincidir con tu Postgres local).
+
+### PostgreSQL
+
+Con la configuración por defecto del código: base de datos `paw`, usuario `postgres`, contraseña `postgres`.
+
+```bash
+sudo service postgresql start
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+sudo -u postgres psql -c "CREATE DATABASE paw;"
+PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d paw -c 'SELECT 1;'
+```
+
+Si la app no levanta el contexto Spring (p. ej. **503**), revisar `.run/jetty.log` luego de usar `run.sh`.
+
+### Ejecutar
+
+Desde la raíz del repo:
+
+```bash
+./run.sh start | stop | restart | status | logs [jetty|tailwind|both]
+```
+
+- **run.sh**: build (`mvn install -pl webapp -am`), Tailwind watch y servidor Jetty en segundo plano; logs en `.run/`.
+- **Manual:** en la raíz `mvn install -pl webapp -am`; en `webapp/`, `mvn tailwind:watch` y en otra terminal `mvn jetty:run`.
+
+Variables opcionales: `PAW_RUN_SKIP_TESTS=1`, `PAW_RUN_WAIT_SECS`, `PAW_JETTY_URL`, `PAW_JETTY_PORT` (ver comentarios en `run.sh`).
+
+App: **http://localhost:8080**
+
+## pre-commit
+
+```bash
+sudo apt install pre-commit
 pre-commit install
 ```
 
-Levantar Jetty:
+Config: `.pre-commit-config.yaml`.
 
-```
-root$ mvn install
-root$ mvn compile
-webapp$ mvn install
-webapp$ mvn compile
-webapp$ mvn tailwind:watch
-webapp$ mvn jetty:run
+## Clases teóricas
 
-```
-
-O desde el root con:
-
-```
-./jetty start
-./jetty stop
-```
-
-### Implementaciones de clases teóricas:
-
-#### Clase 9/3/2026:
-
-```
-curl http://localhost:8080/class
-curl -X 'POST' http://localhost:8080/class/\?email\=foo@bar.com
-```
-
-Nota: el root de las rutas utilizadas en clases teóricas se cambió de / a /class (desde Clase 3)
-
-#### Clase 23/3/2026:
-
-PostgreSQL setup: ver grabación 01:30:00 - 01:45:00
-
-##### Ubuntu:
-
-Instalar postgre:
-
-```
-sudo apt install postgresql postgresql-contrib
-```
-
-Crear DB a usar y cambiar owner:
-
-```
-sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
-sudo -u postgres psql -c "CREATE DATABASE paw;"
-```
-
-```
-sudo -u postgres psql postgres
-CREATE ROLE pawdbuser WITH LOGIN PASSWORD 'pawdbsecret';
-GRANT ALL PRIVILEGES ON DATABASE paw TO pawdbuser;
-ALTER DATABASE paw OWNER TO pawdbuser;
-ALTER TABLE public.users OWNER TO pawdbuser;
-```
-
-Uso de Flyway:
-
-Configurado para que, al levantar Jetty, Flyway aplique automaticamente las migraciones SQL (```V1__```, ```V2__```, etc.) y los ejecute en Postgres.
-
-Para chequear que esté corriendo Posgtres localmente:
-
-```
-pg_isready
-sudo service postgresql status
-```
-
-Para iniciar/frenar Posgres:
-```
-sudo service postgresql start
-sudo service postgresql stop
-```
-
-Para conectarse manualmente:
-
-```
-psql -h localhost -U pawdbuser -d paw -W
-```
-
-Test luego de setear Postgres:
-
-```
-curl -d "email=test@paw.itba.edu.ar" -d "password=secret" -d "username=PAW" http://localhost:8080/class
-curl http://localhost:8080/class/profile/1
-```
-
-### Otras notas:
-
-Usar git por cli con ssh para bitbucket, mucho más cómodo
-
-Para que sus commits cuenten para el contribution graph de GitHub, commitear con el mail que usan en GitHub. Al terminar la materia, se hace un clone de este repo a GitHub y se obtendrían los commits. Si quieren chequear que estén commiteando bien pueden verlo con `git log`.
-
+Notas de teoría y práctica del curso en `logs.md`.

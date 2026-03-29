@@ -13,7 +13,7 @@ import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class UserJdbcDao implements UserDao {
+public class ClassUserJdbcDao implements ClassUserDao {
 
     private static final RowMapper<User> USER_ROW_MAPPER = (ResultSet rs, int rowNum) ->
             new User(rs.getLong("id"), rs.getString("email"), rs.getString("password"), rs.getString("username"));
@@ -22,10 +22,10 @@ public class UserJdbcDao implements UserDao {
     private final SimpleJdbcInsert jdbcInsert;
 
     @Autowired
-    public UserJdbcDao(final DataSource dataSource) {
+    public ClassUserJdbcDao(final DataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.jdbcInsert =
-                new SimpleJdbcInsert(dataSource).withTableName("users").usingGeneratedKeyColumns("id");
+                new SimpleJdbcInsert(dataSource).withTableName("class_users").usingGeneratedKeyColumns("id");
     }
 
     @Override
@@ -41,13 +41,13 @@ public class UserJdbcDao implements UserDao {
 
     @Override
     public Optional<User> findByEmail(final String email) {
-        return jdbcTemplate.query("SELECT * FROM users WHERE email = ?", USER_ROW_MAPPER, email).stream()
+        return jdbcTemplate.query("SELECT * FROM class_users WHERE email = ?", USER_ROW_MAPPER, email).stream()
                 .findAny();
     }
 
     @Override
     public Optional<User> findById(final long id) {
-        return jdbcTemplate.query("SELECT * FROM users WHERE id = ?", USER_ROW_MAPPER, id).stream()
+        return jdbcTemplate.query("SELECT * FROM class_users WHERE id = ?", USER_ROW_MAPPER, id).stream()
                 .findAny();
     }
 }

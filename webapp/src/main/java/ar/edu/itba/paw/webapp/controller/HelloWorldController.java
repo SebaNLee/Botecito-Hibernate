@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.models.ClassUser;
 import ar.edu.itba.paw.services.ClassUserService;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,11 +39,11 @@ public class HelloWorldController {
     // Note: change class root directory from / to /class/
     // Example: /example from class would be /class/example
 
-    private final ClassUserService userService;
+    private final ClassUserService classUserService;
 
     @Autowired
-    public HelloWorldController(final ClassUserService userService) {
-        this.userService = userService;
+    public HelloWorldController(final ClassUserService classUserService) {
+        this.classUserService = classUserService;
     }
 
     @RequestMapping(value = "/class", method = RequestMethod.GET)
@@ -54,21 +54,21 @@ public class HelloWorldController {
     }
 
     @RequestMapping(value = "/class", method = RequestMethod.POST)
-    public ModelAndView createUser(
+    public ModelAndView createClassUser(
             @RequestParam("email") final String email,
             @RequestParam("password") final String password,
             @RequestParam("username") final String username) {
         final ModelAndView mav = new ModelAndView("helloworld/index");
-        User user = userService.createUser(email, password, username);
-        mav.addObject("message", "Hello World " + user.getUsername());
+        final ClassUser classUser = classUserService.createClassUser(email, password, username);
+        mav.addObject("message", "Hello World " + classUser.getUsername());
         return mav;
     }
 
     @RequestMapping(value = "/class/profile/{id:[0-9]+}", method = RequestMethod.GET)
     public ModelAndView helloWorld(@PathVariable("id") final long id) {
         final ModelAndView mav = new ModelAndView("helloworld/index");
-        final Optional<User> user = userService.findById(id);
-        mav.addObject("message", "This it the profile for " + user.get().getUsername());
+        final Optional<ClassUser> classUser = classUserService.findClassUserById(id);
+        mav.addObject("message", "This it the profile for " + classUser.get().getUsername());
         return mav;
     }
 

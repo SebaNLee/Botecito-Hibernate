@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.models.ClassUser;
 import ar.edu.itba.paw.persistence.ClassUserDao;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
@@ -15,19 +15,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ClassUserServiceImplTest {
 
     @InjectMocks
-    private ClassUserServiceImpl userService;
+    private ClassUserServiceImpl classUserService;
 
     @Mock
-    private ClassUserDao userDao;
+    private ClassUserDao classUserDao;
 
     @Test
     public void testFindByIdWhenUserExists() {
         // 1. Arrange
-        final User user = new User(1L, "test", "test", "test");
-        Mockito.when(userDao.findById(1L)).thenReturn(Optional.of(user));
+        final ClassUser classUser = new ClassUser(1L, "test", "test", "test");
+        Mockito.when(classUserDao.findClassUserById(1L)).thenReturn(Optional.of(classUser));
 
         // 2. Excercise
-        final Optional<User> result = userService.findById(1L);
+        final Optional<ClassUser> result = classUserService.findClassUserById(1L);
 
         // 3. Assert
         Assertions.assertTrue(result.isPresent());
@@ -37,10 +37,10 @@ public class ClassUserServiceImplTest {
     @Test
     public void testFindByIdwhenUserNotExists() {
         // 1. Arrange
-        Mockito.when(userDao.findById(Mockito.anyLong())).thenReturn(Optional.empty());
+        Mockito.when(classUserDao.findClassUserById(Mockito.anyLong())).thenReturn(Optional.empty());
 
         // 2. Excercise
-        final Optional<User> result = userService.findById(1L);
+        final Optional<ClassUser> result = classUserService.findClassUserById(1L);
 
         // 3. Assert
         Assertions.assertFalse(result.isPresent());
@@ -49,12 +49,12 @@ public class ClassUserServiceImplTest {
     @Test
     public void testCreateUserWhenUserDoesNotExist() {
         // 1. Arrange
-        final User user = new User(1L, "test", "test", "test");
-        Mockito.when(userDao.createUser(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
-                .thenReturn(user);
+        final ClassUser classUser = new ClassUser(1L, "test", "test", "test");
+        Mockito.when(classUserDao.createClassUser(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
+                .thenReturn(classUser);
 
         // 2. Excercise
-        final User result = userService.createUser("test", "test", "test");
+        final ClassUser result = classUserService.createClassUser("test", "test", "test");
 
         // 3. Assert
         Assertions.assertNotNull(result);

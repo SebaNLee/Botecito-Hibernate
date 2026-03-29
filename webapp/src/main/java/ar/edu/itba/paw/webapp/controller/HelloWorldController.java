@@ -1,11 +1,11 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.ClassUser;
 import ar.edu.itba.paw.models.RequestStatus;
 import ar.edu.itba.paw.models.RequestSubmission;
-import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.services.ClassUserService;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.RequestService;
-import ar.edu.itba.paw.services.UserService;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
@@ -21,7 +21,6 @@ public class HelloWorldController {
 
     private final MailService mailService;
     private final RequestService requestService;
-    private final UserService userService;
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
     public ModelAndView landing() {
@@ -87,48 +86,6 @@ public class HelloWorldController {
         return mav;
     }
 
-    // ====================================
-    // TODO reference, demo code from class
-    // start
-    // ====================================
-
-    // Note: change class root directory from / to /class/
-    // Example: /example from class would be /class/example
-
-    @Autowired
-    public HelloWorldController(
-            final MailService mailService, final RequestService requestService, final UserService userService) {
-        this.mailService = mailService;
-        this.requestService = requestService;
-        this.userService = userService;
-    }
-
-    @RequestMapping(value = "/class", method = RequestMethod.GET)
-    public ModelAndView helloWorld() {
-        final ModelAndView mav = new ModelAndView("helloworld/index");
-        mav.addObject("message", "Hello World from Controller");
-        return mav;
-    }
-
-    @RequestMapping(value = "/class", method = RequestMethod.POST)
-    public ModelAndView createUser(
-            @RequestParam("email") final String email,
-            @RequestParam("password") final String password,
-            @RequestParam("username") final String username) {
-        final ModelAndView mav = new ModelAndView("helloworld/index");
-        User user = userService.createUser(email, password, username);
-        mav.addObject("message", "Hello World " + user.getUsername());
-        return mav;
-    }
-
-    @RequestMapping(value = "/class/profile/{id:[0-9]+}", method = RequestMethod.GET)
-    public ModelAndView helloWorld(@PathVariable("id") final long id) {
-        final ModelAndView mav = new ModelAndView("helloworld/index");
-        final Optional<User> user = userService.findById(id);
-        mav.addObject("message", "This it the profile for " + user.get().getUsername());
-        return mav;
-    }
-
     private ModelAndView resolveRequest(final String token, final RequestStatus requestStatus) {
         final ModelAndView mav = new ModelAndView("request-action-result");
         final Optional<RequestSubmission> existingRequest = requestService.findByToken(token);
@@ -160,6 +117,53 @@ public class HelloWorldController {
         mav.addObject(
                 "actionMessage",
                 "The requester was notified at " + resolvedRequest.get().getRequesterEmail() + ".");
+        return mav;
+    }
+
+    // ====================================
+    // TODO reference, demo code from class
+    // start
+    // ====================================
+
+    // Note: change class root directory from / to /class/
+    // Example: /example from class would be /class/example
+
+    private final ClassUserService classUserService;
+
+    // TODO, mail and request services added by us (cleanup classUserService)
+    @Autowired
+    public HelloWorldController(
+            final ClassUserService classUserService,
+            final RequestService requestService,
+            final MailService mailService) {
+        this.mailService = mailService;
+        this.requestService = requestService;
+        this.classUserService = classUserService;
+    }
+
+    @RequestMapping(value = "/class", method = RequestMethod.GET)
+    public ModelAndView helloWorld() {
+        final ModelAndView mav = new ModelAndView("helloworld/index");
+        mav.addObject("message", "Hello World from Controller");
+        return mav;
+    }
+
+    @RequestMapping(value = "/class", method = RequestMethod.POST)
+    public ModelAndView createClassUser(
+            @RequestParam("email") final String email,
+            @RequestParam("password") final String password,
+            @RequestParam("username") final String username) {
+        final ModelAndView mav = new ModelAndView("helloworld/index");
+        final ClassUser classUser = classUserService.createClassUser(email, password, username);
+        mav.addObject("message", "Hello World " + classUser.getUsername());
+        return mav;
+    }
+
+    @RequestMapping(value = "/class/profile/{id:[0-9]+}", method = RequestMethod.GET)
+    public ModelAndView helloWorld(@PathVariable("id") final long id) {
+        final ModelAndView mav = new ModelAndView("helloworld/index");
+        final Optional<ClassUser> classUser = classUserService.findClassUserById(id);
+        mav.addObject("message", "This it the profile for " + classUser.get().getUsername());
         return mav;
     }
 

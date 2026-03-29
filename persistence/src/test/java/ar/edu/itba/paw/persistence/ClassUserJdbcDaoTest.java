@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.models.ClassUser;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,10 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = TestConfiguration.class)
-public class UserJdbcDaoTest {
+public class ClassUserJdbcDaoTest {
 
     @Autowired
-    private UserDao userDao;
+    private ClassUserDao classUserDao;
 
     @Autowired
     private DataSource dataSource;
@@ -41,13 +41,13 @@ public class UserJdbcDaoTest {
         final String email = "[EMAIL_ADDRESS]";
 
         // 2. Exercise
-        final User user = userDao.createUser(email, password, username);
+        final ClassUser classUser = classUserDao.createClassUser(email, password, username);
 
         // 3. Assert
-        Assertions.assertNotNull(user);
-        Assertions.assertEquals(username, user.getUsername());
-        Assertions.assertEquals(password, user.getPassword());
-        Assertions.assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate, "users"));
+        Assertions.assertNotNull(classUser);
+        Assertions.assertEquals(username, classUser.getUsername());
+        Assertions.assertEquals(password, classUser.getPassword());
+        Assertions.assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate, "class_users"));
     }
 
     @Test
@@ -58,12 +58,12 @@ public class UserJdbcDaoTest {
         final String email = "[EMAIL_ADDRESS]";
 
         // 2. Exercise
-        final User user = userDao.createUser(email, password, username);
+        final ClassUser classUser = classUserDao.createClassUser(email, password, username);
 
         // 3. Assert
-        Assertions.assertNotNull(user);
-        Assertions.assertEquals(username, user.getUsername());
-        Assertions.assertEquals(password, user.getPassword());
-        Assertions.assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate, "users"));
+        Assertions.assertNotNull(classUser);
+        Assertions.assertEquals(username, classUser.getUsername());
+        Assertions.assertEquals(password, classUser.getPassword());
+        Assertions.assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate, "class_users"));
     }
 }

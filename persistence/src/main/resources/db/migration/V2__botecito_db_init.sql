@@ -6,11 +6,6 @@
 -- BOOKING_COMPLETED: booking finished after item usage
 CREATE TYPE booking_state AS ENUM ('BOOKING_PENDING', 'BOOKING_CONFIRMED', 'BOOKING_REJECTED', 'BOOKING_CANCELLED', 'BOOKING_COMPLETED');
 
--- EMAIL_REQUESTED: email sent to owner to decide a new request
--- EMAIL_CONFIRMED: email sent to guest when request is accepted
--- EMAIL_REJECTED: email sent to guest when request is rejected
-CREATE TYPE email_notification_type AS ENUM ('EMAIL_REQUESTED', 'EMAIL_CONFIRMED', 'EMAIL_REJECTED');
-
 CREATE TABLE users (
     id SERIAL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -82,21 +77,6 @@ CREATE TABLE item_booking (
     CONSTRAINT fk_booking_guest FOREIGN KEY (guest_id) REFERENCES users(id),
     CONSTRAINT uq_booking_host_decision_token UNIQUE (host_decision_token),
     CONSTRAINT chk_booking_time CHECK (start_time < end_time)
-);
-
-CREATE TABLE email_notification (
-    id SERIAL,
-    booking_id INT NOT NULL,
-    recipient_user_id INT NOT NULL,
-    notification_type email_notification_type NOT NULL,
-    sent_at TIMESTAMPTZ,
-    last_error TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT pk_email_notification PRIMARY KEY (id),
-    CONSTRAINT fk_email_notification_booking FOREIGN KEY (booking_id) REFERENCES item_booking(id) ON DELETE CASCADE,
-    CONSTRAINT fk_email_notification_user FOREIGN KEY (recipient_user_id) REFERENCES users(id),
-    CONSTRAINT uq_email_notification_booking_type UNIQUE (booking_id, notification_type)
 );
 
 INSERT INTO item_type (name) VALUES

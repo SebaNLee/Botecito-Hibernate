@@ -1,7 +1,8 @@
 # AGENTS.md
 
 This repository is a multi-module Spring MVC application. Treat the conventions
-below as the project baseline when reading, generating, or editing code.
+below as the project baseline when reading, generating, or editing code. All new
+code should follow these rules directly.
 
 ## Stack
 
@@ -31,11 +32,12 @@ modules.
 
 ## Layering rules
 
-- `webapp` depends on service contracts and service implementations.
-- `services` depends on service contracts and persistence contracts.
-- `persistence` depends on persistence contracts.
+- `webapp` depends on `service-contracts` and `services`.
+- `services` depends on `service-contracts` and `persistence-contracts`.
+- `persistence` depends on `persistence-contracts`.
 - `service-contracts` and `persistence-contracts` depend on `models`.
 - Do not import concrete implementations across layers when a contract exists.
+- Do not skip layers.
 
 ## Web layer
 
@@ -45,28 +47,48 @@ modules.
 - Inject service interfaces from `service-contracts`.
 - Do not inject DAOs into controllers.
 - Do not place SQL or business logic in controllers.
+- Controllers handle request parsing, form binding, validation, and model
+  preparation.
 
 ## Routing and views
 
 - `WebConfig` owns MVC configuration.
 - `ViewResolver` uses `prefix="/WEB-INF/views/"` and `suffix=".jsp"`.
-- Controllers should return logical view names such as `"index"` or
-  `"helloworld/index"`.
+- Controllers should return logical view names such as `"index"`,
+  `"marketplace"`, or `"helloworld/index"`.
+- Do not return full JSP paths unless there is a deliberate exception already
+  present in the code.
 - JSP views live under `webapp/src/main/webapp/WEB-INF/views/`.
 - Reusable UI lives under `webapp/src/main/webapp/WEB-INF/tags/`.
+
+## JSP, taglibs, and component rules
+
+- In views, use:
+  - JSTL core: `http://java.sun.com/jsp/jstl/core`
+  - custom tags from `tagdir="/WEB-INF/tags"`
+- In form and i18n views, also use Spring taglibs:
+  - `http://www.springframework.org/tags/form`
+  - `http://www.springframework.org/tags`
+- Do not use `core_rt`.
+- Do not use JSP scriptlets.
+- Use JSTL and EL expressions.
+- Use `<c:url>` for links and resources.
 
 ## Forms, validation, and i18n
 
 - The web layer uses `*Form` classes for form binding and validation.
 - Put form classes in `webapp`, for example under
   `ar.edu.itba.paw.webapp.form`.
-- Use `@ModelAttribute` for binding and `@Valid` plus `BindingResult` for
-  validation.
+- Use `@ModelAttribute` for binding.
+- Use `@Valid` plus `BindingResult` for validation.
+- Helper `@ModelAttribute` methods are valid for shared model state.
 - Keep validation annotations on form objects, not on persistence classes.
-- Map form objects to service/domain inputs inside controllers.
+- Map form objects to service or domain inputs inside controllers.
 - Use Spring form tags in JSPs when working with forms.
 - Use `MessageSource` plus `messages.properties` for validation and UI messages.
+- Use locale-specific message variants when needed.
 - Treat i18n as part of the standard web architecture.
+- Use PRG where it makes sense after successful POST requests.
 
 ## Frontend conventions
 
@@ -84,8 +106,13 @@ modules.
   - `--color-border`
   - `--color-danger`
   - `--color-success`
+  - `--radius-*`
+  - `--shadow-*`
+  - spacing and surface tokens when needed
 - Prefer semantic tokens and shared component classes over scattered hardcoded
   colors.
+- Theme overrides such as dark mode should be implemented through token
+  overrides, not one-off ad hoc styles.
 - Keep repeated styling in reusable classes when that is clearer than repeating
   long utility lists.
 
@@ -94,17 +121,21 @@ modules.
 - Extract repeated UI into reusable tag files.
 - Minimize duplication across JSPs, CSS, and JavaScript.
 - If a piece of UI appears more than once, strongly consider abstracting it.
+- Use reusable primitives for recurring UI patterns such as form fields, inputs,
+  selects, textareas, checkboxes, alerts, badges, dropdowns, modals, drawers,
+  empty states, page headers, sections, stacks, and grids.
 - Repeated interactions should use shared JavaScript instead of inline duplicated
   scripts.
-- Avoid scriptlets in JSP and tag files. Use JSTL and EL.
 
 ## JavaScript
 
 - JavaScript is minimal and enhancement-oriented.
 - Use it for component interactivity, accessibility improvements, and
   `localStorage`-backed UI preferences.
-- Good examples: dropdowns, modals, tabs, dismissible alerts, theme persistence,
-  filter persistence, layout preference persistence.
+- Good examples: dropdowns, modals, tabs, dismissible alerts, copy buttons,
+  keyboard behavior, theme persistence, filter persistence, and layout
+  preference persistence.
+- Keep server-rendered navigation and data flow as the default.
 - Do not turn the app into a client-side SPA.
 
 ## Service layer
@@ -115,6 +146,7 @@ modules.
 - Do not use `JdbcTemplate` or SQL in services.
 - Do not return web-layer objects from services.
 - Do not access request or session state from services.
+- Keep business logic in services, not in controllers or DAOs.
 
 ## Persistence layer
 
@@ -133,11 +165,15 @@ modules.
 - Runtime database: PostgreSQL.
 - Flyway migrations live in `persistence/src/main/resources/db/migration/`.
 - Do not treat HSQLDB as the main database.
+- Do not describe `schema.sql` as the primary runtime mechanism.
 
 ## Testing
 
 - Service tests use JUnit 5 + Mockito.
 - Persistence tests use Spring Test + in-memory HSQLDB.
+- Persistence tests should follow the Spring Test style used in the repository,
+  including test configuration, transactional test behavior, and database
+  initialization for the test datasource.
 - Keep test style aligned with the layer under test.
 
 ## General guidance

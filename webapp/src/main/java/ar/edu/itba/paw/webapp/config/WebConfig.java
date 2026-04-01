@@ -17,10 +17,20 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 @ComponentScan({"ar.edu.itba.paw.webapp.controller", "ar.edu.itba.paw.services", "ar.edu.itba.paw.persistence"})
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+    @Bean
+    public org.springframework.context.MessageSource messageSource() {
+        final org.springframework.context.support.ReloadableResourceBundleMessageSource messageSource =
+                new org.springframework.context.support.ReloadableResourceBundleMessageSource();
+        messageSource.setBasename("classpath:i18n/messages");
+        messageSource.setDefaultEncoding("UTF-8");
+        messageSource.setCacheSeconds(5);
+        return messageSource;
+    }
 
     @Bean
     public ViewResolver viewResolver() {
         final InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
+        viewResolver.setViewClass(org.springframework.web.servlet.view.JstlView.class);
         viewResolver.setPrefix("/WEB-INF/views/");
         viewResolver.setSuffix(".jsp");
         return viewResolver;

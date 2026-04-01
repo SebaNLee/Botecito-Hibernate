@@ -5,20 +5,20 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <c:set var="headingCssClass" value="${not empty cssClass ? cssClass : ''}" />
-<c:set var="headingBaseClass" value="mb-2 mt-0 font-semibold leading-tight" />
+<c:set var="headingBaseClass" value="m-0 font-display font-extrabold leading-tight tracking-tight text-brand-foreground" />
 
 <c:choose>
     <c:when test="${level == 1}">
-        <c:set var="headingSizeClass" value="text-4xl" />
+        <c:set var="headingSizeClass" value="text-4xl sm:text-5xl lg:text-6xl" />
     </c:when>
     <c:when test="${level == 2}">
-        <c:set var="headingSizeClass" value="text-3xl" />
+        <c:set var="headingSizeClass" value="text-3xl sm:text-4xl" />
     </c:when>
     <c:when test="${level == 3}">
-        <c:set var="headingSizeClass" value="text-2xl" />
+        <c:set var="headingSizeClass" value="text-2xl sm:text-3xl" />
     </c:when>
     <c:when test="${level == 4}">
-        <c:set var="headingSizeClass" value="text-xl" />
+        <c:set var="headingSizeClass" value="text-xl sm:text-2xl" />
     </c:when>
     <c:when test="${level == 5}">
         <c:set var="headingSizeClass" value="text-lg" />

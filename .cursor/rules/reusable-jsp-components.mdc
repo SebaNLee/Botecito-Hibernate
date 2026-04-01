@@ -1,0 +1,86 @@
+---
+description: Real rules for reusable JSP components
+globs: ["webapp/src/main/webapp/WEB-INF/views/**/*.jsp", "webapp/src/main/webapp/WEB-INF/tags/*.tag", "webapp/src/main/webapp/js/*.js"]
+alwaysApply: false
+---
+
+# Reusable components
+
+In this repository, UI reuse is implemented mainly through tag files in
+`WEB-INF/tags`, not through `jsp:include` files inside a `components/` folder.
+
+The default rule is to abstract duplicated frontend code whenever it is reasonable.
+Repeated markup, repeated class combinations, and repeated interaction patterns
+should be extracted into reusable components so the codebase keeps as little
+duplication as practical.
+
+## Real structure
+
+```
+webapp/src/main/webapp/WEB-INF/
+|- views/
+|  |- index.jsp
+|  |- marketplace.jsp
+|  |- marketplace-item.jsp
+|  `- helloworld/index.jsp
+`- tags/
+   |- button.tag
+   |- card.tag
+   `- heading.tag
+```
+
+## Correct taglibs
+
+In views:
+
+```jsp
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
+```
+
+In tag files:
+
+```jsp
+<%@ tag language="java" pageEncoding="UTF-8" %>
+<%@ attribute name="text" required="true" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+```
+
+Do not document `core_rt` or a `WEB-INF/jsp/components` folder, because they do
+not match the real repository.
+
+## How they are used
+
+```jsp
+<paw:heading level="1" text="Botecito" />
+<paw:button text="Principal" color="primary" />
+<paw:card name="Producto A" price="1500" date="17/03/2026" />
+```
+
+## How they are implemented
+
+Tag files define attributes and encapsulate reusable markup. Real examples:
+
+- `heading.tag` receives `level`, `text`, and `cssClass`.
+- `button.tag` receives `text`, `color`, `size`, `cssClass`, and `disabled`.
+- `card.tag` receives `name`, `price`, `date`, `imgSrc`, and `cssClass`.
+
+Use more reusable primitives such as:
+
+- form field wrappers;
+- input, textarea, select, and checkbox components;
+- modal, drawer, dropdown, badge, alert, and empty-state components;
+- layout primitives such as page headers, sections, stacks, and grids.
+
+If a repeated interaction also needs JavaScript, keep the markup reusable and move
+the interaction logic to a minimal shared script instead of duplicating inline code.
+
+## Rules
+
+- Reuse `WEB-INF/tags` before duplicating large blocks across multiple JSPs.
+- If a piece of UI appears more than once, strongly consider extracting it.
+- Use JSTL and EL expressions; do not use scriptlets.
+- Keep UI logic inside the tag file and business logic out of the view layer.
+- Use `<c:url>` for links and resources.
+- Keep repeated styling in shared CSS classes instead of repeating long utility sets
+  across many views when a reusable abstraction is clearer.

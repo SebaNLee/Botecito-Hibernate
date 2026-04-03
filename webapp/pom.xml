@@ -133,7 +133,7 @@
   </build>
 
   <profiles>
-    <!-- WAR built with this profile reads config/jdbc-production.properties at runtime (marker = production). -->
+    <!-- WAR built with this profile reads config/credentials-production.properties at runtime (marker = production). -->
     <profile>
       <id>production-war</id>
       <build>

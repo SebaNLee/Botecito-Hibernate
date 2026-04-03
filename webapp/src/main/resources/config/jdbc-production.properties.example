@@ -1,6 +1,0 @@
-# Copy this file to jdbc-production.properties (gitignored) and fill in real values.
-# Required for: ./deploy.sh  and  mvn package -Pproduction-war
-#
-jdbc.url=jdbc:postgresql://HOST/paw-2026a-11
-jdbc.username=paw-2026a-11
-jdbc.password=CHANGE_ME

@@ -43,38 +43,38 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Bean
     public DataSource dataSource() {
-        final String profile = resolveJdbcProfile();
-        final Properties jdbc = loadJdbcProperties(profile);
+        final String profile = resolveCredentialsProfile();
+        final Properties credentials = loadCredentialsProperties(profile);
         final SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
         dataSource.setDriverClass(org.postgresql.Driver.class);
-        dataSource.setUrl(jdbc.getProperty("jdbc.url"));
-        dataSource.setUsername(jdbc.getProperty("jdbc.username"));
-        dataSource.setPassword(jdbc.getProperty("jdbc.password"));
+        dataSource.setUrl(credentials.getProperty("jdbc.url"));
+        dataSource.setUsername(credentials.getProperty("jdbc.username"));
+        dataSource.setPassword(credentials.getProperty("jdbc.password"));
         return dataSource;
     }
 
-    private static String resolveJdbcProfile() {
-        final String env = System.getenv("PAW_JDBC_PROFILE");
+    private static String resolveCredentialsProfile() {
+        final String env = System.getenv("PAW_CREDENTIALS_PROFILE");
         if (env != null && !env.isBlank()) {
             return env.trim();
         }
-        try (InputStream in = WebConfig.class.getResourceAsStream("/META-INF/paw-jdbc-profile")) {
+        try (InputStream in = WebConfig.class.getResourceAsStream("/META-INF/paw-credentials-profile")) {
             if (in == null) {
                 return "local";
             }
             final String text = new String(in.readAllBytes(), StandardCharsets.UTF_8).trim();
             return text.isEmpty() ? "local" : text;
         } catch (final IOException e) {
-            throw new IllegalStateException("Cannot read classpath:META-INF/paw-jdbc-profile", e);
+            throw new IllegalStateException("Cannot read classpath:META-INF/paw-credentials-profile", e);
         }
     }
 
-    private static Properties loadJdbcProperties(final String profile) {
-        final String path = "config/jdbc-" + profile + ".properties";
+    private static Properties loadCredentialsProperties(final String profile) {
+        final String path = "config/credentials-" + profile + ".properties";
         final ClassPathResource resource = new ClassPathResource(path);
         if (!resource.exists()) {
             throw new IllegalStateException(
-                    "Missing classpath resource '" + path + "' for JDBC profile '" + profile + "'");
+                    "Missing classpath resource '" + path + "' for credentials profile '" + profile + "'");
         }
         final Properties properties = new Properties();
         try (InputStream in = resource.getInputStream()) {

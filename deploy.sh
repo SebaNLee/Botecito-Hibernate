@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Build a WAR for Pampero / production: embeds JDBC profile "production" and
-# packages config/jdbc-production.properties (must exist locally; gitignored).
+# packages config/credentials-production.properties (must exist locally; gitignored).
 #
 # Usage: ./deploy.sh
 # Output: webapp/target/webapp.war
@@ -10,12 +10,12 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROD_PROPS="$ROOT_DIR/webapp/src/main/resources/config/jdbc-production.properties"
+PROD_PROPS="$ROOT_DIR/webapp/src/main/resources/config/credentials-production.properties"
 
 if [[ ! -f "$PROD_PROPS" ]]; then
   echo "error: missing $PROD_PROPS" >&2
-  echo "  Copy webapp/src/main/resources/config/jdbc-production.properties.example to jdbc-production.properties" >&2
-  echo "  and set jdbc.url, jdbc.username, jdbc.password for the server database." >&2
+  echo "  Copy webapp/src/main/resources/config/credentials-production.properties.example to credentials-production.properties" >&2
+  echo "  and set JDBC (and any other) credentials for the server." >&2
   exit 1
 fi
 

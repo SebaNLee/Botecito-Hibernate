@@ -21,12 +21,12 @@ sudo apt install openjdk-21-jdk maven postgresql postgresql-contrib
 
 Aplicación web Spring MVC: vistas JSP, acceso a datos con JDBC contra PostgreSQL. Al arrancar Jetty, Flyway aplica migraciones en `webapp/src/main/resources/db/migration/`.
 
-La conexión JDBC se define en archivos properties bajo `webapp/src/main/resources/config/`:
+Credenciales y ajustes por entorno van en `webapp/src/main/resources/config/`:
 
-- **`jdbc-local.properties`**: desarrollo local (usuario `postgres`, base `paw`).
-- **`jdbc-production.properties`**: no está en el repo; copiá `jdbc-production.properties.example` a ese nombre y completá credenciales del servidor (usado al empaquetar el WAR de producción).
+- **`credentials-local.properties`**: desarrollo local (commit en el repo); hoy incluye JDBC (`jdbc.*`); podés sumar mail u otras claves con el mismo prefijo que uses en código.
+- **`credentials-production.properties`**: no está en el repo; copiá `credentials-production.properties.example` a ese nombre y completá valores reales del servidor (usado al empaquetar el WAR de producción).
 
-El perfil activo es `local` o `production`: `./run.sh start` fuerza `PAW_JDBC_PROFILE=local`. Un WAR construido con `./deploy.sh` (perfil Maven `production-war`) incluye el marcador `production` y usa `jdbc-production.properties` dentro del WAR. URL, usuario y contraseña salen solo de esos archivos properties.
+El perfil activo es `local` o `production`: `./run.sh start` fuerza `PAW_CREDENTIALS_PROFILE=local`. Un WAR construido con `./deploy.sh` (perfil Maven `production-war`) incluye el marcador `META-INF/paw-credentials-profile` = `production` y empaqueta `credentials-production.properties` dentro del WAR. La URL/usuario/contraseña de la base salen de las claves `jdbc.*` en ese archivo.
 
 ### PostgreSQL
 
@@ -52,9 +52,9 @@ Desde la raíz del repo:
 - **run.sh**: build (`mvn install -pl webapp -am`), Tailwind watch y servidor Jetty en segundo plano; logs en `.run/`.
 - **Manual:** en la raíz `mvn install -pl webapp -am`; en `webapp/`, `mvn tailwind:watch` y en otra terminal `mvn jetty:run`.
 
-Variables opcionales: `PAW_RUN_SKIP_TESTS=1`, `PAW_RUN_WAIT_SECS`, `PAW_JETTY_URL`, `PAW_JETTY_PORT`, `PAW_JDBC_PROFILE` (ver comentarios en `run.sh`).
+Variables opcionales: `PAW_RUN_SKIP_TESTS=1`, `PAW_RUN_WAIT_SECS`, `PAW_JETTY_URL`, `PAW_JETTY_PORT`, `PAW_CREDENTIALS_PROFILE` (ver comentarios en `run.sh`).
 
-**WAR para Pampero:** `./deploy.sh` (requiere `jdbc-production.properties` local). Genera `webapp/target/webapp.war`.
+**WAR para Pampero:** `./deploy.sh` (requiere `credentials-production.properties` local). Genera `webapp/target/webapp.war`.
 
 App: **http://localhost:8080**
 

@@ -3,11 +3,11 @@ package ar.edu.itba.paw.persistence;
 import ar.edu.itba.paw.models.ClassUser;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.lang.NonNull;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -24,14 +24,7 @@ public class ClassUserJdbcDaoTest {
     private ClassUserDao classUserDao;
 
     @Autowired
-    private DataSource dataSource;
-
-    private JdbcTemplate jdbcTemplate;
-
-    @BeforeEach
-    public void setUp() {
-        jdbcTemplate = new JdbcTemplate(dataSource);
-    }
+    private @NonNull DataSource dataSource;
 
     @Test
     public void testCreateUserWhenUserDoesNotExist() {
@@ -47,7 +40,7 @@ public class ClassUserJdbcDaoTest {
         Assertions.assertNotNull(classUser);
         Assertions.assertEquals(username, classUser.getUsername());
         Assertions.assertEquals(password, classUser.getPassword());
-        Assertions.assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate, "class_users"));
+        Assertions.assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate(), "class_users"));
     }
 
     @Test
@@ -64,6 +57,10 @@ public class ClassUserJdbcDaoTest {
         Assertions.assertNotNull(classUser);
         Assertions.assertEquals(username, classUser.getUsername());
         Assertions.assertEquals(password, classUser.getPassword());
-        Assertions.assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate, "class_users"));
+        Assertions.assertEquals(1, JdbcTestUtils.countRowsInTable(jdbcTemplate(), "class_users"));
+    }
+
+    private @NonNull JdbcTemplate jdbcTemplate() {
+        return new JdbcTemplate(dataSource);
     }
 }

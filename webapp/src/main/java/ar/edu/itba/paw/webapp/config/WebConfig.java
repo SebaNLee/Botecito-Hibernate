@@ -1,10 +1,15 @@
 package ar.edu.itba.paw.webapp.config;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Properties;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.ViewResolver;
@@ -38,12 +43,56 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Bean
     public DataSource dataSource() {
+        final String profile = resolveJdbcProfile();
+        final Properties jdbc = loadJdbcProperties(profile);
         final SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
         dataSource.setDriverClass(org.postgresql.Driver.class);
-        dataSource.setUrl("jdbc:postgresql://localhost/paw-2026a-11"); // TODO local host, migrate to server
-        dataSource.setUsername("paw-2026a-11");
-        dataSource.setPassword("fLwqEc61o");
+        dataSource.setUrl(jdbc.getProperty("jdbc.url"));
+        dataSource.setUsername(jdbc.getProperty("jdbc.username"));
+        dataSource.setPassword(jdbc.getProperty("jdbc.password"));
         return dataSource;
+    }
+
+    private static String resolveJdbcProfile() {
+        final String env = System.getenv("PAW_JDBC_PROFILE");
+        if (env != null && !env.isBlank()) {
+            return env.trim();
+        }
+        try (InputStream in = WebConfig.class.getResourceAsStream("/META-INF/paw-jdbc-profile")) {
+            if (in == null) {
+                return "local";
+            }
+            final String text = new String(in.readAllBytes(), StandardCharsets.UTF_8).trim();
+            return text.isEmpty() ? "local" : text;
+        } catch (final IOException e) {
+            throw new IllegalStateException("Cannot read classpath:META-INF/paw-jdbc-profile", e);
+        }
+    }
+
+    private static Properties loadJdbcProperties(final String profile) {
+        final String path = "config/jdbc-" + profile + ".properties";
+        final ClassPathResource resource = new ClassPathResource(path);
+        if (!resource.exists()) {
+            throw new IllegalStateException(
+                    "Missing classpath resource '" + path + "' for JDBC profile '" + profile + "'");
+        }
+        final Properties properties = new Properties();
+        try (InputStream in = resource.getInputStream()) {
+            properties.load(in);
+        } catch (final IOException e) {
+            throw new IllegalStateException("Cannot load " + path, e);
+        }
+        requireJdbcKey(properties, path, "jdbc.url");
+        requireJdbcKey(properties, path, "jdbc.username");
+        requireJdbcKey(properties, path, "jdbc.password");
+        return properties;
+    }
+
+    private static void requireJdbcKey(final Properties properties, final String path, final String key) {
+        final String value = properties.getProperty(key);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("Missing or blank '" + key + "' in " + path);
+        }
     }
 
     @Bean(initMethod = "migrate")

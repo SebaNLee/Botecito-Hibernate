@@ -30,6 +30,9 @@ dist/
 # Tailwind generated output (plugin downloads binary to ~/.m2/tailwindcss)
 webapp/src/main/webapp/css/tailwind.css
 
+# Production JDBC (copy from jdbc-production.properties.example)
+webapp/src/main/resources/config/jdbc-production.properties
+
 # Cursor MCP (contains API keys; keep local only)
 .cursor/mcp.json
 

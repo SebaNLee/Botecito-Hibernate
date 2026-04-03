@@ -5,6 +5,7 @@
 #
 # Environment:
 #   PAW_RUN_SKIP_TESTS=1  — mvn install with -DskipTests (faster iteration)
+#   PAW_JDBC_PROFILE=local — forced for Jetty (uses config/jdbc-local.properties; overrides WAR marker)
 #
 
 set -euo pipefail
@@ -228,7 +229,8 @@ do_start() {
     die "Tailwind watch failed to stay running"
   fi
 
-  start_bg "Jetty" "$JETTY_LOG" "$JETTY_PID_FILE" mvn jetty:run
+  start_bg "Jetty" "$JETTY_LOG" "$JETTY_PID_FILE" \
+    env "PAW_JDBC_PROFILE=${PAW_JDBC_PROFILE:-local}" mvn jetty:run
   local j_pid
   j_pid="$(read_pid_file "$JETTY_PID_FILE")"
 

@@ -131,4 +131,38 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <profiles>
+    <!-- WAR built with this profile reads config/jdbc-production.properties at runtime (marker = production). -->
+    <profile>
+      <id>production-war</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>jdbc-profile-marker-production</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <overwrite>true</overwrite>
+                  <outputDirectory>${project.build.outputDirectory}/META-INF</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>${project.basedir}/src/main/build-resources/production</directory>
+                      <filtering>false</filtering>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

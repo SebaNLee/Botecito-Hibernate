@@ -59,6 +59,10 @@
       <artifactId>services</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>jstl</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

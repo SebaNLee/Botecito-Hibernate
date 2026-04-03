@@ -40,9 +40,9 @@ public class WebConfig implements WebMvcConfigurer {
     public DataSource dataSource() {
         final SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
         dataSource.setDriverClass(org.postgresql.Driver.class);
-        dataSource.setUrl("jdbc:postgresql://localhost/paw"); // TODO local host, migrate to server
-        dataSource.setUsername("postgres");
-        dataSource.setPassword("postgres");
+        dataSource.setUrl("jdbc:postgresql://localhost/paw-2026a-11"); // TODO local host, migrate to server
+        dataSource.setUsername("paw-2026a-11");
+        dataSource.setPassword("fLwqEc61o");
         return dataSource;
     }
 
@@ -66,20 +66,22 @@ public class WebConfig implements WebMvcConfigurer {
     // ====================================
 
     // Note: the fragment below was replaced by Flyway
-    // (also migrated src/main/resources/schema.sql to src/main/resources/db/migration/V1_init.sql)
+    // (also migrated src/main/resources/schema.sql to
+    // src/main/resources/db/migration/V1_init.sql)
 
     // @Bean
-    // public DataSourceInitializer dataSourceInitializer(final DataSource dataSource) {
-    //     final DataSourceInitializer initializer = new DataSourceInitializer();
-    //     initializer.setDataSource(dataSource);
-    //     initializer.setDatabasePopulator(databasePopulator());
-    //     return initializer;
+    // public DataSourceInitializer dataSourceInitializer(final DataSource
+    // dataSource) {
+    // final DataSourceInitializer initializer = new DataSourceInitializer();
+    // initializer.setDataSource(dataSource);
+    // initializer.setDatabasePopulator(databasePopulator());
+    // return initializer;
     // }
 
     // private DatabasePopulator databasePopulator() {
-    //     final ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
-    //     populator.addScript(new ClassPathResource("schema.sql"));
-    //     return populator;
+    // final ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
+    // populator.addScript(new ClassPathResource("schema.sql"));
+    // return populator;
     // }
 
     // ====================================

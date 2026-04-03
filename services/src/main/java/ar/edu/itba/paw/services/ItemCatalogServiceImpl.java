@@ -3,6 +3,7 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.CatalogUser;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
+import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemMedia;
 import ar.edu.itba.paw.models.ItemType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,6 +11,8 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -50,10 +53,35 @@ public final class ItemCatalogServiceImpl implements ItemCatalogService {
     }
 
     @Override
-    public Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId) {
+    public List<ItemAvailability> listAvailabilities() {
+        return catalogData.getItemAvailability();
+    }
+
+    @Override
+    public List<ItemAvailability> listAvailabilitiesByItemId(final int itemId) {
         return catalogData.getItemAvailability().stream()
                 .filter(itemAvailability -> itemAvailability.getItemId() == itemId)
-                .min(Comparator.comparing(ItemAvailability::getStartTime));
+                .toList();
+    }
+
+    @Override
+    public List<ItemBooking> listBookings() {
+        return catalogData.getItemBooking();
+    }
+
+    @Override
+    public List<ItemBooking> listBookingsByItemId(final int itemId) {
+        return catalogData.getItemBooking().stream()
+                .filter(itemBooking -> itemBooking.getItemId() == itemId)
+                .toList();
+    }
+
+    @Override
+    public Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId) {
+        return listAvailabilitiesByItemId(itemId).stream()
+                .min(Comparator.comparingInt((ItemAvailability availability) ->
+                                DayOfWeek.valueOf(availability.getWeekday()).getValue())
+                        .thenComparing(availability -> LocalTime.parse(availability.getStartTime())));
     }
 
     @Override
@@ -80,6 +108,7 @@ public final class ItemCatalogServiceImpl implements ItemCatalogService {
         private List<ItemType> itemType;
         private List<Item> item;
         private List<ItemAvailability> itemAvailability;
+        private List<ItemBooking> itemBooking;
         private List<ItemMedia> itemMedia;
 
         public List<CatalogUser> getUsers() {
@@ -112,6 +141,14 @@ public final class ItemCatalogServiceImpl implements ItemCatalogService {
 
         public void setItemAvailability(final List<ItemAvailability> itemAvailability) {
             this.itemAvailability = immutableCopy(itemAvailability);
+        }
+
+        public List<ItemBooking> getItemBooking() {
+            return List.copyOf(itemBooking);
+        }
+
+        public void setItemBooking(final List<ItemBooking> itemBooking) {
+            this.itemBooking = immutableCopy(itemBooking);
         }
 
         public List<ItemMedia> getItemMedia() {

@@ -10,19 +10,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class ClassUserJdbcDao implements ClassUserDao {
 
-    private static final RowMapper<ClassUser> CLASS_USER_ROW_MAPPER = (ResultSet rs, int rowNum) ->
+    private static final @NonNull RowMapper<ClassUser> CLASS_USER_ROW_MAPPER = (ResultSet rs, int rowNum) ->
             new ClassUser(rs.getLong("id"), rs.getString("email"), rs.getString("password"), rs.getString("username"));
 
     private final JdbcTemplate jdbcTemplate;
     private final SimpleJdbcInsert jdbcInsert;
 
     @Autowired
-    public ClassUserJdbcDao(final DataSource dataSource) {
+    public ClassUserJdbcDao(final @NonNull DataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.jdbcInsert =
                 new SimpleJdbcInsert(dataSource).withTableName("class_users").usingGeneratedKeyColumns("id");

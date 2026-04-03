@@ -6,7 +6,7 @@
 <c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="publishUrl" value="/publish" />
 
-<paw:layout title="Publicar Bote - Botecito" mainClass="pt-24 pb-20 md:pb-12 max-w-4xl mx-auto px-6">
+<paw:layout title="Publicar Bote - Botecito" mainClass="pt-24 pb-12 max-w-4xl mx-auto px-6">
   <div class="mb-8">
     <a href="${marketplaceUrl}" class="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity font-bold font-manrope bg-transparent no-underline w-fit">
       <span class="material-symbols-outlined">arrow_back</span>

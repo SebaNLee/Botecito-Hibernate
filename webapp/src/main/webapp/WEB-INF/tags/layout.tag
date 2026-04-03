@@ -21,5 +21,6 @@
       <jsp:doBody />
     </main>
     <paw:siteFooter />
+    <script src="<c:url value='/js/date-time-picker.js' />"></script>
   </body>
 </html>

@@ -1,9 +1,8 @@
 package ar.edu.itba.paw.models;
 
-public class ItemAvailability {
+public class ItemBooking {
     private Integer id;
     private Integer itemId;
-    private String weekday;
     private String startTime;
     private String endTime;
 
@@ -21,14 +20,6 @@ public class ItemAvailability {
 
     public void setItemId(final Integer itemId) {
         this.itemId = itemId;
-    }
-
-    public String getWeekday() {
-        return weekday;
-    }
-
-    public void setWeekday(final String weekday) {
-        this.weekday = weekday;
     }
 
     public String getStartTime() {

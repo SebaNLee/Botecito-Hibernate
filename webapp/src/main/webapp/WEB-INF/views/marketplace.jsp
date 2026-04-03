@@ -5,15 +5,15 @@
 <c:url var="publishUrl" value="/publish" />
 <c:url var="homeUrl" value="/" />
 
-<paw:layout title="Explorar - Botecito" mainClass="pt-24 pb-20 md:pb-12 max-w-7xl mx-auto px-6 flex flex-col md:flex-row gap-8">
-  <aside class="w-full md:w-80 shrink-0">
-    <div class="sticky top-28 space-y-8">
+<paw:layout title="Explorar - Botecito" mainClass="pt-24 pb-12 max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-[18rem_minmax(0,1fr)] lg:grid-cols-[20rem_minmax(0,1fr)] gap-8 items-start">
+  <aside class="relative z-40 w-full md:min-w-0">
+    <div class="space-y-8">
       <a href="${homeUrl}" class="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity font-bold font-manrope mb-4 bg-transparent no-underline">
         <span class="material-symbols-outlined">arrow_back</span>
         <span>Volver</span>
       </a>
       
-      <div>
+      <div class="rounded-2xl bg-surface-container-lowest p-6 shadow-[0_24px_40px_rgba(11,28,50,0.06)]">
         <h2 class="text-xl font-extrabold mb-6 tracking-tight">Filtros de busqueda</h2>
         <form action="<c:url value='/marketplace' />" method="get" class="space-y-6">
           <div class="space-y-2">
@@ -26,19 +26,29 @@
           
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
-              <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="marketplace-date">Fecha</label>
-              <div class="relative">
-                <input id="marketplace-date" name="date" value="${param.date}" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface text-sm" type="date"/>
-              </div>
+              <paw:datePicker
+                  id="marketplace-date"
+                  name="date"
+                  label="Fecha"
+                  value="${param.date}"
+                  placeholder="Selecciona fecha"
+                  restrictToAvailability="false"
+                  offeredDatesJson="[]"
+                  occupiedDatesJson="[]" />
             </div>
             <div class="space-y-2">
-              <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="marketplace-time">Horario</label>
-              <select id="marketplace-time" name="time" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface text-sm appearance-none">
-                <option value="">Cualquiera</option>
-                <option value="morning" ${param.time == 'morning' ? 'selected="selected"' : ''}>Manana</option>
-                <option value="afternoon" ${param.time == 'afternoon' ? 'selected="selected"' : ''}>Tarde</option>
-                <option value="full" ${param.time == 'full' ? 'selected="selected"' : ''}>Dia completo</option>
-              </select>
+              <paw:timeRangePicker
+                  id="marketplace-time-range"
+                  dateInputId="marketplace-date"
+                  startName="startTime"
+                  endName="endTime"
+                  label="Horario"
+                  startValue="${param.startTime}"
+                  endValue="${param.endTime}"
+                  placeholder="Inicio - Fin"
+                  restrictToAvailability="false"
+                  offeredTimesJson="{}"
+                  occupiedTimesJson="{}" />
             </div>
           </div>
           
@@ -77,7 +87,7 @@
     </div>
   </aside>
   
-  <section class="flex-1">
+  <section class="relative z-0 min-w-0">
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
       <div>
         <h1 class="text-4xl font-extrabold tracking-tight text-on-background m-0">Explorar items</h1>
@@ -85,6 +95,12 @@
       </div>
       
       <form action="<c:url value='/marketplace' />" method="get" class="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
+        <input type="hidden" name="location" value="${param.location}" />
+        <input type="hidden" name="date" value="${param.date}" />
+        <input type="hidden" name="startTime" value="${param.startTime}" />
+        <input type="hidden" name="endTime" value="${param.endTime}" />
+        <input type="hidden" name="capacity" value="${param.capacity}" />
+        <input type="hidden" name="maxWeight" value="${param.maxWeight}" />
         <label for="marketplace-sort">Ordenar por:</label>
         <div class="relative flex items-center">
           <select id="marketplace-sort" name="sort" class="appearance-none bg-transparent border-none font-bold text-primary pr-6 focus:ring-0 cursor-pointer" onchange="this.form.submit()">
@@ -99,8 +115,18 @@
     
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <c:forEach items="${items}" var="item">
-        <c:url var="itemUrl" value="/item/${item.id}" />
-        <a href="${itemUrl}" class="group bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_32px_48px_rgba(11,28,50,0.04)] transition-all hover:shadow-[0_40px_64px_rgba(11,28,50,0.08)] no-underline block">
+        <c:url var="itemUrl" value="/item/${item.id}">
+          <c:if test="${not empty param.date}">
+            <c:param name="date" value="${param.date}" />
+          </c:if>
+          <c:if test="${not empty param.startTime}">
+            <c:param name="startTime" value="${param.startTime}" />
+          </c:if>
+          <c:if test="${not empty param.endTime}">
+            <c:param name="endTime" value="${param.endTime}" />
+          </c:if>
+        </c:url>
+        <a href="${itemUrl}" data-marketplace-item-link class="group relative z-0 bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_32px_48px_rgba(11,28,50,0.04)] transition-all hover:shadow-[0_40px_64px_rgba(11,28,50,0.08)] no-underline block">
           <div class="aspect-[16/10] overflow-hidden relative">
             <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${item.title}" src="${itemImages[item.id]}"/>
           </div>

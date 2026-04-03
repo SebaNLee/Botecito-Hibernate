@@ -4,6 +4,7 @@
 @source "../**/*.jsp";
 @source "../WEB-INF/**/*.tag";
 @source "../**/*.html";
+@source "../**/*.js";
 
 @theme inline {
   --color-on-surface-variant: #404752;

@@ -5,7 +5,7 @@
 <c:url var="publishUrl" value="/publish" />
 <c:url var="marketplaceUrl" value="/marketplace" />
 
-<paw:layout title="Botecito | Detalle" mainClass="pt-24 pb-20 md:pb-12 max-w-7xl mx-auto px-6 flex flex-col gap-8">
+<paw:layout title="Botecito | Detalle" mainClass="pt-24 pb-12 max-w-7xl mx-auto px-6 flex flex-col gap-8">
   <div class="w-full">
     <a href="${marketplaceUrl}" class="flex items-center gap-2 text-primary hover:opacity-80 transition-opacity font-bold font-manrope mb-6 bg-transparent no-underline w-fit">
       <span class="material-symbols-outlined">arrow_back</span>
@@ -63,31 +63,25 @@
         </div>
         
         <form class="space-y-4">
-          <div class="space-y-2">
-            <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="reservation-date">Fecha</label>
-            <input id="reservation-date" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface text-sm" type="date" value="${reservationDate}"/>
-          </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-2">
-              <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="reservation-start">Inicio</label>
-              <select id="reservation-start" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface text-sm appearance-none">
-                <option><c:out value="${reservationWindow}" /></option>
-              </select>
-            </div>
-            <div class="space-y-2">
-              <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="reservation-end">Fin</label>
-              <select id="reservation-end" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface text-sm appearance-none">
-                <option><c:out value="${reservationWindow}" /></option>
-              </select>
-            </div>
-          </div>
-          <div class="bg-surface-container-high rounded-xl p-4 flex items-start gap-3">
-            <span class="material-symbols-outlined text-primary mt-0.5">schedule</span>
-            <div>
-              <div class="font-bold text-sm"><c:out value="${reservationLabel}" /></div>
-              <div class="text-xs text-on-surface-variant mt-1"><c:out value="${reservationWindow}" /></div>
-            </div>
-          </div>
+          <paw:datePicker
+              id="reservation-date"
+              name="date"
+              label="Fecha"
+              value="${reservationDate}"
+              placeholder="Selecciona fecha"
+              offeredDatesJson="${reservationOfferedDatesJson}"
+              occupiedDatesJson="${reservationOccupiedDatesJson}" />
+          <paw:timeRangePicker
+              id="reservation-time-range"
+              dateInputId="reservation-date"
+              startName="startTime"
+              endName="endTime"
+              label="Horario"
+              startValue="${reservationStartTime}"
+              endValue="${reservationEndTime}"
+              placeholder="Inicio - Fin"
+              offeredTimesJson="${reservationOfferedTimesJson}"
+              occupiedTimesJson="${reservationOccupiedTimesJson}" />
           <button type="button" class="w-full py-4 bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-[0.98] mt-4 flex justify-center items-center gap-2 border-none cursor-pointer">
             Realizar pre-reserva
             <span class="material-symbols-outlined text-sm">chevron_right</span>
@@ -150,5 +144,51 @@
         </p>
       </div>
     </aside>
+  </div>
+
+  <div
+    class="fixed inset-0 z-[280] hidden items-center justify-center bg-on-background/45 px-6"
+    data-item-unavailable-alert
+    data-marketplace-url="${marketplaceUrl}"
+    hidden
+  >
+    <div
+      class="w-full max-w-lg rounded-3xl bg-surface-container-lowest p-8 shadow-[0_32px_64px_rgba(11,28,50,0.18)]"
+    >
+      <div class="flex items-start gap-4">
+        <div
+          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-error-container text-error"
+        >
+          <span class="material-symbols-outlined">warning</span>
+        </div>
+        <div class="space-y-3">
+          <h2 class="m-0 text-2xl font-extrabold tracking-tight">
+            Item no disponible
+          </h2>
+          <p class="m-0 leading-relaxed text-on-surface-variant">
+            El item seleccionado no esta disponible en la fecha y horario
+            elegidos. Puedes seguir viendo este item sin esos filtros o volver
+            al marketplace para elegir otro.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+        <button
+          type="button"
+          class="flex-1 rounded-xl border-none bg-primary px-5 py-3 font-bold text-on-primary cursor-pointer"
+          data-item-unavailable-clear
+        >
+          Seguir sin filtros
+        </button>
+        <button
+          type="button"
+          class="flex-1 rounded-xl border border-outline-variant bg-transparent px-5 py-3 font-bold text-on-surface cursor-pointer"
+          data-item-unavailable-marketplace
+        >
+          Volver al marketplace
+        </button>
+      </div>
+    </div>
   </div>
 </paw:layout>

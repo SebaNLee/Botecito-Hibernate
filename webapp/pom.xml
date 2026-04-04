@@ -29,6 +29,12 @@
     <dependency>
       <groupId>org.hibernate.validator</groupId>
       <artifactId>hibernate-validator</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>jakarta.validation</groupId>
+          <artifactId>jakarta.validation-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
@@ -63,10 +69,6 @@
       <groupId>ar.edu.itba.paw</groupId>
       <artifactId>services</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>jstl</artifactId>
     </dependency>
   </dependencies>
 
@@ -160,6 +162,12 @@
         <credentials.file>credentials-production.properties</credentials.file>
         <credentials.fallback.file></credentials.fallback.file>
       </properties>
+      <dependencies>
+        <dependency>
+          <groupId>javax.servlet</groupId>
+          <artifactId>jstl</artifactId>
+        </dependency>
+      </dependencies>
     </profile>
   </profiles>
 </project>

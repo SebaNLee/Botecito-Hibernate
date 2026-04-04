@@ -38,7 +38,7 @@ SSH_REUSE_OPTS=(
 )
 
 echo "Building WAR..."
-mvn -f "$ROOT_DIR/pom.xml" clean package -DskipTests -pl webapp -am -Pproduction-war
+mvn -f "$ROOT_DIR/pom.xml" clean package -pl webapp -am -Pproduction-war
 
 echo ""
 echo "Opening SSH session to Pampero..."

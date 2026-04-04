@@ -2,13 +2,13 @@
 
 #### Dependencias
 
-- javax.servlet, jstl, 1.2 (root y webapp)
+- javax.servlet, jstl, 1.2 (root y webapp, solo para )
 
 #### Credenciales de producción
 
-1. Copiar `webapp/src/main/resources/config/credentials-production.properties.example` → `credentials-production.properties` (archivo gitignored).
-2. Completar al menos `jdbc.url`, `jdbc.username`, `jdbc.password` del servidor de grupo (y mail u otras claves cuando existan).
-3. En la raíz del repo: `./deploy.sh` — compila el WAR con perfil `production-war` (marcador `META-INF/paw-credentials-profile` = `production` y empaqueta `credentials-production.properties`).
+1. Copiar `webapp/src/main/resources/config/credentials-production.properties.example` a `credentials-production.properties` (archivo gitignored) y agregarle las contraseñas
+2. Completar al menos `jdbc.password`, `mail.password`(y ver si hay otras credenciales a agregar)
+3. En la raíz del repo: `./deploy.sh`  compila el WAR con perfil `production-war` (marcador `META-INF/paw-credentials-profile` = `production` y empaqueta `credentials-production.properties`). Esto usando el flag `-Pproduction-war`
 
 #### Comandos deploy en Pampero
 
@@ -27,6 +27,15 @@ $ ssh <username>@pampero.itba.edu.ar
 sftp> put webapp.war web/app.war
 ```
 
-Y con eso estaría, acceder a: `http://pawserver.it.itba.edu.ar/paw-2026a-11/`
+Deploy: `http://pawserver.it.itba.edu.ar/paw-2026a-11/`
 
 Para logs: `http://pawserver.it.itba.edu.ar/logs/catalina.err`
+
+### Postgres Pampero
+
+##### Ingreso manual
+
+```
+$ ssh <username>@pampero.itba.edu.ar
+[<username>@pampero ~]$ psql -h 10.16.1.110 -U paw-2026a-11 -d paw-2026a-11 -W
+```

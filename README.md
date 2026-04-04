@@ -21,19 +21,20 @@ sudo apt install openjdk-21-jdk maven postgresql postgresql-contrib
 
 Aplicación web Spring MVC: vistas JSP, acceso a datos con JDBC contra PostgreSQL. Al arrancar Jetty, Flyway aplica migraciones en `webapp/src/main/resources/db/migration/`.
 
-Credenciales y ajustes por entorno van en `webapp/src/main/resources/config/`:
+Las credenciales y la configuración de cada entorno (local o producción) están en `webapp/src/main/resources/config/`:
 
-- **`credentials-local.properties`**: desarrollo local (commit en el repo); hoy incluye JDBC (`jdbc.*`); podés sumar mail u otras claves con el mismo prefijo que uses en código.
-- **`credentials-production.properties`**: no está en el repo; copiá `credentials-production.properties.example` a ese nombre y completá valores reales del servidor (usado al empaquetar el WAR de producción).
+- **`credentials-local.properties`** → Para desarrollo local. Está en el repo e incluye la configuración JDBC (`jdbc.*`). Si necesitás más claves (como mail), agregalas acá usando el mismo prefijo.
+- **`credentials-production.properties`** → Para producción. No está en el repo. Tomá `credentials-production.properties.example`, renombralo y completalo con los datos reales del servidor.
 
-La app resuelve el archivo de credenciales desde `config/credentials-selection.properties` (`credentials.file=...`). Ese selector se filtra con Maven:
+¿Cuál archivo se usa?  
+La app lo decide según el valor de `credentials.file`, que está en `config/credentials-selection.properties`. Este archivo se filtra automáticamente según el entorno al construir el proyecto con Maven:
 
-- builds normales (`mvn compile`, `mvn jetty:run`, etc.): `credentials.file=credentials-local.properties`
-- perfil `production-war` (`./deploy.sh`): `credentials.file=credentials-production.properties`
+- Builds locales (`mvn compile`, `mvn jetty:run`, etc.): usa `credentials-local.properties`
+- Build para producción (`./deploy.sh`, perfil `production-war`): usa `credentials-production.properties`
 
-En build local, además se define `credentials.fallback.file=credentials-production.properties`: si una clave no existe en `credentials-local.properties`, se intenta tomarla de `credentials-production.properties` (si ese archivo existe). Esto permite mantener JDBC local y usar credenciales reales para integraciones como mail.
+En builds locales, también se define `credentials.fallback.file=credentials-production.properties`: si falta una clave en `credentials-local.properties`, y existe `credentials-production.properties`, la toma de ahí. Así podés mantener credenciales locales simples y dejar datos sensibles (ej: mail) sólo en producción.
 
-La URL/usuario/contraseña de la base salen de las claves `jdbc.*` del conjunto final cargado.
+La URL, usuario y contraseña de la base de datos se leen de las claves `jdbc.*` que quedan al final de esta selección automática de archivos.
 
 ### PostgreSQL
 
@@ -64,6 +65,16 @@ Variables opcionales: `PAW_RUN_SKIP_TESTS=1`, `PAW_RUN_WAIT_SECS`, `PAW_JETTY_UR
 **WAR para Pampero:** `./deploy.sh <username>` (requiere `credentials-production.properties` local y estar en branch `main`). Compila y despliega en `web/app.war`.
 
 App: **http://localhost:8080**
+
+### Deployear
+
+```bash
+./deploy.sh <username>
+```
+
+Requiere haber creado el archivo `credentials-production.properties` en `webapp/src/main/resources/config/`.
+
+Despliega la web en: [http://pawserver.it.itba.edu.ar/paw-2026a-11](http://pawserver.it.itba.edu.ar/paw-2026a-11).
 
 ## pre-commit
 

@@ -19,10 +19,20 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 @ComponentScan({"ar.edu.itba.paw.webapp.controller", "ar.edu.itba.paw.services", "ar.edu.itba.paw.persistence"})
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+    @Bean
+    public org.springframework.context.MessageSource messageSource() {
+        final org.springframework.context.support.ReloadableResourceBundleMessageSource messageSource =
+                new org.springframework.context.support.ReloadableResourceBundleMessageSource();
+        messageSource.setBasename("classpath:i18n/messages");
+        messageSource.setDefaultEncoding("UTF-8");
+        messageSource.setCacheSeconds(5);
+        return messageSource;
+    }
 
     @Bean
     public ViewResolver viewResolver() {
         final InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
+        viewResolver.setViewClass(org.springframework.web.servlet.view.JstlView.class);
         viewResolver.setPrefix("/WEB-INF/views/");
         viewResolver.setSuffix(".jsp");
         return viewResolver;
@@ -32,9 +42,9 @@ public class WebConfig implements WebMvcConfigurer {
     public DataSource dataSource() {
         final SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
         dataSource.setDriverClass(org.postgresql.Driver.class);
-        dataSource.setUrl("jdbc:postgresql://localhost/paw"); // TODO local host, migrate to server
-        dataSource.setUsername("postgres");
-        dataSource.setPassword("postgres");
+        dataSource.setUrl("jdbc:postgresql://localhost/paw-2026a-11"); // TODO local host, migrate to server
+        dataSource.setUsername("paw-2026a-11");
+        dataSource.setPassword("fLwqEc61o");
         return dataSource;
     }
 
@@ -50,6 +60,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/css/**").addResourceLocations("/css/");
+        registry.addResourceHandler("/js/**").addResourceLocations("/js/");
     }
 
     // ====================================
@@ -58,20 +69,22 @@ public class WebConfig implements WebMvcConfigurer {
     // ====================================
 
     // Note: the fragment below was replaced by Flyway
-    // (also migrated src/main/resources/schema.sql to src/main/resources/db/migration/V1_init.sql)
+    // (also migrated src/main/resources/schema.sql to
+    // src/main/resources/db/migration/V1_init.sql)
 
     // @Bean
-    // public DataSourceInitializer dataSourceInitializer(final DataSource dataSource) {
-    //     final DataSourceInitializer initializer = new DataSourceInitializer();
-    //     initializer.setDataSource(dataSource);
-    //     initializer.setDatabasePopulator(databasePopulator());
-    //     return initializer;
+    // public DataSourceInitializer dataSourceInitializer(final DataSource
+    // dataSource) {
+    // final DataSourceInitializer initializer = new DataSourceInitializer();
+    // initializer.setDataSource(dataSource);
+    // initializer.setDatabasePopulator(databasePopulator());
+    // return initializer;
     // }
 
     // private DatabasePopulator databasePopulator() {
-    //     final ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
-    //     populator.addScript(new ClassPathResource("schema.sql"));
-    //     return populator;
+    // final ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
+    // populator.addScript(new ClassPathResource("schema.sql"));
+    // return populator;
     // }
 
     // ====================================

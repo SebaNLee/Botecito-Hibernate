@@ -1,0 +1,6 @@
+- compilar proyecto
+- copiar war a pampero scp (user)
+- conectarme a pampero
+- hacer dump bdd y scp a mi computadora
+- conectarme a sftp grupo 11
+- subir .war a web/app.war

@@ -4,6 +4,11 @@
 
 <c:url var="publishUrl" value="/publish" />
 <c:url var="homeUrl" value="/" />
+<c:url var="clearMarketplaceFiltersUrl" value="/marketplace">
+  <c:if test="${sort != 'recommended'}">
+    <c:param name="sort" value="${sort}" />
+  </c:if>
+</c:url>
 
 <paw:layout title="Explorar - Botecito" mainClass="pt-24 pb-12 max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-[18rem_minmax(0,1fr)] lg:grid-cols-[20rem_minmax(0,1fr)] gap-8 items-start">
   <aside class="relative z-40 w-full md:min-w-0">
@@ -15,14 +20,14 @@
       
       <div class="rounded-2xl bg-surface-container-lowest p-6 shadow-[0_24px_40px_rgba(11,28,50,0.06)]">
         <h2 class="text-xl font-extrabold mb-6 tracking-tight">Filtros de busqueda</h2>
-        <form action="<c:url value='/marketplace' />" method="get" class="space-y-6">
-          <div class="space-y-2">
-            <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="marketplace-location">Ubicacion</label>
-            <div class="relative">
-              <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">location_on</span>
-              <input id="marketplace-location" name="location" value="${param.location}" class="w-full pl-12 pr-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline" placeholder="A donde vas?" type="text"/>
-            </div>
-          </div>
+        <form action="<c:url value='/marketplace' />" method="get" class="space-y-6" data-filter-form="marketplace">
+          <paw:locationPicker
+              id="marketplace-location"
+              name="location"
+              label="Ubicacion"
+              value="${param.location}"
+              placeholder="A donde vas?"
+              icon="location_on" />
           
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
@@ -52,36 +57,39 @@
             </div>
           </div>
           
-          <div class="space-y-2">
-            <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="marketplace-capacity">Personas</label>
-            <div class="flex items-center justify-between p-3 bg-surface-container-high rounded-xl">
-              <select id="marketplace-capacity" name="capacity" class="w-full bg-transparent border-none p-0 text-on-surface focus:ring-0 font-bold appearance-none text-center">
-                <option value="">Cualquiera</option>
-                <option value="2" ${param.capacity == '2' ? 'selected="selected"' : ''}>2 Personas</option>
-                <option value="4" ${param.capacity == '4' ? 'selected="selected"' : ''}>4 Personas</option>
-                <option value="6" ${param.capacity == '6' ? 'selected="selected"' : ''}>6 Personas</option>
-                <option value="8" ${param.capacity == '8' ? 'selected="selected"' : ''}>8 Personas</option>
-                <option value="10" ${param.capacity == '10' ? 'selected="selected"' : ''}>10 Personas</option>
-                <option value="12" ${param.capacity == '12' ? 'selected="selected"' : ''}>12 Personas</option>
-              </select>
-            </div>
+          <paw:peopleCount
+              id="marketplace-capacity"
+              name="capacity"
+              label="Personas"
+              value="${param.capacity}"
+              allowEmpty="true"
+              placeholder="Cualquiera"
+              min="1"
+              max="20" />
+          
+          <div class="pt-4 border-t border-outline-variant/15">
+            <paw:weightCapacitySlider
+                id="marketplace-max-weight"
+                name="maxWeight"
+                label="Peso a soportar"
+                value="${param.maxWeight}"
+                min="100"
+                max="2000"
+                step="50"
+                helper="Mostramos botes que soportan este peso o mas." />
           </div>
           
-          <div class="space-y-4 pt-4 border-t border-outline-variant/15">
-            <div class="flex justify-between items-center">
-              <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Peso Maximo</label>
-              <span class="text-sm font-bold text-primary">${empty param.maxWeight ? '850' : param.maxWeight} kg</span>
-            </div>
-            <input name="maxWeight" class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary" max="2000" min="100" step="50" type="range" value="${empty param.maxWeight ? '850' : param.maxWeight}"/>
-            <div class="flex justify-between text-[10px] text-outline font-medium">
-              <span>100kg</span>
-              <span>2000kg</span>
-            </div>
+          <div class="flex flex-col gap-3">
+            <button type="submit" class="w-full py-4 bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-[0.98] border-none cursor-pointer">
+              Actualizar resultados
+            </button>
+            <a
+                href="${clearMarketplaceFiltersUrl}"
+                class="inline-flex w-full items-center justify-center rounded-xl border border-outline-variant/30 bg-transparent px-4 py-3 text-sm font-bold text-on-surface no-underline transition-colors hover:bg-surface-container-high"
+                data-clear-marketplace-filters>
+              Limpiar filtros
+            </a>
           </div>
-          
-          <button type="submit" class="w-full py-4 bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-[0.98] border-none cursor-pointer">
-            Actualizar resultados
-          </button>
         </form>
       </div>
     </div>
@@ -95,12 +103,12 @@
       </div>
       
       <form action="<c:url value='/marketplace' />" method="get" class="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
-        <input type="hidden" name="location" value="${param.location}" />
-        <input type="hidden" name="date" value="${param.date}" />
-        <input type="hidden" name="startTime" value="${param.startTime}" />
-        <input type="hidden" name="endTime" value="${param.endTime}" />
-        <input type="hidden" name="capacity" value="${param.capacity}" />
-        <input type="hidden" name="maxWeight" value="${param.maxWeight}" />
+        <input type="hidden" name="location" value="${param.location}" data-applied-filter-mirror />
+        <input type="hidden" name="date" value="${param.date}" data-applied-filter-mirror />
+        <input type="hidden" name="startTime" value="${param.startTime}" data-applied-filter-mirror />
+        <input type="hidden" name="endTime" value="${param.endTime}" data-applied-filter-mirror />
+        <input type="hidden" name="capacity" value="${param.capacity}" data-applied-filter-mirror />
+        <input type="hidden" name="maxWeight" value="${param.maxWeight}" data-applied-filter-mirror />
         <label for="marketplace-sort">Ordenar por:</label>
         <div class="relative flex items-center">
           <select id="marketplace-sort" name="sort" class="appearance-none bg-transparent border-none font-bold text-primary pr-6 focus:ring-0 cursor-pointer" onchange="this.form.submit()">

@@ -150,6 +150,9 @@
     class="fixed inset-0 z-[280] hidden items-center justify-center bg-on-background/45 px-6"
     data-item-unavailable-alert
     data-marketplace-url="${marketplaceUrl}"
+    data-item-location="${item.location}"
+    data-item-capacity="${item.capacityPeople}"
+    data-item-max-weight="${item.maxWeightKg}"
     hidden
   >
     <div
@@ -165,7 +168,7 @@
           <h2 class="m-0 text-2xl font-extrabold tracking-tight">
             Item no disponible
           </h2>
-          <p class="m-0 leading-relaxed text-on-surface-variant">
+          <p class="m-0 leading-relaxed text-on-surface-variant" data-item-unavailable-message>
             El item seleccionado no esta disponible en la fecha y horario
             elegidos. Puedes seguir viendo este item sin esos filtros o volver
             al marketplace para elegir otro.

@@ -26,7 +26,14 @@ Credenciales y ajustes por entorno van en `webapp/src/main/resources/config/`:
 - **`credentials-local.properties`**: desarrollo local (commit en el repo); hoy incluye JDBC (`jdbc.*`); podés sumar mail u otras claves con el mismo prefijo que uses en código.
 - **`credentials-production.properties`**: no está en el repo; copiá `credentials-production.properties.example` a ese nombre y completá valores reales del servidor (usado al empaquetar el WAR de producción).
 
-El perfil activo es `local` o `production`: `./run.sh start` fuerza `PAW_CREDENTIALS_PROFILE=local`. Un WAR construido con `./deploy.sh` (perfil Maven `production-war`) incluye el marcador `META-INF/paw-credentials-profile` = `production` y empaqueta `credentials-production.properties` dentro del WAR. La URL/usuario/contraseña de la base salen de las claves `jdbc.*` en ese archivo.
+La app resuelve el archivo de credenciales desde `config/credentials-selection.properties` (`credentials.file=...`). Ese selector se filtra con Maven:
+
+- builds normales (`mvn compile`, `mvn jetty:run`, etc.): `credentials.file=credentials-local.properties`
+- perfil `production-war` (`./deploy.sh`): `credentials.file=credentials-production.properties`
+
+En build local, además se define `credentials.fallback.file=credentials-production.properties`: si una clave no existe en `credentials-local.properties`, se intenta tomarla de `credentials-production.properties` (si ese archivo existe). Esto permite mantener JDBC local y usar credenciales reales para integraciones como mail.
+
+La URL/usuario/contraseña de la base salen de las claves `jdbc.*` del conjunto final cargado.
 
 ### PostgreSQL
 
@@ -52,9 +59,9 @@ Desde la raíz del repo:
 - **run.sh**: build (`mvn install -pl webapp -am`), Tailwind watch y servidor Jetty en segundo plano; logs en `.run/`.
 - **Manual:** en la raíz `mvn install -pl webapp -am`; en `webapp/`, `mvn tailwind:watch` y en otra terminal `mvn jetty:run`.
 
-Variables opcionales: `PAW_RUN_SKIP_TESTS=1`, `PAW_RUN_WAIT_SECS`, `PAW_JETTY_URL`, `PAW_JETTY_PORT`, `PAW_CREDENTIALS_PROFILE` (ver comentarios en `run.sh`).
+Variables opcionales: `PAW_RUN_SKIP_TESTS=1`, `PAW_RUN_WAIT_SECS`, `PAW_JETTY_URL`, `PAW_JETTY_PORT` (ver comentarios en `run.sh`).
 
-**WAR para Pampero:** `./deploy.sh` (requiere `credentials-production.properties` local). Genera `webapp/target/webapp.war`.
+**WAR para Pampero:** `./deploy.sh <username>` (requiere `credentials-production.properties` local y estar en branch `main`). Compila y despliega en `web/app.war`.
 
 App: **http://localhost:8080**
 

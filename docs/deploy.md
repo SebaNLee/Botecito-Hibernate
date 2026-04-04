@@ -12,6 +12,13 @@
 
 #### Comandos deploy en Pampero
 
+##### Deploy con script
+```
+$ ./deploy.sh <username>
+```
+
+##### Deploy manual
+
 ```
 $ ./deploy.sh
 $ scp webapp/target/webapp.war <username>@pampero.itba.edu.ar:/home/<username>/.

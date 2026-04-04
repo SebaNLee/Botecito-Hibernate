@@ -42,9 +42,14 @@ public class WebConfig implements WebMvcConfigurer {
     public DataSource dataSource() {
         final SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
         dataSource.setDriverClass(org.postgresql.Driver.class);
-        dataSource.setUrl("jdbc:postgresql://localhost/paw-2026a-11"); // TODO local host, migrate to server
-        dataSource.setUsername("paw-2026a-11");
-        dataSource.setPassword("fLwqEc61o");
+
+        // TODO :
+        // LOCAL DEV ONLY: switch these credentials before merging or deploying.
+        // The shared/deployment branch uses a different PostgreSQL user and database.
+
+        dataSource.setUrl("jdbc:postgresql://localhost/paw");
+        dataSource.setUsername("postgres");
+        dataSource.setPassword("postgres");
         return dataSource;
     }
 

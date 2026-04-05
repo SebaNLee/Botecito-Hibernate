@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Request</title>
+  <title th:text="#{mail.requestReview.title}">New Request</title>
 </head>
 
 <body
@@ -24,10 +24,10 @@
 
                 <p
                   style="margin: 0 0 12px; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #005da7;">
-                  Botecito</p>
+                  <span th:text="#{mail.brand.name}">Botecito</span></p>
                 <h1
                   style="margin: 0 0 32px; font-size: 28px; font-weight: 800; line-height: 1.2; color: #0b1c32; letter-spacing: -0.02em;">
-                  New request received</h1>
+                  <span th:text="#{mail.requestReview.heading}">New request received</span></h1>
 
                 <div
                   style="background-color: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 32px; overflow: hidden;">
@@ -36,19 +36,19 @@
                       <td style="padding: 24px;">
                         <p
                           style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-                          Name</p>
+                          <span th:text="#{mail.requestReview.label.name}">Name</span></p>
                         <p th:text="${request.requesterName}"
                           style="margin: 0 0 20px; font-size: 16px; font-weight: 500; color: #0f172a;"></p>
 
                         <p
                           style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-                          Email</p>
+                          <span th:text="#{mail.requestReview.label.email}">Email</span></p>
                         <p th:text="${request.requesterEmail}"
                           style="margin: 0 0 20px; font-size: 16px; font-weight: 500; color: #0f172a;"></p>
 
                         <p
                           style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-                          Description</p>
+                          <span th:text="#{mail.requestReview.label.description}">Description</span></p>
                         <p th:text="${request.description}"
                           style="margin: 0; font-size: 15px; line-height: 1.6; color: #334155; white-space: pre-wrap;">
                         </p>
@@ -61,11 +61,13 @@
                   <tr>
                     <td style="padding-right: 16px;">
                       <a th:href="${acceptUrl}"
-                        style="display: inline-block; padding: 14px 32px; border-radius: 9999px; background-color: #059669; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700;">Accept</a>
+                        style="display: inline-block; padding: 14px 32px; border-radius: 9999px; background-color: #059669; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700;"
+                        th:text="#{mail.requestReview.accept}">Accept</a>
                     </td>
                     <td>
                       <a th:href="${declineUrl}"
-                        style="display: inline-block; padding: 14px 32px; border-radius: 9999px; background-color: #ffffff; color: #dc2626; border: 2px solid #dc2626; text-decoration: none; font-size: 15px; font-weight: 700;">Decline</a>
+                        style="display: inline-block; padding: 14px 32px; border-radius: 9999px; background-color: #ffffff; color: #dc2626; border: 2px solid #dc2626; text-decoration: none; font-size: 15px; font-weight: 700;"
+                        th:text="#{mail.requestReview.decline}">Decline</a>
                     </td>
                   </tr>
                 </table>
@@ -77,7 +79,7 @@
         </div>
         <p
           style="margin: 24px 0 0; font-size: 12px; color: #e2e8f0; text-align: center; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
-          Botecito is curating the experience.</p>
+          <span th:text="#{mail.requestReview.footer}">Botecito is curating the experience.</span></p>
       </td>
     </tr>
   </table>

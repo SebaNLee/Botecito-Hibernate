@@ -1,5 +1,6 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <!DOCTYPE html>
@@ -7,7 +8,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Send Request</title>
+    <title><spring:message code="testMail.title" /></title>
     <link rel="stylesheet" href="<c:url value='/css/components.css' />" />
     <link rel="stylesheet" href="<c:url value='/css/tailwind.css' />" />
   </head>
@@ -16,11 +17,12 @@
       <section class="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
         <div class="mb-8">
           <div class="mb-3 inline-flex rounded-full bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-700">
-            Request flow
+            <spring:message code="testMail.badge" />
           </div>
-          <paw:heading level="2" text="Send a Request to Botecito" cssClass="mb-3" />
+          <spring:message code="testMail.heading" var="testMailHeading" />
+          <paw:heading level="2" text="${testMailHeading}" cssClass="mb-3" />
           <p class="m-0 text-base text-slate-600">
-            Submit your name, email, and request details. Botecito will receive an approval email and you will get a response after it is accepted or declined.
+            <spring:message code="testMail.description" />
           </p>
         </div>
 
@@ -34,19 +36,19 @@
               for="requesterName"
               class="mb-2 block text-sm font-semibold uppercase tracking-[0.12em] text-slate-700"
             >
-              Name
+              <spring:message code="testMail.field.name.label" />
             </label>
             <input
               id="requesterName"
               name="requesterName"
               type="text"
               value="<c:out value='${requesterName}' />"
-              placeholder="Jane Doe"
+              placeholder="<spring:message code='testMail.field.name.placeholder' />"
               class="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
               required
             />
             <p class="mt-2 text-sm text-slate-500">
-              This name will appear in the request email sent to Botecito.
+              <spring:message code="testMail.field.name.help" />
             </p>
           </div>
 
@@ -55,19 +57,19 @@
               for="requesterEmail"
               class="mb-2 block text-sm font-semibold uppercase tracking-[0.12em] text-slate-700"
             >
-              Your email
+              <spring:message code="testMail.field.email.label" />
             </label>
             <input
               id="requesterEmail"
               name="requesterEmail"
               type="email"
               value="<c:out value='${requesterEmail}' />"
-              placeholder="name@example.com"
+              placeholder="<spring:message code='testMail.field.email.placeholder' />"
               class="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
               required
             />
             <p class="mt-2 text-sm text-slate-500">
-              Botecito will send the final accepted or declined response to this address.
+              <spring:message code="testMail.field.email.help" />
             </p>
           </div>
 
@@ -76,25 +78,25 @@
               for="description"
               class="mb-2 block text-sm font-semibold uppercase tracking-[0.12em] text-slate-700"
             >
-              Description
+              <spring:message code="testMail.field.description.label" />
             </label>
             <textarea
               id="description"
               name="description"
               rows="6"
-              placeholder="Describe the request you want Botecito to review."
+              placeholder="<spring:message code='testMail.field.description.placeholder' />"
               class="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-base text-slate-900 outline-none transition focus:border-sky-500 focus:bg-white focus:ring-4 focus:ring-sky-100"
               required
             ><c:out value="${description}" /></textarea>
             <p class="mt-2 text-sm text-slate-500">
-              Include the context Botecito needs to approve or decline the request.
+              <spring:message code="testMail.field.description.help" />
             </p>
           </div>
 
           <c:choose>
             <c:when test="${not empty mailSuccess}">
               <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                <p class="m-0 text-sm font-semibold text-emerald-800">Success</p>
+                <p class="m-0 text-sm font-semibold text-emerald-800"><spring:message code="testMail.flash.success.title" /></p>
                 <p class="mt-1 mb-0 text-sm text-emerald-700">
                   <c:out value="${mailSuccess}" />
                 </p>
@@ -102,7 +104,7 @@
             </c:when>
             <c:when test="${not empty mailError}">
               <div class="rounded-xl border border-rose-200 bg-rose-50 p-4">
-                <p class="m-0 text-sm font-semibold text-rose-800">Error</p>
+                <p class="m-0 text-sm font-semibold text-rose-800"><spring:message code="testMail.flash.error.title" /></p>
                 <p class="mt-1 mb-0 text-sm text-rose-700">
                   <c:out value="${mailError}" />
                 </p>
@@ -110,9 +112,9 @@
             </c:when>
             <c:otherwise>
               <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                <p class="m-0 text-sm font-semibold text-slate-700">Ready to send</p>
+                <p class="m-0 text-sm font-semibold text-slate-700"><spring:message code="testMail.ready.title" /></p>
                 <p class="mt-1 mb-0 text-sm text-slate-500">
-                  Submitting the form will email Botecito a review request with accept and decline links.
+                  <spring:message code="testMail.ready.body" />
                 </p>
               </div>
             </c:otherwise>
@@ -123,9 +125,9 @@
               type="submit"
               class="btn btn-primary btn-md rounded-xl px-5 py-3"
             >
-              Send request
+              <spring:message code="testMail.submit" />
             </button>
-            <span class="text-sm text-slate-500">A POST request will send the review email to Botecito.</span>
+            <span class="text-sm text-slate-500"><spring:message code="testMail.submit.help" /></span>
           </div>
         </form>
       </section>

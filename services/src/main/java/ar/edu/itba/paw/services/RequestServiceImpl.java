@@ -3,6 +3,7 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.RequestStatus;
 import ar.edu.itba.paw.models.RequestSubmission;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,10 +17,19 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public RequestSubmission createRequest(
-            final String requesterName, final String requesterEmail, final String description) {
+            final String requesterName,
+            final String requesterEmail,
+            final String description,
+            final Locale requesterLocale) {
         final String token = UUID.randomUUID().toString();
         final RequestSubmission requestSubmission = new RequestSubmission(
-                token, requesterName, requesterEmail, description, RequestStatus.PENDING, Instant.now());
+                token,
+                requesterName,
+                requesterEmail,
+                requesterLocale.toLanguageTag(),
+                description,
+                RequestStatus.PENDING,
+                Instant.now());
 
         requestsByToken.put(token, requestSubmission);
 

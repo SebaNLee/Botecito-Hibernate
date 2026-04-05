@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services.config;
 
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.thymeleaf.TemplateEngine;
@@ -21,9 +22,11 @@ public class MailTemplateConfig {
     }
 
     @Bean
-    public TemplateEngine emailTemplateEngine(final ClassLoaderTemplateResolver emailTemplateResolver) {
+    public TemplateEngine emailTemplateEngine(
+            final ClassLoaderTemplateResolver emailTemplateResolver, final MessageSource messageSource) {
         final SpringTemplateEngine templateEngine = new SpringTemplateEngine();
         templateEngine.setTemplateResolver(emailTemplateResolver);
+        templateEngine.setTemplateEngineMessageSource(messageSource);
         return templateEngine;
     }
 }

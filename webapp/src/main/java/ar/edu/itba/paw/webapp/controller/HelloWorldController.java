@@ -116,6 +116,7 @@ public class HelloWorldController {
         }
 
         final RequestSubmission requestSubmission = existingRequest.get();
+        mav.addObject("itemId", requestSubmission.getItemId());
         if (requestSubmission.getStatus() != RequestStatus.PENDING) {
             mav.addObject("actionTitle", "Request already processed");
             mav.addObject(
@@ -185,6 +186,7 @@ public class HelloWorldController {
 
         try {
             final RequestSubmission requestSubmission = requestService.createRequest(
+                    itemId,
                     form.getRequesterName().trim(),
                     form.getRequesterEmail().trim(),
                     buildReservationRequestDescription(item.get(), owner.orElse(null), form));

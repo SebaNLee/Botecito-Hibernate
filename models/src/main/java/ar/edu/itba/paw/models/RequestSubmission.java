@@ -6,6 +6,7 @@ import java.util.Locale;
 public class RequestSubmission {
 
     private final String token;
+    private final Integer itemId;
     private final String requesterName;
     private final String requesterEmail;
     private final String requesterLocaleTag;
@@ -16,6 +17,7 @@ public class RequestSubmission {
 
     public RequestSubmission(
             final String token,
+            final Integer itemId,
             final String requesterName,
             final String requesterEmail,
             final String requesterLocaleTag,
@@ -23,6 +25,7 @@ public class RequestSubmission {
             final RequestStatus status,
             final Instant createdAt) {
         this.token = token;
+        this.itemId = itemId;
         this.requesterName = requesterName;
         this.requesterEmail = requesterEmail;
         this.requesterLocaleTag = requesterLocaleTag;
@@ -33,6 +36,10 @@ public class RequestSubmission {
 
     public String getToken() {
         return token;
+    }
+
+    public Integer getItemId() {
+        return itemId;
     }
 
     public String getRequesterName() {

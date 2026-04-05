@@ -21,10 +21,11 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public RequestSubmission createRequest(
-            final String requesterName, final String requesterEmail, final String description) {
+            final Integer itemId, final String requesterName, final String requesterEmail, final String description) {
         final String token = UUID.randomUUID().toString();
         final RequestSubmission requestSubmission = new RequestSubmission(
                 token,
+                itemId,
                 requesterName,
                 requesterEmail,
                 mailService.resolveLocale(requesterEmail).toLanguageTag(),

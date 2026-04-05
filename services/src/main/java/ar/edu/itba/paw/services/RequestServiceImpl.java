@@ -3,7 +3,6 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.RequestStatus;
 import ar.edu.itba.paw.models.RequestSubmission;
 import java.time.Instant;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,19 +13,21 @@ import org.springframework.stereotype.Service;
 public class RequestServiceImpl implements RequestService {
 
     private final Map<String, RequestSubmission> requestsByToken = new ConcurrentHashMap<>();
+    private final MailService mailService;
+
+    public RequestServiceImpl(final MailService mailService) {
+        this.mailService = mailService;
+    }
 
     @Override
     public RequestSubmission createRequest(
-            final String requesterName,
-            final String requesterEmail,
-            final String description,
-            final Locale requesterLocale) {
+            final String requesterName, final String requesterEmail, final String description) {
         final String token = UUID.randomUUID().toString();
         final RequestSubmission requestSubmission = new RequestSubmission(
                 token,
                 requesterName,
                 requesterEmail,
-                requesterLocale.toLanguageTag(),
+                mailService.resolveLocale(requesterEmail).toLanguageTag(),
                 description,
                 RequestStatus.PENDING,
                 Instant.now());

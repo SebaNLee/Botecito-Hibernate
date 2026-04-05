@@ -34,7 +34,8 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
-    public void sendTestConfirmationEmail(final String recipientEmail, final Locale locale) {
+    public void sendTestConfirmationEmail(final String recipientEmail) {
+        final Locale locale = resolveLocale(recipientEmail);
         sendHtmlEmail(
                 recipientEmail,
                 getMessage("mail.testConfirmation.subject", locale),
@@ -67,6 +68,12 @@ public class MailServiceImpl implements MailService {
                         locale,
                         getMessage(statusMessageCode(requestSubmission.getStatus()), locale)),
                 templateEngine.process("request-resolution", context));
+    }
+
+    @Override
+    public Locale resolveLocale(final String recipientIdentifier) {
+        // TODO load the user's preferred language from persistence once that data is available.
+        return Locale.ENGLISH;
     }
 
     private void sendHtmlEmail(final String recipientEmail, final String subject, final String htmlBody) {

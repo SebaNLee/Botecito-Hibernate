@@ -21,7 +21,20 @@ sudo apt install openjdk-21-jdk maven postgresql postgresql-contrib
 
 Aplicación web Spring MVC: vistas JSP, acceso a datos con JDBC contra PostgreSQL. Al arrancar Jetty, Flyway aplica migraciones en `webapp/src/main/resources/db/migration/`.
 
-La conexión a la base de datos está en `webapp/src/main/java/ar/edu/itba/paw/webapp/config/WebConfig.java` (URL, usuario y contraseña deben coincidir con tu Postgres local).
+Las credenciales y la configuración de cada entorno (local o producción) están en `webapp/src/main/resources/config/`:
+
+- **`credentials-local.properties`** → Para desarrollo local. Está en el repo e incluye la configuración JDBC (`jdbc.*`). Si necesitás más claves (como mail), agregalas acá usando el mismo prefijo.
+- **`credentials-production.properties`** → Para producción. No está en el repo. Tomá `credentials-production.properties.example`, renombralo y completalo con los datos reales del servidor.
+
+¿Cuál archivo se usa?  
+La app lo decide según el valor de `credentials.file`, que está en `config/credentials-selection.properties`. Este archivo se filtra automáticamente según el entorno al construir el proyecto con Maven:
+
+- Builds locales (`mvn compile`, `mvn jetty:run`, etc.): usa `credentials-local.properties`
+- Build para producción (`./deploy.sh`, perfil `production-war`): usa `credentials-production.properties`
+
+En builds locales, también se define `credentials.fallback.file=credentials-production.properties`: si falta una clave en `credentials-local.properties`, y existe `credentials-production.properties`, la toma de ahí. Así podés mantener credenciales locales simples y dejar datos sensibles (ej: mail) sólo en producción.
+
+La URL, usuario y contraseña de la base de datos se leen de las claves `jdbc.*` que quedan al final de esta selección automática de archivos.
 
 ### PostgreSQL
 
@@ -49,7 +62,19 @@ Desde la raíz del repo:
 
 Variables opcionales: `PAW_RUN_SKIP_TESTS=1`, `PAW_RUN_WAIT_SECS`, `PAW_JETTY_URL`, `PAW_JETTY_PORT` (ver comentarios en `run.sh`).
 
+**WAR para Pampero:** `./deploy.sh <username>` (requiere `credentials-production.properties` local y estar en branch `main`). Compila y despliega en `web/app.war`.
+
 App: **http://localhost:8080**
+
+### Deployear
+
+```bash
+./deploy.sh <username>
+```
+
+Requiere haber creado el archivo `credentials-production.properties` en `webapp/src/main/resources/config/`.
+
+Despliega la web en: [http://pawserver.it.itba.edu.ar/paw-2026a-11](http://pawserver.it.itba.edu.ar/paw-2026a-11).
 
 ## pre-commit
 

@@ -13,6 +13,7 @@ import ar.edu.itba.paw.services.ItemCatalogService;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.RequestService;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -65,13 +66,19 @@ public class HelloWorldController {
 
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
     public ModelAndView marketplace(
+            @RequestParam(value = "location", required = false) final String requestedLocation,
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "startTime", required = false) final String requestedStartTime,
             @RequestParam(value = "endTime", required = false) final String requestedEndTime,
+            @RequestParam(value = "capacity", required = false) final String requestedCapacity,
+            @RequestParam(value = "maxWeight", required = false) final String requestedMaxWeight,
             @RequestParam(value = "sort", required = false, defaultValue = "recommended") final String sort) {
         final List<Item> filteredItems = itemCatalogService.listItems().stream()
+                .filter(item -> matchesRequestedLocation(item, requestedLocation))
                 .filter(item -> matchesMarketplaceAvailability(
                         item.getId(), requestedDate, requestedStartTime, requestedEndTime))
+                .filter(item -> matchesRequestedCapacity(item, requestedCapacity))
+                .filter(item -> matchesRequestedWeight(item, requestedMaxWeight))
                 .toList();
         final ModelAndView mav = new ModelAndView("marketplace");
         mav.addObject("items", filteredItems);
@@ -312,6 +319,44 @@ public class HelloWorldController {
         options.put("1000", "1,000 kg");
         options.put("1200", "1,200 kg");
         return options;
+    }
+
+    private static boolean matchesRequestedLocation(final Item item, final String requestedLocation) {
+        if (isBlank(requestedLocation)) {
+            return true;
+        }
+
+        return item.getLocation() != null && item.getLocation().trim().equalsIgnoreCase(requestedLocation.trim());
+    }
+
+    private static boolean matchesRequestedCapacity(final Item item, final String requestedCapacity) {
+        final Integer parsedCapacity = parseInteger(requestedCapacity);
+        if (parsedCapacity == null) {
+            return true;
+        }
+
+        return item.getCapacityPeople() >= parsedCapacity;
+    }
+
+    private static boolean matchesRequestedWeight(final Item item, final String requestedMaxWeight) {
+        final Integer parsedWeight = parseInteger(requestedMaxWeight);
+        if (parsedWeight == null) {
+            return true;
+        }
+
+        return item.getMaxWeightKg().compareTo(BigDecimal.valueOf(parsedWeight.longValue())) >= 0;
+    }
+
+    private static Integer parseInteger(final String value) {
+        if (isBlank(value)) {
+            return null;
+        }
+
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (final NumberFormatException exception) {
+            return null;
+        }
     }
 
     private Map<Integer, String> buildItemImagesMap() {

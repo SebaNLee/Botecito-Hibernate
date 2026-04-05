@@ -16,6 +16,11 @@
   <!-- FIXME change it to the project's website -->
   <url>http://www.example.com</url>
 
+  <properties>
+    <credentials.file>credentials-local.properties</credentials.file>
+    <credentials.fallback.file>credentials-production.properties</credentials.fallback.file>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>javax.validation</groupId>
@@ -24,6 +29,12 @@
     <dependency>
       <groupId>org.hibernate.validator</groupId>
       <artifactId>hibernate-validator</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>jakarta.validation</groupId>
+          <artifactId>jakarta.validation-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
@@ -59,14 +70,26 @@
       <artifactId>services</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>jstl</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
     <finalName>webapp</finalName>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>false</filtering>
+        <excludes>
+          <exclude>config/credentials-selection.properties</exclude>
+        </excludes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>config/credentials-selection.properties</include>
+        </includes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>io.github.4ndreidev</groupId>
@@ -131,4 +154,20 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <profiles>
+    <profile>
+      <id>production-war</id>
+      <properties>
+        <credentials.file>credentials-production.properties</credentials.file>
+        <credentials.fallback.file></credentials.fallback.file>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>javax.servlet</groupId>
+          <artifactId>jstl</artifactId>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

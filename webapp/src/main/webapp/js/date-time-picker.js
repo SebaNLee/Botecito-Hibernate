@@ -1355,8 +1355,6 @@
     document.querySelectorAll("[data-time-range-picker]").forEach((root) => {
       new TimeRangePicker(root);
     });
-
-    initializeFilterPersistence();
   });
 
   window.addEventListener("resize", () => {

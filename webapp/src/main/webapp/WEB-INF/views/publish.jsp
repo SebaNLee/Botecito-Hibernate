@@ -65,14 +65,14 @@
         <span class="material-symbols-outlined text-primary text-2xl">location_on</span>
         <h2 class="text-xl font-extrabold m-0">Ubicacion</h2>
       </div>
-      <div class="space-y-2">
-        <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="marina">Nombre del Puerto/Marina</label>
-        <div class="relative">
-          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
-          <form:input path="marina" id="marina" class="w-full pl-12 pr-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline" placeholder="Ej. Puerto Madero, Buenos Aires"/>
-        </div>
-        <form:errors path="marina" cssClass="text-error text-xs mt-1 block" />
-      </div>
+      <paw:locationPicker
+          id="marina"
+          name="marina"
+          label="Nombre del Puerto/Marina"
+          value="${publishForm.marina}"
+          placeholder="Ej. Puerto Madero, Buenos Aires"
+          icon="search"
+          errorPath="marina" />
     </section>
     
     <section class="bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_48px_rgba(11,28,50,0.04)]">
@@ -81,26 +81,14 @@
         <h2 class="text-xl font-extrabold m-0">Especificaciones</h2>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="space-y-2">
-          <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="capacity">Capacidad (Personas)</label>
-          <div class="flex items-center justify-between p-2 bg-surface-container-high rounded-xl">
-            <button type="button" class="w-10 h-10 flex items-center justify-center rounded-lg bg-surface-container-lowest text-primary shadow-sm active:scale-90 transition-transform border-none cursor-pointer">
-              <span class="material-symbols-outlined">remove</span>
-            </button>
-            <form:select path="capacity" id="capacity" class="bg-transparent border-none font-bold text-center appearance-none focus:ring-0 p-0 w-20">
-              <form:option value="2" label="2"/>
-              <form:option value="4" label="4"/>
-              <form:option value="6" label="6"/>
-              <form:option value="8" label="8"/>
-              <form:option value="10" label="10"/>
-              <form:option value="12" label="12"/>
-            </form:select>
-            <button type="button" class="w-10 h-10 flex items-center justify-center rounded-lg bg-surface-container-lowest text-primary shadow-sm active:scale-90 transition-transform border-none cursor-pointer">
-              <span class="material-symbols-outlined">add</span>
-            </button>
-          </div>
-          <form:errors path="capacity" cssClass="text-error text-xs mt-1 block" />
-        </div>
+        <paw:peopleCount
+            id="capacity"
+            name="capacity"
+            label="Capacidad (Personas)"
+            value="${empty publishForm.capacity ? '2' : publishForm.capacity}"
+            min="1"
+            max="20"
+            errorPath="capacity" />
         <div class="space-y-2">
           <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="maxWeight">Peso Maximo (kg)</label>
           <div class="relative">

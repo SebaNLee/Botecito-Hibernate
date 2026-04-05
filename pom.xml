@@ -26,6 +26,7 @@
     <mockito.version>5.23.0</mockito.version>
     <junit.version>5.11.0</junit.version>
     <org.hsqldb.version>2.7.4</org.hsqldb.version>
+    <jstl.version>1.2</jstl.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -121,7 +122,7 @@
       <dependency>
         <groupId>javax.servlet</groupId>
         <artifactId>jstl</artifactId>
-        <version>1.2</version>
+        <version>${jstl.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

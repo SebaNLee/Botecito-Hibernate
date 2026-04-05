@@ -22,5 +22,6 @@
     </main>
     <paw:siteFooter />
     <script src="<c:url value='/js/date-time-picker.js' />"></script>
+    <script src="<c:url value='/js/search-filters.js' />"></script>
   </body>
 </html>

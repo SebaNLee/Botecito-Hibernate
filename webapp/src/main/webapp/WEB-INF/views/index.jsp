@@ -23,44 +23,37 @@ charset=UTF-8" pageEncoding="UTF-8" %>
     </div>
     <div class="relative z-10 w-full max-w-6xl mx-auto text-center">
       <h1
-        class="font-headline font-extrabold text-4xl md:text-7xl text-white mb-6 tracking-tight drop-shadow-sm"
+        class="font-headline font-extrabold text-4xl md:text-6xl text-white mb-6 tracking-tight drop-shadow-sm"
       >
-        Encuentra tu proximo <br class="hidden md:block" /> destino nautico
+        Encontrá un kayak cerca de tu casa<br class="hidden md:block" /> y
+        navegá esta tarde
       </h1>
       <p
         class="font-body text-white/90 text-lg md:text-xl mb-12 max-w-2xl mx-auto"
       >
-        Explora y reserva embarcaciones unicas para tus mejores momentos en el
-        agua.
+        Accedé a embarcaciones de vecinos en tu barrio y disfrutá del lago
+        cuando quieras.
       </p>
 
       <form
         action="${marketplaceUrl}"
         method="get"
+        data-filter-form="landing"
         class="bg-surface-container-lowest p-2 md:p-3 rounded-2xl md:rounded-full shadow-[0_32px_48px_rgba(11,28,50,0.12)] max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-2"
       >
-        <div class="flex-1 w-full flex items-center px-4 py-3 group">
-          <span class="material-symbols-outlined text-primary mr-3"
-            >location_on</span
-          >
-          <div class="text-left w-full">
-            <label
-              class="block text-[10px] font-bold text-outline uppercase tracking-wider"
-              for="landing-location"
-              >Ubicacion</label
-            >
-            <input
-              id="landing-location"
-              name="location"
-              class="w-full bg-transparent border-none p-0 text-on-surface focus:ring-0 placeholder:text-outline-variant font-medium"
-              placeholder="A donde vas?"
-              type="text"
-            />
-          </div>
+        <div class="w-full min-w-0 px-3 py-3 group md:flex-[1.05]">
+          <paw:locationPicker
+            id="landing-location"
+            name="location"
+            label="Ubicacion"
+            placeholder="A donde vas?"
+            icon="location_on"
+            variant="inline"
+          />
         </div>
         <div class="hidden md:block w-px h-8 bg-outline-variant/20"></div>
 
-        <div class="flex-1 w-full px-4 py-3">
+        <div class="w-full min-w-0 px-3 py-3 md:flex-[0.8]">
           <paw:datePicker
             id="landing-date"
             name="date"
@@ -73,7 +66,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
         </div>
         <div class="hidden md:block w-px h-8 bg-outline-variant/20"></div>
 
-        <div class="flex-1 w-full px-4 py-3">
+        <div class="w-full min-w-0 px-3 py-3 md:flex-[0.8]">
           <paw:timeRangePicker
             id="landing-time-range"
             dateInputId="landing-date"
@@ -88,33 +81,23 @@ charset=UTF-8" pageEncoding="UTF-8" %>
         </div>
         <div class="hidden md:block w-px h-8 bg-outline-variant/20"></div>
 
-        <div class="flex-1 w-full flex items-center px-4 py-3">
-          <span class="material-symbols-outlined text-primary mr-3">group</span>
-          <div class="text-left w-full">
-            <label
-              class="block text-[10px] font-bold text-outline uppercase tracking-wider"
-              for="landing-capacity"
-              >Personas</label
-            >
-            <select
-              id="landing-capacity"
-              name="capacity"
-              class="w-full bg-transparent border-none p-0 text-on-surface focus:ring-0 font-medium appearance-none"
-            >
-              <option value="">Cuantos?</option>
-              <option value="2">2 personas</option>
-              <option value="4">4 personas</option>
-              <option value="6">6 personas</option>
-              <option value="8">8 personas</option>
-              <option value="10">10 personas</option>
-              <option value="12">12 personas</option>
-            </select>
-          </div>
+        <div class="w-full min-w-0 px-3 py-3 md:flex-[0.98]">
+          <paw:peopleCount
+            id="landing-capacity"
+            name="capacity"
+            label="Personas"
+            icon="groups"
+            placeholder="Cuantos?"
+            allowEmpty="true"
+            min="1"
+            max="20"
+            variant="inline"
+          />
         </div>
 
         <button
           type="submit"
-          class="w-full md:w-auto bg-[#005da7] hover:bg-[#0076d1] text-white font-bold px-10 py-4 rounded-full transition-all active:scale-95 shadow-lg shadow-primary/20 flex items-center justify-center gap-2 border-none cursor-pointer"
+          class="w-full md:w-auto md:ml-4 md:shrink-0 bg-[#005da7] hover:bg-[#0076d1] text-white font-bold px-10 py-4 rounded-full transition-all active:scale-95 shadow-lg shadow-primary/20 flex items-center justify-center gap-2 border-none cursor-pointer"
         >
           <span class="material-symbols-outlined">search</span>
           <span>Buscar</span>

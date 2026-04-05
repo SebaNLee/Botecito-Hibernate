@@ -16,8 +16,11 @@ import org.thymeleaf.context.Context;
 @Service
 public class MailServiceImpl implements MailService {
 
+    // TODO : thse hardcoded urls should change for deploy
+    // ///////////////////////////////////////////////////
     private static final String BOTECITO_EMAIL = "botecito.dev@gmail.com";
     private static final String ACTION_BASE_URL = "http://localhost:8080/requests";
+    private static final String ITEM_BASE_URL = "http://localhost:8080/item";
 
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
@@ -61,6 +64,9 @@ public class MailServiceImpl implements MailService {
         final Context context = new Context(locale);
         context.setVariable("request", requestSubmission);
         context.setVariable("statusLabel", getMessage(statusMessageCode(requestSubmission.getStatus()), locale));
+        if (requestSubmission.getItemId() != null) {
+            context.setVariable("itemUrl", ITEM_BASE_URL + "/" + requestSubmission.getItemId());
+        }
         sendHtmlEmail(
                 requestSubmission.getRequesterEmail(),
                 getMessage(

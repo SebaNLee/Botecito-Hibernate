@@ -13,6 +13,7 @@ import ar.edu.itba.paw.services.ItemCatalogService;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.RequestService;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -30,9 +31,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -93,43 +96,6 @@ public class HelloWorldController {
         return mav;
     }
 
-    @RequestMapping(value = "/test-mail", method = RequestMethod.GET)
-    public ModelAndView testMail() {
-        return new ModelAndView("test-mail");
-    }
-
-    @RequestMapping(value = "/test-mail", method = RequestMethod.POST)
-    public ModelAndView sendTestMail(
-            @RequestParam("requesterName") final String requesterName,
-            @RequestParam("requesterEmail") final String requesterEmail,
-            @RequestParam("description") final String description) {
-        final ModelAndView mav = new ModelAndView("test-mail");
-        final String trimmedName = requesterName == null ? "" : requesterName.trim();
-        final String trimmedEmail = requesterEmail == null ? "" : requesterEmail.trim();
-        final String trimmedDescription = description == null ? "" : description.trim();
-
-        mav.addObject("requesterName", trimmedName);
-        mav.addObject("requesterEmail", trimmedEmail);
-        mav.addObject("description", trimmedDescription);
-
-        if (trimmedName.isEmpty() || trimmedEmail.isEmpty() || trimmedDescription.isEmpty()) {
-            mav.addObject("mailError", "Please enter your name, email address, and request description.");
-            return mav;
-        }
-
-        try {
-            final RequestSubmission requestSubmission =
-                    requestService.createRequest(trimmedName, trimmedEmail, trimmedDescription);
-            mailService.sendRequestReviewEmail(requestSubmission);
-            mav.addObject("mailSuccess", "Your request was sent to Botecito for review.");
-        } catch (final MailException | IllegalArgumentException e) {
-            mav.addObject(
-                    "mailError", "The request email could not be sent. Check the Gmail credentials and SMTP setup.");
-        }
-
-        return mav;
-    }
-
     @RequestMapping(value = "/requests/{token}/accept", method = RequestMethod.GET)
     public ModelAndView acceptRequest(@PathVariable("token") final String token) {
         return resolveRequest(token, RequestStatus.ACCEPTED);
@@ -179,7 +145,62 @@ public class HelloWorldController {
             @PathVariable("id") final int itemId,
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "startTime", required = false) final String requestedStartTime,
-            @RequestParam(value = "endTime", required = false) final String requestedEndTime) {
+            @RequestParam(value = "endTime", required = false) final String requestedEndTime,
+            @ModelAttribute("reservationRequestForm") final ReservationRequestForm form) {
+        if (isBlank(form.getDate())) {
+            form.setDate(requestedDate);
+        }
+        if (isBlank(form.getStartTime())) {
+            form.setStartTime(requestedStartTime);
+        }
+        if (isBlank(form.getEndTime())) {
+            form.setEndTime(requestedEndTime);
+        }
+        return buildMarketplaceItemView(itemId, form);
+    }
+
+    @RequestMapping(value = "/item/{id:[0-9]+}", method = RequestMethod.POST)
+    public ModelAndView submitMarketplaceItemRequest(
+            @PathVariable("id") final int itemId,
+            @Valid @ModelAttribute("reservationRequestForm") final ReservationRequestForm form,
+            final BindingResult errors) {
+        final Optional<Item> item = itemCatalogService.findItemById(itemId);
+        if (item.isEmpty()) {
+            return new ModelAndView("redirect:/marketplace");
+        }
+
+        final Optional<CatalogUser> owner =
+                itemCatalogService.findUserById(item.get().getOwnerId());
+
+        if (!errors.hasFieldErrors("date")
+                && !errors.hasFieldErrors("startTime")
+                && !errors.hasFieldErrors("endTime")
+                && !matchesMarketplaceAvailability(itemId, form.getDate(), form.getStartTime(), form.getEndTime())) {
+            errors.reject("reservation.unavailable", "The selected reservation slot is no longer available.");
+        }
+
+        if (errors.hasErrors()) {
+            return buildMarketplaceItemView(itemId, form);
+        }
+
+        try {
+            final RequestSubmission requestSubmission = requestService.createRequest(
+                    form.getRequesterName().trim(),
+                    form.getRequesterEmail().trim(),
+                    buildReservationRequestDescription(item.get(), owner.orElse(null), form));
+            mailService.sendRequestReviewEmail(requestSubmission);
+            final ModelAndView mav = buildMarketplaceItemView(itemId, form);
+            mav.addObject("mailSuccess", "Your request was sent to Botecito for review.");
+            return mav;
+        } catch (final MailException | IllegalArgumentException e) {
+            final ModelAndView mav = buildMarketplaceItemView(itemId, form);
+            mav.addObject(
+                    "mailError", "The request email could not be sent. Check the Gmail credentials and SMTP setup.");
+            return mav;
+        }
+    }
+
+    private ModelAndView buildMarketplaceItemView(final int itemId, final ReservationRequestForm form) {
         final Optional<Item> item = itemCatalogService.findItemById(itemId);
         if (item.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
@@ -207,31 +228,37 @@ public class HelloWorldController {
                 owner.map(HelloWorldController::buildOwnerInitial).orElse("I"));
         addAvailabilityPickerData(mav, "reservation", reservationAvailability);
         final String defaultDate = offeredDates.isEmpty() ? "" : offeredDates.getFirst();
-        final String reservationDate = resolveSelectedDate(requestedDate, offeredDates, defaultDate);
+        final String reservationDate = resolveSelectedDate(form.getDate(), offeredDates, defaultDate);
         final List<String> reservationSlots = offeredTimesByDate.getOrDefault(reservationDate, List.of());
         final String defaultStartTime = reservationSlots.isEmpty() ? "" : reservationSlots.getFirst();
         final String defaultEndTime = reservationSlots.size() > 1 ? reservationSlots.getLast() : defaultStartTime;
-        final boolean hasValidRequestedRange = reservationDate.equals(requestedDate)
-                && !isBlank(requestedStartTime)
-                && !isBlank(requestedEndTime)
-                && hasContinuousAvailability(reservationSlots, requestedStartTime, requestedEndTime);
+        final boolean hasValidRequestedRange = reservationDate.equals(form.getDate())
+                && !isBlank(form.getStartTime())
+                && !isBlank(form.getEndTime())
+                && hasContinuousAvailability(reservationSlots, form.getStartTime(), form.getEndTime());
+        form.setDate(reservationDate);
         mav.addObject("reservationDate", reservationDate);
         mav.addObject(
                 "reservationStartTime",
                 hasValidRequestedRange
-                        ? requestedStartTime
-                        : resolveSelectedTime(requestedStartTime, reservationSlots, defaultStartTime));
+                        ? form.getStartTime()
+                        : resolveSelectedTime(form.getStartTime(), reservationSlots, defaultStartTime));
         mav.addObject(
                 "reservationEndTime",
                 hasValidRequestedRange
-                        ? requestedEndTime
-                        : resolveSelectedTime(requestedEndTime, reservationSlots, defaultEndTime));
+                        ? form.getEndTime()
+                        : resolveSelectedTime(form.getEndTime(), reservationSlots, defaultEndTime));
         return mav;
     }
 
     @ModelAttribute("publishForm")
     public PublishBoatForm publishForm() {
         return new PublishBoatForm();
+    }
+
+    @ModelAttribute("reservationRequestForm")
+    public ReservationRequestForm reservationRequestForm() {
+        return new ReservationRequestForm();
     }
 
     @RequestMapping(value = "/publish", method = RequestMethod.GET)
@@ -374,6 +401,38 @@ public class HelloWorldController {
             return "Nivel no definido";
         }
         return "Nivel " + difficultyLevel;
+    }
+
+    private static String buildReservationRequestDescription(
+            final Item item, final CatalogUser owner, final ReservationRequestForm form) {
+        final StringBuilder description = new StringBuilder();
+        description
+                .append("Item: ")
+                .append(item.getTitle())
+                .append(" (#")
+                .append(item.getId())
+                .append(")\n");
+        description.append("Location: ").append(item.getLocation()).append('\n');
+        if (owner != null) {
+            description
+                    .append("Owner: ")
+                    .append(owner.getName())
+                    .append(" <")
+                    .append(owner.getEmail())
+                    .append(">\n");
+        }
+        description.append("Requested date: ").append(form.getDate()).append('\n');
+        description
+                .append("Requested time: ")
+                .append(form.getStartTime())
+                .append(" - ")
+                .append(form.getEndTime());
+
+        if (!isBlank(form.getRequestMessage())) {
+            description.append("\n\nMessage:\n").append(form.getRequestMessage().trim());
+        }
+
+        return description.toString();
     }
 
     private boolean matchesMarketplaceAvailability(

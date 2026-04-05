@@ -22,12 +22,24 @@
     <spotbugs.maven.plugin.version>4.9.8.0</spotbugs.maven.plugin.version>
     <lombok.version>1.18.42</lombok.version>
     <org.postgresql.version>42.2.5</org.postgresql.version>
+    <flyway.version>12.1.1</flyway.version>
     <mockito.version>5.23.0</mockito.version>
     <junit.version>5.11.0</junit.version>
     <org.hsqldb.version>2.7.4</org.hsqldb.version>
+    <jstl.version>1.2</jstl.version>
   </properties>
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>javax.validation</groupId>
+        <artifactId>validation-api</artifactId>
+        <version>2.0.1.Final</version>
+      </dependency>
+      <dependency>
+        <groupId>org.hibernate.validator</groupId>
+        <artifactId>hibernate-validator</artifactId>
+        <version>6.1.6.Final</version>
+      </dependency>
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-webmvc</artifactId>
@@ -47,6 +59,16 @@
         <groupId>org.postgresql</groupId>
         <artifactId>postgresql</artifactId>
         <version>${org.postgresql.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-core</artifactId>
+        <version>${flyway.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.flywaydb</groupId>
+        <artifactId>flyway-database-postgresql</artifactId>
+        <version>${flyway.version}</version>
       </dependency>
       <!-- JUnit -->
       <dependency>
@@ -96,6 +118,11 @@
         <artifactId>hsqldb</artifactId>
         <version>${org.hsqldb.version}</version>
         <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>javax.servlet</groupId>
+        <artifactId>jstl</artifactId>
+        <version>${jstl.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

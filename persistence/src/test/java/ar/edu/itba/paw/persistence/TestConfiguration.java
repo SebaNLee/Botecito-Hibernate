@@ -11,6 +11,7 @@ import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.jdbc.datasource.init.DataSourceInitializer;
 import org.springframework.jdbc.datasource.init.DatabasePopulator;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
+import org.springframework.lang.NonNull;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
@@ -20,7 +21,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 public class TestConfiguration {
 
     @Bean
-    public DataSource dataSource() {
+    public @NonNull DataSource dataSource() {
         final SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
         dataSource.setDriverClass(JDBCDriver.class);
         dataSource.setUrl("jdbc:hsqldb:mem:paw;sql.syntax_pgs=true");
@@ -30,21 +31,21 @@ public class TestConfiguration {
     }
 
     @Bean
-    public PlatformTransactionManager transactionManager() {
+    public @NonNull PlatformTransactionManager transactionManager() {
         return new DataSourceTransactionManager(dataSource());
     }
 
     @Bean
-    public DataSourceInitializer dataSourceInitializer(final DataSource dataSource) {
+    public @NonNull DataSourceInitializer dataSourceInitializer(final @NonNull DataSource dataSource) {
         final DataSourceInitializer initializer = new DataSourceInitializer();
         initializer.setDataSource(dataSource);
         initializer.setDatabasePopulator(databasePopulator());
         return initializer;
     }
 
-    private DatabasePopulator databasePopulator() {
+    private @NonNull DatabasePopulator databasePopulator() {
         final ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
-        populator.addScript(new ClassPathResource("schema.sql"));
+        populator.addScript(new ClassPathResource("db/migration/V1__init.sql"));
         return populator;
     }
 }

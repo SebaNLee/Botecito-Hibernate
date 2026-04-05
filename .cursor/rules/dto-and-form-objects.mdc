@@ -1,0 +1,65 @@
+---
+description: Rule for DTOs and form objects based on the real repository
+globs: ["webapp/src/main/java/**/*.java", "models/src/main/java/**/*.java", "webapp/src/main/webapp/WEB-INF/views/**/*.jsp", "webapp/src/main/resources/**/*.properties"]
+alwaysApply: false
+---
+
+# DTOs and form objects
+
+The repository uses domain models internally and `*Form` classes in the web layer
+for form binding and validation.
+
+## Main rule
+
+Do not invent DTOs without a web-layer need. Forms and validation follow a
+consistent Spring MVC pattern.
+
+The current source of truth is:
+
+- `models/` contains the domain (`ClassUser`).
+- `service-contracts/` and `persistence-contracts/` expose contracts.
+- Controllers may receive simple parameters through `@RequestParam` or bind form
+  objects through `@ModelAttribute`.
+
+## Form pattern
+
+- place the form object in `webapp`, for example under a package such as
+  `ar.edu.itba.paw.webapp.form`;
+- use it only as a web-layer input/output object;
+- annotate it with JSR-303 constraints;
+- map it in the controller to service parameters or domain objects;
+- do not share it with `services` or `persistence` as an internal contract.
+
+## Simple request example
+
+```java
+@RequestMapping(value = "/class", method = RequestMethod.POST)
+public ModelAndView createClassUser(
+        @RequestParam("email") final String email,
+        @RequestParam("password") final String password,
+        @RequestParam("username") final String username) {
+    final ClassUser classUser = classUserService.createClassUser(email, password, username);
+    // ...
+}
+```
+
+## Validation and i18n
+
+- `@Valid` plus `BindingResult` in controllers;
+- Spring form taglib in JSPs;
+- `MessageSource` in `WebConfig`;
+- `i18n/messages.properties` and locale-specific variants;
+- field-level validation messages and internationalized view copy.
+
+Validation belongs to the web boundary when it concerns form input shape and basic
+user-facing constraints.
+
+## Rules
+
+- Prefer the existing domain model before creating DTOs by default.
+- If a DTO or form object is created, it must solve a concrete web-layer need.
+- `*Form` classes belong in `webapp`.
+- Keep validation annotations on form objects, not on persistence classes.
+- Map form objects to domain/service inputs inside controllers.
+- Do not describe internal service or persistence contracts as DTO-based unless the
+  code actually evolves in that direction.

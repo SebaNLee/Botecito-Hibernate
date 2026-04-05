@@ -44,7 +44,7 @@ public class MailServiceImpl implements MailService {
 
     @Override
     public void sendRequestReviewEmail(final RequestSubmission requestSubmission) {
-        final Locale locale = requestSubmission.getRequesterLocale();
+        final Locale locale = resolveLocale(BOTECITO_EMAIL);
         final Context context = new Context(locale);
         context.setVariable("request", requestSubmission);
         context.setVariable("acceptUrl", ACTION_BASE_URL + "/" + requestSubmission.getToken() + "/accept");

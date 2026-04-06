@@ -22,7 +22,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class ItemCatalogJdbcDao implements ItemCatalogDao {
+public class ItemJdbcDao implements ItemDao {
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     private static final @NonNull RowMapper<Item> ITEM_ROW_MAPPER = (ResultSet rs, int rowNum) -> {
@@ -84,7 +84,7 @@ public class ItemCatalogJdbcDao implements ItemCatalogDao {
     private final JdbcTemplate jdbcTemplate;
 
     @Autowired
-    public ItemCatalogJdbcDao(final @NonNull DataSource dataSource) {
+    public ItemJdbcDao(final @NonNull DataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 

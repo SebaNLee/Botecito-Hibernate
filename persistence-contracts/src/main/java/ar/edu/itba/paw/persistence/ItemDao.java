@@ -8,7 +8,7 @@ import ar.edu.itba.paw.models.User;
 import java.util.List;
 import java.util.Optional;
 
-public interface ItemCatalogDao {
+public interface ItemDao {
     List<Item> listItems();
 
     Optional<Item> findItemById(final int id);

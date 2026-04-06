@@ -85,7 +85,7 @@ public class MailServiceImpl implements MailService {
     @Override
     public Locale resolveLocale(final String recipientIdentifier) {
         // TODO load the user's preferred language from persistence once that data is available.
-        return Locale.ENGLISH;
+        return new Locale("es");
     }
 
     private void sendHtmlEmail(final String recipientEmail, final String subject, final String htmlBody) {

@@ -117,16 +117,13 @@ public class WebConfig implements WebMvcConfigurer {
 
     private record CredentialsSelection(String credentialsFile, String fallbackCredentialsFile) {}
 
-    @Bean
+    @Bean(initMethod = "migrate")
     public Flyway flyway(final DataSource dataSource) {
-        final Flyway flyway = Flyway.configure()
+        return Flyway.configure()
                 .dataSource(dataSource)
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
                 .load();
-        flyway.repair();
-        flyway.migrate();
-        return flyway;
     }
 
     @Bean

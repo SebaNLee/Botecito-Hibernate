@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.RequestStatus;
 import ar.edu.itba.paw.models.RequestSubmission;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Locale;
+import java.util.Properties;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import org.springframework.context.MessageSource;
@@ -16,24 +17,29 @@ import org.thymeleaf.context.Context;
 @Service
 public class MailServiceImpl implements MailService {
 
-    // TODO : thse hardcoded urls should change for deploy
-    // ///////////////////////////////////////////////////
-    private static final String BOTECITO_EMAIL = "botecito.dev@gmail.com";
-    private static final String ACTION_BASE_URL = "http://localhost:8080/requests";
-    private static final String ITEM_BASE_URL = "http://localhost:8080/item";
-
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
     private final MessageSource messageSource;
+    private final String reviewRecipient;
+    private final String actionBaseUrl;
+    private final String itemBaseUrl;
 
     @SuppressFBWarnings(
-            value = "EI_EXPOSE_REP2",
-            justification = "Spring injects shared singleton collaborators here; MailServiceImpl does not expose them.")
+            value = {"EI_EXPOSE_REP2", "CT_CONSTRUCTOR_THROW"},
+            justification = "Spring injects shared singleton collaborators here; constructor validation fails fast on"
+                    + " missing mail configuration and does not expose partially initialized state.")
     public MailServiceImpl(
-            final JavaMailSender mailSender, final TemplateEngine templateEngine, final MessageSource messageSource) {
+            final JavaMailSender mailSender,
+            final TemplateEngine templateEngine,
+            final MessageSource messageSource,
+            final Properties credentialsProperties) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
         this.messageSource = messageSource;
+        final String baseUrl = requireProperty(credentialsProperties, "app.baseUrl");
+        this.reviewRecipient = requireProperty(credentialsProperties, "mail.reviewRecipient");
+        this.actionBaseUrl = baseUrl + "/requests";
+        this.itemBaseUrl = baseUrl + "/item";
     }
 
     @Override
@@ -47,13 +53,13 @@ public class MailServiceImpl implements MailService {
 
     @Override
     public void sendRequestReviewEmail(final RequestSubmission requestSubmission) {
-        final Locale locale = resolveLocale(BOTECITO_EMAIL);
+        final Locale locale = resolveLocale(reviewRecipient);
         final Context context = new Context(locale);
         context.setVariable("request", requestSubmission);
-        context.setVariable("acceptUrl", ACTION_BASE_URL + "/" + requestSubmission.getToken() + "/accept");
-        context.setVariable("declineUrl", ACTION_BASE_URL + "/" + requestSubmission.getToken() + "/decline");
+        context.setVariable("acceptUrl", actionBaseUrl + "/" + requestSubmission.getToken() + "/accept");
+        context.setVariable("declineUrl", actionBaseUrl + "/" + requestSubmission.getToken() + "/decline");
         sendHtmlEmail(
-                BOTECITO_EMAIL,
+                reviewRecipient,
                 getMessage("mail.requestReview.subject", locale, requestSubmission.getRequesterName()),
                 templateEngine.process("request-review", context));
     }
@@ -65,7 +71,7 @@ public class MailServiceImpl implements MailService {
         context.setVariable("request", requestSubmission);
         context.setVariable("statusLabel", getMessage(statusMessageCode(requestSubmission.getStatus()), locale));
         if (requestSubmission.getItemId() != null) {
-            context.setVariable("itemUrl", ITEM_BASE_URL + "/" + requestSubmission.getItemId());
+            context.setVariable("itemUrl", itemBaseUrl + "/" + requestSubmission.getItemId());
         }
         sendHtmlEmail(
                 requestSubmission.getRequesterEmail(),
@@ -97,6 +103,14 @@ public class MailServiceImpl implements MailService {
 
     private String getMessage(final String code, final Locale locale, final Object... args) {
         return messageSource.getMessage(code, args, locale);
+    }
+
+    private static String requireProperty(final Properties properties, final String key) {
+        final String value = properties.getProperty(key);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("Missing or blank '" + key + "' in credentials properties");
+        }
+        return value;
     }
 
     private String statusMessageCode(final RequestStatus status) {

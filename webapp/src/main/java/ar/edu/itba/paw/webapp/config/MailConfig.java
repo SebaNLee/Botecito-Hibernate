@@ -10,13 +10,13 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 public class MailConfig {
 
     @Bean
-    public JavaMailSender javaMailSender() {
+    public JavaMailSender javaMailSender(final Properties credentialsProperties) {
         final JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
 
-        mailSender.setHost("smtp.gmail.com");
-        mailSender.setPort(587);
-        mailSender.setUsername("botecito.dev@gmail.com");
-        mailSender.setPassword("oakrmirkfcudrwes");
+        mailSender.setHost(requireProperty(credentialsProperties, "mail.host"));
+        mailSender.setPort(Integer.parseInt(requireProperty(credentialsProperties, "mail.port")));
+        mailSender.setUsername(requireProperty(credentialsProperties, "mail.username"));
+        mailSender.setPassword(requireProperty(credentialsProperties, "mail.password"));
 
         final Properties properties = mailSender.getJavaMailProperties();
         properties.put("mail.transport.protocol", "smtp");
@@ -25,5 +25,13 @@ public class MailConfig {
         properties.put("mail.debug", "false");
 
         return mailSender;
+    }
+
+    private static String requireProperty(final Properties properties, final String key) {
+        final String value = properties.getProperty(key);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("Missing or blank '" + key + "' in credentials properties");
+        }
+        return value;
     }
 }

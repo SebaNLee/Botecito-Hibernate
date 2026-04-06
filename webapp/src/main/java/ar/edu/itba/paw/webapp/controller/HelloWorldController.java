@@ -7,7 +7,7 @@ import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.ClassUserService;
-import ar.edu.itba.paw.services.ItemCatalogService;
+import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -42,7 +42,7 @@ public class HelloWorldController {
     private static final int TIME_SLOT_STEP_MINUTES = 30;
     private static final int MIN_BOOKING_DURATION_MINUTES = 120;
     private static final int PICKER_MONTHS_AROUND_TODAY = 2;
-    private final ItemCatalogService itemCatalogService;
+    private final ItemService itemService;
     private final ClassUserService classUserService;
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
@@ -51,8 +51,7 @@ public class HelloWorldController {
         addAvailabilityPickerData(
                 mav,
                 "search",
-                buildAvailabilityPickerData(
-                        itemCatalogService.listAvailabilities(), itemCatalogService.listBookings()));
+                buildAvailabilityPickerData(itemService.listAvailabilities(), itemService.listBookings()));
         return mav;
     }
 
@@ -65,7 +64,7 @@ public class HelloWorldController {
             @RequestParam(value = "capacity", required = false) final String requestedCapacity,
             @RequestParam(value = "maxWeight", required = false) final String requestedMaxWeight,
             @RequestParam(value = "sort", required = false, defaultValue = "recommended") final String sort) {
-        final List<Item> filteredItems = itemCatalogService.listItems().stream()
+        final List<Item> filteredItems = itemService.listItems().stream()
                 .filter(item -> matchesRequestedLocation(item, requestedLocation))
                 .filter(item -> matchesMarketplaceAvailability(
                         item.getId(), requestedDate, requestedStartTime, requestedEndTime))
@@ -80,8 +79,7 @@ public class HelloWorldController {
         addAvailabilityPickerData(
                 mav,
                 "search",
-                buildAvailabilityPickerData(
-                        itemCatalogService.listAvailabilities(), itemCatalogService.listBookings()));
+                buildAvailabilityPickerData(itemService.listAvailabilities(), itemService.listBookings()));
         return mav;
     }
 
@@ -91,16 +89,16 @@ public class HelloWorldController {
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "startTime", required = false) final String requestedStartTime,
             @RequestParam(value = "endTime", required = false) final String requestedEndTime) {
-        final Optional<Item> item = itemCatalogService.findItemById(itemId);
+        final Optional<Item> item = itemService.findItemById(itemId);
         if (item.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
         }
 
-        final Optional<User> owner = itemCatalogService.findUserById(item.get().getOwnerId());
+        final Optional<User> owner = itemService.findUserById(item.get().getOwnerId());
         final Optional<ItemType> itemType =
-                itemCatalogService.findItemTypeById(item.get().getTypeId());
-        final List<ItemAvailability> itemAvailabilities = itemCatalogService.listAvailabilitiesByItemId(itemId);
-        final List<ItemBooking> itemBookings = itemCatalogService.listBookingsByItemId(itemId);
+                itemService.findItemTypeById(item.get().getTypeId());
+        final List<ItemAvailability> itemAvailabilities = itemService.listAvailabilitiesByItemId(itemId);
+        final List<ItemBooking> itemBookings = itemService.listBookingsByItemId(itemId);
         final AvailabilityPickerData reservationAvailability =
                 buildAvailabilityPickerData(itemAvailabilities, itemBookings);
         final List<String> offeredDates = reservationAvailability.getOfferedDates();
@@ -109,8 +107,7 @@ public class HelloWorldController {
         mav.addObject("item", item.get());
         mav.addObject("itemOwner", owner.orElse(null));
         mav.addObject("itemType", itemType.orElse(null));
-        mav.addObject(
-                "itemImageUrl", itemCatalogService.findImageUrlByItemId(itemId).orElse(""));
+        mav.addObject("itemImageUrl", itemService.findImageUrlByItemId(itemId).orElse(""));
         mav.addObject("difficultyLabel", buildDifficultyLabel(item.get().getDifficultyLevel()));
         mav.addObject(
                 "ownerInitial",
@@ -169,9 +166,9 @@ public class HelloWorldController {
     // Example: /example from class would be /class/example
 
     @Autowired
-    public HelloWorldController(final ClassUserService classUserService, final ItemCatalogService itemCatalogService) {
+    public HelloWorldController(final ClassUserService classUserService, final ItemService itemService) {
         this.classUserService = classUserService;
-        this.itemCatalogService = itemCatalogService;
+        this.itemService = itemService;
     }
 
     @RequestMapping(value = "/class", method = RequestMethod.GET)
@@ -265,10 +262,9 @@ public class HelloWorldController {
 
     private Map<Integer, String> buildItemImagesMap() {
         final Map<Integer, String> itemImages = new LinkedHashMap<>();
-        for (final Item item : itemCatalogService.listItems()) {
+        for (final Item item : itemService.listItems()) {
             itemImages.put(
-                    item.getId(),
-                    itemCatalogService.findImageUrlByItemId(item.getId()).orElse(""));
+                    item.getId(), itemService.findImageUrlByItemId(item.getId()).orElse(""));
         }
         return itemImages;
     }
@@ -290,7 +286,7 @@ public class HelloWorldController {
         }
 
         final AvailabilityPickerData availabilityData = buildAvailabilityPickerData(
-                itemCatalogService.listAvailabilitiesByItemId(itemId), itemCatalogService.listBookingsByItemId(itemId));
+                itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
         final List<String> availableTimes =
                 availabilityData.getOfferedTimesByDate().get(requestedDate);
 

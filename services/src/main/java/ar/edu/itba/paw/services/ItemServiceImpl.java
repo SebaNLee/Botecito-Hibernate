@@ -18,11 +18,11 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 @Service
-public final class ItemCatalogServiceImpl implements ItemCatalogService {
+public final class ItemServiceImpl implements ItemService {
     private static final String ITEMS_JSON_PATH = "mock/items.json";
     private final CatalogData catalogData;
 
-    public ItemCatalogServiceImpl() {
+    public ItemServiceImpl() {
         this.catalogData = loadCatalogData();
     }
 

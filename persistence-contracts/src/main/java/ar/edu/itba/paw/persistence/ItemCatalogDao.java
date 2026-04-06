@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.CatalogUser;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.User;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,7 +13,7 @@ public interface ItemCatalogDao {
 
     Optional<Item> findItemById(final int id);
 
-    Optional<CatalogUser> findUserById(final int id);
+    Optional<User> findUserById(final int id);
 
     Optional<ItemType> findItemTypeById(final int id);
 

@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.models;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 
 public class Item {
     private Integer id;
@@ -14,7 +15,7 @@ public class Item {
     private Integer difficultyLevel;
     private String location;
     private Boolean active;
-    private String createdAt;
+    private OffsetDateTime createdAt;
 
     public Integer getId() {
         return id;
@@ -104,11 +105,15 @@ public class Item {
         this.active = active;
     }
 
-    public String getCreatedAt() {
+    public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(final String createdAt) {
+    public void setCreatedAt(final OffsetDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public void setCreatedAt(final String createdAt) {
+        this.createdAt = createdAt == null ? null : OffsetDateTime.parse(createdAt);
     }
 }

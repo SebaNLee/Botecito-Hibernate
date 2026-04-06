@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.CatalogUser;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.ItemCatalogService;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
@@ -67,8 +67,9 @@ public class MarketplaceController {
             return new ModelAndView("redirect:/marketplace");
         }
 
-        final Optional<CatalogUser> owner = itemCatalogService.findUserById(item.get().getOwnerId());
-        final Optional<ItemType> itemType = itemCatalogService.findItemTypeById(item.get().getTypeId());
+        final Optional<User> owner = itemCatalogService.findUserById(item.get().getOwnerId());
+        final Optional<ItemType> itemType =
+                itemCatalogService.findItemTypeById(item.get().getTypeId());
         final AvailabilityPickerSupport.AvailabilityPickerData reservationAvailability =
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
                         itemCatalogService.listAvailabilitiesByItemId(itemId),
@@ -79,9 +80,12 @@ public class MarketplaceController {
         mav.addObject("item", item.get());
         mav.addObject("itemOwner", owner.orElse(null));
         mav.addObject("itemType", itemType.orElse(null));
-        mav.addObject("itemImageUrl", itemCatalogService.findImageUrlByItemId(itemId).orElse(""));
+        mav.addObject(
+                "itemImageUrl", itemCatalogService.findImageUrlByItemId(itemId).orElse(""));
         mav.addObject("difficultyLabel", buildDifficultyLabel(item.get().getDifficultyLevel()));
-        mav.addObject("ownerInitial", owner.map(MarketplaceController::buildOwnerInitial).orElse("I"));
+        mav.addObject(
+                "ownerInitial",
+                owner.map(MarketplaceController::buildOwnerInitial).orElse("I"));
         AvailabilityPickerSupport.addAvailabilityPickerData(mav, "reservation", reservationAvailability);
         final String defaultDate = offeredDates.isEmpty() ? "" : offeredDates.getFirst();
         final String reservationDate =
@@ -151,7 +155,9 @@ public class MarketplaceController {
     private Map<Integer, String> buildItemImagesMap() {
         final Map<Integer, String> itemImages = new LinkedHashMap<>();
         for (final Item item : itemCatalogService.listItems()) {
-            itemImages.put(item.getId(), itemCatalogService.findImageUrlByItemId(item.getId()).orElse(""));
+            itemImages.put(
+                    item.getId(),
+                    itemCatalogService.findImageUrlByItemId(item.getId()).orElse(""));
         }
         return itemImages;
     }
@@ -176,7 +182,8 @@ public class MarketplaceController {
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
                         itemCatalogService.listAvailabilitiesByItemId(itemId),
                         itemCatalogService.listBookingsByItemId(itemId));
-        final List<String> availableTimes = availabilityData.getOfferedTimesByDate().get(requestedDate);
+        final List<String> availableTimes =
+                availabilityData.getOfferedTimesByDate().get(requestedDate);
 
         if (availableTimes == null || availableTimes.isEmpty()) {
             return false;
@@ -194,17 +201,18 @@ public class MarketplaceController {
             return availableTimes.contains(requestedEndTime);
         }
 
-        return AvailabilityPickerSupport.hasContinuousAvailability(availableTimes, requestedStartTime, requestedEndTime);
+        return AvailabilityPickerSupport.hasContinuousAvailability(
+                availableTimes, requestedStartTime, requestedEndTime);
     }
 
     private static boolean isBlank(final String value) {
         return value == null || value.isBlank();
     }
 
-    private static String buildOwnerInitial(final CatalogUser catalogUser) {
-        if (catalogUser.getName() == null || catalogUser.getName().isEmpty()) {
+    private static String buildOwnerInitial(final User user) {
+        if (user.getName() == null || user.getName().isEmpty()) {
             return "I";
         }
-        return catalogUser.getName().substring(0, 1).toUpperCase();
+        return user.getName().substring(0, 1).toUpperCase();
     }
 }

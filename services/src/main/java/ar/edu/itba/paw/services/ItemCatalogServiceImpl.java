@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.CatalogUser;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemCatalogDao;
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +31,7 @@ public final class ItemCatalogServiceImpl implements ItemCatalogService {
     }
 
     @Override
-    public Optional<CatalogUser> findUserById(final int id) {
+    public Optional<User> findUserById(final int id) {
         return itemCatalogDao.findUserById(id);
     }
 

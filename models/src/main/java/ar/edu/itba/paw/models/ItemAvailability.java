@@ -1,11 +1,14 @@
 package ar.edu.itba.paw.models;
 
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+
 public class ItemAvailability {
     private Integer id;
     private Integer itemId;
-    private String weekday;
-    private String startTime;
-    private String endTime;
+    private DayOfWeek weekday;
+    private LocalTime startTime;
+    private LocalTime endTime;
 
     public Integer getId() {
         return id;
@@ -23,27 +26,39 @@ public class ItemAvailability {
         this.itemId = itemId;
     }
 
-    public String getWeekday() {
+    public DayOfWeek getWeekday() {
         return weekday;
     }
 
-    public void setWeekday(final String weekday) {
+    public void setWeekday(final DayOfWeek weekday) {
         this.weekday = weekday;
     }
 
-    public String getStartTime() {
+    public void setWeekday(final String weekday) {
+        this.weekday = weekday == null ? null : DayOfWeek.valueOf(weekday);
+    }
+
+    public LocalTime getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(final String startTime) {
+    public void setStartTime(final LocalTime startTime) {
         this.startTime = startTime;
     }
 
-    public String getEndTime() {
+    public void setStartTime(final String startTime) {
+        this.startTime = startTime == null ? null : LocalTime.parse(startTime);
+    }
+
+    public LocalTime getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(final String endTime) {
+    public void setEndTime(final LocalTime endTime) {
         this.endTime = endTime;
+    }
+
+    public void setEndTime(final String endTime) {
+        this.endTime = endTime == null ? null : LocalTime.parse(endTime);
     }
 }

@@ -79,7 +79,7 @@ public class MarketplaceController {
         mav.addObject("item", item.get());
         mav.addObject("itemOwner", owner.orElse(null));
         mav.addObject("itemType", itemType.orElse(null));
-        mav.addObject("itemImageUrl", itemService.findImageUrlByItemId(itemId).orElse(""));
+        mav.addObject("itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, itemId));
         mav.addObject("difficultyLabel", buildDifficultyLabel(item.get().getDifficultyLevel()));
         mav.addObject(
                 "ownerInitial",
@@ -153,8 +153,7 @@ public class MarketplaceController {
     private Map<Integer, String> buildItemImagesMap() {
         final Map<Integer, String> itemImages = new LinkedHashMap<>();
         for (final Item item : itemService.listItems()) {
-            itemImages.put(
-                    item.getId(), itemService.findImageUrlByItemId(item.getId()).orElse(""));
+            itemImages.put(item.getId(), ItemImageUtils.resolveImageUrl(itemService, item.getId()));
         }
         return itemImages;
     }

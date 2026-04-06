@@ -26,7 +26,7 @@
     </div>
   </c:if>
   
-  <form:form action="${publishUrl}" method="post" modelAttribute="publishForm" class="space-y-8">
+  <form:form action="${publishUrl}" method="post" modelAttribute="publishForm" enctype="multipart/form-data" class="space-y-8">
     <section class="bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_48px_rgba(11,28,50,0.04)]">
       <div class="flex items-center gap-3 mb-6 border-b border-outline-variant/15 pb-4">
         <span class="material-symbols-outlined text-primary text-2xl">edit_note</span>
@@ -51,13 +51,15 @@
         <span class="material-symbols-outlined text-primary text-2xl">add_a_photo</span>
         <h2 class="text-xl font-extrabold m-0">Foto principal</h2>
       </div>
-      <div class="border-2 border-dashed border-outline-variant rounded-xl p-12 flex flex-col items-center justify-center text-center hover:bg-surface-container-high/50 transition-colors cursor-pointer group">
+      <label class="border-2 border-dashed border-outline-variant rounded-xl p-12 flex flex-col items-center justify-center text-center hover:bg-surface-container-high/50 transition-colors cursor-pointer group">
+        <input type="file" name="file" accept="image/*" class="hidden" onchange="document.getElementById('file-name-display').textContent = this.files[0] ? this.files[0].name : 'JPG, PNG hasta 5MB'"/>
         <div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
           <span class="material-symbols-outlined text-3xl">upload_file</span>
         </div>
         <span class="font-bold text-lg text-primary">Subir imagen</span>
-        <span class="text-sm text-outline mt-1">JPG, PNG hasta 10MB</span>
-      </div>
+        <span id="file-name-display" class="text-sm text-outline mt-1">JPG, PNG hasta 5MB</span>
+        <form:errors path="file" cssClass="text-error text-xs mt-2 block" />
+      </label>
     </section>
     
     <section class="bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_48px_rgba(11,28,50,0.04)]">

@@ -1,0 +1,10 @@
+<FindBugsFilter>
+  <!--
+    Spring-injected service/DAO fields are interfaces managed by the container.
+    SpotBugs incorrectly treats them as mutable objects (EI_EXPOSE_REP2).
+  -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+    <Class name="~ar\.edu\.itba\.paw\.(services|webapp\.controller)\..+"/>
+  </Match>
+</FindBugsFilter>

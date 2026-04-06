@@ -117,13 +117,21 @@ public class WebConfig implements WebMvcConfigurer {
 
     private record CredentialsSelection(String credentialsFile, String fallbackCredentialsFile) {}
 
-    @Bean(initMethod = "migrate")
+    @Bean
     public Flyway flyway(final DataSource dataSource) {
-        return Flyway.configure()
+        final Flyway flyway = Flyway.configure()
                 .dataSource(dataSource)
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
-                .load(); // TODO check this when migrating, configured to keep existing DB
+                .load();
+        flyway.repair();
+        flyway.migrate();
+        return flyway;
+    }
+
+    @Bean
+    public org.springframework.web.multipart.support.StandardServletMultipartResolver multipartResolver() {
+        return new org.springframework.web.multipart.support.StandardServletMultipartResolver();
     }
 
     @Override

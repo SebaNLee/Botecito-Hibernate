@@ -66,7 +66,17 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public Optional<String> findImageUrlByItemId(final int itemId) {
-        return itemDao.findImageUrlByItemId(itemId);
+    public Optional<byte[]> findImageById(final int id) {
+        return itemDao.findImageById(id);
+    }
+
+    @Override
+    public List<Integer> listImageIdsByItemId(final int itemId) {
+        return itemDao.listImageIdsByItemId(itemId);
+    }
+
+    @Override
+    public Integer insertImage(final int itemId, final byte[] imageData) {
+        return itemDao.insertImage(itemId, imageData);
     }
 }

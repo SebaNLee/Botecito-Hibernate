@@ -1,9 +1,14 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -12,6 +17,13 @@ import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 public class PublishController {
+
+    private final ItemService itemService;
+
+    @Autowired
+    public PublishController(final ItemService itemService) {
+        this.itemService = itemService;
+    }
 
     @ModelAttribute("publishForm")
     public PublishBoatForm publishForm() {
@@ -30,7 +42,28 @@ public class PublishController {
     }
 
     @RequestMapping(value = "/publish", method = RequestMethod.POST)
-    public ModelAndView publishSubmit(@ModelAttribute("publishForm") final PublishBoatForm form) {
+    public ModelAndView publishSubmit(
+            @Valid @ModelAttribute("publishForm") final PublishBoatForm form, final BindingResult errors) {
+        if (errors.hasErrors()) {
+            final ModelAndView mav = new ModelAndView("publish");
+            mav.addObject("capacityOptions", buildCapacityOptions());
+            mav.addObject("weightOptions", buildWeightOptions());
+            return mav;
+        }
+
+        if (form.getFile() != null && !form.getFile().isEmpty()) {
+            try {
+                // TODO: replace hardcoded itemId with the actual item being created/edited
+                itemService.insertImage(1, form.getFile().getBytes());
+            } catch (IOException e) {
+                errors.rejectValue("file", "file.upload.error");
+                final ModelAndView mav = new ModelAndView("publish");
+                mav.addObject("capacityOptions", buildCapacityOptions());
+                mav.addObject("weightOptions", buildWeightOptions());
+                return mav;
+            }
+        }
+
         return new ModelAndView("redirect:/publish?submitted=true");
     }
 

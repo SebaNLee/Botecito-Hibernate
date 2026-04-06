@@ -1,8 +1,10 @@
 package ar.edu.itba.paw.models;
 
-public class CatalogUser {
+import java.time.OffsetDateTime;
+
+public class User {
     private Integer id;
-    private String createdAt;
+    private OffsetDateTime createdAt;
     private String name;
     private String email;
     private String phone;
@@ -15,12 +17,16 @@ public class CatalogUser {
         this.id = id;
     }
 
-    public String getCreatedAt() {
+    public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(final String createdAt) {
+    public void setCreatedAt(final OffsetDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public void setCreatedAt(final String createdAt) {
+        this.createdAt = createdAt == null ? null : OffsetDateTime.parse(createdAt);
     }
 
     public String getName() {

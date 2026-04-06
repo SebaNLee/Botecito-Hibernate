@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.CatalogUser;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.User;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -22,7 +22,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class ItemCatalogJdbcDao implements ItemCatalogDao {
+public class ItemJdbcDao implements ItemDao {
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     private static final @NonNull RowMapper<Item> ITEM_ROW_MAPPER = (ResultSet rs, int rowNum) -> {
@@ -42,8 +42,8 @@ public class ItemCatalogJdbcDao implements ItemCatalogDao {
         return item;
     };
 
-    private static final @NonNull RowMapper<CatalogUser> USER_ROW_MAPPER = (ResultSet rs, int rowNum) -> {
-        final CatalogUser user = new CatalogUser();
+    private static final @NonNull RowMapper<User> USER_ROW_MAPPER = (ResultSet rs, int rowNum) -> {
+        final User user = new User();
         user.setId(rs.getInt("id"));
         user.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
         user.setName(rs.getString("name"));
@@ -61,14 +61,12 @@ public class ItemCatalogJdbcDao implements ItemCatalogDao {
 
     private static final @NonNull RowMapper<ItemAvailability> ITEM_AVAILABILITY_ROW_MAPPER =
             (ResultSet rs, int rowNum) -> {
-                final OffsetDateTime startTime = readOffsetDateTime(rs, "start_time");
-                final OffsetDateTime endTime = readOffsetDateTime(rs, "end_time");
                 final ItemAvailability availability = new ItemAvailability();
                 availability.setId(rs.getInt("id"));
                 availability.setItemId(rs.getInt("item_id"));
-                availability.setWeekday(resolveWeekday(startTime, endTime));
-                availability.setStartTime(formatTime(startTime));
-                availability.setEndTime(formatTime(endTime));
+                availability.setWeekday(rs.getString("weekday"));
+                availability.setStartTime(rs.getTime("start_time").toLocalTime().format(TIME_FORMAT));
+                availability.setEndTime(rs.getTime("end_time").toLocalTime().format(TIME_FORMAT));
                 return availability;
             };
 
@@ -84,7 +82,7 @@ public class ItemCatalogJdbcDao implements ItemCatalogDao {
     private final JdbcTemplate jdbcTemplate;
 
     @Autowired
-    public ItemCatalogJdbcDao(final @NonNull DataSource dataSource) {
+    public ItemJdbcDao(final @NonNull DataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
@@ -95,17 +93,20 @@ public class ItemCatalogJdbcDao implements ItemCatalogDao {
 
     @Override
     public Optional<Item> findItemById(final int id) {
-        return jdbcTemplate.query("SELECT * FROM item WHERE id = ?", ITEM_ROW_MAPPER, id).stream().findAny();
+        return jdbcTemplate.query("SELECT * FROM item WHERE id = ?", ITEM_ROW_MAPPER, id).stream()
+                .findAny();
     }
 
     @Override
-    public Optional<CatalogUser> findUserById(final int id) {
-        return jdbcTemplate.query("SELECT * FROM users WHERE id = ?", USER_ROW_MAPPER, id).stream().findAny();
+    public Optional<User> findUserById(final int id) {
+        return jdbcTemplate.query("SELECT * FROM users WHERE id = ?", USER_ROW_MAPPER, id).stream()
+                .findAny();
     }
 
     @Override
     public Optional<ItemType> findItemTypeById(final int id) {
-        return jdbcTemplate.query("SELECT * FROM item_type WHERE id = ?", ITEM_TYPE_ROW_MAPPER, id).stream().findAny();
+        return jdbcTemplate.query("SELECT * FROM item_type WHERE id = ?", ITEM_TYPE_ROW_MAPPER, id).stream()
+                .findAny();
     }
 
     @Override
@@ -126,7 +127,8 @@ public class ItemCatalogJdbcDao implements ItemCatalogDao {
 
     @Override
     public List<ItemBooking> listBookingsByItemId(final int itemId) {
-        return jdbcTemplate.query("SELECT * FROM item_booking WHERE item_id = ? ORDER BY id", ITEM_BOOKING_ROW_MAPPER, itemId);
+        return jdbcTemplate.query(
+                "SELECT * FROM item_booking WHERE item_id = ? ORDER BY id", ITEM_BOOKING_ROW_MAPPER, itemId);
     }
 
     @Override
@@ -145,12 +147,15 @@ public class ItemCatalogJdbcDao implements ItemCatalogDao {
         if (!hasTable("item_media")) {
             return Optional.empty();
         }
-        return jdbcTemplate.query("SELECT image_url FROM item_media WHERE item_id = ?", rs -> {
-            if (rs.next()) {
-                return Optional.ofNullable(rs.getString("image_url"));
-            }
-            return Optional.<String>empty();
-        }, itemId);
+        return jdbcTemplate.query(
+                "SELECT image_url FROM item_media WHERE item_id = ?",
+                rs -> {
+                    if (rs.next()) {
+                        return Optional.ofNullable(rs.getString("image_url"));
+                    }
+                    return Optional.<String>empty();
+                },
+                itemId);
     }
 
     private boolean hasTable(final String tableName) {
@@ -178,19 +183,5 @@ public class ItemCatalogJdbcDao implements ItemCatalogDao {
 
     private static String formatDateTime(final OffsetDateTime dateTime) {
         return dateTime == null ? null : dateTime.toString();
-    }
-
-    private static String formatTime(final OffsetDateTime dateTime) {
-        return dateTime == null ? null : dateTime.toLocalTime().format(TIME_FORMAT);
-    }
-
-    private static String resolveWeekday(final OffsetDateTime startTime, final OffsetDateTime endTime) {
-        if (startTime != null) {
-            return startTime.getDayOfWeek().name();
-        }
-        if (endTime != null) {
-            return endTime.getDayOfWeek().name();
-        }
-        return null;
     }
 }

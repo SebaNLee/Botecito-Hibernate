@@ -53,7 +53,9 @@ final class AvailabilityPickerSupport {
 
         for (final ItemBooking booking : bookings) {
             itemIds.add(booking.getItemId());
-            bookingsByItemId.computeIfAbsent(booking.getItemId(), ignored -> new ArrayList<>()).add(booking);
+            bookingsByItemId
+                    .computeIfAbsent(booking.getItemId(), ignored -> new ArrayList<>())
+                    .add(booking);
         }
 
         for (final Integer itemId : itemIds) {
@@ -68,7 +70,8 @@ final class AvailabilityPickerSupport {
             mergeTimesByDate(availableTimesByDate, itemAvailableTimesByDate);
         }
 
-        final Map<String, TreeSet<String>> occupiedTimesByDate = subtractTimes(scheduledTimesByDate, availableTimesByDate);
+        final Map<String, TreeSet<String>> occupiedTimesByDate =
+                subtractTimes(scheduledTimesByDate, availableTimesByDate);
         final List<String> offeredDates = new ArrayList<>();
         final List<String> occupiedDates = new ArrayList<>();
 
@@ -88,14 +91,16 @@ final class AvailabilityPickerSupport {
                 toImmutableTimesByDate(occupiedTimesByDate));
     }
 
-    static String resolveSelectedDate(final String requestedDate, final List<String> offeredDates, final String fallbackDate) {
+    static String resolveSelectedDate(
+            final String requestedDate, final List<String> offeredDates, final String fallbackDate) {
         if (requestedDate != null && offeredDates.contains(requestedDate)) {
             return requestedDate;
         }
         return fallbackDate;
     }
 
-    static String resolveSelectedTime(final String requestedTime, final List<String> offeredTimes, final String fallbackTime) {
+    static String resolveSelectedTime(
+            final String requestedTime, final List<String> offeredTimes, final String fallbackTime) {
         if (requestedTime != null && offeredTimes.contains(requestedTime)) {
             return requestedTime;
         }
@@ -137,9 +142,9 @@ final class AvailabilityPickerSupport {
         final LocalDate endDate = pickerEndDate();
 
         for (final ItemAvailability availability : availabilities) {
-            final DayOfWeek weekday = DayOfWeek.valueOf(availability.getWeekday());
-            final LocalTime startTime = LocalTime.parse(availability.getStartTime());
-            final LocalTime endTime = LocalTime.parse(availability.getEndTime());
+            final DayOfWeek weekday = availability.getWeekday();
+            final LocalTime startTime = availability.getStartTime();
+            final LocalTime endTime = availability.getEndTime();
 
             for (LocalDate currentDate = startDate;
                     !currentDate.isAfter(endDate);
@@ -161,8 +166,8 @@ final class AvailabilityPickerSupport {
         final LocalDate endDate = pickerEndDate();
 
         for (final ItemBooking booking : bookings) {
-            OffsetDateTime currentTime = OffsetDateTime.parse(booking.getStartTime());
-            final OffsetDateTime endTime = OffsetDateTime.parse(booking.getEndTime());
+            OffsetDateTime currentTime = booking.getStartTime();
+            final OffsetDateTime endTime = booking.getEndTime();
 
             while (currentTime.isBefore(endTime)) {
                 final LocalDate currentDate = currentTime.toLocalDate();

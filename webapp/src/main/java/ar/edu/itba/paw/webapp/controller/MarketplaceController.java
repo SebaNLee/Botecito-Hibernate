@@ -1,9 +1,9 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.CatalogUser;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemType;
-import ar.edu.itba.paw.services.ItemCatalogService;
+import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.services.ItemService;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,11 +20,11 @@ import org.springframework.web.servlet.ModelAndView;
 @Controller
 public class MarketplaceController {
 
-    private final ItemCatalogService itemCatalogService;
+    private final ItemService itemService;
 
     @Autowired
-    public MarketplaceController(final ItemCatalogService itemCatalogService) {
-        this.itemCatalogService = itemCatalogService;
+    public MarketplaceController(final ItemService itemService) {
+        this.itemService = itemService;
     }
 
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
@@ -36,7 +36,7 @@ public class MarketplaceController {
             @RequestParam(value = "capacity", required = false) final String requestedCapacity,
             @RequestParam(value = "maxWeight", required = false) final String requestedMaxWeight,
             @RequestParam(value = "sort", required = false, defaultValue = "recommended") final String sort) {
-        final List<Item> filteredItems = itemCatalogService.listItems().stream()
+        final List<Item> filteredItems = itemService.listItems().stream()
                 .filter(item -> matchesRequestedLocation(item, requestedLocation))
                 .filter(item -> matchesMarketplaceAvailability(
                         item.getId(), requestedDate, requestedStartTime, requestedEndTime))
@@ -52,7 +52,7 @@ public class MarketplaceController {
                 mav,
                 "search",
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemCatalogService.listAvailabilities(), itemCatalogService.listBookings()));
+                        itemService.listAvailabilities(), itemService.listBookings()));
         return mav;
     }
 
@@ -62,26 +62,28 @@ public class MarketplaceController {
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "startTime", required = false) final String requestedStartTime,
             @RequestParam(value = "endTime", required = false) final String requestedEndTime) {
-        final Optional<Item> item = itemCatalogService.findItemById(itemId);
+        final Optional<Item> item = itemService.findItemById(itemId);
         if (item.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
         }
 
-        final Optional<CatalogUser> owner = itemCatalogService.findUserById(item.get().getOwnerId());
-        final Optional<ItemType> itemType = itemCatalogService.findItemTypeById(item.get().getTypeId());
+        final Optional<User> owner = itemService.findUserById(item.get().getOwnerId());
+        final Optional<ItemType> itemType =
+                itemService.findItemTypeById(item.get().getTypeId());
         final AvailabilityPickerSupport.AvailabilityPickerData reservationAvailability =
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemCatalogService.listAvailabilitiesByItemId(itemId),
-                        itemCatalogService.listBookingsByItemId(itemId));
+                        itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
         final List<String> offeredDates = reservationAvailability.getOfferedDates();
         final Map<String, List<String>> offeredTimesByDate = reservationAvailability.getOfferedTimesByDate();
         final ModelAndView mav = new ModelAndView("marketplace-item");
         mav.addObject("item", item.get());
         mav.addObject("itemOwner", owner.orElse(null));
         mav.addObject("itemType", itemType.orElse(null));
-        mav.addObject("itemImageUrl", itemCatalogService.findImageUrlByItemId(itemId).orElse(""));
+        mav.addObject("itemImageUrl", itemService.findImageUrlByItemId(itemId).orElse(""));
         mav.addObject("difficultyLabel", buildDifficultyLabel(item.get().getDifficultyLevel()));
-        mav.addObject("ownerInitial", owner.map(MarketplaceController::buildOwnerInitial).orElse("I"));
+        mav.addObject(
+                "ownerInitial",
+                owner.map(MarketplaceController::buildOwnerInitial).orElse("I"));
         AvailabilityPickerSupport.addAvailabilityPickerData(mav, "reservation", reservationAvailability);
         final String defaultDate = offeredDates.isEmpty() ? "" : offeredDates.getFirst();
         final String reservationDate =
@@ -150,8 +152,9 @@ public class MarketplaceController {
 
     private Map<Integer, String> buildItemImagesMap() {
         final Map<Integer, String> itemImages = new LinkedHashMap<>();
-        for (final Item item : itemCatalogService.listItems()) {
-            itemImages.put(item.getId(), itemCatalogService.findImageUrlByItemId(item.getId()).orElse(""));
+        for (final Item item : itemService.listItems()) {
+            itemImages.put(
+                    item.getId(), itemService.findImageUrlByItemId(item.getId()).orElse(""));
         }
         return itemImages;
     }
@@ -174,9 +177,9 @@ public class MarketplaceController {
 
         final AvailabilityPickerSupport.AvailabilityPickerData availabilityData =
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemCatalogService.listAvailabilitiesByItemId(itemId),
-                        itemCatalogService.listBookingsByItemId(itemId));
-        final List<String> availableTimes = availabilityData.getOfferedTimesByDate().get(requestedDate);
+                        itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
+        final List<String> availableTimes =
+                availabilityData.getOfferedTimesByDate().get(requestedDate);
 
         if (availableTimes == null || availableTimes.isEmpty()) {
             return false;
@@ -194,17 +197,18 @@ public class MarketplaceController {
             return availableTimes.contains(requestedEndTime);
         }
 
-        return AvailabilityPickerSupport.hasContinuousAvailability(availableTimes, requestedStartTime, requestedEndTime);
+        return AvailabilityPickerSupport.hasContinuousAvailability(
+                availableTimes, requestedStartTime, requestedEndTime);
     }
 
     private static boolean isBlank(final String value) {
         return value == null || value.isBlank();
     }
 
-    private static String buildOwnerInitial(final CatalogUser catalogUser) {
-        if (catalogUser.getName() == null || catalogUser.getName().isEmpty()) {
+    private static String buildOwnerInitial(final User user) {
+        if (user.getName() == null || user.getName().isEmpty()) {
             return "I";
         }
-        return catalogUser.getName().substring(0, 1).toUpperCase();
+        return user.getName().substring(0, 1).toUpperCase();
     }
 }

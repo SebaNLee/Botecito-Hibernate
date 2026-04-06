@@ -1,72 +1,72 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.CatalogUser;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemType;
-import ar.edu.itba.paw.persistence.ItemCatalogDao;
+import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.persistence.ItemDao;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public final class ItemCatalogServiceImpl implements ItemCatalogService {
-    private final ItemCatalogDao itemCatalogDao;
+public final class ItemServiceImpl implements ItemService {
+    private final ItemDao itemDao;
 
     @Autowired
-    public ItemCatalogServiceImpl(final ItemCatalogDao itemCatalogDao) {
-        this.itemCatalogDao = itemCatalogDao;
+    public ItemServiceImpl(final ItemDao itemDao) {
+        this.itemDao = itemDao;
     }
 
     @Override
     public List<Item> listItems() {
-        return itemCatalogDao.listItems();
+        return itemDao.listItems();
     }
 
     @Override
     public Optional<Item> findItemById(final int id) {
-        return itemCatalogDao.findItemById(id);
+        return itemDao.findItemById(id);
     }
 
     @Override
-    public Optional<CatalogUser> findUserById(final int id) {
-        return itemCatalogDao.findUserById(id);
+    public Optional<User> findUserById(final int id) {
+        return itemDao.findUserById(id);
     }
 
     @Override
     public Optional<ItemType> findItemTypeById(final int id) {
-        return itemCatalogDao.findItemTypeById(id);
+        return itemDao.findItemTypeById(id);
     }
 
     @Override
     public List<ItemAvailability> listAvailabilities() {
-        return itemCatalogDao.listAvailabilities();
+        return itemDao.listAvailabilities();
     }
 
     @Override
     public List<ItemAvailability> listAvailabilitiesByItemId(final int itemId) {
-        return itemCatalogDao.listAvailabilitiesByItemId(itemId);
+        return itemDao.listAvailabilitiesByItemId(itemId);
     }
 
     @Override
     public List<ItemBooking> listBookings() {
-        return itemCatalogDao.listBookings();
+        return itemDao.listBookings();
     }
 
     @Override
     public List<ItemBooking> listBookingsByItemId(final int itemId) {
-        return itemCatalogDao.listBookingsByItemId(itemId);
+        return itemDao.listBookingsByItemId(itemId);
     }
 
     @Override
     public Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId) {
-        return itemCatalogDao.findNextAvailabilityByItemId(itemId);
+        return itemDao.findNextAvailabilityByItemId(itemId);
     }
 
     @Override
     public Optional<String> findImageUrlByItemId(final int itemId) {
-        return itemCatalogDao.findImageUrlByItemId(itemId);
+        return itemDao.findImageUrlByItemId(itemId);
     }
 }

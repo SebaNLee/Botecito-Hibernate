@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.services.ItemCatalogService;
+import ar.edu.itba.paw.services.ItemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,11 +10,11 @@ import org.springframework.web.servlet.ModelAndView;
 @Controller
 public class HomeController {
 
-    private final ItemCatalogService itemCatalogService;
+    private final ItemService itemService;
 
     @Autowired
-    public HomeController(final ItemCatalogService itemCatalogService) {
-        this.itemCatalogService = itemCatalogService;
+    public HomeController(final ItemService itemService) {
+        this.itemService = itemService;
     }
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
@@ -24,7 +24,7 @@ public class HomeController {
                 mav,
                 "search",
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemCatalogService.listAvailabilities(), itemCatalogService.listBookings()));
+                        itemService.listAvailabilities(), itemService.listBookings()));
         return mav;
     }
 }

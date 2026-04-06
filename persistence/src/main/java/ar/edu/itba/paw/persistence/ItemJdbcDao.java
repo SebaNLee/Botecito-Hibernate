@@ -61,14 +61,12 @@ public class ItemJdbcDao implements ItemDao {
 
     private static final @NonNull RowMapper<ItemAvailability> ITEM_AVAILABILITY_ROW_MAPPER =
             (ResultSet rs, int rowNum) -> {
-                final OffsetDateTime startTime = readOffsetDateTime(rs, "start_time");
-                final OffsetDateTime endTime = readOffsetDateTime(rs, "end_time");
                 final ItemAvailability availability = new ItemAvailability();
                 availability.setId(rs.getInt("id"));
                 availability.setItemId(rs.getInt("item_id"));
-                availability.setWeekday(resolveWeekday(startTime, endTime));
-                availability.setStartTime(formatTime(startTime));
-                availability.setEndTime(formatTime(endTime));
+                availability.setWeekday(rs.getString("weekday"));
+                availability.setStartTime(rs.getTime("start_time").toLocalTime().format(TIME_FORMAT));
+                availability.setEndTime(rs.getTime("end_time").toLocalTime().format(TIME_FORMAT));
                 return availability;
             };
 
@@ -185,19 +183,5 @@ public class ItemJdbcDao implements ItemDao {
 
     private static String formatDateTime(final OffsetDateTime dateTime) {
         return dateTime == null ? null : dateTime.toString();
-    }
-
-    private static String formatTime(final OffsetDateTime dateTime) {
-        return dateTime == null ? null : dateTime.toLocalTime().format(TIME_FORMAT);
-    }
-
-    private static String resolveWeekday(final OffsetDateTime startTime, final OffsetDateTime endTime) {
-        if (startTime != null) {
-            return startTime.getDayOfWeek().name();
-        }
-        if (endTime != null) {
-            return endTime.getDayOfWeek().name();
-        }
-        return null;
     }
 }

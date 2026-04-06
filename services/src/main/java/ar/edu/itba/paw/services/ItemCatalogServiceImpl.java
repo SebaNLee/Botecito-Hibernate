@@ -1,18 +1,16 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.CatalogUser;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemMedia;
 import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.time.DayOfWeek;
-import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -39,7 +37,7 @@ public final class ItemCatalogServiceImpl implements ItemCatalogService {
     }
 
     @Override
-    public Optional<CatalogUser> findUserById(final int id) {
+    public Optional<User> findUserById(final int id) {
         return catalogData.getUsers().stream()
                 .filter(user -> user.getId() == id)
                 .findFirst();
@@ -79,9 +77,9 @@ public final class ItemCatalogServiceImpl implements ItemCatalogService {
     @Override
     public Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId) {
         return listAvailabilitiesByItemId(itemId).stream()
-                .min(Comparator.comparingInt((ItemAvailability availability) ->
-                                DayOfWeek.valueOf(availability.getWeekday()).getValue())
-                        .thenComparing(availability -> LocalTime.parse(availability.getStartTime())));
+                .min(Comparator.<ItemAvailability>comparingInt(
+                                availability -> availability.getWeekday().getValue())
+                        .thenComparing(availability -> availability.getStartTime()));
     }
 
     @Override
@@ -104,18 +102,18 @@ public final class ItemCatalogServiceImpl implements ItemCatalogService {
     }
 
     public static class CatalogData {
-        private List<CatalogUser> users;
+        private List<User> users;
         private List<ItemType> itemType;
         private List<Item> item;
         private List<ItemAvailability> itemAvailability;
         private List<ItemBooking> itemBooking;
         private List<ItemMedia> itemMedia;
 
-        public List<CatalogUser> getUsers() {
+        public List<User> getUsers() {
             return List.copyOf(users);
         }
 
-        public void setUsers(final List<CatalogUser> users) {
+        public void setUsers(final List<User> users) {
             this.users = immutableCopy(users);
         }
 

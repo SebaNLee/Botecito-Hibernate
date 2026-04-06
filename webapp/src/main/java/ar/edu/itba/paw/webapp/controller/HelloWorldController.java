@@ -1,11 +1,11 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.CatalogUser;
 import ar.edu.itba.paw.models.ClassUser;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.ClassUserService;
 import ar.edu.itba.paw.services.ItemCatalogService;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
@@ -96,8 +96,7 @@ public class HelloWorldController {
             return new ModelAndView("redirect:/marketplace");
         }
 
-        final Optional<CatalogUser> owner =
-                itemCatalogService.findUserById(item.get().getOwnerId());
+        final Optional<User> owner = itemCatalogService.findUserById(item.get().getOwnerId());
         final Optional<ItemType> itemType =
                 itemCatalogService.findItemTypeById(item.get().getTypeId());
         final List<ItemAvailability> itemAvailabilities = itemCatalogService.listAvailabilitiesByItemId(itemId);
@@ -383,9 +382,9 @@ public class HelloWorldController {
         final LocalDate endDate = pickerEndDate();
 
         for (final ItemAvailability availability : availabilities) {
-            final DayOfWeek weekday = DayOfWeek.valueOf(availability.getWeekday());
-            final LocalTime startTime = LocalTime.parse(availability.getStartTime());
-            final LocalTime endTime = LocalTime.parse(availability.getEndTime());
+            final DayOfWeek weekday = availability.getWeekday();
+            final LocalTime startTime = availability.getStartTime();
+            final LocalTime endTime = availability.getEndTime();
 
             for (LocalDate currentDate = startDate;
                     !currentDate.isAfter(endDate);
@@ -407,8 +406,8 @@ public class HelloWorldController {
         final LocalDate endDate = pickerEndDate();
 
         for (final ItemBooking booking : bookings) {
-            OffsetDateTime currentTime = OffsetDateTime.parse(booking.getStartTime());
-            final OffsetDateTime endTime = OffsetDateTime.parse(booking.getEndTime());
+            OffsetDateTime currentTime = booking.getStartTime();
+            final OffsetDateTime endTime = booking.getEndTime();
 
             while (currentTime.isBefore(endTime)) {
                 final LocalDate currentDate = currentTime.toLocalDate();
@@ -550,11 +549,11 @@ public class HelloWorldController {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
-    private static String buildOwnerInitial(final CatalogUser catalogUser) {
-        if (catalogUser.getName() == null || catalogUser.getName().isEmpty()) {
+    private static String buildOwnerInitial(final User user) {
+        if (user.getName() == null || user.getName().isEmpty()) {
             return "I";
         }
-        return catalogUser.getName().substring(0, 1).toUpperCase();
+        return user.getName().substring(0, 1).toUpperCase();
     }
 
     private static final class AvailabilityPickerData {

@@ -27,5 +27,9 @@ public interface ItemDao {
 
     Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId);
 
-    Optional<String> findImageUrlByItemId(final int itemId);
+    Optional<byte[]> findImageById(final int id);
+
+    List<Integer> listImageIdsByItemId(final int itemId);
+
+    Integer insertImage(final int itemId, final byte[] imageData);
 }

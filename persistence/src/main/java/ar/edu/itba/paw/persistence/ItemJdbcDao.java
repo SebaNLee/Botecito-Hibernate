@@ -11,13 +11,17 @@ import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
@@ -143,19 +147,37 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
-    public Optional<String> findImageUrlByItemId(final int itemId) {
+    public Optional<byte[]> findImageById(final int id) {
         if (!hasTable("item_media")) {
             return Optional.empty();
         }
         return jdbcTemplate.query(
-                "SELECT image_url FROM item_media WHERE item_id = ?",
+                "SELECT image_data FROM item_media WHERE id = ?",
                 rs -> {
                     if (rs.next()) {
-                        return Optional.ofNullable(rs.getString("image_url"));
+                        return Optional.ofNullable(rs.getBytes("image_data"));
                     }
-                    return Optional.<String>empty();
+                    return Optional.<byte[]>empty();
                 },
-                itemId);
+                id);
+    }
+
+    @Override
+    public List<Integer> listImageIdsByItemId(final int itemId) {
+        if (!hasTable("item_media")) {
+            return Collections.emptyList();
+        }
+        return jdbcTemplate.queryForList("SELECT id FROM item_media WHERE item_id = ?", Integer.class, itemId);
+    }
+
+    @Override
+    public Integer insertImage(final int itemId, final byte[] imageData) {
+        final SimpleJdbcInsert insert =
+                new SimpleJdbcInsert(jdbcTemplate).withTableName("item_media").usingGeneratedKeyColumns("id");
+        final Map<String, Object> args = new HashMap<>();
+        args.put("item_id", itemId);
+        args.put("image_data", imageData);
+        return insert.executeAndReturnKey(args).intValue();
     }
 
     private boolean hasTable(final String tableName) {

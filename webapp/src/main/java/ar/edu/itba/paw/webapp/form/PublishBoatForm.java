@@ -1,5 +1,8 @@
 package ar.edu.itba.paw.webapp.form;
 
+import ar.edu.itba.paw.webapp.form.validation.FileSize;
+import org.springframework.web.multipart.MultipartFile;
+
 public class PublishBoatForm {
 
     private String title;
@@ -7,6 +10,9 @@ public class PublishBoatForm {
     private String marina;
     private String capacity;
     private String maxWeight;
+
+    @FileSize(max = 5242880)
+    private MultipartFile file;
 
     public String getTitle() {
         return title;
@@ -46,5 +52,13 @@ public class PublishBoatForm {
 
     public void setMaxWeight(final String maxWeight) {
         this.maxWeight = maxWeight;
+    }
+
+    public MultipartFile getFile() {
+        return file;
+    }
+
+    public void setFile(final MultipartFile file) {
+        this.file = file;
     }
 }

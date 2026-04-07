@@ -19,6 +19,8 @@ public interface ItemService {
 
     Optional<User> findUserById(final int id);
 
+    Optional<User> findUserByEmail(final String email);
+
     Optional<ItemType> findItemTypeById(final int id);
 
     Item createPublication(

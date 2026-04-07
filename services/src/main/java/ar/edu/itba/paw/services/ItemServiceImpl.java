@@ -41,6 +41,11 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public Optional<User> findUserByEmail(final String email) {
+        return itemDao.findUserByEmail(email);
+    }
+
+    @Override
     public Optional<ItemType> findItemTypeById(final int id) {
         return itemDao.findItemTypeById(id);
     }

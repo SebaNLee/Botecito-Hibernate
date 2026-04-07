@@ -11,6 +11,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
@@ -40,8 +41,10 @@ public class PublishController {
     }
 
     @ModelAttribute("publishForm")
-    public PublishBoatForm publishForm() {
-        return new PublishBoatForm();
+    public PublishBoatForm publishForm(final Locale locale) {
+        final PublishBoatForm form = new PublishBoatForm();
+        form.setOwnerPreferredLanguage(toSupportedLanguage(locale));
+        return form;
     }
 
     @ModelAttribute("itemTypeOptions")
@@ -120,6 +123,7 @@ public class PublishController {
         }
 
         try {
+            form.setOwnerPreferredLanguage(resolveOwnerPreferredLanguage(form));
             final Item createdItem = itemService.createPublication(
                     form.getOwnerFirstName().trim(),
                     form.getOwnerLastName().trim(),
@@ -158,6 +162,27 @@ public class PublishController {
 
         sessionStatus.setComplete();
         return new ModelAndView("redirect:/publish?submitted=true");
+    }
+
+    private String resolveOwnerPreferredLanguage(final PublishBoatForm form) {
+        return itemService
+                .findUserByEmail(form.getOwnerEmail().trim())
+                .map(user -> toSupportedLanguage(user.getPreferredLanguage()))
+                .orElseGet(() -> toSupportedLanguage(form.getOwnerPreferredLanguage()));
+    }
+
+    private static String toSupportedLanguage(final Locale locale) {
+        if (locale != null && "en".equalsIgnoreCase(locale.getLanguage())) {
+            return "en";
+        }
+        return "es";
+    }
+
+    private static String toSupportedLanguage(final String languageTag) {
+        if ("en".equalsIgnoreCase(languageTag)) {
+            return "en";
+        }
+        return "es";
     }
 
     private static String buildOwnerName(final PublishBoatForm form) {

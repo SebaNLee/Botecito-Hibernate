@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class RequestServiceImpl implements RequestService {
 
+    // TODO connect this request workflow to the DB.
+    // For now, requests only live in memory, so tokens and statuses are lost on restart.
     private final Map<String, RequestSubmission> requestsByToken = new ConcurrentHashMap<>();
     private final MailService mailService;
 
@@ -28,6 +30,9 @@ public class RequestServiceImpl implements RequestService {
                 itemId,
                 requesterName,
                 requesterEmail,
+                // TODO load the requester locale from persisted user/request data instead of the current
+                // mail-level fallback, which is still hardcoded in MailServiceImpl.resolveLocale(...).
+                // esto yo creo que deberia pasar en resolveLocale, asi que esta linea puede quedar igual
                 mailService.resolveLocale(requesterEmail).toLanguageTag(),
                 description,
                 RequestStatus.PENDING,

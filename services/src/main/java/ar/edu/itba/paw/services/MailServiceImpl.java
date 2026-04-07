@@ -37,6 +37,10 @@ public class MailServiceImpl implements MailService {
         this.templateEngine = templateEngine;
         this.messageSource = messageSource;
         final String baseUrl = requireProperty(credentialsProperties, "app.baseUrl");
+        // TODO replace this config-backed review recipient with data loaded from persistence once the
+        // application has a real owner/admin recipient model in the DB.
+        // Basicamente es a donde llegan los mails de request, de momento van todos a botecitos deberia ser el que hizo
+        // la publicacion
         this.reviewRecipient = requireProperty(credentialsProperties, "mail.reviewRecipient");
         this.actionBaseUrl = baseUrl + "/requests";
         this.itemBaseUrl = baseUrl + "/item";
@@ -59,6 +63,8 @@ public class MailServiceImpl implements MailService {
         context.setVariable("ownerName", ownerName);
         context.setVariable("itemTitle", itemTitle);
         context.setVariable("publishUrl", itemBaseUrl.replace("/item", "/publish"));
+        // TODO replace this placeholder delete action with a persisted publication delete flow.
+        // A real delete link needs a DB-backed publication id/token instead of a static route.
         context.setVariable("deleteUrl", itemBaseUrl.replace("/item", "/publish/delete"));
         sendHtmlEmail(
                 recipientEmail,
@@ -100,6 +106,7 @@ public class MailServiceImpl implements MailService {
     @Override
     public Locale resolveLocale(final String recipientIdentifier) {
         // TODO load the user's preferred language from persistence once that data is available.
+        // Right now mail locale selection is hardcoded.
         return new Locale("es");
     }
 

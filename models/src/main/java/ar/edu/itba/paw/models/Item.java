@@ -15,6 +15,8 @@ public class Item {
     private Integer difficultyLevel;
     private String location;
     private Boolean active;
+    private String ownerDeleteToken;
+    private OffsetDateTime ownerDeleteUsedAt;
     private OffsetDateTime createdAt;
 
     public Integer getId() {
@@ -103,6 +105,26 @@ public class Item {
 
     public void setActive(final Boolean active) {
         this.active = active;
+    }
+
+    public String getOwnerDeleteToken() {
+        return ownerDeleteToken;
+    }
+
+    public void setOwnerDeleteToken(final String ownerDeleteToken) {
+        this.ownerDeleteToken = ownerDeleteToken;
+    }
+
+    public OffsetDateTime getOwnerDeleteUsedAt() {
+        return ownerDeleteUsedAt;
+    }
+
+    public void setOwnerDeleteUsedAt(final OffsetDateTime ownerDeleteUsedAt) {
+        this.ownerDeleteUsedAt = ownerDeleteUsedAt;
+    }
+
+    public void setOwnerDeleteUsedAt(final String ownerDeleteUsedAt) {
+        this.ownerDeleteUsedAt = ownerDeleteUsedAt == null ? null : OffsetDateTime.parse(ownerDeleteUsedAt);
     }
 
     public OffsetDateTime getCreatedAt() {

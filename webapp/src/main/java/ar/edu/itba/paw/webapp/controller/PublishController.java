@@ -1,17 +1,26 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.Item;
+import ar.edu.itba.paw.models.ItemAvailability;
+import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,9 +32,20 @@ import org.springframework.web.servlet.ModelAndView;
 @SessionAttributes("publishForm")
 public class PublishController {
 
+    private final ItemService itemService;
+    private final MailService mailService;
+
+    @Autowired
+    public PublishController(final ItemService itemService, final MailService mailService) {
+        this.itemService = itemService;
+        this.mailService = mailService;
+    }
+
     @ModelAttribute("publishForm")
-    public PublishBoatForm publishForm() {
-        return new PublishBoatForm();
+    public PublishBoatForm publishForm(final Locale locale) {
+        final PublishBoatForm form = new PublishBoatForm();
+        form.setOwnerPreferredLanguage(toSupportedLanguage(locale));
+        return form;
     }
 
     @ModelAttribute("itemTypeOptions")
@@ -60,8 +80,6 @@ public class PublishController {
             return new ModelAndView("publish");
         }
 
-        // Frontend-only flow: keep validation but skip persistence.
-        form.setFile(null);
         return new ModelAndView("redirect:/publish/availability");
     }
 
@@ -96,6 +114,8 @@ public class PublishController {
     public ModelAndView publishStepThreeSubmit(
             @Validated(PublishBoatForm.Step3.class) @ModelAttribute("publishForm") final PublishBoatForm form,
             final BindingResult errors,
+            final Locale locale,
+            @RequestHeader(value = "Accept-Language", required = false) final String acceptLanguage,
             final SessionStatus sessionStatus) {
         validateAvailabilityStep(form, errors);
 
@@ -105,8 +125,138 @@ public class PublishController {
             return mav;
         }
 
+        try {
+            form.setOwnerPreferredLanguage(resolvePreferredLanguage(locale, acceptLanguage));
+            final Item createdItem = itemService.createPublication(
+                    form.getOwnerFirstName().trim(),
+                    form.getOwnerLastName().trim(),
+                    form.getOwnerEmail().trim(),
+                    form.getOwnerPreferredLanguage(),
+                    Integer.parseInt(form.getItemTypeId().trim()),
+                    form.getTitle().trim(),
+                    form.getDescription() == null ? "" : form.getDescription().trim(),
+                    Integer.parseInt(form.getPricePerHour().trim()),
+                    Integer.parseInt(form.getCapacity().trim()),
+                    parseMaxWeight(form.getMaxWeight()),
+                    form.getDifficultyLevel(),
+                    form.getMarina().trim(),
+                    buildAvailabilitySlots(form));
+
+            if (form.getFile() != null && !form.getFile().isEmpty()) {
+                itemService.insertImage(createdItem.getId(), form.getFile().getBytes());
+            }
+
+            mailService.sendPublishConfirmationEmail(
+                    form.getOwnerEmail().trim(),
+                    buildOwnerName(form),
+                    form.getTitle().trim(),
+                    createdItem.getOwnerDeleteToken());
+        } catch (final MailException | IllegalArgumentException e) {
+            final ModelAndView mav = new ModelAndView("publish-contact");
+            addSummaryData(mav, form);
+            errors.reject("publish.submit.mailError");
+            return mav;
+        } catch (final Exception e) {
+            final ModelAndView mav = new ModelAndView("publish-contact");
+            addSummaryData(mav, form);
+            errors.reject("publish.submit.persistenceError");
+            return mav;
+        }
+
         sessionStatus.setComplete();
         return new ModelAndView("redirect:/publish?submitted=true");
+    }
+
+    private static String resolvePreferredLanguage(final Locale locale, final String acceptLanguageHeader) {
+        final String localeLanguage = toSupportedLanguage(locale);
+        if ("en".equals(localeLanguage)) {
+            return "en";
+        }
+        return toSupportedLanguage(acceptLanguageHeader);
+    }
+
+    private static String toSupportedLanguage(final Locale locale) {
+        if (locale != null && "en".equalsIgnoreCase(locale.getLanguage())) {
+            return "en";
+        }
+        return "es";
+    }
+
+    private static String toSupportedLanguage(final String languageTag) {
+        if (languageTag == null || languageTag.isBlank()) {
+            return "es";
+        }
+        final String firstToken = languageTag.split(",", 2)[0].trim();
+        final String tag = firstToken.split(";", 2)[0].trim();
+        if ("en".equalsIgnoreCase(tag)
+                || tag.regionMatches(true, 0, "en-", 0, 3)
+                || tag.regionMatches(true, 0, "en_", 0, 3)) {
+            return "en";
+        }
+        return "es";
+    }
+
+    private static String buildOwnerName(final PublishBoatForm form) {
+        return form.getOwnerFirstName().trim() + " " + form.getOwnerLastName().trim();
+    }
+
+    private static BigDecimal parseMaxWeight(final String maxWeight) {
+        if (!StringUtils.hasText(maxWeight)) {
+            return null;
+        }
+        return new BigDecimal(maxWeight.trim());
+    }
+
+    private static List<ItemAvailability> buildAvailabilitySlots(final PublishBoatForm form) {
+        final List<ItemAvailability> availabilities = new ArrayList<>();
+        addAvailability(
+                availabilities, "MONDAY", form.isMondayEnabled(), form.getMondayStartTime(), form.getMondayEndTime());
+        addAvailability(
+                availabilities,
+                "TUESDAY",
+                form.isTuesdayEnabled(),
+                form.getTuesdayStartTime(),
+                form.getTuesdayEndTime());
+        addAvailability(
+                availabilities,
+                "WEDNESDAY",
+                form.isWednesdayEnabled(),
+                form.getWednesdayStartTime(),
+                form.getWednesdayEndTime());
+        addAvailability(
+                availabilities,
+                "THURSDAY",
+                form.isThursdayEnabled(),
+                form.getThursdayStartTime(),
+                form.getThursdayEndTime());
+        addAvailability(
+                availabilities, "FRIDAY", form.isFridayEnabled(), form.getFridayStartTime(), form.getFridayEndTime());
+        addAvailability(
+                availabilities,
+                "SATURDAY",
+                form.isSaturdayEnabled(),
+                form.getSaturdayStartTime(),
+                form.getSaturdayEndTime());
+        addAvailability(
+                availabilities, "SUNDAY", form.isSundayEnabled(), form.getSundayStartTime(), form.getSundayEndTime());
+        return availabilities;
+    }
+
+    private static void addAvailability(
+            final List<ItemAvailability> availabilities,
+            final String weekday,
+            final boolean enabled,
+            final String startTime,
+            final String endTime) {
+        if (!enabled) {
+            return;
+        }
+
+        final ItemAvailability availability = new ItemAvailability();
+        availability.setWeekday(weekday);
+        availability.setStartTime(startTime);
+        availability.setEndTime(endTime);
+        availabilities.add(availability);
     }
 
     private static void addSummaryData(final ModelAndView mav, final PublishBoatForm form) {

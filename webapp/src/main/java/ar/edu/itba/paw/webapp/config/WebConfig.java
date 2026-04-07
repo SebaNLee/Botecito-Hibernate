@@ -8,6 +8,7 @@ import org.flywaydb.core.Flyway;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.ViewResolver;
@@ -17,6 +18,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 @EnableWebMvc
+@Import(MailConfig.class)
 @ComponentScan({"ar.edu.itba.paw.webapp.controller", "ar.edu.itba.paw.services", "ar.edu.itba.paw.persistence"})
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -53,17 +55,22 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public DataSource dataSource() {
+    public Properties credentialsProperties() {
         final CredentialsSelection selection = resolveCredentialsSelection();
         final Properties credentials = loadCredentialsProperties(selection.credentialsFile());
         if (!selection.fallbackCredentialsFile().isEmpty()) {
             mergeMissingProperties(credentials, selection.fallbackCredentialsFile());
         }
+        return credentials;
+    }
+
+    @Bean
+    public DataSource dataSource(final Properties credentialsProperties) {
         final SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
         dataSource.setDriverClass(org.postgresql.Driver.class);
-        dataSource.setUrl(credentials.getProperty("jdbc.url"));
-        dataSource.setUsername(credentials.getProperty("jdbc.username"));
-        dataSource.setPassword(credentials.getProperty("jdbc.password"));
+        dataSource.setUrl(credentialsProperties.getProperty("jdbc.url"));
+        dataSource.setUsername(credentialsProperties.getProperty("jdbc.username"));
+        dataSource.setPassword(credentialsProperties.getProperty("jdbc.password"));
         return dataSource;
     }
 

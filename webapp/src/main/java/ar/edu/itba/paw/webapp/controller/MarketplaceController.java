@@ -1,17 +1,32 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.MailService;
+import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,10 +36,24 @@ import org.springframework.web.servlet.ModelAndView;
 public class MarketplaceController {
 
     private final ItemService itemService;
+    private final MailService mailService;
+    private final BookingRequestService bookingRequestService;
 
     @Autowired
-    public MarketplaceController(final ItemService itemService) {
+    public MarketplaceController(
+            final ItemService itemService,
+            final MailService mailService,
+            final BookingRequestService bookingRequestService) {
         this.itemService = itemService;
+        this.mailService = mailService;
+        this.bookingRequestService = bookingRequestService;
+    }
+
+    @ModelAttribute("reservationRequestForm")
+    public ReservationRequestForm reservationRequestForm(final Locale locale) {
+        final ReservationRequestForm form = new ReservationRequestForm();
+        form.setRequesterPreferredLanguage(toSupportedLanguage(locale));
+        return form;
     }
 
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
@@ -61,7 +90,99 @@ public class MarketplaceController {
             @PathVariable("id") final int itemId,
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "startTime", required = false) final String requestedStartTime,
-            @RequestParam(value = "endTime", required = false) final String requestedEndTime) {
+            @RequestParam(value = "endTime", required = false) final String requestedEndTime,
+            @ModelAttribute("reservationRequestForm") final ReservationRequestForm form) {
+        if (isBlank(form.getDate())) {
+            form.setDate(requestedDate);
+        }
+        if (isBlank(form.getStartTime())) {
+            form.setStartTime(requestedStartTime);
+        }
+        if (isBlank(form.getEndTime())) {
+            form.setEndTime(requestedEndTime);
+        }
+        return buildMarketplaceItemView(itemId, form);
+    }
+
+    @RequestMapping(value = "/item/{id:[0-9]+}", method = RequestMethod.POST)
+    public ModelAndView submitMarketplaceItemRequest(
+            @PathVariable("id") final int itemId,
+            @Valid @ModelAttribute("reservationRequestForm") final ReservationRequestForm form,
+            final BindingResult errors,
+            final Locale locale,
+            @RequestHeader(value = "Accept-Language", required = false) final String acceptLanguage) {
+        final Optional<Item> item = itemService.findItemById(itemId);
+        if (item.isEmpty()) {
+            return new ModelAndView("redirect:/marketplace");
+        }
+
+        final Optional<User> owner = itemService.findUserById(item.get().getOwnerId());
+        if (!errors.hasFieldErrors("date")
+                && !errors.hasFieldErrors("startTime")
+                && !errors.hasFieldErrors("endTime")
+                && !matchesMarketplaceAvailability(itemId, form.getDate(), form.getStartTime(), form.getEndTime())) {
+            errors.rejectValue(
+                    "startTime", "reservation.unavailable", "The selected reservation slot is no longer available.");
+        }
+
+        if (errors.hasErrors()) {
+            return buildMarketplaceItemView(itemId, form);
+        }
+
+        try {
+            form.setRequesterPreferredLanguage(resolvePreferredLanguage(locale, acceptLanguage));
+            final BookingRequest bookingRequest = bookingRequestService.createBookingRequest(
+                    itemId,
+                    form.getRequesterGivenName().trim(),
+                    form.getRequesterLastName().trim(),
+                    form.getRequesterEmail().trim(),
+                    form.getRequesterPreferredLanguage(),
+                    toOffsetDateTime(form.getDate(), form.getStartTime()),
+                    toOffsetDateTime(form.getDate(), form.getEndTime()),
+                    buildReservationRequestDescription(item.get(), owner.orElse(null), form));
+            mailService.sendBookingReviewEmail(
+                    bookingRequest, owner.map(User::getEmail).orElse(null));
+            final ModelAndView mav = buildMarketplaceItemView(itemId, form);
+            mav.addObject("mailSuccess", "Your request was sent to Botecito for review.");
+            return mav;
+        } catch (final MailException | IllegalArgumentException e) {
+            final ModelAndView mav = buildMarketplaceItemView(itemId, form);
+            mav.addObject(
+                    "mailError", "The request email could not be sent. Check the Gmail credentials and SMTP setup.");
+            return mav;
+        }
+    }
+
+    private static String resolvePreferredLanguage(final Locale locale, final String acceptLanguageHeader) {
+        final String localeLanguage = toSupportedLanguage(locale);
+        if ("en".equals(localeLanguage)) {
+            return "en";
+        }
+        return toSupportedLanguage(acceptLanguageHeader);
+    }
+
+    private static String toSupportedLanguage(final Locale locale) {
+        if (locale != null && "en".equalsIgnoreCase(locale.getLanguage())) {
+            return "en";
+        }
+        return "es";
+    }
+
+    private static String toSupportedLanguage(final String languageTag) {
+        if (languageTag == null || languageTag.isBlank()) {
+            return "es";
+        }
+        final String firstToken = languageTag.split(",", 2)[0].trim();
+        final String tag = firstToken.split(";", 2)[0].trim();
+        if ("en".equalsIgnoreCase(tag)
+                || tag.regionMatches(true, 0, "en-", 0, 3)
+                || tag.regionMatches(true, 0, "en_", 0, 3)) {
+            return "en";
+        }
+        return "es";
+    }
+
+    private ModelAndView buildMarketplaceItemView(final int itemId, final ReservationRequestForm form) {
         final Optional<Item> item = itemService.findItemById(itemId);
         if (item.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
@@ -87,28 +208,29 @@ public class MarketplaceController {
         AvailabilityPickerSupport.addAvailabilityPickerData(mav, "reservation", reservationAvailability);
         final String defaultDate = offeredDates.isEmpty() ? "" : offeredDates.getFirst();
         final String reservationDate =
-                AvailabilityPickerSupport.resolveSelectedDate(requestedDate, offeredDates, defaultDate);
+                AvailabilityPickerSupport.resolveSelectedDate(form.getDate(), offeredDates, defaultDate);
         final List<String> reservationSlots = offeredTimesByDate.getOrDefault(reservationDate, List.of());
         final String defaultStartTime = reservationSlots.isEmpty() ? "" : reservationSlots.getFirst();
         final String defaultEndTime = reservationSlots.size() > 1 ? reservationSlots.getLast() : defaultStartTime;
-        final boolean hasValidRequestedRange = reservationDate.equals(requestedDate)
-                && !isBlank(requestedStartTime)
-                && !isBlank(requestedEndTime)
+        final boolean hasValidRequestedRange = reservationDate.equals(form.getDate())
+                && !isBlank(form.getStartTime())
+                && !isBlank(form.getEndTime())
                 && AvailabilityPickerSupport.hasContinuousAvailability(
-                        reservationSlots, requestedStartTime, requestedEndTime);
+                        reservationSlots, form.getStartTime(), form.getEndTime());
+        form.setDate(reservationDate);
         mav.addObject("reservationDate", reservationDate);
         mav.addObject(
                 "reservationStartTime",
                 hasValidRequestedRange
-                        ? requestedStartTime
+                        ? form.getStartTime()
                         : AvailabilityPickerSupport.resolveSelectedTime(
-                                requestedStartTime, reservationSlots, defaultStartTime));
+                                form.getStartTime(), reservationSlots, defaultStartTime));
         mav.addObject(
                 "reservationEndTime",
                 hasValidRequestedRange
-                        ? requestedEndTime
+                        ? form.getEndTime()
                         : AvailabilityPickerSupport.resolveSelectedTime(
-                                requestedEndTime, reservationSlots, defaultEndTime));
+                                form.getEndTime(), reservationSlots, defaultEndTime));
         return mav;
     }
 
@@ -165,6 +287,38 @@ public class MarketplaceController {
         return "Nivel " + difficultyLevel;
     }
 
+    private static String buildReservationRequestDescription(
+            final Item item, final User owner, final ReservationRequestForm form) {
+        final StringBuilder description = new StringBuilder();
+        description
+                .append("Item: ")
+                .append(item.getTitle())
+                .append(" (#")
+                .append(item.getId())
+                .append(")\n");
+        description.append("Location: ").append(item.getLocation()).append('\n');
+        if (owner != null) {
+            description
+                    .append("Owner: ")
+                    .append(owner.getName())
+                    .append(" <")
+                    .append(owner.getEmail())
+                    .append(">\n");
+        }
+        description.append("Requested date: ").append(form.getDate()).append('\n');
+        description
+                .append("Requested time: ")
+                .append(form.getStartTime())
+                .append(" - ")
+                .append(form.getEndTime());
+
+        if (!isBlank(form.getRequestMessage())) {
+            description.append("\n\nMessage:\n").append(form.getRequestMessage().trim());
+        }
+
+        return description.toString();
+    }
+
     private boolean matchesMarketplaceAvailability(
             final int itemId,
             final String requestedDate,
@@ -185,19 +339,61 @@ public class MarketplaceController {
         }
 
         if (isBlank(requestedStartTime) && isBlank(requestedEndTime)) {
-            return true;
+            return hasAnyContinuousTwoHourWindow(availableTimes);
         }
 
         if (!isBlank(requestedStartTime) && isBlank(requestedEndTime)) {
-            return availableTimes.contains(requestedStartTime);
+            return hasContinuousTwoHourWindowStartingAt(availableTimes, requestedStartTime);
         }
 
         if (isBlank(requestedStartTime)) {
-            return availableTimes.contains(requestedEndTime);
+            return hasContinuousTwoHourWindowEndingAt(availableTimes, requestedEndTime);
         }
 
         return AvailabilityPickerSupport.hasContinuousAvailability(
                 availableTimes, requestedStartTime, requestedEndTime);
+    }
+
+    private static boolean hasAnyContinuousTwoHourWindow(final List<String> availableTimes) {
+        for (int startIndex = 0; startIndex < availableTimes.size(); startIndex++) {
+            for (int endIndex = startIndex + 1; endIndex < availableTimes.size(); endIndex++) {
+                if (AvailabilityPickerSupport.hasContinuousAvailability(
+                        availableTimes, availableTimes.get(startIndex), availableTimes.get(endIndex))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasContinuousTwoHourWindowStartingAt(
+            final List<String> availableTimes, final String requestedStartTime) {
+        if (!availableTimes.contains(requestedStartTime)) {
+            return false;
+        }
+
+        for (final String possibleEndTime : availableTimes) {
+            if (AvailabilityPickerSupport.hasContinuousAvailability(
+                    availableTimes, requestedStartTime, possibleEndTime)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasContinuousTwoHourWindowEndingAt(
+            final List<String> availableTimes, final String requestedEndTime) {
+        if (!availableTimes.contains(requestedEndTime)) {
+            return false;
+        }
+
+        for (final String possibleStartTime : availableTimes) {
+            if (AvailabilityPickerSupport.hasContinuousAvailability(
+                    availableTimes, possibleStartTime, requestedEndTime)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isBlank(final String value) {
@@ -209,5 +405,13 @@ public class MarketplaceController {
             return "I";
         }
         return user.getName().substring(0, 1).toUpperCase();
+    }
+
+    private static OffsetDateTime toOffsetDateTime(final String date, final String time) {
+        final LocalDate localDate = LocalDate.parse(date);
+        final LocalTime localTime = LocalTime.parse(time);
+        return LocalDateTime.of(localDate, localTime)
+                .atZone(ZoneId.systemDefault())
+                .toOffsetDateTime();
     }
 }

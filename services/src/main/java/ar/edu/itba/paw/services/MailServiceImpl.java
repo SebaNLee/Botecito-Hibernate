@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.BookingRequest;
-import ar.edu.itba.paw.models.BookingRequestStatus;
+import ar.edu.itba.paw.models.BookingState;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Locale;
 import java.util.Properties;
@@ -135,10 +135,10 @@ public class MailServiceImpl implements MailService {
         return value;
     }
 
-    private String statusMessageCode(final BookingRequestStatus status) {
+    private String statusMessageCode(final BookingState status) {
         return switch (status) {
-            case ACCEPTED -> "request.status.accepted";
-            case DECLINED -> "request.status.declined";
+            case BOOKING_CONFIRMED -> "request.status.accepted";
+            case BOOKING_REJECTED -> "request.status.declined";
             default -> "request.status.updated";
         };
     }

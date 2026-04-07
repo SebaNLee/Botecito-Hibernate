@@ -11,7 +11,7 @@ public class BookingRequest {
     private final String requesterEmail;
     private final String requesterLocaleTag;
     private final String description;
-    private BookingRequestStatus status;
+    private BookingState status;
     private final Instant createdAt;
     private Instant resolvedAt;
 
@@ -22,7 +22,7 @@ public class BookingRequest {
             final String requesterEmail,
             final String requesterLocaleTag,
             final String description,
-            final BookingRequestStatus status,
+            final BookingState status,
             final Instant createdAt) {
         this.token = token;
         this.itemId = itemId;
@@ -62,7 +62,7 @@ public class BookingRequest {
         return description;
     }
 
-    public BookingRequestStatus getStatus() {
+    public BookingState getStatus() {
         return status;
     }
 
@@ -74,7 +74,7 @@ public class BookingRequest {
         return resolvedAt;
     }
 
-    public void resolve(final BookingRequestStatus newStatus, final Instant resolutionTime) {
+    public void resolve(final BookingState newStatus, final Instant resolutionTime) {
         this.status = newStatus;
         this.resolvedAt = resolutionTime;
     }

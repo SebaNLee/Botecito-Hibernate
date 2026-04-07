@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.BookingRequest;
-import ar.edu.itba.paw.models.BookingRequestStatus;
+import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.MailService;
 import java.util.Optional;
@@ -27,15 +27,15 @@ public class BookingRequestActionController {
 
     @RequestMapping(value = "/bookings/{token}/accept", method = RequestMethod.GET)
     public ModelAndView acceptBookingRequest(@PathVariable("token") final String token) {
-        return resolveBookingRequest(token, BookingRequestStatus.ACCEPTED);
+        return resolveBookingRequest(token, BookingState.BOOKING_CONFIRMED);
     }
 
     @RequestMapping(value = "/bookings/{token}/decline", method = RequestMethod.GET)
     public ModelAndView declineBookingRequest(@PathVariable("token") final String token) {
-        return resolveBookingRequest(token, BookingRequestStatus.DECLINED);
+        return resolveBookingRequest(token, BookingState.BOOKING_REJECTED);
     }
 
-    private ModelAndView resolveBookingRequest(final String token, final BookingRequestStatus requestStatus) {
+    private ModelAndView resolveBookingRequest(final String token, final BookingState requestStatus) {
         final ModelAndView mav = new ModelAndView("booking-action-result");
         final Optional<BookingRequest> existingBookingRequest = bookingRequestService.findByToken(token);
         if (existingBookingRequest.isEmpty()) {
@@ -46,7 +46,7 @@ public class BookingRequestActionController {
 
         final BookingRequest bookingRequest = existingBookingRequest.get();
         mav.addObject("itemId", bookingRequest.getItemId());
-        if (bookingRequest.getStatus() != BookingRequestStatus.PENDING) {
+        if (bookingRequest.getStatus() != BookingState.BOOKING_PENDING) {
             mav.addObject("actionTitle", "Booking already processed");
             mav.addObject(
                     "actionMessage",

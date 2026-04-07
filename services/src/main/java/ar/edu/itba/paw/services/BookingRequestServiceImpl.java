@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.BookingRequest;
-import ar.edu.itba.paw.models.BookingRequestStatus;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
@@ -44,8 +43,8 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     }
 
     @Override
-    public Optional<BookingRequest> resolveBookingRequest(final String token, final BookingRequestStatus newStatus) {
-        if (!itemDao.resolveBookingByHostDecisionToken(token, toBookingState(newStatus), OffsetDateTime.now())) {
+    public Optional<BookingRequest> resolveBookingRequest(final String token, final BookingState newStatus) {
+        if (!itemDao.resolveBookingByHostDecisionToken(token, newStatus, OffsetDateTime.now())) {
             return Optional.empty();
         }
         return findByToken(token);
@@ -79,15 +78,14 @@ public class BookingRequestServiceImpl implements BookingRequestService {
                 requesterUser.getEmail(),
                 resolveRequesterLocaleTag(requesterUser),
                 booking.getRequestMessage(),
-                toBookingRequestStatus(booking.getState()),
+                booking.getState(),
                 booking.getCreatedAt() == null
                         ? Instant.now()
                         : booking.getCreatedAt().toInstant());
 
         if (booking.getHostDecisionUsedAt() != null) {
             bookingRequest.resolve(
-                    toBookingRequestStatus(booking.getState()),
-                    booking.getHostDecisionUsedAt().toInstant());
+                    booking.getState(), booking.getHostDecisionUsedAt().toInstant());
         }
         return bookingRequest;
     }
@@ -98,21 +96,5 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             return requesterUser.getPreferredLanguage();
         }
         return mailService.resolveLocale(requesterUser.getEmail()).toLanguageTag();
-    }
-
-    private static BookingState toBookingState(final BookingRequestStatus requestStatus) {
-        return switch (requestStatus) {
-            case ACCEPTED -> BookingState.BOOKING_CONFIRMED;
-            case DECLINED -> BookingState.BOOKING_REJECTED;
-            default -> BookingState.BOOKING_PENDING;
-        };
-    }
-
-    private static BookingRequestStatus toBookingRequestStatus(final BookingState bookingState) {
-        return switch (bookingState) {
-            case BOOKING_CONFIRMED -> BookingRequestStatus.ACCEPTED;
-            case BOOKING_REJECTED -> BookingRequestStatus.DECLINED;
-            default -> BookingRequestStatus.PENDING;
-        };
     }
 }

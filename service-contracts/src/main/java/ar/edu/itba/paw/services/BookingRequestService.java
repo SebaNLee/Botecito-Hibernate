@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.BookingRequest;
-import ar.edu.itba.paw.models.BookingRequestStatus;
+import ar.edu.itba.paw.models.BookingState;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 
@@ -16,5 +16,5 @@ public interface BookingRequestService {
 
     Optional<BookingRequest> findByToken(String token);
 
-    Optional<BookingRequest> resolveBookingRequest(String token, BookingRequestStatus newStatus);
+    Optional<BookingRequest> resolveBookingRequest(String token, BookingState newStatus);
 }

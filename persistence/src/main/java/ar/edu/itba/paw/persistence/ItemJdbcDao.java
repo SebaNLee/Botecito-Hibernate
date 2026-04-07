@@ -42,6 +42,8 @@ public class ItemJdbcDao implements ItemDao {
         item.setDifficultyLevel((Integer) rs.getObject("difficulty_level"));
         item.setLocation(rs.getString("location"));
         item.setActive(rs.getBoolean("active"));
+        item.setOwnerDeleteToken(rs.getString("owner_delete_token"));
+        item.setOwnerDeleteUsedAt(formatDateTime(readOffsetDateTime(rs, "owner_delete_used_at")));
         item.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
         return item;
     };
@@ -50,9 +52,11 @@ public class ItemJdbcDao implements ItemDao {
         final User user = new User();
         user.setId(rs.getInt("id"));
         user.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
-        user.setName(rs.getString("name"));
+        user.setGivenName(rs.getString("given_name"));
+        user.setLastName(rs.getString("last_name"));
         user.setEmail(rs.getString("email"));
         user.setPhone(rs.getString("phone"));
+        user.setPreferredLanguage(rs.getString("preferred_language"));
         return user;
     };
 

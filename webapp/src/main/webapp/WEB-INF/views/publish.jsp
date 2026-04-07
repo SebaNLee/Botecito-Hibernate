@@ -33,8 +33,6 @@
   </c:if>
 
   <form:form action="${publishUrl}" method="post" modelAttribute="publishForm" enctype="multipart/form-data" class="space-y-8">
-    <form:errors path="*" cssClass="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm block" />
-
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
       <section class="lg:col-span-3 bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_48px_rgba(11,28,50,0.04)] space-y-6">
         <div class="flex items-center gap-3 pb-4 border-b border-outline-variant/20">
@@ -46,13 +44,13 @@
           <div class="space-y-2 md:col-span-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="title">Titulo del anuncio</label>
             <form:input path="title" id="title" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline" placeholder="Ej. Beneteau Oceanis 45 listo para travesias"/>
-            <form:errors path="title" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="title" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
 
           <div class="space-y-2 md:col-span-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="description">Descripcion</label>
             <form:textarea path="description" id="description" rows="5" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline resize-none" placeholder="Cuenta comodidades, equipamiento, estado general y para que plan es ideal..."/>
-            <form:errors path="description" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="description" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
 
           <div class="space-y-2">
@@ -61,13 +59,13 @@
               <form:option value="" label="Selecciona tipo" />
               <form:options items="${itemTypeOptions}" />
             </form:select>
-            <form:errors path="itemTypeId" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="itemTypeId" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
 
           <div class="space-y-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="pricePerHour">Precio por hora (ARS)</label>
             <form:input path="pricePerHour" id="pricePerHour" type="number" min="0" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface" placeholder="Ej. 3200"/>
-            <form:errors path="pricePerHour" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="pricePerHour" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
 
           <div class="md:col-span-2">
@@ -98,7 +96,7 @@
               <form:input path="maxWeight" id="maxWeight" type="number" min="0" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface" placeholder="Opcional"/>
               <span class="absolute right-4 top-1/2 -translate-y-1/2 text-outline text-sm font-bold">KG</span>
             </div>
-            <form:errors path="maxWeight" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="maxWeight" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
 
           <div class="space-y-2 md:col-span-2">
@@ -107,7 +105,7 @@
               <form:option value="" label="Selecciona nivel" />
               <form:options items="${difficultyOptions}" />
             </form:select>
-            <form:errors path="difficultyLevel" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="difficultyLevel" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
         </div>
       </section>
@@ -125,7 +123,7 @@
           </div>
           <span class="font-bold text-lg text-primary">Subir imagen</span>
           <span id="file-name-display" class="text-sm text-outline mt-1">JPG, PNG hasta 5MB</span>
-          <form:errors path="file" cssClass="text-error text-xs mt-2 block" />
+          <form:errors path="file" cssClass="mt-2 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
         </label>
 
         <div class="rounded-xl bg-surface-container-high p-4 text-sm text-on-surface-variant leading-relaxed">

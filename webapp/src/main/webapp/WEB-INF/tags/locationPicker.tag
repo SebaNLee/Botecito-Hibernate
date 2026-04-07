@@ -120,7 +120,9 @@
       </div>
 
       <c:if test="${not empty errorPath}">
-        <form:errors path="${errorPath}" cssClass="text-error text-xs mt-1 block" />
+        <form:errors
+            path="${errorPath}"
+            cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
       </c:if>
     </div>
   </c:otherwise>

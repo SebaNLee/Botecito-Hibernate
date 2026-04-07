@@ -28,7 +28,6 @@
   </div>
 
   <form:form action="${stepThreeUrl}" method="post" modelAttribute="publishForm" class="space-y-8">
-    <form:errors path="*" cssClass="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm block" />
 
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
       <aside class="lg:col-span-2 bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_48px_rgba(11,28,50,0.04)] space-y-6">
@@ -76,6 +75,7 @@
 
         <div>
           <p class="text-[11px] uppercase tracking-wider font-bold text-outline mb-2">Disponibilidad</p>
+          <form:errors path="mondayEnabled" cssClass="mb-2 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           <c:choose>
             <c:when test="${not empty availabilitySummary}">
               <ul class="space-y-2 m-0 p-0 list-none">
@@ -103,19 +103,19 @@
           <div class="space-y-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="ownerFirstName">Nombre</label>
             <form:input path="ownerFirstName" id="ownerFirstName" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface" placeholder="Tu nombre"/>
-            <form:errors path="ownerFirstName" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="ownerFirstName" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
 
           <div class="space-y-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="ownerLastName">Apellido</label>
             <form:input path="ownerLastName" id="ownerLastName" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface" placeholder="Tu apellido"/>
-            <form:errors path="ownerLastName" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="ownerLastName" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
 
           <div class="space-y-2 md:col-span-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="ownerEmail">Email</label>
             <form:input path="ownerEmail" id="ownerEmail" type="email" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface" placeholder="tu@email.com"/>
-            <form:errors path="ownerEmail" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="ownerEmail" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
 
         </div>

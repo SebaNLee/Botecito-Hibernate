@@ -28,13 +28,13 @@
   </div>
 
   <form:form action="${stepTwoUrl}" method="post" modelAttribute="publishForm" class="space-y-8">
-    <form:errors path="*" cssClass="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm block" />
 
     <section class="bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_48px_rgba(11,28,50,0.04)]">
       <div class="flex items-center gap-3 mb-6 pb-4 border-b border-outline-variant/20">
         <span class="material-symbols-outlined text-primary text-2xl">schedule</span>
         <h2 class="text-xl font-extrabold m-0">Franjas semanales</h2>
       </div>
+      <form:errors path="mondayEnabled" cssClass="mb-4 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
 
       <div class="space-y-4" data-availability-grid>
         <div class="grid grid-cols-1 md:grid-cols-[190px_1fr_1fr] gap-3 items-center rounded-xl border border-outline-variant/20 bg-surface-container-high/55 px-4 py-4" data-availability-row>
@@ -45,12 +45,12 @@
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="mondayStartTime">Desde</label>
             <form:input path="mondayStartTime" id="mondayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="mondayStartTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="mondayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="mondayEndTime">Hasta</label>
             <form:input path="mondayEndTime" id="mondayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="mondayEndTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="mondayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
         </div>
 
@@ -62,12 +62,12 @@
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="tuesdayStartTime">Desde</label>
             <form:input path="tuesdayStartTime" id="tuesdayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="tuesdayStartTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="tuesdayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="tuesdayEndTime">Hasta</label>
             <form:input path="tuesdayEndTime" id="tuesdayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="tuesdayEndTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="tuesdayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
         </div>
 
@@ -79,12 +79,12 @@
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="wednesdayStartTime">Desde</label>
             <form:input path="wednesdayStartTime" id="wednesdayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="wednesdayStartTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="wednesdayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="wednesdayEndTime">Hasta</label>
             <form:input path="wednesdayEndTime" id="wednesdayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="wednesdayEndTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="wednesdayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
         </div>
 
@@ -96,12 +96,12 @@
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="thursdayStartTime">Desde</label>
             <form:input path="thursdayStartTime" id="thursdayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="thursdayStartTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="thursdayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="thursdayEndTime">Hasta</label>
             <form:input path="thursdayEndTime" id="thursdayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="thursdayEndTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="thursdayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
         </div>
 
@@ -113,12 +113,12 @@
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="fridayStartTime">Desde</label>
             <form:input path="fridayStartTime" id="fridayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="fridayStartTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="fridayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="fridayEndTime">Hasta</label>
             <form:input path="fridayEndTime" id="fridayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="fridayEndTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="fridayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
         </div>
 
@@ -130,12 +130,12 @@
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="saturdayStartTime">Desde</label>
             <form:input path="saturdayStartTime" id="saturdayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="saturdayStartTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="saturdayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="saturdayEndTime">Hasta</label>
             <form:input path="saturdayEndTime" id="saturdayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="saturdayEndTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="saturdayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
         </div>
 
@@ -147,12 +147,12 @@
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="sundayStartTime">Desde</label>
             <form:input path="sundayStartTime" id="sundayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="sundayStartTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="sundayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
           <div>
             <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="sundayEndTime">Hasta</label>
             <form:input path="sundayEndTime" id="sundayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="sundayEndTime" cssClass="text-error text-xs mt-1 block" />
+            <form:errors path="sundayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
         </div>
       </div>

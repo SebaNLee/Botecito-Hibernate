@@ -1,7 +1,11 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.Item;
+import ar.edu.itba.paw.models.ItemAvailability;
+import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -26,10 +30,12 @@ import org.springframework.web.servlet.ModelAndView;
 @SessionAttributes("publishForm")
 public class PublishController {
 
+    private final ItemService itemService;
     private final MailService mailService;
 
     @Autowired
-    public PublishController(final MailService mailService) {
+    public PublishController(final ItemService itemService, final MailService mailService) {
+        this.itemService = itemService;
         this.mailService = mailService;
     }
 
@@ -70,8 +76,6 @@ public class PublishController {
             return new ModelAndView("publish");
         }
 
-        // Frontend-only flow: keep validation but skip persistence.
-        form.setFile(null);
         return new ModelAndView("redirect:/publish/availability");
     }
 
@@ -116,14 +120,39 @@ public class PublishController {
         }
 
         try {
+            final Item createdItem = itemService.createPublication(
+                    form.getOwnerFirstName().trim(),
+                    form.getOwnerLastName().trim(),
+                    form.getOwnerEmail().trim(),
+                    "es",
+                    Integer.parseInt(form.getItemTypeId().trim()),
+                    form.getTitle().trim(),
+                    form.getDescription() == null ? "" : form.getDescription().trim(),
+                    Integer.parseInt(form.getPricePerHour().trim()),
+                    Integer.parseInt(form.getCapacity().trim()),
+                    parseMaxWeight(form.getMaxWeight()),
+                    form.getDifficultyLevel(),
+                    form.getMarina().trim(),
+                    buildAvailabilitySlots(form));
+
+            if (form.getFile() != null && !form.getFile().isEmpty()) {
+                itemService.insertImage(createdItem.getId(), form.getFile().getBytes());
+            }
+
             mailService.sendPublishConfirmationEmail(
                     form.getOwnerEmail().trim(),
                     buildOwnerName(form),
-                    form.getTitle().trim());
+                    form.getTitle().trim(),
+                    createdItem.getOwnerDeleteToken());
         } catch (final MailException | IllegalArgumentException e) {
             final ModelAndView mav = new ModelAndView("publish-contact");
             addSummaryData(mav, form);
             errors.reject("publish.submit.mailError", "No se pudo enviar el correo de confirmacion.");
+            return mav;
+        } catch (final Exception e) {
+            final ModelAndView mav = new ModelAndView("publish-contact");
+            addSummaryData(mav, form);
+            errors.reject("publish.submit.persistenceError", "No se pudo guardar la publicacion.");
             return mav;
         }
 
@@ -133,6 +162,65 @@ public class PublishController {
 
     private static String buildOwnerName(final PublishBoatForm form) {
         return form.getOwnerFirstName().trim() + " " + form.getOwnerLastName().trim();
+    }
+
+    private static BigDecimal parseMaxWeight(final String maxWeight) {
+        if (!StringUtils.hasText(maxWeight)) {
+            return null;
+        }
+        return new BigDecimal(maxWeight.trim());
+    }
+
+    private static List<ItemAvailability> buildAvailabilitySlots(final PublishBoatForm form) {
+        final List<ItemAvailability> availabilities = new ArrayList<>();
+        addAvailability(
+                availabilities, "MONDAY", form.isMondayEnabled(), form.getMondayStartTime(), form.getMondayEndTime());
+        addAvailability(
+                availabilities,
+                "TUESDAY",
+                form.isTuesdayEnabled(),
+                form.getTuesdayStartTime(),
+                form.getTuesdayEndTime());
+        addAvailability(
+                availabilities,
+                "WEDNESDAY",
+                form.isWednesdayEnabled(),
+                form.getWednesdayStartTime(),
+                form.getWednesdayEndTime());
+        addAvailability(
+                availabilities,
+                "THURSDAY",
+                form.isThursdayEnabled(),
+                form.getThursdayStartTime(),
+                form.getThursdayEndTime());
+        addAvailability(
+                availabilities, "FRIDAY", form.isFridayEnabled(), form.getFridayStartTime(), form.getFridayEndTime());
+        addAvailability(
+                availabilities,
+                "SATURDAY",
+                form.isSaturdayEnabled(),
+                form.getSaturdayStartTime(),
+                form.getSaturdayEndTime());
+        addAvailability(
+                availabilities, "SUNDAY", form.isSundayEnabled(), form.getSundayStartTime(), form.getSundayEndTime());
+        return availabilities;
+    }
+
+    private static void addAvailability(
+            final List<ItemAvailability> availabilities,
+            final String weekday,
+            final boolean enabled,
+            final String startTime,
+            final String endTime) {
+        if (!enabled) {
+            return;
+        }
+
+        final ItemAvailability availability = new ItemAvailability();
+        availability.setWeekday(weekday);
+        availability.setStartTime(startTime);
+        availability.setEndTime(endTime);
+        availabilities.add(availability);
     }
 
     private static void addSummaryData(final ModelAndView mav, final PublishBoatForm form) {

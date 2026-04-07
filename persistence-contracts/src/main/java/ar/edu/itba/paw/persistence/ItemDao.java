@@ -29,6 +29,21 @@ public interface ItemDao {
 
     Optional<ItemType> findItemTypeById(final int id);
 
+    Item createItem(
+            final int ownerId,
+            final int typeId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final int capacityPeople,
+            final BigDecimal maxWeightKg,
+            final Integer difficultyLevel,
+            final String location,
+            final String ownerDeleteToken);
+
+    ItemAvailability createItemAvailability(
+            final int itemId, final String weekday, final String startTime, final String endTime);
+
     List<ItemAvailability> listAvailabilities();
 
     List<ItemAvailability> listAvailabilitiesByItemId(final int itemId);
@@ -51,6 +66,10 @@ public interface ItemDao {
             final String hostDecisionToken, final BookingState newState, final OffsetDateTime hostDecisionUsedAt);
 
     Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId);
+
+    Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken);
+
+    boolean deactivateItemByOwnerDeleteToken(final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt);
 
     Optional<byte[]> findImageById(final int id);
 

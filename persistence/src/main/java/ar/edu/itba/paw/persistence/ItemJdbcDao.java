@@ -108,12 +108,12 @@ public class ItemJdbcDao implements ItemDao {
 
     @Override
     public List<Item> listItems() {
-        return jdbcTemplate.query("SELECT * FROM item ORDER BY id", ITEM_ROW_MAPPER);
+        return jdbcTemplate.query("SELECT * FROM item WHERE active = TRUE ORDER BY id", ITEM_ROW_MAPPER);
     }
 
     @Override
     public Optional<Item> findItemById(final int id) {
-        return jdbcTemplate.query("SELECT * FROM item WHERE id = ?", ITEM_ROW_MAPPER, id).stream()
+        return jdbcTemplate.query("SELECT * FROM item WHERE id = ? AND active = TRUE", ITEM_ROW_MAPPER, id).stream()
                 .findAny();
     }
 
@@ -162,6 +162,64 @@ public class ItemJdbcDao implements ItemDao {
     public Optional<ItemType> findItemTypeById(final int id) {
         return jdbcTemplate.query("SELECT * FROM item_type WHERE id = ?", ITEM_TYPE_ROW_MAPPER, id).stream()
                 .findAny();
+    }
+
+    @Override
+    public Item createItem(
+            final int ownerId,
+            final int typeId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final int capacityPeople,
+            final BigDecimal maxWeightKg,
+            final Integer difficultyLevel,
+            final String location,
+            final String ownerDeleteToken) {
+        final Integer id = jdbcTemplate.queryForObject(
+                "INSERT INTO item"
+                        + " (owner_id, type_id, title, description, price_per_hour, capacity_people, max_weight_kg, difficulty_level, location, owner_delete_token)"
+                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                        + " RETURNING id",
+                Integer.class,
+                ownerId,
+                typeId,
+                title,
+                description,
+                pricePerHour,
+                capacityPeople,
+                maxWeightKg,
+                difficultyLevel,
+                location,
+                ownerDeleteToken);
+        if (id == null) {
+            throw new IllegalStateException("Could not create item for owner " + ownerId);
+        }
+        return jdbcTemplate.query("SELECT * FROM item WHERE id = ?", ITEM_ROW_MAPPER, id).stream()
+                .findAny()
+                .orElseThrow(() -> new IllegalStateException("Could not read inserted item " + id));
+    }
+
+    @Override
+    public ItemAvailability createItemAvailability(
+            final int itemId, final String weekday, final String startTime, final String endTime) {
+        final Integer id = jdbcTemplate.queryForObject(
+                "INSERT INTO item_availability (item_id, weekday, start_time, end_time)"
+                        + " VALUES (?, ?::availability_weekday, ?, ?)"
+                        + " RETURNING id",
+                Integer.class,
+                itemId,
+                weekday,
+                Time.valueOf(LocalTime.parse(startTime)),
+                Time.valueOf(LocalTime.parse(endTime)));
+        if (id == null) {
+            throw new IllegalStateException("Could not create availability for item " + itemId);
+        }
+        return jdbcTemplate
+                .query("SELECT * FROM item_availability WHERE id = ?", ITEM_AVAILABILITY_ROW_MAPPER, id)
+                .stream()
+                .findAny()
+                .orElseThrow(() -> new IllegalStateException("Could not read inserted availability " + id));
     }
 
     @Override
@@ -249,6 +307,28 @@ public class ItemJdbcDao implements ItemDao {
                         itemId)
                 .stream()
                 .findAny();
+    }
+
+    @Override
+    public Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken) {
+        return jdbcTemplate
+                .query("SELECT * FROM item WHERE owner_delete_token = ?", ITEM_ROW_MAPPER, ownerDeleteToken)
+                .stream()
+                .findAny();
+    }
+
+    @Override
+    public boolean deactivateItemByOwnerDeleteToken(
+            final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt) {
+        final int updatedRows = jdbcTemplate.update(
+                "UPDATE item"
+                        + " SET active = FALSE, owner_delete_used_at = ?"
+                        + " WHERE owner_delete_token = ?"
+                        + " AND active = TRUE"
+                        + " AND owner_delete_used_at IS NULL",
+                Timestamp.from(ownerDeleteUsedAt.toInstant()),
+                ownerDeleteToken);
+        return updatedRows > 0;
     }
 
     private Optional<ItemBooking> findBookingById(final int bookingId) {

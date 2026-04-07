@@ -57,15 +57,16 @@ public class MailServiceImpl implements MailService {
 
     @Override
     public void sendPublishConfirmationEmail(
-            final String recipientEmail, final String ownerName, final String itemTitle) {
+            final String recipientEmail,
+            final String ownerName,
+            final String itemTitle,
+            final String ownerDeleteToken) {
         final Locale locale = resolveLocale(recipientEmail);
         final Context context = new Context(locale);
         context.setVariable("ownerName", ownerName);
         context.setVariable("itemTitle", itemTitle);
         context.setVariable("publishUrl", itemBaseUrl.replace("/item", "/publish"));
-        // TODO replace this placeholder delete action with a persisted publication delete flow.
-        // A real delete link needs a DB-backed publication id/token instead of a static route.
-        context.setVariable("deleteUrl", itemBaseUrl.replace("/item", "/publish/delete"));
+        context.setVariable("deleteUrl", itemBaseUrl.replace("/item", "/publish/" + ownerDeleteToken + "/delete"));
         sendHtmlEmail(
                 recipientEmail,
                 getMessage("mail.publishConfirmation.subject", locale, itemTitle),

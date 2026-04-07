@@ -33,6 +33,19 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Bean
+    public org.springframework.validation.beanvalidation.LocalValidatorFactoryBean localValidatorFactoryBean() {
+        final org.springframework.validation.beanvalidation.LocalValidatorFactoryBean factory =
+                new org.springframework.validation.beanvalidation.LocalValidatorFactoryBean();
+        factory.setValidationMessageSource(messageSource());
+        return factory;
+    }
+
+    @Override
+    public org.springframework.validation.Validator getValidator() {
+        return localValidatorFactoryBean();
+    }
+
+    @Bean
     public ViewResolver viewResolver() {
         final InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
         viewResolver.setViewClass(org.springframework.web.servlet.view.JstlView.class);

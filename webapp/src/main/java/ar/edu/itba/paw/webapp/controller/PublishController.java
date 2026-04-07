@@ -196,9 +196,7 @@ public class PublishController {
                 form.isSundayEnabled(), form.getSundayStartTime(), form.getSundayEndTime(), "sunday", errors);
 
         if (!hasEnabledDay) {
-            errors.reject(
-                    "publish.availability.required",
-                    "Selecciona al menos un dia con su franja horaria para continuar.");
+            errors.rejectValue("mondayEnabled", "publish.availability.required");
         }
     }
 
@@ -216,11 +214,11 @@ public class PublishController {
         final String endField = fieldPrefix + "EndTime";
 
         if (!StringUtils.hasText(startTime)) {
-            errors.rejectValue(startField, "publish.availability.start.required", "Completa la hora de inicio.");
+            errors.rejectValue(startField, "publish.availability.start.required");
         }
 
         if (!StringUtils.hasText(endTime)) {
-            errors.rejectValue(endField, "publish.availability.end.required", "Completa la hora de cierre.");
+            errors.rejectValue(endField, "publish.availability.end.required");
         }
 
         if (!StringUtils.hasText(startTime) || !StringUtils.hasText(endTime)) {
@@ -231,11 +229,10 @@ public class PublishController {
             final LocalTime start = LocalTime.parse(startTime);
             final LocalTime end = LocalTime.parse(endTime);
             if (!end.isAfter(start)) {
-                errors.rejectValue(
-                        endField, "publish.availability.end.invalid", "La hora de cierre debe ser posterior.");
+                errors.rejectValue(endField, "publish.availability.end.invalid");
             }
         } catch (final DateTimeParseException ex) {
-            errors.rejectValue(endField, "publish.availability.format.invalid", "Formato de hora invalido.");
+            errors.rejectValue(endField, "publish.availability.format.invalid");
         }
 
         return true;

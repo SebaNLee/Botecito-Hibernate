@@ -6,9 +6,13 @@ import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.User;
+import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -276,6 +280,44 @@ public class ItemJdbcDao implements ItemDao {
             return Collections.emptyList();
         }
         return jdbcTemplate.queryForList("SELECT id FROM item_media WHERE item_id = ?", Integer.class, itemId);
+    }
+
+    @Override
+    public Integer insertItem(
+            final int ownerId,
+            final int typeId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final int capacityPeople,
+            final BigDecimal maxWeightKg,
+            final Integer difficultyLevel,
+            final String location) {
+        final SimpleJdbcInsert insert =
+                new SimpleJdbcInsert(jdbcTemplate).withTableName("item").usingGeneratedKeyColumns("id");
+        final Map<String, Object> args = new HashMap<>();
+        args.put("owner_id", ownerId);
+        args.put("type_id", typeId);
+        args.put("title", title);
+        args.put("description", description);
+        args.put("price_per_hour", pricePerHour);
+        args.put("capacity_people", capacityPeople);
+        args.put("max_weight_kg", maxWeightKg);
+        args.put("difficulty_level", difficultyLevel);
+        args.put("location", location);
+        return insert.executeAndReturnKey(args).intValue();
+    }
+
+    @Override
+    public Integer insertAvailability(
+            final int itemId, final DayOfWeek weekday, final LocalTime startTime, final LocalTime endTime) {
+        return jdbcTemplate.queryForObject(
+                "INSERT INTO item_availability (item_id, weekday, start_time, end_time) VALUES (?, ?::availability_weekday, ?, ?) RETURNING id",
+                Integer.class,
+                itemId,
+                weekday.name(),
+                Time.valueOf(startTime),
+                Time.valueOf(endTime));
     }
 
     @Override

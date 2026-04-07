@@ -26,6 +26,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -107,7 +108,9 @@ public class MarketplaceController {
     public ModelAndView submitMarketplaceItemRequest(
             @PathVariable("id") final int itemId,
             @Valid @ModelAttribute("reservationRequestForm") final ReservationRequestForm form,
-            final BindingResult errors) {
+            final BindingResult errors,
+            final Locale locale,
+            @RequestHeader(value = "Accept-Language", required = false) final String acceptLanguage) {
         final Optional<Item> item = itemService.findItemById(itemId);
         if (item.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
@@ -127,7 +130,7 @@ public class MarketplaceController {
         }
 
         try {
-            form.setRequesterPreferredLanguage(resolveRequesterPreferredLanguage(form));
+            form.setRequesterPreferredLanguage(resolvePreferredLanguage(locale, acceptLanguage));
             final BookingRequest bookingRequest = bookingRequestService.createBookingRequest(
                     itemId,
                     form.getRequesterGivenName().trim(),
@@ -150,11 +153,12 @@ public class MarketplaceController {
         }
     }
 
-    private String resolveRequesterPreferredLanguage(final ReservationRequestForm form) {
-        return itemService
-                .findUserByEmail(form.getRequesterEmail().trim())
-                .map(user -> toSupportedLanguage(user.getPreferredLanguage()))
-                .orElseGet(() -> toSupportedLanguage(form.getRequesterPreferredLanguage()));
+    private static String resolvePreferredLanguage(final Locale locale, final String acceptLanguageHeader) {
+        final String localeLanguage = toSupportedLanguage(locale);
+        if ("en".equals(localeLanguage)) {
+            return "en";
+        }
+        return toSupportedLanguage(acceptLanguageHeader);
     }
 
     private static String toSupportedLanguage(final Locale locale) {
@@ -165,7 +169,14 @@ public class MarketplaceController {
     }
 
     private static String toSupportedLanguage(final String languageTag) {
-        if ("en".equalsIgnoreCase(languageTag)) {
+        if (languageTag == null || languageTag.isBlank()) {
+            return "es";
+        }
+        final String firstToken = languageTag.split(",", 2)[0].trim();
+        final String tag = firstToken.split(";", 2)[0].trim();
+        if ("en".equalsIgnoreCase(tag)
+                || tag.regionMatches(true, 0, "en-", 0, 3)
+                || tag.regionMatches(true, 0, "en_", 0, 3)) {
             return "en";
         }
         return "es";

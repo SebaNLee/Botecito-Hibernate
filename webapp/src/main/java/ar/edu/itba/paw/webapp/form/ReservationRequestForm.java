@@ -2,7 +2,6 @@ package ar.edu.itba.paw.webapp.form;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
 
 public class ReservationRequestForm {
     @NotBlank(message = "{reservation.validation.date.required}")
@@ -24,8 +23,6 @@ public class ReservationRequestForm {
     @Email(message = "{reservation.validation.requesterEmail.invalid}")
     private String requesterEmail;
 
-    @NotBlank(message = "{reservation.validation.requesterPreferredLanguage.required}")
-    @Pattern(regexp = "es|en", message = "{reservation.validation.requesterPreferredLanguage.invalid}")
     private String requesterPreferredLanguage = "es";
 
     private String requestMessage;

@@ -20,6 +20,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -113,6 +114,8 @@ public class PublishController {
     public ModelAndView publishStepThreeSubmit(
             @Validated(PublishBoatForm.Step3.class) @ModelAttribute("publishForm") final PublishBoatForm form,
             final BindingResult errors,
+            final Locale locale,
+            @RequestHeader(value = "Accept-Language", required = false) final String acceptLanguage,
             final SessionStatus sessionStatus) {
         validateAvailabilityStep(form, errors);
 
@@ -123,7 +126,7 @@ public class PublishController {
         }
 
         try {
-            form.setOwnerPreferredLanguage(resolveOwnerPreferredLanguage(form));
+            form.setOwnerPreferredLanguage(resolvePreferredLanguage(locale, acceptLanguage));
             final Item createdItem = itemService.createPublication(
                     form.getOwnerFirstName().trim(),
                     form.getOwnerLastName().trim(),
@@ -164,11 +167,12 @@ public class PublishController {
         return new ModelAndView("redirect:/publish?submitted=true");
     }
 
-    private String resolveOwnerPreferredLanguage(final PublishBoatForm form) {
-        return itemService
-                .findUserByEmail(form.getOwnerEmail().trim())
-                .map(user -> toSupportedLanguage(user.getPreferredLanguage()))
-                .orElseGet(() -> toSupportedLanguage(form.getOwnerPreferredLanguage()));
+    private static String resolvePreferredLanguage(final Locale locale, final String acceptLanguageHeader) {
+        final String localeLanguage = toSupportedLanguage(locale);
+        if ("en".equals(localeLanguage)) {
+            return "en";
+        }
+        return toSupportedLanguage(acceptLanguageHeader);
     }
 
     private static String toSupportedLanguage(final Locale locale) {
@@ -179,7 +183,14 @@ public class PublishController {
     }
 
     private static String toSupportedLanguage(final String languageTag) {
-        if ("en".equalsIgnoreCase(languageTag)) {
+        if (languageTag == null || languageTag.isBlank()) {
+            return "es";
+        }
+        final String firstToken = languageTag.split(",", 2)[0].trim();
+        final String tag = firstToken.split(";", 2)[0].trim();
+        if ("en".equalsIgnoreCase(tag)
+                || tag.regionMatches(true, 0, "en-", 0, 3)
+                || tag.regionMatches(true, 0, "en_", 0, 3)) {
             return "en";
         }
         return "es";

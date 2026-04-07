@@ -75,7 +75,6 @@
               <c:out value="${mailError}" />
             </div>
           </c:if>
-          <form:errors path="*" element="div" cssClass="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700" />
           <paw:datePicker
               id="reservation-date"
               name="date"

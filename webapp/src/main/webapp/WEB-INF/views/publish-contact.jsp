@@ -121,7 +121,7 @@
         </div>
 
         <div class="rounded-xl bg-surface-container-high p-4 text-sm text-on-surface-variant leading-relaxed">
-          Al confirmar, se mostrara un mensaje de publicacion completada en modo visual. No se guardan datos en base de datos en esta version.
+          Al confirmar, publicaremos el anuncio y enviaremos un correo de confirmacion con un enlace para eliminar la publicacion.
         </div>
 
         <div class="flex flex-col sm:flex-row justify-between items-center gap-4">

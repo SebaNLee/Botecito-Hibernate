@@ -147,12 +147,12 @@ public class PublishController {
         } catch (final MailException | IllegalArgumentException e) {
             final ModelAndView mav = new ModelAndView("publish-contact");
             addSummaryData(mav, form);
-            errors.reject("publish.submit.mailError", "No se pudo enviar el correo de confirmacion.");
+            errors.reject("publish.submit.mailError");
             return mav;
         } catch (final Exception e) {
             final ModelAndView mav = new ModelAndView("publish-contact");
             addSummaryData(mav, form);
-            errors.reject("publish.submit.persistenceError", "No se pudo guardar la publicacion.");
+            errors.reject("publish.submit.persistenceError");
             return mav;
         }
 

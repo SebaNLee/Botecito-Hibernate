@@ -115,7 +115,8 @@ public class MarketplaceController {
                 && !errors.hasFieldErrors("startTime")
                 && !errors.hasFieldErrors("endTime")
                 && !matchesMarketplaceAvailability(itemId, form.getDate(), form.getStartTime(), form.getEndTime())) {
-            errors.reject("reservation.unavailable", "The selected reservation slot is no longer available.");
+            errors.rejectValue(
+                    "startTime", "reservation.unavailable", "The selected reservation slot is no longer available.");
         }
 
         if (errors.hasErrors()) {

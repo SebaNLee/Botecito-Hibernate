@@ -5,27 +5,27 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 
 public class ReservationRequestForm {
-    @NotBlank
+    @NotBlank(message = "{reservation.validation.date.required}")
     private String date;
 
-    @NotBlank
+    @NotBlank(message = "{reservation.validation.startTime.required}")
     private String startTime;
 
-    @NotBlank
+    @NotBlank(message = "{reservation.validation.endTime.required}")
     private String endTime;
 
-    @NotBlank
+    @NotBlank(message = "{reservation.validation.requesterGivenName.required}")
     private String requesterGivenName;
 
-    @NotBlank
+    @NotBlank(message = "{reservation.validation.requesterLastName.required}")
     private String requesterLastName;
 
-    @NotBlank
-    @Email
+    @NotBlank(message = "{reservation.validation.requesterEmail.required}")
+    @Email(message = "{reservation.validation.requesterEmail.invalid}")
     private String requesterEmail;
 
-    @NotBlank
-    @Pattern(regexp = "es|en")
+    @NotBlank(message = "{reservation.validation.requesterPreferredLanguage.required}")
+    @Pattern(regexp = "es|en", message = "{reservation.validation.requesterPreferredLanguage.invalid}")
     private String requesterPreferredLanguage = "es";
 
     private String requestMessage;

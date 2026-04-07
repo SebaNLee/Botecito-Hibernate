@@ -25,12 +25,15 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     @Override
     public BookingRequest createBookingRequest(
             final Integer itemId,
-            final String requesterName,
+            final String requesterGivenName,
+            final String requesterLastName,
             final String requesterEmail,
+            final String requesterPreferredLanguage,
             final OffsetDateTime startTime,
             final OffsetDateTime endTime,
             final String description) {
-        final User requesterUser = resolveOrCreateRequesterUser(requesterName, requesterEmail);
+        final User requesterUser = resolveOrCreateRequesterUser(
+                requesterGivenName, requesterLastName, requesterEmail, requesterPreferredLanguage);
         final String token = UUID.randomUUID().toString();
         final ItemBooking booking =
                 itemDao.createBookingRequest(itemId, requesterUser.getId(), startTime, endTime, description, token);
@@ -50,20 +53,26 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         return findByToken(token);
     }
 
-    private User resolveOrCreateRequesterUser(final String requesterName, final String requesterEmail) {
-        return itemDao.findUserByEmail(requesterEmail).orElseGet(() -> {
-            final String trimmedName = requesterName == null ? "" : requesterName.trim();
-            if (trimmedName.isEmpty()) {
-                return itemDao.createUser("Guest", "", requesterEmail);
-            }
-            final int separatorIndex = trimmedName.indexOf(' ');
-            if (separatorIndex < 0) {
-                return itemDao.createUser(trimmedName, "", requesterEmail);
-            }
-            final String givenName = trimmedName.substring(0, separatorIndex);
-            final String lastName = trimmedName.substring(separatorIndex + 1).trim();
-            return itemDao.createUser(givenName, lastName, requesterEmail);
-        });
+    private User resolveOrCreateRequesterUser(
+            final String requesterGivenName,
+            final String requesterLastName,
+            final String requesterEmail,
+            final String requesterPreferredLanguage) {
+        final String givenName = normalizeNamePart(requesterGivenName, "Guest");
+        final String lastName = normalizeNamePart(requesterLastName, "");
+        final String preferredLanguage = normalizePreferredLanguage(requesterPreferredLanguage);
+
+        final Optional<User> existingUser = itemDao.findUserByEmail(requesterEmail);
+        if (existingUser.isPresent()) {
+            final User user = existingUser.get();
+            itemDao.updateUserProfile(user.getId(), givenName, lastName, preferredLanguage);
+            user.setGivenName(givenName);
+            user.setLastName(lastName);
+            user.setPreferredLanguage(preferredLanguage);
+            return user;
+        }
+
+        return itemDao.createUser(givenName, lastName, requesterEmail, preferredLanguage);
     }
 
     private Optional<BookingRequest> toBookingRequest(final ItemBooking booking) {
@@ -96,5 +105,19 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             return requesterUser.getPreferredLanguage();
         }
         return mailService.resolveLocale(requesterUser.getEmail()).toLanguageTag();
+    }
+
+    private static String normalizeNamePart(final String value, final String fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        return value.trim();
+    }
+
+    private static String normalizePreferredLanguage(final String preferredLanguage) {
+        if ("en".equalsIgnoreCase(preferredLanguage)) {
+            return "en";
+        }
+        return "es";
     }
 }

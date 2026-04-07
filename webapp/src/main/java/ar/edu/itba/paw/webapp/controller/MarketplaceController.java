@@ -125,8 +125,10 @@ public class MarketplaceController {
         try {
             final BookingRequest bookingRequest = bookingRequestService.createBookingRequest(
                     itemId,
-                    form.getRequesterName().trim(),
+                    form.getRequesterGivenName().trim(),
+                    form.getRequesterLastName().trim(),
                     form.getRequesterEmail().trim(),
+                    form.getRequesterPreferredLanguage(),
                     toOffsetDateTime(form.getDate(), form.getStartTime()),
                     toOffsetDateTime(form.getDate(), form.getEndTime()),
                     buildReservationRequestDescription(item.get(), owner.orElse(null), form));

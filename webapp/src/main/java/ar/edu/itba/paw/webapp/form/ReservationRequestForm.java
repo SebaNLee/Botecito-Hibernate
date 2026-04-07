@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.form;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 
 public class ReservationRequestForm {
     @NotBlank
@@ -14,11 +15,18 @@ public class ReservationRequestForm {
     private String endTime;
 
     @NotBlank
-    private String requesterName;
+    private String requesterGivenName;
+
+    @NotBlank
+    private String requesterLastName;
 
     @NotBlank
     @Email
     private String requesterEmail;
+
+    @NotBlank
+    @Pattern(regexp = "es|en")
+    private String requesterPreferredLanguage = "es";
 
     private String requestMessage;
 
@@ -46,12 +54,20 @@ public class ReservationRequestForm {
         this.endTime = endTime;
     }
 
-    public String getRequesterName() {
-        return requesterName;
+    public String getRequesterGivenName() {
+        return requesterGivenName;
     }
 
-    public void setRequesterName(final String requesterName) {
-        this.requesterName = requesterName;
+    public void setRequesterGivenName(final String requesterGivenName) {
+        this.requesterGivenName = requesterGivenName;
+    }
+
+    public String getRequesterLastName() {
+        return requesterLastName;
+    }
+
+    public void setRequesterLastName(final String requesterLastName) {
+        this.requesterLastName = requesterLastName;
     }
 
     public String getRequesterEmail() {
@@ -60,6 +76,14 @@ public class ReservationRequestForm {
 
     public void setRequesterEmail(final String requesterEmail) {
         this.requesterEmail = requesterEmail;
+    }
+
+    public String getRequesterPreferredLanguage() {
+        return requesterPreferredLanguage;
+    }
+
+    public void setRequesterPreferredLanguage(final String requesterPreferredLanguage) {
+        this.requesterPreferredLanguage = requesterPreferredLanguage;
     }
 
     public String getRequestMessage() {

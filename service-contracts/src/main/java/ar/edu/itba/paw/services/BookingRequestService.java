@@ -8,8 +8,10 @@ import java.util.Optional;
 public interface BookingRequestService {
     BookingRequest createBookingRequest(
             Integer itemId,
-            String requesterName,
+            String requesterGivenName,
+            String requesterLastName,
             String requesterEmail,
+            String requesterPreferredLanguage,
             OffsetDateTime startTime,
             OffsetDateTime endTime,
             String description);

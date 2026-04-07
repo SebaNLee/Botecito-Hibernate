@@ -19,7 +19,10 @@ public interface ItemDao {
 
     Optional<User> findUserByEmail(final String email);
 
-    User createUser(final String givenName, final String lastName, final String email);
+    User createUser(final String givenName, final String lastName, final String email, final String preferredLanguage);
+
+    boolean updateUserProfile(
+            final int userId, final String givenName, final String lastName, final String preferredLanguage);
 
     Optional<ItemType> findItemTypeById(final int id);
 

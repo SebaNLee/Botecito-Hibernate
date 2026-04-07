@@ -126,18 +126,32 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
-    public User createUser(final String givenName, final String lastName, final String email) {
+    public User createUser(
+            final String givenName, final String lastName, final String email, final String preferredLanguage) {
         final Integer id = jdbcTemplate.queryForObject(
-                "INSERT INTO users (given_name, last_name, email) VALUES (?, ?, ?) RETURNING id",
+                "INSERT INTO users (given_name, last_name, email, preferred_language) VALUES (?, ?, ?, ?) RETURNING id",
                 Integer.class,
                 givenName,
                 lastName,
-                email);
+                email,
+                preferredLanguage);
         if (id == null) {
             throw new IllegalStateException("Could not create user for email " + email);
         }
 
         return findUserById(id).orElseThrow(() -> new IllegalStateException("Could not read inserted user " + id));
+    }
+
+    @Override
+    public boolean updateUserProfile(
+            final int userId, final String givenName, final String lastName, final String preferredLanguage) {
+        final int updatedRows = jdbcTemplate.update(
+                "UPDATE users SET given_name = ?, last_name = ?, preferred_language = ? WHERE id = ?",
+                givenName,
+                lastName,
+                preferredLanguage,
+                userId);
+        return updatedRows > 0;
     }
 
     @Override

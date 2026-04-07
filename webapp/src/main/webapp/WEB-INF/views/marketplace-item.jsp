@@ -98,15 +98,34 @@
               occupiedTimesJson="${reservationOccupiedTimesJson}" />
           <form:errors path="startTime" element="div" cssClass="text-sm text-error" />
           <form:errors path="endTime" element="div" cssClass="text-sm text-error" />
-          <div class="space-y-2">
-            <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="requesterName">Nombre</label>
-            <form:input path="requesterName" id="requesterName" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline" placeholder="Tu nombre" />
-            <form:errors path="requesterName" element="div" cssClass="text-sm text-error" />
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="space-y-2">
+              <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="requesterGivenName">Nombre</label>
+              <form:input path="requesterGivenName" id="requesterGivenName" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline" placeholder="Tu nombre" />
+              <form:errors path="requesterGivenName" element="div" cssClass="text-sm text-error" />
+            </div>
+            <div class="space-y-2">
+              <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="requesterLastName">Apellido</label>
+              <form:input path="requesterLastName" id="requesterLastName" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline" placeholder="Tu apellido" />
+              <form:errors path="requesterLastName" element="div" cssClass="text-sm text-error" />
+            </div>
           </div>
           <div class="space-y-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="requesterEmail">Email</label>
             <form:input path="requesterEmail" id="requesterEmail" type="email" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline" placeholder="tu@email.com" />
             <form:errors path="requesterEmail" element="div" cssClass="text-sm text-error" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="requesterPreferredLanguage">Idioma para mails</label>
+            <div class="relative">
+              <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-outline transition-colors group-focus-within:text-primary">translate</span>
+              <form:select path="requesterPreferredLanguage" id="requesterPreferredLanguage" cssClass="peer h-14 w-full appearance-none rounded-xl border-none bg-surface-container-high py-3 pl-12 pr-12 text-[0.95rem] font-medium text-on-surface shadow-[inset_0_0_0_1px_rgba(113,119,132,0)] transition-all hover:shadow-[inset_0_0_0_1px_rgba(113,119,132,0.18)] focus:shadow-[inset_0_0_0_2px_rgba(0,93,167,0.2)] focus:outline-none focus:ring-0">
+                <form:option value="es">Espanol</form:option>
+                <form:option value="en">English</form:option>
+              </form:select>
+              <span class="material-symbols-outlined pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-outline transition-colors peer-focus:text-primary">expand_more</span>
+            </div>
+            <form:errors path="requesterPreferredLanguage" element="div" cssClass="text-sm text-error" />
           </div>
           <div class="space-y-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="requestMessage">Mensaje</label>

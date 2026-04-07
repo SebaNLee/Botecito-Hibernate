@@ -6,6 +6,9 @@ import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
+import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,6 +76,35 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     public List<Integer> listImageIdsByItemId(final int itemId) {
         return itemDao.listImageIdsByItemId(itemId);
+    }
+
+    @Override
+    public Integer insertItem(
+            final int ownerId,
+            final int typeId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final int capacityPeople,
+            final BigDecimal maxWeightKg,
+            final Integer difficultyLevel,
+            final String location) {
+        return itemDao.insertItem(
+                ownerId,
+                typeId,
+                title,
+                description,
+                pricePerHour,
+                capacityPeople,
+                maxWeightKg,
+                difficultyLevel,
+                location);
+    }
+
+    @Override
+    public Integer insertAvailability(
+            final int itemId, final DayOfWeek weekday, final LocalTime startTime, final LocalTime endTime) {
+        return itemDao.insertAvailability(itemId, weekday, startTime, endTime);
     }
 
     @Override

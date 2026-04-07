@@ -124,7 +124,7 @@ public class PublishController {
                     form.getOwnerFirstName().trim(),
                     form.getOwnerLastName().trim(),
                     form.getOwnerEmail().trim(),
-                    "es",
+                    form.getOwnerPreferredLanguage(),
                     Integer.parseInt(form.getItemTypeId().trim()),
                     form.getTitle().trim(),
                     form.getDescription() == null ? "" : form.getDescription().trim(),

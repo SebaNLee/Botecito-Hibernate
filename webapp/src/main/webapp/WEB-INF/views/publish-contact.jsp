@@ -118,6 +118,19 @@
             <form:errors path="ownerEmail" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
 
+          <div class="space-y-2 md:col-span-2">
+            <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="ownerPreferredLanguage">Idioma para mails</label>
+            <div class="relative">
+              <span class="material-symbols-outlined pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-outline">translate</span>
+              <form:select path="ownerPreferredLanguage" id="ownerPreferredLanguage" cssClass="h-14 w-full appearance-none rounded-xl border-none bg-surface-container-high py-3 pl-12 pr-12 text-[0.95rem] font-medium text-on-surface shadow-[inset_0_0_0_1px_rgba(113,119,132,0)] transition-all hover:shadow-[inset_0_0_0_1px_rgba(113,119,132,0.18)] focus:shadow-[inset_0_0_0_2px_rgba(0,93,167,0.2)] focus:outline-none focus:ring-0">
+                <form:option value="es">Espanol</form:option>
+                <form:option value="en">English</form:option>
+              </form:select>
+              <span class="material-symbols-outlined pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-outline">expand_more</span>
+            </div>
+            <form:errors path="ownerPreferredLanguage" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
+          </div>
+
         </div>
 
         <div class="rounded-xl bg-surface-container-high p-4 text-sm text-on-surface-variant leading-relaxed">

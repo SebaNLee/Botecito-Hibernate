@@ -2,8 +2,12 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
+import ar.edu.itba.paw.models.Item;
+import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.persistence.ItemDao;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Properties;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -20,6 +24,7 @@ public class MailServiceImpl implements MailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
     private final MessageSource messageSource;
+    private final ItemDao itemDao;
     private final String reviewRecipient;
     private final String actionBaseUrl;
     private final String itemBaseUrl;
@@ -32,10 +37,12 @@ public class MailServiceImpl implements MailService {
             final JavaMailSender mailSender,
             final TemplateEngine templateEngine,
             final MessageSource messageSource,
+            final ItemDao itemDao,
             final Properties credentialsProperties) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
         this.messageSource = messageSource;
+        this.itemDao = itemDao;
         final String baseUrl = requireProperty(credentialsProperties, "app.baseUrl");
         // TODO replace this config-backed review recipient with data loaded from persistence once the
         // application has a real owner/admin recipient model in the DB.
@@ -75,13 +82,15 @@ public class MailServiceImpl implements MailService {
 
     @Override
     public void sendBookingReviewEmail(final BookingRequest bookingRequest) {
-        final Locale locale = resolveLocale(reviewRecipient);
+        final String recipientEmail =
+                resolveBookingReviewRecipient(bookingRequest).orElse(reviewRecipient);
+        final Locale locale = resolveLocale(recipientEmail);
         final Context context = new Context(locale);
         context.setVariable("bookingRequest", bookingRequest);
         context.setVariable("acceptUrl", actionBaseUrl + "/" + bookingRequest.getToken() + "/accept");
         context.setVariable("declineUrl", actionBaseUrl + "/" + bookingRequest.getToken() + "/decline");
         sendHtmlEmail(
-                reviewRecipient,
+                recipientEmail,
                 getMessage("mail.requestReview.subject", locale, bookingRequest.getRequesterName()),
                 templateEngine.process("booking-review", context));
     }
@@ -106,9 +115,39 @@ public class MailServiceImpl implements MailService {
 
     @Override
     public Locale resolveLocale(final String recipientIdentifier) {
-        // TODO load the user's preferred language from persistence once that data is available.
-        // Right now mail locale selection is hardcoded.
+        final Optional<Locale> userLocale = itemDao.findUserByEmail(recipientIdentifier)
+                .map(user -> toSupportedLocale(user.getPreferredLanguage()));
+        if (userLocale.isPresent()) {
+            return userLocale.get();
+        }
         return new Locale("es");
+    }
+
+    private static Locale toSupportedLocale(final String preferredLanguage) {
+        if ("en".equalsIgnoreCase(preferredLanguage)) {
+            return Locale.ENGLISH;
+        }
+        return new Locale("es");
+    }
+
+    private Optional<String> resolveBookingReviewRecipient(final BookingRequest bookingRequest) {
+        if (bookingRequest.getItemId() == null) {
+            return Optional.empty();
+        }
+
+        final Optional<Item> item = itemDao.findItemById(bookingRequest.getItemId());
+        if (item.isEmpty()) {
+            return Optional.empty();
+        }
+
+        final Optional<User> owner = itemDao.findUserById(item.get().getOwnerId());
+        if (owner.isEmpty()
+                || owner.get().getEmail() == null
+                || owner.get().getEmail().isBlank()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(owner.get().getEmail());
     }
 
     private void sendHtmlEmail(final String recipientEmail, final String subject, final String htmlBody) {

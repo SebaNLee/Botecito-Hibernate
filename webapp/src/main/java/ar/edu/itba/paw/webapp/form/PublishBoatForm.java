@@ -87,6 +87,10 @@ public class PublishBoatForm {
     @Size(max = 150, groups = Step3.class, message = "{publish.validation.ownerEmail.max}")
     private String ownerEmail;
 
+    @NotBlank(groups = Step3.class, message = "{publish.validation.ownerPreferredLanguage.required}")
+    @Pattern(regexp = "es|en", groups = Step3.class, message = "{publish.validation.ownerPreferredLanguage.invalid}")
+    private String ownerPreferredLanguage = "es";
+
     public String getTitle() {
         return title;
     }
@@ -349,5 +353,13 @@ public class PublishBoatForm {
 
     public void setOwnerEmail(final String ownerEmail) {
         this.ownerEmail = ownerEmail;
+    }
+
+    public String getOwnerPreferredLanguage() {
+        return ownerPreferredLanguage;
+    }
+
+    public void setOwnerPreferredLanguage(final String ownerPreferredLanguage) {
+        this.ownerPreferredLanguage = ownerPreferredLanguage;
     }
 }

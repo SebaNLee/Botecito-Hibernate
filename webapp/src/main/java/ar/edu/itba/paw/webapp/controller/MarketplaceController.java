@@ -9,6 +9,11 @@ import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.RequestService;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -120,6 +125,8 @@ public class MarketplaceController {
                     itemId,
                     form.getRequesterName().trim(),
                     form.getRequesterEmail().trim(),
+                    toOffsetDateTime(form.getDate(), form.getStartTime()),
+                    toOffsetDateTime(form.getDate(), form.getEndTime()),
                     buildReservationRequestDescription(item.get(), owner.orElse(null), form));
             mailService.sendRequestReviewEmail(requestSubmission);
             final ModelAndView mav = buildMarketplaceItemView(itemId, form);
@@ -314,5 +321,13 @@ public class MarketplaceController {
             return "I";
         }
         return user.getName().substring(0, 1).toUpperCase();
+    }
+
+    private static OffsetDateTime toOffsetDateTime(final String date, final String time) {
+        final LocalDate localDate = LocalDate.parse(date);
+        final LocalTime localTime = LocalTime.parse(time);
+        return LocalDateTime.of(localDate, localTime)
+                .atZone(ZoneId.systemDefault())
+                .toOffsetDateTime();
     }
 }

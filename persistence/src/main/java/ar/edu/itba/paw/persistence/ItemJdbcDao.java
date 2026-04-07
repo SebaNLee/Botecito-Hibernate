@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,7 +100,7 @@ public class ItemJdbcDao implements ItemDao {
         return booking;
     };
 
-    private final JdbcTemplate jdbcTemplate;
+    private final @NonNull JdbcTemplate jdbcTemplate;
 
     @Autowired
     public ItemJdbcDao(final @NonNull DataSource dataSource) {
@@ -132,16 +133,15 @@ public class ItemJdbcDao implements ItemDao {
     @Override
     public User createUser(
             final String givenName, final String lastName, final String email, final String preferredLanguage) {
-        final Integer id = jdbcTemplate.queryForObject(
-                "INSERT INTO users (given_name, last_name, email, preferred_language) VALUES (?, ?, ?, ?) RETURNING id",
-                Integer.class,
-                givenName,
-                lastName,
-                email,
-                preferredLanguage);
-        if (id == null) {
-            throw new IllegalStateException("Could not create user for email " + email);
-        }
+        final int id = Objects.requireNonNull(
+                jdbcTemplate.queryForObject(
+                        "INSERT INTO users (given_name, last_name, email, preferred_language) VALUES (?, ?, ?, ?) RETURNING id",
+                        Integer.class,
+                        givenName,
+                        lastName,
+                        email,
+                        preferredLanguage),
+                "Could not create user for email " + email);
 
         return findUserById(id).orElseThrow(() -> new IllegalStateException("Could not read inserted user " + id));
     }
@@ -176,25 +176,24 @@ public class ItemJdbcDao implements ItemDao {
             final Integer difficultyLevel,
             final String location,
             final String ownerDeleteToken) {
-        final Integer id = jdbcTemplate.queryForObject(
-                "INSERT INTO item"
-                        + " (owner_id, type_id, title, description, price_per_hour, capacity_people, max_weight_kg, difficulty_level, location, owner_delete_token)"
-                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-                        + " RETURNING id",
-                Integer.class,
-                ownerId,
-                typeId,
-                title,
-                description,
-                pricePerHour,
-                capacityPeople,
-                maxWeightKg,
-                difficultyLevel,
-                location,
-                ownerDeleteToken);
-        if (id == null) {
-            throw new IllegalStateException("Could not create item for owner " + ownerId);
-        }
+        final int id = Objects.requireNonNull(
+                jdbcTemplate.queryForObject(
+                        "INSERT INTO item"
+                                + " (owner_id, type_id, title, description, price_per_hour, capacity_people, max_weight_kg, difficulty_level, location, owner_delete_token)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                                + " RETURNING id",
+                        Integer.class,
+                        ownerId,
+                        typeId,
+                        title,
+                        description,
+                        pricePerHour,
+                        capacityPeople,
+                        maxWeightKg,
+                        difficultyLevel,
+                        location,
+                        ownerDeleteToken),
+                "Could not create item for owner " + ownerId);
         return jdbcTemplate.query("SELECT * FROM item WHERE id = ?", ITEM_ROW_MAPPER, id).stream()
                 .findAny()
                 .orElseThrow(() -> new IllegalStateException("Could not read inserted item " + id));
@@ -203,18 +202,17 @@ public class ItemJdbcDao implements ItemDao {
     @Override
     public ItemAvailability createItemAvailability(
             final int itemId, final String weekday, final String startTime, final String endTime) {
-        final Integer id = jdbcTemplate.queryForObject(
-                "INSERT INTO item_availability (item_id, weekday, start_time, end_time)"
-                        + " VALUES (?, ?::availability_weekday, ?, ?)"
-                        + " RETURNING id",
-                Integer.class,
-                itemId,
-                weekday,
-                Time.valueOf(LocalTime.parse(startTime)),
-                Time.valueOf(LocalTime.parse(endTime)));
-        if (id == null) {
-            throw new IllegalStateException("Could not create availability for item " + itemId);
-        }
+        final int id = Objects.requireNonNull(
+                jdbcTemplate.queryForObject(
+                        "INSERT INTO item_availability (item_id, weekday, start_time, end_time)"
+                                + " VALUES (?, ?::availability_weekday, ?, ?)"
+                                + " RETURNING id",
+                        Integer.class,
+                        itemId,
+                        weekday,
+                        Time.valueOf(LocalTime.parse(startTime)),
+                        Time.valueOf(LocalTime.parse(endTime))),
+                "Could not create availability for item " + itemId);
         return jdbcTemplate
                 .query("SELECT * FROM item_availability WHERE id = ?", ITEM_AVAILABILITY_ROW_MAPPER, id)
                 .stream()
@@ -263,22 +261,21 @@ public class ItemJdbcDao implements ItemDao {
             final OffsetDateTime endTime,
             final String requestMessage,
             final String hostDecisionToken) {
-        final Integer id = jdbcTemplate.queryForObject(
-                "INSERT INTO item_booking"
-                        + " (item_id, guest_id, start_time, end_time, state, request_message, host_decision_token)"
-                        + " VALUES (?, ?, ?, ?, ?::booking_state, ?, ?)"
-                        + " RETURNING id",
-                Integer.class,
-                itemId,
-                guestId,
-                Timestamp.from(startTime.toInstant()),
-                Timestamp.from(endTime.toInstant()),
-                BookingState.BOOKING_PENDING.name(),
-                requestMessage,
-                hostDecisionToken);
-        if (id == null) {
-            throw new IllegalStateException("Could not create booking for item " + itemId);
-        }
+        final int id = Objects.requireNonNull(
+                jdbcTemplate.queryForObject(
+                        "INSERT INTO item_booking"
+                                + " (item_id, guest_id, start_time, end_time, state, request_message, host_decision_token)"
+                                + " VALUES (?, ?, ?, ?, ?::booking_state, ?, ?)"
+                                + " RETURNING id",
+                        Integer.class,
+                        itemId,
+                        guestId,
+                        Timestamp.from(startTime.toInstant()),
+                        Timestamp.from(endTime.toInstant()),
+                        BookingState.BOOKING_PENDING.name(),
+                        requestMessage,
+                        hostDecisionToken),
+                "Could not create booking for item " + itemId);
         return findBookingById(id)
                 .orElseThrow(() -> new IllegalStateException("Could not read inserted booking " + id));
     }

@@ -297,19 +297,61 @@ public class MarketplaceController {
         }
 
         if (isBlank(requestedStartTime) && isBlank(requestedEndTime)) {
-            return true;
+            return hasAnyContinuousTwoHourWindow(availableTimes);
         }
 
         if (!isBlank(requestedStartTime) && isBlank(requestedEndTime)) {
-            return availableTimes.contains(requestedStartTime);
+            return hasContinuousTwoHourWindowStartingAt(availableTimes, requestedStartTime);
         }
 
         if (isBlank(requestedStartTime)) {
-            return availableTimes.contains(requestedEndTime);
+            return hasContinuousTwoHourWindowEndingAt(availableTimes, requestedEndTime);
         }
 
         return AvailabilityPickerSupport.hasContinuousAvailability(
                 availableTimes, requestedStartTime, requestedEndTime);
+    }
+
+    private static boolean hasAnyContinuousTwoHourWindow(final List<String> availableTimes) {
+        for (int startIndex = 0; startIndex < availableTimes.size(); startIndex++) {
+            for (int endIndex = startIndex + 1; endIndex < availableTimes.size(); endIndex++) {
+                if (AvailabilityPickerSupport.hasContinuousAvailability(
+                        availableTimes, availableTimes.get(startIndex), availableTimes.get(endIndex))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasContinuousTwoHourWindowStartingAt(
+            final List<String> availableTimes, final String requestedStartTime) {
+        if (!availableTimes.contains(requestedStartTime)) {
+            return false;
+        }
+
+        for (final String possibleEndTime : availableTimes) {
+            if (AvailabilityPickerSupport.hasContinuousAvailability(
+                    availableTimes, requestedStartTime, possibleEndTime)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasContinuousTwoHourWindowEndingAt(
+            final List<String> availableTimes, final String requestedEndTime) {
+        if (!availableTimes.contains(requestedEndTime)) {
+            return false;
+        }
+
+        for (final String possibleStartTime : availableTimes) {
+            if (AvailabilityPickerSupport.hasContinuousAvailability(
+                    availableTimes, possibleStartTime, requestedEndTime)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isBlank(final String value) {

@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.services;
+package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
@@ -8,7 +8,7 @@ import ar.edu.itba.paw.models.User;
 import java.util.List;
 import java.util.Optional;
 
-public interface ItemService {
+public interface ItemDao {
     List<Item> listItems();
 
     Optional<Item> findItemById(final int id);

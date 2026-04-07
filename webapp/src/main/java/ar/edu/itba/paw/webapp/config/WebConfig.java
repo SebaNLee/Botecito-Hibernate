@@ -130,7 +130,12 @@ public class WebConfig implements WebMvcConfigurer {
                 .dataSource(dataSource)
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
-                .load(); // TODO check this when migrating, configured to keep existing DB
+                .load();
+    }
+
+    @Bean
+    public org.springframework.web.multipart.support.StandardServletMultipartResolver multipartResolver() {
+        return new org.springframework.web.multipart.support.StandardServletMultipartResolver();
     }
 
     @Override

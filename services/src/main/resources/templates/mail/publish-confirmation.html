@@ -42,9 +42,20 @@
                   th:text="#{mail.publishConfirmation.note}">
                   This version still does not persist the publication to the database.
                 </p>
-                <a th:href="${publishUrl}"
-                  style="display: inline-block; padding: 14px 28px; border-radius: 9999px; background-color: #005da7; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700;"
-                  th:text="#{mail.publishConfirmation.action}">Create another publication</a>
+                <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="padding-right: 16px;">
+                      <a th:href="${publishUrl}"
+                        style="display: inline-block; padding: 14px 28px; border-radius: 9999px; background-color: #005da7; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700;"
+                        th:text="#{mail.publishConfirmation.action}">Create another publication</a>
+                    </td>
+                    <td>
+                      <a th:href="${deleteUrl}"
+                        style="display: inline-block; padding: 14px 28px; border-radius: 9999px; background-color: #ffffff; color: #dc2626; border: 2px solid #dc2626; text-decoration: none; font-size: 15px; font-weight: 700;"
+                        th:text="#{mail.publishConfirmation.delete}">Delete publication</a>
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
           </table>

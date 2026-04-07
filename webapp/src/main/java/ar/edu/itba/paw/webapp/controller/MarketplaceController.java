@@ -16,6 +16,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import javax.validation.Valid;
@@ -48,8 +49,10 @@ public class MarketplaceController {
     }
 
     @ModelAttribute("reservationRequestForm")
-    public ReservationRequestForm reservationRequestForm() {
-        return new ReservationRequestForm();
+    public ReservationRequestForm reservationRequestForm(final Locale locale) {
+        final ReservationRequestForm form = new ReservationRequestForm();
+        form.setRequesterPreferredLanguage(toSupportedLanguage(locale));
+        return form;
     }
 
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
@@ -124,6 +127,7 @@ public class MarketplaceController {
         }
 
         try {
+            form.setRequesterPreferredLanguage(resolveRequesterPreferredLanguage(form));
             final BookingRequest bookingRequest = bookingRequestService.createBookingRequest(
                     itemId,
                     form.getRequesterGivenName().trim(),
@@ -144,6 +148,27 @@ public class MarketplaceController {
                     "mailError", "The request email could not be sent. Check the Gmail credentials and SMTP setup.");
             return mav;
         }
+    }
+
+    private String resolveRequesterPreferredLanguage(final ReservationRequestForm form) {
+        return itemService
+                .findUserByEmail(form.getRequesterEmail().trim())
+                .map(user -> toSupportedLanguage(user.getPreferredLanguage()))
+                .orElseGet(() -> toSupportedLanguage(form.getRequesterPreferredLanguage()));
+    }
+
+    private static String toSupportedLanguage(final Locale locale) {
+        if (locale != null && "en".equalsIgnoreCase(locale.getLanguage())) {
+            return "en";
+        }
+        return "es";
+    }
+
+    private static String toSupportedLanguage(final String languageTag) {
+        if ("en".equalsIgnoreCase(languageTag)) {
+            return "en";
+        }
+        return "es";
     }
 
     private ModelAndView buildMarketplaceItemView(final int itemId, final ReservationRequestForm form) {

@@ -133,7 +133,8 @@ public class MarketplaceController {
                     toOffsetDateTime(form.getDate(), form.getStartTime()),
                     toOffsetDateTime(form.getDate(), form.getEndTime()),
                     buildReservationRequestDescription(item.get(), owner.orElse(null), form));
-            mailService.sendBookingReviewEmail(bookingRequest);
+            mailService.sendBookingReviewEmail(
+                    bookingRequest, owner.map(User::getEmail).orElse(null));
             final ModelAndView mav = buildMarketplaceItemView(itemId, form);
             mav.addObject("mailSuccess", "Your request was sent to Botecito for review.");
             return mav;

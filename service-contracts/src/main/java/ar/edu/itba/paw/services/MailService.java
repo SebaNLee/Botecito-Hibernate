@@ -9,7 +9,7 @@ public interface MailService {
     void sendPublishConfirmationEmail(
             String recipientEmail, String ownerName, String itemTitle, String ownerDeleteToken);
 
-    void sendBookingReviewEmail(BookingRequest bookingRequest);
+    void sendBookingReviewEmail(BookingRequest bookingRequest, String ownerEmail);
 
     void sendBookingResolutionEmail(BookingRequest bookingRequest);
 

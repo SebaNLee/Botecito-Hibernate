@@ -81,9 +81,13 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
-    public void sendBookingReviewEmail(final BookingRequest bookingRequest) {
-        final String recipientEmail =
-                resolveBookingReviewRecipient(bookingRequest).orElse(reviewRecipient);
+    public void sendBookingReviewEmail(final BookingRequest bookingRequest, final String ownerEmail) {
+        final String recipientEmail;
+        if (ownerEmail != null && !ownerEmail.isBlank()) {
+            recipientEmail = ownerEmail;
+        } else {
+            recipientEmail = resolveBookingReviewRecipient(bookingRequest).orElse(reviewRecipient);
+        }
         final Locale locale = resolveLocale(recipientEmail);
         final Context context = new Context(locale);
         context.setVariable("bookingRequest", bookingRequest);

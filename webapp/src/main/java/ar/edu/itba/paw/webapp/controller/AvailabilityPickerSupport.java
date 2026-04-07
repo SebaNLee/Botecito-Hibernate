@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import java.time.DayOfWeek;
@@ -166,6 +167,9 @@ final class AvailabilityPickerSupport {
         final LocalDate endDate = pickerEndDate();
 
         for (final ItemBooking booking : bookings) {
+            if (!isBlockingBooking(booking)) {
+                continue;
+            }
             OffsetDateTime currentTime = booking.getStartTime();
             final OffsetDateTime endTime = booking.getEndTime();
 
@@ -181,6 +185,14 @@ final class AvailabilityPickerSupport {
         }
 
         return collectedTimesByDate;
+    }
+
+    private static boolean isBlockingBooking(final ItemBooking booking) {
+        if (booking.getState() == null) {
+            return true;
+        }
+        return booking.getState() == BookingState.BOOKING_PENDING
+                || booking.getState() == BookingState.BOOKING_CONFIRMED;
     }
 
     private static void addTimeRange(

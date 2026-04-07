@@ -10,7 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
@@ -292,7 +292,7 @@ public class ItemJdbcDao implements ItemDao {
             return offsetDateTime;
         }
         if (value instanceof Timestamp timestamp) {
-            return timestamp.toInstant().atOffset(ZoneOffset.UTC);
+            return timestamp.toInstant().atZone(ZoneId.systemDefault()).toOffsetDateTime();
         }
         return OffsetDateTime.parse(value.toString());
     }

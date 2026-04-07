@@ -6,6 +6,8 @@ import java.util.Locale;
 public interface MailService {
     void sendTestConfirmationEmail(String recipientEmail);
 
+    void sendPublishConfirmationEmail(String recipientEmail, String ownerName, String itemTitle);
+
     void sendRequestReviewEmail(RequestSubmission requestSubmission);
 
     void sendRequestResolutionEmail(RequestSubmission requestSubmission);

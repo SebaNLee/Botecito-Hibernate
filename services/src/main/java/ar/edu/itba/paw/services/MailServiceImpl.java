@@ -52,6 +52,20 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
+    public void sendPublishConfirmationEmail(
+            final String recipientEmail, final String ownerName, final String itemTitle) {
+        final Locale locale = resolveLocale(recipientEmail);
+        final Context context = new Context(locale);
+        context.setVariable("ownerName", ownerName);
+        context.setVariable("itemTitle", itemTitle);
+        context.setVariable("publishUrl", itemBaseUrl.replace("/item", "/publish"));
+        sendHtmlEmail(
+                recipientEmail,
+                getMessage("mail.publishConfirmation.subject", locale, itemTitle),
+                templateEngine.process("publish-confirmation", context));
+    }
+
+    @Override
     public void sendRequestReviewEmail(final RequestSubmission requestSubmission) {
         final Locale locale = resolveLocale(reviewRecipient);
         final Context context = new Context(locale);

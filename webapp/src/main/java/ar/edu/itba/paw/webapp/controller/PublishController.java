@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
@@ -7,6 +8,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
@@ -22,6 +25,13 @@ import org.springframework.web.servlet.ModelAndView;
 @Controller
 @SessionAttributes("publishForm")
 public class PublishController {
+
+    private final MailService mailService;
+
+    @Autowired
+    public PublishController(final MailService mailService) {
+        this.mailService = mailService;
+    }
 
     @ModelAttribute("publishForm")
     public PublishBoatForm publishForm() {
@@ -105,8 +115,24 @@ public class PublishController {
             return mav;
         }
 
+        try {
+            mailService.sendPublishConfirmationEmail(
+                    form.getOwnerEmail().trim(),
+                    buildOwnerName(form),
+                    form.getTitle().trim());
+        } catch (final MailException | IllegalArgumentException e) {
+            final ModelAndView mav = new ModelAndView("publish-contact");
+            addSummaryData(mav, form);
+            errors.reject("publish.submit.mailError", "No se pudo enviar el correo de confirmacion.");
+            return mav;
+        }
+
         sessionStatus.setComplete();
         return new ModelAndView("redirect:/publish?submitted=true");
+    }
+
+    private static String buildOwnerName(final PublishBoatForm form) {
+        return form.getOwnerFirstName().trim() + " " + form.getOwnerLastName().trim();
     }
 
     private static void addSummaryData(final ModelAndView mav, final PublishBoatForm form) {

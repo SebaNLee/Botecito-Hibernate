@@ -1,12 +1,12 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemType;
-import ar.edu.itba.paw.models.RequestSubmission;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
-import ar.edu.itba.paw.services.RequestService;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,14 +35,16 @@ public class MarketplaceController {
 
     private final ItemService itemService;
     private final MailService mailService;
-    private final RequestService requestService;
+    private final BookingRequestService bookingRequestService;
 
     @Autowired
     public MarketplaceController(
-            final ItemService itemService, final MailService mailService, final RequestService requestService) {
+            final ItemService itemService,
+            final MailService mailService,
+            final BookingRequestService bookingRequestService) {
         this.itemService = itemService;
         this.mailService = mailService;
-        this.requestService = requestService;
+        this.bookingRequestService = bookingRequestService;
     }
 
     @ModelAttribute("reservationRequestForm")
@@ -121,14 +123,14 @@ public class MarketplaceController {
         }
 
         try {
-            final RequestSubmission requestSubmission = requestService.createRequest(
+            final BookingRequest bookingRequest = bookingRequestService.createBookingRequest(
                     itemId,
                     form.getRequesterName().trim(),
                     form.getRequesterEmail().trim(),
                     toOffsetDateTime(form.getDate(), form.getStartTime()),
                     toOffsetDateTime(form.getDate(), form.getEndTime()),
                     buildReservationRequestDescription(item.get(), owner.orElse(null), form));
-            mailService.sendRequestReviewEmail(requestSubmission);
+            mailService.sendBookingReviewEmail(bookingRequest);
             final ModelAndView mav = buildMarketplaceItemView(itemId, form);
             mav.addObject("mailSuccess", "Your request was sent to Botecito for review.");
             return mav;

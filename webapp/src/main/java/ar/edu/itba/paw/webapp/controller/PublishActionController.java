@@ -13,7 +13,7 @@ public class PublishActionController {
         // TODO replace this placeholder endpoint once publications are persisted.
         // A real delete action should resolve a DB-backed publication/token and update its state.
         // related to MailServiceImpl.java delete is a placeholder
-        final ModelAndView mav = new ModelAndView("request-action-result");
+        final ModelAndView mav = new ModelAndView("booking-action-result");
         mav.addObject("actionTitle", "Publication delete unavailable");
         mav.addObject(
                 "actionMessage",

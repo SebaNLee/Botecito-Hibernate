@@ -37,19 +37,19 @@
                         <p
                           style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
                           <span th:text="#{mail.requestReview.label.name}">Name</span></p>
-                        <p th:text="${request.requesterName}"
+                        <p th:text="${bookingRequest.requesterName}"
                           style="margin: 0 0 20px; font-size: 16px; font-weight: 500; color: #0f172a;"></p>
 
                         <p
                           style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
                           <span th:text="#{mail.requestReview.label.email}">Email</span></p>
-                        <p th:text="${request.requesterEmail}"
+                        <p th:text="${bookingRequest.requesterEmail}"
                           style="margin: 0 0 20px; font-size: 16px; font-weight: 500; color: #0f172a;"></p>
 
                         <p
                           style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
                           <span th:text="#{mail.requestReview.label.description}">Description</span></p>
-                        <p th:text="${request.description}"
+                        <p th:text="${bookingRequest.description}"
                           style="margin: 0; font-size: 15px; line-height: 1.6; color: #334155; white-space: pre-wrap;">
                         </p>
                       </td>

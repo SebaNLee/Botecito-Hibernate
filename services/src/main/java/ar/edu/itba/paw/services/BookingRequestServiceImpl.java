@@ -1,9 +1,9 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.BookingRequest;
+import ar.edu.itba.paw.models.BookingRequestStatus;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.ItemBooking;
-import ar.edu.itba.paw.models.RequestStatus;
-import ar.edu.itba.paw.models.RequestSubmission;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.time.Instant;
@@ -13,18 +13,18 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 @Service
-public class RequestServiceImpl implements RequestService {
+public class BookingRequestServiceImpl implements BookingRequestService {
 
     private final ItemDao itemDao;
     private final MailService mailService;
 
-    public RequestServiceImpl(final ItemDao itemDao, final MailService mailService) {
+    public BookingRequestServiceImpl(final ItemDao itemDao, final MailService mailService) {
         this.itemDao = itemDao;
         this.mailService = mailService;
     }
 
     @Override
-    public RequestSubmission createRequest(
+    public BookingRequest createBookingRequest(
             final Integer itemId,
             final String requesterName,
             final String requesterEmail,
@@ -35,16 +35,16 @@ public class RequestServiceImpl implements RequestService {
         final String token = UUID.randomUUID().toString();
         final ItemBooking booking =
                 itemDao.createBookingRequest(itemId, requesterUser.getId(), startTime, endTime, description, token);
-        return toRequestSubmission(booking, requesterUser);
+        return toBookingRequest(booking, requesterUser);
     }
 
     @Override
-    public Optional<RequestSubmission> findByToken(final String token) {
-        return itemDao.findBookingByHostDecisionToken(token).flatMap(this::toRequestSubmission);
+    public Optional<BookingRequest> findByToken(final String token) {
+        return itemDao.findBookingByHostDecisionToken(token).flatMap(this::toBookingRequest);
     }
 
     @Override
-    public Optional<RequestSubmission> resolveRequest(final String token, final RequestStatus newStatus) {
+    public Optional<BookingRequest> resolveBookingRequest(final String token, final BookingRequestStatus newStatus) {
         if (!itemDao.resolveBookingByHostDecisionToken(token, toBookingState(newStatus), OffsetDateTime.now())) {
             return Optional.empty();
         }
@@ -67,29 +67,29 @@ public class RequestServiceImpl implements RequestService {
         });
     }
 
-    private Optional<RequestSubmission> toRequestSubmission(final ItemBooking booking) {
-        return itemDao.findUserById(booking.getGuestId()).map(user -> toRequestSubmission(booking, user));
+    private Optional<BookingRequest> toBookingRequest(final ItemBooking booking) {
+        return itemDao.findUserById(booking.getGuestId()).map(user -> toBookingRequest(booking, user));
     }
 
-    private RequestSubmission toRequestSubmission(final ItemBooking booking, final User requesterUser) {
-        final RequestSubmission requestSubmission = new RequestSubmission(
+    private BookingRequest toBookingRequest(final ItemBooking booking, final User requesterUser) {
+        final BookingRequest bookingRequest = new BookingRequest(
                 booking.getHostDecisionToken(),
                 booking.getItemId(),
                 requesterUser.getName(),
                 requesterUser.getEmail(),
                 resolveRequesterLocaleTag(requesterUser),
                 booking.getRequestMessage(),
-                toRequestStatus(booking.getState()),
+                toBookingRequestStatus(booking.getState()),
                 booking.getCreatedAt() == null
                         ? Instant.now()
                         : booking.getCreatedAt().toInstant());
 
         if (booking.getHostDecisionUsedAt() != null) {
-            requestSubmission.resolve(
-                    toRequestStatus(booking.getState()),
+            bookingRequest.resolve(
+                    toBookingRequestStatus(booking.getState()),
                     booking.getHostDecisionUsedAt().toInstant());
         }
-        return requestSubmission;
+        return bookingRequest;
     }
 
     private String resolveRequesterLocaleTag(final User requesterUser) {
@@ -100,7 +100,7 @@ public class RequestServiceImpl implements RequestService {
         return mailService.resolveLocale(requesterUser.getEmail()).toLanguageTag();
     }
 
-    private static BookingState toBookingState(final RequestStatus requestStatus) {
+    private static BookingState toBookingState(final BookingRequestStatus requestStatus) {
         return switch (requestStatus) {
             case ACCEPTED -> BookingState.BOOKING_CONFIRMED;
             case DECLINED -> BookingState.BOOKING_REJECTED;
@@ -108,11 +108,11 @@ public class RequestServiceImpl implements RequestService {
         };
     }
 
-    private static RequestStatus toRequestStatus(final BookingState bookingState) {
+    private static BookingRequestStatus toBookingRequestStatus(final BookingState bookingState) {
         return switch (bookingState) {
-            case BOOKING_CONFIRMED -> RequestStatus.ACCEPTED;
-            case BOOKING_REJECTED -> RequestStatus.DECLINED;
-            default -> RequestStatus.PENDING;
+            case BOOKING_CONFIRMED -> BookingRequestStatus.ACCEPTED;
+            case BOOKING_REJECTED -> BookingRequestStatus.DECLINED;
+            default -> BookingRequestStatus.PENDING;
         };
     }
 }

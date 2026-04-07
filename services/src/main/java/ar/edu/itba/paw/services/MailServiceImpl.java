@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.RequestStatus;
-import ar.edu.itba.paw.models.RequestSubmission;
+import ar.edu.itba.paw.models.BookingRequest;
+import ar.edu.itba.paw.models.BookingRequestStatus;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Locale;
 import java.util.Properties;
@@ -42,7 +42,7 @@ public class MailServiceImpl implements MailService {
         // Basicamente es a donde llegan los mails de request, de momento van todos a botecitos deberia ser el que hizo
         // la publicacion
         this.reviewRecipient = requireProperty(credentialsProperties, "mail.reviewRecipient");
-        this.actionBaseUrl = baseUrl + "/requests";
+        this.actionBaseUrl = baseUrl + "/bookings";
         this.itemBaseUrl = baseUrl + "/item";
     }
 
@@ -73,34 +73,34 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
-    public void sendRequestReviewEmail(final RequestSubmission requestSubmission) {
+    public void sendBookingReviewEmail(final BookingRequest bookingRequest) {
         final Locale locale = resolveLocale(reviewRecipient);
         final Context context = new Context(locale);
-        context.setVariable("request", requestSubmission);
-        context.setVariable("acceptUrl", actionBaseUrl + "/" + requestSubmission.getToken() + "/accept");
-        context.setVariable("declineUrl", actionBaseUrl + "/" + requestSubmission.getToken() + "/decline");
+        context.setVariable("bookingRequest", bookingRequest);
+        context.setVariable("acceptUrl", actionBaseUrl + "/" + bookingRequest.getToken() + "/accept");
+        context.setVariable("declineUrl", actionBaseUrl + "/" + bookingRequest.getToken() + "/decline");
         sendHtmlEmail(
                 reviewRecipient,
-                getMessage("mail.requestReview.subject", locale, requestSubmission.getRequesterName()),
-                templateEngine.process("request-review", context));
+                getMessage("mail.requestReview.subject", locale, bookingRequest.getRequesterName()),
+                templateEngine.process("booking-review", context));
     }
 
     @Override
-    public void sendRequestResolutionEmail(final RequestSubmission requestSubmission) {
-        final Locale locale = requestSubmission.getRequesterLocale();
+    public void sendBookingResolutionEmail(final BookingRequest bookingRequest) {
+        final Locale locale = bookingRequest.getRequesterLocale();
         final Context context = new Context(locale);
-        context.setVariable("request", requestSubmission);
-        context.setVariable("statusLabel", getMessage(statusMessageCode(requestSubmission.getStatus()), locale));
-        if (requestSubmission.getItemId() != null) {
-            context.setVariable("itemUrl", itemBaseUrl + "/" + requestSubmission.getItemId());
+        context.setVariable("bookingRequest", bookingRequest);
+        context.setVariable("statusLabel", getMessage(statusMessageCode(bookingRequest.getStatus()), locale));
+        if (bookingRequest.getItemId() != null) {
+            context.setVariable("itemUrl", itemBaseUrl + "/" + bookingRequest.getItemId());
         }
         sendHtmlEmail(
-                requestSubmission.getRequesterEmail(),
+                bookingRequest.getRequesterEmail(),
                 getMessage(
                         "mail.requestResolution.subject",
                         locale,
-                        getMessage(statusMessageCode(requestSubmission.getStatus()), locale)),
-                templateEngine.process("request-resolution", context));
+                        getMessage(statusMessageCode(bookingRequest.getStatus()), locale)),
+                templateEngine.process("booking-resolution", context));
     }
 
     @Override
@@ -135,7 +135,7 @@ public class MailServiceImpl implements MailService {
         return value;
     }
 
-    private String statusMessageCode(final RequestStatus status) {
+    private String statusMessageCode(final BookingRequestStatus status) {
         return switch (status) {
             case ACCEPTED -> "request.status.accepted";
             case DECLINED -> "request.status.declined";

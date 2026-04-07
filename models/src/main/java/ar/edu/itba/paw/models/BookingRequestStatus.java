@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.models;
 
-public enum RequestStatus {
+public enum BookingRequestStatus {
     PENDING,
     ACCEPTED,
     DECLINED

@@ -3,7 +3,7 @@ package ar.edu.itba.paw.models;
 import java.time.Instant;
 import java.util.Locale;
 
-public class RequestSubmission {
+public class BookingRequest {
 
     private final String token;
     private final Integer itemId;
@@ -11,18 +11,18 @@ public class RequestSubmission {
     private final String requesterEmail;
     private final String requesterLocaleTag;
     private final String description;
-    private RequestStatus status;
+    private BookingRequestStatus status;
     private final Instant createdAt;
     private Instant resolvedAt;
 
-    public RequestSubmission(
+    public BookingRequest(
             final String token,
             final Integer itemId,
             final String requesterName,
             final String requesterEmail,
             final String requesterLocaleTag,
             final String description,
-            final RequestStatus status,
+            final BookingRequestStatus status,
             final Instant createdAt) {
         this.token = token;
         this.itemId = itemId;
@@ -62,7 +62,7 @@ public class RequestSubmission {
         return description;
     }
 
-    public RequestStatus getStatus() {
+    public BookingRequestStatus getStatus() {
         return status;
     }
 
@@ -74,7 +74,7 @@ public class RequestSubmission {
         return resolvedAt;
     }
 
-    public void resolve(final RequestStatus newStatus, final Instant resolutionTime) {
+    public void resolve(final BookingRequestStatus newStatus, final Instant resolutionTime) {
         this.status = newStatus;
         this.resolvedAt = resolutionTime;
     }

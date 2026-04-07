@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.RequestSubmission;
+import ar.edu.itba.paw.models.BookingRequest;
 import java.util.Locale;
 
 public interface MailService {
@@ -8,9 +8,9 @@ public interface MailService {
 
     void sendPublishConfirmationEmail(String recipientEmail, String ownerName, String itemTitle);
 
-    void sendRequestReviewEmail(RequestSubmission requestSubmission);
+    void sendBookingReviewEmail(BookingRequest bookingRequest);
 
-    void sendRequestResolutionEmail(RequestSubmission requestSubmission);
+    void sendBookingResolutionEmail(BookingRequest bookingRequest);
 
     Locale resolveLocale(String recipientIdentifier);
 }

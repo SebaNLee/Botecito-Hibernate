@@ -1,6 +1,13 @@
 package ar.edu.itba.paw.webapp.form;
 
+import ar.edu.itba.paw.services.utils.TimeRangeList;
 import ar.edu.itba.paw.webapp.form.validation.FileSize;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.time.DayOfWeek;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Objects;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -46,33 +53,10 @@ public class PublishBoatForm {
     @FileSize(max = 5242880, groups = Step1.class)
     private MultipartFile file;
 
-    private boolean mondayEnabled;
-    private String mondayStartTime = "09:00";
-    private String mondayEndTime = "18:00";
+    private byte[] uploadedImageData = new byte[0];
+    private String uploadedImageContentType;
 
-    private boolean tuesdayEnabled;
-    private String tuesdayStartTime = "09:00";
-    private String tuesdayEndTime = "18:00";
-
-    private boolean wednesdayEnabled;
-    private String wednesdayStartTime = "09:00";
-    private String wednesdayEndTime = "18:00";
-
-    private boolean thursdayEnabled;
-    private String thursdayStartTime = "09:00";
-    private String thursdayEndTime = "18:00";
-
-    private boolean fridayEnabled;
-    private String fridayStartTime = "09:00";
-    private String fridayEndTime = "18:00";
-
-    private boolean saturdayEnabled;
-    private String saturdayStartTime = "09:00";
-    private String saturdayEndTime = "18:00";
-
-    private boolean sundayEnabled;
-    private String sundayStartTime = "09:00";
-    private String sundayEndTime = "18:00";
+    private final Map<DayOfWeek, TimeRangeList> availabilityByWeekday = new EnumMap<>(DayOfWeek.class);
 
     @NotBlank(groups = Step3.class, message = "{publish.validation.ownerFirstName.required}")
     @Size(max = 100, groups = Step3.class, message = "{publish.validation.ownerFirstName.max}")
@@ -161,172 +145,71 @@ public class PublishBoatForm {
         this.file = file;
     }
 
-    public boolean isMondayEnabled() {
-        return mondayEnabled;
+    public byte[] getUploadedImageData() {
+        return Arrays.copyOf(uploadedImageData, uploadedImageData.length);
     }
 
-    public void setMondayEnabled(final boolean mondayEnabled) {
-        this.mondayEnabled = mondayEnabled;
+    public void setUploadedImageData(final byte[] uploadedImageData) {
+        this.uploadedImageData =
+                uploadedImageData == null ? new byte[0] : Arrays.copyOf(uploadedImageData, uploadedImageData.length);
     }
 
-    public String getMondayStartTime() {
-        return mondayStartTime;
+    public String getUploadedImageContentType() {
+        return uploadedImageContentType;
     }
 
-    public void setMondayStartTime(final String mondayStartTime) {
-        this.mondayStartTime = mondayStartTime;
+    public void setUploadedImageContentType(final String uploadedImageContentType) {
+        this.uploadedImageContentType = uploadedImageContentType;
     }
 
-    public String getMondayEndTime() {
-        return mondayEndTime;
+    public boolean hasUploadedImage() {
+        return uploadedImageData.length > 0;
     }
 
-    public void setMondayEndTime(final String mondayEndTime) {
-        this.mondayEndTime = mondayEndTime;
+    public boolean isDayEnabled(final DayOfWeek weekday) {
+        return availabilityByWeekday.containsKey(Objects.requireNonNull(weekday));
     }
 
-    public boolean isTuesdayEnabled() {
-        return tuesdayEnabled;
+    public void setDayEnabled(final DayOfWeek weekday, final boolean enabled) {
+        final DayOfWeek safeWeekday = Objects.requireNonNull(weekday);
+        if (enabled) {
+            availabilityByWeekday.computeIfAbsent(safeWeekday, ignored -> new TimeRangeList());
+            return;
+        }
+        availabilityByWeekday.remove(safeWeekday);
     }
 
-    public void setTuesdayEnabled(final boolean tuesdayEnabled) {
-        this.tuesdayEnabled = tuesdayEnabled;
+    public TimeRangeList getAvailabilityFor(final DayOfWeek weekday) {
+        return availabilityByWeekday.get(Objects.requireNonNull(weekday));
     }
 
-    public String getTuesdayStartTime() {
-        return tuesdayStartTime;
+    public void setAvailabilityFor(final DayOfWeek weekday, final TimeRangeList ranges) {
+        final DayOfWeek safeWeekday = Objects.requireNonNull(weekday);
+        if (ranges == null) {
+            availabilityByWeekday.remove(safeWeekday);
+            return;
+        }
+
+        final TimeRangeList copy = new TimeRangeList();
+        copy.addAll(ranges);
+        availabilityByWeekday.put(safeWeekday, copy);
     }
 
-    public void setTuesdayStartTime(final String tuesdayStartTime) {
-        this.tuesdayStartTime = tuesdayStartTime;
+    // Spring binds map properties through this getter, so it must return the backing map.
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Required for Spring indexed property binding")
+    public Map<DayOfWeek, TimeRangeList> getAvailabilityByWeekday() {
+        return availabilityByWeekday;
     }
 
-    public String getTuesdayEndTime() {
-        return tuesdayEndTime;
-    }
+    public void setAvailabilityByWeekday(final Map<DayOfWeek, TimeRangeList> availabilityByWeekday) {
+        this.availabilityByWeekday.clear();
+        if (availabilityByWeekday == null) {
+            return;
+        }
 
-    public void setTuesdayEndTime(final String tuesdayEndTime) {
-        this.tuesdayEndTime = tuesdayEndTime;
-    }
-
-    public boolean isWednesdayEnabled() {
-        return wednesdayEnabled;
-    }
-
-    public void setWednesdayEnabled(final boolean wednesdayEnabled) {
-        this.wednesdayEnabled = wednesdayEnabled;
-    }
-
-    public String getWednesdayStartTime() {
-        return wednesdayStartTime;
-    }
-
-    public void setWednesdayStartTime(final String wednesdayStartTime) {
-        this.wednesdayStartTime = wednesdayStartTime;
-    }
-
-    public String getWednesdayEndTime() {
-        return wednesdayEndTime;
-    }
-
-    public void setWednesdayEndTime(final String wednesdayEndTime) {
-        this.wednesdayEndTime = wednesdayEndTime;
-    }
-
-    public boolean isThursdayEnabled() {
-        return thursdayEnabled;
-    }
-
-    public void setThursdayEnabled(final boolean thursdayEnabled) {
-        this.thursdayEnabled = thursdayEnabled;
-    }
-
-    public String getThursdayStartTime() {
-        return thursdayStartTime;
-    }
-
-    public void setThursdayStartTime(final String thursdayStartTime) {
-        this.thursdayStartTime = thursdayStartTime;
-    }
-
-    public String getThursdayEndTime() {
-        return thursdayEndTime;
-    }
-
-    public void setThursdayEndTime(final String thursdayEndTime) {
-        this.thursdayEndTime = thursdayEndTime;
-    }
-
-    public boolean isFridayEnabled() {
-        return fridayEnabled;
-    }
-
-    public void setFridayEnabled(final boolean fridayEnabled) {
-        this.fridayEnabled = fridayEnabled;
-    }
-
-    public String getFridayStartTime() {
-        return fridayStartTime;
-    }
-
-    public void setFridayStartTime(final String fridayStartTime) {
-        this.fridayStartTime = fridayStartTime;
-    }
-
-    public String getFridayEndTime() {
-        return fridayEndTime;
-    }
-
-    public void setFridayEndTime(final String fridayEndTime) {
-        this.fridayEndTime = fridayEndTime;
-    }
-
-    public boolean isSaturdayEnabled() {
-        return saturdayEnabled;
-    }
-
-    public void setSaturdayEnabled(final boolean saturdayEnabled) {
-        this.saturdayEnabled = saturdayEnabled;
-    }
-
-    public String getSaturdayStartTime() {
-        return saturdayStartTime;
-    }
-
-    public void setSaturdayStartTime(final String saturdayStartTime) {
-        this.saturdayStartTime = saturdayStartTime;
-    }
-
-    public String getSaturdayEndTime() {
-        return saturdayEndTime;
-    }
-
-    public void setSaturdayEndTime(final String saturdayEndTime) {
-        this.saturdayEndTime = saturdayEndTime;
-    }
-
-    public boolean isSundayEnabled() {
-        return sundayEnabled;
-    }
-
-    public void setSundayEnabled(final boolean sundayEnabled) {
-        this.sundayEnabled = sundayEnabled;
-    }
-
-    public String getSundayStartTime() {
-        return sundayStartTime;
-    }
-
-    public void setSundayStartTime(final String sundayStartTime) {
-        this.sundayStartTime = sundayStartTime;
-    }
-
-    public String getSundayEndTime() {
-        return sundayEndTime;
-    }
-
-    public void setSundayEndTime(final String sundayEndTime) {
-        this.sundayEndTime = sundayEndTime;
+        for (final Map.Entry<DayOfWeek, TimeRangeList> dayEntry : availabilityByWeekday.entrySet()) {
+            setAvailabilityFor(dayEntry.getKey(), dayEntry.getValue());
+        }
     }
 
     public String getOwnerFirstName() {

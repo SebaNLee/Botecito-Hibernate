@@ -5,6 +5,7 @@
 
 <c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="publishUrl" value="/publish" />
+<c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
 
 <paw:layout title="Publicar Bote - Botecito" mainClass="pt-24 pb-14 max-w-6xl mx-auto px-6">
   <div class="mb-8">
@@ -25,20 +26,6 @@
     <h1 class="mt-6 text-4xl font-extrabold tracking-tight text-on-background m-0">Detalles de tu embarcacion</h1>
     <p class="text-on-surface-variant mt-2 text-lg m-0">Completa la informacion principal para que los navegantes entiendan tu propuesta.</p>
   </div>
-
-  <c:if test="${submitted}">
-    <div class="bg-green-50 border border-green-200 text-green-800 rounded-xl p-4 mb-8">
-      <p class="m-0 text-sm font-medium">Publicacion guardada correctamente. En breve te llegara un correo de confirmacion al email cargado con un enlace de eliminacion.</p>
-      <div class="mt-3 flex flex-wrap gap-3">
-        <a href="${publishUrl}" class="inline-flex items-center rounded-lg bg-green-700 px-4 py-2 text-sm font-bold text-white no-underline hover:bg-green-800 transition-colors">
-          Crear otra publicacion
-        </a>
-        <a href="${marketplaceUrl}" class="inline-flex items-center rounded-lg border border-green-300 px-4 py-2 text-sm font-bold text-green-800 no-underline hover:bg-green-100 transition-colors">
-          Ir al marketplace
-        </a>
-      </div>
-    </div>
-  </c:if>
 
   <form:form action="${publishUrl}" method="post" modelAttribute="publishForm" enctype="multipart/form-data" class="space-y-8">
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
@@ -124,8 +111,24 @@
           <h2 class="text-xl font-extrabold m-0">Foto principal</h2>
         </div>
 
+        <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-surface-container-high">
+          <img
+            id="publish-file-preview"
+            src="${not empty uploadedImagePreviewUrl ? uploadedImagePreviewUrl : placeholderImageUrl}"
+            alt="Vista previa de la imagen principal"
+            class="w-full aspect-[16/10] object-cover" />
+        </div>
+
         <label class="border-2 border-dashed border-outline-variant rounded-xl p-10 flex flex-col items-center justify-center text-center hover:bg-surface-container-high/50 transition-colors cursor-pointer group">
-          <input type="file" name="file" accept="image/*" class="hidden" onchange="document.getElementById('file-name-display').textContent = this.files[0] ? this.files[0].name : 'JPG, PNG hasta 5MB'"/>
+          <input
+            type="file"
+            name="file"
+            accept="image/*"
+            class="hidden"
+            data-image-preview-input
+            data-image-preview-target-id="publish-file-preview"
+            data-image-preview-filename-id="file-name-display"
+            data-image-preview-placeholder="${not empty uploadedImagePreviewUrl ? uploadedImagePreviewUrl : placeholderImageUrl}"/>
           <div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <span class="material-symbols-outlined text-3xl">upload_file</span>
           </div>

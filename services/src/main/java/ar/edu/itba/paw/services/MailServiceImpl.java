@@ -11,15 +11,19 @@ import java.util.Optional;
 import java.util.Properties;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 @Service
 public class MailServiceImpl implements MailService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MailServiceImpl.class);
 
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
@@ -77,22 +81,31 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
+    @Async("mailTaskExecutor")
     public void sendBookingReviewEmail(final BookingRequest bookingRequest, final String ownerEmail) {
-        final String recipientEmail;
-        if (ownerEmail != null && !ownerEmail.isBlank()) {
-            recipientEmail = ownerEmail;
-        } else {
-            recipientEmail = resolveBookingReviewRecipient(bookingRequest).orElse(reviewRecipient);
+        try {
+            final String recipientEmail;
+            if (ownerEmail != null && !ownerEmail.isBlank()) {
+                recipientEmail = ownerEmail;
+            } else {
+                recipientEmail = resolveBookingReviewRecipient(bookingRequest).orElse(reviewRecipient);
+            }
+            final Locale locale = resolveLocale(recipientEmail);
+            final Context context = new Context(locale);
+            context.setVariable("bookingRequest", bookingRequest);
+            context.setVariable("acceptUrl", actionBaseUrl + "/" + bookingRequest.getToken() + "/accept");
+            context.setVariable("declineUrl", actionBaseUrl + "/" + bookingRequest.getToken() + "/decline");
+            sendHtmlEmail(
+                    recipientEmail,
+                    getMessage("mail.requestReview.subject", locale, bookingRequest.getRequesterName()),
+                    templateEngine.process("booking-review", context));
+        } catch (final RuntimeException e) {
+            LOGGER.error(
+                    "Could not send booking review email for booking token {} and requester {}.",
+                    bookingRequest.getToken(),
+                    bookingRequest.getRequesterEmail(),
+                    e);
         }
-        final Locale locale = resolveLocale(recipientEmail);
-        final Context context = new Context(locale);
-        context.setVariable("bookingRequest", bookingRequest);
-        context.setVariable("acceptUrl", actionBaseUrl + "/" + bookingRequest.getToken() + "/accept");
-        context.setVariable("declineUrl", actionBaseUrl + "/" + bookingRequest.getToken() + "/decline");
-        sendHtmlEmail(
-                recipientEmail,
-                getMessage("mail.requestReview.subject", locale, bookingRequest.getRequesterName()),
-                templateEngine.process("booking-review", context));
     }
 
     @Override

@@ -113,6 +113,11 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    public List<String> listLocationOptions() {
+        return jdbcTemplate.queryForList("SELECT name FROM location_option ORDER BY id", String.class);
+    }
+
+    @Override
     public Optional<Item> findItemById(final int id) {
         return jdbcTemplate.query("SELECT * FROM item WHERE id = ? AND active = TRUE", ITEM_ROW_MAPPER, id).stream()
                 .findAny();

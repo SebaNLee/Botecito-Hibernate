@@ -115,7 +115,7 @@
         <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-surface-container-high">
           <img
             id="publish-file-preview"
-            src="${placeholderImageUrl}"
+            src="${not empty uploadedImagePreviewUrl ? uploadedImagePreviewUrl : placeholderImageUrl}"
             alt="Vista previa de la imagen principal"
             class="w-full aspect-[16/10] object-cover" />
         </div>
@@ -129,7 +129,7 @@
             data-image-preview-input
             data-image-preview-target-id="publish-file-preview"
             data-image-preview-filename-id="file-name-display"
-            data-image-preview-placeholder="${placeholderImageUrl}"/>
+            data-image-preview-placeholder="${not empty uploadedImagePreviewUrl ? uploadedImagePreviewUrl : placeholderImageUrl}"/>
           <div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <span class="material-symbols-outlined text-3xl">upload_file</span>
           </div>

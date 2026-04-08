@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.SessionAttributes;
 import org.springframework.web.bind.support.SessionStatus;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
@@ -74,6 +75,11 @@ public class PublishController {
         return buildDifficultyOptions();
     }
 
+    @ModelAttribute("uploadedImagePreviewUrl")
+    public String uploadedImagePreviewUrl(@ModelAttribute("publishForm") final PublishBoatForm form) {
+        return buildUploadedImagePreviewUrl(form);
+    }
+
     @RequestMapping(value = "/publish", method = RequestMethod.GET)
     public ModelAndView publishStepOne(@ModelAttribute("publishForm") final PublishBoatForm form) {
         return new ModelAndView("publish");
@@ -83,6 +89,10 @@ public class PublishController {
     public ModelAndView publishStepOneSubmit(
             @Validated(PublishBoatForm.Step1.class) @ModelAttribute("publishForm") final PublishBoatForm form,
             final BindingResult errors) {
+        if (!errors.hasFieldErrors("file")) {
+            persistUploadedImageIfPresent(form);
+        }
+
         if (errors.hasErrors()) {
             return new ModelAndView("publish");
         }
@@ -139,19 +149,12 @@ public class PublishController {
             return ResponseEntity.notFound().build();
         }
 
-        try {
-            final byte[] imageBytes = form.getFile().getBytes();
-            if (imageBytes.length == 0) {
-                return ResponseEntity.notFound().build();
-            }
-            return ResponseEntity.ok()
-                    .cacheControl(CacheControl.noStore())
-                    .contentType(resolvePreviewMediaType(form.getFile().getContentType()))
-                    .contentLength(imageBytes.length)
-                    .body(imageBytes);
-        } catch (final IOException ignored) {
-            return ResponseEntity.notFound().build();
-        }
+        final byte[] imageBytes = form.getUploadedImageData();
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(resolvePreviewMediaType(form.getUploadedImageContentType()))
+                .contentLength(imageBytes.length)
+                .body(imageBytes);
     }
 
     @RequestMapping(value = "/publish/contact", method = RequestMethod.POST)
@@ -191,8 +194,8 @@ public class PublishController {
                     form.getMarina().trim(),
                     buildAvailabilitySlots(form));
 
-            if (form.getFile() != null && !form.getFile().isEmpty()) {
-                itemService.insertImage(createdItem.getId(), form.getFile().getBytes());
+            if (form.hasUploadedImage()) {
+                itemService.insertImage(createdItem.getId(), form.getUploadedImageData());
             }
 
             mailService.sendPublishConfirmationEmail(
@@ -347,12 +350,37 @@ public class PublishController {
     }
 
     private static boolean hasValidImagePreview(final PublishBoatForm form) {
-        if (form.getFile() == null || form.getFile().isEmpty()) {
+        if (!form.hasUploadedImage()) {
             return false;
         }
 
-        final String contentType = form.getFile().getContentType();
+        final String contentType = form.getUploadedImageContentType();
         return StringUtils.hasText(contentType) && contentType.regionMatches(true, 0, "image/", 0, 6);
+    }
+
+    private static void persistUploadedImageIfPresent(final PublishBoatForm form) {
+        final MultipartFile uploaded = form.getFile();
+        if (uploaded == null || uploaded.isEmpty()) {
+            return;
+        }
+
+        final String contentType = uploaded.getContentType();
+        if (!StringUtils.hasText(contentType) || !contentType.regionMatches(true, 0, "image/", 0, 6)) {
+            form.setFile(null);
+            return;
+        }
+
+        try {
+            final byte[] imageBytes = uploaded.getBytes();
+            if (imageBytes.length > 0) {
+                form.setUploadedImageData(imageBytes);
+                form.setUploadedImageContentType(contentType);
+            }
+        } catch (final IOException ignored) {
+            // Keep previously stored image if present.
+        }
+
+        form.setFile(null);
     }
 
     private static MediaType resolvePreviewMediaType(final String contentType) {

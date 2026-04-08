@@ -3,6 +3,7 @@ package ar.edu.itba.paw.webapp.form;
 import ar.edu.itba.paw.webapp.form.validation.FileSize;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
@@ -48,6 +49,9 @@ public class PublishBoatForm {
 
     @FileSize(max = 5242880, groups = Step1.class)
     private MultipartFile file;
+
+    private byte[] uploadedImageData = new byte[0];
+    private String uploadedImageContentType;
 
     private boolean mondayEnabled;
     private boolean tuesdayEnabled;
@@ -144,6 +148,27 @@ public class PublishBoatForm {
 
     public void setFile(final MultipartFile file) {
         this.file = file;
+    }
+
+    public byte[] getUploadedImageData() {
+        return Arrays.copyOf(uploadedImageData, uploadedImageData.length);
+    }
+
+    public void setUploadedImageData(final byte[] uploadedImageData) {
+        this.uploadedImageData =
+                uploadedImageData == null ? new byte[0] : Arrays.copyOf(uploadedImageData, uploadedImageData.length);
+    }
+
+    public String getUploadedImageContentType() {
+        return uploadedImageContentType;
+    }
+
+    public void setUploadedImageContentType(final String uploadedImageContentType) {
+        this.uploadedImageContentType = uploadedImageContentType;
+    }
+
+    public boolean hasUploadedImage() {
+        return uploadedImageData.length > 0;
     }
 
     public boolean isMondayEnabled() {

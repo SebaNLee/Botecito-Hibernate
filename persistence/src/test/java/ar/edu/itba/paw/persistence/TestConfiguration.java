@@ -61,6 +61,9 @@ public class TestConfiguration {
                 .compareTo(String.valueOf(right.getFilename())));
 
         for (final Resource migrationScript : migrationScripts) {
+            if (migrationScript == null) {
+                throw new IllegalStateException("Null migration resource found");
+            }
             populator.addScript(migrationScript);
         }
 

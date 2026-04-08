@@ -6,28 +6,32 @@ public class TimeRange {
     private LocalTime startTime;
     private LocalTime endTime;
 
-    public TimeRange(LocalTime start, LocalTime end) {
-        setStart(start);
-        setEnd(end);
+    public static TimeRange of(LocalTime start, LocalTime end) {
+        TimeRange tr = new TimeRange();
+        tr.setStart(start);
+        tr.setEnd(end);
+        return tr;
     }
 
     public LocalTime getStart() {
         return startTime;
     }
 
-    public boolean setStart(LocalTime start) {
-        if (endTime != null && start.compareTo(endTime) > 0) return false;
+    public void setStart(LocalTime start) {
+        if (endTime != null && start.compareTo(endTime) > 0) throwException();
         startTime = start;
-        return true;
     }
 
     public LocalTime getEnd() {
         return endTime;
     }
 
-    public boolean setEnd(LocalTime end) {
-        if (startTime != null && startTime.compareTo(end) > 0) return false;
+    public void setEnd(LocalTime end) {
+        if (startTime != null && startTime.compareTo(end) > 0) throwException();
         endTime = end;
-        return true;
+    }
+
+    private void throwException() {
+        throw new IllegalArgumentException("End time must be greater than start time");
     }
 }

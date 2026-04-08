@@ -27,7 +27,12 @@
     <p class="text-on-surface-variant mt-2 text-lg m-0">Completa tus datos de contacto y confirma el resumen del anuncio.</p>
   </div>
 
-  <form:form action="${stepThreeUrl}" method="post" modelAttribute="publishForm" class="space-y-8">
+  <form:form
+      action="${stepThreeUrl}"
+      method="post"
+      modelAttribute="publishForm"
+      class="space-y-8"
+      data-submit-loading-form="true">
 
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
       <aside class="lg:col-span-2 bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_48px_rgba(11,28,50,0.04)] space-y-6">
@@ -128,9 +133,21 @@
           <a href="${marketplaceUrl}" class="w-full sm:w-auto px-8 py-4 bg-surface-container-high text-primary rounded-xl font-bold hover:bg-surface-container transition-colors no-underline text-center">
             Guardar borrador
           </a>
-          <button type="submit" class="w-full sm:w-auto px-10 py-4 bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-[0.98] flex items-center justify-center gap-2 border-none cursor-pointer">
-            Publicar anuncio
-            <span class="material-symbols-outlined text-sm">check_circle</span>
+          <button
+              type="submit"
+              class="relative w-full sm:w-auto px-10 py-4 bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-[0.98] flex items-center justify-center gap-2 border-none cursor-pointer disabled:cursor-wait disabled:opacity-80"
+              data-submit-loading-button
+              data-loading-text="Publicando...">
+            <span class="flex items-center justify-center gap-2" data-submit-loading-content>
+              <span>Publicar anuncio</span>
+              <span class="material-symbols-outlined text-sm">check_circle</span>
+            </span>
+            <span
+                class="pointer-events-none absolute inset-0 hidden items-center justify-center"
+                aria-hidden="true"
+                data-submit-loading-spinner>
+              <span class="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+            </span>
           </button>
         </div>
       </section>

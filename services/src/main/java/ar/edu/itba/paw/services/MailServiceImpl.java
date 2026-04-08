@@ -63,21 +63,30 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
+    @Async("mailTaskExecutor")
     public void sendPublishConfirmationEmail(
             final String recipientEmail,
             final String ownerName,
             final String itemTitle,
             final String ownerDeleteToken) {
-        final Locale locale = resolveLocale(recipientEmail);
-        final Context context = new Context(locale);
-        context.setVariable("ownerName", ownerName);
-        context.setVariable("itemTitle", itemTitle);
-        context.setVariable("publishUrl", itemBaseUrl.replace("/item", "/publish"));
-        context.setVariable("deleteUrl", itemBaseUrl.replace("/item", "/publish/" + ownerDeleteToken + "/delete"));
-        sendHtmlEmail(
-                recipientEmail,
-                getMessage("mail.publishConfirmation.subject", locale, itemTitle),
-                templateEngine.process("publish-confirmation", context));
+        try {
+            final Locale locale = resolveLocale(recipientEmail);
+            final Context context = new Context(locale);
+            context.setVariable("ownerName", ownerName);
+            context.setVariable("itemTitle", itemTitle);
+            context.setVariable("publishUrl", itemBaseUrl.replace("/item", "/publish"));
+            context.setVariable("deleteUrl", itemBaseUrl.replace("/item", "/publish/" + ownerDeleteToken + "/delete"));
+            sendHtmlEmail(
+                    recipientEmail,
+                    getMessage("mail.publishConfirmation.subject", locale, itemTitle),
+                    templateEngine.process("publish-confirmation", context));
+        } catch (final RuntimeException e) {
+            LOGGER.error(
+                    "Could not send publish confirmation email to {} for item title '{}'.",
+                    recipientEmail,
+                    itemTitle,
+                    e);
+        }
     }
 
     @Override

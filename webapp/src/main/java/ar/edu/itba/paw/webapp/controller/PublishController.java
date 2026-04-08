@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.MailException;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
@@ -151,10 +150,10 @@ public class PublishController {
                     buildOwnerName(form),
                     form.getTitle().trim(),
                     createdItem.getOwnerDeleteToken());
-        } catch (final MailException | IllegalArgumentException e) {
+        } catch (final IllegalArgumentException e) {
             final ModelAndView mav = new ModelAndView("publish-contact");
             addSummaryData(mav, form);
-            errors.reject("publish.submit.mailError");
+            errors.reject("publish.submit.persistenceError");
             return mav;
         } catch (final Exception e) {
             final ModelAndView mav = new ModelAndView("publish-contact");

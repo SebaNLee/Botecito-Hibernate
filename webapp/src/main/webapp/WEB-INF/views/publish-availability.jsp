@@ -59,7 +59,7 @@
       </div>
       <p class="mb-6 text-xs text-outline">Franja minima: 2 horas. Haz click en un slot de inicio y luego en uno de fin para crear una franja. Click en una franja existente para eliminarla.</p>
 
-      <form:errors path="mondayEnabled" cssClass="mb-4 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
+      <form:errors path="availabilityByWeekday" cssClass="mb-4 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
       <spring:hasBindErrors name="publishForm">
         <c:forEach var="error" items="${errors.globalErrors}">
           <div class="mb-4 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
@@ -72,7 +72,7 @@
 
         <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
           <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="mondayEnabled">
-            <form:checkbox path="mondayEnabled" id="mondayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="MONDAY" />
+            <input type="checkbox" id="mondayEnabled" name="enabledDays" value="MONDAY" class="h-4 w-4 accent-primary" data-day-toggle="MONDAY" <c:if test="${enabledWeekdays['MONDAY']}">checked="checked"</c:if> />
             Lunes
           </label>
           <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="MONDAY"></div>
@@ -81,7 +81,7 @@
 
         <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
           <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="tuesdayEnabled">
-            <form:checkbox path="tuesdayEnabled" id="tuesdayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="TUESDAY" />
+            <input type="checkbox" id="tuesdayEnabled" name="enabledDays" value="TUESDAY" class="h-4 w-4 accent-primary" data-day-toggle="TUESDAY" <c:if test="${enabledWeekdays['TUESDAY']}">checked="checked"</c:if> />
             Martes
           </label>
           <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="TUESDAY"></div>
@@ -90,7 +90,7 @@
 
         <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
           <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="wednesdayEnabled">
-            <form:checkbox path="wednesdayEnabled" id="wednesdayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="WEDNESDAY" />
+            <input type="checkbox" id="wednesdayEnabled" name="enabledDays" value="WEDNESDAY" class="h-4 w-4 accent-primary" data-day-toggle="WEDNESDAY" <c:if test="${enabledWeekdays['WEDNESDAY']}">checked="checked"</c:if> />
             Miercoles
           </label>
           <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="WEDNESDAY"></div>
@@ -99,7 +99,7 @@
 
         <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
           <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="thursdayEnabled">
-            <form:checkbox path="thursdayEnabled" id="thursdayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="THURSDAY" />
+            <input type="checkbox" id="thursdayEnabled" name="enabledDays" value="THURSDAY" class="h-4 w-4 accent-primary" data-day-toggle="THURSDAY" <c:if test="${enabledWeekdays['THURSDAY']}">checked="checked"</c:if> />
             Jueves
           </label>
           <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="THURSDAY"></div>
@@ -108,7 +108,7 @@
 
         <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
           <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="fridayEnabled">
-            <form:checkbox path="fridayEnabled" id="fridayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="FRIDAY" />
+            <input type="checkbox" id="fridayEnabled" name="enabledDays" value="FRIDAY" class="h-4 w-4 accent-primary" data-day-toggle="FRIDAY" <c:if test="${enabledWeekdays['FRIDAY']}">checked="checked"</c:if> />
             Viernes
           </label>
           <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="FRIDAY"></div>
@@ -117,7 +117,7 @@
 
         <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
           <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="saturdayEnabled">
-            <form:checkbox path="saturdayEnabled" id="saturdayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="SATURDAY" />
+            <input type="checkbox" id="saturdayEnabled" name="enabledDays" value="SATURDAY" class="h-4 w-4 accent-primary" data-day-toggle="SATURDAY" <c:if test="${enabledWeekdays['SATURDAY']}">checked="checked"</c:if> />
             Sabado
           </label>
           <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="SATURDAY"></div>
@@ -126,7 +126,7 @@
 
         <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
           <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="sundayEnabled">
-            <form:checkbox path="sundayEnabled" id="sundayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="SUNDAY" />
+            <input type="checkbox" id="sundayEnabled" name="enabledDays" value="SUNDAY" class="h-4 w-4 accent-primary" data-day-toggle="SUNDAY" <c:if test="${enabledWeekdays['SUNDAY']}">checked="checked"</c:if> />
             Domingo
           </label>
           <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="SUNDAY"></div>

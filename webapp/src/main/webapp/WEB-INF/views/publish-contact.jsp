@@ -106,7 +106,7 @@
 
         <div>
           <p class="text-[11px] uppercase tracking-wider font-bold text-outline mb-2">Disponibilidad</p>
-          <form:errors path="mondayEnabled" cssClass="mb-2 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
+          <form:errors path="availabilityByWeekday" cssClass="mb-2 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           <c:choose>
             <c:when test="${not empty availabilitySummary}">
               <ul class="space-y-2 m-0 p-0 list-none">

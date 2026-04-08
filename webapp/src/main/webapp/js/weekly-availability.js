@@ -298,7 +298,6 @@
     if (!this.hiddenContainer) return;
     this.hiddenContainer.innerHTML = "";
 
-    var index = 0;
     for (var i = 0; i < WEEKDAYS.length; i++) {
       var key = WEEKDAYS[i].key;
       var day = this.days[key];
@@ -311,15 +310,8 @@
       for (var j = 0; j < sorted.length; j++) {
         var r = sorted[j];
         this.hiddenContainer.appendChild(
-          hiddenInput("availabilitySlots[" + index + "].weekday", key)
+          hiddenInput("availabilityRanges", key + "|" + r.start + "|" + r.end)
         );
-        this.hiddenContainer.appendChild(
-          hiddenInput("availabilitySlots[" + index + "].startTime", r.start)
-        );
-        this.hiddenContainer.appendChild(
-          hiddenInput("availabilitySlots[" + index + "].endTime", r.end)
-        );
-        index++;
       }
     }
   };

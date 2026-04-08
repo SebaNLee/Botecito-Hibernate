@@ -1,10 +1,13 @@
 package ar.edu.itba.paw.webapp.form;
 
+import ar.edu.itba.paw.services.utils.TimeRangeList;
 import ar.edu.itba.paw.webapp.form.validation.FileSize;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.util.ArrayList;
+import java.time.DayOfWeek;
 import java.util.Arrays;
-import java.util.List;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Objects;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -53,15 +56,7 @@ public class PublishBoatForm {
     private byte[] uploadedImageData = new byte[0];
     private String uploadedImageContentType;
 
-    private boolean mondayEnabled;
-    private boolean tuesdayEnabled;
-    private boolean wednesdayEnabled;
-    private boolean thursdayEnabled;
-    private boolean fridayEnabled;
-    private boolean saturdayEnabled;
-    private boolean sundayEnabled;
-
-    private List<AvailabilitySlotForm> availabilitySlots = new ArrayList<>();
+    private final Map<DayOfWeek, TimeRangeList> availabilityByWeekday = new EnumMap<>(DayOfWeek.class);
 
     @NotBlank(groups = Step3.class, message = "{publish.validation.ownerFirstName.required}")
     @Size(max = 100, groups = Step3.class, message = "{publish.validation.ownerFirstName.max}")
@@ -171,70 +166,50 @@ public class PublishBoatForm {
         return uploadedImageData.length > 0;
     }
 
-    public boolean isMondayEnabled() {
-        return mondayEnabled;
+    public boolean isDayEnabled(final DayOfWeek weekday) {
+        return availabilityByWeekday.containsKey(Objects.requireNonNull(weekday));
     }
 
-    public void setMondayEnabled(final boolean mondayEnabled) {
-        this.mondayEnabled = mondayEnabled;
+    public void setDayEnabled(final DayOfWeek weekday, final boolean enabled) {
+        final DayOfWeek safeWeekday = Objects.requireNonNull(weekday);
+        if (enabled) {
+            availabilityByWeekday.computeIfAbsent(safeWeekday, ignored -> new TimeRangeList());
+            return;
+        }
+        availabilityByWeekday.remove(safeWeekday);
     }
 
-    public boolean isTuesdayEnabled() {
-        return tuesdayEnabled;
+    public TimeRangeList getAvailabilityFor(final DayOfWeek weekday) {
+        return availabilityByWeekday.get(Objects.requireNonNull(weekday));
     }
 
-    public void setTuesdayEnabled(final boolean tuesdayEnabled) {
-        this.tuesdayEnabled = tuesdayEnabled;
+    public void setAvailabilityFor(final DayOfWeek weekday, final TimeRangeList ranges) {
+        final DayOfWeek safeWeekday = Objects.requireNonNull(weekday);
+        if (ranges == null) {
+            availabilityByWeekday.remove(safeWeekday);
+            return;
+        }
+
+        final TimeRangeList copy = new TimeRangeList();
+        copy.addAll(ranges);
+        availabilityByWeekday.put(safeWeekday, copy);
     }
 
-    public boolean isWednesdayEnabled() {
-        return wednesdayEnabled;
-    }
-
-    public void setWednesdayEnabled(final boolean wednesdayEnabled) {
-        this.wednesdayEnabled = wednesdayEnabled;
-    }
-
-    public boolean isThursdayEnabled() {
-        return thursdayEnabled;
-    }
-
-    public void setThursdayEnabled(final boolean thursdayEnabled) {
-        this.thursdayEnabled = thursdayEnabled;
-    }
-
-    public boolean isFridayEnabled() {
-        return fridayEnabled;
-    }
-
-    public void setFridayEnabled(final boolean fridayEnabled) {
-        this.fridayEnabled = fridayEnabled;
-    }
-
-    public boolean isSaturdayEnabled() {
-        return saturdayEnabled;
-    }
-
-    public void setSaturdayEnabled(final boolean saturdayEnabled) {
-        this.saturdayEnabled = saturdayEnabled;
-    }
-
-    public boolean isSundayEnabled() {
-        return sundayEnabled;
-    }
-
-    public void setSundayEnabled(final boolean sundayEnabled) {
-        this.sundayEnabled = sundayEnabled;
-    }
-
-    // Spring binds indexed properties through this getter, so it must return the backing list.
+    // Spring binds map properties through this getter, so it must return the backing map.
     @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Required for Spring indexed property binding")
-    public List<AvailabilitySlotForm> getAvailabilitySlots() {
-        return availabilitySlots;
+    public Map<DayOfWeek, TimeRangeList> getAvailabilityByWeekday() {
+        return availabilityByWeekday;
     }
 
-    public void setAvailabilitySlots(final List<AvailabilitySlotForm> availabilitySlots) {
-        this.availabilitySlots = availabilitySlots == null ? new ArrayList<>() : new ArrayList<>(availabilitySlots);
+    public void setAvailabilityByWeekday(final Map<DayOfWeek, TimeRangeList> availabilityByWeekday) {
+        this.availabilityByWeekday.clear();
+        if (availabilityByWeekday == null) {
+            return;
+        }
+
+        for (final Map.Entry<DayOfWeek, TimeRangeList> dayEntry : availabilityByWeekday.entrySet()) {
+            setAvailabilityFor(dayEntry.getKey(), dayEntry.getValue());
+        }
     }
 
     public String getOwnerFirstName() {

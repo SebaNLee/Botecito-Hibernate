@@ -4,15 +4,20 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
+import ar.edu.itba.paw.webapp.form.AvailabilitySlotForm;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Controller;
@@ -85,7 +90,9 @@ public class PublishController {
 
     @RequestMapping(value = "/publish/availability", method = RequestMethod.GET)
     public ModelAndView publishStepTwo(@ModelAttribute("publishForm") final PublishBoatForm form) {
-        return new ModelAndView("publish-availability");
+        final ModelAndView mav = new ModelAndView("publish-availability");
+        mav.addObject("existingSlotsJson", buildExistingSlotsJson(form));
+        return mav;
     }
 
     @RequestMapping(value = "/publish/availability", method = RequestMethod.POST)
@@ -93,7 +100,9 @@ public class PublishController {
             @ModelAttribute("publishForm") final PublishBoatForm form, final BindingResult errors) {
         validateAvailabilityStep(form, errors);
         if (errors.hasErrors()) {
-            return new ModelAndView("publish-availability");
+            final ModelAndView mav = new ModelAndView("publish-availability");
+            mav.addObject("existingSlotsJson", buildExistingSlotsJson(form));
+            return mav;
         }
 
         return new ModelAndView("redirect:/publish/contact");
@@ -207,56 +216,47 @@ public class PublishController {
         return new BigDecimal(maxWeight.trim());
     }
 
-    private static List<ItemAvailability> buildAvailabilitySlots(final PublishBoatForm form) {
-        final List<ItemAvailability> availabilities = new ArrayList<>();
-        addAvailability(
-                availabilities, "MONDAY", form.isMondayEnabled(), form.getMondayStartTime(), form.getMondayEndTime());
-        addAvailability(
-                availabilities,
-                "TUESDAY",
-                form.isTuesdayEnabled(),
-                form.getTuesdayStartTime(),
-                form.getTuesdayEndTime());
-        addAvailability(
-                availabilities,
-                "WEDNESDAY",
-                form.isWednesdayEnabled(),
-                form.getWednesdayStartTime(),
-                form.getWednesdayEndTime());
-        addAvailability(
-                availabilities,
-                "THURSDAY",
-                form.isThursdayEnabled(),
-                form.getThursdayStartTime(),
-                form.getThursdayEndTime());
-        addAvailability(
-                availabilities, "FRIDAY", form.isFridayEnabled(), form.getFridayStartTime(), form.getFridayEndTime());
-        addAvailability(
-                availabilities,
-                "SATURDAY",
-                form.isSaturdayEnabled(),
-                form.getSaturdayStartTime(),
-                form.getSaturdayEndTime());
-        addAvailability(
-                availabilities, "SUNDAY", form.isSundayEnabled(), form.getSundayStartTime(), form.getSundayEndTime());
-        return availabilities;
+    private static final long MIN_RANGE_MINUTES = 120;
+
+    private static final Map<String, String> WEEKDAY_LABELS = new LinkedHashMap<>();
+
+    static {
+        WEEKDAY_LABELS.put("MONDAY", "Lunes");
+        WEEKDAY_LABELS.put("TUESDAY", "Martes");
+        WEEKDAY_LABELS.put("WEDNESDAY", "Miercoles");
+        WEEKDAY_LABELS.put("THURSDAY", "Jueves");
+        WEEKDAY_LABELS.put("FRIDAY", "Viernes");
+        WEEKDAY_LABELS.put("SATURDAY", "Sabado");
+        WEEKDAY_LABELS.put("SUNDAY", "Domingo");
     }
 
-    private static void addAvailability(
-            final List<ItemAvailability> availabilities,
-            final String weekday,
-            final boolean enabled,
-            final String startTime,
-            final String endTime) {
-        if (!enabled) {
-            return;
-        }
+    private static Set<String> enabledWeekdays(final PublishBoatForm form) {
+        final List<String> enabled = new ArrayList<>();
+        if (form.isMondayEnabled()) enabled.add("MONDAY");
+        if (form.isTuesdayEnabled()) enabled.add("TUESDAY");
+        if (form.isWednesdayEnabled()) enabled.add("WEDNESDAY");
+        if (form.isThursdayEnabled()) enabled.add("THURSDAY");
+        if (form.isFridayEnabled()) enabled.add("FRIDAY");
+        if (form.isSaturdayEnabled()) enabled.add("SATURDAY");
+        if (form.isSundayEnabled()) enabled.add("SUNDAY");
+        return Set.copyOf(enabled);
+    }
 
-        final ItemAvailability availability = new ItemAvailability();
-        availability.setWeekday(weekday);
-        availability.setStartTime(startTime);
-        availability.setEndTime(endTime);
-        availabilities.add(availability);
+    private static List<ItemAvailability> buildAvailabilitySlots(final PublishBoatForm form) {
+        final Set<String> enabled = enabledWeekdays(form);
+        final List<AvailabilitySlotForm> slots = form.getAvailabilitySlots();
+        final List<ItemAvailability> availabilities = new ArrayList<>();
+        for (final AvailabilitySlotForm slot : slots) {
+            if (slot.getWeekday() == null || !enabled.contains(slot.getWeekday())) {
+                continue;
+            }
+            final ItemAvailability availability = new ItemAvailability();
+            availability.setWeekday(slot.getWeekday());
+            availability.setStartTime(slot.getStartTime());
+            availability.setEndTime(slot.getEndTime());
+            availabilities.add(availability);
+        }
+        return availabilities;
     }
 
     private static void addSummaryData(final ModelAndView mav, final PublishBoatForm form) {
@@ -266,100 +266,123 @@ public class PublishController {
     }
 
     private static List<String> buildAvailabilitySummary(final PublishBoatForm form) {
+        final Set<String> enabled = enabledWeekdays(form);
+        final List<AvailabilitySlotForm> slots = form.getAvailabilitySlots();
         final List<String> summary = new ArrayList<>();
-        addDaySummary(summary, "Lunes", form.isMondayEnabled(), form.getMondayStartTime(), form.getMondayEndTime());
-        addDaySummary(summary, "Martes", form.isTuesdayEnabled(), form.getTuesdayStartTime(), form.getTuesdayEndTime());
-        addDaySummary(
-                summary,
-                "Miercoles",
-                form.isWednesdayEnabled(),
-                form.getWednesdayStartTime(),
-                form.getWednesdayEndTime());
-        addDaySummary(
-                summary, "Jueves", form.isThursdayEnabled(), form.getThursdayStartTime(), form.getThursdayEndTime());
-        addDaySummary(summary, "Viernes", form.isFridayEnabled(), form.getFridayStartTime(), form.getFridayEndTime());
-        addDaySummary(
-                summary, "Sabado", form.isSaturdayEnabled(), form.getSaturdayStartTime(), form.getSaturdayEndTime());
-        addDaySummary(summary, "Domingo", form.isSundayEnabled(), form.getSundayStartTime(), form.getSundayEndTime());
+        final Map<String, List<AvailabilitySlotForm>> byDay = slots.stream()
+                .filter(s -> s.getWeekday() != null && enabled.contains(s.getWeekday()))
+                .collect(Collectors.groupingBy(AvailabilitySlotForm::getWeekday));
+        for (final Map.Entry<String, String> entry : WEEKDAY_LABELS.entrySet()) {
+            final List<AvailabilitySlotForm> daySlots = byDay.get(entry.getKey());
+            if (daySlots == null || daySlots.isEmpty()) {
+                continue;
+            }
+            daySlots.sort(Comparator.comparing(AvailabilitySlotForm::getStartTime));
+            final StringBuilder sb = new StringBuilder(entry.getValue()).append(": ");
+            for (int i = 0; i < daySlots.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(daySlots.get(i).getStartTime())
+                        .append(" - ")
+                        .append(daySlots.get(i).getEndTime());
+            }
+            summary.add(sb.toString());
+        }
         return summary;
     }
 
-    private static void addDaySummary(
-            final List<String> summary,
-            final String label,
-            final boolean enabled,
-            final String startTime,
-            final String endTime) {
-        if (!enabled) {
-            return;
+    private static String buildExistingSlotsJson(final PublishBoatForm form) {
+        if (form.getAvailabilitySlots() == null || form.getAvailabilitySlots().isEmpty()) {
+            return "[]";
         }
-
-        summary.add(label + ": " + startTime + " - " + endTime);
+        final StringBuilder sb = new StringBuilder("[");
+        boolean first = true;
+        for (final AvailabilitySlotForm slot : form.getAvailabilitySlots()) {
+            if (slot.getWeekday() == null) continue;
+            if (!first) sb.append(",");
+            sb.append("{\"weekday\":\"")
+                    .append(slot.getWeekday())
+                    .append("\",\"startTime\":\"")
+                    .append(slot.getStartTime())
+                    .append("\",\"endTime\":\"")
+                    .append(slot.getEndTime())
+                    .append("\"}");
+            first = false;
+        }
+        sb.append("]");
+        return sb.toString();
     }
 
     private static void validateAvailabilityStep(final PublishBoatForm form, final BindingResult errors) {
-        boolean hasEnabledDay = false;
+        final Set<String> enabled = enabledWeekdays(form);
+        if (enabled.isEmpty()) {
+            errors.rejectValue("mondayEnabled", "publish.availability.required");
+            return;
+        }
 
-        hasEnabledDay |= validateDay(
-                form.isMondayEnabled(), form.getMondayStartTime(), form.getMondayEndTime(), "monday", errors);
-        hasEnabledDay |= validateDay(
-                form.isTuesdayEnabled(), form.getTuesdayStartTime(), form.getTuesdayEndTime(), "tuesday", errors);
-        hasEnabledDay |= validateDay(
-                form.isWednesdayEnabled(),
-                form.getWednesdayStartTime(),
-                form.getWednesdayEndTime(),
-                "wednesday",
-                errors);
-        hasEnabledDay |= validateDay(
-                form.isThursdayEnabled(), form.getThursdayStartTime(), form.getThursdayEndTime(), "thursday", errors);
-        hasEnabledDay |= validateDay(
-                form.isFridayEnabled(), form.getFridayStartTime(), form.getFridayEndTime(), "friday", errors);
-        hasEnabledDay |= validateDay(
-                form.isSaturdayEnabled(), form.getSaturdayStartTime(), form.getSaturdayEndTime(), "saturday", errors);
-        hasEnabledDay |= validateDay(
-                form.isSundayEnabled(), form.getSundayStartTime(), form.getSundayEndTime(), "sunday", errors);
+        final List<AvailabilitySlotForm> slots = form.getAvailabilitySlots();
+        if (slots == null || slots.isEmpty()) {
+            errors.rejectValue("mondayEnabled", "publish.availability.required");
+            return;
+        }
 
-        if (!hasEnabledDay) {
+        final Map<String, List<AvailabilitySlotForm>> byDay = slots.stream()
+                .filter(s -> s.getWeekday() != null && enabled.contains(s.getWeekday()))
+                .collect(Collectors.groupingBy(AvailabilitySlotForm::getWeekday));
+
+        boolean hasAnySlot = false;
+        for (final String weekday : enabled) {
+            final List<AvailabilitySlotForm> daySlots = byDay.get(weekday);
+            if (daySlots == null || daySlots.isEmpty()) {
+                errors.reject(
+                        "publish.availability.day.empty",
+                        new Object[] {WEEKDAY_LABELS.getOrDefault(weekday, weekday)},
+                        null);
+                continue;
+            }
+            hasAnySlot = true;
+            validateDaySlots(daySlots, weekday, errors);
+        }
+
+        if (!hasAnySlot) {
             errors.rejectValue("mondayEnabled", "publish.availability.required");
         }
     }
 
-    private static boolean validateDay(
-            final boolean enabled,
-            final String startTime,
-            final String endTime,
-            final String fieldPrefix,
-            final BindingResult errors) {
-        if (!enabled) {
-            return false;
-        }
+    private static void validateDaySlots(
+            final List<AvailabilitySlotForm> daySlots, final String weekday, final BindingResult errors) {
+        final String dayLabel = WEEKDAY_LABELS.getOrDefault(weekday, weekday);
+        final List<LocalTime[]> parsed = new ArrayList<>();
 
-        final String startField = fieldPrefix + "StartTime";
-        final String endField = fieldPrefix + "EndTime";
-
-        if (!StringUtils.hasText(startTime)) {
-            errors.rejectValue(startField, "publish.availability.start.required");
-        }
-
-        if (!StringUtils.hasText(endTime)) {
-            errors.rejectValue(endField, "publish.availability.end.required");
-        }
-
-        if (!StringUtils.hasText(startTime) || !StringUtils.hasText(endTime)) {
-            return true;
-        }
-
-        try {
-            final LocalTime start = LocalTime.parse(startTime);
-            final LocalTime end = LocalTime.parse(endTime);
-            if (!end.isAfter(start)) {
-                errors.rejectValue(endField, "publish.availability.end.invalid");
+        for (final AvailabilitySlotForm slot : daySlots) {
+            if (!StringUtils.hasText(slot.getStartTime()) || !StringUtils.hasText(slot.getEndTime())) {
+                errors.reject("publish.availability.format.invalid", new Object[] {dayLabel}, null);
+                return;
             }
-        } catch (final DateTimeParseException ex) {
-            errors.rejectValue(endField, "publish.availability.format.invalid");
+            try {
+                final LocalTime start = LocalTime.parse(slot.getStartTime());
+                final LocalTime end = LocalTime.parse(slot.getEndTime());
+                if (!end.isAfter(start)) {
+                    errors.reject("publish.availability.end.invalid", new Object[] {dayLabel}, null);
+                    return;
+                }
+                if (Duration.between(start, end).toMinutes() < MIN_RANGE_MINUTES) {
+                    errors.reject("publish.availability.min.duration", new Object[] {dayLabel}, null);
+                    return;
+                }
+                parsed.add(new LocalTime[] {start, end});
+            } catch (final DateTimeParseException ex) {
+                errors.reject("publish.availability.format.invalid", new Object[] {dayLabel}, null);
+                return;
+            }
         }
 
-        return true;
+        parsed.sort(Comparator.comparing(r -> r[0]));
+        for (int i = 1; i < parsed.size(); i++) {
+            if (parsed.get(i)[0].isBefore(parsed.get(i - 1)[1])) {
+                errors.reject("publish.availability.overlap", new Object[] {dayLabel}, null);
+                return;
+            }
+        }
     }
 
     private static Map<String, String> buildItemTypeOptions() {

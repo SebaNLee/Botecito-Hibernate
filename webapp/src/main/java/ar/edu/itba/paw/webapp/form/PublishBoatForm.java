@@ -1,6 +1,8 @@
 package ar.edu.itba.paw.webapp.form;
 
 import ar.edu.itba.paw.webapp.form.validation.FileSize;
+import java.util.ArrayList;
+import java.util.List;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -47,32 +49,14 @@ public class PublishBoatForm {
     private MultipartFile file;
 
     private boolean mondayEnabled;
-    private String mondayStartTime = "09:00";
-    private String mondayEndTime = "18:00";
-
     private boolean tuesdayEnabled;
-    private String tuesdayStartTime = "09:00";
-    private String tuesdayEndTime = "18:00";
-
     private boolean wednesdayEnabled;
-    private String wednesdayStartTime = "09:00";
-    private String wednesdayEndTime = "18:00";
-
     private boolean thursdayEnabled;
-    private String thursdayStartTime = "09:00";
-    private String thursdayEndTime = "18:00";
-
     private boolean fridayEnabled;
-    private String fridayStartTime = "09:00";
-    private String fridayEndTime = "18:00";
-
     private boolean saturdayEnabled;
-    private String saturdayStartTime = "09:00";
-    private String saturdayEndTime = "18:00";
-
     private boolean sundayEnabled;
-    private String sundayStartTime = "09:00";
-    private String sundayEndTime = "18:00";
+
+    private List<AvailabilitySlotForm> availabilitySlots = new ArrayList<>();
 
     @NotBlank(groups = Step3.class, message = "{publish.validation.ownerFirstName.required}")
     @Size(max = 100, groups = Step3.class, message = "{publish.validation.ownerFirstName.max}")
@@ -169,44 +153,12 @@ public class PublishBoatForm {
         this.mondayEnabled = mondayEnabled;
     }
 
-    public String getMondayStartTime() {
-        return mondayStartTime;
-    }
-
-    public void setMondayStartTime(final String mondayStartTime) {
-        this.mondayStartTime = mondayStartTime;
-    }
-
-    public String getMondayEndTime() {
-        return mondayEndTime;
-    }
-
-    public void setMondayEndTime(final String mondayEndTime) {
-        this.mondayEndTime = mondayEndTime;
-    }
-
     public boolean isTuesdayEnabled() {
         return tuesdayEnabled;
     }
 
     public void setTuesdayEnabled(final boolean tuesdayEnabled) {
         this.tuesdayEnabled = tuesdayEnabled;
-    }
-
-    public String getTuesdayStartTime() {
-        return tuesdayStartTime;
-    }
-
-    public void setTuesdayStartTime(final String tuesdayStartTime) {
-        this.tuesdayStartTime = tuesdayStartTime;
-    }
-
-    public String getTuesdayEndTime() {
-        return tuesdayEndTime;
-    }
-
-    public void setTuesdayEndTime(final String tuesdayEndTime) {
-        this.tuesdayEndTime = tuesdayEndTime;
     }
 
     public boolean isWednesdayEnabled() {
@@ -217,44 +169,12 @@ public class PublishBoatForm {
         this.wednesdayEnabled = wednesdayEnabled;
     }
 
-    public String getWednesdayStartTime() {
-        return wednesdayStartTime;
-    }
-
-    public void setWednesdayStartTime(final String wednesdayStartTime) {
-        this.wednesdayStartTime = wednesdayStartTime;
-    }
-
-    public String getWednesdayEndTime() {
-        return wednesdayEndTime;
-    }
-
-    public void setWednesdayEndTime(final String wednesdayEndTime) {
-        this.wednesdayEndTime = wednesdayEndTime;
-    }
-
     public boolean isThursdayEnabled() {
         return thursdayEnabled;
     }
 
     public void setThursdayEnabled(final boolean thursdayEnabled) {
         this.thursdayEnabled = thursdayEnabled;
-    }
-
-    public String getThursdayStartTime() {
-        return thursdayStartTime;
-    }
-
-    public void setThursdayStartTime(final String thursdayStartTime) {
-        this.thursdayStartTime = thursdayStartTime;
-    }
-
-    public String getThursdayEndTime() {
-        return thursdayEndTime;
-    }
-
-    public void setThursdayEndTime(final String thursdayEndTime) {
-        this.thursdayEndTime = thursdayEndTime;
     }
 
     public boolean isFridayEnabled() {
@@ -265,44 +185,12 @@ public class PublishBoatForm {
         this.fridayEnabled = fridayEnabled;
     }
 
-    public String getFridayStartTime() {
-        return fridayStartTime;
-    }
-
-    public void setFridayStartTime(final String fridayStartTime) {
-        this.fridayStartTime = fridayStartTime;
-    }
-
-    public String getFridayEndTime() {
-        return fridayEndTime;
-    }
-
-    public void setFridayEndTime(final String fridayEndTime) {
-        this.fridayEndTime = fridayEndTime;
-    }
-
     public boolean isSaturdayEnabled() {
         return saturdayEnabled;
     }
 
     public void setSaturdayEnabled(final boolean saturdayEnabled) {
         this.saturdayEnabled = saturdayEnabled;
-    }
-
-    public String getSaturdayStartTime() {
-        return saturdayStartTime;
-    }
-
-    public void setSaturdayStartTime(final String saturdayStartTime) {
-        this.saturdayStartTime = saturdayStartTime;
-    }
-
-    public String getSaturdayEndTime() {
-        return saturdayEndTime;
-    }
-
-    public void setSaturdayEndTime(final String saturdayEndTime) {
-        this.saturdayEndTime = saturdayEndTime;
     }
 
     public boolean isSundayEnabled() {
@@ -313,20 +201,12 @@ public class PublishBoatForm {
         this.sundayEnabled = sundayEnabled;
     }
 
-    public String getSundayStartTime() {
-        return sundayStartTime;
+    public List<AvailabilitySlotForm> getAvailabilitySlots() {
+        return new ArrayList<>(availabilitySlots);
     }
 
-    public void setSundayStartTime(final String sundayStartTime) {
-        this.sundayStartTime = sundayStartTime;
-    }
-
-    public String getSundayEndTime() {
-        return sundayEndTime;
-    }
-
-    public void setSundayEndTime(final String sundayEndTime) {
-        this.sundayEndTime = sundayEndTime;
+    public void setAvailabilitySlots(final List<AvailabilitySlotForm> availabilitySlots) {
+        this.availabilitySlots = availabilitySlots == null ? new ArrayList<>() : new ArrayList<>(availabilitySlots);
     }
 
     public String getOwnerFirstName() {

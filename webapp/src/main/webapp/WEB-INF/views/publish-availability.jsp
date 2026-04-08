@@ -1,5 +1,6 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
@@ -24,138 +25,117 @@
       <div class="h-full w-2/3 rounded-full bg-primary"></div>
     </div>
     <h1 class="mt-6 text-4xl font-extrabold tracking-tight text-on-background m-0">Define dias y horarios</h1>
-    <p class="text-on-surface-variant mt-2 text-lg m-0">Marca en que dias esta disponible tu barco y su franja de alquiler.</p>
+    <p class="text-on-surface-variant mt-2 text-lg m-0">Selecciona franjas de 30 minutos en cada dia. Podes agregar multiples franjas por dia (minimo 2 horas cada una).</p>
   </div>
 
   <form:form action="${stepTwoUrl}" method="post" modelAttribute="publishForm" class="space-y-8">
 
-    <section class="bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_48px_rgba(11,28,50,0.04)]">
-      <div class="flex items-center gap-3 mb-6 pb-4 border-b border-outline-variant/20">
+    <section class="bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_48px_rgba(11,28,50,0.04)]"
+             data-weekly-availability-grid
+             data-existing-slots='${existingSlotsJson}'
+             data-min-duration="120">
+      <div class="flex items-center gap-3 mb-4 pb-4 border-b border-outline-variant/20">
         <span class="material-symbols-outlined text-primary text-2xl">schedule</span>
         <h2 class="text-xl font-extrabold m-0">Franjas semanales</h2>
       </div>
-      <form:errors path="mondayEnabled" cssClass="mb-4 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
 
-      <div class="space-y-4" data-availability-grid>
-        <div class="grid grid-cols-1 md:grid-cols-[190px_1fr_1fr] gap-3 items-center rounded-xl border border-outline-variant/20 bg-surface-container-high/55 px-4 py-4" data-availability-row>
-          <label class="inline-flex items-center gap-3 font-bold text-on-surface" for="mondayEnabled">
-            <form:checkbox path="mondayEnabled" id="mondayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="true" />
+      <div class="mb-4 flex flex-wrap items-center gap-4 text-[10px] font-bold text-on-surface-variant">
+        <span class="inline-flex items-center gap-1.5">
+          <span class="inline-block h-3 w-3 rounded bg-surface-container-low border border-outline-variant/30"></span>
+          Disponible
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <span class="inline-block h-3 w-3 rounded bg-gradient-to-br from-primary to-primary-container"></span>
+          Seleccionado
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <span class="inline-block h-3 w-3 rounded bg-primary/15 border border-primary"></span>
+          Inicio de franja
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <span class="inline-block h-3 w-3 rounded bg-[rgba(212,227,255,0.35)]"></span>
+          No disponible
+        </span>
+      </div>
+      <p class="mb-6 text-xs text-outline">Franja minima: 2 horas. Haz click en un slot de inicio y luego en uno de fin para crear una franja. Click en una franja existente para eliminarla.</p>
+
+      <form:errors path="mondayEnabled" cssClass="mb-4 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
+      <spring:hasBindErrors name="publishForm">
+        <c:forEach var="error" items="${errors.globalErrors}">
+          <div class="mb-4 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+            <c:out value="${error.defaultMessage}" />
+          </div>
+        </c:forEach>
+      </spring:hasBindErrors>
+
+      <div class="space-y-6">
+
+        <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
+          <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="mondayEnabled">
+            <form:checkbox path="mondayEnabled" id="mondayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="MONDAY" />
             Lunes
           </label>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="mondayStartTime">Desde</label>
-            <form:input path="mondayStartTime" id="mondayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="mondayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="mondayEndTime">Hasta</label>
-            <form:input path="mondayEndTime" id="mondayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="mondayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
+          <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="MONDAY"></div>
+          <div data-day-summary="MONDAY"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-[190px_1fr_1fr] gap-3 items-center rounded-xl border border-outline-variant/20 bg-surface-container-high/55 px-4 py-4" data-availability-row>
-          <label class="inline-flex items-center gap-3 font-bold text-on-surface" for="tuesdayEnabled">
-            <form:checkbox path="tuesdayEnabled" id="tuesdayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="true" />
+        <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
+          <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="tuesdayEnabled">
+            <form:checkbox path="tuesdayEnabled" id="tuesdayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="TUESDAY" />
             Martes
           </label>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="tuesdayStartTime">Desde</label>
-            <form:input path="tuesdayStartTime" id="tuesdayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="tuesdayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="tuesdayEndTime">Hasta</label>
-            <form:input path="tuesdayEndTime" id="tuesdayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="tuesdayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
+          <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="TUESDAY"></div>
+          <div data-day-summary="TUESDAY"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-[190px_1fr_1fr] gap-3 items-center rounded-xl border border-outline-variant/20 bg-surface-container-high/55 px-4 py-4" data-availability-row>
-          <label class="inline-flex items-center gap-3 font-bold text-on-surface" for="wednesdayEnabled">
-            <form:checkbox path="wednesdayEnabled" id="wednesdayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="true" />
+        <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
+          <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="wednesdayEnabled">
+            <form:checkbox path="wednesdayEnabled" id="wednesdayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="WEDNESDAY" />
             Miercoles
           </label>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="wednesdayStartTime">Desde</label>
-            <form:input path="wednesdayStartTime" id="wednesdayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="wednesdayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="wednesdayEndTime">Hasta</label>
-            <form:input path="wednesdayEndTime" id="wednesdayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="wednesdayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
+          <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="WEDNESDAY"></div>
+          <div data-day-summary="WEDNESDAY"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-[190px_1fr_1fr] gap-3 items-center rounded-xl border border-outline-variant/20 bg-surface-container-high/55 px-4 py-4" data-availability-row>
-          <label class="inline-flex items-center gap-3 font-bold text-on-surface" for="thursdayEnabled">
-            <form:checkbox path="thursdayEnabled" id="thursdayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="true" />
+        <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
+          <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="thursdayEnabled">
+            <form:checkbox path="thursdayEnabled" id="thursdayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="THURSDAY" />
             Jueves
           </label>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="thursdayStartTime">Desde</label>
-            <form:input path="thursdayStartTime" id="thursdayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="thursdayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="thursdayEndTime">Hasta</label>
-            <form:input path="thursdayEndTime" id="thursdayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="thursdayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
+          <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="THURSDAY"></div>
+          <div data-day-summary="THURSDAY"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-[190px_1fr_1fr] gap-3 items-center rounded-xl border border-outline-variant/20 bg-surface-container-high/55 px-4 py-4" data-availability-row>
-          <label class="inline-flex items-center gap-3 font-bold text-on-surface" for="fridayEnabled">
-            <form:checkbox path="fridayEnabled" id="fridayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="true" />
+        <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
+          <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="fridayEnabled">
+            <form:checkbox path="fridayEnabled" id="fridayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="FRIDAY" />
             Viernes
           </label>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="fridayStartTime">Desde</label>
-            <form:input path="fridayStartTime" id="fridayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="fridayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="fridayEndTime">Hasta</label>
-            <form:input path="fridayEndTime" id="fridayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="fridayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
+          <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="FRIDAY"></div>
+          <div data-day-summary="FRIDAY"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-[190px_1fr_1fr] gap-3 items-center rounded-xl border border-outline-variant/20 bg-surface-container-high/55 px-4 py-4" data-availability-row>
-          <label class="inline-flex items-center gap-3 font-bold text-on-surface" for="saturdayEnabled">
-            <form:checkbox path="saturdayEnabled" id="saturdayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="true" />
+        <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
+          <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="saturdayEnabled">
+            <form:checkbox path="saturdayEnabled" id="saturdayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="SATURDAY" />
             Sabado
           </label>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="saturdayStartTime">Desde</label>
-            <form:input path="saturdayStartTime" id="saturdayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="saturdayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="saturdayEndTime">Hasta</label>
-            <form:input path="saturdayEndTime" id="saturdayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="saturdayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
+          <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="SATURDAY"></div>
+          <div data-day-summary="SATURDAY"></div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-[190px_1fr_1fr] gap-3 items-center rounded-xl border border-outline-variant/20 bg-surface-container-high/55 px-4 py-4" data-availability-row>
-          <label class="inline-flex items-center gap-3 font-bold text-on-surface" for="sundayEnabled">
-            <form:checkbox path="sundayEnabled" id="sundayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="true" />
+        <div class="rounded-xl border border-outline-variant/20 bg-surface-container-high/40 p-4" data-availability-row>
+          <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="sundayEnabled">
+            <form:checkbox path="sundayEnabled" id="sundayEnabled" cssClass="h-4 w-4 accent-primary" data-day-toggle="SUNDAY" />
             Domingo
           </label>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="sundayStartTime">Desde</label>
-            <form:input path="sundayStartTime" id="sundayStartTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="sundayStartTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
-          <div>
-            <label class="text-[11px] uppercase tracking-wider text-outline font-bold" for="sundayEndTime">Hasta</label>
-            <form:input path="sundayEndTime" id="sundayEndTime" type="time" cssClass="mt-1 w-full px-3 py-2 bg-surface-container-lowest rounded-lg border border-outline-variant/30 text-on-surface" />
-            <form:errors path="sundayEndTime" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
+          <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="SUNDAY"></div>
+          <div data-day-summary="SUNDAY"></div>
         </div>
+
       </div>
+
+      <div data-availability-hidden-inputs></div>
     </section>
 
     <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
@@ -168,28 +148,4 @@
       </button>
     </div>
   </form:form>
-
-  <script>
-    (function () {
-      var rows = document.querySelectorAll('[data-availability-row]');
-      rows.forEach(function (row) {
-        var toggle = row.querySelector('[data-day-toggle="true"]');
-        if (!toggle) {
-          return;
-        }
-
-        var inputs = row.querySelectorAll('input[type="time"]');
-        function syncRowState() {
-          var enabled = toggle.checked;
-          inputs.forEach(function (input) {
-            input.disabled = !enabled;
-          });
-          row.classList.toggle('opacity-60', !enabled);
-        }
-
-        toggle.addEventListener('change', syncRowState);
-        syncRowState();
-      });
-    })();
-  </script>
 </paw:layout>

@@ -44,10 +44,6 @@ public class MailServiceImpl implements MailService {
         this.messageSource = messageSource;
         this.itemDao = itemDao;
         final String baseUrl = requireProperty(credentialsProperties, "app.baseUrl");
-        // TODO replace this config-backed review recipient with data loaded from persistence once the
-        // application has a real owner/admin recipient model in the DB.
-        // Basicamente es a donde llegan los mails de request, de momento van todos a botecitos deberia ser el que hizo
-        // la publicacion
         this.reviewRecipient = requireProperty(credentialsProperties, "mail.reviewRecipient");
         this.actionBaseUrl = baseUrl + "/bookings";
         this.itemBaseUrl = baseUrl + "/item";
@@ -124,14 +120,14 @@ public class MailServiceImpl implements MailService {
         if (userLocale.isPresent()) {
             return userLocale.get();
         }
-        return new Locale("es");
+        return Locale.of("es");
     }
 
     private static Locale toSupportedLocale(final String preferredLanguage) {
         if ("en".equalsIgnoreCase(preferredLanguage)) {
             return Locale.ENGLISH;
         }
-        return new Locale("es");
+        return Locale.of("es");
     }
 
     private Optional<String> resolveBookingReviewRecipient(final BookingRequest bookingRequest) {

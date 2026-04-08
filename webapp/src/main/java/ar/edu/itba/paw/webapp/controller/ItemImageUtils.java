@@ -9,11 +9,14 @@ public class ItemImageUtils {
 
     private ItemImageUtils() {}
 
-    public static String resolveImageUrl(final ItemService itemService, final int itemId) {
+    /** Primary image URL or placeholder; {@code servletContextPath} is required when the WAR has a non-root context. */
+    public static String resolveImageUrl(
+            final ItemService itemService, final int itemId, final String servletContextPath) {
+        final String prefix = servletContextPath == null ? "" : servletContextPath;
         final List<Integer> imageIds = itemService.listImageIdsByItemId(itemId);
         if (!imageIds.isEmpty()) {
-            return IMAGE_PATH_PREFIX + imageIds.get(0);
+            return prefix + IMAGE_PATH_PREFIX + imageIds.get(0);
         }
-        return PLACEHOLDER_IMAGE_PATH;
+        return prefix + PLACEHOLDER_IMAGE_PATH;
     }
 }

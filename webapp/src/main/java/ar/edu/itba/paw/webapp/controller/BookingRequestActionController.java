@@ -39,35 +39,48 @@ public class BookingRequestActionController {
         final ModelAndView mav = new ModelAndView("booking-action-result");
         final Optional<BookingRequest> existingBookingRequest = bookingRequestService.findByToken(token);
         if (existingBookingRequest.isEmpty()) {
-            mav.addObject("actionTitle", "Booking not found");
-            mav.addObject("actionMessage", "The booking token is invalid or no longer available.");
+            mav.addObject("actionTitleCode", "bookingAction.notFound.title");
+            mav.addObject("actionMessageCode", "bookingAction.notFound.message");
             return mav;
         }
 
         final BookingRequest bookingRequest = existingBookingRequest.get();
         mav.addObject("itemId", bookingRequest.getItemId());
         if (bookingRequest.getStatus() != BookingState.BOOKING_PENDING) {
-            mav.addObject("actionTitle", "Booking already processed");
-            mav.addObject(
-                    "actionMessage",
-                    "This booking request was already "
-                            + bookingRequest.getStatus().name().toLowerCase() + ".");
+            mav.addObject("actionTitleCode", "bookingAction.alreadyProcessed.title");
+            mav.addObject("actionMessageCode", alreadyProcessedMessageCode(bookingRequest.getStatus()));
             return mav;
         }
 
         final Optional<BookingRequest> resolvedBookingRequest =
                 bookingRequestService.resolveBookingRequest(token, requestStatus);
         if (resolvedBookingRequest.isEmpty()) {
-            mav.addObject("actionTitle", "Booking could not be updated");
-            mav.addObject("actionMessage", "Try again or verify that the booking is still pending.");
+            mav.addObject("actionTitleCode", "bookingAction.updateFailed.title");
+            mav.addObject("actionMessageCode", "bookingAction.updateFailed.message");
             return mav;
         }
 
         mailService.sendBookingResolutionEmail(resolvedBookingRequest.get());
-        mav.addObject("actionTitle", "Booking " + requestStatus.name().toLowerCase());
+        mav.addObject("actionTitleCode", resolvedTitleCode(requestStatus));
+        mav.addObject("actionMessageCode", "bookingAction.resolved.message");
         mav.addObject(
-                "actionMessage",
-                "The requester was notified at " + resolvedBookingRequest.get().getRequesterEmail() + ".");
+                "actionMessageArgs", new Object[] {resolvedBookingRequest.get().getRequesterEmail()});
         return mav;
+    }
+
+    private static String alreadyProcessedMessageCode(final BookingState bookingState) {
+        return switch (bookingState) {
+            case BOOKING_CONFIRMED -> "bookingAction.alreadyProcessed.confirmed";
+            case BOOKING_REJECTED -> "bookingAction.alreadyProcessed.rejected";
+            default -> "bookingAction.alreadyProcessed.message";
+        };
+    }
+
+    private static String resolvedTitleCode(final BookingState bookingState) {
+        return switch (bookingState) {
+            case BOOKING_CONFIRMED -> "bookingAction.resolved.confirmed";
+            case BOOKING_REJECTED -> "bookingAction.resolved.rejected";
+            default -> "bookingAction.pageTitle";
+        };
     }
 }

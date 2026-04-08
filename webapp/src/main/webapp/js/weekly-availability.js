@@ -1,12 +1,12 @@
 (function () {
   var WEEKDAYS = [
-    { key: "MONDAY", label: "Lunes" },
-    { key: "TUESDAY", label: "Martes" },
-    { key: "WEDNESDAY", label: "Miercoles" },
-    { key: "THURSDAY", label: "Jueves" },
-    { key: "FRIDAY", label: "Viernes" },
-    { key: "SATURDAY", label: "Sabado" },
-    { key: "SUNDAY", label: "Domingo" },
+    { key: "MONDAY" },
+    { key: "TUESDAY" },
+    { key: "WEDNESDAY" },
+    { key: "THURSDAY" },
+    { key: "FRIDAY" },
+    { key: "SATURDAY" },
+    { key: "SUNDAY" },
   ];
 
   var MIN_DURATION_MINUTES = 120;
@@ -53,6 +53,7 @@
     this.hiddenContainer = root.querySelector("[data-availability-hidden-inputs]");
     this.form = root.closest("form");
     this.minDuration = parseInt(root.dataset.minDuration || MIN_DURATION_MINUTES, 10);
+    this.noRangesText = root.dataset.noRangesText || "No time ranges selected";
 
     this.days = {};
     for (var i = 0; i < WEEKDAYS.length; i++) {
@@ -153,7 +154,7 @@
 
     var day = this.days[weekday];
     if (!day.enabled || day.ranges.length === 0) {
-      summaryEl.textContent = day.enabled ? "Sin franjas seleccionadas" : "";
+      summaryEl.textContent = day.enabled ? this.noRangesText : "";
       summaryEl.className = "mt-2 text-xs font-medium text-outline";
       return;
     }

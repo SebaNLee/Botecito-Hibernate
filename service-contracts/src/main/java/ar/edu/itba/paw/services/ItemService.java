@@ -40,6 +40,8 @@ public interface ItemService {
 
     Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken);
 
+    boolean activateItemByOwnerDeleteToken(final String ownerDeleteToken);
+
     boolean deactivateItemByOwnerDeleteToken(final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt);
 
     List<ItemAvailability> listAvailabilities();

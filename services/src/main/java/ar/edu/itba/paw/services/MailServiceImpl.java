@@ -74,7 +74,8 @@ public class MailServiceImpl implements MailService {
             final Context context = new Context(locale);
             context.setVariable("ownerName", ownerName);
             context.setVariable("itemTitle", itemTitle);
-            context.setVariable("publishUrl", itemBaseUrl.replace("/item", "/publish"));
+            context.setVariable(
+                    "confirmUrl", itemBaseUrl.replace("/item", "/publish/" + ownerDeleteToken + "/confirm"));
             context.setVariable("deleteUrl", itemBaseUrl.replace("/item", "/publish/" + ownerDeleteToken + "/delete"));
             sendHtmlEmail(
                     recipientEmail,

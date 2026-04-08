@@ -95,6 +95,11 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public boolean activateItemByOwnerDeleteToken(final String ownerDeleteToken) {
+        return itemDao.activateItemByOwnerDeleteToken(ownerDeleteToken);
+    }
+
+    @Override
     public boolean deactivateItemByOwnerDeleteToken(
             final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt) {
         return itemDao.deactivateItemByOwnerDeleteToken(ownerDeleteToken, ownerDeleteUsedAt);

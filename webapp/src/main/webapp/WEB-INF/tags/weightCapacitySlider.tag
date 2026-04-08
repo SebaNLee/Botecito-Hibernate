@@ -11,15 +11,18 @@
 <%@ attribute name="containerClass" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
-<c:set var="resolvedLabel" value="${not empty label ? label : 'Peso a soportar'}" />
+<spring:message code="filters.maxWeight" var="defaultWeightLabel" />
+<spring:message code="filters.maxWeight.helper" var="defaultWeightHelper" />
+<c:set var="resolvedLabel" value="${not empty label ? label : defaultWeightLabel}" />
 <c:set var="resolvedMin" value="${not empty min ? min : '100'}" />
 <c:set var="resolvedMax" value="${not empty max ? max : '2000'}" />
 <c:set var="resolvedStep" value="${not empty step ? step : '50'}" />
 <c:set var="resolvedValue" value="${not empty value ? value : ''}" />
 <c:set var="resolvedDisplayValue" value="${not empty value ? value : resolvedMin}" />
 <c:set var="resolvedUnit" value="${not empty unit ? unit : 'kg'}" />
-<c:set var="resolvedHelper" value="${not empty helper ? helper : 'Mostramos botes que soportan este peso o mas.'}" />
+<c:set var="resolvedHelper" value="${not empty helper ? helper : defaultWeightHelper}" />
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
 
 <div

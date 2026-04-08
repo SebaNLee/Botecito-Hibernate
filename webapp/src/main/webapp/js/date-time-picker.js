@@ -1,10 +1,12 @@
 (function () {
-  const WEEKDAY_LABELS = ["DO", "LU", "MA", "MI", "JU", "VI", "SA"];
-  const MONTH_FORMATTER = new Intl.DateTimeFormat("es-AR", {
+  const UI_LOCALE =
+    document.documentElement.lang || navigator.language || "es";
+  const WEEKDAY_LABELS = buildWeekdayLabels(UI_LOCALE);
+  const MONTH_FORMATTER = new Intl.DateTimeFormat(UI_LOCALE, {
     month: "long",
     year: "numeric",
   });
-  const DATE_FORMATTER = new Intl.DateTimeFormat("es-AR", {
+  const DATE_FORMATTER = new Intl.DateTimeFormat(UI_LOCALE, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -42,6 +44,14 @@
     "bg-gradient-to-br from-primary to-primary-container text-on-primary shadow-[0_16px_32px_rgba(0,93,167,0.24)]";
   const SLOT_RANGE_CLASS =
     "bg-gradient-to-br from-primary to-primary-container text-on-primary";
+
+  function buildWeekdayLabels(locale) {
+    const formatter = new Intl.DateTimeFormat(locale, { weekday: "short" });
+    return Array.from({ length: 7 }, (_, index) => {
+      const value = formatter.format(new Date(2026, 0, 4 + index));
+      return value.replace(/\.$/, "").slice(0, 2).toUpperCase();
+    });
+  }
 
   function buildAllTimes() {
     const times = [];
@@ -444,6 +454,100 @@
     };
   }
 
+  function initializeReservationPriceSummaries() {
+    document
+      .querySelectorAll("[data-reservation-price-summary]")
+      .forEach((summaryRoot) => {
+        const summarySection = summaryRoot.parentElement;
+        const form =
+          summaryRoot.closest("form") ||
+          (summarySection ? summarySection.querySelector("form") : null);
+
+        if (!form) {
+          return;
+        }
+
+        const dateInput = form.querySelector("[data-picker-input]");
+        const startInput = form.querySelector("[data-time-start-input]");
+        const endInput = form.querySelector("[data-time-end-input]");
+        const totalNode = summaryRoot.querySelector("[data-price-total]");
+        const durationNode = summaryRoot.querySelector("[data-price-duration]");
+        const pricePerHour = Number.parseFloat(
+          String(summaryRoot.dataset.pricePerHour || "").replace(",", "."),
+        );
+
+        if (
+          !dateInput ||
+          !startInput ||
+          !endInput ||
+          !totalNode ||
+          !durationNode ||
+          Number.isNaN(pricePerHour)
+        ) {
+          return;
+        }
+
+        const currencySymbol = summaryRoot.dataset.currencySymbol || "$";
+        const pendingLabel = summaryRoot.dataset.pricePending || "";
+        const pendingHelpLabel = summaryRoot.dataset.pricePendingHelp || "";
+        const pickEndLabel = summaryRoot.dataset.pricePickEnd || "";
+        const priceForLabel = summaryRoot.dataset.priceForLabel || "";
+        const hourLabel = summaryRoot.dataset.priceHourLabel || "";
+        const hoursLabel = summaryRoot.dataset.priceHoursLabel || "";
+        const numberFormatter = new Intl.NumberFormat(UI_LOCALE, {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        });
+
+        function resetSummary() {
+          totalNode.textContent = pendingLabel;
+          durationNode.textContent = pendingHelpLabel;
+        }
+
+        function updateSummary() {
+          if (!dateInput.value || !startInput.value) {
+            resetSummary();
+            return;
+          }
+
+          if (!endInput.value) {
+            totalNode.textContent = pendingLabel;
+            durationNode.textContent = pickEndLabel;
+            return;
+          }
+
+          const selectedMinutes = minutesBetween(
+            startInput.value,
+            endInput.value,
+          );
+
+          if (selectedMinutes <= 0) {
+            resetSummary();
+            return;
+          }
+
+          const selectedHours = selectedMinutes / 60;
+          const totalPrice = pricePerHour * selectedHours;
+          const hourUnit = selectedHours === 1 ? hourLabel : hoursLabel;
+
+          totalNode.textContent =
+            currencySymbol + numberFormatter.format(totalPrice);
+          durationNode.textContent =
+            priceForLabel +
+            " " +
+            numberFormatter.format(selectedHours) +
+            " " +
+            hourUnit;
+        }
+
+        [dateInput, startInput, endInput].forEach((input) => {
+          input.addEventListener("change", updateSummary);
+        });
+
+        updateSummary();
+      });
+  }
+
   class DatePicker {
     constructor(root) {
       this.root = root;
@@ -456,7 +560,9 @@
       this.valueNode = root.querySelector("[data-picker-value]");
       this.monthTitleNode = root.querySelector("[data-picker-month-title]");
       this.monthsContainer = root.querySelector("[data-picker-months]");
-      this.placeholder = root.dataset.placeholder || "Selecciona fecha";
+      this.placeholder = root.dataset.placeholder || "";
+      this.availabilityLabel = root.dataset.availabilityLabel || "";
+      this.selectDateLabel = root.dataset.selectDateLabel || "";
       this.offeredDates = new Set(parseJson(root.dataset.offeredDates, []));
       this.occupiedDates = new Set(parseJson(root.dataset.occupiedDates, []));
       this.restrictToAvailability = parseBoolean(
@@ -696,7 +802,7 @@
       const key = this.monthKeys[this.activeMonthIndex];
 
       if (!key) {
-        this.monthTitleNode.textContent = "Selecciona fecha";
+        this.monthTitleNode.textContent = this.selectDateLabel;
         return;
       }
 
@@ -737,7 +843,12 @@
       this.startInput = root.querySelector("[data-time-start-input]");
       this.endInput = root.querySelector("[data-time-end-input]");
       this.dateInput = document.getElementById(root.dataset.dateInputId);
-      this.placeholder = root.dataset.placeholder || "Inicio - Fin";
+      this.placeholder = root.dataset.placeholder || "";
+      this.pickDateFirstLabel = root.dataset.pickDateFirstLabel || "";
+      this.noTimesLabel = root.dataset.noTimesLabel || "";
+      this.pickEndLabel = root.dataset.pickEndLabel || "";
+      this.pickStartLabel = root.dataset.pickStartLabel || "";
+      this.fromLabel = root.dataset.fromLabel || "";
       this.offeredTimes = parseJson(root.dataset.offeredTimes, {});
       this.occupiedTimes = parseJson(root.dataset.occupiedTimes, {});
       this.restrictToAvailability = parseBoolean(
@@ -1046,18 +1157,18 @@
 
     helperText(date) {
       if (isBlank(date)) {
-        return "Selecciona una fecha para ver los horarios libres.";
+        return this.pickDateFirstLabel;
       }
 
       if (!ALL_TIMES.some((time) => this.hasBookableEndFrom(date, time))) {
-        return "No hay horarios libres para la fecha elegida.";
+        return this.noTimesLabel;
       }
 
       if (this.startInput.value && !this.endInput.value) {
-        return "Selecciona un horario de fin.";
+        return this.pickEndLabel;
       }
 
-      return "Selecciona un horario de inicio.";
+      return this.pickStartLabel;
     }
 
     render() {
@@ -1183,7 +1294,7 @@
       }
 
       if (this.startInput.value) {
-        this.valueNode.textContent = "Desde " + this.startInput.value;
+        this.valueNode.textContent = this.fromLabel + " " + this.startInput.value;
         return;
       }
 
@@ -1355,6 +1466,8 @@
     document.querySelectorAll("[data-time-range-picker]").forEach((root) => {
       new TimeRangePicker(root);
     });
+
+    initializeReservationPriceSummaries();
   });
 
   window.addEventListener("resize", () => {

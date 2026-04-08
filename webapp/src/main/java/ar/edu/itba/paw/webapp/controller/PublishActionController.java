@@ -26,26 +26,25 @@ public class PublishActionController {
         final ModelAndView mav = new ModelAndView("booking-action-result");
         final Optional<Item> item = itemService.findItemByOwnerDeleteToken(token);
         if (item.isEmpty()) {
-            mav.addObject("actionTitle", "Publication not found");
-            mav.addObject("actionMessage", "The publication confirmation link is invalid or no longer available.");
+            mav.addObject("actionTitleCode", "publishAction.confirmNotFound.title");
+            mav.addObject("actionMessageCode", "publishAction.confirmNotFound.message");
             return mav;
         }
 
+        mav.addObject("itemId", item.get().getId());
         if (Boolean.TRUE.equals(item.get().getActive())) {
-            mav.addObject("itemId", item.get().getId());
-            mav.addObject("actionTitle", "Publication already confirmed");
-            mav.addObject("actionMessage", "This publication confirmation link was already used.");
+            mav.addObject("actionTitleCode", "publishAction.alreadyConfirmed.title");
+            mav.addObject("actionMessageCode", "publishAction.alreadyConfirmed.message");
             return mav;
         }
 
         if (!itemService.activateItemByOwnerDeleteToken(token)) {
-            mav.addObject("actionTitle", "Publication could not be confirmed");
-            mav.addObject("actionMessage", "Try again or verify that the publication is still pending confirmation.");
+            mav.addObject("actionTitleCode", "publishAction.confirmFailed.title");
+            mav.addObject("actionMessageCode", "publishAction.confirmFailed.message");
             return mav;
         }
-        mav.addObject("itemId", item.get().getId());
-        mav.addObject("actionTitle", "Publication confirmed");
-        mav.addObject("actionMessage", "Your publication is now visible in marketplace results.");
+        mav.addObject("actionTitleCode", "publishAction.confirmed.title");
+        mav.addObject("actionMessageCode", "publishAction.confirmed.message");
         return mav;
     }
 
@@ -54,25 +53,27 @@ public class PublishActionController {
         final ModelAndView mav = new ModelAndView("booking-action-result");
         final Optional<Item> item = itemService.findItemByOwnerDeleteToken(token);
         if (item.isEmpty()) {
-            mav.addObject("actionTitle", "Publication not found");
-            mav.addObject("actionMessage", "The publication token is invalid or no longer available.");
+            mav.addObject("actionTitleCode", "publishAction.notFound.title");
+            mav.addObject("actionMessageCode", "publishAction.notFound.message");
             return mav;
         }
 
-        if (item.get().getOwnerDeleteUsedAt() != null) {
-            mav.addObject("actionTitle", "Publication already deleted");
-            mav.addObject("actionMessage", "This publication delete link was already used.");
+        mav.addObject("itemId", item.get().getId());
+        if (item.get().getOwnerDeleteUsedAt() != null
+                || !Boolean.TRUE.equals(item.get().getActive())) {
+            mav.addObject("actionTitleCode", "publishAction.alreadyDeleted.title");
+            mav.addObject("actionMessageCode", "publishAction.alreadyDeleted.message");
             return mav;
         }
 
         if (!itemService.deactivateItemByOwnerDeleteToken(token, OffsetDateTime.now())) {
-            mav.addObject("actionTitle", "Publication could not be deleted");
-            mav.addObject("actionMessage", "Try again or verify that the publication is still active.");
+            mav.addObject("actionTitleCode", "publishAction.deleteFailed.title");
+            mav.addObject("actionMessageCode", "publishAction.deleteFailed.message");
             return mav;
         }
 
-        mav.addObject("actionTitle", "Publication deleted");
-        mav.addObject("actionMessage", "Your publication was removed from marketplace results.");
+        mav.addObject("actionTitleCode", "publishAction.deleted.title");
+        mav.addObject("actionMessageCode", "publishAction.deleted.message");
         return mav;
     }
 }

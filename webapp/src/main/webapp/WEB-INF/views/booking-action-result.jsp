@@ -6,9 +6,11 @@
 <c:if test="${itemId != null}">
   <c:url var="itemUrl" value="/item/${itemId}" />
 </c:if>
+<spring:message code="${actionTitleCode}" arguments="${actionTitleArgs}" var="resolvedActionTitle" />
+<spring:message code="${actionMessageCode}" arguments="${actionMessageArgs}" var="resolvedActionMessage" />
 
 <!DOCTYPE html>
-<html lang="es">
+<html lang="${not empty pageContext.response.locale.language ? pageContext.response.locale.language : 'es'}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -22,13 +24,13 @@
         <div class="mb-6 inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
           <spring:message code="requestAction.badge" />
         </div>
-        <paw:heading level="2" text="${actionTitle}" cssClass="mb-3" />
+        <paw:heading level="2" text="${resolvedActionTitle}" cssClass="mb-3" />
         <p class="m-0 text-base text-slate-600">
-          <c:out value="${actionMessage}" />
+          <c:out value="${resolvedActionMessage}" />
         </p>
         <c:if test="${itemId != null}">
           <a href="${itemUrl}" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 font-bold text-on-primary no-underline">
-            Check out the publication
+            <spring:message code="mail.requestResolution.viewItem" />
             <span class="material-symbols-outlined text-sm">arrow_forward</span>
           </a>
         </c:if>

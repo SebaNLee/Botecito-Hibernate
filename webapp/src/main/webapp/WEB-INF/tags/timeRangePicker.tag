@@ -15,11 +15,29 @@
 <%@ attribute name="minimumDurationMinutes" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
-<c:set var="resolvedLabel" value="${not empty label ? label : 'Horario'}" />
+<spring:message code="filters.time" var="defaultTimeLabel" />
+<spring:message code="filters.time.placeholder" var="defaultTimePlaceholder" />
+<spring:message code="timePicker.availability" var="timePickerAvailability" />
+<spring:message code="timePicker.selectTime" var="timePickerSelectTime" />
+<spring:message code="timePicker.close" var="timePickerClose" />
+<spring:message code="timePicker.available" var="timePickerAvailable" />
+<spring:message code="timePicker.unavailable" var="timePickerUnavailable" />
+<spring:message code="timePicker.selected" var="timePickerSelected" />
+<spring:message code="timePicker.occupied" var="timePickerOccupied" />
+<spring:message code="timePicker.pickDateFirst" var="timePickerPickDateFirst" />
+<spring:message code="timePicker.noTimes" var="timePickerNoTimes" />
+<spring:message code="timePicker.pickEnd" var="timePickerPickEnd" />
+<spring:message code="timePicker.pickStart" var="timePickerPickStart" />
+<spring:message code="timePicker.minimumDuration" var="timePickerMinimumDuration" />
+<spring:message code="timePicker.from" var="timePickerFrom" />
+<spring:message code="timePicker.apply" var="timePickerApply" />
+<spring:message code="common.clear" var="clearLabel" />
+<c:set var="resolvedLabel" value="${not empty label ? label : defaultTimeLabel}" />
 <c:set var="resolvedStartValue" value="${not empty startValue ? startValue : ''}" />
 <c:set var="resolvedEndValue" value="${not empty endValue ? endValue : ''}" />
-<c:set var="resolvedPlaceholder" value="${not empty placeholder ? placeholder : 'Inicio - Fin'}" />
+<c:set var="resolvedPlaceholder" value="${not empty placeholder ? placeholder : defaultTimePlaceholder}" />
 <c:set var="resolvedIcon" value="${not empty icon ? icon : 'schedule'}" />
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
 <c:set var="resolvedRestrictToAvailability" value="${empty restrictToAvailability ? true : restrictToAvailability}" />
@@ -33,7 +51,19 @@
     data-restrict-to-availability="${resolvedRestrictToAvailability}"
     data-minimum-duration-minutes="${resolvedMinimumDurationMinutes}"
     data-offered-times='${fn:escapeXml(offeredTimesJson)}'
-    data-occupied-times='${fn:escapeXml(occupiedTimesJson)}'>
+    data-occupied-times='${fn:escapeXml(occupiedTimesJson)}'
+    data-availability-label="${fn:escapeXml(timePickerAvailability)}"
+    data-select-time-label="${fn:escapeXml(timePickerSelectTime)}"
+    data-available-label="${fn:escapeXml(timePickerAvailable)}"
+    data-unavailable-label="${fn:escapeXml(timePickerUnavailable)}"
+    data-selected-label="${fn:escapeXml(timePickerSelected)}"
+    data-occupied-label="${fn:escapeXml(timePickerOccupied)}"
+    data-pick-date-first-label="${fn:escapeXml(timePickerPickDateFirst)}"
+    data-no-times-label="${fn:escapeXml(timePickerNoTimes)}"
+    data-pick-end-label="${fn:escapeXml(timePickerPickEnd)}"
+    data-pick-start-label="${fn:escapeXml(timePickerPickStart)}"
+    data-minimum-duration-label="${fn:escapeXml(timePickerMinimumDuration)}"
+    data-from-label="${fn:escapeXml(timePickerFrom)}">
   <input id="${id}-start" name="${startName}" type="hidden" value="${fn:escapeXml(resolvedStartValue)}" data-time-start-input />
   <input id="${id}-end" name="${endName}" type="hidden" value="${fn:escapeXml(resolvedEndValue)}" data-time-end-input />
 
@@ -59,10 +89,10 @@
       hidden>
     <div class="mb-2 flex items-start justify-between gap-3">
       <div>
-        <div class="text-[11px] font-extrabold tracking-[0.18em] uppercase text-primary">Disponibilidad</div>
-        <h3 class="mt-0.5 font-headline text-lg font-extrabold text-on-background">Selecciona horario</h3>
+        <div class="text-[11px] font-extrabold tracking-[0.18em] uppercase text-primary"><c:out value="${timePickerAvailability}" /></div>
+        <h3 class="mt-0.5 font-headline text-lg font-extrabold text-on-background"><c:out value="${timePickerSelectTime}" /></h3>
       </div>
-      <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-full border-0 bg-surface-container-low text-on-surface cursor-pointer" data-picker-close aria-label="Cerrar selector de horario">
+      <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-full border-0 bg-surface-container-low text-on-surface cursor-pointer" data-picker-close aria-label="${fn:escapeXml(timePickerClose)}">
         <span class="material-symbols-outlined text-[18px]">close</span>
       </button>
     </div>
@@ -70,33 +100,33 @@
     <div class="mb-2 flex flex-wrap items-center gap-3 text-[10px] font-bold text-on-surface-variant">
       <span class="inline-flex items-center gap-2">
         <span class="inline-block h-3 w-3 rounded-full border border-primary/35 bg-primary/15"></span>
-        Libre
+        <c:out value="${timePickerAvailable}" />
       </span>
       <span class="inline-flex items-center gap-2">
         <span class="inline-block h-3 w-3 rounded-full bg-[rgba(212,227,255,0.45)]"></span>
-        No disp.
+        <c:out value="${timePickerUnavailable}" />
       </span>
       <span class="inline-flex items-center gap-2">
         <span class="inline-block h-3 w-3 rounded-full bg-primary-container"></span>
-        Sel.
+        <c:out value="${timePickerSelected}" />
       </span>
       <span class="inline-flex items-center gap-2">
         <span class="inline-block h-3 w-3 rounded-full border border-error/25 bg-error/14"></span>
-        Ocup.
+        <c:out value="${timePickerOccupied}" />
       </span>
     </div>
 
-    <div class="mb-1.5 text-[11px] font-semibold text-on-surface-variant" data-time-helper>Selecciona una fecha para ver los horarios libres.</div>
-    <div class="mb-3 text-[10px] font-medium text-outline">Reserva minima: 2 horas.</div>
+    <div class="mb-1.5 text-[11px] font-semibold text-on-surface-variant" data-time-helper><c:out value="${timePickerPickDateFirst}" /></div>
+    <div class="mb-3 text-[10px] font-medium text-outline"><c:out value="${timePickerMinimumDuration}" /></div>
     <div class="hide-scrollbar min-h-0 flex-1 grid grid-cols-4 gap-2 overflow-y-auto" data-time-slots data-picker-scroll-region></div>
 
     <div class="mt-2 flex items-center justify-between gap-2">
       <button type="button" class="inline-flex items-center gap-2 rounded-full border border-outline-variant bg-transparent px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-on-surface cursor-pointer" data-picker-clear>
         <span class="material-symbols-outlined text-[16px]">ink_eraser</span>
-        Limpiar
+        <c:out value="${clearLabel}" />
       </button>
       <button type="button" class="flex min-h-10 flex-1 items-center justify-center gap-2 rounded-full border-0 bg-gradient-to-br from-primary to-primary-container px-4 text-sm font-extrabold text-on-primary shadow-[0_16px_32px_rgba(0,93,167,0.22)] cursor-pointer" data-time-apply>
-        Aplicar horario
+        <c:out value="${timePickerApply}" />
         <span class="material-symbols-outlined text-base">arrow_forward</span>
       </button>
     </div>

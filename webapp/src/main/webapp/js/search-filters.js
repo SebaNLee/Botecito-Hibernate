@@ -212,17 +212,22 @@
     });
   }
 
-  function formatMismatchReasons(reasons) {
+  function formatMismatchReasons(reasons, conjunction) {
+    const joinWith = conjunction || "and";
     if (reasons.length === 1) {
       return reasons[0];
     }
 
     if (reasons.length === 2) {
-      return reasons[0] + " y " + reasons[1];
+      return reasons[0] + " " + joinWith + " " + reasons[1];
     }
 
     return (
-      reasons.slice(0, -1).join(", ") + " y " + reasons[reasons.length - 1]
+      reasons.slice(0, -1).join(", ") +
+      " " +
+      joinWith +
+      " " +
+      reasons[reasons.length - 1]
     );
   }
 
@@ -711,6 +716,21 @@
     const itemLocation = alertRoot.dataset.itemLocation || "";
     const itemCapacity = parseInteger(alertRoot.dataset.itemCapacity);
     const itemMaxWeight = parseInteger(alertRoot.dataset.itemMaxWeight);
+    const mismatchPrefix =
+      alertRoot.dataset.mismatchPrefix ||
+      "This item does not match the saved filters for";
+    const mismatchSuffix =
+      alertRoot.dataset.mismatchSuffix ||
+      "You can keep viewing it without those filters or return to marketplace to choose another.";
+    const mismatchJoin = alertRoot.dataset.mismatchJoin || "and";
+    const mismatchLocation =
+      alertRoot.dataset.mismatchLocation || "location";
+    const mismatchCapacity =
+      alertRoot.dataset.mismatchCapacity || "people capacity";
+    const mismatchWeight =
+      alertRoot.dataset.mismatchWeight || "required weight";
+    const mismatchDateTime =
+      alertRoot.dataset.mismatchDateTime || "date and time";
     const controls = getDateTimeControls(document);
     const mismatchReasons = [];
     const requestedCapacity = parseInteger(appliedState.capacity);
@@ -720,15 +740,15 @@
       appliedState.location &&
       normalizeText(appliedState.location) !== normalizeText(itemLocation)
     ) {
-      mismatchReasons.push("la ubicacion");
+      mismatchReasons.push(mismatchLocation);
     }
 
     if (requestedCapacity != null && itemCapacity != null && itemCapacity < requestedCapacity) {
-      mismatchReasons.push("la cantidad de personas");
+      mismatchReasons.push(mismatchCapacity);
     }
 
     if (requestedWeight != null && itemMaxWeight != null && itemMaxWeight < requestedWeight) {
-      mismatchReasons.push("el peso requerido");
+      mismatchReasons.push(mismatchWeight);
     }
 
     if (
@@ -743,7 +763,7 @@
           appliedState.endTime,
         ))
     ) {
-      mismatchReasons.push("la fecha y el horario");
+      mismatchReasons.push(mismatchDateTime);
     }
 
     clearButton.addEventListener("click", () => {
@@ -771,9 +791,11 @@
     if (mismatchReasons.length > 0) {
       if (messageNode) {
         messageNode.textContent =
-          "Este item no coincide con los filtros guardados de " +
-          formatMismatchReasons(mismatchReasons) +
-          ". Puedes seguir viendo este item sin esos filtros o volver al marketplace para elegir otro.";
+          mismatchPrefix +
+          " " +
+          formatMismatchReasons(mismatchReasons, mismatchJoin) +
+          ". " +
+          mismatchSuffix;
       }
       alertRoot.hidden = false;
       alertRoot.classList.remove("hidden");

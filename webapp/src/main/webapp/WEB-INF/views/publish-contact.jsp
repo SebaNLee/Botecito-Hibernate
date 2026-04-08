@@ -7,6 +7,8 @@
 <c:url var="stepTwoUrl" value="/publish/availability" />
 <c:url var="stepThreeUrl" value="/publish/contact" />
 <c:url var="marketplaceUrl" value="/marketplace" />
+<c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
+<c:url var="publishPreviewImageUrl" value="/publish/preview-image" />
 
 <paw:layout title="Publicar Bote - Contacto" mainClass="pt-24 pb-14 max-w-6xl mx-auto px-6">
   <div class="mb-8">
@@ -46,6 +48,23 @@
         <div class="flex items-center gap-3 pb-4 border-b border-outline-variant/20">
           <span class="material-symbols-outlined text-primary text-2xl">inventory_2</span>
           <h2 class="text-xl font-extrabold m-0">Resumen de publicacion</h2>
+        </div>
+
+        <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-surface-container-high">
+          <c:choose>
+            <c:when test="${not empty uploadedImagePreviewUrl}">
+              <img
+                src="${publishPreviewImageUrl}"
+                alt="Vista previa de la foto principal"
+                class="w-full aspect-[16/10] object-cover" />
+            </c:when>
+            <c:otherwise>
+              <img
+                src="${placeholderImageUrl}"
+                alt="Imagen por defecto"
+                class="w-full aspect-[16/10] object-cover" />
+            </c:otherwise>
+          </c:choose>
         </div>
 
         <div>

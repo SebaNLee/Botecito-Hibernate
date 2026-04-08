@@ -4,6 +4,7 @@
 
 <c:url var="publishUrl" value="/publish" />
 <c:url var="marketplaceUrl" value="/marketplace" />
+<c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
 
 <paw:layout title="Publicacion Exitosa - Botecito" mainClass="pt-24 pb-14 max-w-3xl mx-auto px-6">
 
@@ -19,6 +20,23 @@
     <div class="flex items-center gap-3 mb-6 pb-4 border-b border-outline-variant/20">
       <span class="material-symbols-outlined text-primary text-2xl">inventory_2</span>
       <h2 class="text-xl font-extrabold m-0">Resumen de tu publicacion</h2>
+    </div>
+
+    <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-surface-container-high mb-6">
+      <c:choose>
+        <c:when test="${not empty itemImageUrl}">
+          <img
+            src="${itemImageUrl}"
+            alt="Imagen principal de la publicacion"
+            class="w-full aspect-[16/10] object-cover" />
+        </c:when>
+        <c:otherwise>
+          <img
+            src="${placeholderImageUrl}"
+            alt="Imagen por defecto"
+            class="w-full aspect-[16/10] object-cover" />
+        </c:otherwise>
+      </c:choose>
     </div>
 
     <div class="mb-4">

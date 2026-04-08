@@ -6,6 +6,7 @@ import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.webapp.form.AvailabilitySlotForm;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalTime;
@@ -19,6 +20,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mail.MailException;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
@@ -36,6 +40,8 @@ import org.springframework.web.servlet.ModelAndView;
 @Controller
 @SessionAttributes("publishForm")
 public class PublishController {
+
+    private static final String PUBLISH_PREVIEW_IMAGE_PATH = "/publish/preview-image";
 
     private final ItemService itemService;
     private final MailService mailService;
@@ -127,6 +133,27 @@ public class PublishController {
         return mav;
     }
 
+    @RequestMapping(value = "/publish/preview-image", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> publishPreviewImage(@ModelAttribute("publishForm") final PublishBoatForm form) {
+        if (!hasValidImagePreview(form)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            final byte[] imageBytes = form.getFile().getBytes();
+            if (imageBytes.length == 0) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok()
+                    .cacheControl(CacheControl.noStore())
+                    .contentType(resolvePreviewMediaType(form.getFile().getContentType()))
+                    .contentLength(imageBytes.length)
+                    .body(imageBytes);
+        } catch (final IOException ignored) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @RequestMapping(value = "/publish/contact", method = RequestMethod.POST)
     public ModelAndView publishStepThreeSubmit(
             @Validated(PublishBoatForm.Step3.class) @ModelAttribute("publishForm") final PublishBoatForm form,
@@ -202,6 +229,7 @@ public class PublishController {
 
         final ModelAndView mav = new ModelAndView("publish-success");
         mav.addObject("item", item);
+        mav.addObject("itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId()));
 
         final String typeLabel = buildItemTypeOptions().getOrDefault(String.valueOf(item.getTypeId()), "Otro");
         mav.addObject("itemTypeLabel", typeLabel);
@@ -307,6 +335,36 @@ public class PublishController {
         mav.addObject(
                 "itemTypeLabel", buildItemTypeOptions().getOrDefault(form.getItemTypeId(), "Sin tipo seleccionado"));
         mav.addObject("availabilitySummary", buildAvailabilitySummary(form));
+        mav.addObject("uploadedImagePreviewUrl", buildUploadedImagePreviewUrl(form));
+    }
+
+    private static String buildUploadedImagePreviewUrl(final PublishBoatForm form) {
+        if (!hasValidImagePreview(form)) {
+            return null;
+        }
+
+        return PUBLISH_PREVIEW_IMAGE_PATH;
+    }
+
+    private static boolean hasValidImagePreview(final PublishBoatForm form) {
+        if (form.getFile() == null || form.getFile().isEmpty()) {
+            return false;
+        }
+
+        final String contentType = form.getFile().getContentType();
+        return StringUtils.hasText(contentType) && contentType.regionMatches(true, 0, "image/", 0, 6);
+    }
+
+    private static MediaType resolvePreviewMediaType(final String contentType) {
+        if (!StringUtils.hasText(contentType)) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
+
+        try {
+            return MediaType.parseMediaType(contentType);
+        } catch (final IllegalArgumentException ignored) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
     }
 
     private static List<String> buildAvailabilitySummary(final PublishBoatForm form) {
@@ -335,7 +393,7 @@ public class PublishController {
     }
 
     private static String buildExistingSlotsJson(final PublishBoatForm form) {
-        if (form.getAvailabilitySlots() == null || form.getAvailabilitySlots().isEmpty()) {
+        if (form.getAvailabilitySlots().isEmpty()) {
             return "[]";
         }
         final StringBuilder sb = new StringBuilder("[");
@@ -364,7 +422,7 @@ public class PublishController {
         }
 
         final List<AvailabilitySlotForm> slots = form.getAvailabilitySlots();
-        if (slots == null || slots.isEmpty()) {
+        if (slots.isEmpty()) {
             errors.rejectValue("mondayEnabled", "publish.availability.required");
             return;
         }

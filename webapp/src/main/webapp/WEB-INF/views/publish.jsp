@@ -5,6 +5,7 @@
 
 <c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="publishUrl" value="/publish" />
+<c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
 
 <paw:layout title="Publicar Bote - Botecito" mainClass="pt-24 pb-14 max-w-6xl mx-auto px-6">
   <div class="mb-8">
@@ -111,8 +112,24 @@
           <h2 class="text-xl font-extrabold m-0">Foto principal</h2>
         </div>
 
+        <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-surface-container-high">
+          <img
+            id="publish-file-preview"
+            src="${placeholderImageUrl}"
+            alt="Vista previa de la imagen principal"
+            class="w-full aspect-[16/10] object-cover" />
+        </div>
+
         <label class="border-2 border-dashed border-outline-variant rounded-xl p-10 flex flex-col items-center justify-center text-center hover:bg-surface-container-high/50 transition-colors cursor-pointer group">
-          <input type="file" name="file" accept="image/*" class="hidden" onchange="document.getElementById('file-name-display').textContent = this.files[0] ? this.files[0].name : 'JPG, PNG hasta 5MB'"/>
+          <input
+            type="file"
+            name="file"
+            accept="image/*"
+            class="hidden"
+            data-image-preview-input
+            data-image-preview-target-id="publish-file-preview"
+            data-image-preview-filename-id="file-name-display"
+            data-image-preview-placeholder="${placeholderImageUrl}"/>
           <div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <span class="material-symbols-outlined text-3xl">upload_file</span>
           </div>

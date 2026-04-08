@@ -31,6 +31,11 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public List<String> listLocationOptions() {
+        return itemDao.listLocationOptions();
+    }
+
+    @Override
     public Optional<Item> findItemById(final int id) {
         return itemDao.findItemById(id);
     }

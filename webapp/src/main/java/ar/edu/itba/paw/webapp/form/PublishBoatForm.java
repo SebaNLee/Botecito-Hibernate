@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.webapp.form;
 
 import ar.edu.itba.paw.webapp.form.validation.FileSize;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.List;
 import javax.validation.constraints.Email;
@@ -201,8 +202,10 @@ public class PublishBoatForm {
         this.sundayEnabled = sundayEnabled;
     }
 
+    // Spring binds indexed properties through this getter, so it must return the backing list.
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Required for Spring indexed property binding")
     public List<AvailabilitySlotForm> getAvailabilitySlots() {
-        return new ArrayList<>(availabilitySlots);
+        return availabilitySlots;
     }
 
     public void setAvailabilitySlots(final List<AvailabilitySlotForm> availabilitySlots) {

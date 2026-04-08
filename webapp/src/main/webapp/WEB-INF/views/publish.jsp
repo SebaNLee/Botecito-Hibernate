@@ -26,19 +26,6 @@
     <p class="text-on-surface-variant mt-2 text-lg m-0">Completa la informacion principal para que los navegantes entiendan tu propuesta.</p>
   </div>
 
-  <c:if test="${submitted}">
-    <div class="bg-green-50 border border-green-200 text-green-800 rounded-xl p-4 mb-8">
-      <p class="m-0 text-sm font-medium">Publicacion guardada correctamente. Te enviamos un correo de confirmacion al email cargado con un enlace de eliminacion.</p>
-      <div class="mt-3 flex flex-wrap gap-3">
-        <a href="${publishUrl}" class="inline-flex items-center rounded-lg bg-green-700 px-4 py-2 text-sm font-bold text-white no-underline hover:bg-green-800 transition-colors">
-          Crear otra publicacion
-        </a>
-        <a href="${marketplaceUrl}" class="inline-flex items-center rounded-lg border border-green-300 px-4 py-2 text-sm font-bold text-green-800 no-underline hover:bg-green-100 transition-colors">
-          Ir al marketplace
-        </a>
-      </div>
-    </div>
-  </c:if>
 
   <form:form action="${publishUrl}" method="post" modelAttribute="publishForm" enctype="multipart/form-data" class="space-y-8">
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">

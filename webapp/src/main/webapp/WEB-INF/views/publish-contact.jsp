@@ -1,5 +1,6 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
@@ -28,6 +29,17 @@
   </div>
 
   <form:form action="${stepThreeUrl}" method="post" modelAttribute="publishForm" class="space-y-8">
+
+    <spring:hasBindErrors name="publishForm">
+      <c:if test="${not empty errors.globalErrors}">
+        <c:forEach var="error" items="${errors.globalErrors}">
+          <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 flex items-start gap-3">
+            <span class="material-symbols-outlined text-red-500 text-lg mt-0.5">error</span>
+            <span><c:out value="${error.defaultMessage}" /></span>
+          </div>
+        </c:forEach>
+      </c:if>
+    </spring:hasBindErrors>
 
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
       <aside class="lg:col-span-2 bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_48px_rgba(11,28,50,0.04)] space-y-6">

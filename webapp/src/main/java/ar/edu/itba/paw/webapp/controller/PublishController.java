@@ -69,12 +69,8 @@ public class PublishController {
     }
 
     @RequestMapping(value = "/publish", method = RequestMethod.GET)
-    public ModelAndView publishStepOne(
-            @RequestParam(value = "submitted", required = false, defaultValue = "false") final boolean submitted,
-            @ModelAttribute("publishForm") final PublishBoatForm form) {
-        final ModelAndView mav = new ModelAndView("publish");
-        mav.addObject("submitted", submitted);
-        return mav;
+    public ModelAndView publishStepOne(@ModelAttribute("publishForm") final PublishBoatForm form) {
+        return new ModelAndView("publish");
     }
 
     @RequestMapping(value = "/publish", method = RequestMethod.POST)
@@ -90,6 +86,10 @@ public class PublishController {
 
     @RequestMapping(value = "/publish/availability", method = RequestMethod.GET)
     public ModelAndView publishStepTwo(@ModelAttribute("publishForm") final PublishBoatForm form) {
+        if (!isStepOneComplete(form)) {
+            return new ModelAndView("redirect:/publish");
+        }
+
         final ModelAndView mav = new ModelAndView("publish-availability");
         mav.addObject("existingSlotsJson", buildExistingSlotsJson(form));
         return mav;
@@ -98,6 +98,10 @@ public class PublishController {
     @RequestMapping(value = "/publish/availability", method = RequestMethod.POST)
     public ModelAndView publishStepTwoSubmit(
             @ModelAttribute("publishForm") final PublishBoatForm form, final BindingResult errors) {
+        if (!isStepOneComplete(form)) {
+            return new ModelAndView("redirect:/publish");
+        }
+
         validateAvailabilityStep(form, errors);
         if (errors.hasErrors()) {
             final ModelAndView mav = new ModelAndView("publish-availability");
@@ -110,6 +114,10 @@ public class PublishController {
 
     @RequestMapping(value = "/publish/contact", method = RequestMethod.GET)
     public ModelAndView publishStepThree(@ModelAttribute("publishForm") final PublishBoatForm form) {
+        if (!isStepOneComplete(form)) {
+            return new ModelAndView("redirect:/publish");
+        }
+
         if (buildAvailabilitySummary(form).isEmpty()) {
             return new ModelAndView("redirect:/publish/availability");
         }
@@ -126,6 +134,10 @@ public class PublishController {
             final Locale locale,
             @RequestHeader(value = "Accept-Language", required = false) final String acceptLanguage,
             final SessionStatus sessionStatus) {
+        if (!isStepOneComplete(form)) {
+            return new ModelAndView("redirect:/publish");
+        }
+
         validateAvailabilityStep(form, errors);
 
         if (errors.hasErrors()) {
@@ -134,9 +146,10 @@ public class PublishController {
             return mav;
         }
 
+        final Item createdItem;
         try {
             form.setOwnerPreferredLanguage(resolvePreferredLanguage(locale, acceptLanguage));
-            final Item createdItem = itemService.createPublication(
+            createdItem = itemService.createPublication(
                     form.getOwnerFirstName().trim(),
                     form.getOwnerLastName().trim(),
                     form.getOwnerEmail().trim(),
@@ -173,7 +186,38 @@ public class PublishController {
         }
 
         sessionStatus.setComplete();
-        return new ModelAndView("redirect:/publish?submitted=true");
+        return new ModelAndView("redirect:/publish/success?itemId=" + createdItem.getId());
+    }
+
+    @RequestMapping(value = "/publish/success", method = RequestMethod.GET)
+    public ModelAndView publishSuccess(@RequestParam(value = "itemId", required = false) final Integer itemId) {
+        if (itemId == null) {
+            return new ModelAndView("redirect:/publish");
+        }
+
+        final Item item = itemService.findItemById(itemId).orElse(null);
+        if (item == null) {
+            return new ModelAndView("redirect:/publish");
+        }
+
+        final ModelAndView mav = new ModelAndView("publish-success");
+        mav.addObject("item", item);
+
+        final String typeLabel = buildItemTypeOptions().getOrDefault(String.valueOf(item.getTypeId()), "Otro");
+        mav.addObject("itemTypeLabel", typeLabel);
+
+        final List<ItemAvailability> availabilities = itemService.listAvailabilitiesByItemId(item.getId());
+        mav.addObject("availabilities", availabilities);
+
+        return mav;
+    }
+
+    private static boolean isStepOneComplete(final PublishBoatForm form) {
+        return StringUtils.hasText(form.getTitle())
+                && StringUtils.hasText(form.getMarina())
+                && StringUtils.hasText(form.getCapacity())
+                && StringUtils.hasText(form.getItemTypeId())
+                && StringUtils.hasText(form.getPricePerHour());
     }
 
     private static String resolvePreferredLanguage(final Locale locale, final String acceptLanguageHeader) {

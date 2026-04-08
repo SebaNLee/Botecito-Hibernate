@@ -1,11 +1,14 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="stepTwoUrl" value="/publish/availability" />
 <c:url var="stepThreeUrl" value="/publish/contact" />
 <c:url var="marketplaceUrl" value="/marketplace" />
+<c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
+<c:url var="publishPreviewImageUrl" value="/publish/preview-image" />
 
 <paw:layout title="Publicar Bote - Contacto" mainClass="pt-24 pb-14 max-w-6xl mx-auto px-6">
   <div class="mb-8">
@@ -29,11 +32,39 @@
 
   <form:form action="${stepThreeUrl}" method="post" modelAttribute="publishForm" class="space-y-8">
 
+    <spring:hasBindErrors name="publishForm">
+      <c:if test="${not empty errors.globalErrors}">
+        <c:forEach var="error" items="${errors.globalErrors}">
+          <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 flex items-start gap-3">
+            <span class="material-symbols-outlined text-red-500 text-lg mt-0.5">error</span>
+            <span><c:out value="${error.defaultMessage}" /></span>
+          </div>
+        </c:forEach>
+      </c:if>
+    </spring:hasBindErrors>
+
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
       <aside class="lg:col-span-2 bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_48px_rgba(11,28,50,0.04)] space-y-6">
         <div class="flex items-center gap-3 pb-4 border-b border-outline-variant/20">
           <span class="material-symbols-outlined text-primary text-2xl">inventory_2</span>
           <h2 class="text-xl font-extrabold m-0">Resumen de publicacion</h2>
+        </div>
+
+        <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-surface-container-high">
+          <c:choose>
+            <c:when test="${not empty uploadedImagePreviewUrl}">
+              <img
+                src="${publishPreviewImageUrl}"
+                alt="Vista previa de la foto principal"
+                class="w-full aspect-[16/10] object-cover" />
+            </c:when>
+            <c:otherwise>
+              <img
+                src="${placeholderImageUrl}"
+                alt="Imagen por defecto"
+                class="w-full aspect-[16/10] object-cover" />
+            </c:otherwise>
+          </c:choose>
         </div>
 
         <div>
@@ -75,7 +106,7 @@
 
         <div>
           <p class="text-[11px] uppercase tracking-wider font-bold text-outline mb-2">Disponibilidad</p>
-          <form:errors path="mondayEnabled" cssClass="mb-2 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
+          <form:errors path="availabilityByWeekday" cssClass="mb-2 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           <c:choose>
             <c:when test="${not empty availabilitySummary}">
               <ul class="space-y-2 m-0 p-0 list-none">

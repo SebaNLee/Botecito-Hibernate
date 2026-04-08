@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.webapp.form.ItemBookingForm;
-import ar.edu.itba.paw.webapp.form.ItemForm;
 import javax.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -16,17 +15,13 @@ import org.springframework.web.servlet.ModelAndView;
 public class ItemController {
 
     @RequestMapping(value = "/create", method = RequestMethod.GET)
-    public ModelAndView createForm(@ModelAttribute("createForm") final ItemForm form) {
-        return new ModelAndView("createItem");
+    public ModelAndView createForm() {
+        return new ModelAndView("redirect:/publish");
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
-    public ModelAndView create(@Valid @ModelAttribute("createForm") final ItemForm form, final BindingResult errors) {
-        if (errors.hasErrors()) {
-            return createForm(form);
-        }
-        // creation logic goes here
-        return new ModelAndView("redirect:/");
+    public ModelAndView create() {
+        return new ModelAndView("redirect:/publish");
     }
 
     @RequestMapping(value = "/{id}/book", method = RequestMethod.GET)

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.CacheControl;
@@ -230,7 +231,8 @@ public class PublishController {
     }
 
     @RequestMapping(value = "/publish/success", method = RequestMethod.GET)
-    public ModelAndView publishSuccess(@RequestParam(value = "token", required = false) final String token) {
+    public ModelAndView publishSuccess(
+            final HttpServletRequest request, @RequestParam(value = "token", required = false) final String token) {
         if (token == null || token.isBlank()) {
             return new ModelAndView("redirect:/publish");
         }
@@ -242,7 +244,8 @@ public class PublishController {
 
         final ModelAndView mav = new ModelAndView("publish-success");
         mav.addObject("item", item);
-        mav.addObject("itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId()));
+        mav.addObject(
+                "itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId(), request.getContextPath()));
 
         final List<ItemAvailability> availabilities = itemService.listAvailabilitiesByItemId(item.getId());
         mav.addObject("availabilities", availabilities);

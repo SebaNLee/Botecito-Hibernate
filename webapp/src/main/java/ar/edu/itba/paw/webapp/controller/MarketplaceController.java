@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -62,6 +63,7 @@ public class MarketplaceController {
 
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
     public ModelAndView marketplace(
+            final HttpServletRequest request,
             @RequestParam(value = "location", required = false) final String requestedLocation,
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "startTime", required = false) final String requestedStartTime,
@@ -80,7 +82,7 @@ public class MarketplaceController {
         filteredItems.sort(comparatorFor(resolvedSort));
         final ModelAndView mav = new ModelAndView("marketplace");
         mav.addObject("items", filteredItems);
-        mav.addObject("itemImages", buildItemImagesMap());
+        mav.addObject("itemImages", buildItemImagesMap(request.getContextPath()));
         mav.addObject("itemsCount", filteredItems.size());
         mav.addObject("sort", resolvedSort);
         AvailabilityPickerSupport.addAvailabilityPickerData(
@@ -102,6 +104,7 @@ public class MarketplaceController {
 
     @RequestMapping(value = "/item/{id:[0-9]+}", method = RequestMethod.GET)
     public ModelAndView marketplaceItem(
+            final HttpServletRequest request,
             @PathVariable("id") final int itemId,
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "startTime", required = false) final String requestedStartTime,
@@ -116,11 +119,12 @@ public class MarketplaceController {
         if (isBlank(form.getEndTime())) {
             form.setEndTime(requestedEndTime);
         }
-        return buildMarketplaceItemView(itemId, form);
+        return buildMarketplaceItemView(request.getContextPath(), itemId, form);
     }
 
     @RequestMapping(value = "/item/{id:[0-9]+}", method = RequestMethod.POST)
     public ModelAndView submitMarketplaceItemRequest(
+            final HttpServletRequest request,
             @PathVariable("id") final int itemId,
             @Valid @ModelAttribute("reservationRequestForm") final ReservationRequestForm form,
             final BindingResult errors,
@@ -140,7 +144,7 @@ public class MarketplaceController {
         }
 
         if (errors.hasErrors()) {
-            return buildMarketplaceItemView(itemId, form);
+            return buildMarketplaceItemView(request.getContextPath(), itemId, form);
         }
 
         try {
@@ -156,11 +160,11 @@ public class MarketplaceController {
                     buildReservationRequestDescription(item.get(), owner.orElse(null), form));
             mailService.sendBookingReviewEmail(
                     bookingRequest, owner.map(User::getEmail).orElse(null));
-            final ModelAndView mav = buildMarketplaceItemView(itemId, form);
+            final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, form);
             mav.addObject("mailSuccessCode", "reservation.request.success");
             return mav;
         } catch (final IllegalArgumentException e) {
-            final ModelAndView mav = buildMarketplaceItemView(itemId, form);
+            final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, form);
             mav.addObject("mailErrorCode", "reservation.request.error");
             return mav;
         }
@@ -195,7 +199,8 @@ public class MarketplaceController {
         return "es";
     }
 
-    private ModelAndView buildMarketplaceItemView(final int itemId, final ReservationRequestForm form) {
+    private ModelAndView buildMarketplaceItemView(
+            final String servletContextPath, final int itemId, final ReservationRequestForm form) {
         final Optional<Item> item = itemService.findItemById(itemId);
         if (item.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
@@ -213,7 +218,7 @@ public class MarketplaceController {
         mav.addObject("item", item.get());
         mav.addObject("itemOwner", owner.orElse(null));
         mav.addObject("itemType", itemType.orElse(null));
-        mav.addObject("itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, itemId));
+        mav.addObject("itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, itemId, servletContextPath));
         mav.addObject(
                 "ownerInitial",
                 owner.map(MarketplaceController::buildOwnerInitial).orElse("I"));
@@ -316,10 +321,10 @@ public class MarketplaceController {
         return item.getTitle().trim();
     }
 
-    private Map<Integer, String> buildItemImagesMap() {
+    private Map<Integer, String> buildItemImagesMap(final String servletContextPath) {
         final Map<Integer, String> itemImages = new LinkedHashMap<>();
         for (final Item item : itemService.listItems()) {
-            itemImages.put(item.getId(), ItemImageUtils.resolveImageUrl(itemService, item.getId()));
+            itemImages.put(item.getId(), ItemImageUtils.resolveImageUrl(itemService, item.getId(), servletContextPath));
         }
         return itemImages;
     }

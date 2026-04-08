@@ -1,0 +1,67 @@
+package ar.edu.itba.paw.services;
+
+import ar.edu.itba.paw.models.Item;
+import ar.edu.itba.paw.models.ItemAvailability;
+import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.User;
+import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
+
+public interface ItemService {
+    List<Item> listItems();
+
+    List<String> listLocationOptions();
+
+    Optional<Item> findItemById(final int id);
+
+    Optional<User> findUserById(final int id);
+
+    Optional<User> findUserByEmail(final String email);
+
+    Optional<ItemType> findItemTypeById(final int id);
+
+    Item createPublication(
+            String ownerGivenName,
+            String ownerLastName,
+            String ownerEmail,
+            String ownerPreferredLanguage,
+            Integer typeId,
+            String title,
+            String description,
+            Integer pricePerHour,
+            Integer capacityPeople,
+            BigDecimal maxWeightKg,
+            Integer difficultyLevel,
+            String location,
+            List<ItemAvailability> availabilities);
+
+    Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken);
+
+    boolean activateItemByOwnerDeleteToken(final String ownerDeleteToken);
+
+    boolean deactivateItemByOwnerDeleteToken(final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt);
+
+    List<ItemAvailability> listAvailabilities();
+
+    List<ItemAvailability> listAvailabilitiesByItemId(final int itemId);
+
+    List<ItemBooking> listBookings();
+
+    List<ItemBooking> listBookingsByItemId(final int itemId);
+
+    Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId);
+
+    Optional<byte[]> findImageById(final int id);
+
+    List<Integer> listImageIdsByItemId(final int itemId);
+
+    Integer insertAvailability(
+            final int itemId, final DayOfWeek weekday, final LocalTime startTime, final LocalTime endTime);
+
+    Integer insertImage(final int itemId, final byte[] imageData);
+}

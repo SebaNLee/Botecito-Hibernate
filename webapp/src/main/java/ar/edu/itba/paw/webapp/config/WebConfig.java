@@ -8,8 +8,11 @@ import org.flywaydb.core.Flyway;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.lang.NonNull;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -17,6 +20,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 @EnableWebMvc
+@EnableAsync
+@Import(MailConfig.class)
 @ComponentScan({"ar.edu.itba.paw.webapp.controller", "ar.edu.itba.paw.services", "ar.edu.itba.paw.persistence"})
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -31,6 +36,19 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Bean
+    public org.springframework.validation.beanvalidation.LocalValidatorFactoryBean localValidatorFactoryBean() {
+        final org.springframework.validation.beanvalidation.LocalValidatorFactoryBean factory =
+                new org.springframework.validation.beanvalidation.LocalValidatorFactoryBean();
+        factory.setValidationMessageSource(messageSource());
+        return factory;
+    }
+
+    @Override
+    public org.springframework.validation.Validator getValidator() {
+        return localValidatorFactoryBean();
+    }
+
+    @Bean
     public ViewResolver viewResolver() {
         final InternalResourceViewResolver viewResolver = new InternalResourceViewResolver();
         viewResolver.setViewClass(org.springframework.web.servlet.view.JstlView.class);
@@ -40,17 +58,22 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public DataSource dataSource() {
+    public Properties credentialsProperties() {
         final CredentialsSelection selection = resolveCredentialsSelection();
         final Properties credentials = loadCredentialsProperties(selection.credentialsFile());
         if (!selection.fallbackCredentialsFile().isEmpty()) {
             mergeMissingProperties(credentials, selection.fallbackCredentialsFile());
         }
+        return credentials;
+    }
+
+    @Bean
+    public DataSource dataSource(final Properties credentialsProperties) {
         final SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
         dataSource.setDriverClass(org.postgresql.Driver.class);
-        dataSource.setUrl(credentials.getProperty("jdbc.url"));
-        dataSource.setUsername(credentials.getProperty("jdbc.username"));
-        dataSource.setPassword(credentials.getProperty("jdbc.password"));
+        dataSource.setUrl(credentialsProperties.getProperty("jdbc.url"));
+        dataSource.setUsername(credentialsProperties.getProperty("jdbc.username"));
+        dataSource.setPassword(credentialsProperties.getProperty("jdbc.password"));
         return dataSource;
     }
 
@@ -123,7 +146,23 @@ public class WebConfig implements WebMvcConfigurer {
                 .dataSource(dataSource)
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
-                .load(); // TODO check this when migrating, configured to keep existing DB
+                .load();
+    }
+
+    @Bean
+    public org.springframework.web.multipart.support.StandardServletMultipartResolver multipartResolver() {
+        return new org.springframework.web.multipart.support.StandardServletMultipartResolver();
+    }
+
+    @Bean(name = "mailTaskExecutor")
+    public ThreadPoolTaskExecutor mailTaskExecutor() {
+        final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(4);
+        executor.setQueueCapacity(50);
+        executor.setThreadNamePrefix("mail-");
+        executor.initialize();
+        return executor;
     }
 
     @Override

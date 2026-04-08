@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="#{mail.requestReview.title}">New Request</title>
+</head>
+
+<body
+  style="margin: 0; padding: 0; background-color: #0b1c32; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0"
+    background="https://lh3.googleusercontent.com/aida-public/AB6AXuDZ5Kqd4fIKaFZvY-voq31ImCLWMzSnpeVGHpeEyaXd8kXtZiSFMnnKueB6HamkvchzGHcdtKloU7aDgr0MGxnoT_9ajOLMji0wPSC7yQ5emqwmkA73GZQCbn35o0UxfJBxyeJdhr-pzL1EEkw8LCF2DcdIJfVaWRcu-RoozLWsJ5ORG87g28BMPR4QUAoyt2LvbzVgTrE-Am1XsXBjgD1E9SEkR7OkE9HuWK0S0ggwcliJWi00H0b6vl-7cuPGDQ0UDBDUBgelxxN5"
+    style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDZ5Kqd4fIKaFZvY-voq31ImCLWMzSnpeVGHpeEyaXd8kXtZiSFMnnKueB6HamkvchzGHcdtKloU7aDgr0MGxnoT_9ajOLMji0wPSC7yQ5emqwmkA73GZQCbn35o0UxfJBxyeJdhr-pzL1EEkw8LCF2DcdIJfVaWRcu-RoozLWsJ5ORG87g28BMPR4QUAoyt2LvbzVgTrE-Am1XsXBjgD1E9SEkR7OkE9HuWK0S0ggwcliJWi00H0b6vl-7cuPGDQ0UDBDUBgelxxN5'); background-size: cover; background-position: center;">
+    <tr>
+      <td align="center" style="padding: 60px 24px; background-color: rgba(11, 28, 50, 0.5);">
+
+        <div
+          style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 24px 48px rgba(0,0,0,0.15);">
+          <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0"
+            style="border-collapse: collapse;">
+            <tr>
+              <td style="padding: 40px;">
+
+                <p
+                  style="margin: 0 0 12px; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #005da7;">
+                  <span th:text="#{mail.brand.name}">Botecito</span></p>
+                <h1
+                  style="margin: 0 0 32px; font-size: 28px; font-weight: 800; line-height: 1.2; color: #0b1c32; letter-spacing: -0.02em;">
+                  <span th:text="#{mail.requestReview.heading}">New request received</span></h1>
+
+                <div
+                  style="background-color: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 32px; overflow: hidden;">
+                  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                    <tr>
+                      <td style="padding: 24px;">
+                        <p
+                          style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+                          <span th:text="#{mail.requestReview.label.name}">Name</span></p>
+                        <p th:text="${bookingRequest.requesterName}"
+                          style="margin: 0 0 20px; font-size: 16px; font-weight: 500; color: #0f172a;"></p>
+
+                        <p
+                          style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+                          <span th:text="#{mail.requestReview.label.email}">Email</span></p>
+                        <p th:text="${bookingRequest.requesterEmail}"
+                          style="margin: 0 0 20px; font-size: 16px; font-weight: 500; color: #0f172a;"></p>
+
+                        <p
+                          style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+                          <span th:text="#{mail.requestReview.label.description}">Description</span></p>
+                        <p th:text="${bookingRequest.description}"
+                          style="margin: 0; font-size: 15px; line-height: 1.6; color: #334155; white-space: pre-wrap;">
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="padding-right: 16px;">
+                      <a th:href="${acceptUrl}"
+                        style="display: inline-block; padding: 14px 32px; border-radius: 9999px; background-color: #059669; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700;"
+                        th:text="#{mail.requestReview.accept}">Accept</a>
+                    </td>
+                    <td>
+                      <a th:href="${declineUrl}"
+                        style="display: inline-block; padding: 14px 32px; border-radius: 9999px; background-color: #ffffff; color: #dc2626; border: 2px solid #dc2626; text-decoration: none; font-size: 15px; font-weight: 700;"
+                        th:text="#{mail.requestReview.decline}">Decline</a>
+                    </td>
+                  </tr>
+                </table>
+
+              </td>
+            </tr>
+          </table>
+
+        </div>
+        <p
+          style="margin: 24px 0 0; font-size: 12px; color: #e2e8f0; text-align: center; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+          <span th:text="#{mail.requestReview.footer}">Botecito is curating the experience.</span></p>
+      </td>
+    </tr>
+  </table>
+</body>
+
+</html>

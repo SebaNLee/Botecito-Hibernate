@@ -1,9 +1,11 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="publishUrl" value="/publish" />
 <c:url var="marketplaceUrl" value="/marketplace" />
+<c:url var="reservationRequestUrl" value="/item/${item.id}" />
 
 <paw:layout title="Botecito | Detalle" mainClass="pt-24 pb-12 max-w-7xl mx-auto px-6 flex flex-col gap-8">
   <div class="w-full">
@@ -62,31 +64,83 @@
           <span class="text-xs font-bold uppercase tracking-wider text-outline">por hora</span>
         </div>
         
-        <form class="space-y-4">
+        <form:form
+            action="${reservationRequestUrl}"
+            method="post"
+            modelAttribute="reservationRequestForm"
+            class="space-y-4"
+            data-submit-loading-form="true">
+          <c:if test="${not empty mailSuccess}">
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+              <c:out value="${mailSuccess}" />
+            </div>
+          </c:if>
+          <c:if test="${not empty mailError}">
+            <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+              <c:out value="${mailError}" />
+            </div>
+          </c:if>
           <paw:datePicker
               id="reservation-date"
               name="date"
               label="Fecha"
-              value="${reservationDate}"
+              value="${reservationRequestForm.date}"
               placeholder="Selecciona fecha"
               offeredDatesJson="${reservationOfferedDatesJson}"
               occupiedDatesJson="${reservationOccupiedDatesJson}" />
+          <form:errors path="date" element="div" cssClass="text-sm text-error" />
           <paw:timeRangePicker
               id="reservation-time-range"
               dateInputId="reservation-date"
               startName="startTime"
               endName="endTime"
               label="Horario"
-              startValue="${reservationStartTime}"
-              endValue="${reservationEndTime}"
+              startValue="${reservationRequestForm.startTime}"
+              endValue="${reservationRequestForm.endTime}"
               placeholder="Inicio - Fin"
               offeredTimesJson="${reservationOfferedTimesJson}"
               occupiedTimesJson="${reservationOccupiedTimesJson}" />
-          <button type="button" class="w-full py-4 bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-[0.98] mt-4 flex justify-center items-center gap-2 border-none cursor-pointer">
-            Realizar pre-reserva
-            <span class="material-symbols-outlined text-sm">chevron_right</span>
+          <form:errors path="startTime" element="div" cssClass="text-sm text-error" />
+          <form:errors path="endTime" element="div" cssClass="text-sm text-error" />
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="space-y-2">
+              <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="requesterGivenName">Nombre</label>
+              <form:input path="requesterGivenName" id="requesterGivenName" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline" placeholder="Tu nombre" />
+              <form:errors path="requesterGivenName" element="div" cssClass="text-sm text-error" />
+            </div>
+            <div class="space-y-2">
+              <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="requesterLastName">Apellido</label>
+              <form:input path="requesterLastName" id="requesterLastName" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline" placeholder="Tu apellido" />
+              <form:errors path="requesterLastName" element="div" cssClass="text-sm text-error" />
+            </div>
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="requesterEmail">Email</label>
+            <form:input path="requesterEmail" id="requesterEmail" type="email" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline" placeholder="tu@email.com" />
+            <form:errors path="requesterEmail" element="div" cssClass="text-sm text-error" />
+          </div>
+          <div class="space-y-2">
+            <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="requestMessage">Mensaje</label>
+            <form:textarea path="requestMessage" id="requestMessage" rows="4" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline resize-none" placeholder="Agrega un mensaje para tu solicitud" />
+            <form:errors path="requestMessage" element="div" cssClass="text-sm text-error" />
+          </div>
+          <button
+              type="submit"
+              class="relative w-full py-4 bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-[0.98] mt-4 flex justify-center items-center gap-2 border-none cursor-pointer disabled:cursor-wait disabled:opacity-80"
+              data-submit-loading-button
+              data-loading-text="Enviando...">
+            <span class="flex items-center justify-center gap-2" data-submit-loading-content>
+              <span>Realizar pre-reserva</span>
+              <span class="material-symbols-outlined text-sm">chevron_right</span>
+            </span>
+            <span
+                class="pointer-events-none absolute inset-0 hidden items-center justify-center"
+                aria-hidden="true"
+                data-submit-loading-spinner>
+              <span class="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+            </span>
           </button>
-        </form>
+        </form:form>
       </div>
       
       <div class="grid grid-cols-2 gap-4">
@@ -150,6 +204,9 @@
     class="fixed inset-0 z-[280] hidden items-center justify-center bg-on-background/45 px-6"
     data-item-unavailable-alert
     data-marketplace-url="${marketplaceUrl}"
+    data-item-location="${item.location}"
+    data-item-capacity="${item.capacityPeople}"
+    data-item-max-weight="${item.maxWeightKg}"
     hidden
   >
     <div
@@ -165,7 +222,7 @@
           <h2 class="m-0 text-2xl font-extrabold tracking-tight">
             Item no disponible
           </h2>
-          <p class="m-0 leading-relaxed text-on-surface-variant">
+          <p class="m-0 leading-relaxed text-on-surface-variant" data-item-unavailable-message>
             El item seleccionado no esta disponible en la fecha y horario
             elegidos. Puedes seguir viendo este item sin esos filtros o volver
             al marketplace para elegir otro.

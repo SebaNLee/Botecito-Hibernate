@@ -311,7 +311,7 @@
     }
 
     loadOptions() {
-      fetchLocationOptions(this.root.dataset.optionsUrl || "/js/location-options.json").then(
+      fetchLocationOptions(this.root.dataset.optionsUrl || "/location-options").then(
         (options) => {
           this.options = options;
           this.render();

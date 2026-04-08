@@ -19,7 +19,7 @@
 <c:set var="resolvedIcon" value="${not empty icon ? icon : 'location_on'}" />
 <c:set var="resolvedVariant" value="${not empty variant ? variant : 'default'}" />
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
-<c:set var="resolvedOptionsUrl" value="${not empty optionsUrl ? optionsUrl : '/js/location-options.json'}" />
+<c:set var="resolvedOptionsUrl" value="${not empty optionsUrl ? optionsUrl : '/location-options'}" />
 
 <c:choose>
   <c:when test="${resolvedVariant == 'inline'}">

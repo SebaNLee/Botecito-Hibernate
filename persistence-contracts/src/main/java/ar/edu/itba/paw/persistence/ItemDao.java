@@ -16,6 +16,8 @@ import java.util.Optional;
 public interface ItemDao {
     List<Item> listItems();
 
+    List<String> listLocationOptions();
+
     Optional<Item> findItemById(final int id);
 
     Optional<User> findUserById(final int id);

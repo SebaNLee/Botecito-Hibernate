@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mail.MailException;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
@@ -208,10 +207,10 @@ public class PublishController {
                     buildOwnerName(form),
                     form.getTitle().trim(),
                     createdItem.getOwnerDeleteToken());
-        } catch (final MailException | IllegalArgumentException e) {
+        } catch (final IllegalArgumentException e) {
             final ModelAndView mav = new ModelAndView("publish-contact");
             addSummaryData(mav, form);
-            errors.reject("publish.submit.mailError");
+            errors.reject("publish.submit.persistenceError");
             return mav;
         } catch (final Exception e) {
             final ModelAndView mav = new ModelAndView("publish-contact");
@@ -221,16 +220,16 @@ public class PublishController {
         }
 
         sessionStatus.setComplete();
-        return new ModelAndView("redirect:/publish/success?itemId=" + createdItem.getId());
+        return new ModelAndView("redirect:/publish/success?token=" + createdItem.getOwnerDeleteToken());
     }
 
     @RequestMapping(value = "/publish/success", method = RequestMethod.GET)
-    public ModelAndView publishSuccess(@RequestParam(value = "itemId", required = false) final Integer itemId) {
-        if (itemId == null) {
+    public ModelAndView publishSuccess(@RequestParam(value = "token", required = false) final String token) {
+        if (token == null || token.isBlank()) {
             return new ModelAndView("redirect:/publish");
         }
 
-        final Item item = itemService.findItemById(itemId).orElse(null);
+        final Item item = itemService.findItemByOwnerDeleteToken(token).orElse(null);
         if (item == null) {
             return new ModelAndView("redirect:/publish");
         }

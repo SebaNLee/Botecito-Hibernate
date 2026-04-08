@@ -27,7 +27,6 @@
     <p class="text-on-surface-variant mt-2 text-lg m-0">Completa la informacion principal para que los navegantes entiendan tu propuesta.</p>
   </div>
 
-
   <form:form action="${publishUrl}" method="post" modelAttribute="publishForm" enctype="multipart/form-data" class="space-y-8">
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
       <section class="lg:col-span-3 bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_48px_rgba(11,28,50,0.04)] space-y-6">

@@ -21,8 +21,8 @@ import java.util.Map;
 import java.util.Optional;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.http.MediaType;
-import org.springframework.mail.MailException;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -40,15 +40,18 @@ public class MarketplaceController {
     private final ItemService itemService;
     private final MailService mailService;
     private final BookingRequestService bookingRequestService;
+    private final MessageSource messageSource;
 
     @Autowired
     public MarketplaceController(
             final ItemService itemService,
             final MailService mailService,
-            final BookingRequestService bookingRequestService) {
+            final BookingRequestService bookingRequestService,
+            final MessageSource messageSource) {
         this.itemService = itemService;
         this.mailService = mailService;
         this.bookingRequestService = bookingRequestService;
+        this.messageSource = messageSource;
     }
 
     @ModelAttribute("reservationRequestForm")
@@ -154,12 +157,11 @@ public class MarketplaceController {
             mailService.sendBookingReviewEmail(
                     bookingRequest, owner.map(User::getEmail).orElse(null));
             final ModelAndView mav = buildMarketplaceItemView(itemId, form);
-            mav.addObject("mailSuccess", "Your request was sent to Botecito for review.");
+            mav.addObject("mailSuccess", messageSource.getMessage("reservation.submit.success", null, locale));
             return mav;
-        } catch (final MailException | IllegalArgumentException e) {
+        } catch (final IllegalArgumentException e) {
             final ModelAndView mav = buildMarketplaceItemView(itemId, form);
-            mav.addObject(
-                    "mailError", "The request email could not be sent. Check the Gmail credentials and SMTP setup.");
+            mav.addObject("mailError", messageSource.getMessage("reservation.submit.error", null, locale));
             return mav;
         }
     }

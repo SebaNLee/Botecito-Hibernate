@@ -64,7 +64,12 @@
           <span class="text-xs font-bold uppercase tracking-wider text-outline">por hora</span>
         </div>
         
-        <form:form action="${reservationRequestUrl}" method="post" modelAttribute="reservationRequestForm" class="space-y-4">
+        <form:form
+            action="${reservationRequestUrl}"
+            method="post"
+            modelAttribute="reservationRequestForm"
+            class="space-y-4"
+            data-submit-loading-form="true">
           <c:if test="${not empty mailSuccess}">
             <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
               <c:out value="${mailSuccess}" />
@@ -119,9 +124,21 @@
             <form:textarea path="requestMessage" id="requestMessage" rows="4" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline resize-none" placeholder="Agrega un mensaje para tu solicitud" />
             <form:errors path="requestMessage" element="div" cssClass="text-sm text-error" />
           </div>
-          <button type="submit" class="w-full py-4 bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-[0.98] mt-4 flex justify-center items-center gap-2 border-none cursor-pointer">
-            Realizar pre-reserva
-            <span class="material-symbols-outlined text-sm">chevron_right</span>
+          <button
+              type="submit"
+              class="relative w-full py-4 bg-primary text-on-primary rounded-xl font-bold shadow-lg shadow-primary/20 hover:bg-primary-container transition-all active:scale-[0.98] mt-4 flex justify-center items-center gap-2 border-none cursor-pointer disabled:cursor-wait disabled:opacity-80"
+              data-submit-loading-button
+              data-loading-text="Enviando...">
+            <span class="flex items-center justify-center gap-2" data-submit-loading-content>
+              <span>Realizar pre-reserva</span>
+              <span class="material-symbols-outlined text-sm">chevron_right</span>
+            </span>
+            <span
+                class="pointer-events-none absolute inset-0 hidden items-center justify-center"
+                aria-hidden="true"
+                data-submit-loading-spinner>
+              <span class="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+            </span>
           </button>
         </form:form>
       </div>

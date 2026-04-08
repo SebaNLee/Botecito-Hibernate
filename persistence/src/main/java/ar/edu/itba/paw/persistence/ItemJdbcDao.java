@@ -184,8 +184,8 @@ public class ItemJdbcDao implements ItemDao {
         final int id = Objects.requireNonNull(
                 jdbcTemplate.queryForObject(
                         "INSERT INTO item"
-                                + " (owner_id, type_id, title, description, price_per_hour, capacity_people, max_weight_kg, difficulty_level, location, owner_delete_token)"
-                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                                + " (owner_id, type_id, title, description, price_per_hour, capacity_people, max_weight_kg, difficulty_level, location, active, owner_delete_token)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                                 + " RETURNING id",
                         Integer.class,
                         ownerId,
@@ -197,6 +197,7 @@ public class ItemJdbcDao implements ItemDao {
                         maxWeightKg,
                         difficultyLevel,
                         location,
+                        Boolean.FALSE,
                         ownerDeleteToken),
                 "Could not create item for owner " + ownerId);
         return jdbcTemplate.query("SELECT * FROM item WHERE id = ?", ITEM_ROW_MAPPER, id).stream()
@@ -317,6 +318,14 @@ public class ItemJdbcDao implements ItemDao {
                 .query("SELECT * FROM item WHERE owner_delete_token = ?", ITEM_ROW_MAPPER, ownerDeleteToken)
                 .stream()
                 .findAny();
+    }
+
+    @Override
+    public boolean activateItemByOwnerDeleteToken(final String ownerDeleteToken) {
+        final int updatedRows = jdbcTemplate.update(
+                "UPDATE item" + " SET active = TRUE" + " WHERE owner_delete_token = ?" + " AND active = FALSE",
+                ownerDeleteToken);
+        return updatedRows > 0;
     }
 
     @Override

@@ -1,12 +1,21 @@
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %> <%@ taglib
-prefix="paw" tagdir="/WEB-INF/tags" %> <%@ page contentType="text/html;
-charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="marketplaceUrl" value="/marketplace" />
+<spring:message code="filters.location" var="locationLabel" />
+<spring:message code="filters.location.placeholder" var="locationPlaceholder" />
+<spring:message code="filters.date" var="dateLabel" />
+<spring:message code="filters.date.placeholder" var="datePlaceholder" />
+<spring:message code="filters.time" var="timeLabel" />
+<spring:message code="filters.time.placeholder" var="timePlaceholder" />
+<spring:message code="filters.people" var="peopleLabel" />
+<spring:message code="filters.people.placeholder" var="peoplePlaceholder" />
 
 <paw:layout
   title="Botecito"
-  mainClass="relative min-h-screen flex flex-col pt-20"
+  mainClass="relative min-h-screen flex flex-col"
 >
   <section
     class="relative flex-grow flex items-center justify-center px-6 py-20 min-h-[870px]"
@@ -14,7 +23,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
     <div class="absolute inset-0 z-0 overflow-hidden">
       <img
         class="w-full h-full object-cover"
-        alt="serene blue alpine lake surrounded by pine forests and mountains with a wooden pier and nautical equipment in the foreground, soft morning light"
+        alt="<spring:message code='landing.hero.imageAlt' />"
         src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZ5Kqd4fIKaFZvY-voq31ImCLWMzSnpeVGHpeEyaXd8kXtZiSFMnnKueB6HamkvchzGHcdtKloU7aDgr0MGxnoT_9ajOLMji0wPSC7yQ5emqwmkA73GZQCbn35o0UxfJBxyeJdhr-pzL1EEkw8LCF2DcdIJfVaWRcu-RoozLWsJ5ORG87g28BMPR4QUAoyt2LvbzVgTrE-Am1XsXBjgD1E9SEkR7OkE9HuWK0S0ggwcliJWi00H0b6vl-7cuPGDQ0UDBDUBgelxxN5"
       />
       <div
@@ -25,14 +34,13 @@ charset=UTF-8" pageEncoding="UTF-8" %>
       <h1
         class="font-headline font-extrabold text-4xl md:text-6xl text-white mb-6 tracking-tight drop-shadow-sm"
       >
-        Encontrá un kayak cerca de tu casa<br class="hidden md:block" /> y
-        navegá esta tarde
+        <spring:message code="landing.hero.title.line1" /><br class="hidden md:block" />
+        <spring:message code="landing.hero.title.line2" />
       </h1>
       <p
         class="font-body text-white/90 text-lg md:text-xl mb-12 max-w-2xl mx-auto"
       >
-        Accedé a embarcaciones de vecinos en tu barrio y disfrutá del lago
-        cuando quieras.
+        <spring:message code="landing.hero.subtitle" />
       </p>
 
       <form
@@ -45,8 +53,8 @@ charset=UTF-8" pageEncoding="UTF-8" %>
           <paw:locationPicker
             id="landing-location"
             name="location"
-            label="Ubicacion"
-            placeholder="A donde vas?"
+            label="${locationLabel}"
+            placeholder="${locationPlaceholder}"
             icon="location_on"
             variant="inline"
           />
@@ -57,8 +65,8 @@ charset=UTF-8" pageEncoding="UTF-8" %>
           <paw:datePicker
             id="landing-date"
             name="date"
-            label="Fecha"
-            placeholder="Selecciona fecha"
+            label="${dateLabel}"
+            placeholder="${datePlaceholder}"
             restrictToAvailability="false"
             offeredDatesJson="[]"
             occupiedDatesJson="[]"
@@ -72,8 +80,8 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             dateInputId="landing-date"
             startName="startTime"
             endName="endTime"
-            label="Horario"
-            placeholder="Inicio - Fin"
+            label="${timeLabel}"
+            placeholder="${timePlaceholder}"
             restrictToAvailability="false"
             offeredTimesJson="{}"
             occupiedTimesJson="{}"
@@ -85,9 +93,9 @@ charset=UTF-8" pageEncoding="UTF-8" %>
           <paw:peopleCount
             id="landing-capacity"
             name="capacity"
-            label="Personas"
+            label="${peopleLabel}"
             icon="groups"
-            placeholder="Cuantos?"
+            placeholder="${peoplePlaceholder}"
             allowEmpty="true"
             min="1"
             max="20"
@@ -100,7 +108,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
           class="w-full md:w-auto md:ml-4 md:shrink-0 bg-[#005da7] hover:bg-[#0076d1] text-white font-bold px-10 py-4 rounded-full transition-all active:scale-95 shadow-lg shadow-primary/20 flex items-center justify-center gap-2 border-none cursor-pointer"
         >
           <span class="material-symbols-outlined">search</span>
-          <span>Buscar</span>
+          <span><spring:message code="landing.hero.search" /></span>
         </button>
       </form>
     </div>

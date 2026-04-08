@@ -11,10 +11,21 @@
 <%@ attribute name="restrictToAvailability" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
-<c:set var="resolvedLabel" value="${not empty label ? label : 'Fecha'}" />
+<spring:message code="filters.date" var="defaultDateLabel" />
+<spring:message code="filters.date.placeholder" var="defaultDatePlaceholder" />
+<spring:message code="datePicker.availability" var="datePickerAvailability" />
+<spring:message code="datePicker.selectDate" var="datePickerSelectDate" />
+<spring:message code="datePicker.previousMonth" var="datePickerPreviousMonth" />
+<spring:message code="datePicker.nextMonth" var="datePickerNextMonth" />
+<spring:message code="datePicker.close" var="datePickerClose" />
+<spring:message code="datePicker.available" var="datePickerAvailable" />
+<spring:message code="datePicker.occupied" var="datePickerOccupied" />
+<spring:message code="common.clear" var="clearLabel" />
+<c:set var="resolvedLabel" value="${not empty label ? label : defaultDateLabel}" />
 <c:set var="resolvedValue" value="${not empty value ? value : ''}" />
-<c:set var="resolvedPlaceholder" value="${not empty placeholder ? placeholder : 'Selecciona fecha'}" />
+<c:set var="resolvedPlaceholder" value="${not empty placeholder ? placeholder : defaultDatePlaceholder}" />
 <c:set var="resolvedIcon" value="${not empty icon ? icon : 'calendar_today'}" />
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
 <c:set var="resolvedRestrictToAvailability" value="${empty restrictToAvailability ? true : restrictToAvailability}" />
@@ -25,7 +36,11 @@
     data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
     data-restrict-to-availability="${resolvedRestrictToAvailability}"
     data-offered-dates='${fn:escapeXml(offeredDatesJson)}'
-    data-occupied-dates='${fn:escapeXml(occupiedDatesJson)}'>
+    data-occupied-dates='${fn:escapeXml(occupiedDatesJson)}'
+    data-availability-label="${fn:escapeXml(datePickerAvailability)}"
+    data-select-date-label="${fn:escapeXml(datePickerSelectDate)}"
+    data-available-label="${fn:escapeXml(datePickerAvailable)}"
+    data-occupied-label="${fn:escapeXml(datePickerOccupied)}">
   <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-picker-input />
 
   <button
@@ -50,17 +65,17 @@
       hidden>
     <div class="mb-2 flex items-start justify-between gap-3">
       <div>
-        <div class="text-[11px] font-extrabold tracking-[0.18em] uppercase text-primary">Disponibilidad</div>
-        <h3 class="mt-0.5 font-headline text-lg font-extrabold text-on-background" data-picker-month-title>Selecciona fecha</h3>
+        <div class="text-[11px] font-extrabold tracking-[0.18em] uppercase text-primary"><c:out value="${datePickerAvailability}" /></div>
+        <h3 class="mt-0.5 font-headline text-lg font-extrabold text-on-background" data-picker-month-title><c:out value="${datePickerSelectDate}" /></h3>
       </div>
       <div class="flex items-center gap-2">
-        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-full border-0 bg-surface-container-low text-on-surface cursor-pointer" data-picker-nav="prev" aria-label="Mes anterior">
+        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-full border-0 bg-surface-container-low text-on-surface cursor-pointer" data-picker-nav="prev" aria-label="${fn:escapeXml(datePickerPreviousMonth)}">
           <span class="material-symbols-outlined">chevron_left</span>
         </button>
-        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-full border-0 bg-surface-container-low text-on-surface cursor-pointer" data-picker-nav="next" aria-label="Mes siguiente">
+        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-full border-0 bg-surface-container-low text-on-surface cursor-pointer" data-picker-nav="next" aria-label="${fn:escapeXml(datePickerNextMonth)}">
           <span class="material-symbols-outlined">chevron_right</span>
         </button>
-        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-full border-0 bg-surface-container-low text-on-surface cursor-pointer" data-picker-close aria-label="Cerrar selector de fecha">
+        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-full border-0 bg-surface-container-low text-on-surface cursor-pointer" data-picker-close aria-label="${fn:escapeXml(datePickerClose)}">
           <span class="material-symbols-outlined text-[18px]">close</span>
         </button>
       </div>
@@ -69,11 +84,11 @@
     <div class="mb-2 flex flex-wrap items-center gap-3 text-[10px] font-bold text-on-surface-variant">
       <span class="inline-flex items-center gap-2">
         <span class="inline-block h-3 w-3 rounded-full border border-primary/35 bg-primary/15"></span>
-        Libre
+        <c:out value="${datePickerAvailable}" />
       </span>
       <span class="inline-flex items-center gap-2">
         <span class="inline-block h-3 w-3 rounded-full border border-error/25 bg-error/12"></span>
-        Ocup.
+        <c:out value="${datePickerOccupied}" />
       </span>
     </div>
 
@@ -82,7 +97,7 @@
     <div class="mt-2 flex justify-end">
       <button type="button" class="inline-flex items-center gap-2 rounded-full border border-outline-variant bg-transparent px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-on-surface cursor-pointer" data-picker-clear>
         <span class="material-symbols-outlined text-[16px]">ink_eraser</span>
-        Limpiar
+        <c:out value="${clearLabel}" />
       </button>
     </div>
   </div>

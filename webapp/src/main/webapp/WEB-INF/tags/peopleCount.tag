@@ -15,15 +15,22 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
-<c:set var="resolvedLabel" value="${not empty label ? label : 'Personas'}" />
+<spring:message code="filters.people" var="defaultPeopleLabel" />
+<spring:message code="filters.people.placeholder" var="defaultPeoplePlaceholder" />
+<spring:message code="peopleCount.decrement" var="peopleDecrementLabel" />
+<spring:message code="peopleCount.increment" var="peopleIncrementLabel" />
+<spring:message code="peopleCount.clear" var="peopleClearLabel" />
+<spring:message code="peopleCount.value" var="peopleValueLabel" />
+<c:set var="resolvedLabel" value="${not empty label ? label : defaultPeopleLabel}" />
 <c:set var="resolvedValue" value="${not empty value ? value : ''}" />
 <c:set var="resolvedMin" value="${not empty min ? min : '1'}" />
 <c:set var="resolvedMax" value="${not empty max ? max : '20'}" />
 <c:set var="resolvedStep" value="${not empty step ? step : '1'}" />
 <c:set var="resolvedIcon" value="${not empty icon ? icon : 'groups'}" />
 <c:set var="resolvedVariant" value="${not empty variant ? variant : 'default'}" />
-<c:set var="resolvedPlaceholder" value="${not empty placeholder ? placeholder : 'Cuantos?'}" />
+<c:set var="resolvedPlaceholder" value="${not empty placeholder ? placeholder : defaultPeoplePlaceholder}" />
 <c:set var="resolvedAllowEmpty" value="${empty allowEmpty ? false : allowEmpty}" />
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
 <c:set var="peopleClearInitiallyHidden" value="${empty resolvedValue}" />
@@ -49,7 +56,7 @@
             <button
                 type="button"
                 class="inline-flex h-6 w-6 shrink-0 items-center justify-center self-center rounded-full bg-surface-container text-primary transition-transform active:scale-95 cursor-pointer border-none"
-                aria-label="Restar una persona"
+                aria-label="${fn:escapeXml(peopleDecrementLabel)}"
                 data-people-decrement>
               <span class="material-symbols-outlined text-[16px] leading-none">remove</span>
             </button>
@@ -62,12 +69,12 @@
                     autocomplete="off"
                     spellcheck="false"
                     placeholder="${fn:escapeXml(resolvedPlaceholder)}"
-                    aria-label="Cantidad de personas"
+                    aria-label="${fn:escapeXml(peopleValueLabel)}"
                     data-people-field />
                 <button
                     type="button"
                     class="h-6 w-6 shrink-0 items-center justify-center rounded-full text-outline transition-colors hover:bg-surface-container hover:text-on-surface cursor-pointer border-none bg-transparent leading-none ${peopleClearInitiallyHidden ? 'hidden' : 'inline-flex'}"
-                    aria-label="Limpiar cantidad de personas"
+                    aria-label="${fn:escapeXml(peopleClearLabel)}"
                     data-people-clear>
                   <span class="material-symbols-outlined text-[16px] leading-none">close</span>
                 </button>
@@ -76,7 +83,7 @@
             <button
                 type="button"
                 class="inline-flex h-6 w-6 shrink-0 items-center justify-center self-center rounded-full bg-surface-container text-primary transition-transform active:scale-95 cursor-pointer border-none"
-                aria-label="Sumar una persona"
+                aria-label="${fn:escapeXml(peopleIncrementLabel)}"
                 data-people-increment>
               <span class="material-symbols-outlined text-[16px] leading-none">add</span>
             </button>
@@ -103,7 +110,7 @@
           <button
               type="button"
               class="flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-lg bg-surface-container-lowest text-primary shadow-sm transition-transform active:scale-90 cursor-pointer border-none"
-              aria-label="Restar una persona"
+              aria-label="${fn:escapeXml(peopleDecrementLabel)}"
               data-people-decrement>
             <span class="material-symbols-outlined leading-none">remove</span>
           </button>
@@ -116,12 +123,12 @@
                   autocomplete="off"
                   spellcheck="false"
                   placeholder="${fn:escapeXml(resolvedPlaceholder)}"
-                  aria-label="Cantidad de personas"
+                  aria-label="${fn:escapeXml(peopleValueLabel)}"
                   data-people-field />
               <button
                   type="button"
                   class="h-10 w-10 shrink-0 items-center justify-center rounded-lg text-outline transition-colors hover:bg-surface-container hover:text-on-surface cursor-pointer border-none bg-transparent leading-none ${peopleClearInitiallyHidden ? 'hidden' : 'inline-flex'}"
-                  aria-label="Limpiar cantidad de personas"
+                  aria-label="${fn:escapeXml(peopleClearLabel)}"
                   data-people-clear>
                 <span class="material-symbols-outlined leading-none">close</span>
               </button>
@@ -130,7 +137,7 @@
           <button
               type="button"
               class="flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-lg bg-surface-container-lowest text-primary shadow-sm transition-transform active:scale-90 cursor-pointer border-none"
-              aria-label="Sumar una persona"
+              aria-label="${fn:escapeXml(peopleIncrementLabel)}"
               data-people-increment>
             <span class="material-symbols-outlined leading-none">add</span>
           </button>

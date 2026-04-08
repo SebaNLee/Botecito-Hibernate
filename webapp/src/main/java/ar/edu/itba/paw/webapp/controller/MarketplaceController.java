@@ -14,6 +14,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -21,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -36,22 +37,20 @@ import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 public class MarketplaceController {
+    private static final String DEFAULT_SORT = "priceAsc";
 
     private final ItemService itemService;
     private final MailService mailService;
     private final BookingRequestService bookingRequestService;
-    private final MessageSource messageSource;
 
     @Autowired
     public MarketplaceController(
             final ItemService itemService,
             final MailService mailService,
-            final BookingRequestService bookingRequestService,
-            final MessageSource messageSource) {
+            final BookingRequestService bookingRequestService) {
         this.itemService = itemService;
         this.mailService = mailService;
         this.bookingRequestService = bookingRequestService;
-        this.messageSource = messageSource;
     }
 
     @ModelAttribute("reservationRequestForm")
@@ -69,19 +68,21 @@ public class MarketplaceController {
             @RequestParam(value = "endTime", required = false) final String requestedEndTime,
             @RequestParam(value = "capacity", required = false) final String requestedCapacity,
             @RequestParam(value = "maxWeight", required = false) final String requestedMaxWeight,
-            @RequestParam(value = "sort", required = false, defaultValue = "recommended") final String sort) {
-        final List<Item> filteredItems = itemService.listItems().stream()
+            @RequestParam(value = "sort", required = false, defaultValue = DEFAULT_SORT) final String sort) {
+        final String resolvedSort = resolveSort(sort);
+        final List<Item> filteredItems = new ArrayList<>(itemService.listItems().stream()
                 .filter(item -> matchesRequestedLocation(item, requestedLocation))
                 .filter(item -> matchesMarketplaceAvailability(
                         item.getId(), requestedDate, requestedStartTime, requestedEndTime))
                 .filter(item -> matchesRequestedCapacity(item, requestedCapacity))
                 .filter(item -> matchesRequestedWeight(item, requestedMaxWeight))
-                .toList();
+                .toList());
+        filteredItems.sort(comparatorFor(resolvedSort));
         final ModelAndView mav = new ModelAndView("marketplace");
         mav.addObject("items", filteredItems);
         mav.addObject("itemImages", buildItemImagesMap());
         mav.addObject("itemsCount", filteredItems.size());
-        mav.addObject("sort", sort);
+        mav.addObject("sort", resolvedSort);
         AvailabilityPickerSupport.addAvailabilityPickerData(
                 mav,
                 "search",
@@ -135,8 +136,7 @@ public class MarketplaceController {
                 && !errors.hasFieldErrors("startTime")
                 && !errors.hasFieldErrors("endTime")
                 && !matchesMarketplaceAvailability(itemId, form.getDate(), form.getStartTime(), form.getEndTime())) {
-            errors.rejectValue(
-                    "startTime", "reservation.unavailable", "The selected reservation slot is no longer available.");
+            errors.rejectValue("startTime", "reservation.unavailable");
         }
 
         if (errors.hasErrors()) {
@@ -157,11 +157,11 @@ public class MarketplaceController {
             mailService.sendBookingReviewEmail(
                     bookingRequest, owner.map(User::getEmail).orElse(null));
             final ModelAndView mav = buildMarketplaceItemView(itemId, form);
-            mav.addObject("mailSuccess", messageSource.getMessage("reservation.submit.success", null, locale));
+            mav.addObject("mailSuccessCode", "reservation.request.success");
             return mav;
         } catch (final IllegalArgumentException e) {
             final ModelAndView mav = buildMarketplaceItemView(itemId, form);
-            mav.addObject("mailError", messageSource.getMessage("reservation.submit.error", null, locale));
+            mav.addObject("mailErrorCode", "reservation.request.error");
             return mav;
         }
     }
@@ -214,7 +214,6 @@ public class MarketplaceController {
         mav.addObject("itemOwner", owner.orElse(null));
         mav.addObject("itemType", itemType.orElse(null));
         mav.addObject("itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, itemId));
-        mav.addObject("difficultyLabel", buildDifficultyLabel(item.get().getDifficultyLevel()));
         mav.addObject(
                 "ownerInitial",
                 owner.map(MarketplaceController::buildOwnerInitial).orElse("I"));
@@ -285,19 +284,44 @@ public class MarketplaceController {
         }
     }
 
+    private static String resolveSort(final String sort) {
+        if (sort == null) {
+            return DEFAULT_SORT;
+        }
+
+        return switch (sort) {
+            case "titleAsc", "titleDesc", "priceAsc", "priceDesc" -> sort;
+            default -> DEFAULT_SORT;
+        };
+    }
+
+    private static Comparator<Item> comparatorFor(final String sort) {
+        return switch (sort) {
+            case "titleAsc" -> Comparator.comparing(
+                    MarketplaceController::sortableTitle, String.CASE_INSENSITIVE_ORDER);
+            case "titleDesc" -> Comparator.comparing(
+                            MarketplaceController::sortableTitle, String.CASE_INSENSITIVE_ORDER)
+                    .reversed();
+            case "priceDesc" -> Comparator.comparing(
+                    Item::getPricePerHour, Comparator.nullsLast(Comparator.reverseOrder()));
+            case "priceAsc" -> Comparator.comparing(Item::getPricePerHour, Comparator.nullsLast(Integer::compareTo));
+            default -> Comparator.comparing(Item::getPricePerHour, Comparator.nullsLast(Integer::compareTo));
+        };
+    }
+
+    private static String sortableTitle(final Item item) {
+        if (item == null || item.getTitle() == null) {
+            return "";
+        }
+        return item.getTitle().trim();
+    }
+
     private Map<Integer, String> buildItemImagesMap() {
         final Map<Integer, String> itemImages = new LinkedHashMap<>();
         for (final Item item : itemService.listItems()) {
             itemImages.put(item.getId(), ItemImageUtils.resolveImageUrl(itemService, item.getId()));
         }
         return itemImages;
-    }
-
-    private static String buildDifficultyLabel(final Integer difficultyLevel) {
-        if (difficultyLevel == null) {
-            return "Nivel no definido";
-        }
-        return "Nivel " + difficultyLevel;
     }
 
     private static String buildReservationRequestDescription(

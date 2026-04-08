@@ -12,10 +12,16 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
-<c:set var="resolvedLabel" value="${not empty label ? label : 'Ubicacion'}" />
+<spring:message code="filters.location" var="defaultLocationLabel" />
+<spring:message code="filters.location.placeholder" var="defaultLocationPlaceholder" />
+<spring:message code="locationPicker.clear" var="clearLocationLabel" />
+<spring:message code="locationPicker.availableLocations" var="availableLocationsLabel" />
+<spring:message code="locationPicker.noMatches" var="noLocationsLabel" />
+<c:set var="resolvedLabel" value="${not empty label ? label : defaultLocationLabel}" />
 <c:set var="resolvedValue" value="${not empty value ? value : ''}" />
-<c:set var="resolvedPlaceholder" value="${not empty placeholder ? placeholder : 'Selecciona ubicacion'}" />
+<c:set var="resolvedPlaceholder" value="${not empty placeholder ? placeholder : defaultLocationPlaceholder}" />
 <c:set var="resolvedIcon" value="${not empty icon ? icon : 'location_on'}" />
 <c:set var="resolvedVariant" value="${not empty variant ? variant : 'default'}" />
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
@@ -50,7 +56,7 @@
         <button
             type="button"
             class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface cursor-pointer border-none bg-transparent opacity-0 pointer-events-none"
-            aria-label="Limpiar ubicacion"
+            aria-label="${fn:escapeXml(clearLocationLabel)}"
             data-location-clear>
           <span class="material-symbols-outlined text-[18px]">close</span>
         </button>
@@ -62,11 +68,11 @@
           data-location-panel
           hidden>
         <div class="border-b border-outline-variant/15 px-4 py-3">
-          <p class="m-0 text-[10px] font-bold uppercase tracking-[0.16em] text-outline">Ubicaciones disponibles</p>
+          <p class="m-0 text-[10px] font-bold uppercase tracking-[0.16em] text-outline"><c:out value="${availableLocationsLabel}" /></p>
         </div>
         <div class="h-64 overflow-y-auto p-2" data-location-options></div>
         <p class="hidden px-4 py-4 text-sm text-on-surface-variant" data-location-empty>
-          No encontramos ubicaciones para esa busqueda.
+          <c:out value="${noLocationsLabel}" />
         </p>
       </div>
     </div>
@@ -98,7 +104,7 @@
           <button
               type="button"
               class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-outline transition-colors hover:bg-surface-container hover:text-on-surface cursor-pointer border-none bg-transparent opacity-0 pointer-events-none"
-              aria-label="Limpiar ubicacion"
+              aria-label="${fn:escapeXml(clearLocationLabel)}"
               data-location-clear>
             <span class="material-symbols-outlined text-[18px]">close</span>
           </button>
@@ -111,11 +117,11 @@
           data-location-panel
           hidden>
         <div class="border-b border-outline-variant/15 px-4 py-3">
-          <p class="m-0 text-[10px] font-bold uppercase tracking-[0.16em] text-outline">Ubicaciones disponibles</p>
+          <p class="m-0 text-[10px] font-bold uppercase tracking-[0.16em] text-outline"><c:out value="${availableLocationsLabel}" /></p>
         </div>
         <div class="h-64 overflow-y-auto p-2" data-location-options></div>
         <p class="hidden px-4 py-4 text-sm text-on-surface-variant" data-location-empty>
-          No encontramos ubicaciones para esa busqueda.
+          <c:out value="${noLocationsLabel}" />
         </p>
       </div>
 

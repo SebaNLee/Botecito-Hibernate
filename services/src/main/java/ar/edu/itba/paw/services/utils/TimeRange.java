@@ -31,6 +31,15 @@ public class TimeRange {
         endTime = end;
     }
 
+    public boolean intersects(TimeRange other) {
+        // this start < other start < this end
+        boolean case1 = this.startTime.compareTo(other.startTime) < 0 && other.startTime.compareTo(this.endTime) < 0;
+        // other start < this start < other end
+        boolean case2 = other.startTime.compareTo(this.startTime) < 0 && this.startTime.compareTo(other.endTime) < 0;
+
+        return case1 || case2;
+    }
+
     private void throwException() {
         throw new IllegalArgumentException("End time must be greater than start time");
     }

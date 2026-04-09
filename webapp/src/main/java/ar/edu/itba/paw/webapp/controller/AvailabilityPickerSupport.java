@@ -114,6 +114,8 @@ final class AvailabilityPickerSupport {
             final Set<String> offeredTimeSet = Set.copyOf(offeredTimes);
             final LocalTime startTime = LocalTime.parse(requestedStartTime);
             final LocalTime endTime = LocalTime.parse(requestedEndTime);
+            final int startMinute = startTime.toSecondOfDay() / 60;
+            final int endMinute = endTime.toSecondOfDay() / 60;
 
             if (!endTime.isAfter(startTime)) {
                 return false;
@@ -123,9 +125,8 @@ final class AvailabilityPickerSupport {
                 return false;
             }
 
-            for (LocalTime currentTime = startTime;
-                    !currentTime.isAfter(endTime);
-                    currentTime = currentTime.plusMinutes(TIME_SLOT_STEP_MINUTES)) {
+            for (int minute = startMinute; minute <= endMinute; minute += TIME_SLOT_STEP_MINUTES) {
+                final LocalTime currentTime = LocalTime.ofSecondOfDay((long) minute * 60);
                 if (!offeredTimeSet.contains(currentTime.format(RESERVATION_TIME_FORMAT))) {
                     return false;
                 }
@@ -200,9 +201,11 @@ final class AvailabilityPickerSupport {
             final String date,
             final LocalTime startTime,
             final LocalTime endTime) {
-        for (LocalTime currentTime = startTime;
-                !currentTime.isAfter(endTime);
-                currentTime = currentTime.plusMinutes(TIME_SLOT_STEP_MINUTES)) {
+        final int startMinute = startTime.toSecondOfDay() / 60;
+        final int endMinute = endTime.toSecondOfDay() / 60;
+
+        for (int minute = startMinute; minute <= endMinute; minute += TIME_SLOT_STEP_MINUTES) {
+            final LocalTime currentTime = LocalTime.ofSecondOfDay((long) minute * 60);
             collectedTimesByDate
                     .computeIfAbsent(date, ignored -> new TreeSet<>())
                     .add(currentTime.format(RESERVATION_TIME_FORMAT));

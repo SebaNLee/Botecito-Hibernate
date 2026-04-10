@@ -8,8 +8,15 @@ Es necesario tener las credenciales necesarias de producción en el archivo `web
 
 #### Comandos:
 
+Usar preferiblemente:
+
 ```
 $ ./deploy.sh
+```
+
+De última, estos serían los comandos de a uno para ejecutarlos individualmente:
+
+```
 $ scp webapp/target/webapp.war <username>@pampero.itba.edu.ar:/home/<username>/.
 $ ssh <username>@pampero.itba.edu.ar
 [<username>@pampero ~]$ sftp paw-2026a-11@10.16.1.110

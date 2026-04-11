@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.form;
 
 import java.time.LocalDateTime;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import org.springframework.format.annotation.DateTimeFormat;
 
 public class ItemBookingForm {
@@ -13,6 +14,7 @@ public class ItemBookingForm {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime endTime;
 
+    @Size(max = 1000, message = "{reservation.validation.requestMessage.max}")
     private String requestMessage;
 
     public LocalDateTime getStartTime() {

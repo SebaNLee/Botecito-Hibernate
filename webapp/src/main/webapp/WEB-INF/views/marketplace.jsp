@@ -34,9 +34,9 @@
         <form action="<c:url value='/marketplace' />" method="get" class="space-y-6" data-filter-form="marketplace">
           <paw:locationPicker
               id="marketplace-location"
-              name="location"
+              name="locationOptionId"
               label="${locationLabel}"
-              value="${param.location}"
+              value="${param.locationOptionId}"
               placeholder="${locationPlaceholder}"
               icon="location_on" />
           
@@ -114,7 +114,7 @@
       </div>
       
       <form action="<c:url value='/marketplace' />" method="get" class="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
-        <input type="hidden" name="location" value="${param.location}" data-applied-filter-mirror />
+        <input type="hidden" name="locationOptionId" value="${param.locationOptionId}" data-applied-filter-mirror />
         <input type="hidden" name="date" value="${param.date}" data-applied-filter-mirror />
         <input type="hidden" name="startTime" value="${param.startTime}" data-applied-filter-mirror />
         <input type="hidden" name="endTime" value="${param.endTime}" data-applied-filter-mirror />

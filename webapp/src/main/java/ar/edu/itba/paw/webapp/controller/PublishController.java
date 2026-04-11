@@ -202,7 +202,7 @@ public class PublishController {
                     Integer.parseInt(form.getCapacity().trim()),
                     parseMaxWeight(form.getMaxWeight()),
                     form.getDifficultyLevel(),
-                    form.getMarina().trim(),
+                    Integer.parseInt(form.getMarina().trim()),
                     buildAvailabilitySlots(form));
 
             if (form.hasUploadedImage()) {
@@ -427,6 +427,24 @@ public class PublishController {
     private void addSummaryData(final ModelAndView mav, final PublishBoatForm form, final Locale locale) {
         mav.addObject("availabilitySummary", buildAvailabilitySummary(form, locale));
         mav.addObject("uploadedImagePreviewUrl", buildUploadedImagePreviewUrl(form));
+        mav.addObject("selectedLocationName", resolveLocationName(form.getMarina()));
+    }
+
+    private String resolveLocationName(final String locationOptionId) {
+        if (!StringUtils.hasText(locationOptionId)) {
+            return "";
+        }
+
+        try {
+            final int selectedId = Integer.parseInt(locationOptionId.trim());
+            return itemService.listLocationOptions().stream()
+                    .filter(option -> option.getId() != null && option.getId() == selectedId)
+                    .map(option -> option.getName() == null ? "" : option.getName())
+                    .findFirst()
+                    .orElse("");
+        } catch (final NumberFormatException exception) {
+            return "";
+        }
     }
 
     private static String buildUploadedImagePreviewUrl(final PublishBoatForm form) {

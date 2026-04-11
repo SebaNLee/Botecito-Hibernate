@@ -2,6 +2,7 @@ package ar.edu.itba.paw.persistence;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
 import javax.sql.DataSource;
 import org.hsqldb.jdbc.JDBCDriver;
 import org.springframework.context.annotation.Bean;
@@ -57,8 +58,10 @@ public class TestConfiguration {
             throw new IllegalStateException("Could not load test migration scripts", e);
         }
 
-        Arrays.sort(migrationScripts, (left, right) -> String.valueOf(left.getFilename())
-                .compareTo(String.valueOf(right.getFilename())));
+        Arrays.sort(
+                migrationScripts,
+                Comparator.comparingInt(TestConfiguration::migrationVersion)
+                        .thenComparing(resource -> String.valueOf(resource.getFilename())));
 
         for (final Resource migrationScript : migrationScripts) {
             if (migrationScript == null) {
@@ -68,5 +71,23 @@ public class TestConfiguration {
         }
 
         return populator;
+    }
+
+    private static int migrationVersion(final Resource resource) {
+        final String filename = String.valueOf(resource.getFilename());
+        if (filename.length() < 2 || filename.charAt(0) != 'V') {
+            return Integer.MAX_VALUE;
+        }
+
+        final int separatorIndex = filename.indexOf("__");
+        if (separatorIndex <= 1) {
+            return Integer.MAX_VALUE;
+        }
+
+        try {
+            return Integer.parseInt(filename.substring(1, separatorIndex));
+        } catch (final NumberFormatException exception) {
+            return Integer.MAX_VALUE;
+        }
     }
 }

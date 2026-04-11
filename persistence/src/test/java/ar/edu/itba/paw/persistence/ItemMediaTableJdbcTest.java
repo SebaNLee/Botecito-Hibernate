@@ -58,13 +58,13 @@ public class ItemMediaTableJdbcTest {
         final int ownerId = insertUser(ownerEmail);
         jdbcTemplate()
                 .update(
-                        "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location) VALUES (?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id) VALUES (?, ?, ?, ?, ?, ?)",
                         ownerId,
                         1,
                         itemTitle,
                         1200,
                         2,
-                        "Tigre");
+                        1);
         return jdbcTemplate().queryForObject("SELECT id FROM item WHERE title = ?", Integer.class, itemTitle);
     }
 

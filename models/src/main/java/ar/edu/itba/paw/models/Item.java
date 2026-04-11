@@ -13,6 +13,7 @@ public class Item {
     private Integer capacityPeople;
     private BigDecimal maxWeightKg;
     private Integer difficultyLevel;
+    private Integer locationOptionId;
     private String location;
     private Boolean active;
     private String ownerDeleteToken;
@@ -97,6 +98,14 @@ public class Item {
 
     public void setLocation(final String location) {
         this.location = location;
+    }
+
+    public Integer getLocationOptionId() {
+        return locationOptionId;
+    }
+
+    public void setLocationOptionId(final Integer locationOptionId) {
+        this.locationOptionId = locationOptionId;
     }
 
     public Boolean getActive() {

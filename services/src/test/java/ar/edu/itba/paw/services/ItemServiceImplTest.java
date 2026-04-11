@@ -63,7 +63,7 @@ public class ItemServiceImplTest {
                         Mockito.eq(2),
                         Mockito.eq(BigDecimal.valueOf(100)),
                         Mockito.eq(1),
-                        Mockito.eq("Tigre"),
+                        Mockito.eq(1),
                         Mockito.anyString()))
                 .thenReturn(createdItem);
         final Item result = itemService.createPublication(
@@ -78,7 +78,7 @@ public class ItemServiceImplTest {
                 2,
                 BigDecimal.valueOf(100),
                 1,
-                "Tigre",
+                1,
                 List.of(availability));
         Assertions.assertNotNull(result);
         Assertions.assertEquals(99, result.getId());

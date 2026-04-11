@@ -3,6 +3,7 @@ package ar.edu.itba.paw.webapp.controller;
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
@@ -64,7 +65,7 @@ public class MarketplaceController {
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
     public ModelAndView marketplace(
             final HttpServletRequest request,
-            @RequestParam(value = "location", required = false) final String requestedLocation,
+            @RequestParam(value = "locationOptionId", required = false) final String requestedLocationOptionId,
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "startTime", required = false) final String requestedStartTime,
             @RequestParam(value = "endTime", required = false) final String requestedEndTime,
@@ -73,7 +74,7 @@ public class MarketplaceController {
             @RequestParam(value = "sort", required = false, defaultValue = DEFAULT_SORT) final String sort) {
         final String resolvedSort = resolveSort(sort);
         final List<Item> filteredItems = new ArrayList<>(itemService.listItems().stream()
-                .filter(item -> matchesRequestedLocation(item, requestedLocation))
+                .filter(item -> matchesRequestedLocation(item, requestedLocationOptionId))
                 .filter(item -> matchesMarketplaceAvailability(
                         item.getId(), requestedDate, requestedStartTime, requestedEndTime))
                 .filter(item -> matchesRequestedCapacity(item, requestedCapacity))
@@ -98,7 +99,7 @@ public class MarketplaceController {
             value = "/location-options",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<String> locationOptions() {
+    public List<LocationOption> locationOptions() {
         return itemService.listLocationOptions();
     }
 
@@ -251,12 +252,13 @@ public class MarketplaceController {
         return mav;
     }
 
-    private static boolean matchesRequestedLocation(final Item item, final String requestedLocation) {
-        if (isBlank(requestedLocation)) {
+    private static boolean matchesRequestedLocation(final Item item, final String requestedLocationOptionId) {
+        final Integer parsedLocationOptionId = parseInteger(requestedLocationOptionId);
+        if (parsedLocationOptionId == null) {
             return true;
         }
 
-        return item.getLocation() != null && item.getLocation().trim().equalsIgnoreCase(requestedLocation.trim());
+        return item.getLocationOptionId() != null && item.getLocationOptionId().equals(parsedLocationOptionId);
     }
 
     private static boolean matchesRequestedCapacity(final Item item, final String requestedCapacity) {

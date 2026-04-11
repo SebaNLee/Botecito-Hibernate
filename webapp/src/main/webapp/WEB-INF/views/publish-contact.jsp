@@ -111,7 +111,7 @@
           </div>
           <div class="rounded-xl bg-surface-container-high p-3">
             <p class="text-[11px] uppercase tracking-wider font-bold text-outline m-0"><spring:message code="publish.form.location.label" /></p>
-            <p class="text-sm font-bold text-on-surface mt-1 mb-0"><c:out value="${publishForm.marina}" /></p>
+            <p class="text-sm font-bold text-on-surface mt-1 mb-0"><c:out value="${selectedLocationName}" /></p>
           </div>
           <div class="rounded-xl bg-surface-container-high p-3 col-span-2">
             <p class="text-[11px] uppercase tracking-wider font-bold text-outline m-0"><spring:message code="publish.form.maxWeight.label" /></p>

@@ -11,6 +11,7 @@ public class ItemForm {
     @Size(min = 1, max = 100)
     private String title;
 
+    @Size(max = 1000)
     private String description;
 
     @NotNull

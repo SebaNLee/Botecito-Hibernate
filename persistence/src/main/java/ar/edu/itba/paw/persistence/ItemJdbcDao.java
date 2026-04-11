@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
@@ -34,6 +35,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class ItemJdbcDao implements ItemDao {
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final String ITEM_SELECT = "SELECT i.id, i.owner_id, i.type_id, i.title, i.description,"
+            + " i.price_per_hour, i.capacity_people, i.max_weight_kg, i.difficulty_level,"
+            + " i.location_option_id, lo.name AS location,"
+            + " i.active, i.owner_delete_token, i.owner_delete_used_at, i.created_at"
+            + " FROM item i"
+            + " JOIN location_option lo ON lo.id = i.location_option_id";
 
     private static final @NonNull RowMapper<Item> ITEM_ROW_MAPPER = (ResultSet rs, int rowNum) -> {
         final Item item = new Item();
@@ -46,6 +53,7 @@ public class ItemJdbcDao implements ItemDao {
         item.setCapacityPeople(rs.getInt("capacity_people"));
         item.setMaxWeightKg(rs.getBigDecimal("max_weight_kg"));
         item.setDifficultyLevel((Integer) rs.getObject("difficulty_level"));
+        item.setLocationOptionId((Integer) rs.getObject("location_option_id"));
         item.setLocation(rs.getString("location"));
         item.setActive(rs.getBoolean("active"));
         item.setOwnerDeleteToken(rs.getString("owner_delete_token"));
@@ -109,17 +117,22 @@ public class ItemJdbcDao implements ItemDao {
 
     @Override
     public List<Item> listItems() {
-        return jdbcTemplate.query("SELECT * FROM item WHERE active = TRUE ORDER BY id", ITEM_ROW_MAPPER);
+        return jdbcTemplate.query(ITEM_SELECT + " WHERE i.active = TRUE ORDER BY i.id", ITEM_ROW_MAPPER);
     }
 
     @Override
-    public List<String> listLocationOptions() {
-        return jdbcTemplate.queryForList("SELECT name FROM location_option ORDER BY id", String.class);
+    public List<LocationOption> listLocationOptions() {
+        return jdbcTemplate.query("SELECT id, name FROM location_option ORDER BY id", (rs, rowNum) -> {
+            final LocationOption locationOption = new LocationOption();
+            locationOption.setId(rs.getInt("id"));
+            locationOption.setName(rs.getString("name"));
+            return locationOption;
+        });
     }
 
     @Override
     public Optional<Item> findItemById(final int id) {
-        return jdbcTemplate.query("SELECT * FROM item WHERE id = ? AND active = TRUE", ITEM_ROW_MAPPER, id).stream()
+        return jdbcTemplate.query(ITEM_SELECT + " WHERE i.id = ? AND i.active = TRUE", ITEM_ROW_MAPPER, id).stream()
                 .findAny();
     }
 
@@ -179,12 +192,12 @@ public class ItemJdbcDao implements ItemDao {
             final int capacityPeople,
             final BigDecimal maxWeightKg,
             final Integer difficultyLevel,
-            final String location,
+            final int locationOptionId,
             final String ownerDeleteToken) {
         final int id = Objects.requireNonNull(
                 jdbcTemplate.queryForObject(
                         "INSERT INTO item"
-                                + " (owner_id, type_id, title, description, price_per_hour, capacity_people, max_weight_kg, difficulty_level, location, active, owner_delete_token)"
+                                + " (owner_id, type_id, title, description, price_per_hour, capacity_people, max_weight_kg, difficulty_level, location_option_id, active, owner_delete_token)"
                                 + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                                 + " RETURNING id",
                         Integer.class,
@@ -196,11 +209,11 @@ public class ItemJdbcDao implements ItemDao {
                         capacityPeople,
                         maxWeightKg,
                         difficultyLevel,
-                        location,
+                        locationOptionId,
                         Boolean.FALSE,
                         ownerDeleteToken),
                 "Could not create item for owner " + ownerId);
-        return jdbcTemplate.query("SELECT * FROM item WHERE id = ?", ITEM_ROW_MAPPER, id).stream()
+        return jdbcTemplate.query(ITEM_SELECT + " WHERE i.id = ?", ITEM_ROW_MAPPER, id).stream()
                 .findAny()
                 .orElseThrow(() -> new IllegalStateException("Could not read inserted item " + id));
     }
@@ -315,7 +328,7 @@ public class ItemJdbcDao implements ItemDao {
     @Override
     public Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken) {
         return jdbcTemplate
-                .query("SELECT * FROM item WHERE owner_delete_token = ?", ITEM_ROW_MAPPER, ownerDeleteToken)
+                .query(ITEM_SELECT + " WHERE i.owner_delete_token = ?", ITEM_ROW_MAPPER, ownerDeleteToken)
                 .stream()
                 .findAny();
     }
@@ -383,7 +396,7 @@ public class ItemJdbcDao implements ItemDao {
             final int capacityPeople,
             final BigDecimal maxWeightKg,
             final Integer difficultyLevel,
-            final String location) {
+            final int locationOptionId) {
         final SimpleJdbcInsert insert =
                 new SimpleJdbcInsert(jdbcTemplate).withTableName("item").usingGeneratedKeyColumns("id");
         final Map<String, Object> args = new HashMap<>();
@@ -395,7 +408,7 @@ public class ItemJdbcDao implements ItemDao {
         args.put("capacity_people", capacityPeople);
         args.put("max_weight_kg", maxWeightKg);
         args.put("difficulty_level", difficultyLevel);
-        args.put("location", location);
+        args.put("location_option_id", locationOptionId);
         return insert.executeAndReturnKey(args).intValue();
     }
 

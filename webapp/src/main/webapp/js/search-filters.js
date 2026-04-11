@@ -1,6 +1,6 @@
 (function () {
   const FILTER_KEYS = [
-    "location",
+    "locationOptionId",
     "date",
     "startTime",
     "endTime",
@@ -169,9 +169,9 @@
     }
 
     return normalizeState({
-      location:
+      locationOptionId:
         form.querySelector("[data-location-value]")?.value ||
-        form.querySelector('[name="location"]')?.value ||
+        form.querySelector('[name="locationOptionId"]')?.value ||
         "",
       date:
         form.querySelector("[data-picker-input]")?.value ||
@@ -238,7 +238,17 @@
         .catch(() => [])
         .then((options) =>
           Array.isArray(options)
-            ? options.filter((option) => typeof option === "string")
+            ? options
+                .filter(
+                  (option) =>
+                    option &&
+                    Object.prototype.hasOwnProperty.call(option, "id") &&
+                    typeof option.name === "string",
+                )
+                .map((option) => ({
+                  id: String(option.id),
+                  name: option.name,
+                }))
             : [],
         );
     }
@@ -288,7 +298,7 @@
 
       this.queryInput.addEventListener("input", () => {
         const exactMatch = this.findExact(this.queryInput.value);
-        this.hiddenInput.value = exactMatch || "";
+        this.hiddenInput.value = exactMatch ? exactMatch.id : "";
         this.hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
         this.open();
         this.render();
@@ -319,6 +329,7 @@
       fetchLocationOptions(this.root.dataset.optionsUrl || "/location-options").then(
         (options) => {
           this.options = options;
+          this.setSelectedValue(this.hiddenInput.value);
           this.render();
         },
       );
@@ -331,21 +342,24 @@
       }
 
       return this.options.filter((option) =>
-        normalizeText(option).includes(query),
+        normalizeText(option.name).includes(query),
       );
     }
 
     findExact(value) {
       const normalized = normalizeText(value);
       const match = this.options.find(
-        (option) => normalizeText(option) === normalized,
+        (option) => normalizeText(option.name) === normalized,
       );
-      return match || "";
+      return match || null;
     }
 
     setSelectedValue(value) {
       this.hiddenInput.value = value || "";
-      this.queryInput.value = value || "";
+      const selected = this.options.find(
+        (option) => String(option.id) === String(value || ""),
+      );
+      this.queryInput.value = selected ? selected.name : "";
       this.render();
     }
 
@@ -360,8 +374,8 @@
 
     prepareForSubmit() {
       const exactMatch = this.findExact(this.queryInput.value);
-      this.hiddenInput.value = exactMatch || "";
-      this.queryInput.value = exactMatch || this.queryInput.value || "";
+      this.hiddenInput.value = exactMatch ? exactMatch.id : "";
+      this.queryInput.value = exactMatch ? exactMatch.name : this.queryInput.value || "";
     }
 
     open() {
@@ -379,13 +393,13 @@
     }
 
     selectOption(option) {
-      if (normalizeText(option) === normalizeText(this.hiddenInput.value)) {
+      if (String(option.id) === String(this.hiddenInput.value)) {
         this.clear();
         return;
       }
 
-      this.hiddenInput.value = option;
-      this.queryInput.value = option;
+      this.hiddenInput.value = String(option.id);
+      this.queryInput.value = option.name;
       this.hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
       this.close();
       this.render();
@@ -402,7 +416,7 @@
       filteredOptions.forEach((option) => {
         const button = document.createElement("button");
         const isSelected =
-          normalizeText(option) === normalizeText(this.hiddenInput.value);
+          String(option.id) === String(this.hiddenInput.value);
         button.type = "button";
         button.className =
           "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-on-surface transition-all hover:bg-primary/10 hover:text-primary active:bg-primary/14";
@@ -422,7 +436,7 @@
         content.className = "min-w-0 flex-1";
         const title = document.createElement("div");
         title.className = "truncate";
-        title.textContent = option;
+        title.textContent = option.name;
         content.appendChild(title);
         button.appendChild(content);
 
@@ -597,7 +611,7 @@
     const normalized = normalizeState(state);
 
     form.querySelectorAll("[data-location-picker]").forEach((root) => {
-      root.__locationPicker?.setSelectedValue(normalized.location);
+      root.__locationPicker?.setSelectedValue(normalized.locationOptionId);
     });
 
     form.querySelectorAll("[data-people-count]").forEach((root) => {
@@ -713,7 +727,7 @@
     const marketplaceButton = alertRoot.querySelector(
       "[data-item-unavailable-marketplace]",
     );
-    const itemLocation = alertRoot.dataset.itemLocation || "";
+    const itemLocationOptionId = alertRoot.dataset.itemLocationOptionId || "";
     const itemCapacity = parseInteger(alertRoot.dataset.itemCapacity);
     const itemMaxWeight = parseInteger(alertRoot.dataset.itemMaxWeight);
     const mismatchPrefix =
@@ -737,8 +751,8 @@
     const requestedWeight = parseInteger(appliedState.maxWeight);
 
     if (
-      appliedState.location &&
-      normalizeText(appliedState.location) !== normalizeText(itemLocation)
+      appliedState.locationOptionId &&
+      String(appliedState.locationOptionId) !== String(itemLocationOptionId)
     ) {
       mismatchReasons.push(mismatchLocation);
     }

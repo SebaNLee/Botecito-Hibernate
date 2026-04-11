@@ -458,7 +458,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
     class="fixed inset-0 z-[280] hidden items-center justify-center bg-on-background/45 px-6"
     data-item-unavailable-alert
     data-marketplace-url="${marketplaceUrl}"
-    data-item-location="${item.location}"
+    data-item-location-option-id="${item.locationOptionId}"
     data-item-capacity="${item.capacityPeople}"
     data-item-max-weight="${item.maxWeightKg}"
     data-mismatch-prefix="${unavailableMismatchPrefix}"

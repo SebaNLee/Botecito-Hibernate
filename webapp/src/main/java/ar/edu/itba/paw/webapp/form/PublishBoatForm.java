@@ -30,7 +30,7 @@ public class PublishBoatForm {
     private String description;
 
     @NotBlank(groups = Step1.class, message = "{publish.validation.location.required}")
-    @Size(max = 120, groups = Step1.class, message = "{publish.validation.location.max}")
+    @Pattern(regexp = "\\d+", groups = Step1.class, message = "{publish.validation.location.invalid}")
     private String marina;
 
     @NotBlank(groups = Step1.class, message = "{publish.validation.capacity.required}")

@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.math.BigDecimal;
@@ -31,7 +32,7 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<String> listLocationOptions() {
+    public List<LocationOption> listLocationOptions() {
         return itemDao.listLocationOptions();
     }
 
@@ -68,7 +69,7 @@ public final class ItemServiceImpl implements ItemService {
             final Integer capacityPeople,
             final BigDecimal maxWeightKg,
             final Integer difficultyLevel,
-            final String location,
+            final Integer locationOptionId,
             final List<ItemAvailability> availabilities) {
         final User ownerUser = resolveOrCreateOwner(ownerGivenName, ownerLastName, ownerEmail, ownerPreferredLanguage);
         final String ownerDeleteToken = UUID.randomUUID().toString();
@@ -81,7 +82,7 @@ public final class ItemServiceImpl implements ItemService {
                 capacityPeople,
                 maxWeightKg,
                 difficultyLevel,
-                location,
+                locationOptionId,
                 ownerDeleteToken);
 
         for (final ItemAvailability availability : availabilities) {

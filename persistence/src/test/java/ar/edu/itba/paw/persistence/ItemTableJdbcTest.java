@@ -28,13 +28,13 @@ public class ItemTableJdbcTest {
         final int ownerId = insertUser("a@a.com");
 
         jdbcTemplate.update(
-                "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id) VALUES (?, ?, ?, ?, ?, ?)",
                 ownerId,
                 1,
                 "item-a",
                 2000,
                 2,
-                "Tigre");
+                1);
 
         final Integer count =
                 jdbcTemplate.queryForObject("SELECT COUNT(*) FROM item WHERE title = ?", Integer.class, "item-a");
@@ -45,13 +45,13 @@ public class ItemTableJdbcTest {
     public void testCreateItemWhenOwnerDoesNotExist() {
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update(
-                        "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location) VALUES (?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id) VALUES (?, ?, ?, ?, ?, ?)",
                         999999,
                         1,
                         "item-a",
                         2000,
                         2,
-                        "Tigre"));
+                        1));
     }
 
     @Test
@@ -60,13 +60,13 @@ public class ItemTableJdbcTest {
 
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update(
-                        "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location) VALUES (?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id) VALUES (?, ?, ?, ?, ?, ?)",
                         ownerId,
                         1,
                         "item-a",
                         -10,
                         2,
-                        "Tigre"));
+                        1));
     }
 
     @Test
@@ -75,25 +75,25 @@ public class ItemTableJdbcTest {
         final int ownerId = insertUser("a@a.com");
         final String token = "t";
         jdbcTemplate.update(
-                "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location, owner_delete_token) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id, owner_delete_token) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 ownerId,
                 1,
                 "item-a",
                 1500,
                 2,
-                "Tigre",
+                1,
                 token);
 
         Assertions.assertThrows(
                 DataIntegrityViolationException.class,
                 () -> jdbcTemplate.update(
-                        "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location, owner_delete_token) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id, owner_delete_token) VALUES (?, ?, ?, ?, ?, ?, ?)",
                         ownerId,
                         1,
                         "item-b",
                         1800,
                         2,
-                        "Tigre",
+                        1,
                         token));
     }
 

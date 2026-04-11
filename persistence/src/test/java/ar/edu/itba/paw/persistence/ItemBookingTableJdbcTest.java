@@ -83,13 +83,13 @@ public class ItemBookingTableJdbcTest {
     private int insertItem(final int ownerId, final String title) {
         jdbcTemplate()
                 .update(
-                        "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location) VALUES (?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id) VALUES (?, ?, ?, ?, ?, ?)",
                         ownerId,
                         1,
                         title,
                         1500,
                         2,
-                        "Tigre");
+                        1);
         return jdbcTemplate().queryForObject("SELECT id FROM item WHERE title = ?", Integer.class, title);
     }
 

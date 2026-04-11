@@ -13,7 +13,7 @@ $ ssh <username>@pampero.itba.edu.ar
 
 > **Nota:** Se recomienda el uso del script `db.sh` para el manejo de backups de deploy, se detallan abajo los comandos indviduales para debugging. 
 
-El script `db.sh` crea y trae una copia .sql de la DB actual del deploy como también sube un .sql local a deploy.
+El script `db.sh` crea y trae una copia .sql de la DB actual de deploy y tambien permite restaurar un .sql local sobre deploy.
 
 ### Comandos:
 
@@ -38,12 +38,19 @@ $ scp <username>@pampero.itba.edu.ar:/home/<username>/backup.sql backups/backup.
 Usar preferiblemente:
 
 ```
-$ ./db.sh backup <file> <username>
+$ ./db.sh restore <file> <username>
 ```
+
+El restore en deploy usa estrategia `DROP SCHEMA public CASCADE; CREATE SCHEMA public;` y luego ejecuta el SQL subido.
+No se hace backup automatico: si se quiere respaldo antes de restaurar, correr manualmente `./db.sh backup <username>`.
+
+De última, estos serían los comandos de a uno para ejecutarlos individualmente:
 
 ```
 $ scp backups/backup.sql <username>@pampero.itba.edu.ar:/home/<username>/backup.sql
 $ ssh <username>@pampero.itba.edu.ar
+$ sed -i '/^SET transaction_timeout = /d' /home/<username>/backup.sql
+$ psql -h 10.16.1.110 -U paw-2026a-11 -d paw-2026a-11 -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 $ psql -h 10.16.1.110 -U paw-2026a-11 -d paw-2026a-11 -f backup.sql
 ```
 
@@ -60,7 +67,7 @@ Si se quiere hacer restore en la DB local:
 ```
 sudo -u postgres psql -c "DROP DATABASE paw;"
 sudo -u postgres psql -c "CREATE DATABASE paw;"
-psql -h localhost -U postgres -d paw -f backups/backup.local.sql
+psql -h localhost -U postgres -d paw -f backups/backup.sql
 ```
 
 > **Nota:** Ignorar errores de roles inexistentes, los pisa con usuario postgres (que es lo que venimos usando localmente).

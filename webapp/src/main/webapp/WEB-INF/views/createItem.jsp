@@ -22,7 +22,7 @@
         <br>
 
         <label><spring:message code="item.description" />:</label>
-        <form:textarea path="description" />
+        <form:textarea path="description" maxlength="1000" />
         <form:errors path="description" cssClass="error" element="div"/>
         <br>
 

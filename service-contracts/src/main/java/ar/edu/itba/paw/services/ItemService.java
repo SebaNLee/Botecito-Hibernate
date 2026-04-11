@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -15,7 +16,7 @@ import java.util.Optional;
 public interface ItemService {
     List<Item> listItems();
 
-    List<String> listLocationOptions();
+    List<LocationOption> listLocationOptions();
 
     Optional<Item> findItemById(final int id);
 
@@ -37,7 +38,7 @@ public interface ItemService {
             Integer capacityPeople,
             BigDecimal maxWeightKg,
             Integer difficultyLevel,
-            String location,
+            Integer locationOptionId,
             List<ItemAvailability> availabilities);
 
     Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken);

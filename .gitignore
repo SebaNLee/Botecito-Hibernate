@@ -69,3 +69,6 @@ idea-lolo.txt
 .classpath
 .settings/
 .metadata/
+
+# DB Backups
+backups/

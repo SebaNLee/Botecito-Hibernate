@@ -52,7 +52,7 @@
         <div class="w-full min-w-0 px-3 py-3 group md:flex-[1.05]">
           <paw:locationPicker
             id="landing-location"
-            name="location"
+            name="locationOptionId"
             label="${locationLabel}"
             placeholder="${locationPlaceholder}"
             icon="location_on"

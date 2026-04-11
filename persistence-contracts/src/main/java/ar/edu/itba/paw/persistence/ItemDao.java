@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -16,7 +17,7 @@ import java.util.Optional;
 public interface ItemDao {
     List<Item> listItems();
 
-    List<String> listLocationOptions();
+    List<LocationOption> listLocationOptions();
 
     Optional<Item> findItemById(final int id);
 
@@ -40,7 +41,7 @@ public interface ItemDao {
             final int capacityPeople,
             final BigDecimal maxWeightKg,
             final Integer difficultyLevel,
-            final String location,
+            final int locationOptionId,
             final String ownerDeleteToken);
 
     ItemAvailability createItemAvailability(
@@ -88,7 +89,7 @@ public interface ItemDao {
             final int capacityPeople,
             final BigDecimal maxWeightKg,
             final Integer difficultyLevel,
-            final String location);
+            final int locationOptionId);
 
     Integer insertAvailability(
             final int itemId, final DayOfWeek weekday, final LocalTime startTime, final LocalTime endTime);

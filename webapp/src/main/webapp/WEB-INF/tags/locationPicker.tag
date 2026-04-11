@@ -46,7 +46,7 @@
           <input
               id="${id}-query"
               type="text"
-              value="${fn:escapeXml(resolvedValue)}"
+              value=""
               class="w-full appearance-none bg-transparent border-none p-0 text-[0.9rem] text-on-surface placeholder:text-outline-variant font-medium outline-none focus:outline-none focus-visible:outline-none focus:ring-0 shadow-none"
               placeholder="${fn:escapeXml(resolvedPlaceholder)}"
               autocomplete="off"
@@ -95,7 +95,7 @@
           <input
               id="${id}-query"
               type="text"
-              value="${fn:escapeXml(resolvedValue)}"
+              value=""
               class="w-full appearance-none bg-transparent border-none p-0 text-on-surface placeholder:text-outline font-medium outline-none focus:outline-none focus-visible:outline-none focus:ring-0 shadow-none"
               placeholder="${fn:escapeXml(resolvedPlaceholder)}"
               autocomplete="off"

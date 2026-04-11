@@ -72,7 +72,7 @@
 
           <div class="space-y-2 md:col-span-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="description"><spring:message code="publish.form.description.label" /></label>
-            <form:textarea path="description" id="description" rows="5" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline resize-none" placeholder="${publishDescriptionPlaceholder}"/>
+            <form:textarea path="description" id="description" rows="5" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline resize-none" placeholder="${publishDescriptionPlaceholder}" maxlength="1000"/>
             <form:errors path="description" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
           </div>
 

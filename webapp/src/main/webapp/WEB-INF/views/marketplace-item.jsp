@@ -337,6 +337,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
               path="requestMessage"
               id="requestMessage"
               rows="4"
+              maxlength="1000"
               class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline resize-none"
               placeholder="${requestMessagePlaceholder}"
             />

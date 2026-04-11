@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.form;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 
 public class ReservationRequestForm {
     @NotBlank(message = "{reservation.validation.date.required}")
@@ -25,6 +26,7 @@ public class ReservationRequestForm {
 
     private String requesterPreferredLanguage = "es";
 
+    @Size(max = 1000, message = "{reservation.validation.requestMessage.max}")
     private String requestMessage;
 
     public String getDate() {

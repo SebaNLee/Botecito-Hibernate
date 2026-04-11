@@ -22,7 +22,7 @@
         <br>
 
         <label><spring:message code="booking.requestMessage" />:</label>
-        <form:textarea path="requestMessage" />
+        <form:textarea path="requestMessage" maxlength="1000" />
         <form:errors path="requestMessage" cssClass="error" element="div"/>
         <br>
 

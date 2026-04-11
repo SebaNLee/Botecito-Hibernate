@@ -26,7 +26,7 @@ public class PublishBoatForm {
     @Size(max = 100, groups = Step1.class, message = "{publish.validation.title.max}")
     private String title;
 
-    @Size(max = 2000, groups = Step1.class, message = "{publish.validation.description.max}")
+    @Size(max = 1000, groups = Step1.class, message = "{publish.validation.description.max}")
     private String description;
 
     @NotBlank(groups = Step1.class, message = "{publish.validation.location.required}")

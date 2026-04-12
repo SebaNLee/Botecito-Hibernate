@@ -4,6 +4,7 @@
 <%@ attribute name="ctaVariant" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 
 <c:set var="resolvedCtaMessageCode" value="${not empty ctaMessageCode ? ctaMessageCode : 'nav.publishCta'}" />
 <c:set var="resolvedCtaHref" value="${not empty ctaHref ? ctaHref : '/publish'}" />
@@ -17,7 +18,18 @@
     <a href="<c:url value='/' />" class="text-2xl font-black text-[#005da7] dark:text-[#0076d1] font-headline tracking-tight no-underline">
       Botecito
     </a>
-    <div class="flex items-center gap-6">
+    <div class="flex items-center gap-4">
+      <%-- TODO: wrap login/register in <sec:authorize access="isAnonymous()"> once auth is fully wired --%>
+      <a href="<c:url value='/login' />" class="text-on-surface-variant font-semibold text-sm hover:text-primary transition-colors no-underline">
+        <spring:message code="nav.login" />
+      </a>
+      <a href="<c:url value='/register' />" class="bg-primary text-on-primary font-bold px-5 py-2 rounded-lg hover:bg-primary-container transition-colors text-sm no-underline">
+        <spring:message code="nav.register" />
+      </a>
+      <%-- TODO: wrap profile link in <sec:authorize access="isAuthenticated()"> and show <sec:authentication property="name" /> instead of static text --%>
+      <a href="<c:url value='/profile' />" class="flex items-center gap-2 text-on-surface-variant font-semibold text-sm hover:text-primary transition-colors no-underline">
+        <span class="material-symbols-outlined text-lg">account_circle</span>
+      </a>
       <a href="<c:url value='${resolvedCtaHref}' />" class="${resolvedCtaClasses}">
         <spring:message code="${resolvedCtaMessageCode}" />
       </a>

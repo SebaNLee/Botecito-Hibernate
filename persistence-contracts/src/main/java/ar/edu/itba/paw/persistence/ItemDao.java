@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
@@ -16,6 +17,10 @@ import java.util.Optional;
 
 public interface ItemDao {
     List<Item> listItems();
+
+    List<Item> listItems(final ItemSearchCriteria criteria, final int limit, final int offset);
+
+    int countItems(final ItemSearchCriteria criteria);
 
     List<LocationOption> listLocationOptions();
 

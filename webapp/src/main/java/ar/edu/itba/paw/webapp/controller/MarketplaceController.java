@@ -2,12 +2,14 @@ package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.Item;
+import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
+import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -15,8 +17,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -40,6 +40,7 @@ import org.springframework.web.servlet.ModelAndView;
 @Controller
 public class MarketplaceController {
     private static final String DEFAULT_SORT = "priceAsc";
+    private static final int MARKETPLACE_PAGE_SIZE = 10;
 
     private final ItemService itemService;
     private final MailService mailService;
@@ -71,20 +72,24 @@ public class MarketplaceController {
             @RequestParam(value = "endTime", required = false) final String requestedEndTime,
             @RequestParam(value = "capacity", required = false) final String requestedCapacity,
             @RequestParam(value = "maxWeight", required = false) final String requestedMaxWeight,
-            @RequestParam(value = "sort", required = false, defaultValue = DEFAULT_SORT) final String sort) {
+            @RequestParam(value = "sort", required = false, defaultValue = DEFAULT_SORT) final String sort,
+            @RequestParam(value = "page", required = false) final String requestedPage) {
         final String resolvedSort = resolveSort(sort);
-        final List<Item> filteredItems = new ArrayList<>(itemService.listItems().stream()
-                .filter(item -> matchesRequestedLocation(item, requestedLocationOptionId))
-                .filter(item -> matchesMarketplaceAvailability(
-                        item.getId(), requestedDate, requestedStartTime, requestedEndTime))
-                .filter(item -> matchesRequestedCapacity(item, requestedCapacity))
-                .filter(item -> matchesRequestedWeight(item, requestedMaxWeight))
-                .toList());
-        filteredItems.sort(comparatorFor(resolvedSort));
+        final ItemSearchCriteria criteria = buildItemSearchCriteria(
+                requestedLocationOptionId,
+                requestedDate,
+                requestedStartTime,
+                requestedEndTime,
+                requestedCapacity,
+                requestedMaxWeight,
+                resolvedSort);
+        final Page<Item> itemPage =
+                itemService.searchItems(criteria, resolvePage(requestedPage), MARKETPLACE_PAGE_SIZE);
         final ModelAndView mav = new ModelAndView("marketplace");
-        mav.addObject("items", filteredItems);
-        mav.addObject("itemImages", buildItemImagesMap(request.getContextPath()));
-        mav.addObject("itemsCount", filteredItems.size());
+        mav.addObject("items", itemPage.getContent());
+        mav.addObject("itemImages", buildItemImagesMap(itemPage.getContent(), request.getContextPath()));
+        mav.addObject("itemsCount", itemPage.getTotalItems());
+        mav.addObject("itemPage", itemPage);
         mav.addObject("sort", resolvedSort);
         AvailabilityPickerSupport.addAvailabilityPickerData(
                 mav,
@@ -252,33 +257,6 @@ public class MarketplaceController {
         return mav;
     }
 
-    private static boolean matchesRequestedLocation(final Item item, final String requestedLocationOptionId) {
-        final Integer parsedLocationOptionId = parseInteger(requestedLocationOptionId);
-        if (parsedLocationOptionId == null) {
-            return true;
-        }
-
-        return item.getLocationOptionId() != null && item.getLocationOptionId().equals(parsedLocationOptionId);
-    }
-
-    private static boolean matchesRequestedCapacity(final Item item, final String requestedCapacity) {
-        final Integer parsedCapacity = parseInteger(requestedCapacity);
-        if (parsedCapacity == null) {
-            return true;
-        }
-
-        return item.getCapacityPeople() >= parsedCapacity;
-    }
-
-    private static boolean matchesRequestedWeight(final Item item, final String requestedMaxWeight) {
-        final Integer parsedWeight = parseInteger(requestedMaxWeight);
-        if (parsedWeight == null) {
-            return true;
-        }
-
-        return item.getMaxWeightKg().compareTo(BigDecimal.valueOf(parsedWeight.longValue())) >= 0;
-    }
-
     private static Integer parseInteger(final String value) {
         if (isBlank(value)) {
             return null;
@@ -289,6 +267,34 @@ public class MarketplaceController {
         } catch (final NumberFormatException exception) {
             return null;
         }
+    }
+
+    private static int resolvePage(final String page) {
+        final Integer parsedPage = parseInteger(page);
+        if (parsedPage == null || parsedPage < 1) {
+            return 1;
+        }
+        return parsedPage;
+    }
+
+    private static ItemSearchCriteria buildItemSearchCriteria(
+            final String requestedLocationOptionId,
+            final String requestedDate,
+            final String requestedStartTime,
+            final String requestedEndTime,
+            final String requestedCapacity,
+            final String requestedMaxWeight,
+            final String sort) {
+        final ItemSearchCriteria criteria = new ItemSearchCriteria();
+        criteria.setLocationOptionId(parseInteger(requestedLocationOptionId));
+        criteria.setDate(requestedDate);
+        criteria.setStartTime(requestedStartTime);
+        criteria.setEndTime(requestedEndTime);
+        criteria.setCapacity(parseInteger(requestedCapacity));
+        final Integer maxWeight = parseInteger(requestedMaxWeight);
+        criteria.setMaxWeightKg(maxWeight == null ? null : BigDecimal.valueOf(maxWeight.longValue()));
+        criteria.setSort(sort);
+        return criteria;
     }
 
     private static String resolveSort(final String sort) {
@@ -302,30 +308,9 @@ public class MarketplaceController {
         };
     }
 
-    private static Comparator<Item> comparatorFor(final String sort) {
-        return switch (sort) {
-            case "titleAsc" -> Comparator.comparing(
-                    MarketplaceController::sortableTitle, String.CASE_INSENSITIVE_ORDER);
-            case "titleDesc" -> Comparator.comparing(
-                            MarketplaceController::sortableTitle, String.CASE_INSENSITIVE_ORDER)
-                    .reversed();
-            case "priceDesc" -> Comparator.comparing(
-                    Item::getPricePerHour, Comparator.nullsLast(Comparator.reverseOrder()));
-            case "priceAsc" -> Comparator.comparing(Item::getPricePerHour, Comparator.nullsLast(Integer::compareTo));
-            default -> Comparator.comparing(Item::getPricePerHour, Comparator.nullsLast(Integer::compareTo));
-        };
-    }
-
-    private static String sortableTitle(final Item item) {
-        if (item == null || item.getTitle() == null) {
-            return "";
-        }
-        return item.getTitle().trim();
-    }
-
-    private Map<Integer, String> buildItemImagesMap(final String servletContextPath) {
+    private Map<Integer, String> buildItemImagesMap(final List<Item> items, final String servletContextPath) {
         final Map<Integer, String> itemImages = new LinkedHashMap<>();
-        for (final Item item : itemService.listItems()) {
+        for (final Item item : items) {
             itemImages.put(item.getId(), ItemImageUtils.resolveImageUrl(itemService, item.getId(), servletContextPath));
         }
         return itemImages;

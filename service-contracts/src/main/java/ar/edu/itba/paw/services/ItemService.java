@@ -3,6 +3,7 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
@@ -15,6 +16,8 @@ import java.util.Optional;
 
 public interface ItemService {
     List<Item> listItems();
+
+    Page<Item> searchItems(final ItemSearchCriteria criteria, final int page, final int pageSize);
 
     List<LocationOption> listLocationOptions();
 

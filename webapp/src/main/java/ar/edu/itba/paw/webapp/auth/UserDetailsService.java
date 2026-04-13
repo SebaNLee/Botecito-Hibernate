@@ -9,11 +9,11 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
 @Component
-public class BotecitoUserDetailsService implements org.springframework.security.core.userdetails.UserDetailsService {
+public class UserDetailsService implements org.springframework.security.core.userdetails.UserDetailsService {
 
     private final UserService userService;
 
-    public BotecitoUserDetailsService(final UserService userService) {
+    public UserDetailsService(final UserService userService) {
         this.userService = userService;
     }
 
@@ -22,6 +22,9 @@ public class BotecitoUserDetailsService implements org.springframework.security.
         final User user = userService
                 .findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("No user found with email " + username));
+        if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+            throw new UsernameNotFoundException("User account is not claimed yet for email " + username);
+        }
 
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),

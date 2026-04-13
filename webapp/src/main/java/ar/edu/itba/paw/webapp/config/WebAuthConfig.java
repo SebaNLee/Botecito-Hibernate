@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
@@ -12,12 +13,13 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+// TODO I kinda read the deprecated warnings (2022), should be fine. I think it is bc of this old af stack we are using
 @Configuration
 @EnableWebSecurity
 public class WebAuthConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
-    private ar.edu.itba.paw.webapp.auth.BotecitoUserDetailsService userDetailsService;
+    private ar.edu.itba.paw.webapp.auth.UserDetailsService userDetailsService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -40,7 +42,15 @@ public class WebAuthConfig extends WebSecurityConfigurerAdapter {
                 .anonymous()
                 .antMatchers("/register")
                 .anonymous()
+                .antMatchers(HttpMethod.POST, "/item/*")
+                .authenticated()
+                .antMatchers(HttpMethod.POST, "/bookings/*/*")
+                .authenticated()
+                .antMatchers("/publish/*/confirm", "/publish/*/delete")
+                .permitAll()
                 .antMatchers("/profile/**")
+                .authenticated()
+                .antMatchers("/publish/**")
                 .authenticated()
                 .antMatchers("/**")
                 .permitAll()

@@ -49,7 +49,8 @@ public class UserJdbcDao implements UserDao {
     }
 
     @Override
-    public User createUser(final String givenName, final String lastName, final String email, final String passwordHash) {
+    public User createUser(
+            final String givenName, final String lastName, final String email, final String passwordHash) {
         final int insertedRows = jdbcTemplate.update(
                 "INSERT INTO users (given_name, last_name, email, preferred_language, password_hash) VALUES (?, ?, ?, ?, ?)",
                 givenName,
@@ -61,7 +62,8 @@ public class UserJdbcDao implements UserDao {
             throw new IllegalStateException("Could not create user for email " + email);
         }
 
-        final Integer id = jdbcTemplate.queryForObject("SELECT id FROM users WHERE lower(email) = lower(?)", Integer.class, email);
+        final Integer id =
+                jdbcTemplate.queryForObject("SELECT id FROM users WHERE lower(email) = lower(?)", Integer.class, email);
         if (id == null) {
             throw new IllegalStateException("Could not read inserted user id for email " + email);
         }
@@ -87,7 +89,8 @@ public class UserJdbcDao implements UserDao {
         return findByEmail(email);
     }
 
-    private static OffsetDateTime readOffsetDateTime(final ResultSet rs, final String columnName) throws java.sql.SQLException {
+    private static OffsetDateTime readOffsetDateTime(final ResultSet rs, final String columnName)
+            throws java.sql.SQLException {
         final Timestamp timestamp = rs.getTimestamp(columnName);
         if (timestamp == null) {
             return null;

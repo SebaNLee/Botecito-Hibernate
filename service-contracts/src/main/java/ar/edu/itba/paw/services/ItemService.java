@@ -16,6 +16,8 @@ import java.util.Optional;
 public interface ItemService {
     List<Item> listItems();
 
+    List<Item> listItemsByOwnerId(int ownerId);
+
     List<LocationOption> listLocationOptions();
 
     Optional<Item> findItemById(final int id);

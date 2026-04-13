@@ -30,7 +30,7 @@ public class MailServiceImpl implements MailService {
     private final MessageSource messageSource;
     private final ItemDao itemDao;
     private final String reviewRecipient;
-    private final String actionBaseUrl;
+    private final String accountBaseUrl;
     private final String itemBaseUrl;
 
     @SuppressFBWarnings(
@@ -49,7 +49,7 @@ public class MailServiceImpl implements MailService {
         this.itemDao = itemDao;
         final String baseUrl = requireProperty(credentialsProperties, "app.baseUrl");
         this.reviewRecipient = requireProperty(credentialsProperties, "mail.reviewRecipient");
-        this.actionBaseUrl = baseUrl + "/bookings";
+        this.accountBaseUrl = baseUrl + "/profile";
         this.itemBaseUrl = baseUrl + "/item";
     }
 
@@ -65,18 +65,13 @@ public class MailServiceImpl implements MailService {
     @Override
     @Async("mailTaskExecutor")
     public void sendPublishConfirmationEmail(
-            final String recipientEmail,
-            final String ownerName,
-            final String itemTitle,
-            final String ownerDeleteToken) {
+            final String recipientEmail, final String ownerName, final String itemTitle) {
         try {
             final Locale locale = resolveLocale(recipientEmail);
             final Context context = new Context(locale);
             context.setVariable("ownerName", ownerName);
             context.setVariable("itemTitle", itemTitle);
-            context.setVariable(
-                    "confirmUrl", itemBaseUrl.replace("/item", "/publish/" + ownerDeleteToken + "/confirm"));
-            context.setVariable("deleteUrl", itemBaseUrl.replace("/item", "/publish/" + ownerDeleteToken + "/delete"));
+            context.setVariable("profileUrl", accountBaseUrl);
             sendHtmlEmail(
                     recipientEmail,
                     getMessage("mail.publishConfirmation.subject", locale, itemTitle),
@@ -103,8 +98,7 @@ public class MailServiceImpl implements MailService {
             final Locale locale = resolveLocale(recipientEmail);
             final Context context = new Context(locale);
             context.setVariable("bookingRequest", bookingRequest);
-            context.setVariable("acceptUrl", actionBaseUrl + "/" + bookingRequest.getToken() + "/accept");
-            context.setVariable("declineUrl", actionBaseUrl + "/" + bookingRequest.getToken() + "/decline");
+            context.setVariable("profileUrl", accountBaseUrl);
             sendHtmlEmail(
                     recipientEmail,
                     getMessage("mail.requestReview.subject", locale, bookingRequest.getRequesterName()),

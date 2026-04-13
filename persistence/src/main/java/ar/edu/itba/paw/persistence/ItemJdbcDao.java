@@ -121,6 +121,11 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    public List<Item> listItemsByOwnerId(final int ownerId) {
+        return jdbcTemplate.query(ITEM_SELECT + " WHERE i.owner_id = ? ORDER BY i.id DESC", ITEM_ROW_MAPPER, ownerId);
+    }
+
+    @Override
     public List<LocationOption> listLocationOptions() {
         return jdbcTemplate.query("SELECT id, name FROM location_option ORDER BY id", (rs, rowNum) -> {
             final LocationOption locationOption = new LocationOption();

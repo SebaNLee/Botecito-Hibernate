@@ -19,7 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class WebAuthConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
-    private ar.edu.itba.paw.webapp.auth.UserDetailsService userDetailsService;
+    private ar.edu.itba.paw.webapp.auth.UserAccountDetailsService userDetailsAccountService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -28,12 +28,12 @@ public class WebAuthConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+        auth.userDetailsService(userDetailsAccountService).passwordEncoder(passwordEncoder());
     }
 
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
-        http.userDetailsService(userDetailsService)
+        http.userDetailsService(userDetailsAccountService)
                 .sessionManagement()
                 .invalidSessionUrl("/login")
                 .and()
@@ -64,7 +64,7 @@ public class WebAuthConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .rememberMe()
                 .rememberMeParameter("j_rememberme")
-                .userDetailsService(userDetailsService)
+                .userDetailsService(userDetailsAccountService)
                 .key("botecito-remember-me-secret")
                 .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(30))
                 .and()

@@ -39,6 +39,13 @@
         </div>
       </c:if>
 
+      <c:if test="${legacyTokenError}">
+        <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 flex items-start gap-3">
+          <span class="material-symbols-outlined text-amber-600 text-lg mt-0.5">warning</span>
+          <span><spring:message code="login.legacyToken" /></span>
+        </div>
+      </c:if>
+
       <form action="${loginUrl}" method="post" class="space-y-5">
         <div class="space-y-2">
           <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="j_username">

@@ -12,18 +12,6 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 <spring:message code="filters.time" var="timeLabel" />
 <spring:message code="filters.time.placeholder" var="timePlaceholder" />
 <spring:message
-  code="itemDetail.form.firstName.placeholder"
-  var="requesterFirstNamePlaceholder"
-/>
-<spring:message
-  code="itemDetail.form.lastName.placeholder"
-  var="requesterLastNamePlaceholder"
-/>
-<spring:message
-  code="itemDetail.form.email.placeholder"
-  var="requesterEmailPlaceholder"
-/>
-<spring:message
   code="itemDetail.form.message.placeholder"
   var="requestMessagePlaceholder"
 />
@@ -270,63 +258,9 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             element="div"
             cssClass="text-sm text-error"
           />
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div class="space-y-2">
-              <label
-                class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
-                for="requesterGivenName"
-                ><spring:message code="itemDetail.form.firstName"
-              /></label>
-              <form:input
-                path="requesterGivenName"
-                id="requesterGivenName"
-                class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline"
-                placeholder="${requesterFirstNamePlaceholder}"
-              />
-              <form:errors
-                path="requesterGivenName"
-                element="div"
-                cssClass="text-sm text-error"
-              />
-            </div>
-            <div class="space-y-2">
-              <label
-                class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
-                for="requesterLastName"
-                ><spring:message code="itemDetail.form.lastName"
-              /></label>
-              <form:input
-                path="requesterLastName"
-                id="requesterLastName"
-                class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline"
-                placeholder="${requesterLastNamePlaceholder}"
-              />
-              <form:errors
-                path="requesterLastName"
-                element="div"
-                cssClass="text-sm text-error"
-              />
-            </div>
-          </div>
-          <div class="space-y-2">
-            <label
-              class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
-              for="requesterEmail"
-              ><spring:message code="itemDetail.form.email"
-            /></label>
-            <form:input
-              path="requesterEmail"
-              id="requesterEmail"
-              type="email"
-              class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline"
-              placeholder="${requesterEmailPlaceholder}"
-            />
-            <form:errors
-              path="requesterEmail"
-              element="div"
-              cssClass="text-sm text-error"
-            />
-          </div>
+          <p class="m-0 text-xs text-on-surface-variant">
+            <spring:message code="itemDetail.form.accountNote" />
+          </p>
           <div class="space-y-2">
             <label
               class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant"

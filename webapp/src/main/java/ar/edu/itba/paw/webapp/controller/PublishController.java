@@ -2,8 +2,10 @@ package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
+import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
+import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.services.utils.TimeRange;
 import ar.edu.itba.paw.services.utils.TimeRangeList;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
@@ -26,12 +28,14 @@ import org.springframework.context.MessageSource;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -48,21 +52,24 @@ public class PublishController {
 
     private final ItemService itemService;
     private final MailService mailService;
+    private final UserService userService;
     private final MessageSource messageSource;
 
     @Autowired
     public PublishController(
-            final ItemService itemService, final MailService mailService, final MessageSource messageSource) {
+            final ItemService itemService,
+            final MailService mailService,
+            final UserService userService,
+            final MessageSource messageSource) {
         this.itemService = itemService;
         this.mailService = mailService;
+        this.userService = userService;
         this.messageSource = messageSource;
     }
 
     @ModelAttribute("publishForm")
     public PublishBoatForm publishForm(final Locale locale) {
-        final PublishBoatForm form = new PublishBoatForm();
-        form.setOwnerPreferredLanguage(toSupportedLanguage(locale));
-        return form;
+        return new PublishBoatForm();
     }
 
     @ModelAttribute("itemTypeOptions")
@@ -173,8 +180,12 @@ public class PublishController {
             @Validated(PublishBoatForm.Step3.class) @ModelAttribute("publishForm") final PublishBoatForm form,
             final BindingResult errors,
             final Locale locale,
-            @RequestHeader(value = "Accept-Language", required = false) final String acceptLanguage,
             final SessionStatus sessionStatus) {
+        final User currentUser = currentAuthenticatedUser();
+        if (currentUser == null) {
+            return new ModelAndView("redirect:/login");
+        }
+
         if (!isStepOneComplete(form)) {
             return new ModelAndView("redirect:/publish");
         }
@@ -189,12 +200,11 @@ public class PublishController {
 
         final Item createdItem;
         try {
-            form.setOwnerPreferredLanguage(resolvePreferredLanguage(locale, acceptLanguage));
             createdItem = itemService.createPublication(
-                    form.getOwnerFirstName().trim(),
-                    form.getOwnerLastName().trim(),
-                    form.getOwnerEmail().trim(),
-                    form.getOwnerPreferredLanguage(),
+                    currentUser.getGivenName(),
+                    currentUser.getLastName(),
+                    currentUser.getEmail(),
+                    currentUser.getPreferredLanguage(),
                     Integer.parseInt(form.getItemTypeId().trim()),
                     form.getTitle().trim(),
                     form.getDescription() == null ? "" : form.getDescription().trim(),
@@ -210,10 +220,9 @@ public class PublishController {
             }
 
             mailService.sendPublishConfirmationEmail(
-                    form.getOwnerEmail().trim(),
-                    buildOwnerName(form),
-                    form.getTitle().trim(),
-                    createdItem.getOwnerDeleteToken());
+                    currentUser.getEmail(),
+                    currentUser.getName(),
+                    form.getTitle().trim());
         } catch (final IllegalArgumentException e) {
             final ModelAndView mav = new ModelAndView("publish-contact");
             errors.reject("publish.submit.persistenceError");
@@ -227,19 +236,23 @@ public class PublishController {
         }
 
         sessionStatus.setComplete();
-        return new ModelAndView("redirect:/publish/success?token=" + createdItem.getOwnerDeleteToken());
+        return new ModelAndView("redirect:/publish/success?itemId=" + createdItem.getId());
     }
 
     @RequestMapping(value = "/publish/success", method = RequestMethod.GET)
     public ModelAndView publishSuccess(
-            final HttpServletRequest request, @RequestParam(value = "token", required = false) final String token) {
-        if (token == null || token.isBlank()) {
-            return new ModelAndView("redirect:/publish");
+            final HttpServletRequest request, @RequestParam(value = "itemId", required = false) final Integer itemId) {
+        final User currentUser = currentAuthenticatedUser();
+        if (currentUser == null || itemId == null) {
+            return new ModelAndView("redirect:/login");
         }
 
-        final Item item = itemService.findItemByOwnerDeleteToken(token).orElse(null);
+        final Item item = itemService.findItemById(itemId).orElse(null);
         if (item == null) {
             return new ModelAndView("redirect:/publish");
+        }
+        if (!item.getOwnerId().equals(currentUser.getId())) {
+            return new ModelAndView("redirect:/403");
         }
 
         final ModelAndView mav = new ModelAndView("publish-success");
@@ -259,39 +272,6 @@ public class PublishController {
                 && StringUtils.hasText(form.getCapacity())
                 && StringUtils.hasText(form.getItemTypeId())
                 && StringUtils.hasText(form.getPricePerHour());
-    }
-
-    private static String resolvePreferredLanguage(final Locale locale, final String acceptLanguageHeader) {
-        final String localeLanguage = toSupportedLanguage(locale);
-        if ("en".equals(localeLanguage)) {
-            return "en";
-        }
-        return toSupportedLanguage(acceptLanguageHeader);
-    }
-
-    private static String toSupportedLanguage(final Locale locale) {
-        if (locale != null && "en".equalsIgnoreCase(locale.getLanguage())) {
-            return "en";
-        }
-        return "es";
-    }
-
-    private static String toSupportedLanguage(final String languageTag) {
-        if (languageTag == null || languageTag.isBlank()) {
-            return "es";
-        }
-        final String firstToken = languageTag.split(",", 2)[0].trim();
-        final String tag = firstToken.split(";", 2)[0].trim();
-        if ("en".equalsIgnoreCase(tag)
-                || tag.regionMatches(true, 0, "en-", 0, 3)
-                || tag.regionMatches(true, 0, "en_", 0, 3)) {
-            return "en";
-        }
-        return "es";
-    }
-
-    private static String buildOwnerName(final PublishBoatForm form) {
-        return form.getOwnerFirstName().trim() + " " + form.getOwnerLastName().trim();
     }
 
     private static BigDecimal parseMaxWeight(final String maxWeight) {
@@ -637,6 +617,16 @@ public class PublishController {
             case SATURDAY -> messageSource.getMessage("weekday.saturday", null, locale);
             case SUNDAY -> messageSource.getMessage("weekday.sunday", null, locale);
         };
+    }
+
+    private User currentAuthenticatedUser() {
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+        return userService.findByEmail(authentication.getName()).orElse(null);
     }
 
     private static Map<String, String> buildItemTypeOptions() {

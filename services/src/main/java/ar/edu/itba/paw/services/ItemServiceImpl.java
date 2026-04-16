@@ -51,6 +51,10 @@ public final class ItemServiceImpl implements ItemService {
         return new Page<>(items, resolvedPage, safePageSize, totalItems);
     }
 
+    public List<Item> listItemsByOwnerId(final int ownerId) {
+        return itemDao.listItemsByOwnerId(ownerId);
+    }
+
     @Override
     public List<LocationOption> listLocationOptions() {
         return itemDao.listLocationOptions();
@@ -104,6 +108,10 @@ public final class ItemServiceImpl implements ItemService {
                 difficultyLevel,
                 locationOptionId,
                 ownerDeleteToken);
+        if (!itemDao.activateItemByOwnerDeleteToken(ownerDeleteToken)) {
+            throw new IllegalStateException("Could not activate created item " + item.getId());
+        }
+        item.setActive(Boolean.TRUE);
 
         for (final ItemAvailability availability : availabilities) {
             itemDao.createItemAvailability(

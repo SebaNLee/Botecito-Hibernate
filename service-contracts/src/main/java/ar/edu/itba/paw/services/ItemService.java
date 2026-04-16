@@ -19,6 +19,8 @@ public interface ItemService {
 
     Page<Item> searchItems(final ItemSearchCriteria criteria, final int page, final int pageSize);
 
+    List<Item> listItemsByOwnerId(int ownerId);
+
     List<LocationOption> listLocationOptions();
 
     Optional<Item> findItemById(final int id);

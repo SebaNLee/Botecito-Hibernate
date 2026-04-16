@@ -10,6 +10,7 @@ public class User {
     private String email;
     private String phone;
     private String preferredLanguage;
+    private String passwordHash;
 
     public Integer getId() {
         return id;
@@ -107,6 +108,14 @@ public class User {
 
     public void setPreferredLanguage(final String preferredLanguage) {
         this.preferredLanguage = preferredLanguage;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(final String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     private static boolean isBlank(final String value) {

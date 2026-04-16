@@ -9,9 +9,6 @@
 <c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
 <c:url var="publishPreviewImageUrl" value="/publish/preview-image" />
-<spring:message code="publish.form.firstName.placeholder" var="ownerFirstNamePlaceholder" />
-<spring:message code="publish.form.lastName.placeholder" var="ownerLastNamePlaceholder" />
-<spring:message code="publish.form.email.placeholder" var="ownerEmailPlaceholder" />
 
 <paw:layout
   title="Botecito"
@@ -151,28 +148,7 @@
       <section class="lg:col-span-3 bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_48px_rgba(11,28,50,0.04)] space-y-6">
         <div class="flex items-center gap-3 pb-4 border-b border-outline-variant/20">
           <span class="material-symbols-outlined text-primary text-2xl">person</span>
-          <h2 class="text-xl font-extrabold m-0"><spring:message code="publish.step3.contact.title" /></h2>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="space-y-2">
-            <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="ownerFirstName"><spring:message code="publish.form.firstName.label" /></label>
-            <form:input path="ownerFirstName" id="ownerFirstName" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface" placeholder="${ownerFirstNamePlaceholder}"/>
-            <form:errors path="ownerFirstName" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
-
-          <div class="space-y-2">
-            <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="ownerLastName"><spring:message code="publish.form.lastName.label" /></label>
-            <form:input path="ownerLastName" id="ownerLastName" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface" placeholder="${ownerLastNamePlaceholder}"/>
-            <form:errors path="ownerLastName" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
-
-          <div class="space-y-2 md:col-span-2">
-            <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="ownerEmail"><spring:message code="publish.form.email.label" /></label>
-            <form:input path="ownerEmail" id="ownerEmail" type="email" class="w-full px-4 py-3 bg-surface-container-high border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-on-surface" placeholder="${ownerEmailPlaceholder}"/>
-            <form:errors path="ownerEmail" cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
-          </div>
-
+          <h2 class="text-xl font-extrabold m-0"><spring:message code="publish.step3.account.title" /></h2>
         </div>
 
         <div class="rounded-xl bg-surface-container-high p-4 text-sm text-on-surface-variant leading-relaxed">

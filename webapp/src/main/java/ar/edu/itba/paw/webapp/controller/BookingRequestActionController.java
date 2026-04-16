@@ -1,11 +1,14 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
+import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
+import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
-import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
+import ar.edu.itba.paw.services.UserService;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,72 +18,78 @@ import org.springframework.web.servlet.ModelAndView;
 @Controller
 public class BookingRequestActionController {
 
-    private final MailService mailService;
     private final BookingRequestService bookingRequestService;
+    private final ItemService itemService;
+    private final MailService mailService;
+    private final UserService userService;
 
-    @Autowired
     public BookingRequestActionController(
-            final MailService mailService, final BookingRequestService bookingRequestService) {
-        this.mailService = mailService;
+            final BookingRequestService bookingRequestService,
+            final ItemService itemService,
+            final MailService mailService,
+            final UserService userService) {
         this.bookingRequestService = bookingRequestService;
+        this.itemService = itemService;
+        this.mailService = mailService;
+        this.userService = userService;
     }
 
     @RequestMapping(value = "/bookings/{token}/accept", method = RequestMethod.GET)
     public ModelAndView acceptBookingRequest(@PathVariable("token") final String token) {
-        return resolveBookingRequest(token, BookingState.BOOKING_CONFIRMED);
+        return new ModelAndView("redirect:/register?legacyToken=true");
     }
 
     @RequestMapping(value = "/bookings/{token}/decline", method = RequestMethod.GET)
     public ModelAndView declineBookingRequest(@PathVariable("token") final String token) {
-        return resolveBookingRequest(token, BookingState.BOOKING_REJECTED);
+        return new ModelAndView("redirect:/register?legacyToken=true");
     }
 
-    private ModelAndView resolveBookingRequest(final String token, final BookingState requestStatus) {
-        final ModelAndView mav = new ModelAndView("booking-action-result");
-        final Optional<BookingRequest> existingBookingRequest = bookingRequestService.findByToken(token);
-        if (existingBookingRequest.isEmpty()) {
-            mav.addObject("actionTitleCode", "bookingAction.notFound.title");
-            mav.addObject("actionMessageCode", "bookingAction.notFound.message");
-            return mav;
-        }
-
-        final BookingRequest bookingRequest = existingBookingRequest.get();
-        mav.addObject("itemId", bookingRequest.getItemId());
-        if (bookingRequest.getStatus() != BookingState.BOOKING_PENDING) {
-            mav.addObject("actionTitleCode", "bookingAction.alreadyProcessed.title");
-            mav.addObject("actionMessageCode", alreadyProcessedMessageCode(bookingRequest.getStatus()));
-            return mav;
-        }
-
-        final Optional<BookingRequest> resolvedBookingRequest =
-                bookingRequestService.resolveBookingRequest(token, requestStatus);
-        if (resolvedBookingRequest.isEmpty()) {
-            mav.addObject("actionTitleCode", "bookingAction.updateFailed.title");
-            mav.addObject("actionMessageCode", "bookingAction.updateFailed.message");
-            return mav;
-        }
-
-        mailService.sendBookingResolutionEmail(resolvedBookingRequest.get());
-        mav.addObject("actionTitleCode", resolvedTitleCode(requestStatus));
-        mav.addObject("actionMessageCode", "bookingAction.resolved.message");
-        mav.addObject(
-                "actionMessageArgs", new Object[] {resolvedBookingRequest.get().getRequesterEmail()});
-        return mav;
+    @RequestMapping(value = "/bookings/{id:[0-9]+}/accept", method = RequestMethod.POST)
+    public ModelAndView acceptBookingRequestInAccount(@PathVariable("id") final int bookingId) {
+        return resolveBookingRequestInAccount(bookingId, BookingState.BOOKING_CONFIRMED);
     }
 
-    private static String alreadyProcessedMessageCode(final BookingState bookingState) {
-        return switch (bookingState) {
-            case BOOKING_CONFIRMED -> "bookingAction.alreadyProcessed.confirmed";
-            case BOOKING_REJECTED -> "bookingAction.alreadyProcessed.rejected";
-            default -> "bookingAction.alreadyProcessed.message";
-        };
+    @RequestMapping(value = "/bookings/{id:[0-9]+}/decline", method = RequestMethod.POST)
+    public ModelAndView declineBookingRequestInAccount(@PathVariable("id") final int bookingId) {
+        return resolveBookingRequestInAccount(bookingId, BookingState.BOOKING_REJECTED);
     }
 
-    private static String resolvedTitleCode(final BookingState bookingState) {
-        return switch (bookingState) {
-            case BOOKING_CONFIRMED -> "bookingAction.resolved.confirmed";
-            case BOOKING_REJECTED -> "bookingAction.resolved.rejected";
-            default -> "bookingAction.pageTitle";
-        };
+    private ModelAndView resolveBookingRequestInAccount(final int bookingId, final BookingState bookingState) {
+        final User currentUser = currentAuthenticatedUser();
+        if (currentUser == null) {
+            return new ModelAndView("redirect:/login");
+        }
+
+        final var booking = itemService.listBookings().stream()
+                .filter(existingBooking -> existingBooking.getId() != null && existingBooking.getId() == bookingId)
+                .findFirst()
+                .orElse(null);
+        if (booking == null || booking.getHostDecisionToken() == null) {
+            return new ModelAndView("redirect:/profile?bookingAction=notFound");
+        }
+
+        final var item = itemService.findItemById(booking.getItemId()).orElse(null);
+        if (item == null || item.getOwnerId() == null || !item.getOwnerId().equals(currentUser.getId())) {
+            return new ModelAndView("redirect:/profile?bookingAction=forbidden");
+        }
+
+        final var resolved = bookingRequestService.resolveBookingRequest(booking.getHostDecisionToken(), bookingState);
+        if (resolved.isEmpty()) {
+            return new ModelAndView("redirect:/profile?bookingAction=error");
+        }
+
+        mailService.sendBookingResolutionEmail(resolved.get());
+        final String action = bookingState == BookingState.BOOKING_CONFIRMED ? "accepted" : "rejected";
+        return new ModelAndView("redirect:/profile?bookingAction=" + action);
+    }
+
+    private User currentAuthenticatedUser() {
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+        return userService.findByEmail(authentication.getName()).orElse(null);
     }
 }

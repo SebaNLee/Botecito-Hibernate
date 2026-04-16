@@ -10,6 +10,7 @@ import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.Page;
+import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -26,11 +27,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -45,21 +48,24 @@ public class MarketplaceController {
     private final ItemService itemService;
     private final MailService mailService;
     private final BookingRequestService bookingRequestService;
+    private final UserService userService;
 
     @Autowired
     public MarketplaceController(
             final ItemService itemService,
             final MailService mailService,
-            final BookingRequestService bookingRequestService) {
+            final BookingRequestService bookingRequestService,
+            final UserService userService) {
         this.itemService = itemService;
         this.mailService = mailService;
         this.bookingRequestService = bookingRequestService;
+        this.userService = userService;
     }
 
     @ModelAttribute("reservationRequestForm")
     public ReservationRequestForm reservationRequestForm(final Locale locale) {
         final ReservationRequestForm form = new ReservationRequestForm();
-        form.setRequesterPreferredLanguage(toSupportedLanguage(locale));
+        form.setRequesterPreferredLanguage(locale != null && "en".equalsIgnoreCase(locale.getLanguage()) ? "en" : "es");
         return form;
     }
 
@@ -133,9 +139,12 @@ public class MarketplaceController {
             final HttpServletRequest request,
             @PathVariable("id") final int itemId,
             @Valid @ModelAttribute("reservationRequestForm") final ReservationRequestForm form,
-            final BindingResult errors,
-            final Locale locale,
-            @RequestHeader(value = "Accept-Language", required = false) final String acceptLanguage) {
+            final BindingResult errors) {
+        final User currentUser = currentAuthenticatedUser();
+        if (currentUser == null) {
+            return new ModelAndView("redirect:/login");
+        }
+
         final Optional<Item> item = itemService.findItemById(itemId);
         if (item.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
@@ -154,13 +163,12 @@ public class MarketplaceController {
         }
 
         try {
-            form.setRequesterPreferredLanguage(resolvePreferredLanguage(locale, acceptLanguage));
             final BookingRequest bookingRequest = bookingRequestService.createBookingRequest(
                     itemId,
-                    form.getRequesterGivenName().trim(),
-                    form.getRequesterLastName().trim(),
-                    form.getRequesterEmail().trim(),
-                    form.getRequesterPreferredLanguage(),
+                    currentUser.getGivenName(),
+                    currentUser.getLastName(),
+                    currentUser.getEmail(),
+                    currentUser.getPreferredLanguage(),
                     toOffsetDateTime(form.getDate(), form.getStartTime()),
                     toOffsetDateTime(form.getDate(), form.getEndTime()),
                     buildReservationRequestDescription(item.get(), owner.orElse(null), form));
@@ -174,35 +182,6 @@ public class MarketplaceController {
             mav.addObject("mailErrorCode", "reservation.request.error");
             return mav;
         }
-    }
-
-    private static String resolvePreferredLanguage(final Locale locale, final String acceptLanguageHeader) {
-        final String localeLanguage = toSupportedLanguage(locale);
-        if ("en".equals(localeLanguage)) {
-            return "en";
-        }
-        return toSupportedLanguage(acceptLanguageHeader);
-    }
-
-    private static String toSupportedLanguage(final Locale locale) {
-        if (locale != null && "en".equalsIgnoreCase(locale.getLanguage())) {
-            return "en";
-        }
-        return "es";
-    }
-
-    private static String toSupportedLanguage(final String languageTag) {
-        if (languageTag == null || languageTag.isBlank()) {
-            return "es";
-        }
-        final String firstToken = languageTag.split(",", 2)[0].trim();
-        final String tag = firstToken.split(";", 2)[0].trim();
-        if ("en".equalsIgnoreCase(tag)
-                || tag.regionMatches(true, 0, "en-", 0, 3)
-                || tag.regionMatches(true, 0, "en_", 0, 3)) {
-            return "en";
-        }
-        return "es";
     }
 
     private ModelAndView buildMarketplaceItemView(
@@ -442,5 +421,15 @@ public class MarketplaceController {
         return LocalDateTime.of(localDate, localTime)
                 .atZone(ZoneId.systemDefault())
                 .toOffsetDateTime();
+    }
+
+    private User currentAuthenticatedUser() {
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+        return userService.findByEmail(authentication.getName()).orElse(null);
     }
 }

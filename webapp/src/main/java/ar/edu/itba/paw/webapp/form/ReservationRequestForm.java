@@ -1,6 +1,5 @@
 package ar.edu.itba.paw.webapp.form;
 
-import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
@@ -13,16 +12,6 @@ public class ReservationRequestForm {
 
     @NotBlank(message = "{reservation.validation.endTime.required}")
     private String endTime;
-
-    @NotBlank(message = "{reservation.validation.requesterGivenName.required}")
-    private String requesterGivenName;
-
-    @NotBlank(message = "{reservation.validation.requesterLastName.required}")
-    private String requesterLastName;
-
-    @NotBlank(message = "{reservation.validation.requesterEmail.required}")
-    @Email(message = "{reservation.validation.requesterEmail.invalid}")
-    private String requesterEmail;
 
     private String requesterPreferredLanguage = "es";
 
@@ -51,30 +40,6 @@ public class ReservationRequestForm {
 
     public void setEndTime(final String endTime) {
         this.endTime = endTime;
-    }
-
-    public String getRequesterGivenName() {
-        return requesterGivenName;
-    }
-
-    public void setRequesterGivenName(final String requesterGivenName) {
-        this.requesterGivenName = requesterGivenName;
-    }
-
-    public String getRequesterLastName() {
-        return requesterLastName;
-    }
-
-    public void setRequesterLastName(final String requesterLastName) {
-        this.requesterLastName = requesterLastName;
-    }
-
-    public String getRequesterEmail() {
-        return requesterEmail;
-    }
-
-    public void setRequesterEmail(final String requesterEmail) {
-        this.requesterEmail = requesterEmail;
     }
 
     public String getRequesterPreferredLanguage() {

@@ -66,6 +66,8 @@ public class ItemServiceImplTest {
                         Mockito.eq(1),
                         Mockito.anyString()))
                 .thenReturn(createdItem);
+        Mockito.when(itemDao.activateItemByOwnerDeleteToken(Mockito.anyString()))
+                .thenReturn(true);
         final Item result = itemService.createPublication(
                 "A",
                 "A",
@@ -83,6 +85,7 @@ public class ItemServiceImplTest {
         Assertions.assertNotNull(result);
         Assertions.assertEquals(99, result.getId());
         Mockito.verify(itemDao).createUser("A", "A", "a@a.com", "es");
+        Mockito.verify(itemDao).activateItemByOwnerDeleteToken(Mockito.anyString());
         Mockito.verify(itemDao).createItemAvailability(99, "MONDAY", "10:00", "12:00");
     }
 }

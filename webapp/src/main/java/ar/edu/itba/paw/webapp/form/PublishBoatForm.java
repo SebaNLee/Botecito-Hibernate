@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
-import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -57,21 +56,6 @@ public class PublishBoatForm {
     private String uploadedImageContentType;
 
     private final Map<DayOfWeek, TimeRangeList> availabilityByWeekday = new EnumMap<>(DayOfWeek.class);
-
-    @NotBlank(groups = Step3.class, message = "{publish.validation.ownerFirstName.required}")
-    @Size(max = 100, groups = Step3.class, message = "{publish.validation.ownerFirstName.max}")
-    private String ownerFirstName;
-
-    @NotBlank(groups = Step3.class, message = "{publish.validation.ownerLastName.required}")
-    @Size(max = 100, groups = Step3.class, message = "{publish.validation.ownerLastName.max}")
-    private String ownerLastName;
-
-    @NotBlank(groups = Step3.class, message = "{publish.validation.ownerEmail.required}")
-    @Email(groups = Step3.class, message = "{publish.validation.ownerEmail.invalid}")
-    @Size(max = 150, groups = Step3.class, message = "{publish.validation.ownerEmail.max}")
-    private String ownerEmail;
-
-    private String ownerPreferredLanguage = "es";
 
     public String getTitle() {
         return title;
@@ -210,37 +194,5 @@ public class PublishBoatForm {
         for (final Map.Entry<DayOfWeek, TimeRangeList> dayEntry : availabilityByWeekday.entrySet()) {
             setAvailabilityFor(dayEntry.getKey(), dayEntry.getValue());
         }
-    }
-
-    public String getOwnerFirstName() {
-        return ownerFirstName;
-    }
-
-    public void setOwnerFirstName(final String ownerFirstName) {
-        this.ownerFirstName = ownerFirstName;
-    }
-
-    public String getOwnerLastName() {
-        return ownerLastName;
-    }
-
-    public void setOwnerLastName(final String ownerLastName) {
-        this.ownerLastName = ownerLastName;
-    }
-
-    public String getOwnerEmail() {
-        return ownerEmail;
-    }
-
-    public void setOwnerEmail(final String ownerEmail) {
-        this.ownerEmail = ownerEmail;
-    }
-
-    public String getOwnerPreferredLanguage() {
-        return ownerPreferredLanguage;
-    }
-
-    public void setOwnerPreferredLanguage(final String ownerPreferredLanguage) {
-        this.ownerPreferredLanguage = ownerPreferredLanguage;
     }
 }

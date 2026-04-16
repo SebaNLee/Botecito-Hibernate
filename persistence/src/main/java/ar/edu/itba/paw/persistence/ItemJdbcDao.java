@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
@@ -17,6 +18,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -121,6 +123,30 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    public List<Item> listItems(final ItemSearchCriteria criteria, final int limit, final int offset) {
+        final List<Object> args = new ArrayList<>();
+        final String sql = ITEM_SELECT
+                + marketplaceWhereClause(criteria, args)
+                + marketplaceOrderBy(criteria)
+                + " LIMIT ? OFFSET ?";
+        args.add(limit);
+        args.add(offset);
+        return jdbcTemplate.query(sql, ITEM_ROW_MAPPER, args.toArray());
+    }
+
+    @Override
+    public int countItems(final ItemSearchCriteria criteria) {
+        final List<Object> args = new ArrayList<>();
+        final Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*)"
+                        + " FROM item i"
+                        + " JOIN location_option lo ON lo.id = i.location_option_id"
+                        + marketplaceWhereClause(criteria, args),
+                Integer.class,
+                args.toArray());
+        return count == null ? 0 : count;
+    }
+
     public List<Item> listItemsByOwnerId(final int ownerId) {
         return jdbcTemplate.query(ITEM_SELECT + " WHERE i.owner_id = ? ORDER BY i.id DESC", ITEM_ROW_MAPPER, ownerId);
     }
@@ -389,6 +415,39 @@ public class ItemJdbcDao implements ItemDao {
             return Collections.emptyList();
         }
         return jdbcTemplate.queryForList("SELECT id FROM item_media WHERE item_id = ?", Integer.class, itemId);
+    }
+
+    private static String marketplaceWhereClause(final ItemSearchCriteria criteria, final List<Object> args) {
+        final StringBuilder sql = new StringBuilder(" WHERE i.active = TRUE");
+        if (criteria == null) {
+            return sql.toString();
+        }
+        if (criteria.getLocationOptionId() != null) {
+            sql.append(" AND i.location_option_id = ?");
+            args.add(criteria.getLocationOptionId());
+        }
+        if (criteria.getCapacity() != null) {
+            sql.append(" AND i.capacity_people >= ?");
+            args.add(criteria.getCapacity());
+        }
+        if (criteria.getMaxWeightKg() != null) {
+            sql.append(" AND i.max_weight_kg >= ?");
+            args.add(criteria.getMaxWeightKg());
+        }
+        return sql.toString();
+    }
+
+    private static String marketplaceOrderBy(final ItemSearchCriteria criteria) {
+        final String sort = criteria == null ? null : criteria.getSort();
+        if (sort == null) {
+            return " ORDER BY i.price_per_hour ASC, i.id ASC";
+        }
+        return switch (sort) {
+            case "titleAsc" -> " ORDER BY LOWER(i.title) ASC, i.id ASC";
+            case "titleDesc" -> " ORDER BY LOWER(i.title) DESC, i.id ASC";
+            case "priceDesc" -> " ORDER BY i.price_per_hour DESC, i.id ASC";
+            default -> " ORDER BY i.price_per_hour ASC, i.id ASC";
+        };
     }
 
     @Override

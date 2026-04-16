@@ -3,6 +3,7 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
@@ -11,7 +12,10 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +36,21 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public Page<Item> searchItems(final ItemSearchCriteria criteria, final int page, final int pageSize) {
+        final int safePageSize = Math.max(1, pageSize);
+        final int requestedPage = Math.max(1, page);
+        if (criteria != null && !isBlank(criteria.getDate())) {
+            return searchItemsWithAvailability(criteria, requestedPage, safePageSize);
+        }
+
+        final int totalItems = itemDao.countItems(criteria);
+        final int resolvedPage = resolvePage(requestedPage, safePageSize, totalItems);
+        final List<Item> items = totalItems == 0
+                ? List.of()
+                : itemDao.listItems(criteria, safePageSize, offsetFor(resolvedPage, safePageSize));
+        return new Page<>(items, resolvedPage, safePageSize, totalItems);
+    }
+
     public List<Item> listItemsByOwnerId(final int ownerId) {
         return itemDao.listItemsByOwnerId(ownerId);
     }
@@ -182,5 +201,68 @@ public final class ItemServiceImpl implements ItemService {
             return user;
         }
         return itemDao.createUser(ownerGivenName, ownerLastName, ownerEmail, preferredLanguage);
+    }
+
+    private Page<Item> searchItemsWithAvailability(
+            final ItemSearchCriteria criteria, final int requestedPage, final int pageSize) {
+        final int candidateCount = itemDao.countItems(criteria);
+        if (candidateCount == 0) {
+            return new Page<>(List.of(), 1, pageSize, 0);
+        }
+
+        final List<Item> candidates = itemDao.listItems(criteria, candidateCount, 0);
+        final Map<Integer, List<ItemAvailability>> availabilitiesByItemId =
+                groupAvailabilitiesByItemId(itemDao.listAvailabilities());
+        final Map<Integer, List<ItemBooking>> bookingsByItemId = groupBookingsByItemId(itemDao.listBookings());
+        final List<Item> filteredItems = new ArrayList<>();
+        for (final Item item : candidates) {
+            if (MarketplaceAvailabilityMatcher.matches(
+                    criteria,
+                    availabilitiesByItemId.getOrDefault(item.getId(), List.of()),
+                    bookingsByItemId.getOrDefault(item.getId(), List.of()))) {
+                filteredItems.add(item);
+            }
+        }
+
+        final int totalItems = filteredItems.size();
+        final int resolvedPage = resolvePage(requestedPage, pageSize, totalItems);
+        final int fromIndex = Math.min(offsetFor(resolvedPage, pageSize), totalItems);
+        final int toIndex = Math.min(fromIndex + pageSize, totalItems);
+        return new Page<>(filteredItems.subList(fromIndex, toIndex), resolvedPage, pageSize, totalItems);
+    }
+
+    private static Map<Integer, List<ItemAvailability>> groupAvailabilitiesByItemId(
+            final List<ItemAvailability> availabilities) {
+        final Map<Integer, List<ItemAvailability>> grouped = new LinkedHashMap<>();
+        for (final ItemAvailability availability : availabilities) {
+            grouped.computeIfAbsent(availability.getItemId(), ignored -> new ArrayList<>())
+                    .add(availability);
+        }
+        return grouped;
+    }
+
+    private static Map<Integer, List<ItemBooking>> groupBookingsByItemId(final List<ItemBooking> bookings) {
+        final Map<Integer, List<ItemBooking>> grouped = new LinkedHashMap<>();
+        for (final ItemBooking booking : bookings) {
+            grouped.computeIfAbsent(booking.getItemId(), ignored -> new ArrayList<>())
+                    .add(booking);
+        }
+        return grouped;
+    }
+
+    private static int resolvePage(final int requestedPage, final int pageSize, final int totalItems) {
+        if (totalItems == 0) {
+            return 1;
+        }
+        final int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+        return Math.min(requestedPage, totalPages);
+    }
+
+    private static int offsetFor(final int page, final int pageSize) {
+        return (page - 1) * pageSize;
+    }
+
+    private static boolean isBlank(final String value) {
+        return value == null || value.isBlank();
     }
 }

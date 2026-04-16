@@ -20,6 +20,54 @@
     <c:param name="sort" value="${sort}" />
   </c:if>
 </c:url>
+<c:if test="${itemPage.hasPrevious}">
+  <c:url var="previousPageUrl" value="/marketplace">
+    <c:param name="page" value="${itemPage.previousPage}" />
+    <c:param name="sort" value="${sort}" />
+    <c:if test="${not empty param.locationOptionId}">
+      <c:param name="locationOptionId" value="${param.locationOptionId}" />
+    </c:if>
+    <c:if test="${not empty param.date}">
+      <c:param name="date" value="${param.date}" />
+    </c:if>
+    <c:if test="${not empty param.startTime}">
+      <c:param name="startTime" value="${param.startTime}" />
+    </c:if>
+    <c:if test="${not empty param.endTime}">
+      <c:param name="endTime" value="${param.endTime}" />
+    </c:if>
+    <c:if test="${not empty param.capacity}">
+      <c:param name="capacity" value="${param.capacity}" />
+    </c:if>
+    <c:if test="${not empty param.maxWeight}">
+      <c:param name="maxWeight" value="${param.maxWeight}" />
+    </c:if>
+  </c:url>
+</c:if>
+<c:if test="${itemPage.hasNext}">
+  <c:url var="nextPageUrl" value="/marketplace">
+    <c:param name="page" value="${itemPage.nextPage}" />
+    <c:param name="sort" value="${sort}" />
+    <c:if test="${not empty param.locationOptionId}">
+      <c:param name="locationOptionId" value="${param.locationOptionId}" />
+    </c:if>
+    <c:if test="${not empty param.date}">
+      <c:param name="date" value="${param.date}" />
+    </c:if>
+    <c:if test="${not empty param.startTime}">
+      <c:param name="startTime" value="${param.startTime}" />
+    </c:if>
+    <c:if test="${not empty param.endTime}">
+      <c:param name="endTime" value="${param.endTime}" />
+    </c:if>
+    <c:if test="${not empty param.capacity}">
+      <c:param name="capacity" value="${param.capacity}" />
+    </c:if>
+    <c:if test="${not empty param.maxWeight}">
+      <c:param name="maxWeight" value="${param.maxWeight}" />
+    </c:if>
+  </c:url>
+</c:if>
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-12 max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-[18rem_minmax(0,1fr)] lg:grid-cols-[20rem_minmax(0,1fr)] gap-8 items-start">
   <aside class="relative z-40 w-full md:min-w-0">
@@ -182,5 +230,43 @@
         </a>
       </c:forEach>
     </div>
+
+    <c:if test="${itemPage.totalPages > 1}">
+      <nav class="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
+        <c:choose>
+          <c:when test="${itemPage.hasPrevious}">
+            <a href="${previousPageUrl}" class="inline-flex items-center gap-2 rounded-xl border border-outline-variant/30 px-4 py-3 text-primary no-underline transition-colors hover:bg-surface-container-high">
+              <span class="material-symbols-outlined text-sm">arrow_back</span>
+              <spring:message code="marketplace.pagination.previous" />
+            </a>
+          </c:when>
+          <c:otherwise>
+            <span class="inline-flex items-center gap-2 rounded-xl border border-outline-variant/20 px-4 py-3 text-outline">
+              <span class="material-symbols-outlined text-sm">arrow_back</span>
+              <spring:message code="marketplace.pagination.previous" />
+            </span>
+          </c:otherwise>
+        </c:choose>
+
+        <span>
+          <spring:message code="marketplace.pagination.page" arguments="${itemPage.page},${itemPage.totalPages}" />
+        </span>
+
+        <c:choose>
+          <c:when test="${itemPage.hasNext}">
+            <a href="${nextPageUrl}" class="inline-flex items-center gap-2 rounded-xl border border-outline-variant/30 px-4 py-3 text-primary no-underline transition-colors hover:bg-surface-container-high">
+              <spring:message code="marketplace.pagination.next" />
+              <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </a>
+          </c:when>
+          <c:otherwise>
+            <span class="inline-flex items-center gap-2 rounded-xl border border-outline-variant/20 px-4 py-3 text-outline">
+              <spring:message code="marketplace.pagination.next" />
+              <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </span>
+          </c:otherwise>
+        </c:choose>
+      </nav>
+    </c:if>
   </section>
 </paw:layout>

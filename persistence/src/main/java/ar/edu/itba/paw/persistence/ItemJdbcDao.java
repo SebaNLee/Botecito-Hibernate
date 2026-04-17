@@ -434,7 +434,22 @@ public class ItemJdbcDao implements ItemDao {
             sql.append(" AND i.max_weight_kg >= ?");
             args.add(criteria.getMaxWeightKg());
         }
+        if (criteria.getSearchQuery() != null) {
+            sql.append(" AND i.title LIKE ? ESCAPE '!'");
+            args.add(setupSearchQuery(criteria.getSearchQuery()));
+        }
         return sql.toString();
+    }
+
+    private static String setupSearchQuery(final String searchQuery) {
+        String queryWithWildcards = searchQuery
+                .trim()
+                .replace("!", "!!") // Escape the escape character
+                .replace("%", "!%")
+                .replace("_", "!_") // Escape special characters
+                .replaceAll("\\s+", "%"); // Replace whitespaces with wildcards
+
+        return "%" + queryWithWildcards + "%";
     }
 
     private static String marketplaceOrderBy(final ItemSearchCriteria criteria) {

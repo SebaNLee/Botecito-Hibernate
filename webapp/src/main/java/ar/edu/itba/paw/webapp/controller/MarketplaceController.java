@@ -72,6 +72,7 @@ public class MarketplaceController {
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
     public ModelAndView marketplace(
             final HttpServletRequest request,
+            @RequestParam(value = "searchQuery", required = false) final String requestedSearchQuery,
             @RequestParam(value = "locationOptionId", required = false) final String requestedLocationOptionId,
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "startTime", required = false) final String requestedStartTime,
@@ -82,6 +83,7 @@ public class MarketplaceController {
             @RequestParam(value = "page", required = false) final String requestedPage) {
         final String resolvedSort = resolveSort(sort);
         final ItemSearchCriteria criteria = buildItemSearchCriteria(
+                requestedSearchQuery,
                 requestedLocationOptionId,
                 requestedDate,
                 requestedStartTime,
@@ -257,6 +259,7 @@ public class MarketplaceController {
     }
 
     private static ItemSearchCriteria buildItemSearchCriteria(
+            final String searchQuery,
             final String requestedLocationOptionId,
             final String requestedDate,
             final String requestedStartTime,
@@ -273,6 +276,7 @@ public class MarketplaceController {
         final Integer maxWeight = parseInteger(requestedMaxWeight);
         criteria.setMaxWeightKg(maxWeight == null ? null : BigDecimal.valueOf(maxWeight.longValue()));
         criteria.setSort(sort);
+        criteria.setSearchQuery(searchQuery);
         return criteria;
     }
 

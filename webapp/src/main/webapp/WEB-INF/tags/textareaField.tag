@@ -2,19 +2,41 @@
 <%@ attribute name="path" required="true" %>
 <%@ attribute name="label" required="true" %>
 <%@ attribute name="placeholder" required="false" %>
+<%@ attribute name="rows" required="false" %>
+<%@ attribute name="maxlength" required="false" %>
 <%@ attribute name="cssClass" required="false" %>
+<%@ attribute name="containerClass" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 
-<c:set var="textareaCssClass" value="form-textarea ${not empty cssClass ? cssClass : ''}" />
+<c:set var="textareaCssClass" value="textarea w-full resize-none ${not empty cssClass ? cssClass : ''}" />
+<c:set var="fieldContainerClass" value="fieldset ${not empty containerClass ? containerClass : ''}" />
+<c:set var="resolvedRows" value="${not empty rows ? rows : '4'}" />
 
-<div>
-  <label class="form-label" for="${path}"><c:out value="${label}" /></label>
-  <form:textarea
-      id="${path}"
-      path="${path}"
-      cssClass="${textareaCssClass}"
-      placeholder="${placeholder}"
-  />
-  <form:errors path="${path}" cssClass="field-error" />
-</div>
+<fieldset class="${fieldContainerClass}">
+  <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="${path}">
+    <c:out value="${label}" />
+  </legend>
+  <c:choose>
+    <c:when test="${not empty maxlength}">
+      <form:textarea
+          id="${path}"
+          path="${path}"
+          rows="${resolvedRows}"
+          maxlength="${maxlength}"
+          cssClass="${textareaCssClass}"
+          placeholder="${placeholder}"
+      />
+    </c:when>
+    <c:otherwise>
+      <form:textarea
+          id="${path}"
+          path="${path}"
+          rows="${resolvedRows}"
+          cssClass="${textareaCssClass}"
+          placeholder="${placeholder}"
+      />
+    </c:otherwise>
+  </c:choose>
+  <form:errors path="${path}" cssClass="validator-hint text-error text-xs mt-1" element="p" />
+</fieldset>

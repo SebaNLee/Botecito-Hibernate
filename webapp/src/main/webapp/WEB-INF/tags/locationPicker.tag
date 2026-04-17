@@ -36,18 +36,18 @@
         data-placeholder="${fn:escapeXml(resolvedPlaceholder)}">
       <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-location-value />
       <div
-          class="flex min-h-[3.25rem] w-full items-center gap-2.5 rounded-2xl bg-surface-container-high px-3 py-2.5 transition-all cursor-text shadow-[inset_0_0_0_1px_rgba(113,119,132,0)] hover:shadow-[inset_0_0_0_1px_rgba(113,119,132,0.18)] focus-within:shadow-[inset_0_0_0_2px_rgba(0,93,167,0.2)]"
+          class="flex items-center gap-3 rounded-2xl px-0 py-0.5 cursor-text text-on-surface hover:bg-base-200/60 transition-colors"
           data-location-trigger>
         <span class="material-symbols-outlined shrink-0 text-primary"><c:out value="${resolvedIcon}" /></span>
-        <div class="min-w-0 flex-1 text-left">
-          <label class="block text-[10px] font-bold uppercase tracking-wider text-outline" for="${id}-query">
+        <div class="min-w-0 flex-1 flex flex-col gap-0.5">
+          <label class="block text-[10px] font-extrabold tracking-[0.16em] uppercase text-outline" for="${id}-query">
             <c:out value="${resolvedLabel}" />
           </label>
           <input
               id="${id}-query"
               type="text"
               value=""
-              class="w-full appearance-none bg-transparent border-none p-0 text-[0.9rem] text-on-surface placeholder:text-outline-variant font-medium outline-none focus:outline-none focus-visible:outline-none focus:ring-0 shadow-none"
+              class="w-full appearance-none bg-transparent border-none p-0 text-[0.95rem] leading-[1.35] font-bold text-on-surface placeholder:text-on-surface/60 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 shadow-none"
               placeholder="${fn:escapeXml(resolvedPlaceholder)}"
               autocomplete="off"
               spellcheck="false"
@@ -55,19 +55,19 @@
         </div>
         <button
             type="button"
-            class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-outline transition-colors hover:bg-surface-container-low hover:text-on-surface cursor-pointer border-none bg-transparent opacity-0 pointer-events-none"
+            class="btn btn-ghost btn-xs btn-circle opacity-0 pointer-events-none"
             aria-label="${fn:escapeXml(clearLocationLabel)}"
             data-location-clear>
-          <span class="material-symbols-outlined text-[18px]">close</span>
+          <span class="material-symbols-outlined text-base">close</span>
         </button>
-        <span class="material-symbols-outlined shrink-0 text-primary text-[18px] transition-transform duration-150" data-location-chevron>expand_more</span>
+        <span class="material-symbols-outlined shrink-0 text-primary text-base transition-transform duration-150" data-location-chevron>expand_more</span>
       </div>
 
       <div
-          class="absolute left-0 right-0 top-full z-[10020] mt-3 hidden overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest shadow-[0_24px_64px_rgba(11,28,50,0.24)]"
+          class="card bg-base-100 absolute left-0 right-0 top-full z-[10020] mt-2 hidden overflow-hidden shadow-xl"
           data-location-panel
           hidden>
-        <div class="border-b border-outline-variant/15 px-4 py-3">
+        <div class="border-b border-outline-variant/20 px-4 py-3">
           <p class="m-0 text-[10px] font-bold uppercase tracking-[0.16em] text-outline"><c:out value="${availableLocationsLabel}" /></p>
         </div>
         <div class="h-64 overflow-y-auto p-2" data-location-options></div>
@@ -78,58 +78,56 @@
     </div>
   </c:when>
   <c:otherwise>
-    <div
-        class="relative w-full ${resolvedContainerClass}"
+    <fieldset
+        class="fieldset w-full ${resolvedContainerClass}"
         data-location-picker
         data-options-url="<c:url value='${resolvedOptionsUrl}' />"
         data-placeholder="${fn:escapeXml(resolvedPlaceholder)}">
       <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-location-value />
-      <div class="space-y-2">
-        <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="${id}-query">
-          <c:out value="${resolvedLabel}" />
-        </label>
-        <div
-            class="flex min-h-[3.5rem] w-full items-center gap-3 rounded-xl bg-surface-container-high px-4 py-3 transition-all cursor-text shadow-[inset_0_0_0_1px_rgba(113,119,132,0)] hover:shadow-[inset_0_0_0_1px_rgba(113,119,132,0.18)] focus-within:shadow-[inset_0_0_0_2px_rgba(0,93,167,0.2)]"
+      <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="${id}-query">
+        <c:out value="${resolvedLabel}" />
+      </legend>
+      <div class="relative">
+        <label
+            class="input w-full flex items-center gap-2 cursor-text"
             data-location-trigger>
           <span class="material-symbols-outlined shrink-0 text-outline"><c:out value="${resolvedIcon}" /></span>
           <input
               id="${id}-query"
               type="text"
               value=""
-              class="w-full appearance-none bg-transparent border-none p-0 text-on-surface placeholder:text-outline font-medium outline-none focus:outline-none focus-visible:outline-none focus:ring-0 shadow-none"
+              class="grow bg-transparent outline-none border-none focus:outline-none focus:ring-0 shadow-none p-0"
               placeholder="${fn:escapeXml(resolvedPlaceholder)}"
               autocomplete="off"
               spellcheck="false"
               data-location-query />
           <button
               type="button"
-              class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-outline transition-colors hover:bg-surface-container hover:text-on-surface cursor-pointer border-none bg-transparent opacity-0 pointer-events-none"
+              class="btn btn-ghost btn-xs btn-circle opacity-0 pointer-events-none"
               aria-label="${fn:escapeXml(clearLocationLabel)}"
               data-location-clear>
-            <span class="material-symbols-outlined text-[18px]">close</span>
+            <span class="material-symbols-outlined text-base">close</span>
           </button>
-          <span class="material-symbols-outlined shrink-0 text-outline text-[20px] transition-transform duration-150" data-location-chevron>expand_more</span>
-        </div>
-      </div>
+          <span class="material-symbols-outlined shrink-0 text-outline text-base transition-transform duration-150" data-location-chevron>expand_more</span>
+        </label>
 
-      <div
-          class="absolute left-0 right-0 top-full z-[10020] mt-2 hidden overflow-hidden rounded-2xl border border-outline-variant/40 bg-surface-container-lowest shadow-[0_28px_72px_rgba(11,28,50,0.24)]"
-          data-location-panel
-          hidden>
-        <div class="border-b border-outline-variant/15 px-4 py-3">
-          <p class="m-0 text-[10px] font-bold uppercase tracking-[0.16em] text-outline"><c:out value="${availableLocationsLabel}" /></p>
+        <div
+            class="card bg-base-100 absolute left-0 right-0 top-full z-[10020] mt-2 hidden overflow-hidden shadow-xl"
+            data-location-panel
+            hidden>
+          <div class="border-b border-outline-variant/20 px-4 py-3">
+            <p class="m-0 text-[10px] font-bold uppercase tracking-[0.16em] text-outline"><c:out value="${availableLocationsLabel}" /></p>
+          </div>
+          <div class="h-64 overflow-y-auto p-2" data-location-options></div>
+          <p class="hidden px-4 py-4 text-sm text-on-surface-variant" data-location-empty>
+            <c:out value="${noLocationsLabel}" />
+          </p>
         </div>
-        <div class="h-64 overflow-y-auto p-2" data-location-options></div>
-        <p class="hidden px-4 py-4 text-sm text-on-surface-variant" data-location-empty>
-          <c:out value="${noLocationsLabel}" />
-        </p>
       </div>
 
       <c:if test="${not empty errorPath}">
-        <form:errors
-            path="${errorPath}"
-            cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
+        <form:errors path="${errorPath}" cssClass="validator-hint text-error text-xs mt-1" element="p" />
       </c:if>
-    </div>
+    </fieldset>
   </c:otherwise>
 </c:choose>

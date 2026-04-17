@@ -45,7 +45,7 @@
 
   <button
       type="button"
-      class="w-full flex items-center gap-3 rounded-2xl border-0 bg-transparent px-0 py-0.5 text-left text-on-surface cursor-pointer"
+      class="w-full flex items-center gap-3 rounded-2xl border-0 bg-transparent px-0 py-0.5 text-left text-on-surface cursor-pointer hover:bg-base-200/60 transition-colors"
       data-picker-trigger
       aria-expanded="false"
       aria-controls="${id}-panel">
@@ -59,7 +59,7 @@
 
   <div
       id="${id}-panel"
-      class="fixed z-[240] hidden flex-col overflow-hidden rounded-[1.25rem] border border-outline-variant/45 bg-white/95 p-3 shadow-[0_24px_64px_rgba(11,28,50,0.16)] backdrop-blur-[18px]"
+      class="card bg-base-100 fixed z-[240] hidden flex-col overflow-hidden p-3 shadow-xl"
       data-panel-width="352"
       data-picker-panel
       hidden>
@@ -68,26 +68,26 @@
         <div class="text-[11px] font-extrabold tracking-[0.18em] uppercase text-primary"><c:out value="${datePickerAvailability}" /></div>
         <h3 class="mt-0.5 font-headline text-lg font-extrabold text-on-background" data-picker-month-title><c:out value="${datePickerSelectDate}" /></h3>
       </div>
-      <div class="flex items-center gap-2">
-        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-full border-0 bg-surface-container-low text-on-surface cursor-pointer" data-picker-nav="prev" aria-label="${fn:escapeXml(datePickerPreviousMonth)}">
-          <span class="material-symbols-outlined">chevron_left</span>
+      <div class="flex items-center gap-1">
+        <button type="button" class="btn btn-ghost btn-xs btn-circle" data-picker-nav="prev" aria-label="${fn:escapeXml(datePickerPreviousMonth)}">
+          <span class="material-symbols-outlined text-base">chevron_left</span>
         </button>
-        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-full border-0 bg-surface-container-low text-on-surface cursor-pointer" data-picker-nav="next" aria-label="${fn:escapeXml(datePickerNextMonth)}">
-          <span class="material-symbols-outlined">chevron_right</span>
+        <button type="button" class="btn btn-ghost btn-xs btn-circle" data-picker-nav="next" aria-label="${fn:escapeXml(datePickerNextMonth)}">
+          <span class="material-symbols-outlined text-base">chevron_right</span>
         </button>
-        <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-full border-0 bg-surface-container-low text-on-surface cursor-pointer" data-picker-close aria-label="${fn:escapeXml(datePickerClose)}">
-          <span class="material-symbols-outlined text-[18px]">close</span>
+        <button type="button" class="btn btn-ghost btn-xs btn-circle" data-picker-close aria-label="${fn:escapeXml(datePickerClose)}">
+          <span class="material-symbols-outlined text-base">close</span>
         </button>
       </div>
     </div>
 
     <div class="mb-2 flex flex-wrap items-center gap-3 text-[10px] font-bold text-on-surface-variant">
       <span class="inline-flex items-center gap-2">
-        <span class="inline-block h-3 w-3 rounded-full border border-primary/35 bg-primary/15"></span>
+        <span class="inline-block h-3 w-3 rounded-full bg-primary/15 border border-primary/40"></span>
         <c:out value="${datePickerAvailable}" />
       </span>
       <span class="inline-flex items-center gap-2">
-        <span class="inline-block h-3 w-3 rounded-full border border-error/25 bg-error/12"></span>
+        <span class="inline-block h-3 w-3 rounded-full bg-error/15 border border-error/30"></span>
         <c:out value="${datePickerOccupied}" />
       </span>
     </div>
@@ -95,8 +95,8 @@
     <div class="hide-scrollbar min-h-0 flex-1 overflow-y-auto pr-1" data-picker-months data-picker-scroll-region></div>
 
     <div class="mt-2 flex justify-end">
-      <button type="button" class="inline-flex items-center gap-2 rounded-full border border-outline-variant bg-transparent px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-on-surface cursor-pointer" data-picker-clear>
-        <span class="material-symbols-outlined text-[16px]">ink_eraser</span>
+      <button type="button" class="btn btn-ghost btn-xs gap-1 text-on-surface-variant uppercase tracking-[0.12em]" data-picker-clear>
+        <span class="material-symbols-outlined text-base">ink_eraser</span>
         <c:out value="${clearLabel}" />
       </button>
     </div>

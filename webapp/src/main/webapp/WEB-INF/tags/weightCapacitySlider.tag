@@ -25,14 +25,14 @@
 <c:set var="resolvedHelper" value="${not empty helper ? helper : defaultWeightHelper}" />
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
 
-<div
-    class="space-y-4 ${resolvedContainerClass}"
+<fieldset
+    class="fieldset space-y-3 ${resolvedContainerClass}"
     data-weight-slider
     data-unit="${fn:escapeXml(resolvedUnit)}">
   <div class="flex items-center justify-between gap-4">
-    <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="${id}-range">
+    <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="${id}-range">
       <c:out value="${resolvedLabel}" />
-    </label>
+    </legend>
     <span class="text-sm font-bold text-primary" data-weight-value>
       <c:out value="${resolvedDisplayValue}" /> <c:out value="${resolvedUnit}" />
     </span>
@@ -47,7 +47,7 @@
       max="${resolvedMax}"
       step="${resolvedStep}"
       value="${resolvedDisplayValue}"
-      class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary"
+      class="range range-primary range-sm w-full"
       data-weight-input />
 
   <div class="flex justify-between text-[10px] font-medium text-outline">
@@ -58,4 +58,4 @@
   <p class="m-0 text-xs leading-relaxed text-on-surface-variant">
     <c:out value="${resolvedHelper}" />
   </p>
-</div>
+</fieldset>

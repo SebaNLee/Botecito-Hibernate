@@ -435,7 +435,7 @@ public class ItemJdbcDao implements ItemDao {
             args.add(criteria.getMaxWeightKg());
         }
         if (criteria.getSearchQuery() != null) {
-            sql.append(" AND i.title LIKE ? ESCAPE '!'");
+            sql.append(" AND i.title ILIKE ? ESCAPE '!'");
             args.add(setupSearchQuery(criteria.getSearchQuery()));
         }
         return sql.toString();

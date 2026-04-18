@@ -16,6 +16,7 @@
 <spring:message code="filters.people.any" var="peopleAnyPlaceholder" />
 <spring:message code="filters.maxWeight" var="maxWeightLabel" />
 <spring:message code="filters.maxWeight.helper" var="maxWeightHelper" />
+<spring:message code="landing.hero.search" var="searchLabel" />
 <spring:message code="marketplace.filters.apply" var="filtersApplyLabel" />
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
 <c:url var="clearMarketplaceFiltersUrl" value="/marketplace">
@@ -27,6 +28,9 @@
   <c:url var="previousPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.previousPage}" />
     <c:param name="sort" value="${sort}" />
+    <c:if test="${not empty param.searchQuery}">
+      <c:param name="searchQuery" value="${param.searchQuery}" />
+    </c:if>
     <c:if test="${not empty param.locationOptionId}">
       <c:param name="locationOptionId" value="${param.locationOptionId}" />
     </c:if>
@@ -51,6 +55,9 @@
   <c:url var="nextPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.nextPage}" />
     <c:param name="sort" value="${sort}" />
+    <c:if test="${not empty param.searchQuery}">
+      <c:param name="searchQuery" value="${param.searchQuery}" />
+    </c:if>
     <c:if test="${not empty param.locationOptionId}">
       <c:param name="locationOptionId" value="${param.locationOptionId}" />
     </c:if>
@@ -83,7 +90,7 @@
       <paw:sectionCard element="aside" icon="tune">
         <jsp:attribute name="title"><spring:message code="marketplace.filters.title" /></jsp:attribute>
         <jsp:body>
-          <form action="${marketplaceUrl}" method="get" class="space-y-6" data-filter-form="marketplace">
+          <form id="marketplace-filters-form" action="${marketplaceUrl}" method="get" class="space-y-6" data-filter-form="marketplace">
             <paw:locationPicker
                 id="marketplace-location"
                 name="locationOptionId"
@@ -154,6 +161,22 @@
   </aside>
 
   <section class="relative z-0 min-w-0">
+    <div class="mx-auto mb-8 w-full max-w-3xl">
+      <div class="flex items-center gap-3 rounded-full bg-surface-container-lowest px-6 py-4 shadow-[0_24px_40px_rgba(11,28,50,0.06)]">
+        <span class="material-symbols-outlined text-outline" aria-hidden="true">search</span>
+        <input
+            id="marketplace-search-query"
+            form="marketplace-filters-form"
+            name="searchQuery"
+            type="search"
+            value="${param.searchQuery}"
+            placeholder="${searchLabel}"
+            aria-label="${searchLabel}"
+            data-marketplace-search-input
+            class="w-full border-none bg-transparent p-0 text-on-surface placeholder:text-outline outline-none focus:outline-none focus-visible:outline-none focus:ring-0" />
+      </div>
+    </div>
+
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
       <div>
         <h1 class="text-4xl font-extrabold tracking-tight text-on-background m-0"><spring:message code="marketplace.title" /></h1>
@@ -161,6 +184,7 @@
       </div>
 
       <form action="${marketplaceUrl}" method="get" class="flex items-center gap-3 text-sm font-medium text-on-surface-variant">
+        <input type="hidden" name="searchQuery" value="${param.searchQuery}" data-applied-filter-mirror />
         <input type="hidden" name="locationOptionId" value="${param.locationOptionId}" data-applied-filter-mirror />
         <input type="hidden" name="date" value="${param.date}" data-applied-filter-mirror />
         <input type="hidden" name="startTime" value="${param.startTime}" data-applied-filter-mirror />

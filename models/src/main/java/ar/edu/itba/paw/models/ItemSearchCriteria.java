@@ -3,6 +3,7 @@ package ar.edu.itba.paw.models;
 import java.math.BigDecimal;
 
 public class ItemSearchCriteria {
+    private String searchQuery;
     private Integer locationOptionId;
     private String date;
     private String startTime;
@@ -10,6 +11,14 @@ public class ItemSearchCriteria {
     private Integer capacity;
     private BigDecimal maxWeightKg;
     private String sort;
+
+    public String getSearchQuery() {
+        return searchQuery;
+    }
+
+    public void setSearchQuery(final String searchQuery) {
+        this.searchQuery = searchQuery;
+    }
 
     public Integer getLocationOptionId() {
         return locationOptionId;

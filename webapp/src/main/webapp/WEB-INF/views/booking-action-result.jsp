@@ -8,33 +8,26 @@
 </c:if>
 <spring:message code="${actionTitleCode}" arguments="${actionTitleArgs}" var="resolvedActionTitle" />
 <spring:message code="${actionMessageCode}" arguments="${actionMessageArgs}" var="resolvedActionMessage" />
+<spring:message code="mail.requestResolution.viewItem" var="viewItemLabel" />
+<spring:message code="requestAction.pageTitle" var="pageTitle" />
 
-<!DOCTYPE html>
-<html lang="${not empty pageContext.response.locale.language ? pageContext.response.locale.language : 'es'}">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><spring:message code="requestAction.pageTitle" /></title>
-    <link rel="stylesheet" href="<c:url value='/css/tailwind.css' />" />
-    <link rel="stylesheet" href="<c:url value='/css/main.css' />" />
-  </head>
-  <body>
-    <main class="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-6 py-12">
-      <section class="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
-        <div class="mb-6 inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
+<paw:layout title="${pageTitle}" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen">
+  <div class="w-full max-w-xl px-6">
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-8 gap-4">
+        <div class="badge badge-ghost badge-lg font-semibold self-start">
           <spring:message code="requestAction.badge" />
         </div>
-        <paw:heading level="2" text="${resolvedActionTitle}" cssClass="mb-3" />
-        <p class="m-0 text-base text-slate-600">
+        <paw:heading level="2" text="${resolvedActionTitle}" />
+        <p class="m-0 text-base text-on-surface-variant">
           <c:out value="${resolvedActionMessage}" />
         </p>
         <c:if test="${itemId != null}">
-          <a href="${itemUrl}" class="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 font-bold text-on-primary no-underline">
-            <spring:message code="mail.requestResolution.viewItem" />
-            <span class="material-symbols-outlined text-sm">arrow_forward</span>
-          </a>
+          <div class="card-actions">
+            <paw:button href="${itemUrl}" color="primary" icon="arrow_forward" iconTrailing="true" text="${viewItemLabel}" />
+          </div>
         </c:if>
-      </section>
-    </main>
-  </body>
-</html>
+      </div>
+    </div>
+  </div>
+</paw:layout>

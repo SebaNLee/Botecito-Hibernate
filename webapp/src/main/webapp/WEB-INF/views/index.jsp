@@ -47,7 +47,7 @@
         action="${marketplaceUrl}"
         method="get"
         data-filter-form="landing"
-        class="bg-surface-container-lowest p-2 md:p-3 rounded-2xl md:rounded-full shadow-[0_32px_48px_rgba(11,28,50,0.12)] max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-2"
+        class="bg-base-100 p-2 md:p-3 rounded-2xl md:rounded-full shadow-xl max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-2"
       >
         <div class="w-full min-w-0 px-3 py-3 group md:flex-[1.05]">
           <paw:locationPicker
@@ -105,7 +105,7 @@
 
         <button
           type="submit"
-          class="w-full md:w-auto md:ml-4 md:shrink-0 bg-[#005da7] hover:bg-[#0076d1] text-white font-bold px-10 py-4 rounded-full transition-all active:scale-95 shadow-lg shadow-primary/20 flex items-center justify-center gap-2 border-none cursor-pointer"
+          class="btn btn-primary btn-lg w-full md:w-auto md:ml-4 md:shrink-0 rounded-full gap-2"
         >
           <span class="material-symbols-outlined">search</span>
           <span><spring:message code="landing.hero.search" /></span>

@@ -26,8 +26,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .bg-hero-mesh {
-    background-color: #f9f9ff;
+    background-color: var(--color-background);
     background-image: 
-        radial-gradient(at 0% 0%, rgba(0, 93, 167, 0.15) 0px, transparent 50%),
-        radial-gradient(at 100% 0%, rgba(174, 49, 35, 0.1) 0px, transparent 50%);
+        radial-gradient(at 0% 0%, color-mix(in oklab, var(--color-primary) 15%, transparent) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, color-mix(in oklab, var(--color-secondary) 10%, transparent) 0px, transparent 50%);
 }

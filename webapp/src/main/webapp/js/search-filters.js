@@ -1,5 +1,6 @@
 (function () {
   const FILTER_KEYS = [
+    "searchQuery",
     "locationOptionId",
     "date",
     "startTime",
@@ -169,6 +170,14 @@
     }
 
     return normalizeState({
+      searchQuery:
+        form.querySelector('[name="searchQuery"]')?.value ||
+        document.querySelector(
+          '[data-marketplace-search-input][form="' +
+            form.getAttribute("id") +
+            '"]',
+        )?.value ||
+        "",
       locationOptionId:
         form.querySelector("[data-location-value]")?.value ||
         form.querySelector('[name="locationOptionId"]')?.value ||
@@ -609,6 +618,13 @@
 
   function hydrateForm(form, state) {
     const normalized = normalizeState(state);
+    const searchInput = document.querySelector(
+      '[data-marketplace-search-input][form="' + form.getAttribute("id") + '"]',
+    );
+
+    if (searchInput) {
+      searchInput.value = normalized.searchQuery;
+    }
 
     form.querySelectorAll("[data-location-picker]").forEach((root) => {
       root.__locationPicker?.setSelectedValue(normalized.locationOptionId);
@@ -635,6 +651,14 @@
     const persistDraft = () => {
       writeStoredState(DRAFT_FILTERS_KEY, readFilterStateFromForm(form));
     };
+    const searchInput = document.querySelector(
+      '[data-marketplace-search-input][form="' + form.getAttribute("id") + '"]',
+    );
+
+    if (searchInput) {
+      searchInput.addEventListener("change", persistDraft);
+      searchInput.addEventListener("input", persistDraft);
+    }
 
     form
       .querySelectorAll("[data-location-value], [data-people-input], [data-weight-input]")

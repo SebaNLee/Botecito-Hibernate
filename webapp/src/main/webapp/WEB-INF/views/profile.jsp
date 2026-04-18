@@ -6,7 +6,15 @@
 
 <c:url var="logoutUrl" value="/logout" />
 <spring:message code="profile.logout" var="logoutLabel" />
+<spring:message code="profile.publications.edit" var="editLabel" />
+<spring:message code="profile.publications.enable" var="enableLabel" />
+<spring:message code="profile.publications.disable" var="disableLabel" />
 <spring:message code="profile.publications.delete" var="deleteLabel" />
+<spring:message code="profile.publications.actions" var="actionsLabel" />
+<spring:message code="profile.publications.delete.confirm.title" var="deleteConfirmTitle" />
+<spring:message code="profile.publications.delete.confirm.message" var="deleteConfirmMessage" />
+<spring:message code="profile.publications.delete.confirm.confirm" var="deleteConfirmConfirm" />
+<spring:message code="profile.publications.delete.confirm.cancel" var="deleteConfirmCancel" />
 <spring:message code="profile.bookings.accept" var="acceptLabel" />
 <spring:message code="profile.bookings.decline" var="declineLabel" />
 
@@ -71,6 +79,15 @@
         <c:if test="${param.publishAction == 'deleted'}">
           <paw:alertMessage type="success"><spring:message code="profile.publications.deleted" /></paw:alertMessage>
         </c:if>
+        <c:if test="${param.publishAction == 'updated'}">
+          <paw:alertMessage type="success"><spring:message code="profile.publications.updated" /></paw:alertMessage>
+        </c:if>
+        <c:if test="${param.publishAction == 'disabled'}">
+          <paw:alertMessage type="success"><spring:message code="profile.publications.disabled" /></paw:alertMessage>
+        </c:if>
+        <c:if test="${param.publishAction == 'enabled'}">
+          <paw:alertMessage type="success"><spring:message code="profile.publications.enabled" /></paw:alertMessage>
+        </c:if>
         <c:if test="${param.publishAction == 'alreadyDeleted'}">
           <paw:alertMessage type="warning"><spring:message code="profile.publications.alreadyDeleted" /></paw:alertMessage>
         </c:if>
@@ -80,7 +97,12 @@
         <c:choose>
           <c:when test="${not empty ownedItems}">
             <c:forEach var="item" items="${ownedItems}">
-              <c:url var="deleteItemUrl" value="/publish/item/${item.id}/delete" />
+              <c:url var="editItemUrl" value="/profile/item/${item.id}/edit" />
+              <c:url var="disableItemUrl" value="/profile/item/${item.id}/disable" />
+              <c:url var="enableItemUrl" value="/profile/item/${item.id}/enable" />
+              <c:url var="deleteItemUrl" value="/profile/item/${item.id}/delete" />
+              <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
+              <c:set var="kebabId" value="publication-kebab-${item.id}" />
               <div class="rounded-xl bg-base-200 p-4 flex items-center justify-between gap-4 ${item.active ? '' : 'opacity-75'}">
                 <div>
                   <div class="flex items-center gap-2">
@@ -91,12 +113,58 @@
                   </div>
                   <p class="m-0 text-xs text-on-surface-variant"><spring:message code="profile.publications.price" arguments="${item.pricePerHour}" /></p>
                 </div>
-                <c:if test="${item.active}">
-                  <form action="${deleteItemUrl}" method="post" class="m-0">
-                    <paw:button type="submit" color="danger" variant="outline" size="sm" text="${deleteLabel}" />
-                  </form>
-                </c:if>
+
+                <paw:kebabMenu id="${kebabId}" ariaLabel="${actionsLabel}">
+                  <li>
+                    <a href="${editItemUrl}" class="flex items-center gap-2">
+                      <span class="material-symbols-outlined text-base leading-none">edit</span>
+                      <span><c:out value="${editLabel}" /></span>
+                    </a>
+                  </li>
+                  <li>
+                    <c:choose>
+                      <c:when test="${item.active}">
+                        <form action="${disableItemUrl}" method="post" class="m-0 p-0">
+                          <button type="submit" class="flex w-full items-center gap-2 text-left">
+                            <span class="material-symbols-outlined text-base leading-none">visibility_off</span>
+                            <span><c:out value="${disableLabel}" /></span>
+                          </button>
+                        </form>
+                      </c:when>
+                      <c:otherwise>
+                        <form action="${enableItemUrl}" method="post" class="m-0 p-0">
+                          <button type="submit" class="flex w-full items-center gap-2 text-left">
+                            <span class="material-symbols-outlined text-base leading-none">visibility</span>
+                            <span><c:out value="${enableLabel}" /></span>
+                          </button>
+                        </form>
+                      </c:otherwise>
+                    </c:choose>
+                  </li>
+                  <li>
+                    <button
+                        type="button"
+                        class="flex w-full items-center gap-2 text-left text-error"
+                        onclick="document.getElementById('${deleteModalId}').showModal()">
+                      <span class="material-symbols-outlined text-base leading-none">delete</span>
+                      <span><c:out value="${deleteLabel}" /></span>
+                    </button>
+                  </li>
+                </paw:kebabMenu>
               </div>
+
+              <paw:confirmModal
+                  id="${deleteModalId}"
+                  title="${deleteConfirmTitle}"
+                  message="${deleteConfirmMessage}"
+                  confirmText="${deleteConfirmConfirm}"
+                  cancelText="${deleteConfirmCancel}"
+                  confirmColor="danger"
+                  icon="delete_forever">
+                <form action="${deleteItemUrl}" method="post" class="m-0">
+                  <paw:button type="submit" color="danger" cssClass="w-full sm:w-auto" text="${deleteConfirmConfirm}" />
+                </form>
+              </paw:confirmModal>
             </c:forEach>
           </c:when>
           <c:otherwise>

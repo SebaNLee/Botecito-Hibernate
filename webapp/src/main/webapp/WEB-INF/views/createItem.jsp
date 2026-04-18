@@ -2,56 +2,42 @@
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 
-<html>
-<head>
-    <title><spring:message code="item.create.title" /></title>
-</head>
-<body>
-    <h2><spring:message code="item.create.heading" /></h2>
-    <form:form modelAttribute="createForm" action="${pageContext.request.contextPath}/item/create" method="post">
-        
-        <label><spring:message code="item.typeId" />:</label>
-        <form:input path="typeId" />
-        <form:errors path="typeId" cssClass="error" element="div"/>
-        <br>
+<c:url var="createUrl" value="/item/create" />
+<spring:message code="item.typeId" var="typeIdLabel" />
+<spring:message code="item.title" var="titleLabel" />
+<spring:message code="item.description" var="descriptionLabel" />
+<spring:message code="item.pricePerHour" var="pricePerHourLabel" />
+<spring:message code="item.capacityPeople" var="capacityPeopleLabel" />
+<spring:message code="item.maxWeightKg" var="maxWeightKgLabel" />
+<spring:message code="item.difficultyLevel" var="difficultyLevelLabel" />
+<spring:message code="item.location" var="locationLabel" />
+<spring:message code="item.create.submit" var="createSubmitLabel" />
 
-        <label><spring:message code="item.title" />:</label>
-        <form:input path="title" />
-        <form:errors path="title" cssClass="error" element="div"/>
-        <br>
-
-        <label><spring:message code="item.description" />:</label>
-        <form:textarea path="description" maxlength="1000" />
-        <form:errors path="description" cssClass="error" element="div"/>
-        <br>
-
-        <label><spring:message code="item.pricePerHour" />:</label>
-        <form:input path="pricePerHour" />
-        <form:errors path="pricePerHour" cssClass="error" element="div"/>
-        <br>
-
-        <label><spring:message code="item.capacityPeople" />:</label>
-        <form:input path="capacityPeople" />
-        <form:errors path="capacityPeople" cssClass="error" element="div"/>
-        <br>
-
-        <label><spring:message code="item.maxWeightKg" />:</label>
-        <form:input path="maxWeightKg" />
-        <form:errors path="maxWeightKg" cssClass="error" element="div"/>
-        <br>
-
-        <label><spring:message code="item.difficultyLevel" />:</label>
-        <form:input path="difficultyLevel" />
-        <form:errors path="difficultyLevel" cssClass="error" element="div"/>
-        <br>
-
-        <label><spring:message code="item.location" />:</label>
-        <form:input path="location" />
-        <form:errors path="location" cssClass="error" element="div"/>
-        <br>
-
-        <button type="submit"><spring:message code="item.create.submit" /></button>
-    </form:form>
-</body>
-</html>
+<paw:layout title="Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen">
+  <div class="w-full max-w-2xl px-6">
+    <paw:sectionCard icon="directions_boat">
+      <jsp:attribute name="title"><spring:message code="item.create.heading" /></jsp:attribute>
+      <jsp:body>
+        <form:form modelAttribute="createForm" action="${createUrl}" method="post" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <paw:formField path="typeId" label="${typeIdLabel}" />
+            <paw:formField path="title" label="${titleLabel}" />
+            <div class="md:col-span-2">
+              <paw:textareaField path="description" label="${descriptionLabel}" rows="4" maxlength="1000" />
+            </div>
+            <paw:formField path="pricePerHour" label="${pricePerHourLabel}" />
+            <paw:formField path="capacityPeople" label="${capacityPeopleLabel}" />
+            <paw:formField path="maxWeightKg" label="${maxWeightKgLabel}" />
+            <paw:formField path="difficultyLevel" label="${difficultyLevelLabel}" />
+            <div class="md:col-span-2">
+              <paw:formField path="location" label="${locationLabel}" />
+            </div>
+          </div>
+          <paw:button type="submit" fullWidth="true" color="primary" text="${createSubmitLabel}" />
+        </form:form>
+      </jsp:body>
+    </paw:sectionCard>
+  </div>
+</paw:layout>

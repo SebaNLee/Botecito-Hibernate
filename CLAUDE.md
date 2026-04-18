@@ -76,7 +76,7 @@ architecture. Treat them as established project rules.
 ## Frontend
 
 - The frontend is server-rendered.
-- Use JSP, JSTL, Spring form tags, Tailwind, and minimal JavaScript.
+- Use JSP, JSTL, Spring form tags, Tailwind, DaisyUI and minimal JavaScript.
 - Tailwind is compiled through Maven.
 - `input.css` handles Tailwind loading and scanning.
 - `main.css` is the design-system stylesheet.

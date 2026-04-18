@@ -13,7 +13,7 @@
 <c:set var="fieldContainerClass" value="fieldset ${not empty containerClass ? containerClass : ''}" />
 
 <fieldset class="${fieldContainerClass}">
-  <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="${path}">
+  <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
     <c:out value="${label}" />
   </legend>
   <c:choose>

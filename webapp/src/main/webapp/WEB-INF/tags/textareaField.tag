@@ -14,7 +14,7 @@
 <c:set var="resolvedRows" value="${not empty rows ? rows : '4'}" />
 
 <fieldset class="${fieldContainerClass}">
-  <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="${path}">
+  <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
     <c:out value="${label}" />
   </legend>
   <c:choose>

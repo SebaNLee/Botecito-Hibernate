@@ -87,8 +87,8 @@
 <c:set var="btnClasses" value="btn ${btnColorClass} ${btnVariantClass} ${btnSizeClass} ${btnWidthClass} no-underline ${btnCssClass}" />
 
 <c:choose>
-  <c:when test="${not empty href}">
-    <a href="${href}" class="${btnClasses}" <c:if test="${btnDisabled}">aria-disabled="true"</c:if>>
+  <c:when test="${not empty href and not btnDisabled}">
+    <a href="${href}" class="${btnClasses}">
       <c:if test="${not empty icon and not btnIconTrailing}">
         <span class="material-symbols-outlined text-base leading-none"><c:out value="${icon}" /></span>
       </c:if>
@@ -97,6 +97,17 @@
         <span class="material-symbols-outlined text-base leading-none"><c:out value="${icon}" /></span>
       </c:if>
     </a>
+  </c:when>
+  <c:when test="${not empty href and btnDisabled}">
+    <span class="${btnClasses} btn-disabled" role="link" aria-disabled="true" tabindex="-1">
+      <c:if test="${not empty icon and not btnIconTrailing}">
+        <span class="material-symbols-outlined text-base leading-none"><c:out value="${icon}" /></span>
+      </c:if>
+      <span><c:out value="${text}" /></span>
+      <c:if test="${not empty icon and btnIconTrailing}">
+        <span class="material-symbols-outlined text-base leading-none"><c:out value="${icon}" /></span>
+      </c:if>
+    </span>
   </c:when>
   <c:otherwise>
     <button type="${btnType}" class="${btnClasses}" <c:if test="${btnDisabled}">disabled</c:if>>

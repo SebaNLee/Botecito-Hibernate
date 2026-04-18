@@ -30,7 +30,7 @@
     data-weight-slider
     data-unit="${fn:escapeXml(resolvedUnit)}">
   <div class="flex items-center justify-between gap-4">
-    <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="${id}-range">
+    <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
       <c:out value="${resolvedLabel}" />
     </legend>
     <span class="text-sm font-bold text-primary" data-weight-value>

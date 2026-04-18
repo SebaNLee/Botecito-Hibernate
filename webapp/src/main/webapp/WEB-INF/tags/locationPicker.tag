@@ -84,7 +84,7 @@
         data-options-url="<c:url value='${resolvedOptionsUrl}' />"
         data-placeholder="${fn:escapeXml(resolvedPlaceholder)}">
       <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-location-value />
-      <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="${id}-query">
+      <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
       </legend>
       <div class="relative">

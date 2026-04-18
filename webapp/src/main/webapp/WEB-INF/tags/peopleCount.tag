@@ -46,78 +46,23 @@
         data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
         data-allow-empty="${resolvedAllowEmpty}">
       <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-people-input />
-      <div class="flex w-full min-w-0 items-start gap-2.5">
-        <span class="material-symbols-outlined mt-1 shrink-0 text-primary"><c:out value="${resolvedIcon}" /></span>
-        <div class="min-w-0 flex-1">
-          <div class="block text-left text-[10px] font-bold uppercase tracking-wider text-outline">
+      <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined shrink-0 text-primary"><c:out value="${resolvedIcon}" /></span>
+        <div class="min-w-0 flex-1 flex flex-col gap-0.5">
+          <span class="block text-[10px] font-extrabold tracking-[0.16em] uppercase text-outline">
             <c:out value="${resolvedLabel}" />
-          </div>
-          <div class="mt-1 flex w-full min-w-0 items-center gap-1.5">
+          </span>
+          <div class="flex items-center gap-2">
             <button
                 type="button"
-                class="inline-flex h-6 w-6 shrink-0 items-center justify-center self-center rounded-full bg-surface-container text-primary transition-transform active:scale-95 cursor-pointer border-none"
+                class="btn btn-ghost btn-xs btn-circle text-primary"
                 aria-label="${fn:escapeXml(peopleDecrementLabel)}"
                 data-people-decrement>
-              <span class="material-symbols-outlined text-[16px] leading-none">remove</span>
+              <span class="material-symbols-outlined text-base">remove</span>
             </button>
-            <div class="flex min-h-6 min-w-0 flex-1 items-center justify-center">
-              <div class="inline-flex max-w-full min-w-0 items-center justify-center gap-1">
-                <input
-                    class="min-w-[4rem] max-w-[5.5rem] shrink appearance-none bg-transparent border-none p-0 text-center text-sm font-bold tabular-nums leading-none text-on-surface outline-none focus:outline-none focus-visible:outline-none focus:ring-0 shadow-none"
-                    type="text"
-                    inputmode="numeric"
-                    autocomplete="off"
-                    spellcheck="false"
-                    placeholder="${fn:escapeXml(resolvedPlaceholder)}"
-                    aria-label="${fn:escapeXml(peopleValueLabel)}"
-                    data-people-field />
-                <button
-                    type="button"
-                    class="h-6 w-6 shrink-0 items-center justify-center rounded-full text-outline transition-colors hover:bg-surface-container hover:text-on-surface cursor-pointer border-none bg-transparent leading-none ${peopleClearInitiallyHidden ? 'hidden' : 'inline-flex'}"
-                    aria-label="${fn:escapeXml(peopleClearLabel)}"
-                    data-people-clear>
-                  <span class="material-symbols-outlined text-[16px] leading-none">close</span>
-                </button>
-              </div>
-            </div>
-            <button
-                type="button"
-                class="inline-flex h-6 w-6 shrink-0 items-center justify-center self-center rounded-full bg-surface-container text-primary transition-transform active:scale-95 cursor-pointer border-none"
-                aria-label="${fn:escapeXml(peopleIncrementLabel)}"
-                data-people-increment>
-              <span class="material-symbols-outlined text-[16px] leading-none">add</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </c:when>
-  <c:otherwise>
-    <div
-        class="w-full ${resolvedContainerClass}"
-        data-people-count
-        data-min="${resolvedMin}"
-        data-max="${resolvedMax}"
-        data-step="${resolvedStep}"
-        data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
-        data-allow-empty="${resolvedAllowEmpty}">
-      <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-people-input />
-      <div class="space-y-2">
-        <label class="block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-          <c:out value="${resolvedLabel}" />
-        </label>
-        <div class="flex min-h-[2.75rem] w-full min-w-0 items-center gap-2 rounded-xl bg-surface-container-high p-2">
-          <button
-              type="button"
-              class="flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-lg bg-surface-container-lowest text-primary shadow-sm transition-transform active:scale-90 cursor-pointer border-none"
-              aria-label="${fn:escapeXml(peopleDecrementLabel)}"
-              data-people-decrement>
-            <span class="material-symbols-outlined leading-none">remove</span>
-          </button>
-          <div class="flex min-h-10 min-w-0 flex-1 items-center justify-center">
-            <div class="inline-flex max-w-full min-w-0 items-center justify-center gap-1">
+            <div class="flex min-w-0 flex-1 items-center justify-center gap-1">
               <input
-                  class="min-w-[7rem] max-w-[9rem] shrink appearance-none bg-transparent border-none p-0 text-center text-lg font-bold tabular-nums leading-none text-on-surface outline-none focus:outline-none focus-visible:outline-none focus:ring-0 shadow-none"
+                  class="w-20 max-w-full appearance-none bg-transparent border-none p-0 text-center text-[0.95rem] font-bold tabular-nums text-on-surface placeholder:text-on-surface/60 outline-none focus:outline-none focus:ring-0 shadow-none"
                   type="text"
                   inputmode="numeric"
                   autocomplete="off"
@@ -127,28 +72,75 @@
                   data-people-field />
               <button
                   type="button"
-                  class="h-10 w-10 shrink-0 items-center justify-center rounded-lg text-outline transition-colors hover:bg-surface-container hover:text-on-surface cursor-pointer border-none bg-transparent leading-none ${peopleClearInitiallyHidden ? 'hidden' : 'inline-flex'}"
+                  class="btn btn-ghost btn-xs btn-circle ${peopleClearInitiallyHidden ? 'hidden' : ''}"
                   aria-label="${fn:escapeXml(peopleClearLabel)}"
                   data-people-clear>
-                <span class="material-symbols-outlined leading-none">close</span>
+                <span class="material-symbols-outlined text-base">close</span>
               </button>
             </div>
+            <button
+                type="button"
+                class="btn btn-ghost btn-xs btn-circle text-primary"
+                aria-label="${fn:escapeXml(peopleIncrementLabel)}"
+                data-people-increment>
+              <span class="material-symbols-outlined text-base">add</span>
+            </button>
           </div>
+        </div>
+      </div>
+    </div>
+  </c:when>
+  <c:otherwise>
+    <fieldset
+        class="fieldset w-full ${resolvedContainerClass}"
+        data-people-count
+        data-min="${resolvedMin}"
+        data-max="${resolvedMax}"
+        data-step="${resolvedStep}"
+        data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
+        data-allow-empty="${resolvedAllowEmpty}">
+      <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-people-input />
+      <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+        <c:out value="${resolvedLabel}" />
+      </legend>
+      <div class="join w-full">
+        <button
+            type="button"
+            class="join-item btn btn-outline btn-square"
+            aria-label="${fn:escapeXml(peopleDecrementLabel)}"
+            data-people-decrement>
+          <span class="material-symbols-outlined">remove</span>
+        </button>
+        <div class="join-item input flex-1 flex items-center justify-center gap-1">
+          <input
+              class="w-full appearance-none bg-transparent border-none p-0 text-center text-base font-bold tabular-nums text-on-surface placeholder:text-on-surface/60 outline-none focus:outline-none focus:ring-0 shadow-none"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="${fn:escapeXml(resolvedPlaceholder)}"
+              aria-label="${fn:escapeXml(peopleValueLabel)}"
+              data-people-field />
           <button
               type="button"
-              class="flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-lg bg-surface-container-lowest text-primary shadow-sm transition-transform active:scale-90 cursor-pointer border-none"
-              aria-label="${fn:escapeXml(peopleIncrementLabel)}"
-              data-people-increment>
-            <span class="material-symbols-outlined leading-none">add</span>
+              class="btn btn-ghost btn-xs btn-circle ${peopleClearInitiallyHidden ? 'hidden' : ''}"
+              aria-label="${fn:escapeXml(peopleClearLabel)}"
+              data-people-clear>
+            <span class="material-symbols-outlined text-base">close</span>
           </button>
         </div>
+        <button
+            type="button"
+            class="join-item btn btn-outline btn-square"
+            aria-label="${fn:escapeXml(peopleIncrementLabel)}"
+            data-people-increment>
+          <span class="material-symbols-outlined">add</span>
+        </button>
       </div>
 
       <c:if test="${not empty errorPath}">
-        <form:errors
-            path="${errorPath}"
-            cssClass="mt-1 block rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700" />
+        <form:errors path="${errorPath}" cssClass="text-error text-xs mt-1" element="p" />
       </c:if>
-    </div>
+    </fieldset>
   </c:otherwise>
 </c:choose>

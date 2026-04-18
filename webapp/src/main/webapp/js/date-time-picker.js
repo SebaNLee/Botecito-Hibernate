@@ -16,34 +16,29 @@
   const MONTH_SECTION_CLASS = "picker-month";
   const MONTH_TITLE_CLASS =
     "mb-3 text-xs font-extrabold uppercase tracking-[0.12em] text-on-surface-variant";
-  const WEEKDAY_ROW_CLASS = "mb-2 grid grid-cols-7 gap-1.5";
+  const WEEKDAY_ROW_CLASS = "mb-2 grid grid-cols-7 gap-1";
   const WEEKDAY_CLASS =
     "flex justify-center text-[11px] font-extrabold uppercase tracking-[0.12em] text-outline";
-  const CALENDAR_GRID_CLASS = "grid grid-cols-7 gap-1.5";
+  const CALENDAR_GRID_CLASS = "grid grid-cols-7 gap-1";
   const CALENDAR_SPACER_CLASS = "min-h-10";
   const DAY_BASE_CLASS =
-    "min-h-10 rounded-xl border border-transparent text-sm font-bold transition-all duration-150";
-  const DAY_AVAILABLE_CLASS =
-    "bg-surface-container-low text-on-surface cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(0,93,167,0.12)]";
+    "btn btn-sm btn-square min-h-10 h-10 font-semibold";
+  const DAY_AVAILABLE_CLASS = "btn-ghost text-on-surface";
   const DAY_UNAVAILABLE_CLASS =
-    "bg-[rgba(212,227,255,0.45)] text-[rgba(64,71,82,0.46)] cursor-not-allowed";
+    "btn-ghost text-outline/40 pointer-events-none";
   const DAY_OCCUPIED_CLASS =
-    "bg-error-container/70 text-on-error-container/70 line-through cursor-not-allowed";
-  const DAY_SELECTED_CLASS =
-    "bg-gradient-to-br from-primary to-primary-container text-on-primary shadow-[0_16px_32px_rgba(0,93,167,0.24)]";
-  const DAY_TODAY_CLASS = "border-primary ring-2 ring-primary/18 ring-inset";
+    "btn-ghost text-error/70 line-through pointer-events-none";
+  const DAY_SELECTED_CLASS = "btn-primary shadow-sm";
+  const DAY_TODAY_CLASS = "ring-2 ring-primary/35 ring-inset";
   const SLOT_BASE_CLASS =
-    "min-h-10 rounded-xl border border-transparent text-sm font-bold transition-all duration-150";
-  const SLOT_AVAILABLE_CLASS =
-    "bg-surface-container-low text-on-surface cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(0,93,167,0.12)]";
+    "btn btn-sm min-h-10 h-10 font-semibold";
+  const SLOT_AVAILABLE_CLASS = "btn-ghost text-on-surface";
   const SLOT_UNAVAILABLE_CLASS =
-    "bg-[rgba(212,227,255,0.45)] text-[rgba(64,71,82,0.46)] cursor-not-allowed";
+    "btn-ghost text-outline/40 pointer-events-none";
   const SLOT_OCCUPIED_CLASS =
-    "border border-error/25 bg-error/14 text-error line-through cursor-not-allowed";
-  const SLOT_SELECTED_CLASS =
-    "bg-gradient-to-br from-primary to-primary-container text-on-primary shadow-[0_16px_32px_rgba(0,93,167,0.24)]";
-  const SLOT_RANGE_CLASS =
-    "bg-gradient-to-br from-primary to-primary-container text-on-primary";
+    "btn-ghost text-error/70 line-through pointer-events-none";
+  const SLOT_SELECTED_CLASS = "btn-primary shadow-sm";
+  const SLOT_RANGE_CLASS = "btn-primary btn-soft";
 
   function buildWeekdayLabels(locale) {
     const formatter = new Intl.DateTimeFormat(locale, { weekday: "short" });

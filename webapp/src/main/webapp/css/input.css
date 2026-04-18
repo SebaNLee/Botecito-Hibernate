@@ -5,6 +5,51 @@
 @source "../WEB-INF/**/*.tag";
 @source "../**/*.html";
 @source "../**/*.js";
+@source not "./daisyui.mjs";
+@source not "./daisyui-theme.mjs";
+
+@plugin "./daisyui.mjs" {
+  exclude: radialprogress, properties;
+}
+
+@plugin "./daisyui-theme.mjs" {
+  name: "botecito";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+
+  --color-primary: #005da7;
+  --color-primary-content: #ffffff;
+  --color-secondary: #ae3123;
+  --color-secondary-content: #ffffff;
+  --color-accent: #0076d1;
+  --color-accent-content: #ffffff;
+  --color-neutral: #213148;
+  --color-neutral-content: #ebf1ff;
+  --color-base-100: #ffffff;
+  --color-base-200: #f0f3ff;
+  --color-base-300: #e7eeff;
+  --color-base-content: #0b1c32;
+  --color-info: #0076d1;
+  --color-info-content: #ffffff;
+  --color-success: #2e7d32;
+  --color-success-content: #ffffff;
+  --color-warning: #8d4b00;
+  --color-warning-content: #ffffff;
+  --color-error: #ba1a1a;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.75rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1rem;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
 
 @theme inline {
   --color-on-surface-variant: #404752;
@@ -27,12 +72,10 @@
   --color-on-surface: #0b1c32;
   --color-on-primary-container: #fdfcff;
   --color-primary-fixed: #d3e3ff;
-  --color-primary: #005da7;
   --color-surface-bright: #f9f9ff;
   --color-on-error: #ffffff;
   --color-on-tertiary: #ffffff;
   --color-tertiary-container: #b15f00;
-  --color-secondary: #ae3123;
   --color-primary-container: #0076d1;
   --color-on-primary-fixed: #001c39;
   --color-surface-variant: #d4e3ff;

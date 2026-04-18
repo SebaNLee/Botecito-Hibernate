@@ -5,7 +5,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <c:set var="headingCssClass" value="${not empty cssClass ? cssClass : ''}" />
-<c:set var="headingBaseClass" value="m-0 font-display font-extrabold leading-tight tracking-tight text-brand-foreground" />
+<c:set var="headingBaseClass" value="m-0 font-headline font-extrabold leading-tight tracking-tight text-on-background" />
 
 <c:choose>
     <c:when test="${level == 1}">

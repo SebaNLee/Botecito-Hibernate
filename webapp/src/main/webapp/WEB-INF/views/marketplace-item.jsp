@@ -151,7 +151,7 @@
               placeholder="${datePlaceholder}"
               offeredDatesJson="${reservationOfferedDatesJson}"
               occupiedDatesJson="${reservationOccupiedDatesJson}" />
-            <form:errors path="date" element="p" cssClass="validator-hint text-error text-xs" />
+            <form:errors path="date" element="p" cssClass="text-error text-xs mt-1" />
 
             <paw:timeRangePicker
               id="reservation-time-range"
@@ -164,8 +164,8 @@
               placeholder="${timePlaceholder}"
               offeredTimesJson="${reservationOfferedTimesJson}"
               occupiedTimesJson="${reservationOccupiedTimesJson}" />
-            <form:errors path="startTime" element="p" cssClass="validator-hint text-error text-xs" />
-            <form:errors path="endTime" element="p" cssClass="validator-hint text-error text-xs" />
+            <form:errors path="startTime" element="p" cssClass="text-error text-xs mt-1" />
+            <form:errors path="endTime" element="p" cssClass="text-error text-xs mt-1" />
 
             <p class="m-0 text-xs text-on-surface-variant">
               <spring:message code="itemDetail.form.accountNote" />

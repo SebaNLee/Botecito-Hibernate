@@ -10,6 +10,7 @@
 
 <c:set var="inputType" value="${not empty type ? type : 'text'}" />
 <c:set var="inputCssClass" value="input w-full ${not empty cssClass ? cssClass : ''}" />
+<c:set var="inputErrorCssClass" value="${inputCssClass} input-error" />
 <c:set var="fieldContainerClass" value="fieldset ${not empty containerClass ? containerClass : ''}" />
 
 <fieldset class="${fieldContainerClass}">
@@ -22,6 +23,7 @@
           id="${path}"
           path="${path}"
           cssClass="${inputCssClass}"
+          cssErrorClass="${inputErrorCssClass}"
           placeholder="${placeholder}"
       />
     </c:when>
@@ -31,9 +33,10 @@
           path="${path}"
           type="${inputType}"
           cssClass="${inputCssClass}"
+          cssErrorClass="${inputErrorCssClass}"
           placeholder="${placeholder}"
       />
     </c:otherwise>
   </c:choose>
-  <form:errors path="${path}" cssClass="validator-hint text-error text-xs mt-1" element="p" />
+  <form:errors path="${path}" cssClass="text-error text-xs mt-1" element="p" />
 </fieldset>

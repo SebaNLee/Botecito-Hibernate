@@ -9,13 +9,14 @@
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 
 <c:set var="selectCssClass" value="select w-full ${not empty cssClass ? cssClass : ''}" />
+<c:set var="selectErrorCssClass" value="${selectCssClass} select-error" />
 <c:set var="fieldContainerClass" value="fieldset ${not empty containerClass ? containerClass : ''}" />
 
 <fieldset class="${fieldContainerClass}">
   <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
     <c:out value="${label}" />
   </legend>
-  <form:select id="${path}" path="${path}" cssClass="${selectCssClass}">
+  <form:select id="${path}" path="${path}" cssClass="${selectCssClass}" cssErrorClass="${selectErrorCssClass}">
     <c:if test="${not empty placeholder}">
       <form:option value="" label="${placeholder}" />
     </c:if>
@@ -23,5 +24,5 @@
       <form:option value="${entry.key}" label="${entry.value}" />
     </c:forEach>
   </form:select>
-  <form:errors path="${path}" cssClass="validator-hint text-error text-xs mt-1" element="p" />
+  <form:errors path="${path}" cssClass="text-error text-xs mt-1" element="p" />
 </fieldset>

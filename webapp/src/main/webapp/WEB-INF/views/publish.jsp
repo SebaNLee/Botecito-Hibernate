@@ -77,7 +77,7 @@
               <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="itemTypeId">
                 <c:out value="${publishTypeLabel}" />
               </legend>
-              <form:select path="itemTypeId" id="itemTypeId" cssClass="select w-full">
+              <form:select path="itemTypeId" id="itemTypeId" cssClass="select w-full" cssErrorClass="select w-full select-error">
                 <form:option value="" label="${publishTypePlaceholder}" />
                 <form:option value="1" label="${publishTypeOther}" />
                 <form:option value="2" label="${publishTypeKayak}" />
@@ -87,7 +87,7 @@
                 <form:option value="6" label="${publishTypeEFoil}" />
                 <form:option value="7" label="${publishTypeOptimist}" />
               </form:select>
-              <form:errors path="itemTypeId" cssClass="validator-hint text-error text-xs mt-1" element="p" />
+              <form:errors path="itemTypeId" cssClass="text-error text-xs mt-1" element="p" />
             </fieldset>
             <paw:formField path="pricePerHour" type="number" label="${publishPriceLabel}" placeholder="${publishPricePlaceholder}" />
             <div class="md:col-span-2">
@@ -112,17 +112,19 @@
               <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="maxWeight">
                 <c:out value="${publishMaxWeightLabel}" />
               </legend>
-              <label class="input w-full">
-                <form:input path="maxWeight" id="maxWeight" type="number" min="0" cssClass="grow bg-transparent border-none outline-none focus:outline-none focus:ring-0 shadow-none p-0" placeholder="${publishMaxWeightPlaceholder}" />
-                <span class="text-outline text-sm font-bold">KG</span>
-              </label>
-              <form:errors path="maxWeight" cssClass="validator-hint text-error text-xs mt-1" element="p" />
+              <spring:bind path="publishForm.maxWeight">
+                <label class="input w-full ${status.error ? 'input-error' : ''}">
+                  <form:input path="maxWeight" id="maxWeight" type="number" min="0" cssClass="grow bg-transparent border-none outline-none focus:outline-none focus:ring-0 shadow-none p-0" placeholder="${publishMaxWeightPlaceholder}" />
+                  <span class="text-outline text-sm font-bold">KG</span>
+                </label>
+              </spring:bind>
+              <form:errors path="maxWeight" cssClass="text-error text-xs mt-1" element="p" />
             </fieldset>
             <fieldset class="fieldset md:col-span-2">
               <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="difficultyLevel">
                 <c:out value="${publishDifficultyLabel}" />
               </legend>
-              <form:select path="difficultyLevel" id="difficultyLevel" cssClass="select w-full">
+              <form:select path="difficultyLevel" id="difficultyLevel" cssClass="select w-full" cssErrorClass="select w-full select-error">
                 <form:option value="" label="${publishDifficultyPlaceholder}" />
                 <form:option value="1" label="${publishDifficulty1}" />
                 <form:option value="2" label="${publishDifficulty2}" />
@@ -130,7 +132,7 @@
                 <form:option value="4" label="${publishDifficulty4}" />
                 <form:option value="5" label="${publishDifficulty5}" />
               </form:select>
-              <form:errors path="difficultyLevel" cssClass="validator-hint text-error text-xs mt-1" element="p" />
+              <form:errors path="difficultyLevel" cssClass="text-error text-xs mt-1" element="p" />
             </fieldset>
           </div>
         </jsp:body>
@@ -162,7 +164,7 @@
             </div>
             <span class="font-bold text-lg text-primary"><spring:message code="publish.image.upload" /></span>
             <span id="file-name-display" class="text-sm text-outline mt-1"><spring:message code="publish.image.helper" /></span>
-            <form:errors path="file" cssClass="validator-hint text-error text-xs mt-2" element="p" />
+            <form:errors path="file" cssClass="text-error text-xs mt-2" element="p" />
           </label>
 
           <div class="rounded-xl bg-base-200 p-4 text-sm text-on-surface-variant leading-relaxed">

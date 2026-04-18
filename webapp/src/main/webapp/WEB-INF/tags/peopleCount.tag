@@ -139,7 +139,7 @@
       </div>
 
       <c:if test="${not empty errorPath}">
-        <form:errors path="${errorPath}" cssClass="validator-hint text-error text-xs mt-1" element="p" />
+        <form:errors path="${errorPath}" cssClass="text-error text-xs mt-1" element="p" />
       </c:if>
     </fieldset>
   </c:otherwise>

@@ -20,16 +20,16 @@
             <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="startTime">
               <c:out value="${bookingStartTimeLabel}" />
             </legend>
-            <form:input path="startTime" id="startTime" type="datetime-local" cssClass="input w-full" />
-            <form:errors path="startTime" cssClass="validator-hint text-error text-xs mt-1" element="p" />
+            <form:input path="startTime" id="startTime" type="datetime-local" cssClass="input w-full" cssErrorClass="input w-full input-error" />
+            <form:errors path="startTime" cssClass="text-error text-xs mt-1" element="p" />
           </fieldset>
 
           <fieldset class="fieldset">
             <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="endTime">
               <c:out value="${bookingEndTimeLabel}" />
             </legend>
-            <form:input path="endTime" id="endTime" type="datetime-local" cssClass="input w-full" />
-            <form:errors path="endTime" cssClass="validator-hint text-error text-xs mt-1" element="p" />
+            <form:input path="endTime" id="endTime" type="datetime-local" cssClass="input w-full" cssErrorClass="input w-full input-error" />
+            <form:errors path="endTime" cssClass="text-error text-xs mt-1" element="p" />
           </fieldset>
 
           <paw:textareaField path="requestMessage" label="${bookingRequestMessageLabel}" rows="4" maxlength="1000" />

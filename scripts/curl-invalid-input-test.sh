@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 
 #Note: user mail and pass from in app user
+
+# Example call:
+#
+#  BASE_URL=http://localhost:8080 \
+#  EMAIL="lpizzutobeltran@itba.edu.ar" \
+#  PASSWORD="lorenzo9" \
+#  ITEM_ID=15 \
+#  ./scripts/curl-invalid-input-smoke.sh
+#
+# if that user exist in the db it should work
+
 set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:8080}"

@@ -1,9 +1,11 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.RegisterForm;
@@ -27,10 +29,15 @@ public class AuthController {
 
     private final UserService userService;
     private final ItemService itemService;
+    private final BookingRequestService bookingRequestService;
 
-    public AuthController(final UserService userService, final ItemService itemService) {
+    public AuthController(
+            final UserService userService,
+            final ItemService itemService,
+            final BookingRequestService bookingRequestService) {
         this.userService = userService;
         this.itemService = itemService;
+        this.bookingRequestService = bookingRequestService;
     }
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
@@ -112,6 +119,7 @@ public class AuthController {
         mav.addObject("user", user);
         mav.addObject("ownedItems", itemService.listItemsByOwnerId(user.getId()));
         mav.addObject("pendingBookingRequests", buildPendingBookings(user.getId()));
+        mav.addObject("paymentProofRequests", buildPaymentProofRequests(user.getId()));
         mav.addObject("sentBookingRequests", buildSentBookings(user.getId()));
         return mav;
     }
@@ -171,6 +179,33 @@ public class AuthController {
         return sentBookings;
     }
 
+    private List<PaymentProofReviewView> buildPaymentProofRequests(final int ownerId) {
+        final List<PaymentProofReviewView> paymentProofRequests = new ArrayList<>();
+        for (final ItemBooking booking : itemService.listPaymentSubmittedBookingsByOwnerId(ownerId)) {
+            if (booking.getItemId() == null || booking.getId() == null || booking.getGuestId() == null) {
+                continue;
+            }
+
+            final Item item = itemService.findItemById(booking.getItemId()).orElse(null);
+            if (item == null) {
+                continue;
+            }
+
+            final User requester =
+                    itemService.findUserById(booking.getGuestId()).orElse(null);
+            final BookingPaymentProof proof = bookingRequestService
+                    .findPaymentProofByBookingId(booking.getId())
+                    .orElse(null);
+            paymentProofRequests.add(new PaymentProofReviewView(
+                    booking.getId(),
+                    item.getTitle(),
+                    requester == null ? "" : requester.getName(),
+                    requester == null ? "" : requester.getEmail(),
+                    proof == null ? "" : proof.getFileName()));
+        }
+        return paymentProofRequests;
+    }
+
     private static String statusMessageCode(final BookingState state) {
         if (state == null) {
             return "profile.sentBookings.status.unknown";
@@ -181,6 +216,8 @@ public class AuthController {
             case BOOKING_REJECTED -> "profile.sentBookings.status.rejected";
             case BOOKING_CANCELLED -> "profile.sentBookings.status.cancelled";
             case BOOKING_COMPLETED -> "profile.sentBookings.status.completed";
+            case BOOKING_PAYMENT_SUBMITTED -> "profile.sentBookings.status.paymentSubmitted";
+            case BOOKING_PAID -> "profile.sentBookings.status.paid";
         };
     }
 
@@ -238,6 +275,30 @@ public class AuthController {
 
         public String getStatusMessageCode() {
             return statusMessageCode;
+        }
+    }
+
+    public record PaymentProofReviewView(
+            int id, String itemTitle, String requesterName, String requesterEmail, String fileName) {
+
+        public int getId() {
+            return id;
+        }
+
+        public String getItemTitle() {
+            return itemTitle;
+        }
+
+        public String getRequesterName() {
+            return requesterName;
+        }
+
+        public String getRequesterEmail() {
+            return requesterEmail;
+        }
+
+        public String getFileName() {
+            return fileName;
         }
     }
 }

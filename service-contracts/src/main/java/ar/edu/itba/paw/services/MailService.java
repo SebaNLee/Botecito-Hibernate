@@ -12,5 +12,9 @@ public interface MailService {
 
     void sendBookingResolutionEmail(BookingRequest bookingRequest);
 
+    void sendPaymentProofSubmittedEmail(String ownerEmail, String requesterName, String itemTitle, String proofUrl);
+
+    void sendPaymentReceivedEmail(String requesterEmail, String requesterLocaleTag, String itemTitle);
+
     Locale resolveLocale(String recipientIdentifier);
 }

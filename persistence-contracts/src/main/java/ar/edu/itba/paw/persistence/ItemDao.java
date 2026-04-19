@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
@@ -66,7 +67,11 @@ public interface ItemDao {
 
     List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId);
 
+    List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId);
+
     Optional<ItemBooking> findBookingByHostDecisionToken(final String hostDecisionToken);
+
+    Optional<ItemBooking> findBookingById(final int bookingId);
 
     ItemBooking createBookingRequest(
             final int itemId,
@@ -78,6 +83,21 @@ public interface ItemDao {
 
     boolean resolveBookingByHostDecisionToken(
             final String hostDecisionToken, final BookingState newState, final OffsetDateTime hostDecisionUsedAt);
+
+    BookingPaymentProof createPaymentProof(
+            final int bookingId,
+            final int uploaderId,
+            final String fileName,
+            final String contentType,
+            final byte[] fileData);
+
+    Optional<BookingPaymentProof> findPaymentProofByBookingId(final int bookingId);
+
+    Optional<BookingPaymentProof> findPaymentProofById(final int proofId);
+
+    boolean markBookingPaymentSubmitted(final int bookingId, final int guestId);
+
+    boolean markBookingPaid(final int bookingId, final int ownerId);
 
     Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId);
 

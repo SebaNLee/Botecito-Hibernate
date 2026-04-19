@@ -64,6 +64,8 @@ public interface ItemService {
 
     List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId);
 
+    List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId);
+
     Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId);
 
     Optional<byte[]> findImageById(final int id);

@@ -20,6 +20,7 @@
 <spring:message code="itemDetail.unavailable.reason.capacity" var="unavailableReasonCapacity" />
 <spring:message code="itemDetail.unavailable.reason.weight" var="unavailableReasonWeight" />
 <spring:message code="itemDetail.unavailable.reason.dateTime" var="unavailableReasonDateTime" />
+<spring:message code="itemDetail.unavailable.reason.difficulty" var="unavailableReasonDifficulty" />
 <spring:message code="itemDetail.price.total" var="priceTotalLabel" />
 <spring:message code="itemDetail.price.pending" var="pricePendingLabel" />
 <spring:message code="itemDetail.price.pendingHelp" var="pricePendingHelpLabel" />
@@ -267,6 +268,7 @@
     data-item-location-option-id="${item.locationOptionId}"
     data-item-capacity="${item.capacityPeople}"
     data-item-max-weight="${item.maxWeightKg}"
+    data-item-difficulty-level="${item.difficultyLevel}"
     data-mismatch-prefix="${unavailableMismatchPrefix}"
     data-mismatch-suffix="${unavailableMismatchSuffix}"
     data-mismatch-join="${andLabel}"
@@ -274,6 +276,7 @@
     data-mismatch-capacity="${unavailableReasonCapacity}"
     data-mismatch-weight="${unavailableReasonWeight}"
     data-mismatch-date-time="${unavailableReasonDateTime}"
+    data-mismatch-difficulty="${unavailableReasonDifficulty}"
     hidden>
     <div class="modal-box max-w-lg p-0 bg-transparent shadow-none">
       <div class="card bg-base-100 shadow-xl">

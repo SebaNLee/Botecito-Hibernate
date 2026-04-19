@@ -16,6 +16,8 @@
 <spring:message code="filters.people.any" var="peopleAnyPlaceholder" />
 <spring:message code="filters.maxWeight" var="maxWeightLabel" />
 <spring:message code="filters.maxWeight.helper" var="maxWeightHelper" />
+<spring:message code="filters.difficulty" var="difficultyFilterLabel" />
+<spring:message code="filters.difficulty.any" var="difficultyAnyLabel" />
 <spring:message code="landing.hero.search" var="searchLabel" />
 <spring:message code="marketplace.filters.apply" var="filtersApplyLabel" />
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
@@ -49,6 +51,9 @@
     <c:if test="${not empty param.maxWeight}">
       <c:param name="maxWeight" value="${param.maxWeight}" />
     </c:if>
+    <c:if test="${not empty param.difficultyLevel}">
+      <c:param name="difficultyLevel" value="${param.difficultyLevel}" />
+    </c:if>
   </c:url>
 </c:if>
 <c:if test="${itemPage.hasNext}">
@@ -75,6 +80,9 @@
     </c:if>
     <c:if test="${not empty param.maxWeight}">
       <c:param name="maxWeight" value="${param.maxWeight}" />
+    </c:if>
+    <c:if test="${not empty param.difficultyLevel}">
+      <c:param name="difficultyLevel" value="${param.difficultyLevel}" />
     </c:if>
   </c:url>
 </c:if>
@@ -122,6 +130,20 @@
                   restrictToAvailability="false"
                   offeredTimesJson="{}"
                   occupiedTimesJson="{}" />
+            </div>
+
+            <div class="form-control w-full">
+              <label for="marketplace-difficulty" class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 block">
+                <c:out value="${difficultyFilterLabel}" />
+              </label>
+              <select id="marketplace-difficulty" name="difficultyLevel" class="select select-bordered w-full font-semibold text-on-surface">
+                <option value="" ${empty param.difficultyLevel ? 'selected="selected"' : ''}><c:out value="${difficultyAnyLabel}" /></option>
+                <option value="1" ${param.difficultyLevel == '1' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.1" /></option>
+                <option value="2" ${param.difficultyLevel == '2' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.2" /></option>
+                <option value="3" ${param.difficultyLevel == '3' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.3" /></option>
+                <option value="4" ${param.difficultyLevel == '4' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.4" /></option>
+                <option value="5" ${param.difficultyLevel == '5' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.5" /></option>
+              </select>
             </div>
 
             <paw:peopleCount
@@ -192,6 +214,7 @@
         <input type="hidden" name="endTime" value="${param.endTime}" data-applied-filter-mirror />
         <input type="hidden" name="capacity" value="${param.capacity}" data-applied-filter-mirror />
         <input type="hidden" name="maxWeight" value="${param.maxWeight}" data-applied-filter-mirror />
+        <input type="hidden" name="difficultyLevel" value="${param.difficultyLevel}" data-applied-filter-mirror />
         <label for="marketplace-sort" class="shrink-0"><spring:message code="marketplace.sort.label" /></label>
         <select id="marketplace-sort" name="sort" class="select select-sm font-bold text-primary" onchange="this.form.submit()">
           <option value="titleAsc" ${sort == 'titleAsc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.titleAsc" /></option>
@@ -213,6 +236,9 @@
           </c:if>
           <c:if test="${not empty param.endTime}">
             <c:param name="endTime" value="${param.endTime}" />
+          </c:if>
+          <c:if test="${not empty param.difficultyLevel}">
+            <c:param name="difficultyLevel" value="${param.difficultyLevel}" />
           </c:if>
         </c:url>
         <a href="${itemUrl}" data-marketplace-item-link class="group card bg-base-100 shadow-sm overflow-hidden no-underline text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">

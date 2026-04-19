@@ -7,6 +7,7 @@
     "endTime",
     "capacity",
     "maxWeight",
+    "difficultyLevel",
   ];
   const APPLIED_FILTERS_KEY = "paw.marketplaceFilters";
   const DRAFT_FILTERS_KEY = "paw.marketplaceFilterDraft";
@@ -176,6 +177,13 @@
 
     if (state.startTime && state.endTime) {
       controls.timePicker.setSelection(state.startTime, state.endTime);
+    } else if (state.startTime) {
+      if (!controls.timePicker.setSelection(state.startTime, "")) {
+        controls.timePicker.startInput.value = state.startTime;
+        controls.timePicker.endInput.value = "";
+        controls.timePicker.dispatchSelectionChange();
+        controls.timePicker.render();
+      }
     } else {
       controls.timePicker.clear();
     }
@@ -232,6 +240,7 @@
         form.querySelector("[data-weight-value-input]")?.value ||
         form.querySelector('[name="maxWeight"]')?.value ||
         "",
+      difficultyLevel: form.querySelector('[name="difficultyLevel"]')?.value || "",
     });
   }
 
@@ -690,6 +699,11 @@
       root.__weightSlider?.setValue(normalized.maxWeight);
     });
 
+    const difficultySelect = form.querySelector('[name="difficultyLevel"]');
+    if (difficultySelect) {
+      difficultySelect.value = normalized.difficultyLevel || "";
+    }
+
     setDateTimeState(form, normalized);
   }
 
@@ -707,7 +721,9 @@
     }
 
     form
-      .querySelectorAll("[data-location-value], [data-people-input], [data-weight-input]")
+      .querySelectorAll(
+        "[data-location-value], [data-people-input], [data-weight-input], [name=\"difficultyLevel\"]",
+      )
       .forEach((input) => {
         input.addEventListener("change", persistDraft);
         input.addEventListener("input", persistDraft);
@@ -798,6 +814,7 @@
     const itemLocationOptionId = alertRoot.dataset.itemLocationOptionId || "";
     const itemCapacity = parseInteger(alertRoot.dataset.itemCapacity);
     const itemMaxWeight = parseInteger(alertRoot.dataset.itemMaxWeight);
+    const itemDifficulty = parseInteger(alertRoot.dataset.itemDifficultyLevel);
     const mismatchPrefix =
       alertRoot.dataset.mismatchPrefix ||
       "This item does not match the saved filters for";
@@ -813,10 +830,13 @@
       alertRoot.dataset.mismatchWeight || "required weight";
     const mismatchDateTime =
       alertRoot.dataset.mismatchDateTime || "date and time";
+    const mismatchDifficulty =
+      alertRoot.dataset.mismatchDifficulty || "difficulty level";
     const controls = getDateTimeControls(document);
     const mismatchReasons = [];
     const requestedCapacity = parseInteger(appliedState.capacity);
     const requestedWeight = parseInteger(appliedState.maxWeight);
+    const requestedDifficulty = parseInteger(appliedState.difficultyLevel);
 
     if (
       appliedState.locationOptionId &&
@@ -831,6 +851,13 @@
 
     if (requestedWeight != null && itemMaxWeight != null && itemMaxWeight < requestedWeight) {
       mismatchReasons.push(mismatchWeight);
+    }
+
+    if (
+      requestedDifficulty != null &&
+      (itemDifficulty == null || itemDifficulty !== requestedDifficulty)
+    ) {
+      mismatchReasons.push(mismatchDifficulty);
     }
 
     if (

@@ -39,7 +39,7 @@ public final class ItemServiceImpl implements ItemService {
     public Page<Item> searchItems(final ItemSearchCriteria criteria, final int page, final int pageSize) {
         final int safePageSize = Math.max(1, pageSize);
         final int requestedPage = Math.max(1, page);
-        if (criteria != null && !isBlank(criteria.getDate())) {
+        if (criteria != null && needsAvailabilityPostFilter(criteria)) {
             return searchItemsWithAvailability(criteria, requestedPage, safePageSize);
         }
 
@@ -264,5 +264,12 @@ public final class ItemServiceImpl implements ItemService {
 
     private static boolean isBlank(final String value) {
         return value == null || value.isBlank();
+    }
+
+    private static boolean needsAvailabilityPostFilter(final ItemSearchCriteria criteria) {
+        if (!isBlank(criteria.getDate())) {
+            return true;
+        }
+        return !isBlank(criteria.getStartTime()) || !isBlank(criteria.getEndTime());
     }
 }

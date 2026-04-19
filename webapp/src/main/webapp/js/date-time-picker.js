@@ -940,6 +940,10 @@
     }
 
     getOfferedTimesForDate(isoDate) {
+      if (!this.restrictToAvailability && isBlank(isoDate)) {
+        return new Set(ALL_TIMES);
+      }
+
       if (isBlank(isoDate)) {
         return new Set();
       }
@@ -1019,7 +1023,11 @@
       const startIndex = ALL_TIMES.indexOf(startTime);
       const endIndex = ALL_TIMES.indexOf(endTime);
 
-      if (isBlank(date) || startIndex < 0 || endIndex <= startIndex) {
+      if (this.restrictToAvailability && isBlank(date)) {
+        return false;
+      }
+
+      if (startIndex < 0 || endIndex <= startIndex) {
         return false;
       }
 
@@ -1050,7 +1058,7 @@
 
       const date = this.currentDate();
 
-      if (isBlank(date)) {
+      if (isBlank(date) && this.restrictToAvailability) {
         return false;
       }
 
@@ -1081,8 +1089,37 @@
       const date = this.currentDate();
 
       if (isBlank(date)) {
-        this.startInput.value = "";
-        this.endInput.value = "";
+        if (this.restrictToAvailability) {
+          this.startInput.value = "";
+          this.endInput.value = "";
+          return;
+        }
+
+        if (
+          this.startInput.value &&
+          !this.endInput.value &&
+          !this.hasBookableEndFrom(date, this.startInput.value)
+        ) {
+          this.startInput.value = "";
+          this.endInput.value = "";
+          return;
+        }
+
+        if (
+          this.startInput.value &&
+          this.endInput.value &&
+          !this.isContinuousRangeForDate(
+            date,
+            this.startInput.value,
+            this.endInput.value,
+          )
+        ) {
+          this.endInput.value = "";
+        }
+
+        if (!this.startInput.value) {
+          this.endInput.value = "";
+        }
         return;
       }
 
@@ -1184,6 +1221,13 @@
 
     helperText(date) {
       if (isBlank(date)) {
+        if (
+          !this.restrictToAvailability &&
+          this.startInput.value &&
+          !this.endInput.value
+        ) {
+          return this.pickEndLabel;
+        }
         return this.pickDateFirstLabel;
       }
 

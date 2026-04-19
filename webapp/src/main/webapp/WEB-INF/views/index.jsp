@@ -4,6 +4,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="marketplaceUrl" value="/marketplace" />
+<c:url var="heroImageUrl" value="/img/landing-hero.png" />
 <spring:message code="filters.location" var="locationLabel" />
 <spring:message code="filters.location.placeholder" var="locationPlaceholder" />
 <spring:message code="filters.date" var="dateLabel" />
@@ -24,7 +25,7 @@
       <img
         class="w-full h-full object-cover"
         alt="<spring:message code='landing.hero.imageAlt' />"
-        src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZ5Kqd4fIKaFZvY-voq31ImCLWMzSnpeVGHpeEyaXd8kXtZiSFMnnKueB6HamkvchzGHcdtKloU7aDgr0MGxnoT_9ajOLMji0wPSC7yQ5emqwmkA73GZQCbn35o0UxfJBxyeJdhr-pzL1EEkw8LCF2DcdIJfVaWRcu-RoozLWsJ5ORG87g28BMPR4QUAoyt2LvbzVgTrE-Am1XsXBjgD1E9SEkR7OkE9HuWK0S0ggwcliJWi00H0b6vl-7cuPGDQ0UDBDUBgelxxN5"
+        src="${heroImageUrl}"
       />
       <div
         class="absolute inset-0 bg-gradient-to-b from-on-background/40 via-on-background/10 to-background"

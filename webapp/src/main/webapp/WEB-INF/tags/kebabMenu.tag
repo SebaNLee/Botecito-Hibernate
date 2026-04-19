@@ -8,7 +8,7 @@
 <c:set var="kebabAlignClass" value="${kebabAlignEnd ? 'dropdown-end' : ''}" />
 <c:set var="kebabAriaLabel" value="${not empty ariaLabel ? ariaLabel : 'Actions'}" />
 
-<div class="dropdown ${kebabAlignClass}">
+<div class="dropdown ${kebabAlignClass} relative focus-within:z-[1000]">
   <button
       type="button"
       id="${id}"
@@ -22,7 +22,7 @@
       tabindex="0"
       role="menu"
       aria-labelledby="${id}"
-      class="dropdown-content menu menu-sm z-[20] mt-2 w-52 rounded-box bg-base-100 p-2 shadow">
+      class="dropdown-content menu menu-sm z-[1000] mt-2 w-52 rounded-box bg-base-100 p-2 shadow-xl">
     <jsp:doBody />
   </ul>
 </div>

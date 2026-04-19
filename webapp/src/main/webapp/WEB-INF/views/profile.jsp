@@ -77,7 +77,7 @@
         </div>
       </div>
 
-      <div class="space-y-4">
+      <div id="my-publications" class="scroll-mt-24 space-y-4">
         <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.publications.title" /></h2>
         <c:if test="${param.publishAction == 'deleted'}">
           <paw:alertMessage type="success"><spring:message code="profile.publications.deleted" /></paw:alertMessage>
@@ -134,16 +134,16 @@
                   <li>
                     <c:choose>
                       <c:when test="${item.active}">
-                        <form action="${disableItemUrl}" method="post" class="m-0 p-0">
-                          <button type="submit" class="flex w-full items-center gap-2 text-left">
+                        <form action="${disableItemUrl}" method="post" class="m-0 w-full p-0">
+                          <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left">
                             <span class="material-symbols-outlined text-base leading-none">visibility_off</span>
                             <span><c:out value="${disableLabel}" /></span>
                           </button>
                         </form>
                       </c:when>
                       <c:otherwise>
-                        <form action="${enableItemUrl}" method="post" class="m-0 p-0">
-                          <button type="submit" class="flex w-full items-center gap-2 text-left">
+                        <form action="${enableItemUrl}" method="post" class="m-0 w-full p-0">
+                          <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left">
                             <span class="material-symbols-outlined text-base leading-none">visibility</span>
                             <span><c:out value="${enableLabel}" /></span>
                           </button>
@@ -154,7 +154,7 @@
                   <li>
                     <button
                         type="button"
-                        class="flex w-full items-center gap-2 text-left text-error"
+                        class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-error"
                         onclick="document.getElementById('${deleteModalId}').showModal()">
                       <span class="material-symbols-outlined text-base leading-none">delete</span>
                       <span><c:out value="${deleteLabel}" /></span>
@@ -184,7 +184,7 @@
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="space-y-4">
+        <div id="received-booking-requests" class="scroll-mt-24 space-y-4">
           <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.bookings.title" /></h2>
           <c:if test="${param.bookingAction == 'accepted'}">
             <paw:alertMessage type="success"><spring:message code="profile.bookings.accepted" /></paw:alertMessage>
@@ -195,16 +195,10 @@
           <c:if test="${param.bookingAction == 'forbidden' || param.bookingAction == 'error' || param.bookingAction == 'notFound'}">
             <paw:alertMessage type="error"><spring:message code="profile.bookings.error" /></paw:alertMessage>
           </c:if>
-          <c:if test="${param.paymentAction == 'submitted'}">
-            <paw:alertMessage type="success"><spring:message code="profile.payment.submitted" /></paw:alertMessage>
-          </c:if>
           <c:if test="${param.paymentAction == 'paid'}">
             <paw:alertMessage type="success"><spring:message code="profile.payment.paid" /></paw:alertMessage>
           </c:if>
-          <c:if test="${param.paymentAction == 'invalidFile'}">
-            <paw:alertMessage type="error"><spring:message code="profile.payment.invalidFile" /></paw:alertMessage>
-          </c:if>
-          <c:if test="${param.paymentAction == 'forbidden' || param.paymentAction == 'error'}">
+          <c:if test="${param.paymentAction == 'confirmError'}">
             <paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage>
           </c:if>
           <c:choose>
@@ -268,8 +262,17 @@
           </c:choose>
         </div>
 
-        <div class="space-y-4">
+        <div id="sent-booking-requests" class="scroll-mt-24 space-y-4">
           <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.sentBookings.title" /></h2>
+          <c:if test="${param.paymentAction == 'submitted'}">
+            <paw:alertMessage type="success"><spring:message code="profile.payment.submitted" /></paw:alertMessage>
+          </c:if>
+          <c:if test="${param.paymentAction == 'invalidFile'}">
+            <paw:alertMessage type="error"><spring:message code="profile.payment.invalidFile" /></paw:alertMessage>
+          </c:if>
+          <c:if test="${param.paymentAction == 'forbidden' || param.paymentAction == 'submitError' || param.paymentAction == 'error'}">
+            <paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage>
+          </c:if>
           <c:choose>
             <c:when test="${not empty sentBookingRequests}">
               <c:forEach var="sentRequest" items="${sentBookingRequests}">

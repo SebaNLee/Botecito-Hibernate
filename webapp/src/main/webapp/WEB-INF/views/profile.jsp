@@ -240,7 +240,7 @@
                   <p class="m-0 text-xs text-on-surface-variant"><spring:message code="profile.bookings.requester" arguments="${receivedRequest.requesterName},${receivedRequest.requesterEmail}" /></p>
                   <p class="m-0 text-xs text-on-surface-variant"><spring:message code="profile.sentBookings.window" arguments="${receivedRequest.startTime},${receivedRequest.endTime}" /></p>
                   <c:if test="${receivedRequest.hasPaymentProof}">
-                    <a href="${receivedPaymentProofUrl}" class="link link-hover text-sm font-bold text-primary">
+                    <a href="${receivedPaymentProofUrl}" class="link link-hover block max-w-full break-all text-sm font-bold text-primary">
                       <spring:message code="profile.paymentProofs.view" /> <c:out value="${receivedRequest.paymentProofFileName}" />
                     </a>
                   </c:if>

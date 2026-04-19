@@ -171,10 +171,6 @@ public class AuthController {
                 continue;
             }
 
-            if (item.getOwnerId() != null && item.getOwnerId() == guestId) {
-                continue;
-            }
-
             final User owner = item.getOwnerId() == null
                     ? null
                     : itemService.findUserById(item.getOwnerId()).orElse(null);

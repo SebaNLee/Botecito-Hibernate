@@ -24,6 +24,36 @@
     return (value || "").toString().trim().toLowerCase();
   }
 
+  function openUnavailableAlert(alertRoot) {
+    if (!alertRoot) {
+      return;
+    }
+
+    alertRoot.hidden = false;
+    if (typeof alertRoot.showModal === "function") {
+      if (!alertRoot.open) {
+        alertRoot.showModal();
+      }
+      return;
+    }
+
+    alertRoot.classList.remove("hidden");
+    alertRoot.classList.add("flex");
+  }
+
+  function closeUnavailableAlert(alertRoot) {
+    if (!alertRoot) {
+      return;
+    }
+
+    if (typeof alertRoot.close === "function" && alertRoot.open) {
+      alertRoot.close();
+    }
+    alertRoot.hidden = true;
+    alertRoot.classList.add("hidden");
+    alertRoot.classList.remove("flex");
+  }
+
   function normalizeState(state) {
     const normalized = {};
 
@@ -279,7 +309,29 @@
       this.options = [];
       this.root.__locationPicker = this;
       this.bind();
+      this.bindSubmitToForm();
       this.loadOptions();
+    }
+
+    /** Sync hidden location id before submit; optionally require a selection (publish). */
+    bindSubmitToForm() {
+      const form = this.root.closest("form");
+      if (!form || !this.hiddenInput || !this.queryInput) {
+        return;
+      }
+
+      this._formSubmitListener = (event) => {
+        this.prepareForSubmit();
+        const msg = (this.root.dataset.locationRequiredMessage || "").trim();
+        if (msg && !String(this.hiddenInput.value || "").trim()) {
+          event.preventDefault();
+          this.queryInput.setCustomValidity(msg);
+          this.queryInput.reportValidity();
+          this.queryInput.setCustomValidity("");
+          this.queryInput.focus();
+        }
+      };
+      form.addEventListener("submit", this._formSubmitListener);
     }
 
     bind() {
@@ -641,12 +693,6 @@
     setDateTimeState(form, normalized);
   }
 
-  function prepareFilterForm(form) {
-    form.querySelectorAll("[data-location-picker]").forEach((root) => {
-      root.__locationPicker?.prepareForSubmit();
-    });
-  }
-
   function bindDraftPersistence(form) {
     const persistDraft = () => {
       writeStoredState(DRAFT_FILTERS_KEY, readFilterStateFromForm(form));
@@ -695,7 +741,6 @@
 
     bindDraftPersistence(form);
     form.addEventListener("submit", () => {
-      prepareFilterForm(form);
       const nextState = readFilterStateFromForm(form);
       writeStoredState(DRAFT_FILTERS_KEY, nextState);
       writeStoredState(APPLIED_FILTERS_KEY, nextState);
@@ -728,7 +773,6 @@
     bindDraftPersistence(form);
     bindMarketplaceReset(resetControl);
     form.addEventListener("submit", () => {
-      prepareFilterForm(form);
       const nextState = readFilterStateFromForm(form);
       writeStoredState(DRAFT_FILTERS_KEY, nextState);
       writeStoredState(APPLIED_FILTERS_KEY, nextState);
@@ -835,11 +879,11 @@
           ". " +
           mismatchSuffix;
       }
-      alertRoot.hidden = false;
-      alertRoot.classList.remove("hidden");
-      alertRoot.classList.add("flex");
+      openUnavailableAlert(alertRoot);
       return;
     }
+
+    closeUnavailableAlert(alertRoot);
 
     if (controls && appliedState.date) {
       setDateTimeState(document, appliedState);

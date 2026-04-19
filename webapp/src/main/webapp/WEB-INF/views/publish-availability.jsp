@@ -68,7 +68,9 @@
           <form:errors path="availabilityByWeekday" cssClass="mt-2" element="div" />
           <spring:hasBindErrors name="publishForm">
             <c:forEach var="error" items="${errors.globalErrors}">
-              <paw:alertMessage type="error" cssClass="mt-2" message="${error.defaultMessage}" />
+              <paw:alertMessage type="error" cssClass="mt-2">
+                <spring:message code="${error.codes[0]}" arguments="${error.arguments}" />
+              </paw:alertMessage>
             </c:forEach>
           </spring:hasBindErrors>
 

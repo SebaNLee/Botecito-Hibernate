@@ -3,6 +3,10 @@
 <%@ attribute name="label" required="true" %>
 <%@ attribute name="type" required="false" %>
 <%@ attribute name="placeholder" required="false" %>
+<%@ attribute name="min" required="false" %>
+<%@ attribute name="max" required="false" %>
+<%@ attribute name="step" required="false" %>
+<%@ attribute name="maxlength" required="false" %>
 <%@ attribute name="cssClass" required="false" %>
 <%@ attribute name="containerClass" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
@@ -28,14 +32,58 @@
       />
     </c:when>
     <c:otherwise>
-      <form:input
-          id="${path}"
-          path="${path}"
-          type="${inputType}"
-          cssClass="${inputCssClass}"
-          cssErrorClass="${inputErrorCssClass}"
-          placeholder="${placeholder}"
-      />
+      <c:choose>
+        <c:when test="${inputType == 'number' && not empty min && not empty max}">
+          <form:input
+              id="${path}"
+              path="${path}"
+              type="number"
+              min="${min}"
+              max="${max}"
+              step="${not empty step ? step : '1'}"
+              cssClass="${inputCssClass}"
+              cssErrorClass="${inputErrorCssClass}"
+              placeholder="${placeholder}"
+          />
+        </c:when>
+        <c:when test="${inputType == 'number' && not empty min}">
+          <form:input
+              id="${path}"
+              path="${path}"
+              type="number"
+              min="${min}"
+              step="${not empty step ? step : '1'}"
+              cssClass="${inputCssClass}"
+              cssErrorClass="${inputErrorCssClass}"
+              placeholder="${placeholder}"
+          />
+        </c:when>
+        <c:otherwise>
+          <c:choose>
+            <c:when test="${not empty maxlength}">
+              <form:input
+                  id="${path}"
+                  path="${path}"
+                  type="${inputType}"
+                  maxlength="${maxlength}"
+                  cssClass="${inputCssClass}"
+                  cssErrorClass="${inputErrorCssClass}"
+                  placeholder="${placeholder}"
+              />
+            </c:when>
+            <c:otherwise>
+              <form:input
+                  id="${path}"
+                  path="${path}"
+                  type="${inputType}"
+                  cssClass="${inputCssClass}"
+                  cssErrorClass="${inputErrorCssClass}"
+                  placeholder="${placeholder}"
+              />
+            </c:otherwise>
+          </c:choose>
+        </c:otherwise>
+      </c:choose>
     </c:otherwise>
   </c:choose>
   <form:errors path="${path}" cssClass="text-error text-xs mt-1" element="p" />

@@ -31,3 +31,55 @@ h1, h2, h3, h4, h5, h6 {
         radial-gradient(at 0% 0%, color-mix(in oklab, var(--color-primary) 15%, transparent) 0px, transparent 50%),
         radial-gradient(at 100% 0%, color-mix(in oklab, var(--color-secondary) 10%, transparent) 0px, transparent 50%);
 }
+
+[data-picker-calendar-wrap] {
+    isolation: isolate;
+}
+
+[data-picker-calendar].cally {
+    --color-accent: var(--color-primary);
+    --color-text-on-accent: var(--color-primary-content);
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+}
+
+[data-picker-calendar].cally::part(container) {
+    gap: 0.75rem;
+    padding-inline: 0;
+    justify-content: center;
+    align-items: center;
+}
+
+[data-picker-calendar].cally::part(heading) {
+    font-family: var(--font-headline, 'Manrope', sans-serif);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--color-on-background);
+}
+
+[data-picker-calendar].cally::part(button) {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+}
+
+[data-picker-calendar].cally::part(selected),
+[data-picker-calendar].cally::part(today) {
+    background: var(--color-primary);
+    color: var(--color-primary-content);
+}
+
+[data-picker-calendar].cally::part(available) {
+    background: color-mix(in oklab, var(--color-primary) 10%, var(--color-base-100));
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-primary) 24%, transparent);
+    color: var(--color-on-surface);
+    opacity: 1;
+}
+
+[data-picker-calendar].cally::part(occupied) {
+    background: color-mix(in oklab, var(--color-error) 12%, var(--color-base-100));
+    color: color-mix(in oklab, var(--color-error) 76%, var(--color-on-surface));
+    text-decoration: line-through;
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-error) 18%, transparent);
+    opacity: 1;
+}

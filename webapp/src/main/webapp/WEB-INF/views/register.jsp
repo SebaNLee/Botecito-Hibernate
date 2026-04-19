@@ -32,11 +32,11 @@
         </div>
 
         <spring:hasBindErrors name="registerForm">
-          <c:if test="${not empty errors.globalErrors}">
-            <c:forEach var="error" items="${errors.globalErrors}">
-              <paw:alertMessage type="error" message="${error.defaultMessage}" />
-            </c:forEach>
-          </c:if>
+          <c:forEach var="error" items="${errors.globalErrors}">
+            <paw:alertMessage type="error">
+              <spring:message code="${error.codes[0]}" arguments="${error.arguments}" />
+            </paw:alertMessage>
+          </c:forEach>
         </spring:hasBindErrors>
 
         <form:form action="${registerUrl}" method="post" modelAttribute="registerForm" class="space-y-4">

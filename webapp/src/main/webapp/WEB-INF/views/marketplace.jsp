@@ -97,7 +97,8 @@
                 label="${locationLabel}"
                 value="${param.locationOptionId}"
                 placeholder="${locationPlaceholder}"
-                icon="location_on" />
+                icon="location_on"
+                variant="inline" />
 
             <div class="grid grid-cols-1 gap-4">
               <paw:datePicker
@@ -162,7 +163,7 @@
 
   <section class="relative z-0 min-w-0">
     <div class="mx-auto mb-8 w-full max-w-3xl">
-      <div class="flex items-center gap-3 rounded-full bg-surface-container-lowest px-6 py-4 shadow-[0_24px_40px_rgba(11,28,50,0.06)]">
+      <label class="input input-lg flex items-center gap-3 rounded-full bg-base-100 shadow-sm">
         <span class="material-symbols-outlined text-outline" aria-hidden="true">search</span>
         <input
             id="marketplace-search-query"
@@ -173,8 +174,8 @@
             placeholder="${searchLabel}"
             aria-label="${searchLabel}"
             data-marketplace-search-input
-            class="w-full border-none bg-transparent p-0 text-on-surface placeholder:text-outline outline-none focus:outline-none focus-visible:outline-none focus:ring-0" />
-      </div>
+            class="grow border-none bg-transparent p-0 text-on-surface placeholder:text-outline outline-none focus:outline-none focus-visible:outline-none focus:ring-0" />
+      </label>
     </div>
 
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">

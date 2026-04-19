@@ -47,7 +47,7 @@
         action="${marketplaceUrl}"
         method="get"
         data-filter-form="landing"
-        class="bg-base-100 p-2 md:p-3 rounded-2xl md:rounded-full shadow-xl max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-2"
+        class="bg-base-100/95 backdrop-blur-sm border border-base-200 p-2 md:p-3 rounded-2xl md:rounded-[2rem] shadow-xl max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-2"
       >
         <div class="w-full min-w-0 px-3 py-3 group md:flex-[1.05]">
           <paw:locationPicker
@@ -94,7 +94,6 @@
             id="landing-capacity"
             name="capacity"
             label="${peopleLabel}"
-            icon="groups"
             placeholder="${peoplePlaceholder}"
             allowEmpty="true"
             min="1"

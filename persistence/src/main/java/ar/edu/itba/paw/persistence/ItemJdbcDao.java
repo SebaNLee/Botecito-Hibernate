@@ -315,6 +315,18 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    public List<ItemBooking> listBookingsByOwnerId(final int ownerId) {
+        return jdbcTemplate.query(
+                "SELECT b.*"
+                        + " FROM item_booking b"
+                        + " JOIN item i ON i.id = b.item_id"
+                        + " WHERE i.owner_id = ?"
+                        + " ORDER BY b.created_at DESC, b.id DESC",
+                ITEM_BOOKING_ROW_MAPPER,
+                ownerId);
+    }
+
+    @Override
     public List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId) {
         return jdbcTemplate.query(
                 "SELECT b.*"

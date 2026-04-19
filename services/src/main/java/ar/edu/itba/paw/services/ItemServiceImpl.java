@@ -169,6 +169,11 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public List<ItemBooking> listBookingsByOwnerId(final int ownerId) {
+        return itemDao.listBookingsByOwnerId(ownerId);
+    }
+
+    @Override
     public List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId) {
         return itemDao.listPendingBookingsByOwnerId(ownerId);
     }

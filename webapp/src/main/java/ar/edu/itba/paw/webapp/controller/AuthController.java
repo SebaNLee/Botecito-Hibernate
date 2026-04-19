@@ -118,8 +118,7 @@ public class AuthController {
         final ModelAndView mav = new ModelAndView("profile");
         mav.addObject("user", user);
         mav.addObject("ownedItems", itemService.listItemsByOwnerId(user.getId()));
-        mav.addObject("pendingBookingRequests", buildPendingBookings(user.getId()));
-        mav.addObject("paymentProofRequests", buildPaymentProofRequests(user.getId()));
+        mav.addObject("receivedBookingRequests", buildReceivedBookings(user.getId()));
         mav.addObject("sentBookingRequests", buildSentBookings(user.getId()));
         return mav;
     }
@@ -129,9 +128,9 @@ public class AuthController {
         return new ModelAndView("403");
     }
 
-    private List<PendingBookingView> buildPendingBookings(final int ownerId) {
-        final List<PendingBookingView> pendingBookings = new ArrayList<>();
-        for (final ItemBooking booking : itemService.listPendingBookingsByOwnerId(ownerId)) {
+    private List<ReceivedBookingView> buildReceivedBookings(final int ownerId) {
+        final List<ReceivedBookingView> receivedBookings = new ArrayList<>();
+        for (final ItemBooking booking : itemService.listBookingsByOwnerId(ownerId)) {
             if (booking.getItemId() == null || booking.getId() == null || booking.getGuestId() == null) {
                 continue;
             }
@@ -143,13 +142,21 @@ public class AuthController {
 
             final User requester =
                     itemService.findUserById(booking.getGuestId()).orElse(null);
-            pendingBookings.add(new PendingBookingView(
+            final BookingPaymentProof proof = bookingRequestService
+                    .findPaymentProofByBookingId(booking.getId())
+                    .orElse(null);
+            receivedBookings.add(new ReceivedBookingView(
                     booking.getId(),
                     item.getTitle(),
                     requester == null ? "" : requester.getName(),
-                    requester == null ? "" : requester.getEmail()));
+                    requester == null ? "" : requester.getEmail(),
+                    booking.getStartTime(),
+                    booking.getEndTime(),
+                    statusMessageCode(booking.getState()),
+                    proof != null,
+                    proof == null ? "" : proof.getFileName()));
         }
-        return pendingBookings;
+        return receivedBookings;
     }
 
     private List<SentBookingView> buildSentBookings(final int guestId) {
@@ -161,6 +168,10 @@ public class AuthController {
 
             final Item item = itemService.findItemById(booking.getItemId()).orElse(null);
             if (item == null) {
+                continue;
+            }
+
+            if (item.getOwnerId() != null && item.getOwnerId() == guestId) {
                 continue;
             }
 
@@ -179,33 +190,6 @@ public class AuthController {
         return sentBookings;
     }
 
-    private List<PaymentProofReviewView> buildPaymentProofRequests(final int ownerId) {
-        final List<PaymentProofReviewView> paymentProofRequests = new ArrayList<>();
-        for (final ItemBooking booking : itemService.listPaymentSubmittedBookingsByOwnerId(ownerId)) {
-            if (booking.getItemId() == null || booking.getId() == null || booking.getGuestId() == null) {
-                continue;
-            }
-
-            final Item item = itemService.findItemById(booking.getItemId()).orElse(null);
-            if (item == null) {
-                continue;
-            }
-
-            final User requester =
-                    itemService.findUserById(booking.getGuestId()).orElse(null);
-            final BookingPaymentProof proof = bookingRequestService
-                    .findPaymentProofByBookingId(booking.getId())
-                    .orElse(null);
-            paymentProofRequests.add(new PaymentProofReviewView(
-                    booking.getId(),
-                    item.getTitle(),
-                    requester == null ? "" : requester.getName(),
-                    requester == null ? "" : requester.getEmail(),
-                    proof == null ? "" : proof.getFileName()));
-        }
-        return paymentProofRequests;
-    }
-
     private static String statusMessageCode(final BookingState state) {
         if (state == null) {
             return "profile.sentBookings.status.unknown";
@@ -221,7 +205,16 @@ public class AuthController {
         };
     }
 
-    public record PendingBookingView(int id, String itemTitle, String requesterName, String requesterEmail) {
+    public record ReceivedBookingView(
+            int id,
+            String itemTitle,
+            String requesterName,
+            String requesterEmail,
+            OffsetDateTime startTime,
+            OffsetDateTime endTime,
+            String statusMessageCode,
+            boolean hasPaymentProof,
+            String paymentProofFileName) {
 
         public int getId() {
             return id;
@@ -237,6 +230,30 @@ public class AuthController {
 
         public String getRequesterEmail() {
             return requesterEmail;
+        }
+
+        public OffsetDateTime getStartTime() {
+            return startTime;
+        }
+
+        public OffsetDateTime getEndTime() {
+            return endTime;
+        }
+
+        public String getStatusMessageCode() {
+            return statusMessageCode;
+        }
+
+        public boolean isHasPaymentProof() {
+            return hasPaymentProof;
+        }
+
+        public boolean getHasPaymentProof() {
+            return hasPaymentProof;
+        }
+
+        public String getPaymentProofFileName() {
+            return paymentProofFileName;
         }
     }
 
@@ -275,30 +292,6 @@ public class AuthController {
 
         public String getStatusMessageCode() {
             return statusMessageCode;
-        }
-    }
-
-    public record PaymentProofReviewView(
-            int id, String itemTitle, String requesterName, String requesterEmail, String fileName) {
-
-        public int getId() {
-            return id;
-        }
-
-        public String getItemTitle() {
-            return itemTitle;
-        }
-
-        public String getRequesterName() {
-            return requesterName;
-        }
-
-        public String getRequesterEmail() {
-            return requesterEmail;
-        }
-
-        public String getFileName() {
-            return fileName;
         }
     }
 }

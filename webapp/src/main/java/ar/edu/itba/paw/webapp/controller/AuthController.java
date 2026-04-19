@@ -1,9 +1,13 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.BookingState;
+import ar.edu.itba.paw.models.Item;
+import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.RegisterForm;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import javax.validation.Valid;
@@ -108,6 +112,7 @@ public class AuthController {
         mav.addObject("user", user);
         mav.addObject("ownedItems", itemService.listItemsByOwnerId(user.getId()));
         mav.addObject("pendingBookingRequests", buildPendingBookings(user.getId()));
+        mav.addObject("sentBookingRequests", buildSentBookings(user.getId()));
         return mav;
     }
 
@@ -118,20 +123,18 @@ public class AuthController {
 
     private List<PendingBookingView> buildPendingBookings(final int ownerId) {
         final List<PendingBookingView> pendingBookings = new ArrayList<>();
-        for (final var booking : itemService.listBookings()) {
-            if (booking.getItemId() == null || booking.getId() == null || booking.getHostDecisionToken() == null) {
-                continue;
-            }
-            if (booking.getState() != ar.edu.itba.paw.models.BookingState.BOOKING_PENDING) {
+        for (final ItemBooking booking : itemService.listPendingBookingsByOwnerId(ownerId)) {
+            if (booking.getItemId() == null || booking.getId() == null || booking.getGuestId() == null) {
                 continue;
             }
 
-            final var item = itemService.findItemById(booking.getItemId()).orElse(null);
-            if (item == null || item.getOwnerId() == null || !item.getOwnerId().equals(ownerId)) {
+            final Item item = itemService.findItemById(booking.getItemId()).orElse(null);
+            if (item == null) {
                 continue;
             }
 
-            final var requester = itemService.findUserById(booking.getGuestId()).orElse(null);
+            final User requester =
+                    itemService.findUserById(booking.getGuestId()).orElse(null);
             pendingBookings.add(new PendingBookingView(
                     booking.getId(),
                     item.getTitle(),
@@ -139,6 +142,46 @@ public class AuthController {
                     requester == null ? "" : requester.getEmail()));
         }
         return pendingBookings;
+    }
+
+    private List<SentBookingView> buildSentBookings(final int guestId) {
+        final List<SentBookingView> sentBookings = new ArrayList<>();
+        for (final ItemBooking booking : itemService.listBookingsByGuestId(guestId)) {
+            if (booking.getItemId() == null || booking.getId() == null) {
+                continue;
+            }
+
+            final Item item = itemService.findItemById(booking.getItemId()).orElse(null);
+            if (item == null) {
+                continue;
+            }
+
+            final User owner = item.getOwnerId() == null
+                    ? null
+                    : itemService.findUserById(item.getOwnerId()).orElse(null);
+            sentBookings.add(new SentBookingView(
+                    booking.getId(),
+                    item.getTitle(),
+                    owner == null ? "" : owner.getName(),
+                    owner == null ? "" : owner.getEmail(),
+                    booking.getStartTime(),
+                    booking.getEndTime(),
+                    statusMessageCode(booking.getState())));
+        }
+        return sentBookings;
+    }
+
+    private static String statusMessageCode(final BookingState state) {
+        if (state == null) {
+            return "profile.sentBookings.status.unknown";
+        }
+        return switch (state) {
+            case BOOKING_PENDING -> "profile.sentBookings.status.pending";
+            case BOOKING_CONFIRMED -> "profile.sentBookings.status.confirmed";
+            case BOOKING_REJECTED -> "profile.sentBookings.status.rejected";
+            case BOOKING_CANCELLED -> "profile.sentBookings.status.cancelled";
+            case BOOKING_COMPLETED -> "profile.sentBookings.status.completed";
+        };
     }
 
     public record PendingBookingView(int id, String itemTitle, String requesterName, String requesterEmail) {
@@ -157,6 +200,44 @@ public class AuthController {
 
         public String getRequesterEmail() {
             return requesterEmail;
+        }
+    }
+
+    public record SentBookingView(
+            int id,
+            String itemTitle,
+            String ownerName,
+            String ownerEmail,
+            OffsetDateTime startTime,
+            OffsetDateTime endTime,
+            String statusMessageCode) {
+
+        public int getId() {
+            return id;
+        }
+
+        public String getItemTitle() {
+            return itemTitle;
+        }
+
+        public String getOwnerName() {
+            return ownerName;
+        }
+
+        public String getOwnerEmail() {
+            return ownerEmail;
+        }
+
+        public OffsetDateTime getStartTime() {
+            return startTime;
+        }
+
+        public OffsetDateTime getEndTime() {
+            return endTime;
+        }
+
+        public String getStatusMessageCode() {
+            return statusMessageCode;
         }
     }
 }

@@ -27,7 +27,7 @@
 </c:if>
 <c:set var="initials" value="${fn:toUpperCase(initials)}" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-14 max-w-2xl mx-auto px-6">
+<paw:layout title="Botecito" mainClass="pt-24 pb-14 max-w-4xl mx-auto px-6">
   <div class="card bg-base-100 shadow-sm">
     <div class="card-body p-8 gap-8">
 
@@ -173,40 +173,75 @@
         </c:choose>
       </div>
 
-      <div class="space-y-4">
-        <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.bookings.title" /></h2>
-        <c:if test="${param.bookingAction == 'accepted'}">
-          <paw:alertMessage type="success"><spring:message code="profile.bookings.accepted" /></paw:alertMessage>
-        </c:if>
-        <c:if test="${param.bookingAction == 'rejected'}">
-          <paw:alertMessage type="warning"><spring:message code="profile.bookings.rejected" /></paw:alertMessage>
-        </c:if>
-        <c:if test="${param.bookingAction == 'forbidden' || param.bookingAction == 'error' || param.bookingAction == 'notFound'}">
-          <paw:alertMessage type="error"><spring:message code="profile.bookings.error" /></paw:alertMessage>
-        </c:if>
-        <c:choose>
-          <c:when test="${not empty pendingBookingRequests}">
-            <c:forEach var="request" items="${pendingBookingRequests}">
-              <c:url var="acceptBookingUrl" value="/bookings/${request.id}/accept" />
-              <c:url var="declineBookingUrl" value="/bookings/${request.id}/decline" />
-              <div class="rounded-xl bg-base-200 p-4 space-y-3">
-                <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${request.itemTitle}" /></p>
-                <p class="m-0 text-xs text-on-surface-variant"><spring:message code="profile.bookings.requester" arguments="${request.requesterName},${request.requesterEmail}" /></p>
-                <div class="flex gap-2">
-                  <form action="${acceptBookingUrl}" method="post" class="m-0">
-                    <paw:button type="submit" color="success" size="sm" text="${acceptLabel}" />
-                  </form>
-                  <form action="${declineBookingUrl}" method="post" class="m-0">
-                    <paw:button type="submit" color="danger" variant="outline" size="sm" text="${declineLabel}" />
-                  </form>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="space-y-4">
+          <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.bookings.title" /></h2>
+          <c:if test="${param.bookingAction == 'accepted'}">
+            <paw:alertMessage type="success"><spring:message code="profile.bookings.accepted" /></paw:alertMessage>
+          </c:if>
+          <c:if test="${param.bookingAction == 'rejected'}">
+            <paw:alertMessage type="warning"><spring:message code="profile.bookings.rejected" /></paw:alertMessage>
+          </c:if>
+          <c:if test="${param.bookingAction == 'forbidden' || param.bookingAction == 'error' || param.bookingAction == 'notFound'}">
+            <paw:alertMessage type="error"><spring:message code="profile.bookings.error" /></paw:alertMessage>
+          </c:if>
+          <c:choose>
+            <c:when test="${not empty pendingBookingRequests}">
+              <c:forEach var="receivedRequest" items="${pendingBookingRequests}">
+                <c:url var="acceptBookingUrl" value="/bookings/${receivedRequest.id}/accept" />
+                <c:url var="declineBookingUrl" value="/bookings/${receivedRequest.id}/decline" />
+                <div class="rounded-xl bg-base-200 p-4 space-y-3">
+                  <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${receivedRequest.itemTitle}" /></p>
+                  <p class="m-0 text-xs text-on-surface-variant"><spring:message code="profile.bookings.requester" arguments="${receivedRequest.requesterName},${receivedRequest.requesterEmail}" /></p>
+                  <div class="flex gap-2">
+                    <form action="${acceptBookingUrl}" method="post" class="m-0">
+                      <paw:button type="submit" color="success" size="sm" text="${acceptLabel}" />
+                    </form>
+                    <form action="${declineBookingUrl}" method="post" class="m-0">
+                      <paw:button type="submit" color="danger" variant="outline" size="sm" text="${declineLabel}" />
+                    </form>
+                  </div>
                 </div>
-              </div>
-            </c:forEach>
-          </c:when>
-          <c:otherwise>
-            <p class="m-0 text-sm text-on-surface-variant"><spring:message code="profile.bookings.empty" /></p>
-          </c:otherwise>
-        </c:choose>
+              </c:forEach>
+            </c:when>
+            <c:otherwise>
+              <p class="m-0 text-sm text-on-surface-variant"><spring:message code="profile.bookings.empty" /></p>
+            </c:otherwise>
+          </c:choose>
+        </div>
+
+        <div class="space-y-4">
+          <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.sentBookings.title" /></h2>
+          <c:choose>
+            <c:when test="${not empty sentBookingRequests}">
+              <c:forEach var="sentRequest" items="${sentBookingRequests}">
+                <c:set var="sentStatusClass" value="badge-ghost" />
+                <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.pending'}">
+                  <c:set var="sentStatusClass" value="badge-warning" />
+                </c:if>
+                <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.confirmed'}">
+                  <c:set var="sentStatusClass" value="badge-success" />
+                </c:if>
+                <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.rejected' || sentRequest.statusMessageCode == 'profile.sentBookings.status.cancelled'}">
+                  <c:set var="sentStatusClass" value="badge-error" />
+                </c:if>
+                <div class="rounded-xl bg-base-200 p-4 space-y-2">
+                  <div class="flex items-start justify-between gap-3">
+                    <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${sentRequest.itemTitle}" /></p>
+                    <span class="badge ${sentStatusClass} badge-sm font-bold">
+                      <spring:message code="${sentRequest.statusMessageCode}" />
+                    </span>
+                  </div>
+                  <p class="m-0 text-xs text-on-surface-variant"><spring:message code="profile.sentBookings.owner" arguments="${sentRequest.ownerName},${sentRequest.ownerEmail}" /></p>
+                  <p class="m-0 text-xs text-on-surface-variant"><spring:message code="profile.sentBookings.window" arguments="${sentRequest.startTime},${sentRequest.endTime}" /></p>
+                </div>
+              </c:forEach>
+            </c:when>
+            <c:otherwise>
+              <p class="m-0 text-sm text-on-surface-variant"><spring:message code="profile.sentBookings.empty" /></p>
+            </c:otherwise>
+          </c:choose>
+        </div>
       </div>
 
       <form action="${logoutUrl}" method="post">

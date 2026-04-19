@@ -62,6 +62,10 @@ public interface ItemDao {
 
     List<ItemBooking> listBookingsByItemId(final int itemId);
 
+    List<ItemBooking> listBookingsByGuestId(final int guestId);
+
+    List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId);
+
     Optional<ItemBooking> findBookingByHostDecisionToken(final String hostDecisionToken);
 
     ItemBooking createBookingRequest(

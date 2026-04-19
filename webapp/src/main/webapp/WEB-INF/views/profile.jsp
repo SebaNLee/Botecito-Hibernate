@@ -7,6 +7,7 @@
 <c:url var="logoutUrl" value="/logout" />
 <spring:message code="profile.logout" var="logoutLabel" />
 <spring:message code="profile.publications.edit" var="editLabel" />
+<spring:message code="profile.publications.manageAvailability" var="manageAvailabilityLabel" />
 <spring:message code="profile.publications.enable" var="enableLabel" />
 <spring:message code="profile.publications.disable" var="disableLabel" />
 <spring:message code="profile.publications.delete" var="deleteLabel" />
@@ -98,6 +99,7 @@
           <c:when test="${not empty ownedItems}">
             <c:forEach var="item" items="${ownedItems}">
               <c:url var="editItemUrl" value="/profile/item/${item.id}/edit" />
+              <c:url var="manageAvailabilityItemUrl" value="/profile/item/${item.id}/availability" />
               <c:url var="disableItemUrl" value="/profile/item/${item.id}/disable" />
               <c:url var="enableItemUrl" value="/profile/item/${item.id}/enable" />
               <c:url var="deleteItemUrl" value="/profile/item/${item.id}/delete" />
@@ -119,6 +121,12 @@
                     <a href="${editItemUrl}" class="flex items-center gap-2">
                       <span class="material-symbols-outlined text-base leading-none">edit</span>
                       <span><c:out value="${editLabel}" /></span>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="${manageAvailabilityItemUrl}" class="flex items-center gap-2">
+                      <span class="material-symbols-outlined text-base leading-none">event_available</span>
+                      <span><c:out value="${manageAvailabilityLabel}" /></span>
                     </a>
                   </li>
                   <li>

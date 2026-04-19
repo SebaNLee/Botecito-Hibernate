@@ -1,7 +1,9 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
+import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
@@ -51,6 +53,58 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             return Optional.empty();
         }
         return findByToken(token);
+    }
+
+    @Override
+    public Optional<BookingPaymentProof> submitPaymentProof(
+            final int bookingId,
+            final int requesterId,
+            final String fileName,
+            final String contentType,
+            final byte[] fileData) {
+        final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
+        if (booking.isEmpty()
+                || booking.get().getGuestId() == null
+                || booking.get().getGuestId() != requesterId
+                || !canSubmitPaymentProof(booking.get().getState())
+                || itemDao.findPaymentProofByBookingId(bookingId).isPresent()) {
+            return Optional.empty();
+        }
+
+        if (booking.get().getState() == BookingState.BOOKING_CONFIRMED
+                && !itemDao.markBookingPaymentSubmitted(bookingId, requesterId)) {
+            return Optional.empty();
+        }
+        return Optional.of(itemDao.createPaymentProof(bookingId, requesterId, fileName, contentType, fileData));
+    }
+
+    @Override
+    public Optional<BookingRequest> confirmPaymentReceived(final int bookingId, final int ownerId) {
+        final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
+        if (booking.isEmpty()
+                || booking.get().getItemId() == null
+                || booking.get().getHostDecisionToken() == null
+                || booking.get().getState() != BookingState.BOOKING_PAYMENT_SUBMITTED
+                || itemDao.findPaymentProofByBookingId(bookingId).isEmpty()) {
+            return Optional.empty();
+        }
+
+        final Optional<Item> item = itemDao.findItemById(booking.get().getItemId());
+        if (item.isEmpty()
+                || item.get().getOwnerId() == null
+                || !item.get().getOwnerId().equals(ownerId)) {
+            return Optional.empty();
+        }
+
+        if (!itemDao.markBookingPaid(bookingId, ownerId)) {
+            return Optional.empty();
+        }
+        return itemDao.findBookingById(bookingId).flatMap(this::toBookingRequest);
+    }
+
+    @Override
+    public Optional<BookingPaymentProof> findPaymentProofByBookingId(final int bookingId) {
+        return itemDao.findPaymentProofByBookingId(bookingId);
     }
 
     private User resolveOrCreateRequesterUser(
@@ -112,6 +166,10 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             return fallback;
         }
         return value.trim();
+    }
+
+    private static boolean canSubmitPaymentProof(final BookingState state) {
+        return state == BookingState.BOOKING_CONFIRMED || state == BookingState.BOOKING_PAYMENT_SUBMITTED;
     }
 
     private static String normalizePreferredLanguage(final String preferredLanguage) {

@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
@@ -109,6 +110,19 @@ public class ItemJdbcDao implements ItemDao {
         booking.setUpdatedAt(formatDateTime(readOffsetDateTime(rs, "updated_at")));
         return booking;
     };
+
+    private static final @NonNull RowMapper<BookingPaymentProof> BOOKING_PAYMENT_PROOF_ROW_MAPPER =
+            (ResultSet rs, int rowNum) -> {
+                final BookingPaymentProof proof = new BookingPaymentProof();
+                proof.setId(rs.getInt("id"));
+                proof.setBookingId(rs.getInt("booking_id"));
+                proof.setUploaderId(rs.getInt("uploader_id"));
+                proof.setFileName(rs.getString("file_name"));
+                proof.setContentType(rs.getString("content_type"));
+                proof.setFileData(rs.getBytes("file_data"));
+                proof.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
+                return proof;
+            };
 
     private final @NonNull JdbcTemplate jdbcTemplate;
 
@@ -301,6 +315,18 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    public List<ItemBooking> listBookingsByOwnerId(final int ownerId) {
+        return jdbcTemplate.query(
+                "SELECT b.*"
+                        + " FROM item_booking b"
+                        + " JOIN item i ON i.id = b.item_id"
+                        + " WHERE i.owner_id = ?"
+                        + " ORDER BY b.created_at DESC, b.id DESC",
+                ITEM_BOOKING_ROW_MAPPER,
+                ownerId);
+    }
+
+    @Override
     public List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId) {
         return jdbcTemplate.query(
                 "SELECT b.*"
@@ -313,12 +339,32 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    public List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId) {
+        return jdbcTemplate.query(
+                "SELECT b.*"
+                        + " FROM item_booking b"
+                        + " JOIN item i ON i.id = b.item_id"
+                        + " WHERE i.owner_id = ? AND b.state = 'BOOKING_PAYMENT_SUBMITTED'"
+                        + " ORDER BY b.created_at DESC, b.id DESC",
+                ITEM_BOOKING_ROW_MAPPER,
+                ownerId);
+    }
+
+    @Override
     public Optional<ItemBooking> findBookingByHostDecisionToken(final String hostDecisionToken) {
         return jdbcTemplate
                 .query(
                         "SELECT * FROM item_booking WHERE host_decision_token = ?",
                         ITEM_BOOKING_ROW_MAPPER,
                         hostDecisionToken)
+                .stream()
+                .findAny();
+    }
+
+    @Override
+    public Optional<ItemBooking> findBookingById(final int bookingId) {
+        return jdbcTemplate
+                .query("SELECT * FROM item_booking WHERE id = ?", ITEM_BOOKING_ROW_MAPPER, bookingId)
                 .stream()
                 .findAny();
     }
@@ -366,6 +412,75 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    public BookingPaymentProof createPaymentProof(
+            final int bookingId,
+            final int uploaderId,
+            final String fileName,
+            final String contentType,
+            final byte[] fileData) {
+        final int id = Objects.requireNonNull(
+                jdbcTemplate.queryForObject(
+                        "INSERT INTO booking_payment_proof"
+                                + " (booking_id, uploader_id, file_name, content_type, file_data)"
+                                + " VALUES (?, ?, ?, ?, ?)"
+                                + " RETURNING id",
+                        Integer.class,
+                        bookingId,
+                        uploaderId,
+                        fileName,
+                        contentType,
+                        fileData),
+                "Could not create payment proof for booking " + bookingId);
+        return findPaymentProofById(id)
+                .orElseThrow(() -> new IllegalStateException("Could not read inserted payment proof " + id));
+    }
+
+    @Override
+    public Optional<BookingPaymentProof> findPaymentProofByBookingId(final int bookingId) {
+        return jdbcTemplate
+                .query(
+                        "SELECT * FROM booking_payment_proof WHERE booking_id = ? ORDER BY id DESC LIMIT 1",
+                        BOOKING_PAYMENT_PROOF_ROW_MAPPER,
+                        bookingId)
+                .stream()
+                .findAny();
+    }
+
+    @Override
+    public Optional<BookingPaymentProof> findPaymentProofById(final int proofId) {
+        return jdbcTemplate
+                .query("SELECT * FROM booking_payment_proof WHERE id = ?", BOOKING_PAYMENT_PROOF_ROW_MAPPER, proofId)
+                .stream()
+                .findAny();
+    }
+
+    @Override
+    public boolean markBookingPaymentSubmitted(final int bookingId, final int guestId) {
+        final int updatedRows = jdbcTemplate.update(
+                "UPDATE item_booking"
+                        + " SET state = 'BOOKING_PAYMENT_SUBMITTED', updated_at = CURRENT_TIMESTAMP"
+                        + " WHERE id = ? AND guest_id = ? AND state = 'BOOKING_CONFIRMED'",
+                bookingId,
+                guestId);
+        return updatedRows > 0;
+    }
+
+    @Override
+    public boolean markBookingPaid(final int bookingId, final int ownerId) {
+        final int updatedRows = jdbcTemplate.update(
+                "UPDATE item_booking b"
+                        + " SET state = 'BOOKING_PAID', updated_at = CURRENT_TIMESTAMP"
+                        + " FROM item i"
+                        + " WHERE b.item_id = i.id"
+                        + " AND b.id = ?"
+                        + " AND i.owner_id = ?"
+                        + " AND b.state = 'BOOKING_PAYMENT_SUBMITTED'",
+                bookingId,
+                ownerId);
+        return updatedRows > 0;
+    }
+
+    @Override
     public Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId) {
         return jdbcTemplate
                 .query(
@@ -404,13 +519,6 @@ public class ItemJdbcDao implements ItemDao {
                 Timestamp.from(ownerDeleteUsedAt.toInstant()),
                 ownerDeleteToken);
         return updatedRows > 0;
-    }
-
-    private Optional<ItemBooking> findBookingById(final int bookingId) {
-        return jdbcTemplate
-                .query("SELECT * FROM item_booking WHERE id = ?", ITEM_BOOKING_ROW_MAPPER, bookingId)
-                .stream()
-                .findAny();
     }
 
     @Override

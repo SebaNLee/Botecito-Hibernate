@@ -247,7 +247,9 @@ final class AvailabilityPickerSupport {
             return true;
         }
         return booking.getState() == BookingState.BOOKING_PENDING
-                || booking.getState() == BookingState.BOOKING_CONFIRMED;
+                || booking.getState() == BookingState.BOOKING_CONFIRMED
+                || booking.getState() == BookingState.BOOKING_PAYMENT_SUBMITTED
+                || booking.getState() == BookingState.BOOKING_PAID;
     }
 
     private static void addTimeRange(

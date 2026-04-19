@@ -1,16 +1,21 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.RegisterForm;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import javax.validation.Valid;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,10 +32,15 @@ public class AuthController {
 
     private final UserService userService;
     private final ItemService itemService;
+    private final BookingRequestService bookingRequestService;
 
-    public AuthController(final UserService userService, final ItemService itemService) {
+    public AuthController(
+            final UserService userService,
+            final ItemService itemService,
+            final BookingRequestService bookingRequestService) {
         this.userService = userService;
         this.itemService = itemService;
+        this.bookingRequestService = bookingRequestService;
     }
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
@@ -111,7 +121,7 @@ public class AuthController {
         final ModelAndView mav = new ModelAndView("profile");
         mav.addObject("user", user);
         mav.addObject("ownedItems", itemService.listItemsByOwnerId(user.getId()));
-        mav.addObject("pendingBookingRequests", buildPendingBookings(user.getId()));
+        mav.addObject("receivedBookingRequests", buildReceivedBookings(user.getId()));
         mav.addObject("sentBookingRequests", buildSentBookings(user.getId()));
         return mav;
     }
@@ -121,9 +131,9 @@ public class AuthController {
         return new ModelAndView("403");
     }
 
-    private List<PendingBookingView> buildPendingBookings(final int ownerId) {
-        final List<PendingBookingView> pendingBookings = new ArrayList<>();
-        for (final ItemBooking booking : itemService.listPendingBookingsByOwnerId(ownerId)) {
+    private List<ReceivedBookingView> buildReceivedBookings(final int ownerId) {
+        final List<ReceivedBookingView> receivedBookings = new ArrayList<>();
+        for (final ItemBooking booking : itemService.listBookingsByOwnerId(ownerId)) {
             if (booking.getItemId() == null || booking.getId() == null || booking.getGuestId() == null) {
                 continue;
             }
@@ -135,13 +145,22 @@ public class AuthController {
 
             final User requester =
                     itemService.findUserById(booking.getGuestId()).orElse(null);
-            pendingBookings.add(new PendingBookingView(
+            receivedBookings.add(new ReceivedBookingView(
                     booking.getId(),
                     item.getTitle(),
                     requester == null ? "" : requester.getName(),
-                    requester == null ? "" : requester.getEmail()));
+                    requester == null ? "" : requester.getEmail(),
+                    booking.getStartTime(),
+                    booking.getEndTime(),
+                    formatDateLabel(booking.getStartTime()),
+                    formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
+                    statusMessageCode(booking.getState()),
+                    bookingRequestService
+                            .findPaymentProofByBookingId(booking.getId())
+                            .map(BookingPaymentProof::getFileName)
+                            .orElse("")));
         }
-        return pendingBookings;
+        return receivedBookings;
     }
 
     private List<SentBookingView> buildSentBookings(final int guestId) {
@@ -166,9 +185,27 @@ public class AuthController {
                     owner == null ? "" : owner.getEmail(),
                     booking.getStartTime(),
                     booking.getEndTime(),
+                    formatDateLabel(booking.getStartTime()),
+                    formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
                     statusMessageCode(booking.getState())));
         }
         return sentBookings;
+    }
+
+    private static String formatDateLabel(final OffsetDateTime dateTime) {
+        if (dateTime == null) {
+            return "";
+        }
+        final Locale locale = LocaleContextHolder.getLocale();
+        return dateTime.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale));
+    }
+
+    private static String formatTimeRangeLabel(final OffsetDateTime startTime, final OffsetDateTime endTime) {
+        if (startTime == null || endTime == null) {
+            return "";
+        }
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+        return startTime.format(formatter) + " - " + endTime.format(formatter);
     }
 
     private static String statusMessageCode(final BookingState state) {
@@ -181,10 +218,22 @@ public class AuthController {
             case BOOKING_REJECTED -> "profile.sentBookings.status.rejected";
             case BOOKING_CANCELLED -> "profile.sentBookings.status.cancelled";
             case BOOKING_COMPLETED -> "profile.sentBookings.status.completed";
+            case BOOKING_PAYMENT_SUBMITTED -> "profile.sentBookings.status.paymentSubmitted";
+            case BOOKING_PAID -> "profile.sentBookings.status.paid";
         };
     }
 
-    public record PendingBookingView(int id, String itemTitle, String requesterName, String requesterEmail) {
+    public record ReceivedBookingView(
+            int id,
+            String itemTitle,
+            String requesterName,
+            String requesterEmail,
+            OffsetDateTime startTime,
+            OffsetDateTime endTime,
+            String dateLabel,
+            String timeRangeLabel,
+            String statusMessageCode,
+            String paymentProofFileName) {
 
         public int getId() {
             return id;
@@ -201,6 +250,38 @@ public class AuthController {
         public String getRequesterEmail() {
             return requesterEmail;
         }
+
+        public OffsetDateTime getStartTime() {
+            return startTime;
+        }
+
+        public OffsetDateTime getEndTime() {
+            return endTime;
+        }
+
+        public String getDateLabel() {
+            return dateLabel;
+        }
+
+        public String getTimeRangeLabel() {
+            return timeRangeLabel;
+        }
+
+        public String getStatusMessageCode() {
+            return statusMessageCode;
+        }
+
+        public boolean isHasPaymentProof() {
+            return paymentProofFileName != null && !paymentProofFileName.isBlank();
+        }
+
+        public boolean getHasPaymentProof() {
+            return isHasPaymentProof();
+        }
+
+        public String getPaymentProofFileName() {
+            return paymentProofFileName;
+        }
     }
 
     public record SentBookingView(
@@ -210,6 +291,8 @@ public class AuthController {
             String ownerEmail,
             OffsetDateTime startTime,
             OffsetDateTime endTime,
+            String dateLabel,
+            String timeRangeLabel,
             String statusMessageCode) {
 
         public int getId() {
@@ -234,6 +317,14 @@ public class AuthController {
 
         public OffsetDateTime getEndTime() {
             return endTime;
+        }
+
+        public String getDateLabel() {
+            return dateLabel;
+        }
+
+        public String getTimeRangeLabel() {
+            return timeRangeLabel;
         }
 
         public String getStatusMessageCode() {

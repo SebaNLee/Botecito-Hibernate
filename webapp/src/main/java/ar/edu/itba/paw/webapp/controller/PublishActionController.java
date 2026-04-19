@@ -109,7 +109,7 @@ public class PublishActionController {
         // starts with "image/" before touching bytes.
         // if (form.getFile() != null && !form.getFile().isEmpty()) { ... }
 
-        return new ModelAndView("redirect:/profile?publishAction=updated");
+        return new ModelAndView("redirect:/profile?publishAction=updated#my-publications");
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/disable", method = RequestMethod.POST)
@@ -121,14 +121,14 @@ public class PublishActionController {
 
         final Item item = itemService.findItemById(itemId).orElse(null);
         if (item == null || item.getOwnerId() == null || !item.getOwnerId().equals(currentUser.getId())) {
-            return new ModelAndView("redirect:/profile?publishAction=forbidden");
+            return new ModelAndView("redirect:/profile?publishAction=forbidden#my-publications");
         }
 
         // BACKEND: call itemService.setItemActive(itemId, false) (new method) to
         // flip `item.active` to FALSE without consuming the legacy owner-delete
         // token, so enabling afterwards is still possible.
 
-        return new ModelAndView("redirect:/profile?publishAction=disabled");
+        return new ModelAndView("redirect:/profile?publishAction=disabled#my-publications");
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/enable", method = RequestMethod.POST)
@@ -140,7 +140,7 @@ public class PublishActionController {
 
         final Item item = itemService.findItemById(itemId).orElse(null);
         if (item == null || item.getOwnerId() == null || !item.getOwnerId().equals(currentUser.getId())) {
-            return new ModelAndView("redirect:/profile?publishAction=forbidden");
+            return new ModelAndView("redirect:/profile?publishAction=forbidden#my-publications");
         }
 
         // BACKEND: call itemService.setItemActive(itemId, true) (new method) to
@@ -148,7 +148,7 @@ public class PublishActionController {
         // activateItemByOwnerDeleteToken(token) requires a one-time token and is
         // not appropriate here.
 
-        return new ModelAndView("redirect:/profile?publishAction=enabled");
+        return new ModelAndView("redirect:/profile?publishAction=enabled#my-publications");
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/delete", method = RequestMethod.POST)
@@ -160,7 +160,7 @@ public class PublishActionController {
 
         final Item item = itemService.findItemById(itemId).orElse(null);
         if (item == null || item.getOwnerId() == null || !item.getOwnerId().equals(currentUser.getId())) {
-            return new ModelAndView("redirect:/profile?publishAction=forbidden");
+            return new ModelAndView("redirect:/profile?publishAction=forbidden#my-publications");
         }
 
         // BACKEND: call itemService.deleteItemById(itemId) (new method) which
@@ -168,7 +168,7 @@ public class PublishActionController {
         // ON DELETE CASCADE, but `item_booking` does NOT — decide whether to
         // cascade, block deletion when bookings exist, or null-out the FK.
 
-        return new ModelAndView("redirect:/profile?publishAction=deleted");
+        return new ModelAndView("redirect:/profile?publishAction=deleted#my-publications");
     }
 
     private User currentAuthenticatedUser() {

@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title th:text="#{mail.paymentReceived.title}">Payment confirmed</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f6f8fb; font-family:Arial, sans-serif; color:#202124;">
+  <div style="max-width:600px; margin:0 auto; padding:32px 16px;">
+    <div style="background:#ffffff; border-radius:12px; padding:28px; box-shadow:0 8px 24px rgba(15,23,42,0.08);">
+      <p style="margin:0 0 8px; font-size:13px; font-weight:700; color:#005da7;" th:text="#{mail.paymentReceived.badge}">Payment confirmed</p>
+      <h1 style="margin:0 0 16px; font-size:24px; line-height:1.25;" th:text="#{mail.paymentReceived.heading}">Payment received</h1>
+      <p style="margin:0 0 20px; font-size:15px; line-height:1.6;"
+         th:text="#{mail.paymentReceived.body(${itemTitle})}">
+        The owner confirmed your payment.
+      </p>
+      <a th:href="${profileUrl}"
+         style="display:inline-block; padding:12px 24px; border-radius:9999px; background:#005da7; color:#ffffff; text-decoration:none; font-size:14px; font-weight:700;"
+         th:text="#{mail.paymentReceived.action}">Go to my account</a>
+    </div>
+  </div>
+</body>
+</html>

@@ -10,9 +10,12 @@ import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.RegisterForm;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import javax.validation.Valid;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -142,9 +145,6 @@ public class AuthController {
 
             final User requester =
                     itemService.findUserById(booking.getGuestId()).orElse(null);
-            final BookingPaymentProof proof = bookingRequestService
-                    .findPaymentProofByBookingId(booking.getId())
-                    .orElse(null);
             receivedBookings.add(new ReceivedBookingView(
                     booking.getId(),
                     item.getTitle(),
@@ -152,9 +152,13 @@ public class AuthController {
                     requester == null ? "" : requester.getEmail(),
                     booking.getStartTime(),
                     booking.getEndTime(),
+                    formatDateLabel(booking.getStartTime()),
+                    formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
                     statusMessageCode(booking.getState()),
-                    proof != null,
-                    proof == null ? "" : proof.getFileName()));
+                    bookingRequestService
+                            .findPaymentProofByBookingId(booking.getId())
+                            .map(BookingPaymentProof::getFileName)
+                            .orElse("")));
         }
         return receivedBookings;
     }
@@ -181,9 +185,27 @@ public class AuthController {
                     owner == null ? "" : owner.getEmail(),
                     booking.getStartTime(),
                     booking.getEndTime(),
+                    formatDateLabel(booking.getStartTime()),
+                    formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
                     statusMessageCode(booking.getState())));
         }
         return sentBookings;
+    }
+
+    private static String formatDateLabel(final OffsetDateTime dateTime) {
+        if (dateTime == null) {
+            return "";
+        }
+        final Locale locale = LocaleContextHolder.getLocale();
+        return dateTime.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale));
+    }
+
+    private static String formatTimeRangeLabel(final OffsetDateTime startTime, final OffsetDateTime endTime) {
+        if (startTime == null || endTime == null) {
+            return "";
+        }
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
+        return startTime.format(formatter) + " - " + endTime.format(formatter);
     }
 
     private static String statusMessageCode(final BookingState state) {
@@ -208,8 +230,9 @@ public class AuthController {
             String requesterEmail,
             OffsetDateTime startTime,
             OffsetDateTime endTime,
+            String dateLabel,
+            String timeRangeLabel,
             String statusMessageCode,
-            boolean hasPaymentProof,
             String paymentProofFileName) {
 
         public int getId() {
@@ -236,16 +259,24 @@ public class AuthController {
             return endTime;
         }
 
+        public String getDateLabel() {
+            return dateLabel;
+        }
+
+        public String getTimeRangeLabel() {
+            return timeRangeLabel;
+        }
+
         public String getStatusMessageCode() {
             return statusMessageCode;
         }
 
         public boolean isHasPaymentProof() {
-            return hasPaymentProof;
+            return paymentProofFileName != null && !paymentProofFileName.isBlank();
         }
 
         public boolean getHasPaymentProof() {
-            return hasPaymentProof;
+            return isHasPaymentProof();
         }
 
         public String getPaymentProofFileName() {
@@ -260,6 +291,8 @@ public class AuthController {
             String ownerEmail,
             OffsetDateTime startTime,
             OffsetDateTime endTime,
+            String dateLabel,
+            String timeRangeLabel,
             String statusMessageCode) {
 
         public int getId() {
@@ -284,6 +317,14 @@ public class AuthController {
 
         public OffsetDateTime getEndTime() {
             return endTime;
+        }
+
+        public String getDateLabel() {
+            return dateLabel;
+        }
+
+        public String getTimeRangeLabel() {
+            return timeRangeLabel;
         }
 
         public String getStatusMessageCode() {

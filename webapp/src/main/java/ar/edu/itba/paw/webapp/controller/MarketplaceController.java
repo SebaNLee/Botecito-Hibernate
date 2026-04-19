@@ -7,6 +7,7 @@ import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
+import ar.edu.itba.paw.services.DisabledTimeSlotService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.Page;
@@ -49,17 +50,20 @@ public class MarketplaceController {
     private final MailService mailService;
     private final BookingRequestService bookingRequestService;
     private final UserService userService;
+    private final DisabledTimeSlotService disabledTimeSlotService;
 
     @Autowired
     public MarketplaceController(
             final ItemService itemService,
             final MailService mailService,
             final BookingRequestService bookingRequestService,
-            final UserService userService) {
+            final UserService userService,
+            final DisabledTimeSlotService disabledTimeSlotService) {
         this.itemService = itemService;
         this.mailService = mailService;
         this.bookingRequestService = bookingRequestService;
         this.userService = userService;
+        this.disabledTimeSlotService = disabledTimeSlotService;
     }
 
     @ModelAttribute("reservationRequestForm")
@@ -103,7 +107,9 @@ public class MarketplaceController {
                 mav,
                 "search",
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilities(), itemService.listBookings()));
+                        itemService.listAvailabilities(),
+                        itemService.listBookings(),
+                        disabledTimeSlotService.listAll()));
         return mav;
     }
 
@@ -198,7 +204,9 @@ public class MarketplaceController {
                 itemService.findItemTypeById(item.get().getTypeId());
         final AvailabilityPickerSupport.AvailabilityPickerData reservationAvailability =
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
+                        itemService.listAvailabilitiesByItemId(itemId),
+                        itemService.listBookingsByItemId(itemId),
+                        disabledTimeSlotService.listByItem(itemId));
         final List<String> offeredDates = reservationAvailability.getOfferedDates();
         final Map<String, List<String>> offeredTimesByDate = reservationAvailability.getOfferedTimesByDate();
         final ModelAndView mav = new ModelAndView("marketplace-item");
@@ -342,7 +350,9 @@ public class MarketplaceController {
 
         final AvailabilityPickerSupport.AvailabilityPickerData availabilityData =
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
+                        itemService.listAvailabilitiesByItemId(itemId),
+                        itemService.listBookingsByItemId(itemId),
+                        disabledTimeSlotService.listByItem(itemId));
         final List<String> availableTimes =
                 availabilityData.getOfferedTimesByDate().get(requestedDate);
 

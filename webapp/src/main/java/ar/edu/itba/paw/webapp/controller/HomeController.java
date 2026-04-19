@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.services.DisabledTimeSlotService;
 import ar.edu.itba.paw.services.ItemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -11,10 +12,12 @@ import org.springframework.web.servlet.ModelAndView;
 public class HomeController {
 
     private final ItemService itemService;
+    private final DisabledTimeSlotService disabledTimeSlotService;
 
     @Autowired
-    public HomeController(final ItemService itemService) {
+    public HomeController(final ItemService itemService, final DisabledTimeSlotService disabledTimeSlotService) {
         this.itemService = itemService;
+        this.disabledTimeSlotService = disabledTimeSlotService;
     }
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
@@ -24,7 +27,9 @@ public class HomeController {
                 mav,
                 "search",
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilities(), itemService.listBookings()));
+                        itemService.listAvailabilities(),
+                        itemService.listBookings(),
+                        disabledTimeSlotService.listAll()));
         return mav;
     }
 }

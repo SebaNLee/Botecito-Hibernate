@@ -54,6 +54,18 @@
       enctype="multipart/form-data"
       cssClass="space-y-8">
 
+    <spring:hasBindErrors name="editForm">
+      <c:if test="${not empty errors.globalErrors}">
+        <c:forEach var="error" items="${errors.globalErrors}">
+          <spring:message
+              code="${error.code}"
+              text="${not empty error.defaultMessage ? error.defaultMessage : error.code}"
+              var="resolvedGlobalError" />
+          <paw:alertMessage type="error" message="${resolvedGlobalError}" />
+        </c:forEach>
+      </c:if>
+    </spring:hasBindErrors>
+
     <paw:sectionCard icon="edit">
       <jsp:attribute name="title"><spring:message code="editPublication.title" /></jsp:attribute>
       <jsp:body>

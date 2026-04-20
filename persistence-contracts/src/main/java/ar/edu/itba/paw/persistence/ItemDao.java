@@ -42,6 +42,16 @@ public interface ItemDao {
 
     Optional<ItemType> findItemTypeById(final int id);
 
+    boolean updatePublication(
+            int itemId,
+            String title,
+            String description,
+            int pricePerHour,
+            Integer difficultyLevel,
+            int locationOptionId);
+
+    boolean hasBlockingBookingsForEdition(int itemId);
+
     Item createItem(
             final int ownerId,
             final int typeId,
@@ -126,4 +136,6 @@ public interface ItemDao {
             final int itemId, final DayOfWeek weekday, final LocalTime startTime, final LocalTime endTime);
 
     Integer insertImage(final int itemId, final byte[] imageData);
+
+    Integer replacePrimaryImage(final int itemId, final byte[] imageData);
 }

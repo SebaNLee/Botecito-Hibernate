@@ -89,6 +89,22 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public boolean updatePublication(
+            final int itemId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final Integer difficultyLevel,
+            final int locationOptionId) {
+        return itemDao.updatePublication(itemId, title, description, pricePerHour, difficultyLevel, locationOptionId);
+    }
+
+    @Override
+    public boolean hasBlockingBookingsForEdition(final int itemId) {
+        return itemDao.hasBlockingBookingsForEdition(itemId);
+    }
+
+    @Override
     public Item createPublication(
             final String ownerGivenName,
             final String ownerLastName,
@@ -196,6 +212,11 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     public Integer insertImage(final int itemId, final byte[] imageData) {
         return itemDao.insertImage(itemId, imageData);
+    }
+
+    @Override
+    public Integer replacePrimaryImage(final int itemId, final byte[] imageData) {
+        return itemDao.replacePrimaryImage(itemId, imageData);
     }
 
     private User resolveOrCreateOwner(

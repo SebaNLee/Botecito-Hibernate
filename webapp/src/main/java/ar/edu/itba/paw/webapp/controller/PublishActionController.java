@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.EditPublicationForm;
+import java.io.IOException;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
@@ -37,24 +39,25 @@ public class PublishActionController {
             return new ModelAndView("redirect:/login");
         }
 
-        final Item item = itemService.findItemById(itemId).orElse(null);
-        if (item == null || item.getOwnerId() == null || !item.getOwnerId().equals(currentUser.getId())) {
+        final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
+        if (item.isEmpty()) {
             return new ModelAndView("redirect:/profile?publishAction=forbidden");
         }
 
         final EditPublicationForm form = new EditPublicationForm();
-        form.setTitle(item.getTitle());
-        form.setDescription(item.getDescription());
-        form.setPricePerHour(item.getPricePerHour() == null ? "" : String.valueOf(item.getPricePerHour()));
-        form.setDifficultyLevel(item.getDifficultyLevel());
-        form.setMarina(item.getLocationOptionId() == null ? "" : String.valueOf(item.getLocationOptionId()));
+        form.setTitle(item.get().getTitle());
+        form.setDescription(item.get().getDescription());
+        form.setPricePerHour(
+                item.get().getPricePerHour() == null
+                        ? ""
+                        : String.valueOf(item.get().getPricePerHour()));
+        form.setDifficultyLevel(item.get().getDifficultyLevel());
+        form.setMarina(
+                item.get().getLocationOptionId() == null
+                        ? ""
+                        : String.valueOf(item.get().getLocationOptionId()));
 
-        final ModelAndView mav = new ModelAndView("edit-publication");
-        mav.addObject("editForm", form);
-        mav.addObject("item", item);
-        mav.addObject(
-                "itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId(), request.getContextPath()));
-        return mav;
+        return editPublicationModelAndView(item.get(), request).addObject("editForm", form);
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/edit", method = RequestMethod.POST)
@@ -68,37 +71,55 @@ public class PublishActionController {
             return new ModelAndView("redirect:/login");
         }
 
-        final Item item = itemService.findItemById(itemId).orElse(null);
-        if (item == null || item.getOwnerId() == null || !item.getOwnerId().equals(currentUser.getId())) {
+        final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
+        if (item.isEmpty()) {
             return new ModelAndView("redirect:/profile?publishAction=forbidden");
         }
 
-        if (errors.hasErrors()) {
-            final ModelAndView mav = new ModelAndView("edit-publication");
-            mav.addObject("item", item);
-            mav.addObject(
-                    "itemImageUrl",
-                    ItemImageUtils.resolveImageUrl(itemService, item.getId(), request.getContextPath()));
-            return mav;
+        validateUploadedImage(form.getFile(), errors);
+        final Integer parsedPrice =
+                parseIntegerField(form.getPricePerHour(), "pricePerHour", "publish.validation.price.numeric", errors);
+        final Integer parsedLocationOptionId =
+                parseIntegerField(form.getMarina(), "marina", "publish.validation.location.invalid", errors);
+        if (parsedLocationOptionId != null
+                && itemService.listLocationOptions().stream()
+                        .noneMatch(option -> option.getId() == parsedLocationOptionId)) {
+            errors.rejectValue("marina", "publish.validation.location.invalid");
         }
 
-        // BACKEND: persist the edit by calling a new service method such as
-        //   itemService.updatePublication(
-        //       itemId,
-        //       form.getTitle().trim(),
-        //       form.getDescription() == null ? "" : form.getDescription().trim(),
-        //       Integer.parseInt(form.getPricePerHour().trim()),
-        //       form.getDifficultyLevel(),
-        //       Integer.parseInt(form.getMarina().trim()));
-        // This will require adding `updatePublication(...)` to ItemService /
-        // ItemServiceImpl and a corresponding UPDATE statement in ItemJdbcDao.
+        if (errors.hasErrors()) {
+            return editPublicationModelAndView(item.get(), request);
+        }
 
-        // BACKEND: when the owner uploads a new image, persist it via
-        //   itemService.insertImage(itemId, form.getFile().getBytes())
-        // and decide replacement semantics (delete previous rows in
-        // item_media or keep history). Validate form.getFile().getContentType()
-        // starts with "image/" before touching bytes.
-        // if (form.getFile() != null && !form.getFile().isEmpty()) { ... }
+        if (itemService.hasBlockingBookingsForEdition(itemId)) {
+            errors.reject("editPublication.validation.blockedByBookings");
+            return editPublicationModelAndView(item.get(), request);
+        }
+
+        final boolean updated = itemService.updatePublication(
+                itemId,
+                form.getTitle().trim(),
+                form.getDescription() == null ? "" : form.getDescription().trim(),
+                parsedPrice,
+                form.getDifficultyLevel(),
+                parsedLocationOptionId);
+        if (!updated) {
+            errors.reject("publish.submit.persistenceError");
+            return editPublicationModelAndView(item.get(), request);
+        }
+
+        final MultipartFile file = form.getFile();
+        if (file != null && !file.isEmpty()) {
+            try {
+                if (itemService.replacePrimaryImage(itemId, file.getBytes()) == null) {
+                    errors.reject("publish.submit.persistenceError");
+                    return editPublicationModelAndView(item.get(), request);
+                }
+            } catch (final IOException e) {
+                errors.rejectValue("file", "editPublication.validation.image.read");
+                return editPublicationModelAndView(item.get(), request);
+            }
+        }
 
         return new ModelAndView("redirect:/profile?publishAction=updated#my-publications");
     }
@@ -175,5 +196,36 @@ public class PublishActionController {
         return itemService.listItemsByOwnerId(currentUser.getId()).stream()
                 .filter(item -> item.getId() == itemId)
                 .findFirst();
+    }
+
+    private ModelAndView editPublicationModelAndView(final Item item, final HttpServletRequest request) {
+        final ModelAndView mav = new ModelAndView("edit-publication");
+        mav.addObject("item", item);
+        mav.addObject(
+                "itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId(), request.getContextPath()));
+        return mav;
+    }
+
+    private static Integer parseIntegerField(
+            final String rawValue, final String fieldName, final String errorCode, final BindingResult errors) {
+        if (rawValue == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(rawValue.trim());
+        } catch (final NumberFormatException e) {
+            errors.rejectValue(fieldName, errorCode);
+            return null;
+        }
+    }
+
+    private static void validateUploadedImage(final MultipartFile file, final BindingResult errors) {
+        if (file == null || file.isEmpty()) {
+            return;
+        }
+        final String contentType = file.getContentType();
+        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
+            errors.rejectValue("file", "editPublication.validation.image.type");
+        }
     }
 }

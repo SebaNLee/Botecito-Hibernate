@@ -234,6 +234,40 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    public boolean updatePublication(
+            final int itemId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final Integer difficultyLevel,
+            final int locationOptionId) {
+        final int updatedRows = jdbcTemplate.update(
+                "UPDATE item"
+                        + " SET title = ?, description = ?, price_per_hour = ?, difficulty_level = ?, location_option_id = ?"
+                        + " WHERE id = ?",
+                title,
+                description,
+                pricePerHour,
+                difficultyLevel,
+                locationOptionId,
+                itemId);
+        return updatedRows > 0;
+    }
+
+    @Override
+    public boolean hasBlockingBookingsForEdition(final int itemId) {
+        final Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*)"
+                        + " FROM item_booking"
+                        + " WHERE item_id = ?"
+                        + " AND state IN ('BOOKING_PENDING', 'BOOKING_CONFIRMED', 'BOOKING_PAYMENT_SUBMITTED',"
+                        + " 'BOOKING_PAID')",
+                Integer.class,
+                itemId);
+        return count != null && count > 0;
+    }
+
+    @Override
     public Item createItem(
             final int ownerId,
             final int typeId,
@@ -621,6 +655,24 @@ public class ItemJdbcDao implements ItemDao {
         args.put("item_id", itemId);
         args.put("image_data", imageData);
         return insert.executeAndReturnKey(args).intValue();
+    }
+
+    @Override
+    public Integer replacePrimaryImage(final int itemId, final byte[] imageData) {
+        if (!hasTable("item_media")) {
+            return null;
+        }
+        final Integer existingImageId = jdbcTemplate
+                .queryForList("SELECT id FROM item_media WHERE item_id = ? ORDER BY id ASC", Integer.class, itemId)
+                .stream()
+                .findFirst()
+                .orElse(null);
+        if (existingImageId == null) {
+            return insertImage(itemId, imageData);
+        }
+        final int updatedRows =
+                jdbcTemplate.update("UPDATE item_media SET image_data = ? WHERE id = ?", imageData, existingImageId);
+        return updatedRows > 0 ? existingImageId : null;
     }
 
     private boolean hasTable(final String tableName) {

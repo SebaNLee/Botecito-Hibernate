@@ -97,6 +97,9 @@
         <c:if test="${param.publishAction == 'forbidden' || param.publishAction == 'error'}">
           <paw:alertMessage type="error"><spring:message code="profile.publications.error" /></paw:alertMessage>
         </c:if>
+        <c:if test="${param.publishAction == 'deleteBlockedByBookings'}">
+          <paw:alertMessage type="error"><spring:message code="profile.publications.deleteBlockedByBookings" /></paw:alertMessage>
+        </c:if>
         <c:choose>
           <c:when test="${not empty ownedItems}">
             <c:forEach var="item" items="${ownedItems}">

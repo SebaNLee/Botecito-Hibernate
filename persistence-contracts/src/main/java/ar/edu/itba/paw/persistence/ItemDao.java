@@ -103,12 +103,6 @@ public interface ItemDao {
 
     Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId);
 
-    Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken);
-
-    boolean activateItemByOwnerDeleteToken(final String ownerDeleteToken);
-
-    boolean deactivateItemByOwnerDeleteToken(final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt);
-
     boolean setItemActive(final int itemId, final boolean active);
 
     Optional<byte[]> findImageById(final int id);

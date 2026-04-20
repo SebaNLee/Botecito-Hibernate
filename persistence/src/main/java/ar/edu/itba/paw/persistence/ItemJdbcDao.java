@@ -255,7 +255,7 @@ public class ItemJdbcDao implements ItemDao {
                         maxWeightKg,
                         difficultyLevel,
                         locationOptionId,
-                        Boolean.FALSE,
+                        Boolean.TRUE,
                         ownerDeleteToken),
                 "Could not create item for owner " + ownerId);
         return jdbcTemplate.query(ITEM_SELECT + " WHERE i.id = ?", ITEM_ROW_MAPPER, id).stream()
@@ -489,36 +489,6 @@ public class ItemJdbcDao implements ItemDao {
                         itemId)
                 .stream()
                 .findAny();
-    }
-
-    @Override
-    public Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken) {
-        return jdbcTemplate
-                .query(ITEM_SELECT + " WHERE i.owner_delete_token = ?", ITEM_ROW_MAPPER, ownerDeleteToken)
-                .stream()
-                .findAny();
-    }
-
-    @Override
-    public boolean activateItemByOwnerDeleteToken(final String ownerDeleteToken) {
-        final int updatedRows = jdbcTemplate.update(
-                "UPDATE item" + " SET active = TRUE" + " WHERE owner_delete_token = ?" + " AND active = FALSE",
-                ownerDeleteToken);
-        return updatedRows > 0;
-    }
-
-    @Override
-    public boolean deactivateItemByOwnerDeleteToken(
-            final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt) {
-        final int updatedRows = jdbcTemplate.update(
-                "UPDATE item"
-                        + " SET active = FALSE, owner_delete_used_at = ?"
-                        + " WHERE owner_delete_token = ?"
-                        + " AND active = TRUE"
-                        + " AND owner_delete_used_at IS NULL",
-                Timestamp.from(ownerDeleteUsedAt.toInstant()),
-                ownerDeleteToken);
-        return updatedRows > 0;
     }
 
     @Override

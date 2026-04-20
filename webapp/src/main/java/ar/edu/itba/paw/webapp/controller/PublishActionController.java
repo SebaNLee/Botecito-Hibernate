@@ -30,16 +30,6 @@ public class PublishActionController {
         this.userService = userService;
     }
 
-    @RequestMapping(value = "/publish/{token}/confirm", method = RequestMethod.GET)
-    public ModelAndView confirmPublication(@PathVariable("token") final String token) {
-        return new ModelAndView("redirect:/register?legacyToken=true");
-    }
-
-    @RequestMapping(value = "/publish/{token}/delete", method = RequestMethod.GET)
-    public ModelAndView deletePublication(@PathVariable("token") final String token) {
-        return new ModelAndView("redirect:/register?legacyToken=true");
-    }
-
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/edit", method = RequestMethod.GET)
     public ModelAndView editPublicationForm(@PathVariable("id") final int itemId, final HttpServletRequest request) {
         final User currentUser = currentAuthenticatedUser();

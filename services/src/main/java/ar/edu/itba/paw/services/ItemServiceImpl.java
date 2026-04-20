@@ -13,7 +13,6 @@ import ar.edu.itba.paw.persistence.ItemDao;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -112,10 +111,6 @@ public final class ItemServiceImpl implements ItemService {
                 difficultyLevel,
                 locationOptionId,
                 ownerDeleteToken);
-        if (!itemDao.activateItemByOwnerDeleteToken(ownerDeleteToken)) {
-            throw new IllegalStateException("Could not activate created item " + item.getId());
-        }
-        item.setActive(Boolean.TRUE);
 
         for (final ItemAvailability availability : availabilities) {
             itemDao.createItemAvailability(
@@ -125,22 +120,6 @@ public final class ItemServiceImpl implements ItemService {
                     availability.getEndTime().toString());
         }
         return item;
-    }
-
-    @Override
-    public Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken) {
-        return itemDao.findItemByOwnerDeleteToken(ownerDeleteToken);
-    }
-
-    @Override
-    public boolean activateItemByOwnerDeleteToken(final String ownerDeleteToken) {
-        return itemDao.activateItemByOwnerDeleteToken(ownerDeleteToken);
-    }
-
-    @Override
-    public boolean deactivateItemByOwnerDeleteToken(
-            final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt) {
-        return itemDao.deactivateItemByOwnerDeleteToken(ownerDeleteToken, ownerDeleteUsedAt);
     }
 
     @Override

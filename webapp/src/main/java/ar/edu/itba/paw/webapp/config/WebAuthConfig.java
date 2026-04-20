@@ -46,8 +46,6 @@ public class WebAuthConfig extends WebSecurityConfigurerAdapter {
                 .authenticated()
                 .antMatchers(HttpMethod.POST, "/bookings/**")
                 .authenticated()
-                .antMatchers("/publish/*/confirm", "/publish/*/delete")
-                .permitAll()
                 .antMatchers("/profile/**")
                 .authenticated()
                 .antMatchers("/publish/**")

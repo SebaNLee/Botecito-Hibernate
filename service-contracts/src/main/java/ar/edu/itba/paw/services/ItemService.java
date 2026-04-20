@@ -10,7 +10,6 @@ import ar.edu.itba.paw.models.User;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,12 +44,6 @@ public interface ItemService {
             Integer difficultyLevel,
             Integer locationOptionId,
             List<ItemAvailability> availabilities);
-
-    Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken);
-
-    boolean activateItemByOwnerDeleteToken(final String ownerDeleteToken);
-
-    boolean deactivateItemByOwnerDeleteToken(final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt);
 
     boolean setItemActive(final int itemId, final boolean active);
 

@@ -9,6 +9,7 @@ public class User {
     private String lastName;
     private String email;
     private String phone;
+    private String paymentAlias;
     private String preferredLanguage;
     private String passwordHash;
 
@@ -100,6 +101,14 @@ public class User {
 
     public void setPhone(final String phone) {
         this.phone = phone;
+    }
+
+    public String getPaymentAlias() {
+        return paymentAlias;
+    }
+
+    public void setPaymentAlias(final String paymentAlias) {
+        this.paymentAlias = paymentAlias;
     }
 
     public String getPreferredLanguage() {

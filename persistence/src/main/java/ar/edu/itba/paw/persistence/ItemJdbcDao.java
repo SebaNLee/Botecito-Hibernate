@@ -73,6 +73,7 @@ public class ItemJdbcDao implements ItemDao {
         user.setLastName(rs.getString("last_name"));
         user.setEmail(rs.getString("email"));
         user.setPhone(rs.getString("phone"));
+        user.setPaymentAlias(rs.getString("payment_alias"));
         user.setPreferredLanguage(rs.getString("preferred_language"));
         return user;
     };

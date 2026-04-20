@@ -1,0 +1,2 @@
+ALTER TABLE users
+ADD COLUMN payment_alias VARCHAR(120);

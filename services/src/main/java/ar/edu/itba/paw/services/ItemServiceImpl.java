@@ -69,6 +69,11 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public Optional<Item> findAnyItemById(final int id) {
+        return itemDao.findAnyItemById(id);
+    }
+
+    @Override
     public Optional<User> findUserById(final int id) {
         return itemDao.findUserById(id);
     }

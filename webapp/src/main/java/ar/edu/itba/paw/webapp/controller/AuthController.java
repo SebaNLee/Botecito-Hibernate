@@ -138,7 +138,7 @@ public class AuthController {
                 continue;
             }
 
-            final Item item = itemService.findItemById(booking.getItemId()).orElse(null);
+            final Item item = itemService.findAnyItemById(booking.getItemId()).orElse(null);
             if (item == null) {
                 continue;
             }
@@ -170,7 +170,7 @@ public class AuthController {
                 continue;
             }
 
-            final Item item = itemService.findItemById(booking.getItemId()).orElse(null);
+            final Item item = itemService.findAnyItemById(booking.getItemId()).orElse(null);
             if (item == null) {
                 continue;
             }

@@ -182,6 +182,12 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    public Optional<Item> findAnyItemById(final int id) {
+        return jdbcTemplate.query(ITEM_SELECT + " WHERE i.id = ?", ITEM_ROW_MAPPER, id).stream()
+                .findAny();
+    }
+
+    @Override
     public Optional<User> findUserById(final int id) {
         return jdbcTemplate.query("SELECT * FROM users WHERE id = ?", USER_ROW_MAPPER, id).stream()
                 .findAny();

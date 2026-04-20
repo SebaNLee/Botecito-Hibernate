@@ -29,6 +29,8 @@ public interface ItemDao {
 
     Optional<Item> findItemById(final int id);
 
+    Optional<Item> findAnyItemById(final int id);
+
     Optional<User> findUserById(final int id);
 
     Optional<User> findUserByEmail(final String email);

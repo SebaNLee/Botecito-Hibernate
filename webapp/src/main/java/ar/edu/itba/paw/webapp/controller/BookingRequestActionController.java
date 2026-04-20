@@ -103,7 +103,7 @@ public class BookingRequestActionController {
 
             final Item item = booking.getItemId() == null
                     ? null
-                    : itemService.findItemById(booking.getItemId()).orElse(null);
+                    : itemService.findAnyItemById(booking.getItemId()).orElse(null);
             final User owner = item == null || item.getOwnerId() == null
                     ? null
                     : itemService.findUserById(item.getOwnerId()).orElse(null);
@@ -164,7 +164,7 @@ public class BookingRequestActionController {
 
         final Item item = resolved.get().getItemId() == null
                 ? null
-                : itemService.findItemById(resolved.get().getItemId()).orElse(null);
+                : itemService.findAnyItemById(resolved.get().getItemId()).orElse(null);
         mailService.sendPaymentReceivedEmail(
                 resolved.get().getRequesterEmail(),
                 resolved.get().getRequesterLocaleTag(),
@@ -186,7 +186,7 @@ public class BookingRequestActionController {
             return new ModelAndView("redirect:/profile?bookingAction=notFound#received-booking-requests");
         }
 
-        final var item = itemService.findItemById(booking.getItemId()).orElse(null);
+        final var item = itemService.findAnyItemById(booking.getItemId()).orElse(null);
         if (item == null || item.getOwnerId() == null || !item.getOwnerId().equals(currentUser.getId())) {
             return new ModelAndView("redirect:/profile?bookingAction=forbidden#received-booking-requests");
         }
@@ -215,7 +215,7 @@ public class BookingRequestActionController {
         if (booking.getItemId() == null) {
             return false;
         }
-        final Item item = itemService.findItemById(booking.getItemId()).orElse(null);
+        final Item item = itemService.findAnyItemById(booking.getItemId()).orElse(null);
         return item != null && item.getOwnerId() != null && item.getOwnerId().equals(userId);
     }
 

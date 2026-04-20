@@ -14,6 +14,7 @@ import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -133,7 +134,11 @@ public class MailServiceImpl implements MailService {
     @Override
     @Async("mailTaskExecutor")
     public void sendPaymentProofSubmittedEmail(
-            final String ownerEmail, final String requesterName, final String itemTitle, final String proofUrl) {
+            final String ownerEmail,
+            final String requesterName,
+            final String itemTitle,
+            final byte[] proofFileData,
+            final String proofContentType) {
         if (ownerEmail == null || ownerEmail.isBlank()) {
             return;
         }
@@ -142,11 +147,21 @@ public class MailServiceImpl implements MailService {
             final Context context = new Context(locale);
             context.setVariable("requesterName", requesterName);
             context.setVariable("itemTitle", itemTitle);
-            context.setVariable("proofUrl", proofUrl);
+            context.setVariable("profileUrl", accountBaseUrl + "#received-booking-requests");
+            final boolean hasProofImage = isInlineProofImage(proofFileData, proofContentType);
+            context.setVariable("hasProofImage", hasProofImage);
+            if (hasProofImage) {
+                context.setVariable("proofImageSrc", "cid:payment-proof-image");
+            }
+
+            final String htmlBody = templateEngine.process("payment-proof-submitted", context);
             sendHtmlEmail(
                     ownerEmail,
                     getMessage("mail.paymentProofSubmitted.subject", locale, requesterName),
-                    templateEngine.process("payment-proof-submitted", context));
+                    htmlBody,
+                    hasProofImage ? proofFileData : null,
+                    hasProofImage ? proofContentType : null,
+                    hasProofImage ? "payment-proof-image" : null);
         } catch (final RuntimeException e) {
             LOGGER.error("Could not send payment proof email to {}.", ownerEmail, e);
         }
@@ -163,7 +178,7 @@ public class MailServiceImpl implements MailService {
             final Locale locale = toSupportedLocale(requesterLocaleTag);
             final Context context = new Context(locale);
             context.setVariable("itemTitle", itemTitle);
-            context.setVariable("profileUrl", accountBaseUrl);
+            context.setVariable("profileUrl", accountBaseUrl + "#sent-booking-requests");
             sendHtmlEmail(
                     requesterEmail,
                     getMessage("mail.paymentReceived.subject", locale, itemTitle),
@@ -190,6 +205,13 @@ public class MailServiceImpl implements MailService {
         return Locale.of("es");
     }
 
+    private static boolean isInlineProofImage(final byte[] proofFileData, final String proofContentType) {
+        return proofFileData != null
+                && proofFileData.length > 0
+                && proofContentType != null
+                && proofContentType.toLowerCase(Locale.ROOT).startsWith("image/");
+    }
+
     private Optional<String> resolveBookingReviewRecipient(final BookingRequest bookingRequest) {
         if (bookingRequest.getItemId() == null) {
             return Optional.empty();
@@ -211,12 +233,28 @@ public class MailServiceImpl implements MailService {
     }
 
     private void sendHtmlEmail(final String recipientEmail, final String subject, final String htmlBody) {
+        sendHtmlEmail(recipientEmail, subject, htmlBody, null, null, null);
+    }
+
+    private void sendHtmlEmail(
+            final String recipientEmail,
+            final String subject,
+            final String htmlBody,
+            final byte[] inlineFileData,
+            final String inlineContentType,
+            final String inlineContentId) {
         try {
             final MimeMessage mimeMessage = mailSender.createMimeMessage();
             final MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
             helper.setTo(recipientEmail);
             helper.setSubject(subject);
             helper.setText(htmlBody, true);
+            if (inlineFileData != null
+                    && inlineFileData.length > 0
+                    && inlineContentType != null
+                    && inlineContentId != null) {
+                helper.addInline(inlineContentId, new ByteArrayResource(inlineFileData), inlineContentType);
+            }
             mailSender.send(mimeMessage);
         } catch (final MessagingException e) {
             throw new IllegalStateException("Could not build the email message.", e);

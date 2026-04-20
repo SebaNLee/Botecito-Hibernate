@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class BookingRequestServiceImpl implements BookingRequestService {
-
     private final ItemDao itemDao;
     private final MailService mailService;
 

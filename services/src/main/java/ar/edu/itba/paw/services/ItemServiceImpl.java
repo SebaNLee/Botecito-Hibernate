@@ -23,6 +23,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public final class ItemServiceImpl implements ItemService {
+    private static final int TIME_STEP_MINUTES = 30;
+
     private final ItemDao itemDao;
 
     @Autowired
@@ -95,18 +97,24 @@ public final class ItemServiceImpl implements ItemService {
             final Integer difficultyLevel,
             final Integer locationOptionId,
             final List<ItemAvailability> availabilities) {
+        final int validatedTypeId = validateItemTypeId(typeId);
+        final int validatedLocationOptionId = validateLocationOptionId(locationOptionId);
+        final int validatedCapacityPeople = requirePositive(capacityPeople, "capacity people");
+        final int validatedPricePerHour = requirePositive(pricePerHour, "price per hour");
+        validateAvailabilities(availabilities);
+
         final User ownerUser = resolveOrCreateOwner(ownerGivenName, ownerLastName, ownerEmail, ownerPreferredLanguage);
         final String ownerDeleteToken = UUID.randomUUID().toString();
         final Item item = itemDao.createItem(
                 ownerUser.getId(),
-                typeId,
+                validatedTypeId,
                 title,
                 description,
-                pricePerHour,
-                capacityPeople,
+                validatedPricePerHour,
+                validatedCapacityPeople,
                 maxWeightKg,
                 difficultyLevel,
-                locationOptionId,
+                validatedLocationOptionId,
                 ownerDeleteToken);
         if (!itemDao.activateItemByOwnerDeleteToken(ownerDeleteToken)) {
             throw new IllegalStateException("Could not activate created item " + item.getId());
@@ -201,6 +209,60 @@ public final class ItemServiceImpl implements ItemService {
             return user;
         }
         return itemDao.createUser(ownerGivenName, ownerLastName, ownerEmail, preferredLanguage);
+    }
+
+    private int validateItemTypeId(final Integer typeId) {
+        final int validatedTypeId = requirePositive(typeId, "item type id");
+        if (itemDao.findItemTypeById(validatedTypeId).isEmpty()) {
+            throw new IllegalArgumentException("item type does not exist");
+        }
+        return validatedTypeId;
+    }
+
+    private int validateLocationOptionId(final Integer locationOptionId) {
+        final int validatedLocationOptionId = requirePositive(locationOptionId, "location option id");
+        final boolean exists = itemDao.listLocationOptions().stream()
+                .anyMatch(location -> location.getId() != null && location.getId() == validatedLocationOptionId);
+        if (!exists) {
+            throw new IllegalArgumentException("location option does not exist");
+        }
+        return validatedLocationOptionId;
+    }
+
+    private static void validateAvailabilities(final List<ItemAvailability> availabilities) {
+        if (availabilities == null || availabilities.isEmpty()) {
+            throw new IllegalArgumentException("at least one availability is required");
+        }
+        for (final ItemAvailability availability : availabilities) {
+            if (availability == null) {
+                throw new IllegalArgumentException("availability is required");
+            }
+            validateAvailabilitySlot(availability.getWeekday(), availability.getStartTime(), availability.getEndTime());
+        }
+    }
+
+    private static void validateAvailabilitySlot(
+            final DayOfWeek weekday, final LocalTime startTime, final LocalTime endTime) {
+        if (weekday == null || startTime == null || endTime == null) {
+            throw new IllegalArgumentException("availability weekday, start time and end time are required");
+        }
+        if (!endTime.isAfter(startTime)) {
+            throw new IllegalArgumentException("availability end time must be after start time");
+        }
+        if (!isThirtyMinuteStep(startTime) || !isThirtyMinuteStep(endTime)) {
+            throw new IllegalArgumentException("availability times must use 30 minute steps");
+        }
+    }
+
+    private static boolean isThirtyMinuteStep(final LocalTime time) {
+        return time.getMinute() % TIME_STEP_MINUTES == 0 && time.getSecond() == 0 && time.getNano() == 0;
+    }
+
+    private static int requirePositive(final Integer value, final String fieldName) {
+        if (value == null || value <= 0) {
+            throw new IllegalArgumentException(fieldName + " must be positive");
+        }
+        return value;
     }
 
     private Page<Item> searchItemsWithAvailability(

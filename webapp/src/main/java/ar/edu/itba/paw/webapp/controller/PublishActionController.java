@@ -83,7 +83,7 @@ public class PublishActionController {
                 parseIntegerField(form.getMarina(), "marina", "publish.validation.location.invalid", errors);
         if (parsedLocationOptionId != null
                 && itemService.listLocationOptions().stream()
-                        .noneMatch(option -> option.getId() == parsedLocationOptionId)) {
+                        .noneMatch(option -> parsedLocationOptionId.equals(option.getId()))) {
             errors.rejectValue("marina", "publish.validation.location.invalid");
         }
 

@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.DisabledTimeSlot;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -26,7 +27,7 @@ final class MarketplaceAvailabilityMatcher {
             final List<ItemBooking> bookings,
             final List<DisabledTimeSlot> disabledSlots) {
         if (isBlank(criteria.getDate())) {
-            return true;
+            return matchesWithoutCalendarDate(criteria, availabilities);
         }
 
         final TreeSet<String> availableTimes =
@@ -48,6 +49,73 @@ final class MarketplaceAvailabilityMatcher {
         }
 
         return hasContinuousAvailability(List.copyOf(availableTimes), criteria.getStartTime(), criteria.getEndTime());
+    }
+
+    /**
+     * When no calendar date is chosen, match against recurring weekly availability only
+     * (bookings are date-specific and are not applied for this mode).
+     */
+    private static boolean matchesWithoutCalendarDate(
+            final ItemSearchCriteria criteria, final List<ItemAvailability> availabilities) {
+        if (isBlank(criteria.getStartTime()) && isBlank(criteria.getEndTime())) {
+            return true;
+        }
+
+        if (!isBlank(criteria.getStartTime()) && isBlank(criteria.getEndTime())) {
+            return matchesStartTimeAnyWeekday(criteria.getStartTime(), availabilities);
+        }
+
+        if (isBlank(criteria.getStartTime())) {
+            return matchesEndTimeAnyWeekday(criteria.getEndTime(), availabilities);
+        }
+
+        return matchesRangeAnyWeekday(criteria.getStartTime(), criteria.getEndTime(), availabilities);
+    }
+
+    private static boolean matchesStartTimeAnyWeekday(
+            final String requestedStartTime, final List<ItemAvailability> availabilities) {
+        for (final DayOfWeek dow : DayOfWeek.values()) {
+            final TreeSet<String> times = availableTimesForWeekday(dow, availabilities);
+            if (hasContinuousTwoHourWindowStartingAt(List.copyOf(times), requestedStartTime)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean matchesEndTimeAnyWeekday(
+            final String requestedEndTime, final List<ItemAvailability> availabilities) {
+        for (final DayOfWeek dow : DayOfWeek.values()) {
+            final TreeSet<String> times = availableTimesForWeekday(dow, availabilities);
+            if (hasContinuousTwoHourWindowEndingAt(List.copyOf(times), requestedEndTime)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean matchesRangeAnyWeekday(
+            final String requestedStartTime,
+            final String requestedEndTime,
+            final List<ItemAvailability> availabilities) {
+        for (final DayOfWeek dow : DayOfWeek.values()) {
+            final TreeSet<String> times = availableTimesForWeekday(dow, availabilities);
+            if (hasContinuousAvailability(List.copyOf(times), requestedStartTime, requestedEndTime)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static TreeSet<String> availableTimesForWeekday(
+            final DayOfWeek dow, final List<ItemAvailability> availabilities) {
+        final TreeSet<String> scheduledTimes = new TreeSet<>();
+        for (final ItemAvailability availability : availabilities) {
+            if (availability.getWeekday() == dow) {
+                addTimeRange(scheduledTimes, availability.getStartTime(), availability.getEndTime());
+            }
+        }
+        return scheduledTimes;
     }
 
     private static TreeSet<String> availableTimesForDate(

@@ -83,6 +83,7 @@ public class MarketplaceController {
             @RequestParam(value = "endTime", required = false) final String requestedEndTime,
             @RequestParam(value = "capacity", required = false) final String requestedCapacity,
             @RequestParam(value = "maxWeight", required = false) final String requestedMaxWeight,
+            @RequestParam(value = "difficultyLevel", required = false) final String requestedDifficultyLevel,
             @RequestParam(value = "sort", required = false, defaultValue = DEFAULT_SORT) final String sort,
             @RequestParam(value = "page", required = false) final String requestedPage) {
         final String resolvedSort = resolveSort(sort);
@@ -94,6 +95,7 @@ public class MarketplaceController {
                 requestedEndTime,
                 requestedCapacity,
                 requestedMaxWeight,
+                parseDifficultyLevel(requestedDifficultyLevel),
                 resolvedSort);
         final Page<Item> itemPage =
                 itemService.searchItems(criteria, resolvePage(requestedPage), MARKETPLACE_PAGE_SIZE);
@@ -274,6 +276,7 @@ public class MarketplaceController {
             final String requestedEndTime,
             final String requestedCapacity,
             final String requestedMaxWeight,
+            final Integer difficultyLevel,
             final String sort) {
         final ItemSearchCriteria criteria = new ItemSearchCriteria();
         criteria.setLocationOptionId(parseInteger(requestedLocationOptionId));
@@ -283,9 +286,18 @@ public class MarketplaceController {
         criteria.setCapacity(parseInteger(requestedCapacity));
         final Integer maxWeight = parseInteger(requestedMaxWeight);
         criteria.setMaxWeightKg(maxWeight == null ? null : BigDecimal.valueOf(maxWeight.longValue()));
+        criteria.setDifficultyLevel(difficultyLevel);
         criteria.setSort(sort);
         criteria.setSearchQuery(searchQuery);
         return criteria;
+    }
+
+    private static Integer parseDifficultyLevel(final String value) {
+        final Integer parsed = parseInteger(value);
+        if (parsed == null || parsed < 1 || parsed > 5) {
+            return null;
+        }
+        return parsed;
     }
 
     private static String resolveSort(final String sort) {

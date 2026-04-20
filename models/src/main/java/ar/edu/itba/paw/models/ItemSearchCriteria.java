@@ -10,6 +10,7 @@ public class ItemSearchCriteria {
     private String endTime;
     private Integer capacity;
     private BigDecimal maxWeightKg;
+    private Integer difficultyLevel;
     private String sort;
 
     public String getSearchQuery() {
@@ -66,6 +67,14 @@ public class ItemSearchCriteria {
 
     public void setMaxWeightKg(final BigDecimal maxWeightKg) {
         this.maxWeightKg = maxWeightKg;
+    }
+
+    public Integer getDifficultyLevel() {
+        return difficultyLevel;
+    }
+
+    public void setDifficultyLevel(final Integer difficultyLevel) {
+        this.difficultyLevel = difficultyLevel;
     }
 
     public String getSort() {

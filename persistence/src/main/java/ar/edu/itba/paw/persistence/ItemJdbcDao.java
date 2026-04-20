@@ -588,6 +588,10 @@ public class ItemJdbcDao implements ItemDao {
             sql.append(" AND i.title ILIKE ? ESCAPE '!'");
             args.add(setupSearchQuery(criteria.getSearchQuery()));
         }
+        if (criteria.getDifficultyLevel() != null) {
+            sql.append(" AND i.difficulty_level = ?");
+            args.add(criteria.getDifficultyLevel());
+        }
         return sql.toString();
     }
 

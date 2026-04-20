@@ -11,6 +11,7 @@ import java.util.Objects;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,18 +31,20 @@ public class PublishBoatForm {
 
     @NotBlank(groups = Step1.class, message = "{publish.validation.location.required}")
     @Pattern(regexp = "\\d+", groups = Step1.class, message = "{publish.validation.location.invalid}")
-    private String marina;
+    private String locationOptionId;
 
     @NotBlank(groups = Step1.class, message = "{publish.validation.capacity.required}")
+    @Pattern(regexp = "^([1-9]|1[0-9]|20)$", groups = Step1.class, message = "{publish.validation.capacity.invalid}")
     private String capacity;
 
     @NotBlank(groups = Step1.class, message = "{publish.validation.itemType.required}")
     private String itemTypeId;
 
     @NotBlank(groups = Step1.class, message = "{publish.validation.price.required}")
-    @Pattern(regexp = "^$|\\d+", groups = Step1.class, message = "{publish.validation.price.numeric}")
+    @Pattern(regexp = "^[1-9]\\d*$", groups = Step1.class, message = "{publish.validation.price.positive}")
     private String pricePerHour;
 
+    @NotNull(groups = Step1.class, message = "{publish.validation.difficulty.required}")
     @Min(value = 1, groups = Step1.class, message = "{publish.validation.difficulty.min}")
     @Max(value = 5, groups = Step1.class, message = "{publish.validation.difficulty.max}")
     private Integer difficultyLevel;
@@ -73,12 +76,12 @@ public class PublishBoatForm {
         this.description = description;
     }
 
-    public String getMarina() {
-        return marina;
+    public String getLocationOptionId() {
+        return locationOptionId;
     }
 
-    public void setMarina(final String marina) {
-        this.marina = marina;
+    public void setLocationOptionId(final String locationOptionId) {
+        this.locationOptionId = locationOptionId;
     }
 
     public String getCapacity() {

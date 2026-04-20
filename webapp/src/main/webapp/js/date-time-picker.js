@@ -1,6 +1,5 @@
 (function () {
-  const UI_LOCALE =
-    document.documentElement.lang || navigator.language || "es";
+  const UI_LOCALE = document.documentElement.lang || navigator.language || "es";
   const WEEKDAY_LABELS = buildWeekdayLabels(UI_LOCALE);
   const MONTH_FORMATTER = new Intl.DateTimeFormat(UI_LOCALE, {
     month: "long",
@@ -8,6 +7,11 @@
   });
   const DATE_FORMATTER = new Intl.DateTimeFormat(UI_LOCALE, {
     weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const DATE_TRIGGER_SHORT_WEEKDAY = new Intl.DateTimeFormat(UI_LOCALE, {
+    weekday: "short",
     day: "numeric",
     month: "long",
   });
@@ -21,17 +25,15 @@
     "flex justify-center text-[11px] font-extrabold uppercase tracking-[0.12em] text-outline";
   const CALENDAR_GRID_CLASS = "grid grid-cols-7 gap-1";
   const CALENDAR_SPACER_CLASS = "min-h-10";
-  const DAY_BASE_CLASS =
-    "btn btn-sm btn-square min-h-10 h-10 font-semibold";
+  const DAY_BASE_CLASS = "btn btn-sm btn-square min-h-10 h-10 font-semibold";
   const DAY_AVAILABLE_CLASS = "btn-ghost text-on-surface";
-  const DAY_UNAVAILABLE_CLASS =
-    "btn-ghost text-outline/40 pointer-events-none";
+  const DAY_UNAVAILABLE_CLASS = "btn-ghost text-outline/40 pointer-events-none";
   const DAY_OCCUPIED_CLASS =
     "btn-ghost text-error/70 line-through pointer-events-none";
   const DAY_SELECTED_CLASS = "btn-primary shadow-sm";
   const DAY_TODAY_CLASS = "ring-2 ring-primary/35 ring-inset";
   const SLOT_BASE_CLASS =
-    "btn btn-sm min-h-10 h-10 font-semibold";
+    "btn btn-sm h-10 min-h-10 min-w-[4.5rem] shrink-0 px-1.5 text-xs font-semibold tabular-nums whitespace-nowrap";
   const SLOT_AVAILABLE_CLASS = "btn-ghost text-on-surface";
   const SLOT_UNAVAILABLE_CLASS =
     "btn-ghost text-outline/40 pointer-events-none";
@@ -86,6 +88,52 @@
     return fallback;
   }
 
+  const TRIGGER_CLEAR_COLLAPSED_CLASSES = [
+    "!w-0",
+    "!min-w-0",
+    "!max-w-0",
+    "overflow-hidden",
+    "!p-0",
+    "opacity-0",
+    "pointer-events-none",
+    "!border-0",
+  ];
+
+  function syncTriggerClearButtonCollapsed(button, collapsed) {
+    if (!button) {
+      return;
+    }
+
+    TRIGGER_CLEAR_COLLAPSED_CLASSES.forEach((cls) => {
+      button.classList.toggle(cls, collapsed);
+    });
+
+    if (collapsed) {
+      button.setAttribute("aria-hidden", "true");
+      button.setAttribute("tabindex", "-1");
+    } else {
+      button.removeAttribute("aria-hidden");
+      button.removeAttribute("tabindex");
+    }
+  }
+
+  function openUnavailableAlert(alertRoot) {
+    if (!alertRoot) {
+      return;
+    }
+
+    alertRoot.hidden = false;
+    if (typeof alertRoot.showModal === "function") {
+      if (!alertRoot.open) {
+        alertRoot.showModal();
+      }
+      return;
+    }
+
+    alertRoot.classList.remove("hidden");
+    alertRoot.classList.add("flex");
+  }
+
   function isoToDate(isoDate) {
     return new Date(isoDate + "T00:00:00");
   }
@@ -96,6 +144,20 @@
     }
 
     const formatted = DATE_FORMATTER.format(isoToDate(isoDate));
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }
+
+  function formatDatePickerTriggerLabel(isoDate) {
+    if (!isoDate) {
+      return "";
+    }
+
+    const date = isoToDate(isoDate);
+    let formatted = DATE_FORMATTER.format(date);
+    if (formatted.length > 32) {
+      formatted = DATE_TRIGGER_SHORT_WEEKDAY.format(date);
+    }
+
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }
 
@@ -140,40 +202,15 @@
     return rect.top;
   }
 
-  function getTriggerBand(trigger) {
-    const scope = trigger.closest("form") || document;
-    const triggerRect = trigger.getBoundingClientRect();
-    const triggerCenter = (triggerRect.top + triggerRect.bottom) / 2;
-    const relatedTriggers = [
-      ...scope.querySelectorAll("[data-picker-trigger]"),
-    ].filter((otherTrigger) => {
-      const rect = otherTrigger.getBoundingClientRect();
-      const center = (rect.top + rect.bottom) / 2;
-      return (
-        Math.abs(center - triggerCenter) <=
-        Math.max(triggerRect.height, rect.height, 56)
-      );
-    });
-
-    return relatedTriggers.reduce(
-      (band, otherTrigger) => {
-        const rect = otherTrigger.getBoundingClientRect();
-        return {
-          top: Math.min(band.top, rect.top),
-          bottom: Math.max(band.bottom, rect.bottom),
-        };
-      },
-      { top: triggerRect.top, bottom: triggerRect.bottom },
-    );
-  }
-
   function showPanel(panel, trigger) {
     panel.hidden = false;
     panel.classList.remove("hidden");
     panel.classList.add("flex");
     trigger.setAttribute("aria-expanded", "true");
     panel.style.zIndex = "9999";
-    const root = panel.closest("[data-date-picker], [data-time-range-picker]");
+    const root = trigger.closest(
+      "[data-date-picker], [data-time-range-picker]",
+    );
     if (root) {
       root.style.zIndex = "9998";
     }
@@ -185,10 +222,21 @@
     panel.classList.add("hidden");
     panel.classList.remove("flex");
     trigger.setAttribute("aria-expanded", "false");
-    const root = panel.closest("[data-date-picker], [data-time-range-picker]");
+    const root = trigger.closest(
+      "[data-date-picker], [data-time-range-picker]",
+    );
     if (root) {
       root.style.zIndex = "";
     }
+  }
+
+  function mountFloatingPanel(panel) {
+    if (!panel || panel.dataset.floatingMounted === "true") {
+      return;
+    }
+
+    document.body.appendChild(panel);
+    panel.dataset.floatingMounted = "true";
   }
 
   function dayStateClass(state, selected) {
@@ -252,19 +300,18 @@
     panel.style.visibility = "hidden";
 
     const triggerRect = trigger.getBoundingClientRect();
-    const triggerBand = getTriggerBand(trigger);
     const naturalPanelHeight = panel.offsetHeight;
     const maxViewportHeight = Math.max(120, safeBottom - safeTop);
     const panelHeight = Math.min(naturalPanelHeight, maxViewportHeight);
     const gap = 12;
-    const spaceBelow = safeBottom - triggerBand.bottom - gap;
-    const spaceAbove = triggerBand.top - safeTop - gap;
+    const spaceBelow = safeBottom - triggerRect.bottom - gap;
+    const spaceAbove = triggerRect.top - safeTop - gap;
     const openUpwards = spaceAbove >= spaceBelow;
     const top = openUpwards
-      ? Math.max(safeTop, triggerBand.top - panelHeight - gap)
+      ? Math.max(safeTop, triggerRect.top - panelHeight - gap)
       : Math.min(
           safeBottom - panelHeight,
-          Math.max(safeTop, triggerBand.bottom + gap),
+          Math.max(safeTop, triggerRect.bottom + gap),
         );
     const left = Math.min(
       Math.max(margin, triggerRect.left),
@@ -277,7 +324,7 @@
     if (naturalPanelHeight > Math.max(120, availableHeight)) {
       panel.style.maxHeight = Math.max(120, availableHeight) + "px";
     } else {
-      panel.style.maxHeight = naturalPanelHeight + "px";
+      panel.style.maxHeight = "";
     }
     panel.style.visibility = "";
   }
@@ -294,9 +341,23 @@
     ].join("-");
   }
 
+  function dateObjectToIsoDate(date) {
+    return toIsoDate(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
   function todayIsoDate() {
     const today = new Date();
     return toIsoDate(today.getFullYear(), today.getMonth(), today.getDate());
+  }
+
+  function visibleRangeEndIsoDate() {
+    const today = new Date();
+    const maxDate = new Date(
+      today.getFullYear(),
+      today.getMonth() + 2,
+      today.getDate(),
+    );
+    return dateObjectToIsoDate(maxDate);
   }
 
   function monthKey(year, monthIndex) {
@@ -331,9 +392,7 @@
   }
 
   function hasAnyFilter(state) {
-    return Boolean(
-      state && (state.date || state.startTime || state.endTime),
-    );
+    return Boolean(state && (state.date || state.startTime || state.endTime));
   }
 
   function hasCompleteRange(state) {
@@ -410,13 +469,18 @@
   }
 
   function updateMarketplaceItemLinks(state) {
-    document.querySelectorAll("[data-marketplace-item-link]").forEach((link) => {
-      if (!link.dataset.baseHref) {
-        link.dataset.baseHref = link.getAttribute("href") || "";
-      }
+    document
+      .querySelectorAll("[data-marketplace-item-link]")
+      .forEach((link) => {
+        if (!link.dataset.baseHref) {
+          link.dataset.baseHref = link.getAttribute("href") || "";
+        }
 
-      link.setAttribute("href", buildUrlWithFilters(link.dataset.baseHref, state));
-    });
+        link.setAttribute(
+          "href",
+          buildUrlWithFilters(link.dataset.baseHref, state),
+        );
+      });
   }
 
   function syncPersistentFilters(state) {
@@ -548,44 +612,46 @@
       this.root = root;
       this.input = root.querySelector("[data-picker-input]");
       this.trigger = root.querySelector("[data-picker-trigger]");
+      this.controlRow = root.querySelector("[data-picker-control-row]");
       this.panel = root.querySelector("[data-picker-panel]");
-      this.scrollRegion = root.querySelector("[data-picker-scroll-region]");
       this.closeButton = root.querySelector("[data-picker-close]");
       this.clearButton = root.querySelector("[data-picker-clear]");
+      this.triggerClearButton = root.querySelector(
+        "[data-picker-trigger-clear]",
+      );
+      this.chevronNode = root.querySelector("[data-picker-chevron]");
       this.valueNode = root.querySelector("[data-picker-value]");
-      this.monthTitleNode = root.querySelector("[data-picker-month-title]");
-      this.monthsContainer = root.querySelector("[data-picker-months]");
+      this.calendar = root.querySelector("[data-picker-calendar]");
       this.placeholder = root.dataset.placeholder || "";
       this.availabilityLabel = root.dataset.availabilityLabel || "";
-      this.selectDateLabel = root.dataset.selectDateLabel || "";
       this.offeredDates = new Set(parseJson(root.dataset.offeredDates, []));
       this.occupiedDates = new Set(parseJson(root.dataset.occupiedDates, []));
       this.restrictToAvailability = parseBoolean(
         root.dataset.restrictToAvailability,
         true,
       );
-      this.monthKeys = clampMonthRange();
-      this.activeMonthIndex = this.resolveMonthIndex(this.input.value);
       this.today = todayIsoDate();
+      this.maxDate = visibleRangeEndIsoDate();
       this.root.__datePicker = this;
+      mountFloatingPanel(this.panel);
 
       this.bind();
-      this.render();
+      this.syncCalendar();
       this.updateValueLabel();
     }
 
     bind() {
-      this.trigger.addEventListener("click", () => {
+      const toggleFromControlRow = () => {
         if (this.panel.hidden) {
           this.open();
+        } else {
+          this.close();
         }
-      });
+      };
 
-      this.root.querySelectorAll("[data-picker-nav]").forEach((button) => {
-        button.addEventListener("click", () => {
-          const direction = button.dataset.pickerNav === "next" ? 1 : -1;
-          this.navigateMonth(direction);
-        });
+      const row = this.controlRow || this.trigger;
+      row.addEventListener("click", () => {
+        toggleFromControlRow();
       });
 
       if (this.closeButton) {
@@ -594,37 +660,75 @@
         });
       }
 
-      if (this.clearButton) {
-        this.clearButton.addEventListener("click", () => {
-          this.clear();
+      [this.clearButton, this.triggerClearButton]
+        .filter(Boolean)
+        .forEach((button) => {
+          button.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.clear();
+            this.close();
+          });
+        });
+
+      if (this.calendar) {
+        this.calendar.addEventListener("change", () => {
+          this.selectDate(this.calendar.value || "", true);
+        });
+        this.calendar.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            this.close();
+          }
         });
       }
 
-      if (this.panel && this.scrollRegion) {
-        this.panel.addEventListener(
-          "wheel",
-          (event) => {
-            if (this.panel.hidden) {
-              return;
-            }
+      if (this.chevronNode) {
+        const toggleFromChevron = (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (this.panel.hidden) {
+            this.open();
+          } else {
+            this.close();
+          }
+        };
 
-            event.preventDefault();
-            this.scrollRegion.scrollTop += event.deltaY;
-          },
-          { passive: false },
-        );
+        this.chevronNode.addEventListener("click", toggleFromChevron);
+        this.chevronNode.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            toggleFromChevron(event);
+          }
+        });
       }
     }
 
-    resolveMonthIndex(isoDate) {
-      if (!isoDate) {
-        return 0;
+    syncCalendar() {
+      if (!this.calendar) {
+        return;
       }
 
-      const [year, month] = isoDateParts(isoDate);
-      const key = monthKey(year, month - 1);
-      const index = this.monthKeys.indexOf(key);
-      return index >= 0 ? index : 0;
+      this.calendar.value = this.input.value || "";
+      this.calendar.today = this.today;
+      this.calendar.min = this.today;
+      this.calendar.max = this.maxDate;
+      this.calendar.locale =
+        document.documentElement.lang || navigator.language || "es";
+      this.calendar.isDateDisallowed = (date) =>
+        !this.isSelectableDate(dateObjectToIsoDate(date));
+      this.calendar.getDayParts = (date) => {
+        const state = this.getDayState(dateObjectToIsoDate(date));
+
+        if (state === "available") {
+          return "available";
+        }
+
+        if (state === "occupied") {
+          return "occupied";
+        }
+
+        return "";
+      };
     }
 
     isSelectableDate(isoDate) {
@@ -634,8 +738,8 @@
     clear() {
       this.input.value = "";
       this.input.dispatchEvent(new Event("change", { bubbles: true }));
+      this.syncCalendar();
       this.updateValueLabel();
-      this.render();
     }
 
     setValue(isoDate) {
@@ -645,95 +749,17 @@
 
       this.input.value = isoDate;
       this.input.dispatchEvent(new Event("change", { bubbles: true }));
+      this.syncCalendar();
       this.updateValueLabel();
-      this.activeMonthIndex = this.resolveMonthIndex(isoDate);
-      this.render();
       return true;
-    }
-
-    render() {
-      this.monthsContainer.innerHTML = "";
-      const key = this.monthKeys[this.activeMonthIndex];
-
-      if (key) {
-        const [year, monthIndex] = key.split("-").map(Number);
-        this.monthsContainer.appendChild(
-          this.buildMonthSection(year, monthIndex),
-        );
-      }
-
-      this.updateMonthTitle();
-      this.updateNavigationState();
-    }
-
-    buildMonthSection(year, monthIndex) {
-      const section = createElement("section", MONTH_SECTION_CLASS);
-      section.dataset.monthKey = monthKey(year, monthIndex);
-
-      const title = createElement(
-        "h4",
-        MONTH_TITLE_CLASS,
-        formatMonthLabel(new Date(year, monthIndex, 1)),
-      );
-      section.appendChild(title);
-
-      const weekdayRow = createElement("div", WEEKDAY_ROW_CLASS);
-      WEEKDAY_LABELS.forEach((label) => {
-        weekdayRow.appendChild(createElement("span", WEEKDAY_CLASS, label));
-      });
-      section.appendChild(weekdayRow);
-
-      const grid = createElement("div", CALENDAR_GRID_CLASS);
-      const firstDay = new Date(year, monthIndex, 1).getDay();
-      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-
-      for (let spacer = 0; spacer < firstDay; spacer += 1) {
-        grid.appendChild(createElement("span", CALENDAR_SPACER_CLASS));
-      }
-
-      for (let day = 1; day <= daysInMonth; day += 1) {
-        const isoDate = toIsoDate(year, monthIndex, day);
-        const state = this.getDayState(isoDate);
-        const selected = this.input.value === isoDate;
-        const isToday = this.today === isoDate;
-        const className = [
-          DAY_BASE_CLASS,
-          dayStateClass(state, selected),
-          isToday ? DAY_TODAY_CLASS : "",
-        ]
-          .filter(Boolean)
-          .join(" ");
-        const button = createElement("button", className, String(day));
-
-        button.type = "button";
-        button.dataset.state = state;
-
-        if (selected) {
-          button.dataset.selected = "true";
-        }
-
-        if (isToday) {
-          button.dataset.today = "true";
-          button.setAttribute("aria-current", "date");
-        }
-
-        if (state !== "available") {
-          button.disabled = true;
-        } else {
-          button.addEventListener("click", () => {
-            this.selectDate(isoDate, true);
-          });
-        }
-
-        grid.appendChild(button);
-      }
-
-      section.appendChild(grid);
-      return section;
     }
 
     getDayState(isoDate) {
       if (isoDate < this.today) {
+        return "unavailable";
+      }
+
+      if (isoDate > this.maxDate) {
         return "unavailable";
       }
 
@@ -764,62 +790,27 @@
 
     updateValueLabel() {
       this.valueNode.textContent = this.input.value
-        ? formatLongDate(this.input.value)
+        ? formatDatePickerTriggerLabel(this.input.value)
         : this.placeholder;
+
+      const hasValue = Boolean(this.input.value);
+      syncTriggerClearButtonCollapsed(this.triggerClearButton, !hasValue);
     }
 
     open() {
       closeOtherPickers(this.root, true);
-      this.activeMonthIndex = this.resolveMonthIndex(this.input.value || this.today);
-      this.render();
+      this.syncCalendar();
       showPanel(this.panel, this.trigger);
+      if (this.chevronNode) {
+        this.chevronNode.classList.add("rotate-180");
+      }
     }
 
     close() {
       hidePanel(this.panel, this.trigger);
-    }
-
-    navigateMonth(direction) {
-      const nextIndex = Math.min(
-        Math.max(this.activeMonthIndex + direction, 0),
-        this.monthKeys.length - 1,
-      );
-
-      if (nextIndex === this.activeMonthIndex) {
-        return;
+      if (this.chevronNode) {
+        this.chevronNode.classList.remove("rotate-180");
       }
-
-      this.activeMonthIndex = nextIndex;
-      this.render();
-    }
-
-    updateMonthTitle() {
-      const key = this.monthKeys[this.activeMonthIndex];
-
-      if (!key) {
-        this.monthTitleNode.textContent = this.selectDateLabel;
-        return;
-      }
-
-      const [year, monthIndex] = key.split("-").map(Number);
-      this.monthTitleNode.textContent = formatMonthLabel(
-        new Date(year, monthIndex, 1),
-      );
-    }
-
-    updateNavigationState() {
-      this.root.querySelectorAll("[data-picker-nav]").forEach((button) => {
-        const isNext = button.dataset.pickerNav === "next";
-        const disabled = isNext
-          ? this.activeMonthIndex >= this.monthKeys.length - 1
-          : this.activeMonthIndex <= 0;
-
-        button.disabled = disabled;
-        button.classList.toggle("opacity-40", disabled);
-        button.classList.toggle("cursor-not-allowed", disabled);
-        button.classList.toggle("cursor-pointer", !disabled);
-        button.setAttribute("aria-disabled", String(disabled));
-      });
     }
   }
 
@@ -827,10 +818,15 @@
     constructor(root) {
       this.root = root;
       this.trigger = root.querySelector("[data-picker-trigger]");
+      this.controlRow = root.querySelector("[data-picker-control-row]");
       this.panel = root.querySelector("[data-picker-panel]");
       this.scrollRegion = root.querySelector("[data-picker-scroll-region]");
       this.closeButton = root.querySelector("[data-picker-close]");
       this.clearButton = root.querySelector("[data-picker-clear]");
+      this.triggerClearButton = root.querySelector(
+        "[data-picker-trigger-clear]",
+      );
+      this.chevronNode = root.querySelector("[data-picker-chevron]");
       this.valueNode = root.querySelector("[data-time-value]");
       this.helperNode = root.querySelector("[data-time-helper]");
       this.slotsNode = root.querySelector("[data-time-slots]");
@@ -855,6 +851,7 @@
         10,
       );
       this.root.__timeRangePicker = this;
+      mountFloatingPanel(this.panel);
 
       this.bind();
       this.syncSelection();
@@ -862,12 +859,17 @@
     }
 
     bind() {
-      this.trigger.addEventListener("click", () => {
+      const toggleFromControlRow = () => {
         if (this.panel.hidden) {
           this.open();
         } else {
           this.close();
         }
+      };
+
+      const row = this.controlRow || this.trigger;
+      row.addEventListener("click", () => {
+        toggleFromControlRow();
       });
 
       this.applyButton.addEventListener("click", () => {
@@ -880,9 +882,33 @@
         });
       }
 
-      if (this.clearButton) {
-        this.clearButton.addEventListener("click", () => {
-          this.clear();
+      [this.clearButton, this.triggerClearButton]
+        .filter(Boolean)
+        .forEach((button) => {
+          button.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.clear();
+            this.close();
+          });
+        });
+
+      if (this.chevronNode) {
+        const toggleFromChevron = (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (this.panel.hidden) {
+            this.open();
+          } else {
+            this.close();
+          }
+        };
+
+        this.chevronNode.addEventListener("click", toggleFromChevron);
+        this.chevronNode.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            toggleFromChevron(event);
+          }
         });
       }
 
@@ -914,6 +940,10 @@
     }
 
     getOfferedTimesForDate(isoDate) {
+      if (!this.restrictToAvailability && isBlank(isoDate)) {
+        return new Set(ALL_TIMES);
+      }
+
       if (isBlank(isoDate)) {
         return new Set();
       }
@@ -993,7 +1023,11 @@
       const startIndex = ALL_TIMES.indexOf(startTime);
       const endIndex = ALL_TIMES.indexOf(endTime);
 
-      if (isBlank(date) || startIndex < 0 || endIndex <= startIndex) {
+      if (this.restrictToAvailability && isBlank(date)) {
+        return false;
+      }
+
+      if (startIndex < 0 || endIndex <= startIndex) {
         return false;
       }
 
@@ -1024,7 +1058,7 @@
 
       const date = this.currentDate();
 
-      if (isBlank(date)) {
+      if (isBlank(date) && this.restrictToAvailability) {
         return false;
       }
 
@@ -1055,8 +1089,37 @@
       const date = this.currentDate();
 
       if (isBlank(date)) {
-        this.startInput.value = "";
-        this.endInput.value = "";
+        if (this.restrictToAvailability) {
+          this.startInput.value = "";
+          this.endInput.value = "";
+          return;
+        }
+
+        if (
+          this.startInput.value &&
+          !this.endInput.value &&
+          !this.hasBookableEndFrom(date, this.startInput.value)
+        ) {
+          this.startInput.value = "";
+          this.endInput.value = "";
+          return;
+        }
+
+        if (
+          this.startInput.value &&
+          this.endInput.value &&
+          !this.isContinuousRangeForDate(
+            date,
+            this.startInput.value,
+            this.endInput.value,
+          )
+        ) {
+          this.endInput.value = "";
+        }
+
+        if (!this.startInput.value) {
+          this.endInput.value = "";
+        }
         return;
       }
 
@@ -1124,6 +1187,9 @@
     open() {
       closeOtherPickers(this.root, true);
       showPanel(this.panel, this.trigger);
+      if (this.chevronNode) {
+        this.chevronNode.classList.add("rotate-180");
+      }
       requestAnimationFrame(() => {
         this.scrollToSelection();
       });
@@ -1131,6 +1197,9 @@
 
     close() {
       hidePanel(this.panel, this.trigger);
+      if (this.chevronNode) {
+        this.chevronNode.classList.remove("rotate-180");
+      }
     }
 
     scrollToSelection() {
@@ -1152,6 +1221,13 @@
 
     helperText(date) {
       if (isBlank(date)) {
+        if (
+          !this.restrictToAvailability &&
+          this.startInput.value &&
+          !this.endInput.value
+        ) {
+          return this.pickEndLabel;
+        }
         return this.pickDateFirstLabel;
       }
 
@@ -1262,9 +1338,7 @@
         return this.baseStartState(time);
       }
 
-      if (
-        this.isContinuousRangeForDate(date, this.startInput.value, time)
-      ) {
+      if (this.isContinuousRangeForDate(date, this.startInput.value, time)) {
         return "available";
       }
 
@@ -1272,9 +1346,7 @@
         return "unavailable";
       }
 
-      if (
-        this.hasOccupiedBoundaryInRange(date, this.startInput.value, time)
-      ) {
+      if (this.hasOccupiedBoundaryInRange(date, this.startInput.value, time)) {
         return "occupied";
       }
 
@@ -1285,15 +1357,20 @@
       if (this.startInput.value && this.endInput.value) {
         this.valueNode.textContent =
           this.startInput.value + " - " + this.endInput.value;
-        return;
+      } else if (this.startInput.value) {
+        this.valueNode.textContent =
+          this.fromLabel + " " + this.startInput.value;
+      } else {
+        this.valueNode.textContent = this.placeholder;
       }
 
-      if (this.startInput.value) {
-        this.valueNode.textContent = this.fromLabel + " " + this.startInput.value;
-        return;
-      }
-
-      this.valueNode.textContent = this.placeholder;
+      const hasSelection = Boolean(
+        this.startInput.value || this.endInput.value,
+      );
+      syncTriggerClearButtonCollapsed(
+        this.triggerClearButton,
+        !hasSelection,
+      );
     }
   }
 
@@ -1305,7 +1382,10 @@
           return;
         }
 
-        const panel = root.querySelector("[data-picker-panel]");
+        const panel =
+          root.__datePicker?.panel ||
+          root.__timeRangePicker?.panel ||
+          root.querySelector("[data-picker-panel]");
         const trigger = root.querySelector("[data-picker-trigger]");
         const isTimePicker = root.hasAttribute("data-time-range-picker");
 
@@ -1351,7 +1431,10 @@
       syncPersistentFilters(currentPickerState(controls));
 
       if (isMarketplacePage && storedState.date) {
-        const syncedUrl = buildUrlWithFilters(window.location.href, storedState);
+        const syncedUrl = buildUrlWithFilters(
+          window.location.href,
+          storedState,
+        );
 
         if (syncedUrl !== window.location.href) {
           window.location.replace(syncedUrl);
@@ -1379,7 +1462,9 @@
       return;
     }
 
-    const clearButton = alertRoot.querySelector("[data-item-unavailable-clear]");
+    const clearButton = alertRoot.querySelector(
+      "[data-item-unavailable-clear]",
+    );
     const marketplaceButton = alertRoot.querySelector(
       "[data-item-unavailable-marketplace]",
     );
@@ -1419,18 +1504,23 @@
         storedState.endTime,
       )
     ) {
-      alertRoot.hidden = false;
-      alertRoot.classList.remove("hidden");
-      alertRoot.classList.add("flex");
+      openUnavailableAlert(alertRoot);
       return;
     }
 
     controls.datePicker.setValue(storedState.date);
-    controls.timePicker.setSelection(storedState.startTime, storedState.endTime);
+    controls.timePicker.setSelection(
+      storedState.startTime,
+      storedState.endTime,
+    );
     syncPersistentFilters(currentPickerState(controls));
   }
 
   document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-picker-panel]")) {
+      return;
+    }
+
     const pickerRoot = event.target.closest(
       "[data-date-picker], [data-time-range-picker]",
     );

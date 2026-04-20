@@ -62,10 +62,79 @@
         <max-request-size>10485760</max-request-size>
         <file-size-threshold>2621440</file-size-threshold>
     </multipart-config>
+    <init-param>
+      <param-name>throwExceptionIfNoHandlerFound</param-name>
+      <param-value>true</param-value>
+    </init-param>
   </servlet>
 
   <servlet-mapping>
     <servlet-name>dispatcher</servlet-name>
     <url-pattern>/</url-pattern>
   </servlet-mapping>
+
+  <error-page>
+    <error-code>400</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <error-code>401</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <error-code>403</error-code>
+    <location>/403</location>
+  </error-page>
+  <error-page>
+    <error-code>404</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <error-code>405</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <error-code>408</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <error-code>409</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <error-code>413</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <error-code>415</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <error-code>429</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <error-code>500</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <error-code>501</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <error-code>502</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <error-code>503</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <error-code>504</error-code>
+    <location>/errors</location>
+  </error-page>
+  <error-page>
+    <exception-type>java.lang.Exception</exception-type>
+    <location>/errors</location>
+  </error-page>
 </web-app>

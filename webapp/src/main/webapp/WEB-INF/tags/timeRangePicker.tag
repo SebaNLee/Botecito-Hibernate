@@ -43,8 +43,8 @@
 <c:set var="resolvedRestrictToAvailability" value="${empty restrictToAvailability ? true : restrictToAvailability}" />
 <c:set var="resolvedMinimumDurationMinutes" value="${empty minimumDurationMinutes ? 120 : minimumDurationMinutes}" />
 
-<div
-    class="relative w-full ${resolvedContainerClass}"
+<fieldset
+    class="fieldset min-w-0 max-w-full w-full ${resolvedContainerClass}"
     data-time-range-picker
     data-date-input-id="${fn:escapeXml(dateInputId)}"
     data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
@@ -67,68 +67,107 @@
   <input id="${id}-start" name="${startName}" type="hidden" value="${fn:escapeXml(resolvedStartValue)}" data-time-start-input />
   <input id="${id}-end" name="${endName}" type="hidden" value="${fn:escapeXml(resolvedEndValue)}" data-time-end-input />
 
-  <button
-      type="button"
-      class="w-full flex items-center gap-3 rounded-2xl border-0 bg-transparent px-0 py-0.5 text-left text-on-surface cursor-pointer"
-      data-picker-trigger
-      aria-expanded="false"
-      aria-controls="${id}-panel">
-    <span class="material-symbols-outlined text-primary"><c:out value="${resolvedIcon}" /></span>
-    <span class="min-w-0 flex-1 flex flex-col gap-0.5">
-      <span class="text-[10px] font-extrabold tracking-[0.16em] uppercase text-outline"><c:out value="${resolvedLabel}" /></span>
-      <span class="text-[0.95rem] leading-[1.35] font-bold text-on-surface" data-time-value><c:out value="${resolvedPlaceholder}" /></span>
-    </span>
-    <span class="material-symbols-outlined text-primary">expand_more</span>
-  </button>
+  <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+    <c:out value="${resolvedLabel}" />
+  </legend>
+  <div class="relative min-w-0 max-w-full">
+    <div
+        data-picker-control-row
+        class="input cursor-pointer flex h-10 min-h-10 max-h-10 w-full min-w-0 max-w-full items-center gap-1 overflow-x-hidden border-primary/25 px-2 py-0 focus-within:border-primary has-[:focus-visible]:border-primary">
+      <button
+          type="button"
+          class="flex min-h-0 min-w-0 flex-1 items-center gap-2 bg-transparent py-0 pl-0.5 pr-0 text-left text-on-surface outline-none cursor-pointer"
+          data-picker-trigger
+          aria-expanded="false"
+          aria-controls="${id}-panel"
+          aria-haspopup="dialog">
+        <span class="material-symbols-outlined shrink-0 text-primary text-xl"><c:out value="${resolvedIcon}" /></span>
+        <span class="min-w-0 flex-1 truncate text-[0.95rem] font-bold leading-tight text-on-surface" data-time-value><c:out value="${resolvedPlaceholder}" /></span>
+      </button>
+      <button
+          type="button"
+          class="btn btn-ghost btn-xs btn-circle shrink-0 cursor-pointer text-primary ${empty resolvedStartValue && empty resolvedEndValue ? '!w-0 !min-w-0 !max-w-0 overflow-hidden !p-0 opacity-0 pointer-events-none !border-0' : ''}"
+          aria-label="${fn:escapeXml(clearLabel)}"
+          <c:if test="${empty resolvedStartValue && empty resolvedEndValue}">aria-hidden="true" tabindex="-1"</c:if>
+          data-picker-trigger-clear>
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+      <span
+          role="button"
+          tabindex="0"
+          class="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md p-1 text-primary transition-transform duration-150 outline-none hover:bg-base-200/50 focus-visible:bg-base-200/50 focus-visible:ring-2 focus-visible:ring-primary/25"
+          data-picker-chevron
+          aria-label="${fn:escapeXml(timePickerSelectTime)}">
+        <span class="material-symbols-outlined text-base leading-none">expand_more</span>
+      </span>
+    </div>
 
-  <div
-      id="${id}-panel"
-      class="fixed z-[240] hidden flex-col overflow-hidden rounded-[1.25rem] border border-outline-variant/45 bg-white/95 p-3 shadow-[0_24px_64px_rgba(11,28,50,0.16)] backdrop-blur-[18px]"
-      data-panel-width="384"
-      data-picker-panel
-      hidden>
-    <div class="mb-2 flex items-start justify-between gap-3">
-      <div>
-        <div class="text-[11px] font-extrabold tracking-[0.18em] uppercase text-primary"><c:out value="${timePickerAvailability}" /></div>
-        <h3 class="mt-0.5 font-headline text-lg font-extrabold text-on-background"><c:out value="${timePickerSelectTime}" /></h3>
+    <div
+        id="${id}-panel"
+        class="card bg-base-100 fixed z-[240] hidden flex-col overflow-y-auto overflow-x-hidden px-1 pt-0.5 pb-1 shadow-xl"
+        data-panel-width="360"
+        data-picker-panel
+        hidden>
+      <div
+          class="mb-1.5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 border-b border-outline-variant/20 px-0.5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-on-surface-variant">
+        <div class="flex min-w-0 flex-col gap-1">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-primary/15 ring-1 ring-primary/35"></span>
+            <c:out value="${timePickerAvailable}" />
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-base-200 ring-1 ring-base-300/40"></span>
+            <c:out value="${timePickerUnavailable}" />
+          </span>
+        </div>
+        <div class="flex min-w-0 flex-col gap-1">
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-primary ring-1 ring-primary/30"></span>
+            <c:out value="${timePickerSelected}" />
+          </span>
+          <span class="inline-flex items-center gap-1.5">
+            <span class="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-error/15 ring-1 ring-error/35"></span>
+            <c:out value="${timePickerOccupied}" />
+          </span>
+        </div>
+        <div class="flex justify-end self-start">
+          <button
+              type="button"
+              class="btn btn-ghost btn-xs btn-circle shrink-0 text-on-surface-variant"
+              data-picker-close
+              aria-label="${fn:escapeXml(timePickerClose)}">
+            <span class="material-symbols-outlined text-base">close</span>
+          </button>
+        </div>
       </div>
-      <button type="button" class="inline-flex h-7 w-7 items-center justify-center rounded-full border-0 bg-surface-container-low text-on-surface cursor-pointer" data-picker-close aria-label="${fn:escapeXml(timePickerClose)}">
-        <span class="material-symbols-outlined text-[18px]">close</span>
-      </button>
-    </div>
 
-    <div class="mb-2 flex flex-wrap items-center gap-3 text-[10px] font-bold text-on-surface-variant">
-      <span class="inline-flex items-center gap-2">
-        <span class="inline-block h-3 w-3 rounded-full border border-primary/35 bg-primary/15"></span>
-        <c:out value="${timePickerAvailable}" />
-      </span>
-      <span class="inline-flex items-center gap-2">
-        <span class="inline-block h-3 w-3 rounded-full bg-[rgba(212,227,255,0.45)]"></span>
-        <c:out value="${timePickerUnavailable}" />
-      </span>
-      <span class="inline-flex items-center gap-2">
-        <span class="inline-block h-3 w-3 rounded-full bg-primary-container"></span>
-        <c:out value="${timePickerSelected}" />
-      </span>
-      <span class="inline-flex items-center gap-2">
-        <span class="inline-block h-3 w-3 rounded-full border border-error/25 bg-error/14"></span>
-        <c:out value="${timePickerOccupied}" />
-      </span>
-    </div>
+      <div class="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 px-0.5">
+        <span class="min-w-0 flex-1 text-[11px] font-semibold normal-case tracking-normal leading-snug text-on-surface-variant" data-time-helper>
+          <c:out value="${timePickerPickDateFirst}" />
+        </span>
+        <span class="max-w-[48%] shrink-0 text-right text-[10px] font-medium normal-case tracking-normal leading-snug text-outline">
+          <c:out value="${timePickerMinimumDuration}" />
+        </span>
+      </div>
 
-    <div class="mb-1.5 text-[11px] font-semibold text-on-surface-variant" data-time-helper><c:out value="${timePickerPickDateFirst}" /></div>
-    <div class="mb-3 text-[10px] font-medium text-outline"><c:out value="${timePickerMinimumDuration}" /></div>
-    <div class="hide-scrollbar min-h-0 flex-1 grid grid-cols-4 gap-2 overflow-y-auto" data-time-slots data-picker-scroll-region></div>
+      <div
+          class="min-h-0 max-h-[min(18rem,50vh)] flex-1 grid grid-cols-3 gap-1.5 overflow-y-auto overflow-x-hidden overscroll-y-contain px-0.5 sm:grid-cols-4 [scrollbar-gutter:stable]"
+          data-time-slots
+          data-picker-scroll-region></div>
 
-    <div class="mt-2 flex items-center justify-between gap-2">
-      <button type="button" class="inline-flex items-center gap-2 rounded-full border border-outline-variant bg-transparent px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-on-surface cursor-pointer" data-picker-clear>
-        <span class="material-symbols-outlined text-[16px]">ink_eraser</span>
-        <c:out value="${clearLabel}" />
-      </button>
-      <button type="button" class="flex min-h-10 flex-1 items-center justify-center gap-2 rounded-full border-0 bg-gradient-to-br from-primary to-primary-container px-4 text-sm font-extrabold text-on-primary shadow-[0_16px_32px_rgba(0,93,167,0.22)] cursor-pointer" data-time-apply>
-        <c:out value="${timePickerApply}" />
-        <span class="material-symbols-outlined text-base">arrow_forward</span>
-      </button>
+      <div class="mt-1.5 grid grid-cols-2 gap-2 border-t border-outline-variant/20 px-0.5 pt-1.5">
+        <button
+            type="button"
+            class="btn btn-outline btn-sm gap-1 font-semibold"
+            data-picker-clear>
+          <span class="material-symbols-outlined text-base">ink_eraser</span>
+          <c:out value="${clearLabel}" />
+        </button>
+        <button type="button" class="btn btn-primary btn-sm gap-1.5 font-semibold" data-time-apply>
+          <c:out value="${timePickerApply}" />
+          <span class="material-symbols-outlined text-base">arrow_forward</span>
+        </button>
+      </div>
     </div>
   </div>
-</div>
+</fieldset>

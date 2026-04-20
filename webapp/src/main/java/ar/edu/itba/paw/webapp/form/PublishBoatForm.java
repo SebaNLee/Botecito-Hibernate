@@ -8,10 +8,10 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
-import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,18 +31,20 @@ public class PublishBoatForm {
 
     @NotBlank(groups = Step1.class, message = "{publish.validation.location.required}")
     @Pattern(regexp = "\\d+", groups = Step1.class, message = "{publish.validation.location.invalid}")
-    private String marina;
+    private String locationOptionId;
 
     @NotBlank(groups = Step1.class, message = "{publish.validation.capacity.required}")
+    @Pattern(regexp = "^([1-9]|1[0-9]|20)$", groups = Step1.class, message = "{publish.validation.capacity.invalid}")
     private String capacity;
 
     @NotBlank(groups = Step1.class, message = "{publish.validation.itemType.required}")
     private String itemTypeId;
 
     @NotBlank(groups = Step1.class, message = "{publish.validation.price.required}")
-    @Pattern(regexp = "^$|\\d+", groups = Step1.class, message = "{publish.validation.price.numeric}")
+    @Pattern(regexp = "^[1-9]\\d*$", groups = Step1.class, message = "{publish.validation.price.positive}")
     private String pricePerHour;
 
+    @NotNull(groups = Step1.class, message = "{publish.validation.difficulty.required}")
     @Min(value = 1, groups = Step1.class, message = "{publish.validation.difficulty.min}")
     @Max(value = 5, groups = Step1.class, message = "{publish.validation.difficulty.max}")
     private Integer difficultyLevel;
@@ -57,21 +59,6 @@ public class PublishBoatForm {
     private String uploadedImageContentType;
 
     private final Map<DayOfWeek, TimeRangeList> availabilityByWeekday = new EnumMap<>(DayOfWeek.class);
-
-    @NotBlank(groups = Step3.class, message = "{publish.validation.ownerFirstName.required}")
-    @Size(max = 100, groups = Step3.class, message = "{publish.validation.ownerFirstName.max}")
-    private String ownerFirstName;
-
-    @NotBlank(groups = Step3.class, message = "{publish.validation.ownerLastName.required}")
-    @Size(max = 100, groups = Step3.class, message = "{publish.validation.ownerLastName.max}")
-    private String ownerLastName;
-
-    @NotBlank(groups = Step3.class, message = "{publish.validation.ownerEmail.required}")
-    @Email(groups = Step3.class, message = "{publish.validation.ownerEmail.invalid}")
-    @Size(max = 150, groups = Step3.class, message = "{publish.validation.ownerEmail.max}")
-    private String ownerEmail;
-
-    private String ownerPreferredLanguage = "es";
 
     public String getTitle() {
         return title;
@@ -89,12 +76,12 @@ public class PublishBoatForm {
         this.description = description;
     }
 
-    public String getMarina() {
-        return marina;
+    public String getLocationOptionId() {
+        return locationOptionId;
     }
 
-    public void setMarina(final String marina) {
-        this.marina = marina;
+    public void setLocationOptionId(final String locationOptionId) {
+        this.locationOptionId = locationOptionId;
     }
 
     public String getCapacity() {
@@ -210,37 +197,5 @@ public class PublishBoatForm {
         for (final Map.Entry<DayOfWeek, TimeRangeList> dayEntry : availabilityByWeekday.entrySet()) {
             setAvailabilityFor(dayEntry.getKey(), dayEntry.getValue());
         }
-    }
-
-    public String getOwnerFirstName() {
-        return ownerFirstName;
-    }
-
-    public void setOwnerFirstName(final String ownerFirstName) {
-        this.ownerFirstName = ownerFirstName;
-    }
-
-    public String getOwnerLastName() {
-        return ownerLastName;
-    }
-
-    public void setOwnerLastName(final String ownerLastName) {
-        this.ownerLastName = ownerLastName;
-    }
-
-    public String getOwnerEmail() {
-        return ownerEmail;
-    }
-
-    public void setOwnerEmail(final String ownerEmail) {
-        this.ownerEmail = ownerEmail;
-    }
-
-    public String getOwnerPreferredLanguage() {
-        return ownerPreferredLanguage;
-    }
-
-    public void setOwnerPreferredLanguage(final String ownerPreferredLanguage) {
-        this.ownerPreferredLanguage = ownerPreferredLanguage;
     }
 }

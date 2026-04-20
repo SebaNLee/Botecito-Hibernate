@@ -2,6 +2,8 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
+import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.math.BigDecimal;
@@ -47,11 +49,18 @@ public class ItemServiceImplTest {
         final Item createdItem = new Item();
         createdItem.setId(99);
 
+        final ItemType itemType = new ItemType();
+        itemType.setId(1);
+        final LocationOption locationOption = new LocationOption();
+        locationOption.setId(1);
+
         final ItemAvailability availability = new ItemAvailability();
         availability.setWeekday(DayOfWeek.MONDAY);
         availability.setStartTime(LocalTime.of(10, 0));
         availability.setEndTime(LocalTime.of(12, 0));
 
+        Mockito.when(itemDao.findItemTypeById(1)).thenReturn(Optional.of(itemType));
+        Mockito.when(itemDao.listLocationOptions()).thenReturn(List.of(locationOption));
         Mockito.when(itemDao.findUserByEmail("a@a.com")).thenReturn(Optional.empty());
         Mockito.when(itemDao.createUser("A", "A", "a@a.com", "es")).thenReturn(createdUser);
         Mockito.when(itemDao.createItem(

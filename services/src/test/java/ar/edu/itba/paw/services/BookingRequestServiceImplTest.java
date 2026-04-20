@@ -46,7 +46,6 @@ public class BookingRequestServiceImplTest {
 
         final OffsetDateTime start = OffsetDateTime.now().plusDays(1);
         final OffsetDateTime end = start.plusHours(2);
-
         Mockito.when(itemDao.findUserByEmail("a@a.com")).thenReturn(Optional.of(existingUser));
         Mockito.when(itemDao.createBookingRequest(
                         Mockito.eq(15),

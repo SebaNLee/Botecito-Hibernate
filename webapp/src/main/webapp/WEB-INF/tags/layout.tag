@@ -11,7 +11,7 @@
 <c:set var="resolvedLang" value="${not empty pageContext.response.locale.language ? pageContext.response.locale.language : 'es'}" />
 
 <!DOCTYPE html>
-<html class="light" lang="${resolvedLang}">
+<html class="light" lang="${resolvedLang}" data-theme="botecito">
   <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
@@ -28,6 +28,7 @@
       <jsp:doBody />
     </main>
     <paw:siteFooter />
+    <script type="module" src="<c:url value='/js/cally-loader.js' />"></script>
     <script src="<c:url value='/js/date-time-picker.js' />"></script>
     <script src="<c:url value='/js/search-filters.js' />"></script>
     <script src="<c:url value='/js/form-submit-state.js' />"></script>

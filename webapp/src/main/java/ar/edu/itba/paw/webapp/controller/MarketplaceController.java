@@ -2,12 +2,16 @@ package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.Item;
+import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
+import ar.edu.itba.paw.services.DisabledTimeSlotService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
+import ar.edu.itba.paw.services.Page;
+import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -15,8 +19,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -26,11 +28,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -40,57 +44,74 @@ import org.springframework.web.servlet.ModelAndView;
 @Controller
 public class MarketplaceController {
     private static final String DEFAULT_SORT = "priceAsc";
+    private static final int MARKETPLACE_PAGE_SIZE = 10;
 
     private final ItemService itemService;
     private final MailService mailService;
     private final BookingRequestService bookingRequestService;
+    private final UserService userService;
+    private final DisabledTimeSlotService disabledTimeSlotService;
 
     @Autowired
     public MarketplaceController(
             final ItemService itemService,
             final MailService mailService,
-            final BookingRequestService bookingRequestService) {
+            final BookingRequestService bookingRequestService,
+            final UserService userService,
+            final DisabledTimeSlotService disabledTimeSlotService) {
         this.itemService = itemService;
         this.mailService = mailService;
         this.bookingRequestService = bookingRequestService;
+        this.userService = userService;
+        this.disabledTimeSlotService = disabledTimeSlotService;
     }
 
     @ModelAttribute("reservationRequestForm")
     public ReservationRequestForm reservationRequestForm(final Locale locale) {
         final ReservationRequestForm form = new ReservationRequestForm();
-        form.setRequesterPreferredLanguage(toSupportedLanguage(locale));
+        form.setRequesterPreferredLanguage(locale != null && "en".equalsIgnoreCase(locale.getLanguage()) ? "en" : "es");
         return form;
     }
 
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
     public ModelAndView marketplace(
             final HttpServletRequest request,
+            @RequestParam(value = "searchQuery", required = false) final String requestedSearchQuery,
             @RequestParam(value = "locationOptionId", required = false) final String requestedLocationOptionId,
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "startTime", required = false) final String requestedStartTime,
             @RequestParam(value = "endTime", required = false) final String requestedEndTime,
             @RequestParam(value = "capacity", required = false) final String requestedCapacity,
             @RequestParam(value = "maxWeight", required = false) final String requestedMaxWeight,
-            @RequestParam(value = "sort", required = false, defaultValue = DEFAULT_SORT) final String sort) {
+            @RequestParam(value = "difficultyLevel", required = false) final String requestedDifficultyLevel,
+            @RequestParam(value = "sort", required = false, defaultValue = DEFAULT_SORT) final String sort,
+            @RequestParam(value = "page", required = false) final String requestedPage) {
         final String resolvedSort = resolveSort(sort);
-        final List<Item> filteredItems = new ArrayList<>(itemService.listItems().stream()
-                .filter(item -> matchesRequestedLocation(item, requestedLocationOptionId))
-                .filter(item -> matchesMarketplaceAvailability(
-                        item.getId(), requestedDate, requestedStartTime, requestedEndTime))
-                .filter(item -> matchesRequestedCapacity(item, requestedCapacity))
-                .filter(item -> matchesRequestedWeight(item, requestedMaxWeight))
-                .toList());
-        filteredItems.sort(comparatorFor(resolvedSort));
+        final ItemSearchCriteria criteria = buildItemSearchCriteria(
+                requestedSearchQuery,
+                requestedLocationOptionId,
+                requestedDate,
+                requestedStartTime,
+                requestedEndTime,
+                requestedCapacity,
+                requestedMaxWeight,
+                parseDifficultyLevel(requestedDifficultyLevel),
+                resolvedSort);
+        final Page<Item> itemPage =
+                itemService.searchItems(criteria, resolvePage(requestedPage), MARKETPLACE_PAGE_SIZE);
         final ModelAndView mav = new ModelAndView("marketplace");
-        mav.addObject("items", filteredItems);
-        mav.addObject("itemImages", buildItemImagesMap(request.getContextPath()));
-        mav.addObject("itemsCount", filteredItems.size());
+        mav.addObject("items", itemPage.getContent());
+        mav.addObject("itemImages", buildItemImagesMap(itemPage.getContent(), request.getContextPath()));
+        mav.addObject("itemsCount", itemPage.getTotalItems());
+        mav.addObject("itemPage", itemPage);
         mav.addObject("sort", resolvedSort);
         AvailabilityPickerSupport.addAvailabilityPickerData(
                 mav,
                 "search",
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilities(), itemService.listBookings()));
+                        itemService.listAvailabilities(),
+                        itemService.listBookings(),
+                        disabledTimeSlotService.listAll()));
         return mav;
     }
 
@@ -128,9 +149,12 @@ public class MarketplaceController {
             final HttpServletRequest request,
             @PathVariable("id") final int itemId,
             @Valid @ModelAttribute("reservationRequestForm") final ReservationRequestForm form,
-            final BindingResult errors,
-            final Locale locale,
-            @RequestHeader(value = "Accept-Language", required = false) final String acceptLanguage) {
+            final BindingResult errors) {
+        final User currentUser = currentAuthenticatedUser();
+        if (currentUser == null) {
+            return new ModelAndView("redirect:/login");
+        }
+
         final Optional<Item> item = itemService.findItemById(itemId);
         if (item.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
@@ -149,13 +173,12 @@ public class MarketplaceController {
         }
 
         try {
-            form.setRequesterPreferredLanguage(resolvePreferredLanguage(locale, acceptLanguage));
             final BookingRequest bookingRequest = bookingRequestService.createBookingRequest(
                     itemId,
-                    form.getRequesterGivenName().trim(),
-                    form.getRequesterLastName().trim(),
-                    form.getRequesterEmail().trim(),
-                    form.getRequesterPreferredLanguage(),
+                    currentUser.getGivenName(),
+                    currentUser.getLastName(),
+                    currentUser.getEmail(),
+                    currentUser.getPreferredLanguage(),
                     toOffsetDateTime(form.getDate(), form.getStartTime()),
                     toOffsetDateTime(form.getDate(), form.getEndTime()),
                     buildReservationRequestDescription(item.get(), owner.orElse(null), form));
@@ -171,35 +194,6 @@ public class MarketplaceController {
         }
     }
 
-    private static String resolvePreferredLanguage(final Locale locale, final String acceptLanguageHeader) {
-        final String localeLanguage = toSupportedLanguage(locale);
-        if ("en".equals(localeLanguage)) {
-            return "en";
-        }
-        return toSupportedLanguage(acceptLanguageHeader);
-    }
-
-    private static String toSupportedLanguage(final Locale locale) {
-        if (locale != null && "en".equalsIgnoreCase(locale.getLanguage())) {
-            return "en";
-        }
-        return "es";
-    }
-
-    private static String toSupportedLanguage(final String languageTag) {
-        if (languageTag == null || languageTag.isBlank()) {
-            return "es";
-        }
-        final String firstToken = languageTag.split(",", 2)[0].trim();
-        final String tag = firstToken.split(";", 2)[0].trim();
-        if ("en".equalsIgnoreCase(tag)
-                || tag.regionMatches(true, 0, "en-", 0, 3)
-                || tag.regionMatches(true, 0, "en_", 0, 3)) {
-            return "en";
-        }
-        return "es";
-    }
-
     private ModelAndView buildMarketplaceItemView(
             final String servletContextPath, final int itemId, final ReservationRequestForm form) {
         final Optional<Item> item = itemService.findItemById(itemId);
@@ -212,7 +206,9 @@ public class MarketplaceController {
                 itemService.findItemTypeById(item.get().getTypeId());
         final AvailabilityPickerSupport.AvailabilityPickerData reservationAvailability =
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
+                        itemService.listAvailabilitiesByItemId(itemId),
+                        itemService.listBookingsByItemId(itemId),
+                        disabledTimeSlotService.listByItem(itemId));
         final List<String> offeredDates = reservationAvailability.getOfferedDates();
         final Map<String, List<String>> offeredTimesByDate = reservationAvailability.getOfferedTimesByDate();
         final ModelAndView mav = new ModelAndView("marketplace-item");
@@ -252,33 +248,6 @@ public class MarketplaceController {
         return mav;
     }
 
-    private static boolean matchesRequestedLocation(final Item item, final String requestedLocationOptionId) {
-        final Integer parsedLocationOptionId = parseInteger(requestedLocationOptionId);
-        if (parsedLocationOptionId == null) {
-            return true;
-        }
-
-        return item.getLocationOptionId() != null && item.getLocationOptionId().equals(parsedLocationOptionId);
-    }
-
-    private static boolean matchesRequestedCapacity(final Item item, final String requestedCapacity) {
-        final Integer parsedCapacity = parseInteger(requestedCapacity);
-        if (parsedCapacity == null) {
-            return true;
-        }
-
-        return item.getCapacityPeople() >= parsedCapacity;
-    }
-
-    private static boolean matchesRequestedWeight(final Item item, final String requestedMaxWeight) {
-        final Integer parsedWeight = parseInteger(requestedMaxWeight);
-        if (parsedWeight == null) {
-            return true;
-        }
-
-        return item.getMaxWeightKg().compareTo(BigDecimal.valueOf(parsedWeight.longValue())) >= 0;
-    }
-
     private static Integer parseInteger(final String value) {
         if (isBlank(value)) {
             return null;
@@ -289,6 +258,46 @@ public class MarketplaceController {
         } catch (final NumberFormatException exception) {
             return null;
         }
+    }
+
+    private static int resolvePage(final String page) {
+        final Integer parsedPage = parseInteger(page);
+        if (parsedPage == null || parsedPage < 1) {
+            return 1;
+        }
+        return parsedPage;
+    }
+
+    private static ItemSearchCriteria buildItemSearchCriteria(
+            final String searchQuery,
+            final String requestedLocationOptionId,
+            final String requestedDate,
+            final String requestedStartTime,
+            final String requestedEndTime,
+            final String requestedCapacity,
+            final String requestedMaxWeight,
+            final Integer difficultyLevel,
+            final String sort) {
+        final ItemSearchCriteria criteria = new ItemSearchCriteria();
+        criteria.setLocationOptionId(parseInteger(requestedLocationOptionId));
+        criteria.setDate(requestedDate);
+        criteria.setStartTime(requestedStartTime);
+        criteria.setEndTime(requestedEndTime);
+        criteria.setCapacity(parseInteger(requestedCapacity));
+        final Integer maxWeight = parseInteger(requestedMaxWeight);
+        criteria.setMaxWeightKg(maxWeight == null ? null : BigDecimal.valueOf(maxWeight.longValue()));
+        criteria.setDifficultyLevel(difficultyLevel);
+        criteria.setSort(sort);
+        criteria.setSearchQuery(searchQuery);
+        return criteria;
+    }
+
+    private static Integer parseDifficultyLevel(final String value) {
+        final Integer parsed = parseInteger(value);
+        if (parsed == null || parsed < 1 || parsed > 5) {
+            return null;
+        }
+        return parsed;
     }
 
     private static String resolveSort(final String sort) {
@@ -302,30 +311,9 @@ public class MarketplaceController {
         };
     }
 
-    private static Comparator<Item> comparatorFor(final String sort) {
-        return switch (sort) {
-            case "titleAsc" -> Comparator.comparing(
-                    MarketplaceController::sortableTitle, String.CASE_INSENSITIVE_ORDER);
-            case "titleDesc" -> Comparator.comparing(
-                            MarketplaceController::sortableTitle, String.CASE_INSENSITIVE_ORDER)
-                    .reversed();
-            case "priceDesc" -> Comparator.comparing(
-                    Item::getPricePerHour, Comparator.nullsLast(Comparator.reverseOrder()));
-            case "priceAsc" -> Comparator.comparing(Item::getPricePerHour, Comparator.nullsLast(Integer::compareTo));
-            default -> Comparator.comparing(Item::getPricePerHour, Comparator.nullsLast(Integer::compareTo));
-        };
-    }
-
-    private static String sortableTitle(final Item item) {
-        if (item == null || item.getTitle() == null) {
-            return "";
-        }
-        return item.getTitle().trim();
-    }
-
-    private Map<Integer, String> buildItemImagesMap(final String servletContextPath) {
+    private Map<Integer, String> buildItemImagesMap(final List<Item> items, final String servletContextPath) {
         final Map<Integer, String> itemImages = new LinkedHashMap<>();
-        for (final Item item : itemService.listItems()) {
+        for (final Item item : items) {
             itemImages.put(item.getId(), ItemImageUtils.resolveImageUrl(itemService, item.getId(), servletContextPath));
         }
         return itemImages;
@@ -374,7 +362,9 @@ public class MarketplaceController {
 
         final AvailabilityPickerSupport.AvailabilityPickerData availabilityData =
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
+                        itemService.listAvailabilitiesByItemId(itemId),
+                        itemService.listBookingsByItemId(itemId),
+                        disabledTimeSlotService.listByItem(itemId));
         final List<String> availableTimes =
                 availabilityData.getOfferedTimesByDate().get(requestedDate);
 
@@ -457,5 +447,15 @@ public class MarketplaceController {
         return LocalDateTime.of(localDate, localTime)
                 .atZone(ZoneId.systemDefault())
                 .toOffsetDateTime();
+    }
+
+    private User currentAuthenticatedUser() {
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+        return userService.findByEmail(authentication.getName()).orElse(null);
     }
 }

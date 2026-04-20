@@ -1,11 +1,13 @@
 (function () {
   const FILTER_KEYS = [
+    "searchQuery",
     "locationOptionId",
     "date",
     "startTime",
     "endTime",
     "capacity",
     "maxWeight",
+    "difficultyLevel",
   ];
   const APPLIED_FILTERS_KEY = "paw.marketplaceFilters";
   const DRAFT_FILTERS_KEY = "paw.marketplaceFilterDraft";
@@ -21,6 +23,36 @@
 
   function normalizeText(value) {
     return (value || "").toString().trim().toLowerCase();
+  }
+
+  function openUnavailableAlert(alertRoot) {
+    if (!alertRoot) {
+      return;
+    }
+
+    alertRoot.hidden = false;
+    if (typeof alertRoot.showModal === "function") {
+      if (!alertRoot.open) {
+        alertRoot.showModal();
+      }
+      return;
+    }
+
+    alertRoot.classList.remove("hidden");
+    alertRoot.classList.add("flex");
+  }
+
+  function closeUnavailableAlert(alertRoot) {
+    if (!alertRoot) {
+      return;
+    }
+
+    if (typeof alertRoot.close === "function" && alertRoot.open) {
+      alertRoot.close();
+    }
+    alertRoot.hidden = true;
+    alertRoot.classList.add("hidden");
+    alertRoot.classList.remove("flex");
   }
 
   function normalizeState(state) {
@@ -145,6 +177,13 @@
 
     if (state.startTime && state.endTime) {
       controls.timePicker.setSelection(state.startTime, state.endTime);
+    } else if (state.startTime) {
+      if (!controls.timePicker.setSelection(state.startTime, "")) {
+        controls.timePicker.startInput.value = state.startTime;
+        controls.timePicker.endInput.value = "";
+        controls.timePicker.dispatchSelectionChange();
+        controls.timePicker.render();
+      }
     } else {
       controls.timePicker.clear();
     }
@@ -169,6 +208,14 @@
     }
 
     return normalizeState({
+      searchQuery:
+        form.querySelector('[name="searchQuery"]')?.value ||
+        document.querySelector(
+          '[data-marketplace-search-input][form="' +
+            form.getAttribute("id") +
+            '"]',
+        )?.value ||
+        "",
       locationOptionId:
         form.querySelector("[data-location-value]")?.value ||
         form.querySelector('[name="locationOptionId"]')?.value ||
@@ -193,6 +240,7 @@
         form.querySelector("[data-weight-value-input]")?.value ||
         form.querySelector('[name="maxWeight"]')?.value ||
         "",
+      difficultyLevel: form.querySelector('[name="difficultyLevel"]')?.value || "",
     });
   }
 
@@ -270,7 +318,29 @@
       this.options = [];
       this.root.__locationPicker = this;
       this.bind();
+      this.bindSubmitToForm();
       this.loadOptions();
+    }
+
+    /** Sync hidden location id before submit; optionally require a selection (publish). */
+    bindSubmitToForm() {
+      const form = this.root.closest("form");
+      if (!form || !this.hiddenInput || !this.queryInput) {
+        return;
+      }
+
+      this._formSubmitListener = (event) => {
+        this.prepareForSubmit();
+        const msg = (this.root.dataset.locationRequiredMessage || "").trim();
+        if (msg && !String(this.hiddenInput.value || "").trim()) {
+          event.preventDefault();
+          this.queryInput.setCustomValidity(msg);
+          this.queryInput.reportValidity();
+          this.queryInput.setCustomValidity("");
+          this.queryInput.focus();
+        }
+      };
+      form.addEventListener("submit", this._formSubmitListener);
     }
 
     bind() {
@@ -609,6 +679,13 @@
 
   function hydrateForm(form, state) {
     const normalized = normalizeState(state);
+    const searchInput = document.querySelector(
+      '[data-marketplace-search-input][form="' + form.getAttribute("id") + '"]',
+    );
+
+    if (searchInput) {
+      searchInput.value = normalized.searchQuery;
+    }
 
     form.querySelectorAll("[data-location-picker]").forEach((root) => {
       root.__locationPicker?.setSelectedValue(normalized.locationOptionId);
@@ -622,22 +699,31 @@
       root.__weightSlider?.setValue(normalized.maxWeight);
     });
 
-    setDateTimeState(form, normalized);
-  }
+    const difficultySelect = form.querySelector('[name="difficultyLevel"]');
+    if (difficultySelect) {
+      difficultySelect.value = normalized.difficultyLevel || "";
+    }
 
-  function prepareFilterForm(form) {
-    form.querySelectorAll("[data-location-picker]").forEach((root) => {
-      root.__locationPicker?.prepareForSubmit();
-    });
+    setDateTimeState(form, normalized);
   }
 
   function bindDraftPersistence(form) {
     const persistDraft = () => {
       writeStoredState(DRAFT_FILTERS_KEY, readFilterStateFromForm(form));
     };
+    const searchInput = document.querySelector(
+      '[data-marketplace-search-input][form="' + form.getAttribute("id") + '"]',
+    );
+
+    if (searchInput) {
+      searchInput.addEventListener("change", persistDraft);
+      searchInput.addEventListener("input", persistDraft);
+    }
 
     form
-      .querySelectorAll("[data-location-value], [data-people-input], [data-weight-input]")
+      .querySelectorAll(
+        "[data-location-value], [data-people-input], [data-weight-input], [name=\"difficultyLevel\"]",
+      )
       .forEach((input) => {
         input.addEventListener("change", persistDraft);
         input.addEventListener("input", persistDraft);
@@ -671,7 +757,6 @@
 
     bindDraftPersistence(form);
     form.addEventListener("submit", () => {
-      prepareFilterForm(form);
       const nextState = readFilterStateFromForm(form);
       writeStoredState(DRAFT_FILTERS_KEY, nextState);
       writeStoredState(APPLIED_FILTERS_KEY, nextState);
@@ -704,7 +789,6 @@
     bindDraftPersistence(form);
     bindMarketplaceReset(resetControl);
     form.addEventListener("submit", () => {
-      prepareFilterForm(form);
       const nextState = readFilterStateFromForm(form);
       writeStoredState(DRAFT_FILTERS_KEY, nextState);
       writeStoredState(APPLIED_FILTERS_KEY, nextState);
@@ -730,6 +814,7 @@
     const itemLocationOptionId = alertRoot.dataset.itemLocationOptionId || "";
     const itemCapacity = parseInteger(alertRoot.dataset.itemCapacity);
     const itemMaxWeight = parseInteger(alertRoot.dataset.itemMaxWeight);
+    const itemDifficulty = parseInteger(alertRoot.dataset.itemDifficultyLevel);
     const mismatchPrefix =
       alertRoot.dataset.mismatchPrefix ||
       "This item does not match the saved filters for";
@@ -745,10 +830,13 @@
       alertRoot.dataset.mismatchWeight || "required weight";
     const mismatchDateTime =
       alertRoot.dataset.mismatchDateTime || "date and time";
+    const mismatchDifficulty =
+      alertRoot.dataset.mismatchDifficulty || "difficulty level";
     const controls = getDateTimeControls(document);
     const mismatchReasons = [];
     const requestedCapacity = parseInteger(appliedState.capacity);
     const requestedWeight = parseInteger(appliedState.maxWeight);
+    const requestedDifficulty = parseInteger(appliedState.difficultyLevel);
 
     if (
       appliedState.locationOptionId &&
@@ -763,6 +851,13 @@
 
     if (requestedWeight != null && itemMaxWeight != null && itemMaxWeight < requestedWeight) {
       mismatchReasons.push(mismatchWeight);
+    }
+
+    if (
+      requestedDifficulty != null &&
+      (itemDifficulty == null || itemDifficulty !== requestedDifficulty)
+    ) {
+      mismatchReasons.push(mismatchDifficulty);
     }
 
     if (
@@ -811,11 +906,11 @@
           ". " +
           mismatchSuffix;
       }
-      alertRoot.hidden = false;
-      alertRoot.classList.remove("hidden");
-      alertRoot.classList.add("flex");
+      openUnavailableAlert(alertRoot);
       return;
     }
+
+    closeUnavailableAlert(alertRoot);
 
     if (controls && appliedState.date) {
       setDateTimeState(document, appliedState);

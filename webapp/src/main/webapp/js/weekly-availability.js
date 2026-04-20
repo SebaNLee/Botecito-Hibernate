@@ -38,13 +38,13 @@
   var SLOT_BASE =
     "min-h-9 rounded-lg border text-xs font-bold transition-all duration-150 select-none";
   var SLOT_AVAILABLE =
-    "border-transparent bg-surface-container-low text-on-surface cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_8px_16px_rgba(0,93,167,0.10)]";
+    "border-transparent bg-surface-container-low text-on-surface cursor-pointer hover:-translate-y-0.5 hover:shadow-sm";
   var SLOT_SELECTED =
     "border-transparent bg-gradient-to-br from-primary to-primary-container text-on-primary shadow-[0_8px_20px_rgba(0,93,167,0.22)]";
   var SLOT_PENDING =
     "border-primary bg-primary/15 text-primary animate-pulse cursor-pointer";
   var SLOT_UNAVAILABLE =
-    "border-transparent bg-[rgba(212,227,255,0.35)] text-[rgba(64,71,82,0.38)] cursor-not-allowed";
+    "border-transparent bg-surface-container-highest/35 text-outline/40 cursor-not-allowed";
   var SLOT_DISABLED =
     "border-transparent bg-surface-container-high/40 text-outline/30 cursor-not-allowed";
 

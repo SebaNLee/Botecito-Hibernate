@@ -4,6 +4,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="marketplaceUrl" value="/marketplace" />
+<c:url var="heroImageUrl" value="/img/landing-hero.png" />
 <spring:message code="filters.location" var="locationLabel" />
 <spring:message code="filters.location.placeholder" var="locationPlaceholder" />
 <spring:message code="filters.date" var="dateLabel" />
@@ -24,7 +25,7 @@
       <img
         class="w-full h-full object-cover"
         alt="<spring:message code='landing.hero.imageAlt' />"
-        src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZ5Kqd4fIKaFZvY-voq31ImCLWMzSnpeVGHpeEyaXd8kXtZiSFMnnKueB6HamkvchzGHcdtKloU7aDgr0MGxnoT_9ajOLMji0wPSC7yQ5emqwmkA73GZQCbn35o0UxfJBxyeJdhr-pzL1EEkw8LCF2DcdIJfVaWRcu-RoozLWsJ5ORG87g28BMPR4QUAoyt2LvbzVgTrE-Am1XsXBjgD1E9SEkR7OkE9HuWK0S0ggwcliJWi00H0b6vl-7cuPGDQ0UDBDUBgelxxN5"
+        src="${heroImageUrl}"
       />
       <div
         class="absolute inset-0 bg-gradient-to-b from-on-background/40 via-on-background/10 to-background"
@@ -47,7 +48,7 @@
         action="${marketplaceUrl}"
         method="get"
         data-filter-form="landing"
-        class="bg-surface-container-lowest p-2 md:p-3 rounded-2xl md:rounded-full shadow-[0_32px_48px_rgba(11,28,50,0.12)] max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-2"
+        class="bg-base-100/95 backdrop-blur-sm border border-base-200 p-2 md:p-3 rounded-2xl md:rounded-[2rem] shadow-xl max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-2"
       >
         <div class="w-full min-w-0 px-3 py-3 group md:flex-[1.05]">
           <paw:locationPicker
@@ -94,7 +95,6 @@
             id="landing-capacity"
             name="capacity"
             label="${peopleLabel}"
-            icon="groups"
             placeholder="${peoplePlaceholder}"
             allowEmpty="true"
             min="1"
@@ -105,7 +105,7 @@
 
         <button
           type="submit"
-          class="w-full md:w-auto md:ml-4 md:shrink-0 bg-[#005da7] hover:bg-[#0076d1] text-white font-bold px-10 py-4 rounded-full transition-all active:scale-95 shadow-lg shadow-primary/20 flex items-center justify-center gap-2 border-none cursor-pointer"
+          class="btn btn-primary btn-lg w-full md:w-auto md:ml-4 md:shrink-0 rounded-full gap-2"
         >
           <span class="material-symbols-outlined">search</span>
           <span><spring:message code="landing.hero.search" /></span>

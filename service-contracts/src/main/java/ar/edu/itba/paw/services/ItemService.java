@@ -42,6 +42,8 @@ public interface ItemService {
 
     boolean hasBlockingBookingsForEdition(int itemId);
 
+    boolean deleteItemById(int itemId);
+
     Item createPublication(
             String ownerGivenName,
             String ownerLastName,

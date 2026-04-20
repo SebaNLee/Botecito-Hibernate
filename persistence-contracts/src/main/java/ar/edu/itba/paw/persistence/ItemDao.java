@@ -52,6 +52,8 @@ public interface ItemDao {
 
     boolean hasBlockingBookingsForEdition(int itemId);
 
+    boolean deleteItemById(int itemId);
+
     Item createItem(
             final int ownerId,
             final int typeId,

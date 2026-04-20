@@ -268,6 +268,12 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    public boolean deleteItemById(final int itemId) {
+        final int deletedRows = jdbcTemplate.update("DELETE FROM item WHERE id = ?", itemId);
+        return deletedRows > 0;
+    }
+
+    @Override
     public Item createItem(
             final int ownerId,
             final int typeId,

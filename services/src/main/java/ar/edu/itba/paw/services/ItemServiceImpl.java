@@ -105,6 +105,11 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public boolean deleteItemById(final int itemId) {
+        return itemDao.deleteItemById(itemId);
+    }
+
+    @Override
     public Item createPublication(
             final String ownerGivenName,
             final String ownerLastName,

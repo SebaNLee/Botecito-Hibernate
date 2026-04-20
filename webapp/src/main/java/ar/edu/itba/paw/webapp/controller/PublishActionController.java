@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -169,15 +170,22 @@ public class PublishActionController {
             return new ModelAndView("redirect:/login");
         }
 
-        final Item item = itemService.findItemById(itemId).orElse(null);
-        if (item == null || item.getOwnerId() == null || !item.getOwnerId().equals(currentUser.getId())) {
+        final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
+        if (item.isEmpty()) {
             return new ModelAndView("redirect:/profile?publishAction=forbidden#my-publications");
         }
 
-        // BACKEND: call itemService.deleteItemById(itemId) (new method) which
-        // must DELETE the row from `item`. Note: `item_availability` already has
-        // ON DELETE CASCADE, but `item_booking` does NOT — decide whether to
-        // cascade, block deletion when bookings exist, or null-out the FK.
+        if (itemService.hasBlockingBookingsForEdition(itemId)) {
+            return new ModelAndView("redirect:/profile?publishAction=deleteBlockedByBookings#my-publications");
+        }
+
+        try {
+            if (!itemService.deleteItemById(itemId)) {
+                return new ModelAndView("redirect:/profile?publishAction=error#my-publications");
+            }
+        } catch (final DataAccessException e) {
+            return new ModelAndView("redirect:/profile?publishAction=error#my-publications");
+        }
 
         return new ModelAndView("redirect:/profile?publishAction=deleted#my-publications");
     }

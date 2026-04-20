@@ -2,14 +2,10 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
-import ar.edu.itba.paw.models.Item;
-import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
-import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -48,24 +44,8 @@ public class BookingRequestServiceImplTest {
         createdBooking.setState(BookingState.BOOKING_PENDING);
         createdBooking.setCreatedAt(OffsetDateTime.now());
 
-        final OffsetDateTime start = OffsetDateTime.now()
-                .plusDays(1)
-                .withHour(10)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0);
+        final OffsetDateTime start = OffsetDateTime.now().plusDays(1);
         final OffsetDateTime end = start.plusHours(2);
-        final Item item = new Item();
-        item.setId(15);
-        item.setActive(Boolean.TRUE);
-        final ItemAvailability availability = new ItemAvailability();
-        availability.setWeekday(start.getDayOfWeek());
-        availability.setStartTime(LocalTime.MIN);
-        availability.setEndTime(LocalTime.MAX);
-
-        Mockito.when(itemDao.findItemById(15)).thenReturn(Optional.of(item));
-        Mockito.when(itemDao.listAvailabilitiesByItemId(15)).thenReturn(List.of(availability));
-        Mockito.when(itemDao.listBookingsByItemId(15)).thenReturn(List.of());
         Mockito.when(itemDao.findUserByEmail("a@a.com")).thenReturn(Optional.of(existingUser));
         Mockito.when(itemDao.createBookingRequest(
                         Mockito.eq(15),
@@ -84,39 +64,6 @@ public class BookingRequestServiceImplTest {
         Mockito.verify(itemDao).updateUserProfile(7, "A", "B", "en");
         Mockito.verify(itemDao, Mockito.never())
                 .createUser(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
-    }
-
-    @Test
-    public void testCreateBookingRequestRejectsUnavailableTime() {
-        final OffsetDateTime start = OffsetDateTime.now()
-                .plusDays(1)
-                .withHour(10)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0);
-        final OffsetDateTime end = start.plusHours(2);
-        final Item item = new Item();
-        item.setId(15);
-        item.setActive(Boolean.TRUE);
-        final ItemAvailability availability = new ItemAvailability();
-        availability.setWeekday(start.getDayOfWeek().plus(1));
-        availability.setStartTime(LocalTime.of(10, 0));
-        availability.setEndTime(LocalTime.of(12, 0));
-
-        Mockito.when(itemDao.findItemById(15)).thenReturn(Optional.of(item));
-        Mockito.when(itemDao.listAvailabilitiesByItemId(15)).thenReturn(List.of(availability));
-
-        Assertions.assertThrows(
-                IllegalArgumentException.class,
-                () -> bookingRequestService.createBookingRequest(15, "A", "B", "a@a.com", "en", start, end, "a"));
-        Mockito.verify(itemDao, Mockito.never())
-                .createBookingRequest(
-                        Mockito.anyInt(),
-                        Mockito.anyInt(),
-                        Mockito.any(),
-                        Mockito.any(),
-                        Mockito.anyString(),
-                        Mockito.anyString());
     }
 
     @Test

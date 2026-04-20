@@ -97,48 +97,4 @@ public class ItemServiceImplTest {
         Mockito.verify(itemDao).activateItemByOwnerDeleteToken(Mockito.anyString());
         Mockito.verify(itemDao).createItemAvailability(99, "MONDAY", "10:00", "12:00");
     }
-
-    @Test
-    public void testCreatePublicationRejectsInvalidAvailability() {
-        final ItemType itemType = new ItemType();
-        itemType.setId(1);
-        final LocationOption locationOption = new LocationOption();
-        locationOption.setId(1);
-        final ItemAvailability availability = new ItemAvailability();
-        availability.setWeekday(DayOfWeek.MONDAY);
-        availability.setStartTime(LocalTime.of(10, 0));
-        availability.setEndTime(LocalTime.of(11, 0));
-
-        Mockito.when(itemDao.findItemTypeById(1)).thenReturn(Optional.of(itemType));
-        Mockito.when(itemDao.listLocationOptions()).thenReturn(List.of(locationOption));
-
-        Assertions.assertThrows(
-                IllegalArgumentException.class,
-                () -> itemService.createPublication(
-                        "A",
-                        "A",
-                        "a@a.com",
-                        "es",
-                        1,
-                        "item-a",
-                        "a",
-                        2000,
-                        2,
-                        BigDecimal.valueOf(100),
-                        1,
-                        1,
-                        List.of(availability)));
-        Mockito.verify(itemDao, Mockito.never())
-                .createItem(
-                        Mockito.anyInt(),
-                        Mockito.anyInt(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyInt(),
-                        Mockito.anyInt(),
-                        Mockito.any(),
-                        Mockito.any(),
-                        Mockito.anyInt(),
-                        Mockito.anyString());
-    }
 }

@@ -131,6 +131,49 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
+    @Async("mailTaskExecutor")
+    public void sendPaymentProofSubmittedEmail(
+            final String ownerEmail, final String requesterName, final String itemTitle, final String proofUrl) {
+        if (ownerEmail == null || ownerEmail.isBlank()) {
+            return;
+        }
+        try {
+            final Locale locale = resolveLocale(ownerEmail);
+            final Context context = new Context(locale);
+            context.setVariable("requesterName", requesterName);
+            context.setVariable("itemTitle", itemTitle);
+            context.setVariable("proofUrl", proofUrl);
+            sendHtmlEmail(
+                    ownerEmail,
+                    getMessage("mail.paymentProofSubmitted.subject", locale, requesterName),
+                    templateEngine.process("payment-proof-submitted", context));
+        } catch (final RuntimeException e) {
+            LOGGER.error("Could not send payment proof email to {}.", ownerEmail, e);
+        }
+    }
+
+    @Override
+    @Async("mailTaskExecutor")
+    public void sendPaymentReceivedEmail(
+            final String requesterEmail, final String requesterLocaleTag, final String itemTitle) {
+        if (requesterEmail == null || requesterEmail.isBlank()) {
+            return;
+        }
+        try {
+            final Locale locale = toSupportedLocale(requesterLocaleTag);
+            final Context context = new Context(locale);
+            context.setVariable("itemTitle", itemTitle);
+            context.setVariable("profileUrl", accountBaseUrl);
+            sendHtmlEmail(
+                    requesterEmail,
+                    getMessage("mail.paymentReceived.subject", locale, itemTitle),
+                    templateEngine.process("payment-received", context));
+        } catch (final RuntimeException e) {
+            LOGGER.error("Could not send payment received email to {}.", requesterEmail, e);
+        }
+    }
+
+    @Override
     public Locale resolveLocale(final String recipientIdentifier) {
         final Optional<Locale> userLocale = itemDao.findUserByEmail(recipientIdentifier)
                 .map(user -> toSupportedLocale(user.getPreferredLanguage()));
@@ -196,6 +239,8 @@ public class MailServiceImpl implements MailService {
         return switch (status) {
             case BOOKING_CONFIRMED -> "request.status.accepted";
             case BOOKING_REJECTED -> "request.status.declined";
+            case BOOKING_PAYMENT_SUBMITTED -> "request.status.paymentSubmitted";
+            case BOOKING_PAID -> "request.status.paid";
             default -> "request.status.updated";
         };
     }

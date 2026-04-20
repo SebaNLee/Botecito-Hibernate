@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.DisabledTimeSlot;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
@@ -7,11 +8,11 @@ import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.persistence.DisabledTimeSlotDao;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,10 +27,12 @@ public final class ItemServiceImpl implements ItemService {
     private static final int TIME_STEP_MINUTES = 30;
 
     private final ItemDao itemDao;
+    private final DisabledTimeSlotDao disabledTimeSlotDao;
 
     @Autowired
-    public ItemServiceImpl(final ItemDao itemDao) {
+    public ItemServiceImpl(final ItemDao itemDao, final DisabledTimeSlotDao disabledTimeSlotDao) {
         this.itemDao = itemDao;
+        this.disabledTimeSlotDao = disabledTimeSlotDao;
     }
 
     @Override
@@ -68,6 +71,11 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public Optional<Item> findAnyItemById(final int id) {
+        return itemDao.findAnyItemById(id);
+    }
+
+    @Override
     public Optional<User> findUserById(final int id) {
         return itemDao.findUserById(id);
     }
@@ -80,6 +88,27 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     public Optional<ItemType> findItemTypeById(final int id) {
         return itemDao.findItemTypeById(id);
+    }
+
+    @Override
+    public boolean updatePublication(
+            final int itemId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final Integer difficultyLevel,
+            final int locationOptionId) {
+        return itemDao.updatePublication(itemId, title, description, pricePerHour, difficultyLevel, locationOptionId);
+    }
+
+    @Override
+    public boolean hasBlockingBookingsForEdition(final int itemId) {
+        return itemDao.hasBlockingBookingsForEdition(itemId);
+    }
+
+    @Override
+    public boolean deleteItemById(final int itemId) {
+        return itemDao.deleteItemById(itemId);
     }
 
     @Override
@@ -116,10 +145,6 @@ public final class ItemServiceImpl implements ItemService {
                 difficultyLevel,
                 validatedLocationOptionId,
                 ownerDeleteToken);
-        if (!itemDao.activateItemByOwnerDeleteToken(ownerDeleteToken)) {
-            throw new IllegalStateException("Could not activate created item " + item.getId());
-        }
-        item.setActive(Boolean.TRUE);
 
         for (final ItemAvailability availability : availabilities) {
             itemDao.createItemAvailability(
@@ -132,19 +157,8 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken) {
-        return itemDao.findItemByOwnerDeleteToken(ownerDeleteToken);
-    }
-
-    @Override
-    public boolean activateItemByOwnerDeleteToken(final String ownerDeleteToken) {
-        return itemDao.activateItemByOwnerDeleteToken(ownerDeleteToken);
-    }
-
-    @Override
-    public boolean deactivateItemByOwnerDeleteToken(
-            final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt) {
-        return itemDao.deactivateItemByOwnerDeleteToken(ownerDeleteToken, ownerDeleteUsedAt);
+    public boolean setItemActive(final int itemId, final boolean active) {
+        return itemDao.setItemActive(itemId, active);
     }
 
     @Override
@@ -165,6 +179,26 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemBooking> listBookingsByItemId(final int itemId) {
         return itemDao.listBookingsByItemId(itemId);
+    }
+
+    @Override
+    public List<ItemBooking> listBookingsByGuestId(final int guestId) {
+        return itemDao.listBookingsByGuestId(guestId);
+    }
+
+    @Override
+    public List<ItemBooking> listBookingsByOwnerId(final int ownerId) {
+        return itemDao.listBookingsByOwnerId(ownerId);
+    }
+
+    @Override
+    public List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId) {
+        return itemDao.listPendingBookingsByOwnerId(ownerId);
+    }
+
+    @Override
+    public List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId) {
+        return itemDao.listPaymentSubmittedBookingsByOwnerId(ownerId);
     }
 
     @Override
@@ -191,6 +225,11 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     public Integer insertImage(final int itemId, final byte[] imageData) {
         return itemDao.insertImage(itemId, imageData);
+    }
+
+    @Override
+    public Integer replacePrimaryImage(final int itemId, final byte[] imageData) {
+        return itemDao.replacePrimaryImage(itemId, imageData);
     }
 
     private User resolveOrCreateOwner(
@@ -276,12 +315,16 @@ public final class ItemServiceImpl implements ItemService {
         final Map<Integer, List<ItemAvailability>> availabilitiesByItemId =
                 groupAvailabilitiesByItemId(itemDao.listAvailabilities());
         final Map<Integer, List<ItemBooking>> bookingsByItemId = groupBookingsByItemId(itemDao.listBookings());
+        final Map<Integer, List<DisabledTimeSlot>> disabledSlotsByItemId = new LinkedHashMap<>();
         final List<Item> filteredItems = new ArrayList<>();
         for (final Item item : candidates) {
+            final List<DisabledTimeSlot> disabledSlots =
+                    disabledSlotsByItemId.computeIfAbsent(item.getId(), id -> disabledTimeSlotDao.listByItem(id));
             if (MarketplaceAvailabilityMatcher.matches(
                     criteria,
                     availabilitiesByItemId.getOrDefault(item.getId(), List.of()),
-                    bookingsByItemId.getOrDefault(item.getId(), List.of()))) {
+                    bookingsByItemId.getOrDefault(item.getId(), List.of()),
+                    disabledSlots)) {
                 filteredItems.add(item);
             }
         }

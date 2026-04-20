@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.EditPublicationForm;
+import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -119,14 +120,14 @@ public class PublishActionController {
             return new ModelAndView("redirect:/login");
         }
 
-        final Item item = itemService.findItemById(itemId).orElse(null);
-        if (item == null || item.getOwnerId() == null || !item.getOwnerId().equals(currentUser.getId())) {
+        final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
+        if (item.isEmpty()) {
             return new ModelAndView("redirect:/profile?publishAction=forbidden#my-publications");
         }
 
-        // BACKEND: call itemService.setItemActive(itemId, false) (new method) to
-        // flip `item.active` to FALSE without consuming the legacy owner-delete
-        // token, so enabling afterwards is still possible.
+        if (!itemService.setItemActive(itemId, false)) {
+            return new ModelAndView("redirect:/profile?publishAction=forbidden#my-publications");
+        }
 
         return new ModelAndView("redirect:/profile?publishAction=disabled#my-publications");
     }
@@ -138,15 +139,14 @@ public class PublishActionController {
             return new ModelAndView("redirect:/login");
         }
 
-        final Item item = itemService.findItemById(itemId).orElse(null);
-        if (item == null || item.getOwnerId() == null || !item.getOwnerId().equals(currentUser.getId())) {
+        final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
+        if (item.isEmpty()) {
             return new ModelAndView("redirect:/profile?publishAction=forbidden#my-publications");
         }
 
-        // BACKEND: call itemService.setItemActive(itemId, true) (new method) to
-        // flip `item.active` to TRUE. The existing
-        // activateItemByOwnerDeleteToken(token) requires a one-time token and is
-        // not appropriate here.
+        if (!itemService.setItemActive(itemId, true)) {
+            return new ModelAndView("redirect:/profile?publishAction=forbidden#my-publications");
+        }
 
         return new ModelAndView("redirect:/profile?publishAction=enabled#my-publications");
     }
@@ -179,5 +179,11 @@ public class PublishActionController {
             return null;
         }
         return userService.findByEmail(authentication.getName()).orElse(null);
+    }
+
+    private Optional<Item> resolveOwnedItem(final User currentUser, final int itemId) {
+        return itemService.listItemsByOwnerId(currentUser.getId()).stream()
+                .filter(item -> item.getId() == itemId)
+                .findFirst();
     }
 }

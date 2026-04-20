@@ -109,6 +109,8 @@ public interface ItemDao {
 
     boolean deactivateItemByOwnerDeleteToken(final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt);
 
+    boolean setItemActive(final int itemId, final boolean active);
+
     Optional<byte[]> findImageById(final int id);
 
     List<Integer> listImageIdsByItemId(final int itemId);

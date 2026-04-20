@@ -144,6 +144,11 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public boolean setItemActive(final int itemId, final boolean active) {
+        return itemDao.setItemActive(itemId, active);
+    }
+
+    @Override
     public List<ItemAvailability> listAvailabilities() {
         return itemDao.listAvailabilities();
     }

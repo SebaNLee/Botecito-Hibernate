@@ -522,6 +522,12 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    public boolean setItemActive(final int itemId, final boolean active) {
+        final int updatedRows = jdbcTemplate.update("UPDATE item SET active = ? WHERE id = ?", active, itemId);
+        return updatedRows > 0;
+    }
+
+    @Override
     public Optional<byte[]> findImageById(final int id) {
         if (!hasTable("item_media")) {
             return Optional.empty();

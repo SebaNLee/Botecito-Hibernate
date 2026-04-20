@@ -52,6 +52,8 @@ public interface ItemService {
 
     boolean deactivateItemByOwnerDeleteToken(final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt);
 
+    boolean setItemActive(final int itemId, final boolean active);
+
     List<ItemAvailability> listAvailabilities();
 
     List<ItemAvailability> listAvailabilitiesByItemId(final int itemId);

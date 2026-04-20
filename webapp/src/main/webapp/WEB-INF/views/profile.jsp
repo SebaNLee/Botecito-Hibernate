@@ -107,8 +107,8 @@
               <c:url var="deleteItemUrl" value="/profile/item/${item.id}/delete" />
               <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
               <c:set var="kebabId" value="publication-kebab-${item.id}" />
-              <div class="rounded-xl bg-base-200 p-4 flex items-center justify-between gap-4 ${item.active ? '' : 'opacity-75'}">
-                <div>
+              <div class="rounded-xl bg-base-200 p-4 flex items-center justify-between gap-4">
+                <div class="${item.active ? '' : 'opacity-75'}">
                   <div class="flex items-center gap-2">
                     <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${item.title}" /></p>
                     <span class="badge ${item.active ? 'badge-success' : 'badge-ghost'} badge-sm font-bold">

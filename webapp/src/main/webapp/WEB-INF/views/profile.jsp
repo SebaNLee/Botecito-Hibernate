@@ -20,6 +20,8 @@
 <spring:message code="profile.bookings.decline" var="declineLabel" />
 <spring:message code="profile.paymentProofs.confirmReceived" var="paymentReceivedLabel" />
 <spring:message code="profile.sentBookings.paymentProof.upload" var="uploadPaymentProofLabel" />
+<spring:message code="profile.bookings.paymentInfo.price" var="paymentInfoPriceLabel" />
+<spring:message code="profile.bookings.paymentInfo.alias" var="paymentInfoAliasLabel" />
 
 <c:set var="initials" value="" />
 <c:if test="${not empty user.givenName}">
@@ -227,6 +229,12 @@
                 <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.paid'}">
                   <c:set var="receivedStatusClass" value="badge-success" />
                 </c:if>
+                <c:set
+                    var="showReceivedPaymentInfo"
+                    value="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.confirmed'
+                        || receivedRequest.statusMessageCode == 'profile.sentBookings.status.paymentSubmitted'
+                        || receivedRequest.statusMessageCode == 'profile.sentBookings.status.paid'
+                        || receivedRequest.statusMessageCode == 'profile.sentBookings.status.completed'}" />
                 <div class="rounded-xl bg-base-200 p-4 space-y-4">
                   <div class="flex items-start justify-between gap-3">
                     <p class="m-0 min-w-0 break-words text-sm font-bold text-on-surface"><c:out value="${receivedRequest.itemTitle}" /></p>
@@ -241,6 +249,18 @@
                       <p class="m-0 text-xs text-on-surface-variant"><c:out value="${receivedRequest.timeRangeLabel}" /></p>
                     </div>
                   </div>
+                  <c:if test="${showReceivedPaymentInfo}">
+                    <div class="rounded-lg bg-base-100 p-3 space-y-2">
+                      <div>
+                        <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${paymentInfoPriceLabel}" /></p>
+                        <p class="m-0 mt-1 text-sm font-bold text-on-surface">$ <c:out value="${not empty receivedRequest.totalPriceLabel ? receivedRequest.totalPriceLabel : '-'}" /></p>
+                      </div>
+                      <div>
+                        <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${paymentInfoAliasLabel}" /></p>
+                        <p class="m-0 mt-1 break-all text-sm font-bold text-on-surface"><c:out value="${not empty receivedRequest.paymentAlias ? receivedRequest.paymentAlias : '-'}" /></p>
+                      </div>
+                    </div>
+                  </c:if>
                   <div class="rounded-lg bg-base-100 p-3">
                     <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.bookings.requester.label" /></p>
                     <p class="m-0 mt-1 break-words text-sm font-bold text-on-surface"><c:out value="${receivedRequest.requesterName}" /></p>
@@ -309,6 +329,12 @@
                 <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paid'}">
                   <c:set var="sentStatusClass" value="badge-success" />
                 </c:if>
+                <c:set
+                    var="showSentPaymentInfo"
+                    value="${sentRequest.statusMessageCode == 'profile.sentBookings.status.confirmed'
+                        || sentRequest.statusMessageCode == 'profile.sentBookings.status.paymentSubmitted'
+                        || sentRequest.statusMessageCode == 'profile.sentBookings.status.paid'
+                        || sentRequest.statusMessageCode == 'profile.sentBookings.status.completed'}" />
                 <div class="rounded-xl bg-base-200 p-4 space-y-4">
                   <div class="flex items-start justify-between gap-3">
                     <p class="m-0 min-w-0 break-words text-sm font-bold text-on-surface"><c:out value="${sentRequest.itemTitle}" /></p>
@@ -323,6 +349,18 @@
                       <p class="m-0 text-xs text-on-surface-variant"><c:out value="${sentRequest.timeRangeLabel}" /></p>
                     </div>
                   </div>
+                  <c:if test="${showSentPaymentInfo}">
+                    <div class="rounded-lg bg-base-100 p-3 space-y-2">
+                      <div>
+                        <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${paymentInfoPriceLabel}" /></p>
+                        <p class="m-0 mt-1 text-sm font-bold text-on-surface">$ <c:out value="${not empty sentRequest.totalPriceLabel ? sentRequest.totalPriceLabel : '-'}" /></p>
+                      </div>
+                      <div>
+                        <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${paymentInfoAliasLabel}" /></p>
+                        <p class="m-0 mt-1 break-all text-sm font-bold text-on-surface"><c:out value="${not empty sentRequest.paymentAlias ? sentRequest.paymentAlias : '-'}" /></p>
+                      </div>
+                    </div>
+                  </c:if>
                   <div class="rounded-lg bg-base-100 p-3">
                     <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.sentBookings.owner.label" /></p>
                     <p class="m-0 mt-1 break-words text-sm font-bold text-on-surface"><c:out value="${sentRequest.ownerName}" /></p>

@@ -24,6 +24,7 @@ public class UserJdbcDao implements UserDao {
         user.setLastName(rs.getString("last_name"));
         user.setEmail(rs.getString("email"));
         user.setPhone(rs.getString("phone"));
+        user.setPaymentAlias(rs.getString("payment_alias"));
         user.setPreferredLanguage(rs.getString("preferred_language"));
         user.setPasswordHash(rs.getString("password_hash"));
         return user;

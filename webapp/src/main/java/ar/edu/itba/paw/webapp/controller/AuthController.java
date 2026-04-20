@@ -9,6 +9,10 @@ import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.RegisterForm;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.NumberFormat;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -121,7 +125,7 @@ public class AuthController {
         final ModelAndView mav = new ModelAndView("profile");
         mav.addObject("user", user);
         mav.addObject("ownedItems", itemService.listItemsByOwnerId(user.getId()));
-        mav.addObject("receivedBookingRequests", buildReceivedBookings(user.getId()));
+        mav.addObject("receivedBookingRequests", buildReceivedBookings(user));
         mav.addObject("sentBookingRequests", buildSentBookings(user.getId()));
         return mav;
     }
@@ -131,9 +135,13 @@ public class AuthController {
         return new ModelAndView("403");
     }
 
-    private List<ReceivedBookingView> buildReceivedBookings(final int ownerId) {
+    private List<ReceivedBookingView> buildReceivedBookings(final User owner) {
         final List<ReceivedBookingView> receivedBookings = new ArrayList<>();
-        for (final ItemBooking booking : itemService.listBookingsByOwnerId(ownerId)) {
+        if (owner == null || owner.getId() == null) {
+            return receivedBookings;
+        }
+
+        for (final ItemBooking booking : itemService.listBookingsByOwnerId(owner.getId())) {
             if (booking.getItemId() == null || booking.getId() == null || booking.getGuestId() == null) {
                 continue;
             }
@@ -154,6 +162,8 @@ public class AuthController {
                     booking.getEndTime(),
                     formatDateLabel(booking.getStartTime()),
                     formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
+                    formatTotalPriceLabel(booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
+                    resolvePaymentAlias(owner),
                     statusMessageCode(booking.getState()),
                     bookingRequestService
                             .findPaymentProofByBookingId(booking.getId())
@@ -187,6 +197,8 @@ public class AuthController {
                     booking.getEndTime(),
                     formatDateLabel(booking.getStartTime()),
                     formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
+                    formatTotalPriceLabel(booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
+                    resolvePaymentAlias(owner),
                     statusMessageCode(booking.getState())));
         }
         return sentBookings;
@@ -223,6 +235,36 @@ public class AuthController {
         };
     }
 
+    private static String formatTotalPriceLabel(
+            final OffsetDateTime startTime, final OffsetDateTime endTime, final Integer pricePerHour) {
+        if (startTime == null || endTime == null || pricePerHour == null || pricePerHour < 0) {
+            return "";
+        }
+
+        final long minutes = Duration.between(startTime, endTime).toMinutes();
+        if (minutes <= 0) {
+            return "";
+        }
+
+        final BigDecimal totalPrice = BigDecimal.valueOf(pricePerHour.longValue())
+                .multiply(BigDecimal.valueOf(minutes))
+                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+        final NumberFormat numberFormat = NumberFormat.getNumberInstance(LocaleContextHolder.getLocale());
+        numberFormat.setMinimumFractionDigits(0);
+        numberFormat.setMaximumFractionDigits(2);
+        return numberFormat.format(totalPrice);
+    }
+
+    private static String resolvePaymentAlias(final User user) {
+        if (user == null) {
+            return "";
+        }
+        if (user.getPaymentAlias() != null && !user.getPaymentAlias().isBlank()) {
+            return user.getPaymentAlias();
+        }
+        return user.getEmail() == null ? "" : user.getEmail();
+    }
+
     public record ReceivedBookingView(
             int id,
             String itemTitle,
@@ -232,6 +274,8 @@ public class AuthController {
             OffsetDateTime endTime,
             String dateLabel,
             String timeRangeLabel,
+            String totalPriceLabel,
+            String paymentAlias,
             String statusMessageCode,
             String paymentProofFileName) {
 
@@ -267,6 +311,14 @@ public class AuthController {
             return timeRangeLabel;
         }
 
+        public String getTotalPriceLabel() {
+            return totalPriceLabel;
+        }
+
+        public String getPaymentAlias() {
+            return paymentAlias;
+        }
+
         public String getStatusMessageCode() {
             return statusMessageCode;
         }
@@ -293,6 +345,8 @@ public class AuthController {
             OffsetDateTime endTime,
             String dateLabel,
             String timeRangeLabel,
+            String totalPriceLabel,
+            String paymentAlias,
             String statusMessageCode) {
 
         public int getId() {
@@ -325,6 +379,14 @@ public class AuthController {
 
         public String getTimeRangeLabel() {
             return timeRangeLabel;
+        }
+
+        public String getTotalPriceLabel() {
+            return totalPriceLabel;
+        }
+
+        public String getPaymentAlias() {
+            return paymentAlias;
         }
 
         public String getStatusMessageCode() {

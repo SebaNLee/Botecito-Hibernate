@@ -12,7 +12,6 @@ import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.PaymentProofForm;
 import java.io.IOException;
 import java.util.Set;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -70,9 +69,7 @@ public class BookingRequestActionController {
 
     @RequestMapping(value = "/bookings/{id:[0-9]+}/payment-proof", method = RequestMethod.POST)
     public ModelAndView submitPaymentProof(
-            final HttpServletRequest request,
-            @PathVariable("id") final int bookingId,
-            @ModelAttribute("paymentProofForm") final PaymentProofForm form) {
+            @PathVariable("id") final int bookingId, @ModelAttribute("paymentProofForm") final PaymentProofForm form) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
@@ -112,7 +109,8 @@ public class BookingRequestActionController {
                         owner.getEmail(),
                         currentUser.getName(),
                         item.getTitle(),
-                        buildPaymentProofUrl(request, bookingId));
+                        proof.get().getFileData(),
+                        proof.get().getContentType());
             }
             return new ModelAndView("redirect:/profile?paymentAction=submitted#sent-booking-requests");
         } catch (final IOException e) {
@@ -233,20 +231,6 @@ public class BookingRequestActionController {
         }
         final int slash = Math.max(fileName.lastIndexOf('/'), fileName.lastIndexOf('\\'));
         return slash >= 0 ? fileName.substring(slash + 1) : fileName;
-    }
-
-    private static String buildPaymentProofUrl(final HttpServletRequest request, final int bookingId) {
-        final int port = request.getServerPort();
-        final boolean defaultPort = ("http".equals(request.getScheme()) && port == 80)
-                || ("https".equals(request.getScheme()) && port == 443);
-        return request.getScheme()
-                + "://"
-                + request.getServerName()
-                + (defaultPort ? "" : ":" + port)
-                + request.getContextPath()
-                + "/bookings/"
-                + bookingId
-                + "/payment-proof";
     }
 
     private User currentAuthenticatedUser() {

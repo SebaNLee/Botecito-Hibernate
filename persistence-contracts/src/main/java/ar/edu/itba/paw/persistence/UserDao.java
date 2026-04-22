@@ -8,7 +8,7 @@ public interface UserDao {
 
     Optional<User> findByEmail(String email);
 
-    User createUser(String givenName, String lastName, String email, String passwordHash);
+    User createUser(String givenName, String lastName, String email, String passwordHash, String paymentAlias);
 
-    Optional<User> claimUser(String givenName, String lastName, String email, String passwordHash);
+    Optional<User> claimUser(String givenName, String lastName, String email, String passwordHash, String paymentAlias);
 }

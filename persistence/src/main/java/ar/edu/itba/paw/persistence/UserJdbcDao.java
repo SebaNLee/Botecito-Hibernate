@@ -51,14 +51,20 @@ public class UserJdbcDao implements UserDao {
 
     @Override
     public User createUser(
-            final String givenName, final String lastName, final String email, final String passwordHash) {
+            final String givenName,
+            final String lastName,
+            final String email,
+            final String passwordHash,
+            final String paymentAlias) {
         final int insertedRows = jdbcTemplate.update(
-                "INSERT INTO users (given_name, last_name, email, preferred_language, password_hash) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO users (given_name, last_name, email, preferred_language, password_hash, payment_alias)"
+                        + " VALUES (?, ?, ?, ?, ?, ?)",
                 givenName,
                 lastName,
                 email,
                 "es",
-                passwordHash);
+                passwordHash,
+                paymentAlias);
         if (insertedRows == 0) {
             throw new IllegalStateException("Could not create user for email " + email);
         }
@@ -74,15 +80,20 @@ public class UserJdbcDao implements UserDao {
 
     @Override
     public Optional<User> claimUser(
-            final String givenName, final String lastName, final String email, final String passwordHash) {
+            final String givenName,
+            final String lastName,
+            final String email,
+            final String passwordHash,
+            final String paymentAlias) {
         final int updatedRows = jdbcTemplate.update(
                 "UPDATE users"
-                        + " SET given_name = ?, last_name = ?, password_hash = ?"
+                        + " SET given_name = ?, last_name = ?, password_hash = ?, payment_alias = COALESCE(?, payment_alias)"
                         + " WHERE lower(email) = lower(?)"
                         + " AND password_hash IS NULL",
                 givenName,
                 lastName,
                 passwordHash,
+                paymentAlias,
                 email);
         if (updatedRows == 0) {
             return Optional.empty();

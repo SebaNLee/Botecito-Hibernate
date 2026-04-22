@@ -75,7 +75,7 @@
           <p class="text-[11px] uppercase tracking-wider font-bold text-outline m-0">
             <spring:message code="profile.memberSince" />
           </p>
-          <p class="text-base font-bold text-on-surface mt-1 mb-0"><c:out value="${user.createdAt}" /></p>
+          <p class="text-base font-bold text-on-surface mt-1 mb-0"><c:out value="${memberSinceDisplay}" /></p>
         </div>
       </div>
 

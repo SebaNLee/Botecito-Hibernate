@@ -9,11 +9,13 @@
 <spring:message code="register.givenName.placeholder" var="givenNamePlaceholder" />
 <spring:message code="register.lastName.placeholder" var="lastNamePlaceholder" />
 <spring:message code="register.email.placeholder" var="emailPlaceholder" />
+<spring:message code="register.paymentAlias.placeholder" var="paymentAliasPlaceholder" />
 <spring:message code="register.password.placeholder" var="passwordPlaceholder" />
 <spring:message code="register.confirmPassword.placeholder" var="confirmPasswordPlaceholder" />
 <spring:message code="register.givenName.label" var="givenNameLabel" />
 <spring:message code="register.lastName.label" var="lastNameLabel" />
 <spring:message code="register.email.label" var="emailLabel" />
+<spring:message code="register.paymentAlias.label" var="paymentAliasLabel" />
 <spring:message code="register.password.label" var="passwordLabel" />
 <spring:message code="register.confirmPassword.label" var="confirmPasswordLabel" />
 <spring:message code="register.submit" var="registerSubmitLabel" />
@@ -45,6 +47,7 @@
             <paw:formField path="lastName" label="${lastNameLabel}" placeholder="${lastNamePlaceholder}" />
           </div>
           <paw:formField path="email" type="email" label="${emailLabel}" placeholder="${emailPlaceholder}" />
+          <paw:formField path="paymentAlias" label="${paymentAliasLabel}" placeholder="${paymentAliasPlaceholder}" />
           <paw:formField path="password" type="password" label="${passwordLabel}" placeholder="${passwordPlaceholder}" />
           <paw:formField path="confirmPassword" type="password" label="${confirmPasswordLabel}" placeholder="${confirmPasswordPlaceholder}" />
           <paw:button type="submit" fullWidth="true" color="primary" text="${registerSubmitLabel}" />

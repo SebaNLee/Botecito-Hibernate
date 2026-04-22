@@ -16,6 +16,8 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title><c:out value="${title}" /></title>
+    <link rel="icon" type="image/png" href="<c:url value='/favicon.png' />" />
+    <link rel="apple-touch-icon" href="<c:url value='/favicon.png' />" />
     <link rel="stylesheet" href="<c:url value='/css/tailwind.css' />" />
     <link rel="stylesheet" href="<c:url value='/css/main.css' />" />
   </head>

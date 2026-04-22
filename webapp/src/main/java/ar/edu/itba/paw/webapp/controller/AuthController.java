@@ -124,6 +124,7 @@ public class AuthController {
 
         final ModelAndView mav = new ModelAndView("profile");
         mav.addObject("user", user);
+        mav.addObject("memberSinceDisplay", formatMemberSince(user.getCreatedAt()));
         mav.addObject("ownedItems", itemService.listItemsByOwnerId(user.getId()));
         mav.addObject("receivedBookingRequests", buildReceivedBookings(user));
         mav.addObject("sentBookingRequests", buildSentBookings(user.getId()));
@@ -210,6 +211,13 @@ public class AuthController {
         }
         final Locale locale = LocaleContextHolder.getLocale();
         return dateTime.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale));
+    }
+
+    private static String formatMemberSince(final OffsetDateTime dateTime) {
+        if (dateTime == null) {
+            return "";
+        }
+        return dateTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 
     private static String formatTimeRangeLabel(final OffsetDateTime startTime, final OffsetDateTime endTime) {

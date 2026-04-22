@@ -99,7 +99,8 @@ public class AuthController {
                     form.getGivenName().trim(),
                     form.getLastName().trim(),
                     form.getEmail().trim(),
-                    form.getPassword());
+                    form.getPassword(),
+                    form.getPaymentAlias());
         } catch (final IllegalArgumentException exception) {
             errors.rejectValue("email", "register.validation.email.duplicate");
             return new ModelAndView("register");

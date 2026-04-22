@@ -18,16 +18,22 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User register(final String givenName, final String lastName, final String email, final String rawPassword) {
+    public User register(
+            final String givenName,
+            final String lastName,
+            final String email,
+            final String rawPassword,
+            final String paymentAlias) {
         final String normalizedEmail = email.trim().toLowerCase();
         final String passwordHash = passwordEncoder.encode(rawPassword);
+        final String normalizedPaymentAlias = normalizePaymentAlias(paymentAlias);
         final Optional<User> existingUser = userDao.findByEmail(normalizedEmail);
         if (existingUser.isEmpty()) {
-            return userDao.createUser(givenName, lastName, normalizedEmail, passwordHash);
+            return userDao.createUser(givenName, lastName, normalizedEmail, passwordHash, normalizedPaymentAlias);
         }
 
         if (existingUser.get().getPasswordHash() == null) {
-            return userDao.claimUser(givenName, lastName, normalizedEmail, passwordHash)
+            return userDao.claimUser(givenName, lastName, normalizedEmail, passwordHash, normalizedPaymentAlias)
                     .orElseThrow(() -> new IllegalStateException("Could not claim account for " + normalizedEmail));
         }
 
@@ -45,5 +51,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public Optional<User> findById(final int id) {
         return userDao.findById(id);
+    }
+
+    private static String normalizePaymentAlias(final String paymentAlias) {
+        if (paymentAlias == null) {
+            return null;
+        }
+        final String trimmedPaymentAlias = paymentAlias.trim();
+        return trimmedPaymentAlias.isEmpty() ? null : trimmedPaymentAlias;
     }
 }

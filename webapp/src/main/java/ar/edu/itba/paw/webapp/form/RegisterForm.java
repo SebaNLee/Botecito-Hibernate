@@ -26,6 +26,9 @@ public class RegisterForm {
     @NotBlank(message = "{register.validation.confirmPassword.required}")
     private String confirmPassword;
 
+    @Size(max = 120, message = "{register.validation.paymentAlias.max}")
+    private String paymentAlias;
+
     public String getGivenName() {
         return givenName;
     }
@@ -64,5 +67,13 @@ public class RegisterForm {
 
     public void setConfirmPassword(final String confirmPassword) {
         this.confirmPassword = confirmPassword;
+    }
+
+    public String getPaymentAlias() {
+        return paymentAlias;
+    }
+
+    public void setPaymentAlias(final String paymentAlias) {
+        this.paymentAlias = paymentAlias;
     }
 }

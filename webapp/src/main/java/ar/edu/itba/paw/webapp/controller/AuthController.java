@@ -26,12 +26,12 @@ import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Controller;
@@ -50,19 +50,19 @@ public class AuthController {
     private final ItemService itemService;
     private final BookingRequestService bookingRequestService;
     private final MailService mailService;
-    private final UserDetailsService userDetailsService;
+    private final AuthenticationManager authenticationManager;
 
     public AuthController(
             final UserService userService,
             final ItemService itemService,
             final BookingRequestService bookingRequestService,
             final MailService mailService,
-            final UserDetailsService userDetailsService) {
+            final AuthenticationManager authenticationManager) {
         this.userService = userService;
         this.itemService = itemService;
         this.bookingRequestService = bookingRequestService;
         this.mailService = mailService;
-        this.userDetailsService = userDetailsService;
+        this.authenticationManager = authenticationManager;
     }
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
@@ -130,15 +130,29 @@ public class AuthController {
             return new ModelAndView("register");
         }
 
-        authenticateRegisteredUser(form.getEmail().trim(), request);
+        if (!authenticateRegisteredUser(form.getEmail().trim(), form.getPassword(), request)) {
+            return new ModelAndView("redirect:/login?registered=true");
+        }
         return new ModelAndView("redirect:/");
     }
 
-    private void authenticateRegisteredUser(final String email, final HttpServletRequest request) {
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-        final UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+    private boolean authenticateRegisteredUser(
+            final String email, final String rawPassword, final HttpServletRequest request) {
+        final UsernamePasswordAuthenticationToken requestToken =
+                new UsernamePasswordAuthenticationToken(email, rawPassword);
+        requestToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+        final Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(requestToken);
+        } catch (final AuthenticationException exception) {
+            SecurityContextHolder.clearContext();
+            final HttpSession existingSession = request.getSession(false);
+            if (existingSession != null) {
+                existingSession.removeAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
+            }
+            return false;
+        }
 
         final SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
@@ -146,6 +160,7 @@ public class AuthController {
 
         final HttpSession session = request.getSession(true);
         session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
+        return true;
     }
 
     @RequestMapping(value = "/password-recovery", method = RequestMethod.GET)

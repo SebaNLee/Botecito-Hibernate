@@ -4,9 +4,20 @@ import ar.edu.itba.paw.models.User;
 import java.util.Optional;
 
 public interface UserService {
+    enum PasswordRecoveryResult {
+        SUCCESS,
+        INVALID_TOKEN
+    }
+
     User register(String givenName, String lastName, String email, String rawPassword, String paymentAlias);
 
     Optional<User> findByEmail(String email);
 
     Optional<User> findById(int id);
+
+    Optional<User> requestPasswordRecovery(String email);
+
+    Optional<User> findByPasswordRecoveryToken(String token);
+
+    PasswordRecoveryResult resetPassword(String token, String rawPassword);
 }

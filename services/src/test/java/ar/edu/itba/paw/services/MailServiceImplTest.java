@@ -80,4 +80,21 @@ public class MailServiceImplTest {
         Mockito.verify(mailSender).send(mimeMessage);
         Mockito.verify(mailSender, Mockito.never()).send(Mockito.any(org.springframework.mail.SimpleMailMessage.class));
     }
+
+    @Test
+    public void testSendPasswordRecoveryEmailUsesHtmlTemplate() {
+        final javax.mail.internet.MimeMessage mimeMessage = Mockito.mock(javax.mail.internet.MimeMessage.class);
+
+        Mockito.when(itemDao.findUserByEmail("recover@a.com")).thenReturn(Optional.empty());
+        Mockito.when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        Mockito.when(messageSource.getMessage(
+                        Mockito.eq("mail.passwordRecovery.subject"), Mockito.any(), Mockito.any(Locale.class)))
+                .thenReturn("Reset your password");
+        Mockito.when(templateEngine.process(Mockito.eq("password-recovery"), Mockito.any()))
+                .thenReturn("<p>reset</p>");
+
+        mailService.sendPasswordRecoveryEmail("recover@a.com", "Recover User", "token-1");
+
+        Mockito.verify(mailSender).send(mimeMessage);
+    }
 }

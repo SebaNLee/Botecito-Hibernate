@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Objects;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,8 @@ public class UserJdbcDao implements UserDao {
         user.setPaymentAlias(rs.getString("payment_alias"));
         user.setPreferredLanguage(rs.getString("preferred_language"));
         user.setPasswordHash(rs.getString("password_hash"));
+        user.setPasswordRecoveryToken(rs.getString("password_recovery_token"));
+        user.setPasswordRecoveryUsedAt(readOffsetDateTime(rs, "password_recovery_used_at"));
         return user;
     };
 
@@ -99,6 +102,43 @@ public class UserJdbcDao implements UserDao {
             return Optional.empty();
         }
         return findByEmail(email);
+    }
+
+    @Override
+    public Optional<User> updatePasswordRecoveryToken(final int userId, final String token) {
+        final int updatedRows = jdbcTemplate.update(
+                "UPDATE users SET password_recovery_token = ?, password_recovery_used_at = NULL WHERE id = ?",
+                token,
+                userId);
+        if (updatedRows == 0) {
+            return Optional.empty();
+        }
+        return findById(userId);
+    }
+
+    @Override
+    public Optional<User> findByPasswordRecoveryToken(final String token) {
+        if (token == null || token.isBlank()) {
+            return Optional.empty();
+        }
+        return jdbcTemplate
+                .query("SELECT * FROM users WHERE password_recovery_token = ?", USER_ROW_MAPPER, token)
+                .stream()
+                .findAny();
+    }
+
+    @Override
+    public boolean resetPasswordByRecoveryToken(
+            final String token, final String passwordHash, final OffsetDateTime usedAt) {
+        final int updatedRows = jdbcTemplate.update(
+                "UPDATE users"
+                        + " SET password_hash = ?, password_recovery_used_at = ?"
+                        + " WHERE password_recovery_token = ?"
+                        + " AND password_recovery_used_at IS NULL",
+                passwordHash,
+                Timestamp.from(Objects.requireNonNull(usedAt).toInstant()),
+                token);
+        return updatedRows > 0;
     }
 
     private static OffsetDateTime readOffsetDateTime(final ResultSet rs, final String columnName)

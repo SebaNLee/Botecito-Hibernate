@@ -106,4 +106,69 @@ public class UserServiceImplTest {
                         Mockito.anyString(),
                         Mockito.any());
     }
+
+    @Test
+    public void testRequestPasswordRecoveryGeneratesNewTokenForExistingUser() {
+        final User existingUser = new User();
+        existingUser.setId(5);
+        existingUser.setEmail("recover@a.com");
+        existingUser.setPasswordHash("stored-hash");
+
+        final User updatedUser = new User();
+        updatedUser.setId(5);
+        updatedUser.setEmail("recover@a.com");
+        updatedUser.setPasswordHash("stored-hash");
+        updatedUser.setPasswordRecoveryToken("generated-token");
+
+        Mockito.when(userDao.findByEmail("recover@a.com")).thenReturn(Optional.of(existingUser));
+        Mockito.when(userDao.updatePasswordRecoveryToken(Mockito.eq(5), Mockito.anyString()))
+                .thenReturn(Optional.of(updatedUser));
+
+        final Optional<User> result = userService.requestPasswordRecovery(" recover@a.com ");
+
+        Assertions.assertTrue(result.isPresent());
+        Assertions.assertEquals("generated-token", result.get().getPasswordRecoveryToken());
+        Mockito.verify(userDao).updatePasswordRecoveryToken(Mockito.eq(5), Mockito.anyString());
+    }
+
+    @Test
+    public void testRequestPasswordRecoverySkipsLegacyUserWithoutPassword() {
+        final User existingUser = new User();
+        existingUser.setId(5);
+        existingUser.setEmail("legacy@a.com");
+        existingUser.setPasswordHash(null);
+
+        Mockito.when(userDao.findByEmail("legacy@a.com")).thenReturn(Optional.of(existingUser));
+
+        final Optional<User> result = userService.requestPasswordRecovery("legacy@a.com");
+
+        Assertions.assertTrue(result.isEmpty());
+        Mockito.verify(userDao, Mockito.never()).updatePasswordRecoveryToken(Mockito.anyInt(), Mockito.anyString());
+    }
+
+    @Test
+    public void testResetPasswordConsumesRecoveryToken() {
+        Mockito.when(passwordEncoder.encode("new-password")).thenReturn("new-password-hash");
+        Mockito.when(userDao.resetPasswordByRecoveryToken(
+                        Mockito.eq("token-1"), Mockito.eq("new-password-hash"), Mockito.any()))
+                .thenReturn(true);
+
+        final UserService.PasswordRecoveryResult result = userService.resetPassword("token-1", "new-password");
+
+        Assertions.assertEquals(UserService.PasswordRecoveryResult.SUCCESS, result);
+        Mockito.verify(userDao)
+                .resetPasswordByRecoveryToken(Mockito.eq("token-1"), Mockito.eq("new-password-hash"), Mockito.any());
+    }
+
+    @Test
+    public void testFindByPasswordRecoveryTokenReturnsEmptyWhenAlreadyUsed() {
+        final User user = new User();
+        user.setPasswordRecoveryToken("token-2");
+        user.setPasswordRecoveryUsedAt(java.time.OffsetDateTime.now());
+        Mockito.when(userDao.findByPasswordRecoveryToken("token-2")).thenReturn(Optional.of(user));
+
+        final Optional<User> result = userService.findByPasswordRecoveryToken("token-2");
+
+        Assertions.assertTrue(result.isEmpty());
+    }
 }

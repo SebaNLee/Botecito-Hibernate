@@ -21,11 +21,19 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -42,16 +50,19 @@ public class AuthController {
     private final ItemService itemService;
     private final BookingRequestService bookingRequestService;
     private final MailService mailService;
+    private final UserDetailsService userDetailsService;
 
     public AuthController(
             final UserService userService,
             final ItemService itemService,
             final BookingRequestService bookingRequestService,
-            final MailService mailService) {
+            final MailService mailService,
+            final UserDetailsService userDetailsService) {
         this.userService = userService;
         this.itemService = itemService;
         this.bookingRequestService = bookingRequestService;
         this.mailService = mailService;
+        this.userDetailsService = userDetailsService;
     }
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
@@ -88,7 +99,9 @@ public class AuthController {
 
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     public ModelAndView registerSubmit(
-            @Valid @ModelAttribute("registerForm") final RegisterForm form, final BindingResult errors) {
+            @Valid @ModelAttribute("registerForm") final RegisterForm form,
+            final BindingResult errors,
+            final HttpServletRequest request) {
 
         if (!form.getPassword().equals(form.getConfirmPassword())) {
             errors.rejectValue("confirmPassword", "register.validation.password.mismatch");
@@ -117,7 +130,22 @@ public class AuthController {
             return new ModelAndView("register");
         }
 
-        return new ModelAndView("redirect:/login?registered=true");
+        authenticateRegisteredUser(form.getEmail().trim(), request);
+        return new ModelAndView("redirect:/");
+    }
+
+    private void authenticateRegisteredUser(final String email, final HttpServletRequest request) {
+        final UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        final UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+        final SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+
+        final HttpSession session = request.getSession(true);
+        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
     }
 
     @RequestMapping(value = "/password-recovery", method = RequestMethod.GET)

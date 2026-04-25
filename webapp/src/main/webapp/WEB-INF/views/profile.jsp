@@ -5,7 +5,9 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="logoutUrl" value="/logout" />
+<c:url var="profilePasswordRecoveryUrl" value="/profile/password-recovery" />
 <spring:message code="profile.logout" var="logoutLabel" />
+<spring:message code="profile.passwordRecovery.send" var="passwordRecoverySendLabel" />
 <spring:message code="profile.publications.edit" var="editLabel" />
 <spring:message code="profile.publications.manageAvailability" var="manageAvailabilityLabel" />
 <spring:message code="profile.publications.enable" var="enableLabel" />
@@ -76,6 +78,20 @@
             <spring:message code="profile.memberSince" />
           </p>
           <p class="text-base font-bold text-on-surface mt-1 mb-0"><c:out value="${memberSinceDisplay}" /></p>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <c:if test="${param.passwordRecovery == 'sent'}">
+          <paw:alertMessage type="success"><spring:message code="profile.passwordRecovery.sent" /></paw:alertMessage>
+        </c:if>
+        <div class="flex flex-wrap items-center gap-3">
+          <form action="${profilePasswordRecoveryUrl}" method="post" class="m-0">
+            <paw:button type="submit" color="secondary" icon="mail" text="${passwordRecoverySendLabel}" />
+          </form>
+          <form action="${logoutUrl}" method="post" class="m-0">
+            <paw:button type="submit" variant="outline" icon="logout" text="${logoutLabel}" />
+          </form>
         </div>
       </div>
 

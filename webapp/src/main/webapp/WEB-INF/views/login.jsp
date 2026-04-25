@@ -5,6 +5,7 @@
 
 <c:url var="loginUrl" value="/login" />
 <c:url var="registerUrl" value="/register" />
+<c:url var="passwordRecoveryUrl" value="/password-recovery" />
 <spring:message code="login.email.placeholder" var="emailPlaceholder" />
 <spring:message code="login.password.placeholder" var="passwordPlaceholder" />
 <spring:message code="login.email.label" var="emailLabel" />
@@ -34,6 +35,9 @@
         </c:if>
         <c:if test="${legacyTokenError}">
           <paw:alertMessage type="warning"><spring:message code="login.legacyToken" /></paw:alertMessage>
+        </c:if>
+        <c:if test="${passwordRecoveredSuccess}">
+          <paw:alertMessage type="success"><spring:message code="login.passwordRecovered" /></paw:alertMessage>
         </c:if>
 
         <form action="${loginUrl}" method="post" class="space-y-4">
@@ -70,6 +74,12 @@
           <spring:message code="login.submit" var="loginSubmitLabel" />
           <paw:button type="submit" fullWidth="true" color="primary" text="${loginSubmitLabel}" />
         </form>
+
+        <div class="text-center">
+          <a href="${passwordRecoveryUrl}" class="link link-hover text-sm text-primary font-semibold no-underline">
+            <spring:message code="login.forgotPassword" />
+          </a>
+        </div>
 
         <p class="text-center text-sm text-on-surface-variant m-0">
           <spring:message code="login.noAccount" />

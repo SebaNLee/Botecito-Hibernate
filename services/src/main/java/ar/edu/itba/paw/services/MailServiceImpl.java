@@ -33,6 +33,7 @@ public class MailServiceImpl implements MailService {
     private final String reviewRecipient;
     private final String accountBaseUrl;
     private final String itemBaseUrl;
+    private final String passwordRecoveryBaseUrl;
 
     @SuppressFBWarnings(
             value = {"EI_EXPOSE_REP2", "CT_CONSTRUCTOR_THROW"},
@@ -52,6 +53,7 @@ public class MailServiceImpl implements MailService {
         this.reviewRecipient = requireProperty(credentialsProperties, "mail.reviewRecipient");
         this.accountBaseUrl = baseUrl + "/profile";
         this.itemBaseUrl = baseUrl + "/item";
+        this.passwordRecoveryBaseUrl = baseUrl + "/password-recovery";
     }
 
     @Override
@@ -185,6 +187,27 @@ public class MailServiceImpl implements MailService {
                     templateEngine.process("payment-received", context));
         } catch (final RuntimeException e) {
             LOGGER.error("Could not send payment received email to {}.", requesterEmail, e);
+        }
+    }
+
+    @Override
+    @Async("mailTaskExecutor")
+    public void sendPasswordRecoveryEmail(
+            final String recipientEmail, final String recipientName, final String recoveryToken) {
+        if (recipientEmail == null || recipientEmail.isBlank() || recoveryToken == null || recoveryToken.isBlank()) {
+            return;
+        }
+        try {
+            final Locale locale = resolveLocale(recipientEmail);
+            final Context context = new Context(locale);
+            context.setVariable("recipientName", recipientName);
+            context.setVariable("recoveryUrl", passwordRecoveryBaseUrl + "/" + recoveryToken);
+            sendHtmlEmail(
+                    recipientEmail,
+                    getMessage("mail.passwordRecovery.subject", locale),
+                    templateEngine.process("password-recovery", context));
+        } catch (final RuntimeException e) {
+            LOGGER.error("Could not send password recovery email to {}.", recipientEmail, e);
         }
     }
 

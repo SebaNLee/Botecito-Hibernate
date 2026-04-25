@@ -7,7 +7,10 @@ import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.form.PasswordRecoveryRequestForm;
+import ar.edu.itba.paw.webapp.form.PasswordResetForm;
 import ar.edu.itba.paw.webapp.form.RegisterForm;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -26,6 +29,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -37,14 +41,17 @@ public class AuthController {
     private final UserService userService;
     private final ItemService itemService;
     private final BookingRequestService bookingRequestService;
+    private final MailService mailService;
 
     public AuthController(
             final UserService userService,
             final ItemService itemService,
-            final BookingRequestService bookingRequestService) {
+            final BookingRequestService bookingRequestService,
+            final MailService mailService) {
         this.userService = userService;
         this.itemService = itemService;
         this.bookingRequestService = bookingRequestService;
+        this.mailService = mailService;
     }
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
@@ -52,7 +59,8 @@ public class AuthController {
             @RequestParam(value = "error", required = false) final String error,
             @RequestParam(value = "logout", required = false) final String logout,
             @RequestParam(value = "registered", required = false) final String registered,
-            @RequestParam(value = "legacyToken", required = false) final String legacyToken) {
+            @RequestParam(value = "legacyToken", required = false) final String legacyToken,
+            @RequestParam(value = "passwordRecovered", required = false) final String passwordRecovered) {
 
         final ModelAndView mav = new ModelAndView("login");
         if (error != null) {
@@ -66,6 +74,9 @@ public class AuthController {
         }
         if (legacyToken != null) {
             mav.addObject("legacyTokenError", true);
+        }
+        if (passwordRecovered != null) {
+            mav.addObject("passwordRecoveredSuccess", true);
         }
         return mav;
     }
@@ -107,6 +118,99 @@ public class AuthController {
         }
 
         return new ModelAndView("redirect:/login?registered=true");
+    }
+
+    @RequestMapping(value = "/password-recovery", method = RequestMethod.GET)
+    public ModelAndView passwordRecoveryRequestForm(
+            @ModelAttribute("passwordRecoveryRequestForm") final PasswordRecoveryRequestForm form,
+            @RequestParam(value = "sent", required = false) final String sent) {
+        final ModelAndView mav = new ModelAndView("password-recovery-request");
+        if (sent != null) {
+            mav.addObject("recoverySent", true);
+        }
+        return mav;
+    }
+
+    @RequestMapping(value = "/password-recovery", method = RequestMethod.POST)
+    public ModelAndView passwordRecoveryRequestSubmit(
+            @Valid @ModelAttribute("passwordRecoveryRequestForm") final PasswordRecoveryRequestForm form,
+            final BindingResult errors) {
+        if (errors.hasErrors()) {
+            return new ModelAndView("password-recovery-request");
+        }
+
+        userService
+                .requestPasswordRecovery(form.getEmail().trim())
+                .ifPresent(user -> mailService.sendPasswordRecoveryEmail(
+                        user.getEmail(),
+                        user.getName().isBlank() ? user.getEmail() : user.getName(),
+                        user.getPasswordRecoveryToken()));
+
+        return new ModelAndView("redirect:/password-recovery?sent=true");
+    }
+
+    @RequestMapping(value = "/password-recovery/{token}", method = RequestMethod.GET)
+    public ModelAndView passwordRecoveryResetForm(
+            @PathVariable("token") final String token,
+            @ModelAttribute("passwordResetForm") final PasswordResetForm form,
+            @RequestParam(value = "invalid", required = false) final String invalid) {
+        final ModelAndView mav = new ModelAndView("password-recovery-reset");
+        mav.addObject("token", token);
+        mav.addObject(
+                "tokenValid", userService.findByPasswordRecoveryToken(token).isPresent());
+        if (invalid != null) {
+            mav.addObject("tokenInvalidError", true);
+        }
+        return mav;
+    }
+
+    @RequestMapping(value = "/password-recovery/{token}", method = RequestMethod.POST)
+    public ModelAndView passwordRecoveryResetSubmit(
+            @PathVariable("token") final String token,
+            @Valid @ModelAttribute("passwordResetForm") final PasswordResetForm form,
+            final BindingResult errors) {
+        if (!form.getPassword().equals(form.getConfirmPassword())) {
+            errors.rejectValue("confirmPassword", "passwordRecovery.reset.validation.password.mismatch");
+        }
+
+        final boolean tokenValid =
+                userService.findByPasswordRecoveryToken(token).isPresent();
+        if (!tokenValid) {
+            return new ModelAndView("password-recovery-reset")
+                    .addObject("token", token)
+                    .addObject("tokenValid", false);
+        }
+
+        if (errors.hasErrors()) {
+            return new ModelAndView("password-recovery-reset")
+                    .addObject("token", token)
+                    .addObject("tokenValid", true);
+        }
+
+        if (userService.resetPassword(token, form.getPassword()) != UserService.PasswordRecoveryResult.SUCCESS) {
+            return new ModelAndView("redirect:/password-recovery/" + token + "?invalid=true");
+        }
+
+        return new ModelAndView("redirect:/login?passwordRecovered=true");
+    }
+
+    @RequestMapping(value = "/profile/password-recovery", method = RequestMethod.POST)
+    public ModelAndView profilePasswordRecoveryRequest() {
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return new ModelAndView("redirect:/login");
+        }
+
+        userService.findByEmail(authentication.getName()).ifPresent(user -> userService
+                .requestPasswordRecovery(user.getEmail())
+                .ifPresent(updatedUser -> mailService.sendPasswordRecoveryEmail(
+                        updatedUser.getEmail(),
+                        updatedUser.getName().isBlank() ? updatedUser.getEmail() : updatedUser.getName(),
+                        updatedUser.getPasswordRecoveryToken())));
+
+        return new ModelAndView("redirect:/profile?passwordRecovery=sent");
     }
 
     @RequestMapping(value = "/profile", method = RequestMethod.GET)

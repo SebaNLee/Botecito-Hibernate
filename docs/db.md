@@ -1,3 +1,22 @@
+## Postgres local
+
+Se detallan abajo los comandos para el manejo de la DB local con Bash:
+
+### Comandos DB local:
+
+Para conectarse:
+
+```
+psql -h localhost -U pawdbuser -d paw -W
+```
+
+Para borrar y recrear DB:
+
+```
+sudo -u postgres psql -c "DELETE DATABASE paw;"
+sudo -u postgres psql -c "CREATE DATABASE paw;"
+```
+
 ## Postgres Pampero
 
 Se detallan abajo los comandos para ingresar manualmente a la DB de producción:

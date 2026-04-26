@@ -27,9 +27,20 @@
           <span class="material-symbols-outlined text-xl">account_circle</span>
         </a>
       </sec:authorize>
-      <a href="<c:url value='${resolvedCtaHref}' />" class="${resolvedCtaClass}">
-        <spring:message code="${resolvedCtaMessageCode}" />
-      </a>
+      <c:choose>
+        <c:when test="${resolvedCtaVariant == 'publish'}">
+          <sec:authorize access="isAnonymous()">
+            <a href="<c:url value='${resolvedCtaHref}' />" class="${resolvedCtaClass}">
+              <spring:message code="${resolvedCtaMessageCode}" />
+            </a>
+          </sec:authorize>
+        </c:when>
+        <c:otherwise>
+          <a href="<c:url value='${resolvedCtaHref}' />" class="${resolvedCtaClass}">
+            <spring:message code="${resolvedCtaMessageCode}" />
+          </a>
+        </c:otherwise>
+      </c:choose>
     </div>
   </div>
 </header>

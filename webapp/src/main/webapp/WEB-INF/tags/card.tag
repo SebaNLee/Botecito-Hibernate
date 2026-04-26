@@ -5,7 +5,9 @@
 <%@ attribute name="imgSrc" required="false" %>
 <%@ attribute name="cssClass" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
+<fmt:setLocale value="es_AR" />
 <c:set var="cardCssClass" value="${not empty cssClass ? cssClass : ''}" />
 
 <div class="card bg-base-100 shadow-sm max-w-xs ${cardCssClass}">
@@ -17,7 +19,7 @@
     <div class="card-body p-5 gap-1">
         <h3 class="card-title text-xl font-semibold m-0"><c:out value="${name}" /></h3>
         <c:if test="${not empty price}">
-            <p class="text-lg font-bold text-success m-0">$<c:out value="${price}" /></p>
+            <p class="text-lg font-bold text-success m-0">$<fmt:formatNumber value="${price}" type="number" groupingUsed="true" maxFractionDigits="0" /></p>
         </c:if>
         <c:if test="${not empty date}">
             <p class="text-sm text-base-content/60 m-0"><c:out value="${date}" /></p>

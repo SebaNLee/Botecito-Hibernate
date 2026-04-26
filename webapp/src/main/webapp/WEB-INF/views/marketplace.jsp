@@ -1,8 +1,10 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
+<fmt:setLocale value="es_AR" />
 <c:url var="publishUrl" value="/publish" />
 <c:url var="homeUrl" value="/" />
 <c:url var="marketplaceUrl" value="/marketplace" />
@@ -22,7 +24,7 @@
 <spring:message code="marketplace.filters.apply" var="filtersApplyLabel" />
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
 <c:url var="clearMarketplaceFiltersUrl" value="/marketplace">
-  <c:if test="${sort != 'priceAsc'}">
+  <c:if test="${sort != 'newest'}">
     <c:param name="sort" value="${sort}" />
   </c:if>
 </c:url>
@@ -201,12 +203,12 @@
     </div>
 
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
-      <div>
-        <h1 class="text-4xl font-extrabold tracking-tight text-on-background m-0"><spring:message code="marketplace.title" /></h1>
+      <div class="min-w-0">
+        <h1 class="text-4xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="marketplace.title" /></h1>
         <p class="text-on-surface-variant mt-2 m-0"><spring:message code="marketplace.results.count" arguments="${itemsCount}" /></p>
       </div>
 
-      <form action="${marketplaceUrl}" method="get" class="flex items-center gap-3 text-sm font-medium text-on-surface-variant">
+      <form action="${marketplaceUrl}" method="get" class="flex flex-wrap items-center gap-3 text-sm font-medium text-on-surface-variant">
         <input type="hidden" name="searchQuery" value="${param.searchQuery}" data-applied-filter-mirror />
         <input type="hidden" name="locationOptionId" value="${param.locationOptionId}" data-applied-filter-mirror />
         <input type="hidden" name="date" value="${param.date}" data-applied-filter-mirror />
@@ -217,15 +219,32 @@
         <input type="hidden" name="difficultyLevel" value="${param.difficultyLevel}" data-applied-filter-mirror />
         <label for="marketplace-sort" class="shrink-0"><spring:message code="marketplace.sort.label" /></label>
         <select id="marketplace-sort" name="sort" class="select select-sm font-bold text-primary" onchange="this.form.submit()">
-          <option value="titleAsc" ${sort == 'titleAsc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.titleAsc" /></option>
-          <option value="titleDesc" ${sort == 'titleDesc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.titleDesc" /></option>
-          <option value="priceDesc" ${sort == 'priceDesc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceDesc" /></option>
+          <option value="newest" ${sort == 'newest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.newest" /></option>
+          <option value="oldest" ${sort == 'oldest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.oldest" /></option>
           <option value="priceAsc" ${sort == 'priceAsc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceAsc" /></option>
+          <option value="priceDesc" ${sort == 'priceDesc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceDesc" /></option>
         </select>
       </form>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <c:if test="${empty items}">
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body items-center text-center gap-4 p-10">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <span class="material-symbols-outlined text-4xl">travel_explore</span>
+          </div>
+          <div class="max-w-lg">
+            <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><spring:message code="marketplace.empty.title" /></h2>
+            <p class="m-0 mt-2 text-on-surface-variant"><spring:message code="marketplace.empty.message" /></p>
+          </div>
+          <a href="${clearMarketplaceFiltersUrl}" class="btn btn-primary no-underline" data-clear-marketplace-filters>
+            <spring:message code="marketplace.empty.clear" />
+          </a>
+        </div>
+      </div>
+    </c:if>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <c:forEach items="${items}" var="item">
         <c:url var="itemUrl" value="/item/${item.id}">
           <c:if test="${not empty param.date}">
@@ -241,24 +260,24 @@
             <c:param name="difficultyLevel" value="${param.difficultyLevel}" />
           </c:if>
         </c:url>
-        <a href="${itemUrl}" data-marketplace-item-link class="group card bg-base-100 shadow-sm overflow-hidden no-underline text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
-          <figure class="aspect-[16/10] overflow-hidden">
+        <a href="${itemUrl}" data-marketplace-item-link class="group card min-w-0 bg-base-100 shadow-sm overflow-hidden no-underline text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
+          <figure class="aspect-[4/3] overflow-hidden">
             <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${item.title}" src="${itemImages[item.id]}"/>
           </figure>
-          <div class="card-body p-6 gap-3">
-            <div class="flex justify-between items-start gap-4">
-              <h3 class="card-title text-xl font-bold text-on-background leading-tight m-0"><c:out value="${item.title}" /></h3>
-              <div class="text-right">
-                <span class="block text-2xl font-black text-primary">$<c:out value="${item.pricePerHour}" /></span>
+          <div class="card-body min-w-0 p-4 gap-3">
+            <div class="flex justify-between items-start gap-3">
+              <h3 class="card-title min-w-0 text-lg font-bold text-on-background leading-tight m-0 line-clamp-2 break-words"><c:out value="${item.title}" /></h3>
+              <div class="shrink-0 text-right">
+                <span class="block text-xl font-black text-primary">$<fmt:formatNumber value="${item.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0" /></span>
                 <span class="text-[10px] font-bold uppercase tracking-tighter text-outline"><spring:message code="marketplace.card.perHour" /></span>
               </div>
             </div>
-            <div class="flex items-center text-on-surface-variant text-sm gap-1">
-              <span class="material-symbols-outlined text-primary text-lg">location_on</span>
-              <span><c:out value="${item.location}" /></span>
+            <div class="flex min-w-0 items-center text-on-surface-variant text-sm gap-1">
+              <span class="material-symbols-outlined shrink-0 text-primary text-lg">location_on</span>
+              <span class="min-w-0 truncate"><c:out value="${item.location}" /></span>
             </div>
-            <div class="pt-4 border-t border-outline-variant/15 flex justify-between items-center">
-              <div class="flex items-center gap-4">
+            <div class="pt-3 border-t border-outline-variant/15 flex flex-col gap-3">
+              <div class="flex flex-wrap items-center gap-3">
                 <div class="flex items-center gap-1.5">
                   <span class="material-symbols-outlined text-outline text-lg">groups</span>
                   <span class="text-sm font-semibold"><spring:message code="marketplace.card.people" arguments="${item.capacityPeople}" /></span>

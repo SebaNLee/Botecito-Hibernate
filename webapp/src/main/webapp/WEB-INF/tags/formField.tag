@@ -7,6 +7,7 @@
 <%@ attribute name="max" required="false" %>
 <%@ attribute name="step" required="false" %>
 <%@ attribute name="maxlength" required="false" %>
+<%@ attribute name="required" required="false" %>
 <%@ attribute name="cssClass" required="false" %>
 <%@ attribute name="containerClass" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
@@ -20,6 +21,7 @@
 <fieldset class="${fieldContainerClass}">
   <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
     <c:out value="${label}" />
+    <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
   </legend>
   <c:choose>
     <c:when test="${inputType == 'password'}">

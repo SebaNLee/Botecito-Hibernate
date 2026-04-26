@@ -30,7 +30,7 @@
       <span><spring:message code="publish.step2.progress" /></span>
       <span><spring:message code="publish.step2.badge" /></span>
     </div>
-    <progress class="progress progress-primary mt-3 w-full" value="66" max="100"></progress>
+    <progress class="progress progress-primary mt-3 w-full" value="33" max="100"></progress>
     <h1 class="mt-6 text-4xl font-extrabold tracking-tight text-on-background m-0"><spring:message code="publish.step2.title" /></h1>
     <p class="text-on-surface-variant mt-2 text-lg m-0"><spring:message code="publish.step2.subtitle" /></p>
   </div>
@@ -43,7 +43,8 @@
             data-weekly-availability-grid
             data-existing-slots='${existingSlotsJson}'
             data-min-duration="120"
-            data-no-ranges-text="${publishNoRangesLabel}">
+            data-no-ranges-text="${publishNoRangesLabel}"
+            data-missing-range-text="<spring:message code='publish.availability.day.empty.client' />">
 
           <div class="flex flex-wrap items-center gap-4 text-[10px] font-bold text-on-surface-variant">
             <span class="inline-flex items-center gap-1.5">
@@ -85,6 +86,7 @@
                 </label>
                 <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="${day}"></div>
                 <div data-day-summary="${day}"></div>
+                <p class="mt-2 hidden text-xs font-bold text-error" data-day-error="${day}"></p>
               </div>
             </c:forEach>
           </div>

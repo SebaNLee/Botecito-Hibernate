@@ -21,12 +21,12 @@
     <link rel="stylesheet" href="<c:url value='/css/tailwind.css' />" />
     <link rel="stylesheet" href="<c:url value='/css/main.css' />" />
   </head>
-  <body class="bg-background text-on-background font-body antialiased min-h-screen">
+  <body class="bg-background text-on-background font-body antialiased min-h-screen flex flex-col">
     <paw:siteHeader
       ctaMessageCode="${headerCtaMessageCode}"
       ctaHref="${headerCtaHref}"
       ctaVariant="${headerCtaVariant}" />
-    <main class="${resolvedMainClass}">
+    <main class="${resolvedMainClass} flex-1">
       <jsp:doBody />
     </main>
     <paw:siteFooter />

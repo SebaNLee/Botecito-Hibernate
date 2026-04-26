@@ -68,6 +68,10 @@
     );
   }
 
+  function displayTime(time) {
+    return time ? time + " hs" : "";
+  }
+
   function parseJson(value, fallback) {
     try {
       return value ? JSON.parse(value) : fallback;
@@ -553,12 +557,13 @@
         const priceForLabel = summaryRoot.dataset.priceForLabel || "";
         const hourLabel = summaryRoot.dataset.priceHourLabel || "";
         const hoursLabel = summaryRoot.dataset.priceHoursLabel || "";
-        const numberFormatter = new Intl.NumberFormat(UI_LOCALE, {
+        const numberFormatter = new Intl.NumberFormat("es-AR", {
           minimumFractionDigits: 0,
           maximumFractionDigits: 2,
         });
 
         function resetSummary() {
+          summaryRoot.classList.add("hidden");
           totalNode.textContent = pendingLabel;
           durationNode.textContent = pendingHelpLabel;
         }
@@ -570,6 +575,7 @@
           }
 
           if (!endInput.value) {
+            summaryRoot.classList.add("hidden");
             totalNode.textContent = pendingLabel;
             durationNode.textContent = pickEndLabel;
             return;
@@ -589,6 +595,7 @@
           const totalPrice = pricePerHour * selectedHours;
           const hourUnit = selectedHours === 1 ? hourLabel : hoursLabel;
 
+          summaryRoot.classList.remove("hidden");
           totalNode.textContent =
             currencySymbol + numberFormatter.format(totalPrice);
           durationNode.textContent =
@@ -1253,7 +1260,7 @@
         const button = createElement(
           "button",
           SLOT_BASE_CLASS + " " + slotStateClass(state),
-          time,
+          displayTime(time),
         );
         button.type = "button";
         button.dataset.state = state;
@@ -1356,10 +1363,10 @@
     updateTriggerLabel() {
       if (this.startInput.value && this.endInput.value) {
         this.valueNode.textContent =
-          this.startInput.value + " - " + this.endInput.value;
+          displayTime(this.startInput.value) + " - " + displayTime(this.endInput.value);
       } else if (this.startInput.value) {
         this.valueNode.textContent =
-          this.fromLabel + " " + this.startInput.value;
+          this.fromLabel + " " + displayTime(this.startInput.value);
       } else {
         this.valueNode.textContent = this.placeholder;
       }

@@ -43,7 +43,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 public class MarketplaceController {
-    private static final String DEFAULT_SORT = "priceAsc";
+    private static final String DEFAULT_SORT = "newest";
     private static final int MARKETPLACE_PAGE_SIZE = 10;
 
     private final ItemService itemService;
@@ -306,7 +306,7 @@ public class MarketplaceController {
         }
 
         return switch (sort) {
-            case "titleAsc", "titleDesc", "priceAsc", "priceDesc" -> sort;
+            case "newest", "oldest", "priceAsc", "priceDesc" -> sort;
             default -> DEFAULT_SORT;
         };
     }

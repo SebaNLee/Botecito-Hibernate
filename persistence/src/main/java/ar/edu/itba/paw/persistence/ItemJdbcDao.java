@@ -610,13 +610,13 @@ public class ItemJdbcDao implements ItemDao {
     private static String marketplaceOrderBy(final ItemSearchCriteria criteria) {
         final String sort = criteria == null ? null : criteria.getSort();
         if (sort == null) {
-            return " ORDER BY i.price_per_hour ASC, i.id ASC";
+            return " ORDER BY i.created_at DESC, i.id DESC";
         }
         return switch (sort) {
-            case "titleAsc" -> " ORDER BY LOWER(i.title) ASC, i.id ASC";
-            case "titleDesc" -> " ORDER BY LOWER(i.title) DESC, i.id ASC";
+            case "oldest" -> " ORDER BY i.created_at ASC, i.id ASC";
+            case "priceAsc" -> " ORDER BY i.price_per_hour ASC, i.id ASC";
             case "priceDesc" -> " ORDER BY i.price_per_hour DESC, i.id ASC";
-            default -> " ORDER BY i.price_per_hour ASC, i.id ASC";
+            default -> " ORDER BY i.created_at DESC, i.id DESC";
         };
     }
 

@@ -1,6 +1,6 @@
 (function() {
   function setLoadingState(form) {
-    const button = form.querySelector("[data-submit-loading-button]");
+    const button = findSubmitButton(form);
     if (!button || button.disabled) {
       return;
     }
@@ -27,7 +27,7 @@
   }
 
   function resetLoadingState(form) {
-    const button = form.querySelector("[data-submit-loading-button]");
+    const button = findSubmitButton(form);
     if (!button) {
       return;
     }
@@ -60,6 +60,40 @@
     });
   }
 
+  function initOptionalPanels() {
+    document.querySelectorAll("[data-optional-toggle]").forEach((toggle) => {
+      const panel = document.getElementById(toggle.dataset.optionalToggle);
+      if (!panel) {
+        return;
+      }
+
+      const syncPanel = () => {
+        panel.classList.toggle("hidden", !toggle.checked);
+        if (!toggle.checked) {
+          panel.querySelectorAll("input, textarea").forEach((field) => {
+            field.value = "";
+          });
+        }
+      };
+
+      toggle.addEventListener("change", syncPanel);
+      syncPanel();
+    });
+  }
+
+  function findSubmitButton(form) {
+    return (
+      form.querySelector("[data-submit-loading-button]") ||
+      (form.id
+        ? document.querySelector(
+            '[data-submit-loading-button][form="' + form.id + '"]',
+          )
+        : null)
+    );
+  }
+
   document.addEventListener("DOMContentLoaded", initSubmitLoadingState);
+  document.addEventListener("DOMContentLoaded", initOptionalPanels);
   window.addEventListener("pageshow", initSubmitLoadingState);
+  window.addEventListener("pageshow", initOptionalPanels);
 })();

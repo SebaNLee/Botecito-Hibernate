@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -138,6 +139,7 @@ public class PublishController {
         validateAvailabilityStep(form, errors, locale);
         if (errors.hasErrors()) {
             final ModelAndView mav = new ModelAndView("publish-availability");
+            mav.setStatus(HttpStatus.BAD_REQUEST);
             addAvailabilityEditorData(mav, form);
             return mav;
         }
@@ -495,9 +497,9 @@ public class PublishController {
             final StringBuilder sb = new StringBuilder(dayLabel(locale, entry.getKey())).append(": ");
             for (int i = 0; i < sortedSlots.size(); i++) {
                 if (i > 0) sb.append(", ");
-                sb.append(formatTime(sortedSlots.get(i).getStart()))
+                sb.append(formatDisplayTime(sortedSlots.get(i).getStart()))
                         .append(" - ")
-                        .append(formatTime(sortedSlots.get(i).getEnd()));
+                        .append(formatDisplayTime(sortedSlots.get(i).getEnd()));
             }
             summary.add(sb.toString());
         }
@@ -602,6 +604,11 @@ public class PublishController {
 
     private static String formatTime(final LocalTime time) {
         return time == null ? null : time.toString();
+    }
+
+    private static String formatDisplayTime(final LocalTime time) {
+        final String formatted = formatTime(time);
+        return formatted == null ? null : formatted + " hs";
     }
 
     private String dayLabel(final Locale locale, final DayOfWeek weekday) {

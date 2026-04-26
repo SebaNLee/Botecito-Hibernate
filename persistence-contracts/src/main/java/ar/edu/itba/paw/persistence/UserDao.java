@@ -13,6 +13,15 @@ public interface UserDao {
 
     Optional<User> claimUser(String givenName, String lastName, String email, String passwordHash, String paymentAlias);
 
+    Optional<User> updateProfile(
+            int userId,
+            String givenName,
+            String lastName,
+            String email,
+            String phone,
+            String paymentAlias,
+            String preferredLanguage);
+
     Optional<User> updatePasswordRecoveryToken(int userId, String token);
 
     Optional<User> findByPasswordRecoveryToken(String token);

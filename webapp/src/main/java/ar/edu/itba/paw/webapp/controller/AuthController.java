@@ -11,6 +11,7 @@ import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.PasswordResetForm;
+import ar.edu.itba.paw.webapp.form.ProfileForm;
 import ar.edu.itba.paw.webapp.form.RegisterForm;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -257,26 +258,106 @@ public class AuthController {
     }
 
     @RequestMapping(value = "/profile", method = RequestMethod.GET)
-    public ModelAndView profile() {
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            return new ModelAndView("redirect:/login");
-        }
-
-        final User user = userService.findByEmail(authentication.getName()).orElse(null);
+    public ModelAndView profile(@ModelAttribute("profileForm") final ProfileForm form) {
+        final User user = currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
 
+        populateProfileForm(form, user);
+        return buildProfileView(user);
+    }
+
+    @RequestMapping(value = "/profile", method = RequestMethod.POST)
+    public ModelAndView profileSubmit(
+            @Valid @ModelAttribute("profileForm") final ProfileForm form, final BindingResult errors) {
+        final User currentUser = currentAuthenticatedUser();
+        if (currentUser == null) {
+            return new ModelAndView("redirect:/login");
+        }
+
+        if (errors.hasErrors()) {
+            return buildProfileView(currentUser);
+        }
+
+        final User updatedUser = userService
+                .updateProfile(
+                        currentUser.getId(),
+                        form.getGivenName(),
+                        form.getLastName(),
+                        form.getEmail(),
+                        form.getPhone(),
+                        form.getPaymentAlias(),
+                        form.getPreferredLanguage())
+                .orElse(null);
+        if (updatedUser == null) {
+            errors.rejectValue("email", "profile.validation.email.duplicate");
+            return buildProfileView(currentUser);
+        }
+
+        refreshAuthenticatedPrincipal(updatedUser);
+        return new ModelAndView("redirect:/profile?profileAction=updated");
+    }
+
+    @RequestMapping(value = "/profile/dashboard", method = RequestMethod.GET)
+    public ModelAndView dashboard() {
+        final User user = currentAuthenticatedUser();
+        if (user == null) {
+            return new ModelAndView("redirect:/login");
+        }
+
+        final ModelAndView mav = new ModelAndView("dashboard");
+        mav.addObject("user", user);
+        addDashboardData(mav, user);
+        return mav;
+    }
+
+    private ModelAndView buildProfileView(final User user) {
         final ModelAndView mav = new ModelAndView("profile");
         mav.addObject("user", user);
         mav.addObject("memberSinceDisplay", formatMemberSince(user.getCreatedAt()));
+        return mav;
+    }
+
+    private void addDashboardData(final ModelAndView mav, final User user) {
         mav.addObject("ownedItems", itemService.listItemsByOwnerId(user.getId()));
         mav.addObject("receivedBookingRequests", buildReceivedBookings(user));
         mav.addObject("sentBookingRequests", buildSentBookings(user.getId()));
-        return mav;
+    }
+
+    private static void populateProfileForm(final ProfileForm form, final User user) {
+        if (form == null || user == null || form.getEmail() != null) {
+            return;
+        }
+
+        form.setGivenName(user.getGivenName());
+        form.setLastName(user.getLastName());
+        form.setEmail(user.getEmail());
+        form.setPhone(user.getPhone());
+        form.setPaymentAlias(user.getPaymentAlias());
+        form.setPreferredLanguage(user.getPreferredLanguage());
+    }
+
+    private User currentAuthenticatedUser() {
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+        return userService.findByEmail(authentication.getName()).orElse(null);
+    }
+
+    private static void refreshAuthenticatedPrincipal(final User user) {
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || user == null || user.getEmail() == null) {
+            return;
+        }
+
+        final UsernamePasswordAuthenticationToken refreshed = new UsernamePasswordAuthenticationToken(
+                user.getEmail(), authentication.getCredentials(), authentication.getAuthorities());
+        refreshed.setDetails(authentication.getDetails());
+        SecurityContextHolder.getContext().setAuthentication(refreshed);
     }
 
     @RequestMapping("/403")
@@ -373,7 +454,7 @@ public class AuthController {
             return "";
         }
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
-        return startTime.format(formatter) + " - " + endTime.format(formatter);
+        return startTime.format(formatter) + " hs - " + endTime.format(formatter) + " hs";
     }
 
     private static String statusMessageCode(final BookingState state) {
@@ -405,7 +486,7 @@ public class AuthController {
         final BigDecimal totalPrice = BigDecimal.valueOf(pricePerHour.longValue())
                 .multiply(BigDecimal.valueOf(minutes))
                 .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
-        final NumberFormat numberFormat = NumberFormat.getNumberInstance(LocaleContextHolder.getLocale());
+        final NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.forLanguageTag("es-AR"));
         numberFormat.setMinimumFractionDigits(0);
         numberFormat.setMaximumFractionDigits(2);
         return numberFormat.format(totalPrice);

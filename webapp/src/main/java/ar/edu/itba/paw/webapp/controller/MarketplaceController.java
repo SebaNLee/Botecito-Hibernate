@@ -7,6 +7,7 @@ import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
+import ar.edu.itba.paw.services.DisabledTimeSlotService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.Page;
@@ -49,17 +50,20 @@ public class MarketplaceController {
     private final MailService mailService;
     private final BookingRequestService bookingRequestService;
     private final UserService userService;
+    private final DisabledTimeSlotService disabledTimeSlotService;
 
     @Autowired
     public MarketplaceController(
             final ItemService itemService,
             final MailService mailService,
             final BookingRequestService bookingRequestService,
-            final UserService userService) {
+            final UserService userService,
+            final DisabledTimeSlotService disabledTimeSlotService) {
         this.itemService = itemService;
         this.mailService = mailService;
         this.bookingRequestService = bookingRequestService;
         this.userService = userService;
+        this.disabledTimeSlotService = disabledTimeSlotService;
     }
 
     @ModelAttribute("reservationRequestForm")
@@ -79,6 +83,7 @@ public class MarketplaceController {
             @RequestParam(value = "endTime", required = false) final String requestedEndTime,
             @RequestParam(value = "capacity", required = false) final String requestedCapacity,
             @RequestParam(value = "maxWeight", required = false) final String requestedMaxWeight,
+            @RequestParam(value = "difficultyLevel", required = false) final String requestedDifficultyLevel,
             @RequestParam(value = "sort", required = false, defaultValue = DEFAULT_SORT) final String sort,
             @RequestParam(value = "page", required = false) final String requestedPage) {
         final String resolvedSort = resolveSort(sort);
@@ -90,6 +95,7 @@ public class MarketplaceController {
                 requestedEndTime,
                 requestedCapacity,
                 requestedMaxWeight,
+                parseDifficultyLevel(requestedDifficultyLevel),
                 resolvedSort);
         final Page<Item> itemPage =
                 itemService.searchItems(criteria, resolvePage(requestedPage), MARKETPLACE_PAGE_SIZE);
@@ -103,7 +109,9 @@ public class MarketplaceController {
                 mav,
                 "search",
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilities(), itemService.listBookings()));
+                        itemService.listAvailabilities(),
+                        itemService.listBookings(),
+                        disabledTimeSlotService.listAll()));
         return mav;
     }
 
@@ -198,7 +206,9 @@ public class MarketplaceController {
                 itemService.findItemTypeById(item.get().getTypeId());
         final AvailabilityPickerSupport.AvailabilityPickerData reservationAvailability =
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
+                        itemService.listAvailabilitiesByItemId(itemId),
+                        itemService.listBookingsByItemId(itemId),
+                        disabledTimeSlotService.listByItem(itemId));
         final List<String> offeredDates = reservationAvailability.getOfferedDates();
         final Map<String, List<String>> offeredTimesByDate = reservationAvailability.getOfferedTimesByDate();
         final ModelAndView mav = new ModelAndView("marketplace-item");
@@ -267,6 +277,7 @@ public class MarketplaceController {
             final String requestedEndTime,
             final String requestedCapacity,
             final String requestedMaxWeight,
+            final Integer difficultyLevel,
             final String sort) {
         final ItemSearchCriteria criteria = new ItemSearchCriteria();
         criteria.setLocationOptionId(parseInteger(requestedLocationOptionId));
@@ -276,9 +287,18 @@ public class MarketplaceController {
         criteria.setCapacity(parseInteger(requestedCapacity));
         final Integer maxWeight = parseInteger(requestedMaxWeight);
         criteria.setMaxWeightKg(maxWeight == null ? null : BigDecimal.valueOf(maxWeight.longValue()));
+        criteria.setDifficultyLevel(difficultyLevel);
         criteria.setSort(sort);
         criteria.setSearchQuery(searchQuery);
         return criteria;
+    }
+
+    private static Integer parseDifficultyLevel(final String value) {
+        final Integer parsed = parseInteger(value);
+        if (parsed == null || parsed < 1 || parsed > 5) {
+            return null;
+        }
+        return parsed;
     }
 
     private static String resolveSort(final String sort) {
@@ -343,7 +363,9 @@ public class MarketplaceController {
 
         final AvailabilityPickerSupport.AvailabilityPickerData availabilityData =
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
+                        itemService.listAvailabilitiesByItemId(itemId),
+                        itemService.listBookingsByItemId(itemId),
+                        disabledTimeSlotService.listByItem(itemId));
         final List<String> availableTimes =
                 availabilityData.getOfferedTimesByDate().get(requestedDate);
 

@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
@@ -26,6 +27,12 @@ public class WebAuthConfig extends WebSecurityConfigurerAdapter {
         return new BCryptPasswordEncoder();
     }
 
+    @Bean(name = "authenticationManager")
+    @Override
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return super.authenticationManagerBean();
+    }
+
     @Override
     protected void configure(final AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(userDetailsAccountService).passwordEncoder(passwordEncoder());
@@ -42,14 +49,14 @@ public class WebAuthConfig extends WebSecurityConfigurerAdapter {
                 .anonymous()
                 .antMatchers("/register")
                 .anonymous()
+                .antMatchers("/password-recovery/**")
+                .permitAll()
                 .antMatchers(HttpMethod.POST, "/item/*")
                 .authenticated()
                 .antMatchers("/item/*/gallery/**")
                 .authenticated()
-                .antMatchers(HttpMethod.POST, "/bookings/*/*")
+                .antMatchers(HttpMethod.POST, "/bookings/**")
                 .authenticated()
-                .antMatchers("/publish/*/confirm", "/publish/*/delete")
-                .permitAll()
                 .antMatchers("/profile/**")
                 .authenticated()
                 .antMatchers("/publish/**")

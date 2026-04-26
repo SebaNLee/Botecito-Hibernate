@@ -34,20 +34,20 @@
     <p class="text-on-surface-variant mt-2 text-lg m-0"><spring:message code="publish.step3.subtitle" /></p>
   </div>
 
+  <spring:hasBindErrors name="publishForm">
+    <c:forEach var="error" items="${errors.globalErrors}">
+      <paw:alertMessage type="error">
+        <spring:message code="${error.codes[0]}" arguments="${error.arguments}" />
+      </paw:alertMessage>
+    </c:forEach>
+  </spring:hasBindErrors>
+
   <form:form
       action="${stepThreeUrl}"
       method="post"
       modelAttribute="publishForm"
       class="space-y-8"
       data-submit-loading-form="true">
-
-    <spring:hasBindErrors name="publishForm">
-      <c:if test="${not empty errors.globalErrors}">
-        <c:forEach var="error" items="${errors.globalErrors}">
-          <paw:alertMessage type="error" message="${error.defaultMessage}" />
-        </c:forEach>
-      </c:if>
-    </spring:hasBindErrors>
 
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
       <paw:sectionCard element="aside" cssClass="lg:col-span-2" icon="inventory_2">

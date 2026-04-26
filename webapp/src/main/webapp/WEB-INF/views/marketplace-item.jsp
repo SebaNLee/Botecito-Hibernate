@@ -20,6 +20,7 @@
 <spring:message code="itemDetail.unavailable.reason.capacity" var="unavailableReasonCapacity" />
 <spring:message code="itemDetail.unavailable.reason.weight" var="unavailableReasonWeight" />
 <spring:message code="itemDetail.unavailable.reason.dateTime" var="unavailableReasonDateTime" />
+<spring:message code="itemDetail.unavailable.reason.difficulty" var="unavailableReasonDifficulty" />
 <spring:message code="itemDetail.price.total" var="priceTotalLabel" />
 <spring:message code="itemDetail.price.pending" var="pricePendingLabel" />
 <spring:message code="itemDetail.price.pendingHelp" var="pricePendingHelpLabel" />
@@ -256,13 +257,14 @@
     </aside>
   </div>
 
-  <div
-    class="fixed inset-0 z-[280] hidden items-center justify-center bg-on-background/45 px-6"
+  <dialog
+    class="modal"
     data-item-unavailable-alert
     data-marketplace-url="${marketplaceUrl}"
     data-item-location-option-id="${item.locationOptionId}"
     data-item-capacity="${item.capacityPeople}"
     data-item-max-weight="${item.maxWeightKg}"
+    data-item-difficulty-level="${item.difficultyLevel}"
     data-mismatch-prefix="${unavailableMismatchPrefix}"
     data-mismatch-suffix="${unavailableMismatchSuffix}"
     data-mismatch-join="${andLabel}"
@@ -270,9 +272,11 @@
     data-mismatch-capacity="${unavailableReasonCapacity}"
     data-mismatch-weight="${unavailableReasonWeight}"
     data-mismatch-date-time="${unavailableReasonDateTime}"
+    data-mismatch-difficulty="${unavailableReasonDifficulty}"
     hidden>
-    <div class="card bg-base-100 shadow-xl w-full max-w-lg">
-      <div class="card-body p-8 gap-4">
+    <div class="modal-box max-w-lg p-0 bg-transparent shadow-none">
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body p-8 gap-4">
         <div class="flex items-start gap-4">
           <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-error/15 text-error">
             <span class="material-symbols-outlined">warning</span>
@@ -294,7 +298,11 @@
             <c:out value="${unavailableBackLabel}" />
           </button>
         </div>
+        </div>
       </div>
     </div>
-  </div>
+    <form method="dialog" class="modal-backdrop">
+      <button aria-label="${unavailableBackLabel}">close</button>
+    </form>
+  </dialog>
 </paw:layout>

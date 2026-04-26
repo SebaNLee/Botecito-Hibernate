@@ -179,7 +179,7 @@
       var si = timeIndex(r.start);
       var ei = timeIndex(r.end);
       var ti = timeIndex(time);
-      if (ti >= si && ti < ei) return "selected";
+      if (ti >= si && ti <= ei) return "selected";
     }
 
     if (day.pendingStart !== null) {
@@ -230,7 +230,7 @@
     var ti = timeIndex(time);
     for (var i = 0; i < day.ranges.length; i++) {
       var r = day.ranges[i];
-      if (ti >= timeIndex(r.start) && ti < timeIndex(r.end)) return i;
+      if (ti >= timeIndex(r.start) && ti <= timeIndex(r.end)) return i;
     }
     return -1;
   };

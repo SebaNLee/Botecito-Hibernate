@@ -16,6 +16,8 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title><c:out value="${title}" /></title>
+    <link rel="icon" type="image/png" href="<c:url value='/img/favicon.png' />" />
+    <link rel="apple-touch-icon" href="<c:url value='/img/favicon.png' />" />
     <link rel="stylesheet" href="<c:url value='/css/tailwind.css' />" />
     <link rel="stylesheet" href="<c:url value='/css/main.css' />" />
   </head>
@@ -28,6 +30,7 @@
       <jsp:doBody />
     </main>
     <paw:siteFooter />
+    <script type="module" src="<c:url value='/js/cally-loader.js' />"></script>
     <script src="<c:url value='/js/date-time-picker.js' />"></script>
     <script src="<c:url value='/js/search-filters.js' />"></script>
     <script src="<c:url value='/js/form-submit-state.js' />"></script>

@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
@@ -28,6 +29,8 @@ public interface ItemDao {
 
     Optional<Item> findItemById(final int id);
 
+    Optional<Item> findAnyItemById(final int id);
+
     Optional<User> findUserById(final int id);
 
     Optional<User> findUserByEmail(final String email);
@@ -38,6 +41,18 @@ public interface ItemDao {
             final int userId, final String givenName, final String lastName, final String preferredLanguage);
 
     Optional<ItemType> findItemTypeById(final int id);
+
+    boolean updatePublication(
+            int itemId,
+            String title,
+            String description,
+            int pricePerHour,
+            Integer difficultyLevel,
+            int locationOptionId);
+
+    boolean hasBlockingBookingsForEdition(int itemId);
+
+    boolean deleteItemById(int itemId);
 
     Item createItem(
             final int ownerId,
@@ -62,7 +77,17 @@ public interface ItemDao {
 
     List<ItemBooking> listBookingsByItemId(final int itemId);
 
+    List<ItemBooking> listBookingsByGuestId(final int guestId);
+
+    List<ItemBooking> listBookingsByOwnerId(final int ownerId);
+
+    List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId);
+
+    List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId);
+
     Optional<ItemBooking> findBookingByHostDecisionToken(final String hostDecisionToken);
+
+    Optional<ItemBooking> findBookingById(final int bookingId);
 
     ItemBooking createBookingRequest(
             final int itemId,
@@ -75,13 +100,24 @@ public interface ItemDao {
     boolean resolveBookingByHostDecisionToken(
             final String hostDecisionToken, final BookingState newState, final OffsetDateTime hostDecisionUsedAt);
 
+    BookingPaymentProof createPaymentProof(
+            final int bookingId,
+            final int uploaderId,
+            final String fileName,
+            final String contentType,
+            final byte[] fileData);
+
+    Optional<BookingPaymentProof> findPaymentProofByBookingId(final int bookingId);
+
+    Optional<BookingPaymentProof> findPaymentProofById(final int proofId);
+
+    boolean markBookingPaymentSubmitted(final int bookingId, final int guestId);
+
+    boolean markBookingPaid(final int bookingId, final int ownerId);
+
     Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId);
 
-    Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken);
-
-    boolean activateItemByOwnerDeleteToken(final String ownerDeleteToken);
-
-    boolean deactivateItemByOwnerDeleteToken(final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt);
+    boolean setItemActive(final int itemId, final boolean active);
 
     Optional<byte[]> findImageById(final int id);
 
@@ -110,4 +146,6 @@ public interface ItemDao {
     boolean deleteImage(final int itemId, final int imageId);
 
     void reorderImages(final int itemId, final List<Integer> imageIdsInOrder);
+
+    Integer replacePrimaryImage(final int itemId, final byte[] imageData);
 }

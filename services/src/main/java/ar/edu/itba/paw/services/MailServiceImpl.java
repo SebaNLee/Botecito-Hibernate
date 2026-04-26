@@ -14,6 +14,7 @@ import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -32,6 +33,7 @@ public class MailServiceImpl implements MailService {
     private final String reviewRecipient;
     private final String accountBaseUrl;
     private final String itemBaseUrl;
+    private final String passwordRecoveryBaseUrl;
 
     @SuppressFBWarnings(
             value = {"EI_EXPOSE_REP2", "CT_CONSTRUCTOR_THROW"},
@@ -51,6 +53,7 @@ public class MailServiceImpl implements MailService {
         this.reviewRecipient = requireProperty(credentialsProperties, "mail.reviewRecipient");
         this.accountBaseUrl = baseUrl + "/profile";
         this.itemBaseUrl = baseUrl + "/item";
+        this.passwordRecoveryBaseUrl = baseUrl + "/password-recovery";
     }
 
     @Override
@@ -131,6 +134,84 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
+    @Async("mailTaskExecutor")
+    public void sendPaymentProofSubmittedEmail(
+            final String ownerEmail,
+            final String requesterName,
+            final String itemTitle,
+            final byte[] proofFileData,
+            final String proofContentType) {
+        if (ownerEmail == null || ownerEmail.isBlank()) {
+            return;
+        }
+        try {
+            final Locale locale = resolveLocale(ownerEmail);
+            final Context context = new Context(locale);
+            context.setVariable("requesterName", requesterName);
+            context.setVariable("itemTitle", itemTitle);
+            context.setVariable("profileUrl", accountBaseUrl + "#received-booking-requests");
+            final boolean hasProofImage = isInlineProofImage(proofFileData, proofContentType);
+            context.setVariable("hasProofImage", hasProofImage);
+            if (hasProofImage) {
+                context.setVariable("proofImageSrc", "cid:payment-proof-image");
+            }
+
+            final String htmlBody = templateEngine.process("payment-proof-submitted", context);
+            sendHtmlEmail(
+                    ownerEmail,
+                    getMessage("mail.paymentProofSubmitted.subject", locale, requesterName),
+                    htmlBody,
+                    hasProofImage ? proofFileData : null,
+                    hasProofImage ? proofContentType : null,
+                    hasProofImage ? "payment-proof-image" : null);
+        } catch (final RuntimeException e) {
+            LOGGER.error("Could not send payment proof email to {}.", ownerEmail, e);
+        }
+    }
+
+    @Override
+    @Async("mailTaskExecutor")
+    public void sendPaymentReceivedEmail(
+            final String requesterEmail, final String requesterLocaleTag, final String itemTitle) {
+        if (requesterEmail == null || requesterEmail.isBlank()) {
+            return;
+        }
+        try {
+            final Locale locale = toSupportedLocale(requesterLocaleTag);
+            final Context context = new Context(locale);
+            context.setVariable("itemTitle", itemTitle);
+            context.setVariable("profileUrl", accountBaseUrl + "#sent-booking-requests");
+            sendHtmlEmail(
+                    requesterEmail,
+                    getMessage("mail.paymentReceived.subject", locale, itemTitle),
+                    templateEngine.process("payment-received", context));
+        } catch (final RuntimeException e) {
+            LOGGER.error("Could not send payment received email to {}.", requesterEmail, e);
+        }
+    }
+
+    @Override
+    @Async("mailTaskExecutor")
+    public void sendPasswordRecoveryEmail(
+            final String recipientEmail, final String recipientName, final String recoveryToken) {
+        if (recipientEmail == null || recipientEmail.isBlank() || recoveryToken == null || recoveryToken.isBlank()) {
+            return;
+        }
+        try {
+            final Locale locale = resolveLocale(recipientEmail);
+            final Context context = new Context(locale);
+            context.setVariable("recipientName", recipientName);
+            context.setVariable("recoveryUrl", passwordRecoveryBaseUrl + "/" + recoveryToken);
+            sendHtmlEmail(
+                    recipientEmail,
+                    getMessage("mail.passwordRecovery.subject", locale),
+                    templateEngine.process("password-recovery", context));
+        } catch (final RuntimeException e) {
+            LOGGER.error("Could not send password recovery email to {}.", recipientEmail, e);
+        }
+    }
+
+    @Override
     public Locale resolveLocale(final String recipientIdentifier) {
         final Optional<Locale> userLocale = itemDao.findUserByEmail(recipientIdentifier)
                 .map(user -> toSupportedLocale(user.getPreferredLanguage()));
@@ -145,6 +226,13 @@ public class MailServiceImpl implements MailService {
             return Locale.ENGLISH;
         }
         return Locale.of("es");
+    }
+
+    private static boolean isInlineProofImage(final byte[] proofFileData, final String proofContentType) {
+        return proofFileData != null
+                && proofFileData.length > 0
+                && proofContentType != null
+                && proofContentType.toLowerCase(Locale.ROOT).startsWith("image/");
     }
 
     private Optional<String> resolveBookingReviewRecipient(final BookingRequest bookingRequest) {
@@ -168,12 +256,28 @@ public class MailServiceImpl implements MailService {
     }
 
     private void sendHtmlEmail(final String recipientEmail, final String subject, final String htmlBody) {
+        sendHtmlEmail(recipientEmail, subject, htmlBody, null, null, null);
+    }
+
+    private void sendHtmlEmail(
+            final String recipientEmail,
+            final String subject,
+            final String htmlBody,
+            final byte[] inlineFileData,
+            final String inlineContentType,
+            final String inlineContentId) {
         try {
             final MimeMessage mimeMessage = mailSender.createMimeMessage();
             final MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
             helper.setTo(recipientEmail);
             helper.setSubject(subject);
             helper.setText(htmlBody, true);
+            if (inlineFileData != null
+                    && inlineFileData.length > 0
+                    && inlineContentType != null
+                    && inlineContentId != null) {
+                helper.addInline(inlineContentId, new ByteArrayResource(inlineFileData), inlineContentType);
+            }
             mailSender.send(mimeMessage);
         } catch (final MessagingException e) {
             throw new IllegalStateException("Could not build the email message.", e);
@@ -196,6 +300,8 @@ public class MailServiceImpl implements MailService {
         return switch (status) {
             case BOOKING_CONFIRMED -> "request.status.accepted";
             case BOOKING_REJECTED -> "request.status.declined";
+            case BOOKING_PAYMENT_SUBMITTED -> "request.status.paymentSubmitted";
+            case BOOKING_PAID -> "request.status.paid";
             default -> "request.status.updated";
         };
     }

@@ -10,7 +10,6 @@ import ar.edu.itba.paw.models.User;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,11 +24,25 @@ public interface ItemService {
 
     Optional<Item> findItemById(final int id);
 
+    Optional<Item> findAnyItemById(final int id);
+
     Optional<User> findUserById(final int id);
 
     Optional<User> findUserByEmail(final String email);
 
     Optional<ItemType> findItemTypeById(final int id);
+
+    boolean updatePublication(
+            int itemId,
+            String title,
+            String description,
+            int pricePerHour,
+            Integer difficultyLevel,
+            int locationOptionId);
+
+    boolean hasBlockingBookingsForEdition(int itemId);
+
+    boolean deleteItemById(int itemId);
 
     Item createPublication(
             String ownerGivenName,
@@ -46,11 +59,7 @@ public interface ItemService {
             Integer locationOptionId,
             List<ItemAvailability> availabilities);
 
-    Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken);
-
-    boolean activateItemByOwnerDeleteToken(final String ownerDeleteToken);
-
-    boolean deactivateItemByOwnerDeleteToken(final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt);
+    boolean setItemActive(final int itemId, final boolean active);
 
     List<ItemAvailability> listAvailabilities();
 
@@ -59,6 +68,14 @@ public interface ItemService {
     List<ItemBooking> listBookings();
 
     List<ItemBooking> listBookingsByItemId(final int itemId);
+
+    List<ItemBooking> listBookingsByGuestId(final int guestId);
+
+    List<ItemBooking> listBookingsByOwnerId(final int ownerId);
+
+    List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId);
+
+    List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId);
 
     Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId);
 
@@ -82,4 +99,6 @@ public interface ItemService {
     boolean deleteImageFromItem(final int itemId, final int imageId);
 
     void reorderImagesForItem(final int itemId, final List<Integer> imageIdsInOrder);
+
+    Integer replacePrimaryImage(final int itemId, final byte[] imageData);
 }

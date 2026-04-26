@@ -37,6 +37,7 @@
 <spring:message code="publish.difficulty.5" var="publishDifficulty5" />
 <spring:message code="publish.actions.saveDraft" var="publishSaveDraftLabel" />
 <spring:message code="publish.actions.continueAvailability" var="publishContinueAvailabilityLabel" />
+<spring:message code="publish.validation.location.required" var="publishLocationRequiredMsg" />
 
 <paw:layout
   title="Botecito"
@@ -75,7 +76,7 @@
         <jsp:body>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="md:col-span-2">
-              <paw:formField path="title" label="${publishTitleLabel}" placeholder="${publishTitlePlaceholder}" />
+              <paw:formField path="title" maxlength="100" label="${publishTitleLabel}" placeholder="${publishTitlePlaceholder}" />
             </div>
             <div class="md:col-span-2">
               <paw:textareaField path="description" label="${publishDescriptionLabel}" placeholder="${publishDescriptionPlaceholder}" rows="5" maxlength="1000" />
@@ -84,7 +85,7 @@
               <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="itemTypeId">
                 <c:out value="${publishTypeLabel}" />
               </legend>
-              <form:select path="itemTypeId" id="itemTypeId" cssClass="select w-full" cssErrorClass="select w-full select-error">
+              <form:select path="itemTypeId" id="itemTypeId" required="required" cssClass="select w-full" cssErrorClass="select w-full select-error">
                 <form:option value="" label="${publishTypePlaceholder}" />
                 <form:option value="1" label="${publishTypeOther}" />
                 <form:option value="2" label="${publishTypeKayak}" />
@@ -96,16 +97,17 @@
               </form:select>
               <form:errors path="itemTypeId" cssClass="text-error text-xs mt-1" element="p" />
             </fieldset>
-            <paw:formField path="pricePerHour" type="number" label="${publishPriceLabel}" placeholder="${publishPricePlaceholder}" />
+            <paw:formField path="pricePerHour" type="number" min="1" max="1500000000" step="1" label="${publishPriceLabel}" placeholder="${publishPricePlaceholder}" />
             <div class="md:col-span-2">
               <paw:locationPicker
-                  id="marina"
-                  name="marina"
+                  id="locationOptionId"
+                  name="locationOptionId"
                   label="${publishLocationLabel}"
-                  value="${publishForm.marina}"
+                  value="${publishForm.locationOptionId}"
                   placeholder="${publishLocationPlaceholder}"
                   icon="location_on"
-                  errorPath="marina" />
+                  errorPath="locationOptionId"
+                  locationRequiredMessage="${publishLocationRequiredMsg}" />
             </div>
             <paw:peopleCount
                 id="capacity"
@@ -121,7 +123,7 @@
               </legend>
               <spring:bind path="publishForm.maxWeight">
                 <label class="input w-full ${status.error ? 'input-error' : ''}">
-                  <form:input path="maxWeight" id="maxWeight" type="number" min="0" cssClass="grow bg-transparent border-none outline-none focus:outline-none focus:ring-0 shadow-none p-0" placeholder="${publishMaxWeightPlaceholder}" />
+                  <form:input path="maxWeight" id="maxWeight" type="number" min="50" max="15000" step="1" required="required" cssClass="grow bg-transparent border-none outline-none focus:outline-none focus:ring-0 shadow-none p-0" placeholder="${publishMaxWeightPlaceholder}" />
                   <span class="text-outline text-sm font-bold">KG</span>
                 </label>
               </spring:bind>
@@ -131,7 +133,7 @@
               <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="difficultyLevel">
                 <c:out value="${publishDifficultyLabel}" />
               </legend>
-              <form:select path="difficultyLevel" id="difficultyLevel" cssClass="select w-full" cssErrorClass="select w-full select-error">
+              <form:select path="difficultyLevel" id="difficultyLevel" required="required" cssClass="select w-full" cssErrorClass="select w-full select-error">
                 <form:option value="" label="${publishDifficultyPlaceholder}" />
                 <form:option value="1" label="${publishDifficulty1}" />
                 <form:option value="2" label="${publishDifficulty2}" />

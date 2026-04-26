@@ -12,5 +12,12 @@ public interface MailService {
 
     void sendBookingResolutionEmail(BookingRequest bookingRequest);
 
+    void sendPaymentProofSubmittedEmail(
+            String ownerEmail, String requesterName, String itemTitle, byte[] proofFileData, String proofContentType);
+
+    void sendPaymentReceivedEmail(String requesterEmail, String requesterLocaleTag, String itemTitle);
+
+    void sendPasswordRecoveryEmail(String recipientEmail, String recipientName, String recoveryToken);
+
     Locale resolveLocale(String recipientIdentifier);
 }

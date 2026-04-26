@@ -9,8 +9,11 @@ public class User {
     private String lastName;
     private String email;
     private String phone;
+    private String paymentAlias;
     private String preferredLanguage;
     private String passwordHash;
+    private String passwordRecoveryToken;
+    private OffsetDateTime passwordRecoveryUsedAt;
 
     public Integer getId() {
         return id;
@@ -102,6 +105,14 @@ public class User {
         this.phone = phone;
     }
 
+    public String getPaymentAlias() {
+        return paymentAlias;
+    }
+
+    public void setPaymentAlias(final String paymentAlias) {
+        this.paymentAlias = paymentAlias;
+    }
+
     public String getPreferredLanguage() {
         return preferredLanguage;
     }
@@ -116,6 +127,27 @@ public class User {
 
     public void setPasswordHash(final String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public String getPasswordRecoveryToken() {
+        return passwordRecoveryToken;
+    }
+
+    public void setPasswordRecoveryToken(final String passwordRecoveryToken) {
+        this.passwordRecoveryToken = passwordRecoveryToken;
+    }
+
+    public OffsetDateTime getPasswordRecoveryUsedAt() {
+        return passwordRecoveryUsedAt;
+    }
+
+    public void setPasswordRecoveryUsedAt(final OffsetDateTime passwordRecoveryUsedAt) {
+        this.passwordRecoveryUsedAt = passwordRecoveryUsedAt;
+    }
+
+    public void setPasswordRecoveryUsedAt(final String passwordRecoveryUsedAt) {
+        this.passwordRecoveryUsedAt =
+                passwordRecoveryUsedAt == null ? null : OffsetDateTime.parse(passwordRecoveryUsedAt);
     }
 
     private static boolean isBlank(final String value) {

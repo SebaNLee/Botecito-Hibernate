@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.DisabledTimeSlot;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
@@ -7,11 +8,11 @@ import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.persistence.DisabledTimeSlotDao;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,12 +27,15 @@ import org.springframework.transaction.annotation.Transactional;
 public final class ItemServiceImpl implements ItemService {
 
     private static final int MAX_IMAGES_PER_ITEM = 10;
+    private static final int TIME_STEP_MINUTES = 30;
 
     private final ItemDao itemDao;
+    private final DisabledTimeSlotDao disabledTimeSlotDao;
 
     @Autowired
-    public ItemServiceImpl(final ItemDao itemDao) {
+    public ItemServiceImpl(final ItemDao itemDao, final DisabledTimeSlotDao disabledTimeSlotDao) {
         this.itemDao = itemDao;
+        this.disabledTimeSlotDao = disabledTimeSlotDao;
     }
 
     @Override
@@ -43,7 +47,7 @@ public final class ItemServiceImpl implements ItemService {
     public Page<Item> searchItems(final ItemSearchCriteria criteria, final int page, final int pageSize) {
         final int safePageSize = Math.max(1, pageSize);
         final int requestedPage = Math.max(1, page);
-        if (criteria != null && !isBlank(criteria.getDate())) {
+        if (criteria != null && needsAvailabilityPostFilter(criteria)) {
             return searchItemsWithAvailability(criteria, requestedPage, safePageSize);
         }
 
@@ -70,6 +74,11 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public Optional<Item> findAnyItemById(final int id) {
+        return itemDao.findAnyItemById(id);
+    }
+
+    @Override
     public Optional<User> findUserById(final int id) {
         return itemDao.findUserById(id);
     }
@@ -82,6 +91,27 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     public Optional<ItemType> findItemTypeById(final int id) {
         return itemDao.findItemTypeById(id);
+    }
+
+    @Override
+    public boolean updatePublication(
+            final int itemId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final Integer difficultyLevel,
+            final int locationOptionId) {
+        return itemDao.updatePublication(itemId, title, description, pricePerHour, difficultyLevel, locationOptionId);
+    }
+
+    @Override
+    public boolean hasBlockingBookingsForEdition(final int itemId) {
+        return itemDao.hasBlockingBookingsForEdition(itemId);
+    }
+
+    @Override
+    public boolean deleteItemById(final int itemId) {
+        return itemDao.deleteItemById(itemId);
     }
 
     @Override
@@ -99,23 +129,25 @@ public final class ItemServiceImpl implements ItemService {
             final Integer difficultyLevel,
             final Integer locationOptionId,
             final List<ItemAvailability> availabilities) {
+        final int validatedTypeId = validateItemTypeId(typeId);
+        final int validatedLocationOptionId = validateLocationOptionId(locationOptionId);
+        final int validatedCapacityPeople = requirePositive(capacityPeople, "capacity people");
+        final int validatedPricePerHour = requirePositive(pricePerHour, "price per hour");
+        validateAvailabilities(availabilities);
+
         final User ownerUser = resolveOrCreateOwner(ownerGivenName, ownerLastName, ownerEmail, ownerPreferredLanguage);
         final String ownerDeleteToken = UUID.randomUUID().toString();
         final Item item = itemDao.createItem(
                 ownerUser.getId(),
-                typeId,
+                validatedTypeId,
                 title,
                 description,
-                pricePerHour,
-                capacityPeople,
+                validatedPricePerHour,
+                validatedCapacityPeople,
                 maxWeightKg,
                 difficultyLevel,
-                locationOptionId,
+                validatedLocationOptionId,
                 ownerDeleteToken);
-        if (!itemDao.activateItemByOwnerDeleteToken(ownerDeleteToken)) {
-            throw new IllegalStateException("Could not activate created item " + item.getId());
-        }
-        item.setActive(Boolean.TRUE);
 
         for (final ItemAvailability availability : availabilities) {
             itemDao.createItemAvailability(
@@ -128,19 +160,8 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public Optional<Item> findItemByOwnerDeleteToken(final String ownerDeleteToken) {
-        return itemDao.findItemByOwnerDeleteToken(ownerDeleteToken);
-    }
-
-    @Override
-    public boolean activateItemByOwnerDeleteToken(final String ownerDeleteToken) {
-        return itemDao.activateItemByOwnerDeleteToken(ownerDeleteToken);
-    }
-
-    @Override
-    public boolean deactivateItemByOwnerDeleteToken(
-            final String ownerDeleteToken, final OffsetDateTime ownerDeleteUsedAt) {
-        return itemDao.deactivateItemByOwnerDeleteToken(ownerDeleteToken, ownerDeleteUsedAt);
+    public boolean setItemActive(final int itemId, final boolean active) {
+        return itemDao.setItemActive(itemId, active);
     }
 
     @Override
@@ -161,6 +182,26 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemBooking> listBookingsByItemId(final int itemId) {
         return itemDao.listBookingsByItemId(itemId);
+    }
+
+    @Override
+    public List<ItemBooking> listBookingsByGuestId(final int guestId) {
+        return itemDao.listBookingsByGuestId(guestId);
+    }
+
+    @Override
+    public List<ItemBooking> listBookingsByOwnerId(final int ownerId) {
+        return itemDao.listBookingsByOwnerId(ownerId);
+    }
+
+    @Override
+    public List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId) {
+        return itemDao.listPendingBookingsByOwnerId(ownerId);
+    }
+
+    @Override
+    public List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId) {
+        return itemDao.listPaymentSubmittedBookingsByOwnerId(ownerId);
     }
 
     @Override
@@ -254,6 +295,11 @@ public final class ItemServiceImpl implements ItemService {
         itemDao.reorderImages(itemId, imageIdsInOrder);
     }
 
+    @Override
+    public Integer replacePrimaryImage(final int itemId, final byte[] imageData) {
+        return itemDao.replacePrimaryImage(itemId, imageData);
+    }
+
     private User resolveOrCreateOwner(
             final String ownerGivenName,
             final String ownerLastName,
@@ -272,6 +318,60 @@ public final class ItemServiceImpl implements ItemService {
         return itemDao.createUser(ownerGivenName, ownerLastName, ownerEmail, preferredLanguage);
     }
 
+    private int validateItemTypeId(final Integer typeId) {
+        final int validatedTypeId = requirePositive(typeId, "item type id");
+        if (itemDao.findItemTypeById(validatedTypeId).isEmpty()) {
+            throw new IllegalArgumentException("item type does not exist");
+        }
+        return validatedTypeId;
+    }
+
+    private int validateLocationOptionId(final Integer locationOptionId) {
+        final int validatedLocationOptionId = requirePositive(locationOptionId, "location option id");
+        final boolean exists = itemDao.listLocationOptions().stream()
+                .anyMatch(location -> location.getId() != null && location.getId() == validatedLocationOptionId);
+        if (!exists) {
+            throw new IllegalArgumentException("location option does not exist");
+        }
+        return validatedLocationOptionId;
+    }
+
+    private static void validateAvailabilities(final List<ItemAvailability> availabilities) {
+        if (availabilities == null || availabilities.isEmpty()) {
+            throw new IllegalArgumentException("at least one availability is required");
+        }
+        for (final ItemAvailability availability : availabilities) {
+            if (availability == null) {
+                throw new IllegalArgumentException("availability is required");
+            }
+            validateAvailabilitySlot(availability.getWeekday(), availability.getStartTime(), availability.getEndTime());
+        }
+    }
+
+    private static void validateAvailabilitySlot(
+            final DayOfWeek weekday, final LocalTime startTime, final LocalTime endTime) {
+        if (weekday == null || startTime == null || endTime == null) {
+            throw new IllegalArgumentException("availability weekday, start time and end time are required");
+        }
+        if (!endTime.isAfter(startTime)) {
+            throw new IllegalArgumentException("availability end time must be after start time");
+        }
+        if (!isThirtyMinuteStep(startTime) || !isThirtyMinuteStep(endTime)) {
+            throw new IllegalArgumentException("availability times must use 30 minute steps");
+        }
+    }
+
+    private static boolean isThirtyMinuteStep(final LocalTime time) {
+        return time.getMinute() % TIME_STEP_MINUTES == 0 && time.getSecond() == 0 && time.getNano() == 0;
+    }
+
+    private static int requirePositive(final Integer value, final String fieldName) {
+        if (value == null || value <= 0) {
+            throw new IllegalArgumentException(fieldName + " must be positive");
+        }
+        return value;
+    }
+
     private Page<Item> searchItemsWithAvailability(
             final ItemSearchCriteria criteria, final int requestedPage, final int pageSize) {
         final int candidateCount = itemDao.countItems(criteria);
@@ -283,12 +383,16 @@ public final class ItemServiceImpl implements ItemService {
         final Map<Integer, List<ItemAvailability>> availabilitiesByItemId =
                 groupAvailabilitiesByItemId(itemDao.listAvailabilities());
         final Map<Integer, List<ItemBooking>> bookingsByItemId = groupBookingsByItemId(itemDao.listBookings());
+        final Map<Integer, List<DisabledTimeSlot>> disabledSlotsByItemId = new LinkedHashMap<>();
         final List<Item> filteredItems = new ArrayList<>();
         for (final Item item : candidates) {
+            final List<DisabledTimeSlot> disabledSlots =
+                    disabledSlotsByItemId.computeIfAbsent(item.getId(), id -> disabledTimeSlotDao.listByItem(id));
             if (MarketplaceAvailabilityMatcher.matches(
                     criteria,
                     availabilitiesByItemId.getOrDefault(item.getId(), List.of()),
-                    bookingsByItemId.getOrDefault(item.getId(), List.of()))) {
+                    bookingsByItemId.getOrDefault(item.getId(), List.of()),
+                    disabledSlots)) {
                 filteredItems.add(item);
             }
         }
@@ -333,5 +437,12 @@ public final class ItemServiceImpl implements ItemService {
 
     private static boolean isBlank(final String value) {
         return value == null || value.isBlank();
+    }
+
+    private static boolean needsAvailabilityPostFilter(final ItemSearchCriteria criteria) {
+        if (!isBlank(criteria.getDate())) {
+            return true;
+        }
+        return !isBlank(criteria.getStartTime()) || !isBlank(criteria.getEndTime());
     }
 }

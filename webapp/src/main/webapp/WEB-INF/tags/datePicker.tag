@@ -19,9 +19,9 @@
 <spring:message code="datePicker.selectDate" var="datePickerSelectDate" />
 <spring:message code="datePicker.previousMonth" var="datePickerPreviousMonth" />
 <spring:message code="datePicker.nextMonth" var="datePickerNextMonth" />
-<spring:message code="datePicker.close" var="datePickerClose" />
 <spring:message code="datePicker.available" var="datePickerAvailable" />
 <spring:message code="datePicker.occupied" var="datePickerOccupied" />
+<spring:message code="timePicker.close" var="datePickerClose" />
 <spring:message code="common.clear" var="clearLabel" />
 <c:set var="resolvedLabel" value="${not empty label ? label : defaultDateLabel}" />
 <c:set var="resolvedValue" value="${not empty value ? value : ''}" />
@@ -29,9 +29,10 @@
 <c:set var="resolvedIcon" value="${not empty icon ? icon : 'calendar_today'}" />
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
 <c:set var="resolvedRestrictToAvailability" value="${empty restrictToAvailability ? true : restrictToAvailability}" />
+<c:set var="resolvedLocale" value="${not empty pageContext.response.locale.language ? pageContext.response.locale.language : 'es'}" />
 
-<div
-    class="relative w-full ${resolvedContainerClass}"
+<fieldset
+    class="fieldset min-w-0 max-w-full w-full ${resolvedContainerClass}"
     data-date-picker
     data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
     data-restrict-to-availability="${resolvedRestrictToAvailability}"
@@ -43,62 +44,89 @@
     data-occupied-label="${fn:escapeXml(datePickerOccupied)}">
   <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-picker-input />
 
-  <button
-      type="button"
-      class="w-full flex items-center gap-3 rounded-2xl border-0 bg-transparent px-0 py-0.5 text-left text-on-surface cursor-pointer hover:bg-base-200/60 transition-colors"
-      data-picker-trigger
-      aria-expanded="false"
-      aria-controls="${id}-panel">
-    <span class="material-symbols-outlined text-primary"><c:out value="${resolvedIcon}" /></span>
-    <span class="min-w-0 flex-1 flex flex-col gap-0.5">
-      <span class="text-[10px] font-extrabold tracking-[0.16em] uppercase text-outline"><c:out value="${resolvedLabel}" /></span>
-      <span class="text-[0.95rem] leading-[1.35] font-bold text-on-surface" data-picker-value><c:out value="${resolvedPlaceholder}" /></span>
-    </span>
-    <span class="material-symbols-outlined text-primary">expand_more</span>
-  </button>
+  <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+    <c:out value="${resolvedLabel}" />
+  </legend>
+  <div class="relative min-w-0 max-w-full">
+    <div
+        data-picker-control-row
+        class="input cursor-pointer flex h-10 min-h-10 max-h-10 w-full min-w-0 max-w-full items-center gap-1 overflow-x-hidden border-primary/25 px-2 py-0 focus-within:border-primary has-[:focus-visible]:border-primary">
+      <button
+          type="button"
+          class="flex min-h-0 min-w-0 flex-1 items-center gap-2 bg-transparent py-0 pl-0.5 pr-0 text-left text-on-surface outline-none cursor-pointer"
+          data-picker-trigger
+          aria-expanded="false"
+          aria-controls="${id}-panel"
+          aria-haspopup="dialog">
+        <span class="material-symbols-outlined shrink-0 text-primary text-xl"><c:out value="${resolvedIcon}" /></span>
+        <span class="min-w-0 flex-1 truncate text-[0.95rem] font-bold leading-tight text-on-surface" data-picker-value><c:out value="${resolvedPlaceholder}" /></span>
+      </button>
+      <button
+          type="button"
+          class="btn btn-ghost btn-xs btn-circle shrink-0 cursor-pointer text-primary ${empty resolvedValue ? '!w-0 !min-w-0 !max-w-0 overflow-hidden !p-0 opacity-0 pointer-events-none !border-0' : ''}"
+          aria-label="${fn:escapeXml(clearLabel)}"
+          <c:if test="${empty resolvedValue}">aria-hidden="true" tabindex="-1"</c:if>
+          data-picker-trigger-clear>
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+      <span
+          role="button"
+          tabindex="0"
+          class="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md p-1 text-primary transition-transform duration-150 outline-none hover:bg-base-200/50 focus-visible:bg-base-200/50 focus-visible:ring-2 focus-visible:ring-primary/25"
+          data-picker-chevron
+          aria-label="${fn:escapeXml(datePickerSelectDate)}">
+        <span class="material-symbols-outlined text-base leading-none">expand_more</span>
+      </span>
+    </div>
 
   <div
       id="${id}-panel"
-      class="card bg-base-100 fixed z-[240] hidden flex-col overflow-hidden p-3 shadow-xl"
-      data-panel-width="352"
+      class="card bg-base-100 fixed z-[240] hidden flex-col overflow-y-auto overflow-x-hidden px-1 pt-0.5 pb-1 shadow-xl"
+      data-panel-width="328"
       data-picker-panel
       hidden>
-    <div class="mb-2 flex items-start justify-between gap-3">
-      <div>
-        <div class="text-[11px] font-extrabold tracking-[0.18em] uppercase text-primary"><c:out value="${datePickerAvailability}" /></div>
-        <h3 class="mt-0.5 font-headline text-lg font-extrabold text-on-background" data-picker-month-title><c:out value="${datePickerSelectDate}" /></h3>
-      </div>
-      <div class="flex items-center gap-1">
-        <button type="button" class="btn btn-ghost btn-xs btn-circle" data-picker-nav="prev" aria-label="${fn:escapeXml(datePickerPreviousMonth)}">
-          <span class="material-symbols-outlined text-base">chevron_left</span>
-        </button>
-        <button type="button" class="btn btn-ghost btn-xs btn-circle" data-picker-nav="next" aria-label="${fn:escapeXml(datePickerNextMonth)}">
-          <span class="material-symbols-outlined text-base">chevron_right</span>
-        </button>
-        <button type="button" class="btn btn-ghost btn-xs btn-circle" data-picker-close aria-label="${fn:escapeXml(datePickerClose)}">
-          <span class="material-symbols-outlined text-base">close</span>
-        </button>
-      </div>
-    </div>
-
-    <div class="mb-2 flex flex-wrap items-center gap-3 text-[10px] font-bold text-on-surface-variant">
-      <span class="inline-flex items-center gap-2">
-        <span class="inline-block h-3 w-3 rounded-full bg-primary/15 border border-primary/40"></span>
-        <c:out value="${datePickerAvailable}" />
-      </span>
-      <span class="inline-flex items-center gap-2">
-        <span class="inline-block h-3 w-3 rounded-full bg-error/15 border border-error/30"></span>
-        <c:out value="${datePickerOccupied}" />
-      </span>
-    </div>
-
-    <div class="hide-scrollbar min-h-0 flex-1 overflow-y-auto pr-1" data-picker-months data-picker-scroll-region></div>
-
-    <div class="mt-2 flex justify-end">
-      <button type="button" class="btn btn-ghost btn-xs gap-1 text-on-surface-variant uppercase tracking-[0.12em]" data-picker-clear>
-        <span class="material-symbols-outlined text-base">ink_eraser</span>
+    <div class="relative mx-auto w-fit max-w-full min-w-0" data-picker-calendar-wrap>
+      <button
+          type="button"
+          class="btn btn-outline btn-xs absolute left-0 top-[0.45rem] z-10 gap-0.5 px-1.5 font-semibold shadow-sm"
+          data-picker-clear>
+        <span class="material-symbols-outlined text-sm">ink_eraser</span>
         <c:out value="${clearLabel}" />
       </button>
+      <button
+          type="button"
+          class="btn btn-ghost btn-xs btn-circle absolute right-0 top-[0.45rem] z-10 text-on-surface-variant shadow-sm"
+          data-picker-close
+          aria-label="${fn:escapeXml(datePickerClose)}">
+        <span class="material-symbols-outlined text-base">close</span>
+      </button>
+      <calendar-date
+          class="cally w-fit max-w-full"
+          locale="${fn:escapeXml(resolvedLocale)}"
+          first-day-of-week="1"
+          format-weekday="short"
+          page-by="single"
+          show-outside-days
+          data-picker-calendar>
+        <svg
+            slot="previous"
+            aria-label="${fn:escapeXml(datePickerPreviousMonth)}"
+            class="size-4 fill-none stroke-current stroke-[1.8]"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+        </svg>
+        <svg
+            slot="next"
+            aria-label="${fn:escapeXml(datePickerNextMonth)}"
+            class="size-4 fill-none stroke-current stroke-[1.8]"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+        </svg>
+        <calendar-month></calendar-month>
+      </calendar-date>
     </div>
   </div>
-</div>
+  </div>
+</fieldset>

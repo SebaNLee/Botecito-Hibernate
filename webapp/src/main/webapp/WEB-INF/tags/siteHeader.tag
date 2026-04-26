@@ -21,9 +21,6 @@
         <a href="<c:url value='/login' />" class="btn btn-ghost btn-sm no-underline">
           <spring:message code="nav.login" />
         </a>
-        <a href="<c:url value='/register' />" class="btn btn-primary btn-sm no-underline">
-          <spring:message code="nav.register" />
-        </a>
       </sec:authorize>
       <sec:authorize access="isAuthenticated()">
         <a href="<c:url value='/profile' />" class="btn btn-ghost btn-circle btn-sm no-underline" title="<sec:authentication property='name' />" aria-label="Profile">

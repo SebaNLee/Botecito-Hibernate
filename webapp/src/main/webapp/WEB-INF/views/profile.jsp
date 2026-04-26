@@ -7,6 +7,7 @@
 <c:url var="logoutUrl" value="/logout" />
 <spring:message code="profile.logout" var="logoutLabel" />
 <spring:message code="profile.publications.delete" var="deleteLabel" />
+<spring:message code="profile.publications.manageGallery" var="manageGalleryLabel" />
 <spring:message code="profile.bookings.accept" var="acceptLabel" />
 <spring:message code="profile.bookings.decline" var="declineLabel" />
 
@@ -92,9 +93,13 @@
                   <p class="m-0 text-xs text-on-surface-variant"><spring:message code="profile.publications.price" arguments="${item.pricePerHour}" /></p>
                 </div>
                 <c:if test="${item.active}">
-                  <form action="${deleteItemUrl}" method="post" class="m-0">
-                    <paw:button type="submit" color="danger" variant="outline" size="sm" text="${deleteLabel}" />
-                  </form>
+                  <c:url var="manageGalleryUrl" value="/item/${item.id}/gallery" />
+                  <div class="flex gap-2">
+                    <paw:button href="${manageGalleryUrl}" color="primary" variant="outline" size="sm" text="${manageGalleryLabel}" />
+                    <form action="${deleteItemUrl}" method="post" class="m-0">
+                      <paw:button type="submit" color="danger" variant="outline" size="sm" text="${deleteLabel}" />
+                    </form>
+                  </div>
                 </c:if>
               </div>
             </c:forEach>

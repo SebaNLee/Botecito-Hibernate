@@ -85,7 +85,11 @@ public interface ItemDao {
 
     Optional<byte[]> findImageById(final int id);
 
-    List<Integer> listImageIdsByItemId(final int itemId);
+    List<Integer> listImageIdsByItemIdOrdered(final int itemId);
+
+    Optional<Integer> findCoverImageIdByItemId(final int itemId);
+
+    int countImagesByItemId(final int itemId);
 
     Integer insertItem(
             final int ownerId,
@@ -101,5 +105,9 @@ public interface ItemDao {
     Integer insertAvailability(
             final int itemId, final DayOfWeek weekday, final LocalTime startTime, final LocalTime endTime);
 
-    Integer insertImage(final int itemId, final byte[] imageData);
+    Integer insertImage(final int itemId, final byte[] imageData, final int displayOrder);
+
+    boolean deleteImage(final int itemId, final int imageId);
+
+    void reorderImages(final int itemId, final List<Integer> imageIdsInOrder);
 }

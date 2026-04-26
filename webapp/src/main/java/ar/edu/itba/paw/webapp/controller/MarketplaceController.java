@@ -206,6 +206,7 @@ public class MarketplaceController {
         mav.addObject("itemOwner", owner.orElse(null));
         mav.addObject("itemType", itemType.orElse(null));
         mav.addObject("itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, itemId, servletContextPath));
+        mav.addObject("itemImageUrls", ItemImageUtils.resolveImageUrls(itemService, itemId, servletContextPath));
         mav.addObject(
                 "ownerInitial",
                 owner.map(MarketplaceController::buildOwnerInitial).orElse("I"));

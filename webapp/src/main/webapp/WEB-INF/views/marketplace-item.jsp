@@ -41,11 +41,7 @@
 
   <div class="flex flex-col lg:flex-row gap-8">
     <section class="flex-1 space-y-8">
-      <div class="card bg-base-100 shadow-sm overflow-hidden">
-        <figure>
-          <img class="w-full h-[400px] object-cover" alt="${item.title}" src="${itemImageUrl}" />
-        </figure>
-      </div>
+      <paw:imageCarousel imageUrls="${itemImageUrls}" altText="${item.title}" />
 
       <paw:sectionCard>
         <jsp:attribute name="title"><spring:message code="itemDetail.description.title" /></jsp:attribute>

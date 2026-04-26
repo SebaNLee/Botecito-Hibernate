@@ -20,9 +20,13 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public final class ItemServiceImpl implements ItemService {
+
+    private static final int MAX_IMAGES_PER_ITEM = 10;
+
     private final ItemDao itemDao;
 
     @Autowired
@@ -170,8 +174,23 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public List<Integer> listImageIdsByItemId(final int itemId) {
-        return itemDao.listImageIdsByItemId(itemId);
+    public List<Integer> listImageIdsByItemIdOrdered(final int itemId) {
+        return itemDao.listImageIdsByItemIdOrdered(itemId);
+    }
+
+    @Override
+    public Optional<Integer> findCoverImageIdByItemId(final int itemId) {
+        return itemDao.findCoverImageIdByItemId(itemId);
+    }
+
+    @Override
+    public int countImagesByItemId(final int itemId) {
+        return itemDao.countImagesByItemId(itemId);
+    }
+
+    @Override
+    public int maxImagesPerItem() {
+        return MAX_IMAGES_PER_ITEM;
     }
 
     @Override
@@ -181,8 +200,58 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public Integer insertImage(final int itemId, final byte[] imageData) {
-        return itemDao.insertImage(itemId, imageData);
+    @Transactional
+    public Integer appendImage(final int itemId, final byte[] imageData) {
+        if (imageData == null || imageData.length == 0) {
+            throw new IllegalArgumentException("Image data is empty");
+        }
+        final int existing = itemDao.countImagesByItemId(itemId);
+        if (existing >= MAX_IMAGES_PER_ITEM) {
+            throw new IllegalArgumentException("Image gallery is full (max " + MAX_IMAGES_PER_ITEM + ")");
+        }
+        return itemDao.insertImage(itemId, imageData, existing);
+    }
+
+    @Override
+    @Transactional
+    public void replaceGallery(final int itemId, final List<byte[]> orderedImages) {
+        if (orderedImages == null) {
+            return;
+        }
+        if (orderedImages.size() > MAX_IMAGES_PER_ITEM) {
+            throw new IllegalArgumentException("Gallery exceeds max " + MAX_IMAGES_PER_ITEM);
+        }
+        for (final Integer existingId : itemDao.listImageIdsByItemIdOrdered(itemId)) {
+            itemDao.deleteImage(itemId, existingId);
+        }
+        int position = 0;
+        for (final byte[] data : orderedImages) {
+            if (data == null || data.length == 0) {
+                continue;
+            }
+            itemDao.insertImage(itemId, data, position);
+            position++;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean deleteImageFromItem(final int itemId, final int imageId) {
+        return itemDao.deleteImage(itemId, imageId);
+    }
+
+    @Override
+    @Transactional
+    public void reorderImagesForItem(final int itemId, final List<Integer> imageIdsInOrder) {
+        if (imageIdsInOrder == null || imageIdsInOrder.isEmpty()) {
+            return;
+        }
+        final List<Integer> currentIds = itemDao.listImageIdsByItemIdOrdered(itemId);
+        if (currentIds.size() != imageIdsInOrder.size()
+                || !new java.util.HashSet<>(currentIds).equals(new java.util.HashSet<>(imageIdsInOrder))) {
+            throw new IllegalArgumentException("Reorder list does not match current gallery contents");
+        }
+        itemDao.reorderImages(itemId, imageIdsInOrder);
     }
 
     private User resolveOrCreateOwner(

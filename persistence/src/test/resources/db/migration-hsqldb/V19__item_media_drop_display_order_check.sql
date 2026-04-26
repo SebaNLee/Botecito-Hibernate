@@ -1,0 +1,1 @@
+ALTER TABLE item_media DROP CONSTRAINT item_media_display_order_nonneg;

@@ -410,11 +410,36 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
-    public List<Integer> listImageIdsByItemId(final int itemId) {
+    public List<Integer> listImageIdsByItemIdOrdered(final int itemId) {
         if (!hasTable("item_media")) {
             return Collections.emptyList();
         }
-        return jdbcTemplate.queryForList("SELECT id FROM item_media WHERE item_id = ?", Integer.class, itemId);
+        return jdbcTemplate.queryForList(
+                "SELECT id FROM item_media WHERE item_id = ? ORDER BY display_order ASC", Integer.class, itemId);
+    }
+
+    @Override
+    public Optional<Integer> findCoverImageIdByItemId(final int itemId) {
+        if (!hasTable("item_media")) {
+            return Optional.empty();
+        }
+        return jdbcTemplate
+                .queryForList(
+                        "SELECT id FROM item_media WHERE item_id = ? ORDER BY display_order ASC LIMIT 1",
+                        Integer.class,
+                        itemId)
+                .stream()
+                .findFirst();
+    }
+
+    @Override
+    public int countImagesByItemId(final int itemId) {
+        if (!hasTable("item_media")) {
+            return 0;
+        }
+        final Integer count =
+                jdbcTemplate.queryForObject("SELECT COUNT(*) FROM item_media WHERE item_id = ?", Integer.class, itemId);
+        return count == null ? 0 : count;
     }
 
     private static String marketplaceWhereClause(final ItemSearchCriteria criteria, final List<Object> args) {
@@ -504,13 +529,59 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
-    public Integer insertImage(final int itemId, final byte[] imageData) {
+    public Integer insertImage(final int itemId, final byte[] imageData, final int displayOrder) {
         final SimpleJdbcInsert insert =
                 new SimpleJdbcInsert(jdbcTemplate).withTableName("item_media").usingGeneratedKeyColumns("id");
         final Map<String, Object> args = new HashMap<>();
         args.put("item_id", itemId);
         args.put("image_data", imageData);
+        args.put("display_order", displayOrder);
         return insert.executeAndReturnKey(args).intValue();
+    }
+
+    @Override
+    public boolean deleteImage(final int itemId, final int imageId) {
+        final List<Integer> currentOrder = jdbcTemplate.queryForList(
+                "SELECT id FROM item_media WHERE item_id = ? ORDER BY display_order ASC", Integer.class, itemId);
+        if (!currentOrder.contains(imageId)) {
+            return false;
+        }
+        // Park surviving rows out of the unique-constraint range, delete the target,
+        // then re-pack 0..N-1 deterministically.
+        jdbcTemplate.update("UPDATE item_media SET display_order = -1 - display_order WHERE item_id = ?", itemId);
+        final int deleted = jdbcTemplate.update("DELETE FROM item_media WHERE id = ? AND item_id = ?", imageId, itemId);
+        if (deleted == 0) {
+            jdbcTemplate.update("UPDATE item_media SET display_order = -1 - display_order WHERE item_id = ?", itemId);
+            return false;
+        }
+        int newPosition = 0;
+        for (final Integer survivingId : currentOrder) {
+            if (survivingId.intValue() == imageId) {
+                continue;
+            }
+            jdbcTemplate.update(
+                    "UPDATE item_media SET display_order = ? WHERE id = ? AND item_id = ?",
+                    newPosition,
+                    survivingId,
+                    itemId);
+            newPosition++;
+        }
+        return true;
+    }
+
+    @Override
+    public void reorderImages(final int itemId, final List<Integer> imageIdsInOrder) {
+        if (imageIdsInOrder == null || imageIdsInOrder.isEmpty()) {
+            return;
+        }
+        jdbcTemplate.update("UPDATE item_media SET display_order = -1 - display_order WHERE item_id = ?", itemId);
+        for (int position = 0; position < imageIdsInOrder.size(); position++) {
+            jdbcTemplate.update(
+                    "UPDATE item_media SET display_order = ? WHERE id = ? AND item_id = ?",
+                    position,
+                    imageIdsInOrder.get(position),
+                    itemId);
+        }
     }
 
     private boolean hasTable(final String tableName) {

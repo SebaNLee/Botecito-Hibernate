@@ -33,5 +33,7 @@
     <script src="<c:url value='/js/form-submit-state.js' />"></script>
     <script src="<c:url value='/js/weekly-availability.js' />"></script>
     <script src="<c:url value='/js/image-upload-preview.js' />"></script>
+    <script src="<c:url value='/js/image-gallery.js' />"></script>
+    <script src="<c:url value='/js/image-carousel.js' />"></script>
   </body>
 </html>

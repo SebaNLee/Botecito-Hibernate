@@ -341,8 +341,6 @@
         <input type="radio" name="dashboard_tabs" role="tab" class="tab font-bold" aria-label="${reviewsTabLabel}" ${activeDashboardTab == 'reviews' ? 'checked="checked"' : ''} />
         <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6">
           <div id="reviews" class="scroll-mt-24 space-y-6">
-            <h2 class="text-xl font-extrabold tracking-tight m-0"><c:out value="${reviewsTabLabel}" /></h2>
-
             <div class="space-y-4">
               <h3 class="text-lg font-extrabold tracking-tight m-0"><c:out value="${receivedGuestReviewsTitle}" /></h3>
               <c:choose>

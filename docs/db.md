@@ -13,7 +13,7 @@ psql -h localhost -U pawdbuser -d paw -W
 Para borrar y recrear DB:
 
 ```
-sudo -u postgres psql -c "DELETE DATABASE paw;"
+sudo -u postgres psql -c "DROP DATABASE paw;"
 sudo -u postgres psql -c "CREATE DATABASE paw;"
 ```
 

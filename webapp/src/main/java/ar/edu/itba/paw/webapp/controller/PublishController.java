@@ -28,7 +28,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.CacheControl;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -172,7 +171,6 @@ public class PublishController {
         validateAvailabilityStep(form, errors, locale);
         if (errors.hasErrors()) {
             final ModelAndView mav = new ModelAndView("publish-availability");
-            mav.setStatus(HttpStatus.BAD_REQUEST);
             addAvailabilityEditorData(mav, form);
             return mav;
         }

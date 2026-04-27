@@ -20,6 +20,7 @@
 <spring:message code="filters.maxWeight.helper" var="maxWeightHelper" />
 <spring:message code="filters.difficulty" var="difficultyFilterLabel" />
 <spring:message code="filters.difficulty.any" var="difficultyAnyLabel" />
+<spring:message code="itemDetail.value.notAvailable" var="notAvailableLabel" />
 <spring:message code="landing.hero.search" var="searchLabel" />
 <spring:message code="marketplace.filters.apply" var="filtersApplyLabel" />
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
@@ -284,7 +285,14 @@
                 </div>
                 <div class="flex items-center gap-1.5">
                   <span class="material-symbols-outlined text-outline text-lg">weight</span>
-                  <span class="text-sm font-semibold"><spring:message code="marketplace.card.weight" arguments="${item.maxWeightKg}" /></span>
+                  <span class="text-sm font-semibold">
+                    <c:choose>
+                      <c:when test="${item.maxWeightKg != null}">
+                        <spring:message code="marketplace.card.weight" arguments="${item.maxWeightKg}" />
+                      </c:when>
+                      <c:otherwise><c:out value="${notAvailableLabel}" /></c:otherwise>
+                    </c:choose>
+                  </span>
                 </div>
               </div>
               <div class="text-primary font-bold text-sm flex items-center gap-1">

@@ -9,6 +9,7 @@
 <c:url var="stepTwoUrl" value="/publish/availability" />
 <c:url var="marketplaceUrl" value="/marketplace" />
 <spring:message code="publish.availability.noRanges" var="publishNoRangesLabel" />
+<spring:message code="publish.availability.day.empty.client" var="publishMissingRangeLabel" />
 <spring:message code="publish.actions.saveDraft" var="publishSaveDraftLabel" />
 <spring:message code="publish.actions.continueContact" var="publishContinueContactLabel" />
 
@@ -39,12 +40,17 @@
     <paw:sectionCard icon="schedule">
       <jsp:attribute name="title"><spring:message code="publish.step2.section.slots" /></jsp:attribute>
       <jsp:body>
+        <c:if test="${param.availabilityAction == 'invalidMethod'}">
+          <paw:alertMessage type="error" cssClass="mb-4">
+            <c:out value="${publishMissingRangeLabel}" />
+          </paw:alertMessage>
+        </c:if>
         <div
             data-weekly-availability-grid
             data-existing-slots='${existingSlotsJson}'
             data-min-duration="120"
             data-no-ranges-text="${publishNoRangesLabel}"
-            data-missing-range-text="<spring:message code='publish.availability.day.empty.client' />">
+            data-missing-range-text="${publishMissingRangeLabel}">
 
           <div class="flex flex-wrap items-center gap-4 text-[10px] font-bold text-on-surface-variant">
             <span class="inline-flex items-center gap-1.5">
@@ -74,6 +80,10 @@
               </paw:alertMessage>
             </c:forEach>
           </spring:hasBindErrors>
+          <div role="alert" class="alert alert-error alert-soft rounded-xl text-sm items-start mt-2 hidden" data-availability-client-alert>
+            <span class="material-symbols-outlined text-lg shrink-0">error</span>
+            <span><c:out value="${publishMissingRangeLabel}" /></span>
+          </div>
 
           <div class="space-y-4 mt-6">
             <c:forEach var="day" items="${['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY']}">

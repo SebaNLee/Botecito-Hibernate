@@ -59,6 +59,10 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 <spring:message code="itemDetail.price.hour" var="priceHourLabel" />
 <spring:message code="itemDetail.price.hours" var="priceHoursLabel" />
 <spring:message
+  code="itemDetail.value.notAvailable"
+  var="notAvailableLabel"
+/>
+<spring:message
   code="itemDetail.unavailable.clear"
   var="unavailableClearLabel"
 />
@@ -138,10 +142,15 @@ charset=UTF-8" pageEncoding="UTF-8" %>
               <span class="material-symbols-outlined text-primary"
                 >check_circle</span
               >
-              <spring:message
-                code="itemDetail.weight"
-                arguments="${item.maxWeightKg}"
-              />
+              <c:choose>
+                <c:when test="${item.maxWeightKg != null}">
+                  <spring:message
+                    code="itemDetail.weight"
+                    arguments="${item.maxWeightKg}"
+                  />
+                </c:when>
+                <c:otherwise><c:out value="${notAvailableLabel}" /></c:otherwise>
+              </c:choose>
               </span>
             </li>
             <li class="rounded-2xl bg-base-200 p-4 min-w-0">

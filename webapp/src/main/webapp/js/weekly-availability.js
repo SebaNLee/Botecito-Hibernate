@@ -61,6 +61,7 @@
     this.noRangesText = root.dataset.noRangesText || "No time ranges selected";
     this.missingRangeText =
       root.dataset.missingRangeText || "Choose a time range for this day.";
+    this.clientAlert = root.querySelector("[data-availability-client-alert]");
 
     this.days = {};
     for (var i = 0; i < WEEKDAYS.length; i++) {
@@ -321,10 +322,22 @@
     this.form.addEventListener("submit", function (event) {
       if (!self.validateEnabledDays()) {
         event.preventDefault();
+        self.showClientAlert();
         return;
       }
+      self.hideClientAlert();
       self.serializeToHiddenInputs();
     });
+  };
+
+  WeeklyAvailabilityGrid.prototype.showClientAlert = function () {
+    if (!this.clientAlert) return;
+    this.clientAlert.classList.remove("hidden");
+  };
+
+  WeeklyAvailabilityGrid.prototype.hideClientAlert = function () {
+    if (!this.clientAlert) return;
+    this.clientAlert.classList.add("hidden");
   };
 
   WeeklyAvailabilityGrid.prototype.validateEnabledDays = function () {

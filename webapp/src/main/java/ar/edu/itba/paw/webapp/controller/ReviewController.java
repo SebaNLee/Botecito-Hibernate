@@ -68,6 +68,12 @@ public class ReviewController {
         if ("item".equals(returnTo) && itemId != null) {
             return "/item/" + itemId + "?reviewAction=" + action;
         }
+        if ("dashboardHosting".equals(returnTo)) {
+            return "/profile/dashboard?dashboardTab=hosting&reviewAction=" + action + "#received-booking-requests";
+        }
+        if ("dashboardBookings".equals(returnTo)) {
+            return "/profile/dashboard?dashboardTab=bookings&reviewAction=" + action + "#sent-booking-requests";
+        }
         return "/profile/dashboard?dashboardTab=reviews&reviewAction=" + action + "#reviews";
     }
 

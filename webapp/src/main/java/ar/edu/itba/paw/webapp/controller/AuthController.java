@@ -23,8 +23,10 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
@@ -327,12 +329,26 @@ public class AuthController {
     }
 
     private void addDashboardData(final ModelAndView mav, final User user) {
-        mav.addObject("ownedItems", itemService.listItemsByOwnerId(user.getId()));
+        final List<Item> ownedItems = itemService.listItemsByOwnerId(user.getId());
+        final List<PendingReviewView> pendingReviewActions = buildPendingReviewActions(user.getId());
+        final Map<Integer, PendingReviewView> pendingGuestItemReviewsByBookingId = new LinkedHashMap<>();
+        final Map<Integer, PendingReviewView> pendingOwnerUserReviewsByBookingId = new LinkedHashMap<>();
+        for (final PendingReviewView pendingReview : pendingReviewActions) {
+            if (pendingReview.targetType() == ReviewTargetType.ITEM) {
+                pendingGuestItemReviewsByBookingId.put(pendingReview.bookingId(), pendingReview);
+            } else if (pendingReview.targetType() == ReviewTargetType.USER) {
+                pendingOwnerUserReviewsByBookingId.put(pendingReview.bookingId(), pendingReview);
+            }
+        }
+
+        mav.addObject("ownedItems", ownedItems);
         mav.addObject("receivedBookingRequests", buildReceivedBookings(user));
         mav.addObject("sentBookingRequests", buildSentBookings(user.getId()));
-        mav.addObject("pendingReviewActions", buildPendingReviewActions(user.getId()));
-        mav.addObject("authoredReviews", buildAuthoredReviews(user.getId()));
-        mav.addObject("receivedReviews", buildReceivedReviews(user.getId()));
+        mav.addObject("pendingGuestItemReviewsByBookingId", pendingGuestItemReviewsByBookingId);
+        mav.addObject("pendingOwnerUserReviewsByBookingId", pendingOwnerUserReviewsByBookingId);
+        mav.addObject("receivedGuestReviews", buildReceivedUserReviews(user.getId()));
+        mav.addObject(
+                "receivedItemReviewsByOwnedItems", buildReceivedItemReviewsByOwnedItems(user.getId(), ownedItems));
     }
 
     private static void populateProfileForm(final ProfileForm form, final User user) {
@@ -520,6 +536,64 @@ public class AuthController {
                     formatDateLabel(review.getCreatedAt())));
         }
         return receivedReviews;
+    }
+
+    private List<ReceivedReviewView> buildReceivedUserReviews(final int revieweeUserId) {
+        final List<ReceivedReviewView> receivedReviews = new ArrayList<>();
+        for (final ReceivedReviewView review : buildReceivedReviews(revieweeUserId)) {
+            if (review.targetType() == ReviewTargetType.USER) {
+                receivedReviews.add(review);
+            }
+        }
+        return receivedReviews;
+    }
+
+    private List<ItemReviewGroupView> buildReceivedItemReviewsByOwnedItems(
+            final int ownerUserId, final List<Item> ownedItems) {
+        final Map<Integer, String> itemTitlesById = new LinkedHashMap<>();
+        if (ownedItems != null) {
+            for (final Item item : ownedItems) {
+                if (item == null || item.getId() == null) {
+                    continue;
+                }
+                itemTitlesById.put(item.getId(), item.getTitle() == null ? "" : item.getTitle());
+            }
+        }
+
+        final Map<Integer, List<ReceivedReviewView>> reviewsByItemId = new LinkedHashMap<>();
+        for (final Review review : reviewService.listReceivedReviews(ownerUserId)) {
+            if (review.getTargetType() != ReviewTargetType.ITEM || review.getTargetId() == null) {
+                continue;
+            }
+            if (!itemTitlesById.containsKey(review.getTargetId())) {
+                continue;
+            }
+
+            final User reviewer = review.getReviewerUserId() == null
+                    ? null
+                    : itemService.findUserById(review.getReviewerUserId()).orElse(null);
+            final ReceivedReviewView reviewView = new ReceivedReviewView(
+                    review.getTargetType(),
+                    itemTitlesById.get(review.getTargetId()),
+                    reviewer == null ? "" : reviewer.getName(),
+                    reviewer == null ? "" : reviewer.getEmail(),
+                    review.getRating() == null ? 0 : review.getRating(),
+                    review.getComment(),
+                    formatDateLabel(review.getCreatedAt()));
+            reviewsByItemId
+                    .computeIfAbsent(review.getTargetId(), ignored -> new ArrayList<>())
+                    .add(reviewView);
+        }
+
+        final List<ItemReviewGroupView> groups = new ArrayList<>();
+        for (final Map.Entry<Integer, String> itemEntry : itemTitlesById.entrySet()) {
+            final List<ReceivedReviewView> itemReviews = reviewsByItemId.get(itemEntry.getKey());
+            if (itemReviews == null || itemReviews.isEmpty()) {
+                continue;
+            }
+            groups.add(new ItemReviewGroupView(itemEntry.getKey(), itemEntry.getValue(), itemReviews));
+        }
+        return groups;
     }
 
     private String resolveReviewContextTitle(final ReviewTargetType targetType, final int targetId) {
@@ -852,6 +926,30 @@ public class AuthController {
 
         public String getCreatedAtLabel() {
             return createdAtLabel;
+        }
+    }
+
+    public static final class ItemReviewGroupView {
+        private final int itemId;
+        private final String itemTitle;
+        private final List<ReceivedReviewView> reviews;
+
+        public ItemReviewGroupView(final int itemId, final String itemTitle, final List<ReceivedReviewView> reviews) {
+            this.itemId = itemId;
+            this.itemTitle = itemTitle;
+            this.reviews = reviews == null ? List.of() : List.copyOf(reviews);
+        }
+
+        public int getItemId() {
+            return itemId;
+        }
+
+        public String getItemTitle() {
+            return itemTitle;
+        }
+
+        public List<ReceivedReviewView> getReviews() {
+            return reviews;
         }
     }
 }

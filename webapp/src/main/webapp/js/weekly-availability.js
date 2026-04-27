@@ -11,9 +11,9 @@
 
   var MIN_DURATION_MINUTES = 120;
   var SLOT_STEP_MINUTES = 30;
-  var TOTAL_MINUTES = 24 * 60;
+  var TOTAL_MINUTES = 23 * 60 + 30;
   var TOTAL_STEPS = TOTAL_MINUTES / SLOT_STEP_MINUTES;
-  var DAY_END_DISPLAY_LABEL = "23:59h";
+  var DAY_END_DISPLAY_LABEL = "23:30h";
 
   var PREVIEW_BLOCK_CLASS =
     "absolute top-0 h-8 rounded-md border border-primary/60 bg-primary/20 hidden pointer-events-none";
@@ -193,6 +193,7 @@
     day.dom.track.addEventListener("pointerleave", function () {
       if (self.dragState) return;
       self.clearPreview(weekday);
+      self.setTrackCursor(weekday, "");
     });
 
     day.dom.track.addEventListener("pointerdown", function (event) {
@@ -260,6 +261,9 @@
     if (day.dom.track) {
       day.dom.track.classList.toggle("pointer-events-none", !day.enabled);
       day.dom.track.classList.toggle("opacity-60", !day.enabled);
+      if (!day.enabled) {
+        this.setTrackCursor(weekday, "");
+      }
     }
 
     this.renderRanges(weekday);
@@ -280,16 +284,12 @@
 
     for (var i = 0; i < sorted.length; i++) {
       var range = sorted[i];
+      var durationSteps = range.end - range.start;
       var block = document.createElement("div");
       block.className = PLACED_BLOCK_CLASS;
       block.style.left = percent(range.start) + "%";
       block.style.width = percent(range.end - range.start) + "%";
       block.setAttribute("data-block-id", String(range.id));
-
-      var centerLabel = document.createElement("span");
-      centerLabel.className = "absolute inset-0 flex items-center justify-center text-[10px] font-bold pointer-events-none";
-      centerLabel.textContent = formatRangeLabel(range.start, range.end);
-      block.appendChild(centerLabel);
 
       var leftHandle = document.createElement("button");
       leftHandle.type = "button";
@@ -316,6 +316,8 @@
       rightPill.textContent = formatBoundaryLabel(range.end, true);
       rightHandle.appendChild(rightBar);
       rightHandle.appendChild(rightPill);
+
+      this.configureHandleLabelPositions(leftPill, rightPill, durationSteps);
 
       var deleteButton = document.createElement("button");
       deleteButton.type = "button";
@@ -374,18 +376,93 @@
     summaryEl.className = "mt-2 text-xs font-bold text-primary";
   };
 
+  WeeklyAvailabilityGrid.prototype.configureHandleLabelPositions = function (leftPill, rightPill, durationSteps) {
+    var inwardOffset = 22;
+    if (durationSteps <= 4) {
+      inwardOffset = 4;
+    } else if (durationSteps <= 5) {
+      inwardOffset = 10;
+    } else if (durationSteps <= 6) {
+      inwardOffset = 16;
+    }
+
+    leftPill.style.marginLeft = String(inwardOffset) + "px";
+    rightPill.style.marginLeft = String(-inwardOffset) + "px";
+
+    if (durationSteps <= 4) {
+      leftPill.style.top = "-1.75rem";
+      rightPill.style.top = "-3rem";
+    }
+  };
+
+  WeeklyAvailabilityGrid.prototype.setTrackCursor = function (weekday, cursor) {
+    var day = this.days[weekday];
+    if (!day || !day.dom || !day.dom.track) return;
+    day.dom.track.style.cursor = cursor || "";
+  };
+
+  WeeklyAvailabilityGrid.prototype.isPointerInBlockedGap = function (weekday, pointerStep) {
+    var day = this.days[weekday];
+    if (!day || day.ranges.length < 2) return false;
+
+    var sorted = day.ranges.slice().sort(function (a, b) {
+      return a.start - b.start;
+    });
+
+    for (var i = 1; i < sorted.length; i++) {
+      var left = sorted[i - 1];
+      var right = sorted[i];
+
+      if (!(pointerStep > left.end && pointerStep < right.start)) {
+        continue;
+      }
+
+      var minStart = left.end + 1;
+      var maxStart = right.start - this.minSteps - 1;
+      if (maxStart < minStart) {
+        return true;
+      }
+
+      for (var start = minStart; start <= maxStart; start++) {
+        if (this.canPlaceRange(weekday, start, start + this.minSteps, null)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    return false;
+  };
+
   WeeklyAvailabilityGrid.prototype.updatePreviewFromPointer = function (weekday, event) {
     var day = this.days[weekday];
     if (!day || !day.enabled || !day.dom || !day.dom.track) {
       this.clearPreview(weekday);
+      this.setTrackCursor(weekday, "");
+      return;
+    }
+
+    if (event.target && event.target.closest("[data-block-id]")) {
+      this.clearPreview(weekday);
+      this.setTrackCursor(weekday, "");
       return;
     }
 
     var pointerStep = pointerToStep(day.dom.track, event);
     if (pointerStep === null) {
       this.clearPreview(weekday);
+      this.setTrackCursor(weekday, "");
       return;
     }
+
+    if (this.isPointerInBlockedGap(weekday, pointerStep)) {
+      this.clearPreview(weekday);
+      this.setTrackCursor(weekday, "not-allowed");
+      return;
+    }
+
+    this.setTrackCursor(weekday, "");
 
     var desiredStart = Math.round(pointerStep - this.minSteps / 2);
     var validStarts = this.validInsertStarts(weekday);
@@ -657,9 +734,9 @@
             "availabilityRanges",
             key +
               "|" +
-              serializeStep(range.start, false) +
+              serializeStep(range.start) +
               "|" +
-              serializeStep(range.end, true)
+              serializeStep(range.end)
           )
         );
       }
@@ -689,11 +766,7 @@
     return step;
   }
 
-  function serializeStep(step, isEnd) {
-    if (isEnd && step === TOTAL_STEPS) {
-      return "23:59";
-    }
-
+  function serializeStep(step) {
     var minutes = step * SLOT_STEP_MINUTES;
     var hour = Math.floor(minutes / 60);
     var minute = minutes % 60;
@@ -708,7 +781,7 @@
     if (isEnd && step === TOTAL_STEPS) {
       return DAY_END_DISPLAY_LABEL;
     }
-    return serializeStep(step, false) + "h";
+    return serializeStep(step) + "h";
   }
 
   function pointerToStep(track, event) {

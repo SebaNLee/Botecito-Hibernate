@@ -47,24 +47,6 @@
               data-no-ranges-text="${publishNoRangesLabel}"
               data-delete-text="${publishDeleteRangeLabel}">
 
-          <div class="flex flex-wrap items-center gap-4 text-[10px] font-bold text-on-surface-variant">
-            <span class="inline-flex items-center gap-1.5">
-              <span class="inline-block h-3 w-3 rounded bg-primary/15 border border-primary/40"></span>
-              <spring:message code="publish.step2.legend.available" />
-            </span>
-            <span class="inline-flex items-center gap-1.5">
-              <span class="inline-block h-3 w-3 rounded bg-primary"></span>
-              <spring:message code="publish.step2.legend.selected" />
-            </span>
-            <span class="inline-flex items-center gap-1.5">
-              <span class="inline-block h-3 w-3 rounded bg-primary/80"></span>
-              <spring:message code="publish.step2.legend.start" />
-            </span>
-            <span class="inline-flex items-center gap-1.5">
-              <span class="inline-block h-3 w-3 rounded bg-error/20 border border-error/40"></span>
-              <spring:message code="publish.step2.legend.unavailable" />
-            </span>
-          </div>
           <p class="text-xs text-outline m-0"><spring:message code="publish.step2.instructions" /></p>
 
           <form:errors path="availabilityByWeekday" cssClass="mt-2" element="div" />

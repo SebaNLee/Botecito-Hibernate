@@ -632,7 +632,7 @@ public class PublishController {
                 return;
             }
 
-            if (rangeDurationMinutes(start, end) < MIN_RANGE_MINUTES) {
+            if (Duration.between(start, end).toMinutes() < MIN_RANGE_MINUTES) {
                 errors.reject("publish.availability.min.duration", new Object[] {dayLabel}, null);
                 return;
             }
@@ -651,22 +651,6 @@ public class PublishController {
 
     private static String formatTime(final LocalTime time) {
         return time == null ? null : time.toString();
-    }
-
-    private static long rangeDurationMinutes(final LocalTime start, final LocalTime end) {
-        long minutes = Duration.between(start, end).toMinutes();
-        if (isDayEndSentinel(end)) {
-            minutes += 1;
-        }
-        return minutes;
-    }
-
-    private static boolean isDayEndSentinel(final LocalTime time) {
-        return time != null
-                && time.getHour() == 23
-                && time.getMinute() == 59
-                && time.getSecond() == 0
-                && time.getNano() == 0;
     }
 
     private String dayLabel(final Locale locale, final DayOfWeek weekday) {

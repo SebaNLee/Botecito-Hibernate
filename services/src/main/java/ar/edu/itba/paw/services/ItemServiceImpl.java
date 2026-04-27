@@ -356,21 +356,13 @@ public final class ItemServiceImpl implements ItemService {
         if (!endTime.isAfter(startTime)) {
             throw new IllegalArgumentException("availability end time must be after start time");
         }
-        if (!isThirtyMinuteStep(startTime) || !isValidAvailabilityEndStep(endTime)) {
-            throw new IllegalArgumentException("availability times must use 30 minute steps or end at 23:59");
+        if (!isThirtyMinuteStep(startTime) || !isThirtyMinuteStep(endTime)) {
+            throw new IllegalArgumentException("availability times must use 30 minute steps");
         }
-    }
-
-    private static boolean isValidAvailabilityEndStep(final LocalTime endTime) {
-        return isThirtyMinuteStep(endTime) || isDayEndSentinel(endTime);
     }
 
     private static boolean isThirtyMinuteStep(final LocalTime time) {
         return time.getMinute() % TIME_STEP_MINUTES == 0 && time.getSecond() == 0 && time.getNano() == 0;
-    }
-
-    private static boolean isDayEndSentinel(final LocalTime time) {
-        return time.getHour() == 23 && time.getMinute() == 59 && time.getSecond() == 0 && time.getNano() == 0;
     }
 
     private static int requirePositive(final Integer value, final String fieldName) {

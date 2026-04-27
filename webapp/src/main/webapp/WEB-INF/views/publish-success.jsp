@@ -1,8 +1,10 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %> <%@ taglib
+prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %> <%@ taglib
 prefix="paw" tagdir="/WEB-INF/tags" %> <%@ taglib prefix="spring"
 uri="http://www.springframework.org/tags" %> <%@ page contentType="text/html;
 charset=UTF-8" pageEncoding="UTF-8" %>
 
+<fmt:setLocale value="es_AR" />
 <c:url var="publishUrl" value="/publish" />
 <c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
@@ -129,7 +131,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             <spring:message code="publish.form.price.short" />
           </p>
           <p class="text-sm font-bold text-on-surface mt-1 mb-0">
-            $ <c:out value="${item.pricePerHour}" />
+            $ <fmt:formatNumber value="${item.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0" />
           </p>
         </div>
         <div class="rounded-xl bg-base-200 p-3">
@@ -163,7 +165,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
               <spring:message code="publish.form.maxWeight.label" />
             </p>
             <p class="text-sm font-bold text-on-surface mt-1 mb-0">
-              <c:out value="${item.maxWeightKg}" /> kg
+              <fmt:formatNumber value="${item.maxWeightKg}" type="number" groupingUsed="true" maxFractionDigits="0" /> kg
             </p>
           </div>
         </c:if>
@@ -217,8 +219,8 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                   /></c:when>
                   <c:otherwise><c:out value="${avail.weekday}" /></c:otherwise>
                 </c:choose>
-                : <c:out value="${avail.startTime}" /> -
-                <c:out value="${avail.endTime}" />
+                : <c:out value="${avail.startTime}" /> hs -
+                <c:out value="${avail.endTime}" /> hs
               </li>
             </c:forEach>
           </ul>

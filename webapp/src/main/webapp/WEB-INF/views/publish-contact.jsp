@@ -1,9 +1,11 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
+<fmt:setLocale value="es_AR" />
 <c:url var="stepTwoUrl" value="/publish/availability" />
 <c:url var="stepThreeUrl" value="/publish/contact" />
 <c:url var="marketplaceUrl" value="/marketplace" />
@@ -29,7 +31,7 @@
       <span><spring:message code="publish.step3.progress" /></span>
       <span><spring:message code="publish.step3.badge" /></span>
     </div>
-    <progress class="progress progress-primary mt-3 w-full" value="100" max="100"></progress>
+    <progress class="progress progress-primary mt-3 w-full" value="66" max="100"></progress>
     <h1 class="mt-6 text-4xl font-extrabold tracking-tight text-on-background m-0"><spring:message code="publish.step3.title" /></h1>
     <p class="text-on-surface-variant mt-2 text-lg m-0"><spring:message code="publish.step3.subtitle" /></p>
   </div>
@@ -91,7 +93,7 @@
             </div>
             <div class="rounded-xl bg-base-200 p-3">
               <p class="text-[11px] uppercase tracking-wider font-bold text-outline m-0"><spring:message code="publish.form.price.short" /></p>
-              <p class="text-sm font-bold text-on-surface mt-1 mb-0">$ <c:out value="${publishForm.pricePerHour}" /></p>
+              <p class="text-sm font-bold text-on-surface mt-1 mb-0">$ <fmt:formatNumber value="${publishForm.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0" /></p>
             </div>
             <div class="rounded-xl bg-base-200 p-3">
               <p class="text-[11px] uppercase tracking-wider font-bold text-outline m-0"><spring:message code="publish.form.location.label" /></p>
@@ -101,7 +103,7 @@
               <p class="text-[11px] uppercase tracking-wider font-bold text-outline m-0"><spring:message code="publish.form.maxWeight.label" /></p>
               <p class="text-sm font-bold text-on-surface mt-1 mb-0">
                 <c:choose>
-                  <c:when test="${not empty publishForm.maxWeight}"><c:out value="${publishForm.maxWeight}" /> kg</c:when>
+                  <c:when test="${not empty publishForm.maxWeight}"><fmt:formatNumber value="${publishForm.maxWeight}" type="number" groupingUsed="true" maxFractionDigits="0" /> kg</c:when>
                   <c:otherwise><spring:message code="publish.form.maxWeight.unspecified" /></c:otherwise>
                 </c:choose>
               </p>

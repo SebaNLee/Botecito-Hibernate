@@ -50,10 +50,18 @@
 
   function WeeklyAvailabilityGrid(root) {
     this.root = root;
-    this.hiddenContainer = root.querySelector("[data-availability-hidden-inputs]");
+    this.hiddenContainer = root.querySelector(
+      "[data-availability-hidden-inputs]",
+    );
     this.form = root.closest("form");
-    this.minDuration = parseInt(root.dataset.minDuration || MIN_DURATION_MINUTES, 10);
+    this.minDuration = parseInt(
+      root.dataset.minDuration || MIN_DURATION_MINUTES,
+      10,
+    );
     this.noRangesText = root.dataset.noRangesText || "No time ranges selected";
+    this.missingRangeText =
+      root.dataset.missingRangeText || "Choose a time range for this day.";
+    this.clientAlert = root.querySelector("[data-availability-client-alert]");
 
     this.days = {};
     for (var i = 0; i < WEEKDAYS.length; i++) {
@@ -78,7 +86,10 @@
       for (var i = 0; i < slots.length; i++) {
         var s = slots[i];
         if (!s.weekday || !this.days[s.weekday]) continue;
-        this.days[s.weekday].ranges.push({ start: s.startTime, end: s.endTime });
+        this.days[s.weekday].ranges.push({
+          start: s.startTime,
+          end: s.endTime,
+        });
       }
     } catch (e) {
       // ignore parse errors
@@ -116,7 +127,9 @@
   };
 
   WeeklyAvailabilityGrid.prototype.renderDay = function (weekday) {
-    var container = this.root.querySelector('[data-day-slots="' + weekday + '"]');
+    var container = this.root.querySelector(
+      '[data-day-slots="' + weekday + '"]',
+    );
     if (!container) return;
 
     var day = this.days[weekday];
@@ -132,14 +145,17 @@
       var state = this.slotState(weekday, time);
       var btn = document.createElement("button");
       btn.type = "button";
-      btn.textContent = time;
+      btn.textContent = displayTime(time);
       btn.className = SLOT_BASE + " " + this.stateClass(state);
       btn.dataset.state = state;
 
       if (state === "disabled" || state === "unavailable") {
         btn.disabled = true;
       } else {
-        btn.addEventListener("click", this.handleClick.bind(this, weekday, time));
+        btn.addEventListener(
+          "click",
+          this.handleClick.bind(this, weekday, time),
+        );
       }
 
       container.appendChild(btn);
@@ -149,7 +165,9 @@
   };
 
   WeeklyAvailabilityGrid.prototype.renderRangeSummary = function (weekday) {
-    var summaryEl = this.root.querySelector('[data-day-summary="' + weekday + '"]');
+    var summaryEl = this.root.querySelector(
+      '[data-day-summary="' + weekday + '"]',
+    );
     if (!summaryEl) return;
 
     var day = this.days[weekday];
@@ -163,7 +181,9 @@
       return timeIndex(a.start) - timeIndex(b.start);
     });
 
-    var parts = sorted.map(function (r) { return r.start + " - " + r.end; });
+    var parts = sorted.map(function (r) {
+      return displayTime(r.start) + " - " + displayTime(r.end);
+    });
     summaryEl.textContent = parts.join("  ·  ");
     summaryEl.className = "mt-2 text-xs font-bold text-primary";
   };
@@ -203,15 +223,24 @@
 
   WeeklyAvailabilityGrid.prototype.stateClass = function (state) {
     switch (state) {
-      case "selected": return SLOT_SELECTED;
-      case "pending": return SLOT_PENDING;
-      case "unavailable": return SLOT_UNAVAILABLE;
-      case "disabled": return SLOT_DISABLED;
-      default: return SLOT_AVAILABLE;
+      case "selected":
+        return SLOT_SELECTED;
+      case "pending":
+        return SLOT_PENDING;
+      case "unavailable":
+        return SLOT_UNAVAILABLE;
+      case "disabled":
+        return SLOT_DISABLED;
+      default:
+        return SLOT_AVAILABLE;
     }
   };
 
-  WeeklyAvailabilityGrid.prototype.wouldOverlap = function (weekday, start, end) {
+  WeeklyAvailabilityGrid.prototype.wouldOverlap = function (
+    weekday,
+    start,
+    end,
+  ) {
     var day = this.days[weekday];
     var si = timeIndex(start);
     var ei = timeIndex(end);
@@ -290,9 +319,53 @@
     var self = this;
     if (!this.form) return;
 
-    this.form.addEventListener("submit", function () {
+    this.form.addEventListener("submit", function (event) {
+      if (!self.validateEnabledDays()) {
+        event.preventDefault();
+        self.showClientAlert();
+        return;
+      }
+      self.hideClientAlert();
       self.serializeToHiddenInputs();
     });
+  };
+
+  WeeklyAvailabilityGrid.prototype.showClientAlert = function () {
+    if (!this.clientAlert) return;
+    this.clientAlert.classList.remove("hidden");
+  };
+
+  WeeklyAvailabilityGrid.prototype.hideClientAlert = function () {
+    if (!this.clientAlert) return;
+    this.clientAlert.classList.add("hidden");
+  };
+
+  WeeklyAvailabilityGrid.prototype.validateEnabledDays = function () {
+    var firstInvalidToggle = null;
+
+    for (var i = 0; i < WEEKDAYS.length; i++) {
+      var key = WEEKDAYS[i].key;
+      var day = this.days[key];
+      var errorNode = this.root.querySelector('[data-day-error="' + key + '"]');
+      var toggle = this.root.querySelector('[data-day-toggle="' + key + '"]');
+      var isInvalid = day.enabled && day.ranges.length === 0;
+
+      if (errorNode) {
+        errorNode.textContent = isInvalid ? this.missingRangeText : "";
+        errorNode.classList.toggle("hidden", !isInvalid);
+      }
+
+      if (isInvalid && !firstInvalidToggle) {
+        firstInvalidToggle = toggle;
+      }
+    }
+
+    if (firstInvalidToggle) {
+      firstInvalidToggle.focus();
+      return false;
+    }
+
+    return true;
   };
 
   WeeklyAvailabilityGrid.prototype.serializeToHiddenInputs = function () {
@@ -311,7 +384,7 @@
       for (var j = 0; j < sorted.length; j++) {
         var r = sorted[j];
         this.hiddenContainer.appendChild(
-          hiddenInput("availabilityRanges", key + "|" + r.start + "|" + r.end)
+          hiddenInput("availabilityRanges", key + "|" + r.start + "|" + r.end),
         );
       }
     }
@@ -323,6 +396,10 @@
     input.name = name;
     input.value = value;
     return input;
+  }
+
+  function displayTime(time) {
+    return time ? time + " hs" : "";
   }
 
   document.addEventListener("DOMContentLoaded", function () {

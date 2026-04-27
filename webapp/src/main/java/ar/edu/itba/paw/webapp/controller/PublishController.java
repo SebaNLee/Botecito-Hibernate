@@ -544,9 +544,9 @@ public class PublishController {
             final StringBuilder sb = new StringBuilder(dayLabel(locale, entry.getKey())).append(": ");
             for (int i = 0; i < sortedSlots.size(); i++) {
                 if (i > 0) sb.append(", ");
-                sb.append(formatTime(sortedSlots.get(i).getStart()))
+                sb.append(formatDisplayTime(sortedSlots.get(i).getStart()))
                         .append(" - ")
-                        .append(formatTime(sortedSlots.get(i).getEnd()));
+                        .append(formatDisplayTime(sortedSlots.get(i).getEnd()));
             }
             summary.add(sb.toString());
         }
@@ -651,6 +651,11 @@ public class PublishController {
 
     private static String formatTime(final LocalTime time) {
         return time == null ? null : time.toString();
+    }
+
+    private static String formatDisplayTime(final LocalTime time) {
+        final String formatted = formatTime(time);
+        return formatted == null ? null : formatted + " hs";
     }
 
     private String dayLabel(final Locale locale, final DayOfWeek weekday) {

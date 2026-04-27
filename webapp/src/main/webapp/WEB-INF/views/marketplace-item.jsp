@@ -74,6 +74,13 @@ charset=UTF-8" pageEncoding="UTF-8" %>
   code="itemDetail.contact.sendEmail"
   var="contactSendEmailLabel"
 />
+<spring:message code="itemDetail.reviews.title" var="itemReviewsTitle" />
+<spring:message code="itemDetail.reviews.empty" var="itemReviewsEmpty" />
+<spring:message code="itemDetail.reviews.count" var="itemReviewsCountLabel" />
+<spring:message code="itemDetail.reviews.leave" var="itemReviewLeaveLabel" />
+<spring:message code="itemDetail.reviews.rating" var="itemReviewRatingLabel" />
+<spring:message code="itemDetail.reviews.comment" var="itemReviewCommentLabel" />
+<spring:message code="reviews.empty.short" var="reviewsEmptyShortLabel" />
 
 <paw:layout
   title="Botecito"
@@ -88,6 +95,10 @@ charset=UTF-8" pageEncoding="UTF-8" %>
       <span><spring:message code="common.back" /></span>
     </a>
   </div>
+
+  <c:if test="${param.reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
+  <c:if test="${param.reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
+  <c:if test="${param.reviewAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.error" /></paw:alertMessage></c:if>
 
   <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-8 items-start">
     <section class="order-2 lg:order-1 min-w-0 space-y-8">
@@ -201,6 +212,75 @@ charset=UTF-8" pageEncoding="UTF-8" %>
               cssClass="w-full sm:w-auto"
               text="${contactSendEmailLabel}"
             />
+          </div>
+        </jsp:body>
+      </paw:sectionCard>
+
+      <paw:sectionCard icon="star">
+        <jsp:attribute name="title"><c:out value="${itemReviewsTitle}" /></jsp:attribute>
+        <jsp:body>
+          <div class="space-y-5">
+            <div class="rounded-2xl bg-base-200 px-4 py-3 flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2 text-lg font-black text-on-surface">
+                <span class="material-symbols-outlined text-warning">star</span>
+                <c:choose>
+                  <c:when test="${itemRatingSummary != null && itemRatingSummary.hasReviews}">
+                    <fmt:formatNumber value="${itemRatingSummary.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
+                  </c:when>
+                  <c:otherwise><c:out value="${reviewsEmptyShortLabel}" /></c:otherwise>
+                </c:choose>
+              </div>
+              <p class="m-0 text-xs text-on-surface-variant">
+                <spring:message code="itemDetail.reviews.count" arguments="${itemRatingSummary != null ? itemRatingSummary.totalReviews : 0}" />
+              </p>
+            </div>
+
+            <c:if test="${pendingItemReviewAction != null}">
+              <c:url var="createItemReviewUrl" value="/reviews/booking/${pendingItemReviewAction.bookingId}" />
+              <form action="${createItemReviewUrl}" method="post" class="rounded-2xl bg-base-200 p-4 space-y-3">
+                <input type="hidden" name="returnTo" value="item" />
+                <input type="hidden" name="itemId" value="${item.id}" />
+                <h3 class="m-0 text-sm font-bold text-on-surface"><c:out value="${itemReviewLeaveLabel}" /></h3>
+                <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
+                  <label class="text-xs font-bold uppercase tracking-wider text-outline" for="item-review-rating"><c:out value="${itemReviewRatingLabel}" /></label>
+                  <select id="item-review-rating" name="rating" class="select select-bordered w-full" required>
+                    <option value="">-</option>
+                    <option value="5">5</option>
+                    <option value="4">4</option>
+                    <option value="3">3</option>
+                    <option value="2">2</option>
+                    <option value="1">1</option>
+                  </select>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
+                  <label class="text-xs font-bold uppercase tracking-wider text-outline pt-2" for="item-review-comment"><c:out value="${itemReviewCommentLabel}" /></label>
+                  <textarea id="item-review-comment" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
+                </div>
+                <paw:button type="submit" color="primary" size="sm" text="${itemReviewLeaveLabel}" />
+              </form>
+            </c:if>
+
+            <c:choose>
+              <c:when test="${not empty itemReviews}">
+                <div class="space-y-3">
+                  <c:forEach items="${itemReviews}" var="review">
+                    <div class="rounded-xl bg-base-200 p-4 space-y-2">
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${reviewAuthorNames[review.reviewerUserId]}" /></p>
+                        <span class="badge badge-outline badge-sm font-bold"><c:out value="${review.rating}" />/5</span>
+                      </div>
+                      <p class="m-0 text-xs text-on-surface-variant"><c:out value="${review.createdAt}" /></p>
+                      <c:if test="${not empty review.comment}">
+                        <p class="m-0 text-sm text-on-surface-variant break-words"><c:out value="${review.comment}" /></p>
+                      </c:if>
+                    </div>
+                  </c:forEach>
+                </div>
+              </c:when>
+              <c:otherwise>
+                <p class="m-0 text-sm text-on-surface-variant"><c:out value="${itemReviewsEmpty}" /></p>
+              </c:otherwise>
+            </c:choose>
           </div>
         </jsp:body>
       </paw:sectionCard>

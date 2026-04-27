@@ -4,10 +4,13 @@ import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.Review;
+import ar.edu.itba.paw.models.ReviewTargetType;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
+import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.PasswordResetForm;
@@ -51,6 +54,7 @@ public class AuthController {
     private final ItemService itemService;
     private final BookingRequestService bookingRequestService;
     private final MailService mailService;
+    private final ReviewService reviewService;
     private final AuthenticationManager authenticationManager;
 
     public AuthController(
@@ -58,11 +62,13 @@ public class AuthController {
             final ItemService itemService,
             final BookingRequestService bookingRequestService,
             final MailService mailService,
+            final ReviewService reviewService,
             final AuthenticationManager authenticationManager) {
         this.userService = userService;
         this.itemService = itemService;
         this.bookingRequestService = bookingRequestService;
         this.mailService = mailService;
+        this.reviewService = reviewService;
         this.authenticationManager = authenticationManager;
     }
 
@@ -300,7 +306,7 @@ public class AuthController {
     }
 
     @RequestMapping(value = "/profile/dashboard", method = RequestMethod.GET)
-    public ModelAndView dashboard() {
+    public ModelAndView dashboard(@RequestParam(value = "dashboardTab", required = false) final String dashboardTab) {
         final User user = currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
@@ -308,6 +314,7 @@ public class AuthController {
 
         final ModelAndView mav = new ModelAndView("dashboard");
         mav.addObject("user", user);
+        mav.addObject("activeDashboardTab", resolveDashboardTab(dashboardTab));
         addDashboardData(mav, user);
         return mav;
     }
@@ -323,6 +330,9 @@ public class AuthController {
         mav.addObject("ownedItems", itemService.listItemsByOwnerId(user.getId()));
         mav.addObject("receivedBookingRequests", buildReceivedBookings(user));
         mav.addObject("sentBookingRequests", buildSentBookings(user.getId()));
+        mav.addObject("pendingReviewActions", buildPendingReviewActions(user.getId()));
+        mav.addObject("authoredReviews", buildAuthoredReviews(user.getId()));
+        mav.addObject("receivedReviews", buildReceivedReviews(user.getId()));
     }
 
     private static void populateProfileForm(final ProfileForm form, final User user) {
@@ -336,6 +346,13 @@ public class AuthController {
         form.setPhone(user.getPhone());
         form.setPaymentAlias(user.getPaymentAlias());
         form.setPreferredLanguage(user.getPreferredLanguage());
+    }
+
+    private static String resolveDashboardTab(final String requestedTab) {
+        if ("bookings".equals(requestedTab) || "reviews".equals(requestedTab)) {
+            return requestedTab;
+        }
+        return "hosting";
     }
 
     private User currentAuthenticatedUser() {
@@ -432,6 +449,84 @@ public class AuthController {
                     statusMessageCode(booking.getState())));
         }
         return sentBookings;
+    }
+
+    private List<PendingReviewView> buildPendingReviewActions(final int userId) {
+        final List<PendingReviewView> pendingReviews = new ArrayList<>();
+        for (final ReviewService.PendingReviewAction action : reviewService.listPendingReviewActions(userId)) {
+            final Item item = itemService.findAnyItemById(action.getItemId()).orElse(null);
+            final User targetUser =
+                    itemService.findUserById(action.getTargetUserId()).orElse(null);
+            if (item == null || targetUser == null) {
+                continue;
+            }
+
+            pendingReviews.add(new PendingReviewView(
+                    action.getBookingId(),
+                    item.getId(),
+                    item.getTitle(),
+                    action.getTargetType(),
+                    targetUser.getName(),
+                    targetUser.getEmail(),
+                    formatDateLabel(action.getStartTime()),
+                    formatTimeRangeLabel(action.getStartTime(), action.getEndTime())));
+        }
+        return pendingReviews;
+    }
+
+    private List<AuthoredReviewView> buildAuthoredReviews(final int reviewerUserId) {
+        final List<AuthoredReviewView> authoredReviews = new ArrayList<>();
+        for (final Review review : reviewService.listAuthoredReviews(reviewerUserId)) {
+            if (review.getTargetType() == null || review.getTargetId() == null) {
+                continue;
+            }
+
+            final String contextTitle = resolveReviewContextTitle(review.getTargetType(), review.getTargetId());
+            final User reviewee = review.getRevieweeUserId() == null
+                    ? null
+                    : itemService.findUserById(review.getRevieweeUserId()).orElse(null);
+            authoredReviews.add(new AuthoredReviewView(
+                    review.getId(),
+                    review.getBookingId() == null ? 0 : review.getBookingId(),
+                    review.getTargetType(),
+                    contextTitle,
+                    reviewee == null ? "" : reviewee.getName(),
+                    reviewee == null ? "" : reviewee.getEmail(),
+                    review.getRating() == null ? 0 : review.getRating(),
+                    review.getComment(),
+                    formatDateLabel(review.getCreatedAt())));
+        }
+        return authoredReviews;
+    }
+
+    private List<ReceivedReviewView> buildReceivedReviews(final int revieweeUserId) {
+        final List<ReceivedReviewView> receivedReviews = new ArrayList<>();
+        for (final Review review : reviewService.listReceivedReviews(revieweeUserId)) {
+            if (review.getTargetType() == null || review.getTargetId() == null) {
+                continue;
+            }
+
+            final User reviewer = review.getReviewerUserId() == null
+                    ? null
+                    : itemService.findUserById(review.getReviewerUserId()).orElse(null);
+            final String contextTitle = resolveReviewContextTitle(review.getTargetType(), review.getTargetId());
+            receivedReviews.add(new ReceivedReviewView(
+                    review.getTargetType(),
+                    contextTitle,
+                    reviewer == null ? "" : reviewer.getName(),
+                    reviewer == null ? "" : reviewer.getEmail(),
+                    review.getRating() == null ? 0 : review.getRating(),
+                    review.getComment(),
+                    formatDateLabel(review.getCreatedAt())));
+        }
+        return receivedReviews;
+    }
+
+    private String resolveReviewContextTitle(final ReviewTargetType targetType, final int targetId) {
+        if (targetType == ReviewTargetType.ITEM) {
+            return itemService.findAnyItemById(targetId).map(Item::getTitle).orElse("");
+        }
+        return itemService.findUserById(targetId).map(User::getName).orElse("");
     }
 
     private static String formatDateLabel(final OffsetDateTime dateTime) {
@@ -628,6 +723,135 @@ public class AuthController {
 
         public String getStatusMessageCode() {
             return statusMessageCode;
+        }
+    }
+
+    public record PendingReviewView(
+            int bookingId,
+            int itemId,
+            String itemTitle,
+            ReviewTargetType targetType,
+            String targetName,
+            String targetEmail,
+            String dateLabel,
+            String timeRangeLabel) {
+
+        public int getBookingId() {
+            return bookingId;
+        }
+
+        public int getItemId() {
+            return itemId;
+        }
+
+        public String getItemTitle() {
+            return itemTitle;
+        }
+
+        public ReviewTargetType getTargetType() {
+            return targetType;
+        }
+
+        public String getTargetName() {
+            return targetName;
+        }
+
+        public String getTargetEmail() {
+            return targetEmail;
+        }
+
+        public String getDateLabel() {
+            return dateLabel;
+        }
+
+        public String getTimeRangeLabel() {
+            return timeRangeLabel;
+        }
+    }
+
+    public record AuthoredReviewView(
+            int reviewId,
+            int bookingId,
+            ReviewTargetType targetType,
+            String contextTitle,
+            String revieweeName,
+            String revieweeEmail,
+            int rating,
+            String comment,
+            String createdAtLabel) {
+
+        public int getReviewId() {
+            return reviewId;
+        }
+
+        public int getBookingId() {
+            return bookingId;
+        }
+
+        public ReviewTargetType getTargetType() {
+            return targetType;
+        }
+
+        public String getContextTitle() {
+            return contextTitle;
+        }
+
+        public String getRevieweeName() {
+            return revieweeName;
+        }
+
+        public String getRevieweeEmail() {
+            return revieweeEmail;
+        }
+
+        public int getRating() {
+            return rating;
+        }
+
+        public String getComment() {
+            return comment;
+        }
+
+        public String getCreatedAtLabel() {
+            return createdAtLabel;
+        }
+    }
+
+    public record ReceivedReviewView(
+            ReviewTargetType targetType,
+            String contextTitle,
+            String reviewerName,
+            String reviewerEmail,
+            int rating,
+            String comment,
+            String createdAtLabel) {
+
+        public ReviewTargetType getTargetType() {
+            return targetType;
+        }
+
+        public String getContextTitle() {
+            return contextTitle;
+        }
+
+        public String getReviewerName() {
+            return reviewerName;
+        }
+
+        public String getReviewerEmail() {
+            return reviewerEmail;
+        }
+
+        public int getRating() {
+            return rating;
+        }
+
+        public String getComment() {
+            return comment;
+        }
+
+        public String getCreatedAtLabel() {
+            return createdAtLabel;
         }
     }
 }

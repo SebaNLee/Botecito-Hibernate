@@ -5,12 +5,15 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
+import ar.edu.itba.paw.models.RatingSummary;
+import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.DisabledTimeSlotService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.Page;
+import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import java.math.BigDecimal;
@@ -51,6 +54,7 @@ public class MarketplaceController {
     private final BookingRequestService bookingRequestService;
     private final UserService userService;
     private final DisabledTimeSlotService disabledTimeSlotService;
+    private final ReviewService reviewService;
 
     @Autowired
     public MarketplaceController(
@@ -58,12 +62,14 @@ public class MarketplaceController {
             final MailService mailService,
             final BookingRequestService bookingRequestService,
             final UserService userService,
-            final DisabledTimeSlotService disabledTimeSlotService) {
+            final DisabledTimeSlotService disabledTimeSlotService,
+            final ReviewService reviewService) {
         this.itemService = itemService;
         this.mailService = mailService;
         this.bookingRequestService = bookingRequestService;
         this.userService = userService;
         this.disabledTimeSlotService = disabledTimeSlotService;
+        this.reviewService = reviewService;
     }
 
     @ModelAttribute("reservationRequestForm")
@@ -105,6 +111,10 @@ public class MarketplaceController {
         mav.addObject("itemsCount", itemPage.getTotalItems());
         mav.addObject("itemPage", itemPage);
         mav.addObject("sort", resolvedSort);
+        mav.addObject(
+                "itemRatingSummaries",
+                reviewService.getItemRatingSummaries(
+                        itemPage.getContent().stream().map(Item::getId).toList()));
         AvailabilityPickerSupport.addAvailabilityPickerData(
                 mav,
                 "search",
@@ -204,6 +214,20 @@ public class MarketplaceController {
         final Optional<User> owner = itemService.findUserById(item.get().getOwnerId());
         final Optional<ItemType> itemType =
                 itemService.findItemTypeById(item.get().getTypeId());
+        final RatingSummary itemRatingSummary = reviewService.getItemRatingSummary(itemId);
+        final List<Review> itemReviews = reviewService.listLatestItemReviews(itemId, 12);
+        final Map<Integer, String> reviewAuthorNames = new LinkedHashMap<>();
+        for (final Review review : itemReviews) {
+            if (review.getReviewerUserId() == null || reviewAuthorNames.containsKey(review.getReviewerUserId())) {
+                continue;
+            }
+            final String authorName = itemService
+                    .findUserById(review.getReviewerUserId())
+                    .map(User::getName)
+                    .orElse("");
+            reviewAuthorNames.put(review.getReviewerUserId(), authorName);
+        }
+        final User currentUser = currentAuthenticatedUser();
         final AvailabilityPickerSupport.AvailabilityPickerData reservationAvailability =
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
                         itemService.listAvailabilitiesByItemId(itemId),
@@ -215,11 +239,21 @@ public class MarketplaceController {
         mav.addObject("item", item.get());
         mav.addObject("itemOwner", owner.orElse(null));
         mav.addObject("itemType", itemType.orElse(null));
+        mav.addObject("itemRatingSummary", itemRatingSummary);
+        mav.addObject("itemReviews", itemReviews);
+        mav.addObject("reviewAuthorNames", reviewAuthorNames);
         mav.addObject("itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, itemId, servletContextPath));
         mav.addObject("itemImageUrls", ItemImageUtils.resolveImageUrls(itemService, itemId, servletContextPath));
         mav.addObject(
                 "ownerInitial",
                 owner.map(MarketplaceController::buildOwnerInitial).orElse("I"));
+        mav.addObject(
+                "pendingItemReviewAction",
+                currentUser == null
+                        ? null
+                        : reviewService
+                                .findPendingItemReviewAction(currentUser.getId(), itemId)
+                                .orElse(null));
         AvailabilityPickerSupport.addAvailabilityPickerData(mav, "reservation", reservationAvailability);
         final String defaultDate = offeredDates.isEmpty() ? "" : offeredDates.getFirst();
         final String reservationDate =

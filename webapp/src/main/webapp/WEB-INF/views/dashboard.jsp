@@ -25,6 +25,19 @@
 <spring:message code="profile.bookings.paymentInfo.alias" var="paymentInfoAliasLabel" />
 <spring:message code="dashboard.tabs.hosting" var="hostingTabLabel" />
 <spring:message code="dashboard.tabs.bookings" var="bookingsTabLabel" />
+<spring:message code="dashboard.tabs.reviews" var="reviewsTabLabel" />
+<spring:message code="profile.reviews.pending.title" var="pendingReviewsTitle" />
+<spring:message code="profile.reviews.pending.empty" var="pendingReviewsEmpty" />
+<spring:message code="profile.reviews.authored.title" var="authoredReviewsTitle" />
+<spring:message code="profile.reviews.authored.empty" var="authoredReviewsEmpty" />
+<spring:message code="profile.reviews.received.title" var="receivedReviewsTitle" />
+<spring:message code="profile.reviews.received.empty" var="receivedReviewsEmpty" />
+<spring:message code="profile.reviews.rating.label" var="reviewRatingLabel" />
+<spring:message code="profile.reviews.comment.label" var="reviewCommentLabel" />
+<spring:message code="profile.reviews.submit" var="reviewSubmitLabel" />
+<spring:message code="profile.reviews.delete" var="reviewDeleteLabel" />
+<spring:message code="profile.reviews.target.item" var="reviewTargetItemLabel" />
+<spring:message code="profile.reviews.target.user" var="reviewTargetUserLabel" />
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-14 max-w-7xl mx-auto px-6">
   <div class="grid grid-cols-1 lg:grid-cols-[18rem_minmax(0,1fr)] gap-8 items-start">
@@ -43,7 +56,7 @@
       </div>
 
       <div role="tablist" class="tabs tabs-lifted">
-        <input type="radio" name="dashboard_tabs" role="tab" class="tab font-bold" aria-label="${hostingTabLabel}" checked="checked" />
+        <input type="radio" name="dashboard_tabs" role="tab" class="tab font-bold" aria-label="${hostingTabLabel}" ${activeDashboardTab == 'hosting' ? 'checked="checked"' : ''} />
         <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6">
           <div id="my-publications" class="scroll-mt-24 space-y-4">
             <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.publications.title" /></h2>
@@ -167,7 +180,7 @@
           </div>
         </div>
 
-        <input type="radio" name="dashboard_tabs" role="tab" class="tab font-bold" aria-label="${bookingsTabLabel}" />
+        <input type="radio" name="dashboard_tabs" role="tab" class="tab font-bold" aria-label="${bookingsTabLabel}" ${activeDashboardTab == 'bookings' ? 'checked="checked"' : ''} />
         <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6">
           <div id="sent-booking-requests" class="scroll-mt-24 space-y-4">
             <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.sentBookings.title" /></h2>
@@ -216,6 +229,118 @@
               </c:when>
               <c:otherwise><p class="m-0 text-sm text-on-surface-variant"><spring:message code="profile.sentBookings.empty" /></p></c:otherwise>
             </c:choose>
+          </div>
+        </div>
+
+        <input type="radio" name="dashboard_tabs" role="tab" class="tab font-bold" aria-label="${reviewsTabLabel}" ${activeDashboardTab == 'reviews' ? 'checked="checked"' : ''} />
+        <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6">
+          <div id="reviews" class="scroll-mt-24 space-y-6">
+            <h2 class="text-xl font-extrabold tracking-tight m-0"><c:out value="${reviewsTabLabel}" /></h2>
+
+            <c:if test="${param.reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
+            <c:if test="${param.reviewAction == 'deleted'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.deleted" /></paw:alertMessage></c:if>
+            <c:if test="${param.reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
+            <c:if test="${param.reviewAction == 'error' || param.reviewAction == 'deleteError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.error" /></paw:alertMessage></c:if>
+
+            <div class="space-y-4">
+              <h3 class="text-lg font-extrabold tracking-tight m-0"><c:out value="${pendingReviewsTitle}" /></h3>
+              <c:choose>
+                <c:when test="${not empty pendingReviewActions}">
+                  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <c:forEach var="pendingReview" items="${pendingReviewActions}">
+                      <c:url var="createReviewUrl" value="/reviews/booking/${pendingReview.bookingId}" />
+                      <div class="rounded-xl bg-base-200 p-4 space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                          <p class="m-0 min-w-0 break-words text-sm font-bold text-on-surface"><c:out value="${pendingReview.itemTitle}" /></p>
+                          <span class="badge badge-primary badge-sm shrink-0 font-bold">
+                            <c:out value="${pendingReview.targetType == 'ITEM' ? reviewTargetItemLabel : reviewTargetUserLabel}" />
+                          </span>
+                        </div>
+                        <p class="m-0 text-xs text-on-surface-variant"><c:out value="${pendingReview.dateLabel}" /> · <c:out value="${pendingReview.timeRangeLabel}" /></p>
+                        <p class="m-0 text-xs text-on-surface-variant"><c:out value="${pendingReview.targetName}" /> · <c:out value="${pendingReview.targetEmail}" /></p>
+                        <form action="${createReviewUrl}" method="post" class="space-y-3 border-t border-outline-variant/20 pt-3">
+                          <input type="hidden" name="returnTo" value="dashboard" />
+                          <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
+                            <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-rating-${pendingReview.bookingId}"><c:out value="${reviewRatingLabel}" /></label>
+                            <select id="review-rating-${pendingReview.bookingId}" name="rating" class="select select-bordered select-sm w-full" required>
+                              <option value=""><spring:message code="profile.reviews.rating.placeholder" /></option>
+                              <option value="5">5</option>
+                              <option value="4">4</option>
+                              <option value="3">3</option>
+                              <option value="2">2</option>
+                              <option value="1">1</option>
+                            </select>
+                          </div>
+                          <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
+                            <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-comment-${pendingReview.bookingId}"><c:out value="${reviewCommentLabel}" /></label>
+                            <textarea id="review-comment-${pendingReview.bookingId}" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
+                          </div>
+                          <paw:button type="submit" color="primary" size="sm" text="${reviewSubmitLabel}" />
+                        </form>
+                      </div>
+                    </c:forEach>
+                  </div>
+                </c:when>
+                <c:otherwise><p class="m-0 text-sm text-on-surface-variant"><c:out value="${pendingReviewsEmpty}" /></p></c:otherwise>
+              </c:choose>
+            </div>
+
+            <div class="space-y-4">
+              <h3 class="text-lg font-extrabold tracking-tight m-0"><c:out value="${authoredReviewsTitle}" /></h3>
+              <c:choose>
+                <c:when test="${not empty authoredReviews}">
+                  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <c:forEach var="authoredReview" items="${authoredReviews}">
+                      <c:url var="deleteReviewUrl" value="/reviews/${authoredReview.reviewId}/delete" />
+                      <div class="rounded-xl bg-base-200 p-4 space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${authoredReview.contextTitle}" /></p>
+                            <p class="m-0 text-xs text-on-surface-variant"><c:out value="${authoredReview.revieweeName}" /> · <c:out value="${authoredReview.revieweeEmail}" /></p>
+                          </div>
+                          <span class="badge badge-outline badge-sm shrink-0 font-bold">${authoredReview.rating}/5</span>
+                        </div>
+                        <p class="m-0 text-xs text-on-surface-variant"><c:out value="${authoredReview.createdAtLabel}" /></p>
+                        <c:if test="${not empty authoredReview.comment}">
+                          <p class="m-0 text-sm text-on-surface-variant break-words"><c:out value="${authoredReview.comment}" /></p>
+                        </c:if>
+                        <form action="${deleteReviewUrl}" method="post" class="m-0 border-t border-outline-variant/20 pt-3">
+                          <input type="hidden" name="returnTo" value="dashboard" />
+                          <paw:button type="submit" color="danger" variant="outline" size="sm" text="${reviewDeleteLabel}" />
+                        </form>
+                      </div>
+                    </c:forEach>
+                  </div>
+                </c:when>
+                <c:otherwise><p class="m-0 text-sm text-on-surface-variant"><c:out value="${authoredReviewsEmpty}" /></p></c:otherwise>
+              </c:choose>
+            </div>
+
+            <div class="space-y-4">
+              <h3 class="text-lg font-extrabold tracking-tight m-0"><c:out value="${receivedReviewsTitle}" /></h3>
+              <c:choose>
+                <c:when test="${not empty receivedReviews}">
+                  <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <c:forEach var="receivedReview" items="${receivedReviews}">
+                      <div class="rounded-xl bg-base-200 p-4 space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                          <div>
+                            <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${receivedReview.contextTitle}" /></p>
+                            <p class="m-0 text-xs text-on-surface-variant"><c:out value="${receivedReview.reviewerName}" /> · <c:out value="${receivedReview.reviewerEmail}" /></p>
+                          </div>
+                          <span class="badge badge-outline badge-sm shrink-0 font-bold">${receivedReview.rating}/5</span>
+                        </div>
+                        <p class="m-0 text-xs text-on-surface-variant"><c:out value="${receivedReview.createdAtLabel}" /></p>
+                        <c:if test="${not empty receivedReview.comment}">
+                          <p class="m-0 text-sm text-on-surface-variant break-words"><c:out value="${receivedReview.comment}" /></p>
+                        </c:if>
+                      </div>
+                    </c:forEach>
+                  </div>
+                </c:when>
+                <c:otherwise><p class="m-0 text-sm text-on-surface-variant"><c:out value="${receivedReviewsEmpty}" /></p></c:otherwise>
+              </c:choose>
+            </div>
           </div>
         </div>
       </div>

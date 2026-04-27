@@ -155,6 +155,17 @@
                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.bookings.requester.label" /></p>
                         <p class="m-0 mt-1 break-words text-sm font-bold text-on-surface"><c:out value="${receivedRequest.requesterName}" /></p>
                         <p class="m-0 break-all text-xs text-on-surface-variant"><c:out value="${receivedRequest.requesterEmail}" /></p>
+                        <p class="m-0 mt-1 text-xs text-on-surface-variant flex items-center gap-1.5">
+                          <span class="material-symbols-outlined text-sm text-warning leading-none">star</span>
+                          <c:choose>
+                            <c:when test="${receivedRequest.requesterHasReviews}">
+                              <fmt:formatNumber value="${receivedRequest.requesterAverageRating}" minFractionDigits="1" maxFractionDigits="1" />
+                              <span>·</span>
+                              <spring:message code="profile.bookings.requester.rating.count" arguments="${receivedRequest.requesterTotalReviews}" />
+                            </c:when>
+                            <c:otherwise><spring:message code="profile.bookings.requester.rating.empty" /></c:otherwise>
+                          </c:choose>
+                        </p>
                       </div>
                       <div class="rounded-lg bg-base-100 p-3 space-y-2">
                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${paymentInfoPriceLabel}" /></p>

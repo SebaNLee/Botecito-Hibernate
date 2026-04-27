@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.RatingSummary;
 import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.ReviewTargetType;
 import ar.edu.itba.paw.models.User;
@@ -405,6 +406,8 @@ public class AuthController {
             return receivedBookings;
         }
 
+        final Map<Integer, RatingSummary> requesterRatingByUserId = new LinkedHashMap<>();
+
         for (final ItemBooking booking : itemService.listBookingsByOwnerId(owner.getId())) {
             if (booking.getItemId() == null || booking.getId() == null || booking.getGuestId() == null) {
                 continue;
@@ -417,11 +420,29 @@ public class AuthController {
 
             final User requester =
                     itemService.findUserById(booking.getGuestId()).orElse(null);
+            final RatingSummary requesterRating = requesterRatingByUserId.computeIfAbsent(
+                    booking.getGuestId(), guestId -> reviewService.listReceivedReviews(guestId).stream()
+                            .filter(review -> review.getTargetType() == ReviewTargetType.USER)
+                            .collect(java.util.stream.Collectors.collectingAndThen(
+                                    java.util.stream.Collectors.toList(), reviews -> {
+                                        if (reviews.isEmpty()) {
+                                            return new RatingSummary();
+                                        }
+                                        final double average = reviews.stream()
+                                                .map(Review::getRating)
+                                                .filter(java.util.Objects::nonNull)
+                                                .mapToInt(Integer::intValue)
+                                                .average()
+                                                .orElse(0.0);
+                                        return new RatingSummary(average, reviews.size());
+                                    })));
             receivedBookings.add(new ReceivedBookingView(
                     booking.getId(),
                     item.getTitle(),
                     requester == null ? "" : requester.getName(),
                     requester == null ? "" : requester.getEmail(),
+                    requesterRating.getAverageRating(),
+                    requesterRating.getTotalReviews(),
                     booking.getStartTime(),
                     booking.getEndTime(),
                     formatDateLabel(booking.getStartTime()),
@@ -692,6 +713,8 @@ public class AuthController {
             String itemTitle,
             String requesterName,
             String requesterEmail,
+            double requesterAverageRating,
+            int requesterTotalReviews,
             OffsetDateTime startTime,
             OffsetDateTime endTime,
             String dateLabel,
@@ -715,6 +738,22 @@ public class AuthController {
 
         public String getRequesterEmail() {
             return requesterEmail;
+        }
+
+        public double getRequesterAverageRating() {
+            return requesterAverageRating;
+        }
+
+        public int getRequesterTotalReviews() {
+            return requesterTotalReviews;
+        }
+
+        public boolean isRequesterHasReviews() {
+            return requesterTotalReviews > 0;
+        }
+
+        public boolean getRequesterHasReviews() {
+            return isRequesterHasReviews();
         }
 
         public OffsetDateTime getStartTime() {

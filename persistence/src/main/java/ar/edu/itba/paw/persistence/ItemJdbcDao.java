@@ -8,6 +8,9 @@ import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
+import ar.edu.itba.paw.models.RatingSummary;
+import ar.edu.itba.paw.models.Review;
+import ar.edu.itba.paw.models.ReviewTargetType;
 import ar.edu.itba.paw.models.User;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
@@ -28,6 +31,7 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -125,11 +129,38 @@ public class ItemJdbcDao implements ItemDao {
                 return proof;
             };
 
+    private static final @NonNull RowMapper<Review> REVIEW_ROW_MAPPER = (ResultSet rs, int rowNum) -> {
+        final Review review = new Review();
+        review.setId(rs.getInt("id"));
+        review.setBookingId(rs.getInt("booking_id"));
+        review.setReviewerUserId(rs.getInt("reviewer_user_id"));
+        review.setRevieweeUserId(rs.getInt("reviewee_user_id"));
+        review.setTargetType(rs.getString("target_type"));
+        review.setTargetId(rs.getInt("target_id"));
+        review.setRating(rs.getInt("rating"));
+        review.setComment(rs.getString("comment"));
+        review.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
+        review.setUpdatedAt(formatDateTime(readOffsetDateTime(rs, "updated_at")));
+        return review;
+    };
+
     private final @NonNull JdbcTemplate jdbcTemplate;
+    private final boolean postgresDialect;
 
     @Autowired
     public ItemJdbcDao(final @NonNull DataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        boolean resolvedPostgresDialect = false;
+        try {
+            resolvedPostgresDialect =
+                    Boolean.TRUE.equals(jdbcTemplate.execute((ConnectionCallback<Boolean>) connection -> {
+                        final String productName = connection.getMetaData().getDatabaseProductName();
+                        return productName != null && productName.toLowerCase().contains("postgresql");
+                    }));
+        } catch (final RuntimeException exception) {
+            resolvedPostgresDialect = false;
+        }
+        this.postgresDialect = resolvedPostgresDialect;
     }
 
     @Override
@@ -525,6 +556,137 @@ public class ItemJdbcDao implements ItemDao {
                 bookingId,
                 ownerId);
         return updatedRows > 0;
+    }
+
+    @Override
+    public Optional<Review> createReview(
+            final int bookingId,
+            final int reviewerUserId,
+            final int revieweeUserId,
+            final ReviewTargetType targetType,
+            final int targetId,
+            final int rating,
+            final String comment) {
+        if (postgresDialect) {
+            final Integer id = jdbcTemplate.queryForObject(
+                    "INSERT INTO review"
+                            + " (booking_id, reviewer_user_id, reviewee_user_id, target_type, target_id, rating, comment)"
+                            + " VALUES (?, ?, ?, CAST(? AS review_target_type), ?, ?, ?)"
+                            + " ON CONFLICT (booking_id, reviewer_user_id, target_type) DO NOTHING"
+                            + " RETURNING id",
+                    Integer.class,
+                    bookingId,
+                    reviewerUserId,
+                    revieweeUserId,
+                    targetType.name(),
+                    targetId,
+                    rating,
+                    comment);
+            if (id == null) {
+                return Optional.empty();
+            }
+            return findReviewById(id);
+        }
+
+        if (findReviewByBookingReviewerAndTargetType(bookingId, reviewerUserId, targetType)
+                .isPresent()) {
+            return Optional.empty();
+        }
+        final SimpleJdbcInsert insert =
+                new SimpleJdbcInsert(jdbcTemplate).withTableName("review").usingGeneratedKeyColumns("id");
+        final Map<String, Object> args = new HashMap<>();
+        args.put("booking_id", bookingId);
+        args.put("reviewer_user_id", reviewerUserId);
+        args.put("reviewee_user_id", revieweeUserId);
+        args.put("target_type", targetType.name());
+        args.put("target_id", targetId);
+        args.put("rating", rating);
+        args.put("comment", comment);
+        try {
+            final Number id = insert.executeAndReturnKey(args);
+            return findReviewById(id.intValue());
+        } catch (final DataIntegrityViolationException exception) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<Review> findReviewByBookingReviewerAndTargetType(
+            final int bookingId, final int reviewerUserId, final ReviewTargetType targetType) {
+        return jdbcTemplate
+                .query(
+                        "SELECT * FROM review WHERE booking_id = ? AND reviewer_user_id = ? AND CAST(target_type AS VARCHAR(16)) = ?",
+                        REVIEW_ROW_MAPPER,
+                        bookingId,
+                        reviewerUserId,
+                        targetType.name())
+                .stream()
+                .findAny();
+    }
+
+    @Override
+    public List<Review> listReviewsByTarget(final ReviewTargetType targetType, final int targetId) {
+        return jdbcTemplate.query(
+                "SELECT * FROM review WHERE CAST(target_type AS VARCHAR(16)) = ? AND target_id = ? ORDER BY created_at DESC, id DESC",
+                REVIEW_ROW_MAPPER,
+                targetType.name(),
+                targetId);
+    }
+
+    @Override
+    public List<Review> listLatestReviewsByTarget(
+            final ReviewTargetType targetType, final int targetId, final int limit) {
+        final int safeLimit = Math.max(1, limit);
+        return jdbcTemplate.query(
+                "SELECT * FROM review WHERE CAST(target_type AS VARCHAR(16)) = ? AND target_id = ? ORDER BY created_at DESC, id DESC LIMIT ?",
+                REVIEW_ROW_MAPPER,
+                targetType.name(),
+                targetId,
+                safeLimit);
+    }
+
+    @Override
+    public List<Review> listReviewsByReviewer(final int reviewerUserId) {
+        return jdbcTemplate.query(
+                "SELECT * FROM review WHERE reviewer_user_id = ? ORDER BY created_at DESC, id DESC",
+                REVIEW_ROW_MAPPER,
+                reviewerUserId);
+    }
+
+    @Override
+    public List<Review> listReviewsByReviewee(final int revieweeUserId) {
+        return jdbcTemplate.query(
+                "SELECT * FROM review WHERE reviewee_user_id = ? ORDER BY created_at DESC, id DESC",
+                REVIEW_ROW_MAPPER,
+                revieweeUserId);
+    }
+
+    @Override
+    public Optional<Review> findReviewById(final int reviewId) {
+        return jdbcTemplate.query("SELECT * FROM review WHERE id = ?", REVIEW_ROW_MAPPER, reviewId).stream()
+                .findAny();
+    }
+
+    @Override
+    public boolean deleteReview(final int reviewId, final int reviewerUserId) {
+        final int deletedRows = jdbcTemplate.update(
+                "DELETE FROM review WHERE id = ? AND reviewer_user_id = ?", reviewId, reviewerUserId);
+        return deletedRows > 0;
+    }
+
+    @Override
+    public RatingSummary ratingSummaryByTarget(final ReviewTargetType targetType, final int targetId) {
+        return jdbcTemplate.query(
+                "SELECT COALESCE(AVG(rating), 0) AS avg_rating, COUNT(*) AS total_reviews"
+                        + " FROM review WHERE CAST(target_type AS VARCHAR(16)) = ? AND target_id = ?",
+                rs -> {
+                    if (!rs.next()) {
+                        return new RatingSummary();
+                    }
+                    return new RatingSummary(rs.getDouble("avg_rating"), rs.getInt("total_reviews"));
+                },
+                targetType.name(),
+                targetId);
     }
 
     @Override

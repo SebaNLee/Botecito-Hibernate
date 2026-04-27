@@ -8,6 +8,9 @@ import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
+import ar.edu.itba.paw.models.RatingSummary;
+import ar.edu.itba.paw.models.Review;
+import ar.edu.itba.paw.models.ReviewTargetType;
 import ar.edu.itba.paw.models.User;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -114,6 +117,32 @@ public interface ItemDao {
     boolean markBookingPaymentSubmitted(final int bookingId, final int guestId);
 
     boolean markBookingPaid(final int bookingId, final int ownerId);
+
+    Optional<Review> createReview(
+            int bookingId,
+            int reviewerUserId,
+            int revieweeUserId,
+            ReviewTargetType targetType,
+            int targetId,
+            int rating,
+            String comment);
+
+    Optional<Review> findReviewByBookingReviewerAndTargetType(
+            int bookingId, int reviewerUserId, ReviewTargetType targetType);
+
+    List<Review> listReviewsByTarget(ReviewTargetType targetType, int targetId);
+
+    List<Review> listLatestReviewsByTarget(ReviewTargetType targetType, int targetId, int limit);
+
+    List<Review> listReviewsByReviewer(int reviewerUserId);
+
+    List<Review> listReviewsByReviewee(int revieweeUserId);
+
+    Optional<Review> findReviewById(int reviewId);
+
+    boolean deleteReview(int reviewId, int reviewerUserId);
+
+    RatingSummary ratingSummaryByTarget(ReviewTargetType targetType, int targetId);
 
     Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId);
 

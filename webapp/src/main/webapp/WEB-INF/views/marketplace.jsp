@@ -24,6 +24,7 @@
 <spring:message code="landing.hero.search" var="searchLabel" />
 <spring:message code="marketplace.filters.apply" var="filtersApplyLabel" />
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
+<spring:message code="reviews.empty.short" var="reviewsEmptyShortLabel" />
 <c:url var="clearMarketplaceFiltersUrl" value="/marketplace">
   <c:if test="${sort != 'newest'}">
     <c:param name="sort" value="${sort}" />
@@ -272,6 +273,17 @@
                 <span class="block text-xl font-black text-primary">$<fmt:formatNumber value="${item.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0" /></span>
                 <span class="text-[10px] font-bold uppercase tracking-tighter text-outline"><spring:message code="marketplace.card.perHour" /></span>
               </div>
+            </div>
+            <c:set var="itemRating" value="${itemRatingSummaries[item.id]}" />
+            <div class="flex items-center gap-1 text-sm font-semibold text-on-surface-variant">
+              <span class="material-symbols-outlined text-base text-warning">star</span>
+              <c:choose>
+                <c:when test="${itemRating != null && itemRating.hasReviews}">
+                  <fmt:formatNumber value="${itemRating.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
+                  <span class="text-outline">(<c:out value="${itemRating.totalReviews}" />)</span>
+                </c:when>
+                <c:otherwise><c:out value="${reviewsEmptyShortLabel}" /></c:otherwise>
+              </c:choose>
             </div>
             <div class="flex min-w-0 items-center text-on-surface-variant text-sm gap-1">
               <span class="material-symbols-outlined shrink-0 text-primary text-lg">location_on</span>

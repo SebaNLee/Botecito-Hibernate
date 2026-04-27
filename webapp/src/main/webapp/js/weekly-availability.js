@@ -377,22 +377,11 @@
   };
 
   WeeklyAvailabilityGrid.prototype.configureHandleLabelPositions = function (leftPill, rightPill, durationSteps) {
-    var inwardOffset = 22;
-    if (durationSteps <= 4) {
-      inwardOffset = 4;
-    } else if (durationSteps <= 5) {
-      inwardOffset = 10;
-    } else if (durationSteps <= 6) {
-      inwardOffset = 16;
-    }
-
+    var inwardOffset = 15;
     leftPill.style.marginLeft = String(inwardOffset) + "px";
     rightPill.style.marginLeft = String(-inwardOffset) + "px";
-
-    if (durationSteps <= 4) {
-      leftPill.style.top = "-1.75rem";
-      rightPill.style.top = "-3rem";
-    }
+    leftPill.style.top = "";
+    rightPill.style.top = "";
   };
 
   WeeklyAvailabilityGrid.prototype.setTrackCursor = function (weekday, cursor) {

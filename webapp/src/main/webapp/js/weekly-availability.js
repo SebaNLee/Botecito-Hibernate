@@ -15,21 +15,6 @@
   var TOTAL_STEPS = TOTAL_MINUTES / SLOT_STEP_MINUTES;
   var DAY_END_DISPLAY_LABEL = "23:30h";
 
-  var PREVIEW_BLOCK_CLASS =
-    "absolute top-0 h-8 rounded-md border border-primary/60 bg-primary/20 hidden pointer-events-none";
-  var PREVIEW_LABEL_CLASS =
-    "absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-primary/35 bg-surface px-2 py-0.5 text-[10px] font-bold text-primary";
-  var PLACED_BLOCK_CLASS =
-    "absolute top-0 h-8 rounded-md bg-gradient-to-r from-primary to-primary-container text-on-primary shadow-[0_8px_16px_rgba(0,93,167,0.28)] cursor-grab active:cursor-grabbing";
-  var HANDLE_CLASS =
-    "absolute top-0 h-8 w-4 -translate-x-1/2 cursor-ew-resize touch-none";
-  var HANDLE_BAR_CLASS =
-    "absolute left-1/2 top-0 h-8 w-[3px] -translate-x-1/2 rounded-full bg-on-primary";
-  var HANDLE_LABEL_CLASS =
-    "absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-outline-variant/30 bg-surface px-2 py-0.5 text-[10px] font-bold text-on-surface";
-  var DELETE_CLASS =
-    "absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-error/40 bg-error/15 px-2 py-0.5 text-[10px] font-bold text-error hover:bg-error/25 transition-colors";
-
   function WeeklyAvailabilityGrid(root) {
     this.root = root;
     this.hiddenContainer = root.querySelector("[data-availability-hidden-inputs]");
@@ -38,6 +23,7 @@
     this.minSteps = Math.max(1, Math.ceil(this.minDuration / SLOT_STEP_MINUTES));
     this.noRangesText = root.dataset.noRangesText || "No time ranges selected";
     this.deleteText = root.dataset.deleteText || "Delete";
+    this.blockTemplate = root.querySelector("[data-availability-block-template]");
     this.dragState = null;
 
     this.days = {};
@@ -52,7 +38,7 @@
     }
 
     this.loadExisting();
-    this.buildTimelines();
+    this.cacheDayDom();
     this.bindToggles();
     this.bindGlobalDragging();
     this.renderAll();
@@ -96,87 +82,28 @@
     }
   };
 
-  WeeklyAvailabilityGrid.prototype.buildTimelines = function () {
+  WeeklyAvailabilityGrid.prototype.cacheDayDom = function () {
     for (var i = 0; i < WEEKDAYS.length; i++) {
       var weekday = WEEKDAYS[i].key;
-      var container = this.root.querySelector('[data-day-slots="' + weekday + '"]');
-      if (!container) continue;
+      var dayRow = this.root.querySelector('[data-availability-row="' + weekday + '"]');
+      if (!dayRow) continue;
 
-      container.innerHTML = "";
+      var track = dayRow.querySelector('[data-timeline-track="' + weekday + '"]');
+      var preview = dayRow.querySelector("[data-timeline-preview]");
+      var previewLabel = dayRow.querySelector("[data-timeline-preview-label]");
+      var blocksLayer = dayRow.querySelector("[data-timeline-blocks]");
 
-      var shell = document.createElement("div");
-      shell.className = "mt-2";
-
-      var wrapper = document.createElement("div");
-      wrapper.className = "relative pt-1 pb-8";
-
-      var axis = document.createElement("div");
-      axis.className = "absolute inset-x-0 bottom-0 flex items-center justify-between text-[11px] font-bold text-outline";
-      var axisStart = document.createElement("span");
-      axisStart.textContent = "00:00h";
-      var axisEnd = document.createElement("span");
-      axisEnd.textContent = DAY_END_DISPLAY_LABEL;
-      axis.appendChild(axisStart);
-      axis.appendChild(axisEnd);
-
-      var track = document.createElement("div");
-      track.className = "relative h-12 rounded-xl border border-outline-variant/30 bg-surface-container-high/40 overflow-visible touch-none";
-      track.setAttribute("data-timeline-track", weekday);
-
-      var lane = document.createElement("div");
-      lane.className = "absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 rounded-lg border border-outline-variant/25 bg-base-200/80";
-
-      var ticks = document.createElement("div");
-      ticks.className = "absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 pointer-events-none";
-
-      var previewLayer = document.createElement("div");
-      previewLayer.className = "absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 pointer-events-none";
-      var preview = document.createElement("div");
-      preview.className = PREVIEW_BLOCK_CLASS;
-      var previewLabel = document.createElement("div");
-      previewLabel.className = PREVIEW_LABEL_CLASS;
-      preview.appendChild(previewLabel);
-      previewLayer.appendChild(preview);
-
-      var blocksLayer = document.createElement("div");
-      blocksLayer.className = "absolute inset-x-1 top-1/2 h-8 -translate-y-1/2";
-
-      track.appendChild(lane);
-      track.appendChild(ticks);
-      track.appendChild(previewLayer);
-      track.appendChild(blocksLayer);
-      wrapper.appendChild(axis);
-      wrapper.appendChild(track);
-      shell.appendChild(wrapper);
-      container.appendChild(shell);
+      if (!track || !preview || !previewLabel || !blocksLayer) continue;
 
       this.days[weekday].dom = {
-        dayRow: container.closest("[data-availability-row]"),
+        dayRow: dayRow,
         track: track,
-        ticks: ticks,
         preview: preview,
         previewLabel: previewLabel,
         blocksLayer: blocksLayer,
       };
 
-      this.renderTicks(weekday);
       this.bindTrackEvents(weekday);
-    }
-  };
-
-  WeeklyAvailabilityGrid.prototype.renderTicks = function (weekday) {
-    var day = this.days[weekday];
-    if (!day || !day.dom || !day.dom.ticks) return;
-
-    day.dom.ticks.innerHTML = "";
-    for (var step = 0; step <= TOTAL_STEPS; step++) {
-      if (step % 2 !== 0) continue;
-
-      var tick = document.createElement("span");
-      var strong = step % 4 === 0;
-      tick.className = "absolute top-0 h-8 w-px " + (strong ? "bg-outline-variant/45" : "bg-outline-variant/25");
-      tick.style.left = percent(step) + "%";
-      day.dom.ticks.appendChild(tick);
     }
   };
 
@@ -277,6 +204,7 @@
     if (!day || !day.dom || !day.dom.blocksLayer) return;
 
     day.dom.blocksLayer.innerHTML = "";
+    if (!this.blockTemplate || !this.blockTemplate.content) return;
 
     var sorted = day.ranges.slice().sort(function (a, b) {
       return a.start - b.start;
@@ -285,43 +213,30 @@
     for (var i = 0; i < sorted.length; i++) {
       var range = sorted[i];
       var durationSteps = range.end - range.start;
-      var block = document.createElement("div");
-      block.className = PLACED_BLOCK_CLASS;
+      var blockFragment = this.blockTemplate.content.cloneNode(true);
+      var block = blockFragment.querySelector('[data-role="availability-block"]');
+      var leftHandle = blockFragment.querySelector('[data-role="left-handle"]');
+      var rightHandle = blockFragment.querySelector('[data-role="right-handle"]');
+      var leftPill = blockFragment.querySelector('[data-role="left-label"]');
+      var rightPill = blockFragment.querySelector('[data-role="right-label"]');
+      var deleteButton = blockFragment.querySelector('[data-role="delete-button"]');
+
+      if (!block || !leftHandle || !rightHandle || !leftPill || !rightPill || !deleteButton) {
+        continue;
+      }
+
       block.style.left = percent(range.start) + "%";
       block.style.width = percent(range.end - range.start) + "%";
       block.setAttribute("data-block-id", String(range.id));
 
-      var leftHandle = document.createElement("button");
-      leftHandle.type = "button";
-      leftHandle.className = HANDLE_CLASS;
-      leftHandle.style.left = "0%";
       leftHandle.setAttribute("aria-label", "Resize start");
-      var leftBar = document.createElement("span");
-      leftBar.className = HANDLE_BAR_CLASS;
-      var leftPill = document.createElement("span");
-      leftPill.className = HANDLE_LABEL_CLASS;
       leftPill.textContent = formatBoundaryLabel(range.start, false);
-      leftHandle.appendChild(leftBar);
-      leftHandle.appendChild(leftPill);
 
-      var rightHandle = document.createElement("button");
-      rightHandle.type = "button";
-      rightHandle.className = HANDLE_CLASS;
-      rightHandle.style.left = "100%";
       rightHandle.setAttribute("aria-label", "Resize end");
-      var rightBar = document.createElement("span");
-      rightBar.className = HANDLE_BAR_CLASS;
-      var rightPill = document.createElement("span");
-      rightPill.className = HANDLE_LABEL_CLASS;
       rightPill.textContent = formatBoundaryLabel(range.end, true);
-      rightHandle.appendChild(rightBar);
-      rightHandle.appendChild(rightPill);
 
       this.configureHandleLabelPositions(leftPill, rightPill, durationSteps);
 
-      var deleteButton = document.createElement("button");
-      deleteButton.type = "button";
-      deleteButton.className = DELETE_CLASS;
       deleteButton.setAttribute("aria-label", self.deleteText);
       deleteButton.textContent = self.deleteText;
 
@@ -330,10 +245,7 @@
       deleteButton.addEventListener("click", self.handleDelete.bind(self, weekday, range.id));
       block.addEventListener("pointerdown", self.handleDragStart.bind(self, weekday, range.id));
 
-      block.appendChild(leftHandle);
-      block.appendChild(rightHandle);
-      block.appendChild(deleteButton);
-      day.dom.blocksLayer.appendChild(block);
+      day.dom.blocksLayer.appendChild(blockFragment);
     }
   };
 

@@ -75,7 +75,7 @@
                         <span>23:30h</span>
                       </div>
                       <div class="relative h-12 rounded-xl border border-outline-variant/30 bg-surface-container-high/40 overflow-visible touch-none" data-timeline-track="${day}">
-                        <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 rounded-lg border border-outline-variant/25 bg-base-200/80"></div>
+                        <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 rounded-lg border border-outline-variant/25 bg-base-200/80" data-timeline-hover-zone></div>
                         <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 pointer-events-none" data-timeline-ticks>
                           <c:forEach var="tickHour" begin="0" end="23">
                             <c:set var="tickStep" value="${tickHour * 2}" />

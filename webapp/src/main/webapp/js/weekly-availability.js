@@ -89,15 +89,17 @@
       if (!dayRow) continue;
 
       var track = dayRow.querySelector('[data-timeline-track="' + weekday + '"]');
+      var hoverZone = dayRow.querySelector("[data-timeline-hover-zone]");
       var preview = dayRow.querySelector("[data-timeline-preview]");
       var previewLabel = dayRow.querySelector("[data-timeline-preview-label]");
       var blocksLayer = dayRow.querySelector("[data-timeline-blocks]");
 
-      if (!track || !preview || !previewLabel || !blocksLayer) continue;
+      if (!track || !hoverZone || !preview || !previewLabel || !blocksLayer) continue;
 
       this.days[weekday].dom = {
         dayRow: dayRow,
         track: track,
+        hoverZone: hoverZone,
         preview: preview,
         previewLabel: previewLabel,
         blocksLayer: blocksLayer,
@@ -304,11 +306,16 @@
 
   WeeklyAvailabilityGrid.prototype.isPointerInBlockedGap = function (weekday, pointerStep) {
     var day = this.days[weekday];
-    if (!day || day.ranges.length < 2) return false;
+    if (!day || day.ranges.length === 0) return false;
 
     var sorted = day.ranges.slice().sort(function (a, b) {
       return a.start - b.start;
     });
+
+    var first = sorted[0];
+    if (pointerStep >= 0 && pointerStep < first.start) {
+      return this.gapCannotFitBlock(0, first.start - this.minSteps - 1);
+    }
 
     for (var i = 1; i < sorted.length; i++) {
       var left = sorted[i - 1];
@@ -320,20 +327,33 @@
 
       var minStart = left.end + 1;
       var maxStart = right.start - this.minSteps - 1;
-      if (maxStart < minStart) {
-        return true;
-      }
+      return this.gapCannotFitBlock(minStart, maxStart);
+    }
 
-      for (var start = minStart; start <= maxStart; start++) {
-        if (this.canPlaceRange(weekday, start, start + this.minSteps, null)) {
-          return false;
-        }
-      }
-
-      return true;
+    var last = sorted[sorted.length - 1];
+    if (pointerStep > last.end && pointerStep <= TOTAL_STEPS) {
+      return this.gapCannotFitBlock(last.end + 1, TOTAL_STEPS - this.minSteps);
     }
 
     return false;
+  };
+
+  WeeklyAvailabilityGrid.prototype.gapCannotFitBlock = function (minStart, maxStart) {
+    return maxStart < minStart;
+  };
+
+  WeeklyAvailabilityGrid.prototype.pointerInHoverZone = function (weekday, event) {
+    var day = this.days[weekday];
+    if (!day || !day.dom || !day.dom.hoverZone) return false;
+    var rect = day.dom.hoverZone.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return false;
+
+    return (
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom
+    );
   };
 
   WeeklyAvailabilityGrid.prototype.updatePreviewFromPointer = function (weekday, event) {
@@ -345,6 +365,12 @@
     }
 
     if (event.target && event.target.closest("[data-block-id]")) {
+      this.clearPreview(weekday);
+      this.setTrackCursor(weekday, "");
+      return;
+    }
+
+    if (!this.pointerInHoverZone(weekday, event)) {
       this.clearPreview(weekday);
       this.setTrackCursor(weekday, "");
       return;

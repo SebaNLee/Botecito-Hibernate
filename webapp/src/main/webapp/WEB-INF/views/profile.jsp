@@ -91,6 +91,8 @@
             </div>
           </form:form>
 
+          <div class="border-b border-outline-variant/20"></div>
+
           <div class="flex flex-wrap items-center gap-3">
             <form action="${profilePasswordRecoveryUrl}" method="post" class="m-0">
               <paw:button type="submit" color="secondary" icon="mail" text="${passwordRecoverySendLabel}" />

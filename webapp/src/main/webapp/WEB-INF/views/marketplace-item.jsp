@@ -87,15 +87,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 
   <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-8 items-start">
     <section class="order-2 lg:order-1 min-w-0 space-y-8">
-      <div class="card bg-base-100 shadow-sm overflow-hidden">
-        <figure>
-          <img
-            class="w-full h-[400px] object-cover"
-            alt="${item.title}"
-            src="${itemImageUrl}"
-          />
-        </figure>
-      </div>
+      <paw:imageCarousel imageUrls="${itemImageUrls}" altText="${item.title}" />
 
       <paw:sectionCard>
         <jsp:attribute name="title"

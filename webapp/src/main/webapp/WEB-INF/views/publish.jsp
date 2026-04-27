@@ -74,6 +74,12 @@ charset=UTF-8" pageEncoding="UTF-8" %>
   code="publish.validation.location.required"
   var="publishLocationRequiredMsg"
 />
+<c:url var="publishImagesUploadUrl" value="/publish/images/upload" />
+<c:url var="publishImagesRemoveUrl" value="/publish/images/remove" />
+<c:url var="publishImagesReorderUrl" value="/publish/images/reorder" />
+<spring:bind path="publishForm.files">
+  <c:set var="filesError" value="${status.errorMessage}" />
+</spring:bind>
 
 <paw:layout
   title="Botecito"
@@ -114,18 +120,10 @@ charset=UTF-8" pageEncoding="UTF-8" %>
     </p>
   </div>
 
-  <form:form
-    action="${publishUrl}"
-    method="post"
-    modelAttribute="publishForm"
-    enctype="multipart/form-data"
-    class="space-y-8"
-  >
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-      <paw:sectionCard cssClass="lg:col-span-3" icon="directions_boat">
-        <jsp:attribute name="title"
-          ><spring:message code="publish.step1.section.base"
-        /></jsp:attribute>
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+    <form:form action="${publishUrl}" method="post" modelAttribute="publishForm" class="space-y-8 lg:col-span-3">
+      <paw:sectionCard icon="directions_boat">
+        <jsp:attribute name="title"><spring:message code="publish.step1.section.base" /></jsp:attribute>
         <jsp:body>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="md:col-span-2">
@@ -273,87 +271,27 @@ charset=UTF-8" pageEncoding="UTF-8" %>
         </jsp:body>
       </paw:sectionCard>
 
-      <paw:sectionCard
-        element="aside"
-        cssClass="lg:col-span-2"
-        icon="add_a_photo"
-      >
-        <jsp:attribute name="title"
-          ><spring:message code="publish.step1.section.photo"
-        /></jsp:attribute>
-        <jsp:body>
-          <div
-            class="rounded-xl overflow-hidden border border-outline-variant/30 bg-base-200"
-          >
-            <img
-              id="publish-file-preview"
-              src="${not empty uploadedImagePreviewUrl ? uploadedImagePreviewUrl : placeholderImageUrl}"
-              alt="<spring:message code='publish.image.previewAlt' />"
-              class="w-full aspect-[16/10] object-cover"
-            />
-          </div>
+      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
+        <paw:button href="${marketplaceUrl}" color="ghost" size="lg" cssClass="w-full sm:w-auto" text="${publishSaveDraftLabel}" />
+        <paw:button type="submit" color="secondary" size="lg" icon="arrow_forward" iconTrailing="true" cssClass="w-full sm:w-auto" text="${publishContinueAvailabilityLabel}" />
+      </div>
+    </form:form>
 
-          <label
-            class="border-2 border-dashed border-outline-variant rounded-xl p-10 flex flex-col items-center justify-center text-center hover:bg-base-200/60 transition-colors cursor-pointer group"
-          >
-            <input
-              type="file"
-              name="file"
-              accept="image/*"
-              class="hidden"
-              data-image-preview-input
-              data-image-preview-target-id="publish-file-preview"
-              data-image-preview-filename-id="file-name-display"
-              data-image-preview-placeholder="${not empty uploadedImagePreviewUrl ? uploadedImagePreviewUrl : placeholderImageUrl}"
-            />
-            <div
-              class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"
-            >
-              <span class="material-symbols-outlined text-3xl"
-                >upload_file</span
-              >
-            </div>
-            <span class="font-bold text-lg text-primary"
-              ><spring:message code="publish.image.upload"
-            /></span>
-            <span id="file-name-display" class="text-sm text-outline mt-1"
-              ><spring:message code="publish.image.helper"
-            /></span>
-            <form:errors
-              path="file"
-              cssClass="text-error text-xs mt-2"
-              element="p"
-            />
-          </label>
-
-          <div
-            class="rounded-xl bg-base-200 p-4 text-sm text-on-surface-variant leading-relaxed"
-          >
-            <spring:message code="publish.image.note" />
-          </div>
-        </jsp:body>
-      </paw:sectionCard>
-    </div>
-
-    <div
-      class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2"
-    >
-      <paw:button
-        href="${marketplaceUrl}"
-        color="ghost"
-        size="lg"
-        cssClass="w-full sm:w-auto"
-        text="${publishSaveDraftLabel}"
-      />
-      <paw:button
-        type="submit"
-        color="secondary"
-        size="lg"
-        icon="arrow_forward"
-        iconTrailing="true"
-        cssClass="w-full sm:w-auto"
-        text="${publishContinueAvailabilityLabel}"
-      />
-    </div>
-  </form:form>
+    <paw:sectionCard element="aside" cssClass="lg:col-span-2" icon="add_a_photo">
+      <jsp:attribute name="title"><spring:message code="publish.step1.section.photo" /></jsp:attribute>
+      <jsp:body>
+        <paw:imageGalleryEditor
+            imageUrls="${uploadedImagePreviewUrls}"
+            uploadUrl="${publishImagesUploadUrl}"
+            removeUrl="${publishImagesRemoveUrl}"
+            reorderUrl="${publishImagesReorderUrl}"
+            maxImages="${maxGalleryImages}"
+            errorMessage="${filesError}"
+            displayMode="modal" />
+        <div class="rounded-xl bg-base-200 p-4 text-sm text-on-surface-variant leading-relaxed">
+          <spring:message code="publish.image.note" />
+        </div>
+      </jsp:body>
+    </paw:sectionCard>
+  </div>
 </paw:layout>

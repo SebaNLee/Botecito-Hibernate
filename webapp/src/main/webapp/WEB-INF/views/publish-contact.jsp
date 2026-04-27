@@ -10,7 +10,6 @@
 <c:url var="stepThreeUrl" value="/publish/contact" />
 <c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
-<c:url var="publishPreviewImageUrl" value="/publish/preview-image" />
 <spring:message code="publish.actions.saveDraft" var="publishSaveDraftLabel" />
 <spring:message code="publish.actions.submit" var="publishSubmitLabel" />
 
@@ -58,8 +57,8 @@
         <jsp:body>
           <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-base-200">
             <c:choose>
-              <c:when test="${not empty uploadedImagePreviewUrl}">
-                <img src="${publishPreviewImageUrl}" alt="<spring:message code='publish.image.previewAlt' />" class="w-full aspect-[16/10] object-cover" />
+              <c:when test="${not empty uploadedImagePreviewUrls}">
+                <img src="${uploadedImagePreviewUrls[0]}" alt="<spring:message code='publish.image.previewAlt' />" class="w-full aspect-[16/10] object-cover" />
               </c:when>
               <c:otherwise>
                 <img src="${placeholderImageUrl}" alt="<spring:message code='publish.image.defaultAlt' />" class="w-full aspect-[16/10] object-cover" />

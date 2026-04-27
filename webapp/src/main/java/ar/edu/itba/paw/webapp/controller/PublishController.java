@@ -9,6 +9,7 @@ import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.services.utils.TimeRange;
 import ar.edu.itba.paw.services.utils.TimeRangeList;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import ar.edu.itba.paw.webapp.form.PublishBoatForm.UploadedImage;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -16,6 +17,7 @@ import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,6 +52,7 @@ import org.springframework.web.servlet.ModelAndView;
 public class PublishController {
 
     private static final String PUBLISH_PREVIEW_IMAGE_PATH = "/publish/preview-image";
+    private static final int MAX_GALLERY_IMAGES = 10;
 
     private final ItemService itemService;
     private final MailService mailService;
@@ -88,9 +91,14 @@ public class PublishController {
         return buildDifficultyOptions();
     }
 
-    @ModelAttribute("uploadedImagePreviewUrl")
-    public String uploadedImagePreviewUrl(@ModelAttribute("publishForm") final PublishBoatForm form) {
-        return buildUploadedImagePreviewUrl(form);
+    @ModelAttribute("uploadedImagePreviewUrls")
+    public List<String> uploadedImagePreviewUrls(@ModelAttribute("publishForm") final PublishBoatForm form) {
+        return buildUploadedImagePreviewUrls(form);
+    }
+
+    @ModelAttribute("maxGalleryImages")
+    public int maxGalleryImages() {
+        return MAX_GALLERY_IMAGES;
     }
 
     @RequestMapping(value = "/publish", method = RequestMethod.GET)
@@ -102,15 +110,40 @@ public class PublishController {
     public ModelAndView publishStepOneSubmit(
             @Validated(PublishBoatForm.Step1.class) @ModelAttribute("publishForm") final PublishBoatForm form,
             final BindingResult errors) {
-        if (!errors.hasFieldErrors("file")) {
-            persistUploadedImageIfPresent(form);
+        if (!errors.hasFieldErrors("files")) {
+            appendUploadedImagesIfPresent(form, errors);
         }
+        form.setFiles(new ArrayList<>());
 
         if (errors.hasErrors()) {
             return new ModelAndView("publish");
         }
 
         return new ModelAndView("redirect:/publish/availability");
+    }
+
+    @RequestMapping(value = "/publish/images/upload", method = RequestMethod.POST)
+    public ModelAndView publishImagesUpload(
+            @ModelAttribute("publishForm") final PublishBoatForm form, final BindingResult errors) {
+        appendUploadedImagesIfPresent(form, errors);
+        form.setFiles(new ArrayList<>());
+        return new ModelAndView("redirect:/publish");
+    }
+
+    @RequestMapping(value = "/publish/images/remove", method = RequestMethod.POST)
+    public ModelAndView publishImagesRemove(
+            @ModelAttribute("publishForm") final PublishBoatForm form, @RequestParam("index") final int index) {
+        form.removeUploadedImageAt(index);
+        return new ModelAndView("redirect:/publish");
+    }
+
+    @RequestMapping(value = "/publish/images/reorder", method = RequestMethod.POST)
+    public ModelAndView publishImagesReorder(
+            @ModelAttribute("publishForm") final PublishBoatForm form,
+            @RequestParam(value = "order", required = false) final String order) {
+        final List<Integer> parsed = parseOrderCsv(order);
+        form.reorderUploadedImages(parsed);
+        return new ModelAndView("redirect:/publish");
     }
 
     @RequestMapping(value = "/publish/availability", method = RequestMethod.GET)
@@ -163,16 +196,18 @@ public class PublishController {
         return mav;
     }
 
-    @RequestMapping(value = "/publish/preview-image", method = RequestMethod.GET)
-    public ResponseEntity<byte[]> publishPreviewImage(@ModelAttribute("publishForm") final PublishBoatForm form) {
-        if (!hasValidImagePreview(form)) {
+    @RequestMapping(value = "/publish/preview-image/{index}", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> publishPreviewImage(
+            @ModelAttribute("publishForm") final PublishBoatForm form,
+            @org.springframework.web.bind.annotation.PathVariable("index") final int index) {
+        final UploadedImage image = form.getUploadedImageAt(index);
+        if (image == null || image.getSize() == 0) {
             return ResponseEntity.notFound().build();
         }
-
-        final byte[] imageBytes = form.getUploadedImageData();
+        final byte[] imageBytes = image.getData();
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
-                .contentType(resolvePreviewMediaType(form.getUploadedImageContentType()))
+                .contentType(resolvePreviewMediaType(image.getContentType()))
                 .contentLength(imageBytes.length)
                 .body(imageBytes);
     }
@@ -217,8 +252,8 @@ public class PublishController {
                     Integer.parseInt(form.getLocationOptionId().trim()),
                     buildAvailabilitySlots(form));
 
-            if (form.hasUploadedImage()) {
-                itemService.insertImage(createdItem.getId(), form.getUploadedImageData());
+            if (form.hasUploadedImages()) {
+                itemService.replaceGallery(createdItem.getId(), form.orderedImageBytes());
             }
 
             mailService.sendPublishConfirmationEmail(
@@ -408,7 +443,7 @@ public class PublishController {
 
     private void addSummaryData(final ModelAndView mav, final PublishBoatForm form, final Locale locale) {
         mav.addObject("availabilitySummary", buildAvailabilitySummary(form, locale));
-        mav.addObject("uploadedImagePreviewUrl", buildUploadedImagePreviewUrl(form));
+        mav.addObject("uploadedImagePreviewUrls", buildUploadedImagePreviewUrls(form));
         mav.addObject("selectedLocationName", resolveLocationName(form.getLocationOptionId()));
     }
 
@@ -429,46 +464,60 @@ public class PublishController {
         }
     }
 
-    private static String buildUploadedImagePreviewUrl(final PublishBoatForm form) {
-        if (!hasValidImagePreview(form)) {
-            return null;
+    private static List<String> buildUploadedImagePreviewUrls(final PublishBoatForm form) {
+        final List<String> urls = new ArrayList<>();
+        for (int i = 0; i < form.getUploadedImageCount(); i++) {
+            urls.add(PUBLISH_PREVIEW_IMAGE_PATH + "/" + i);
         }
-
-        return PUBLISH_PREVIEW_IMAGE_PATH;
+        return urls;
     }
 
-    private static boolean hasValidImagePreview(final PublishBoatForm form) {
-        if (!form.hasUploadedImage()) {
-            return false;
-        }
-
-        final String contentType = form.getUploadedImageContentType();
-        return StringUtils.hasText(contentType) && contentType.regionMatches(true, 0, "image/", 0, 6);
-    }
-
-    private static void persistUploadedImageIfPresent(final PublishBoatForm form) {
-        final MultipartFile uploaded = form.getFile();
+    private static void appendUploadedImagesIfPresent(final PublishBoatForm form, final BindingResult errors) {
+        final List<MultipartFile> uploaded = form.getFiles();
         if (uploaded == null || uploaded.isEmpty()) {
             return;
         }
 
-        final String contentType = uploaded.getContentType();
-        if (!StringUtils.hasText(contentType) || !contentType.regionMatches(true, 0, "image/", 0, 6)) {
-            form.setFile(null);
-            return;
-        }
-
-        try {
-            final byte[] imageBytes = uploaded.getBytes();
-            if (imageBytes.length > 0) {
-                form.setUploadedImageData(imageBytes);
-                form.setUploadedImageContentType(contentType);
+        for (final MultipartFile file : uploaded) {
+            if (file == null || file.isEmpty()) {
+                continue;
             }
-        } catch (final IOException ignored) {
-            // Keep previously stored image if present.
+            if (form.getUploadedImageCount() >= MAX_GALLERY_IMAGES) {
+                errors.rejectValue("files", "publish.validation.images.count");
+                return;
+            }
+            final String contentType = file.getContentType();
+            if (!StringUtils.hasText(contentType) || !contentType.regionMatches(true, 0, "image/", 0, 6)) {
+                continue;
+            }
+            try {
+                final byte[] imageBytes = file.getBytes();
+                if (imageBytes.length > 0) {
+                    form.appendUploadedImage(imageBytes, contentType);
+                }
+            } catch (final IOException ignored) {
+                // Skip unreadable file.
+            }
         }
+    }
 
-        form.setFile(null);
+    private static List<Integer> parseOrderCsv(final String csv) {
+        if (!StringUtils.hasText(csv)) {
+            return List.of();
+        }
+        final List<Integer> result = new ArrayList<>();
+        for (final String token : Arrays.asList(csv.split(","))) {
+            final String trimmed = token.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            try {
+                result.add(Integer.parseInt(trimmed));
+            } catch (final NumberFormatException ignored) {
+                return List.of();
+            }
+        }
+        return result;
     }
 
     private static MediaType resolvePreviewMediaType(final String contentType) {

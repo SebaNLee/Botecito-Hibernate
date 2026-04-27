@@ -105,6 +105,32 @@ public class UserJdbcDao implements UserDao {
     }
 
     @Override
+    public Optional<User> updateProfile(
+            final int userId,
+            final String givenName,
+            final String lastName,
+            final String email,
+            final String phone,
+            final String paymentAlias,
+            final String preferredLanguage) {
+        final int updatedRows = jdbcTemplate.update(
+                "UPDATE users"
+                        + " SET given_name = ?, last_name = ?, email = ?, phone = ?, payment_alias = ?, preferred_language = ?"
+                        + " WHERE id = ?",
+                givenName,
+                lastName,
+                email,
+                phone,
+                paymentAlias,
+                preferredLanguage,
+                userId);
+        if (updatedRows == 0) {
+            return Optional.empty();
+        }
+        return findById(userId);
+    }
+
+    @Override
     public Optional<User> updatePasswordRecoveryToken(final int userId, final String token) {
         final int updatedRows = jdbcTemplate.update(
                 "UPDATE users SET password_recovery_token = ?, password_recovery_used_at = NULL WHERE id = ?",

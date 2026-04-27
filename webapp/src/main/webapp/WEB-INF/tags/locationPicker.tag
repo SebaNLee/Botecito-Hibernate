@@ -10,6 +10,7 @@
 <%@ attribute name="errorPath" required="false" %>
 <%@ attribute name="optionsUrl" required="false" %>
 <%@ attribute name="locationRequiredMessage" required="false" %>
+<%@ attribute name="required" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
@@ -40,17 +41,18 @@
       <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-location-value />
       <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
+        <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
       </legend>
       <div class="relative">
         <label
-            class="input w-full flex items-center gap-2 cursor-text border-primary/25 focus-within:border-primary"
+            class="input flex h-10 min-h-10 max-h-10 w-full min-w-0 items-center gap-1 overflow-hidden border-primary/25 px-2 py-0 cursor-text focus-within:border-primary"
             data-location-trigger>
-          <span class="material-symbols-outlined shrink-0 text-primary"><c:out value="${resolvedIcon}" /></span>
+          <span class="material-symbols-outlined shrink-0 text-primary text-xl"><c:out value="${resolvedIcon}" /></span>
           <input
               id="${id}-query"
               type="text"
               value=""
-              class="grow bg-transparent outline-none border-none focus:outline-none focus:ring-0 shadow-none p-0"
+              class="min-w-0 grow bg-transparent border-none p-0 text-[0.95rem] font-bold text-on-surface placeholder:text-on-surface/60 outline-none focus:outline-none focus:ring-0 shadow-none"
               placeholder="${fn:escapeXml(resolvedPlaceholder)}"
               autocomplete="off"
               spellcheck="false"
@@ -90,29 +92,30 @@
       <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-location-value />
       <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
+        <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
       </legend>
       <div class="relative">
         <label
-            class="input w-full flex items-center gap-2 cursor-text"
+            class="input flex h-10 min-h-10 max-h-10 w-full min-w-0 items-center gap-1 overflow-hidden border-primary/25 px-2 py-0 cursor-text focus-within:border-primary"
             data-location-trigger>
-          <span class="material-symbols-outlined shrink-0 text-outline"><c:out value="${resolvedIcon}" /></span>
+          <span class="material-symbols-outlined shrink-0 text-primary text-xl"><c:out value="${resolvedIcon}" /></span>
           <input
               id="${id}-query"
               type="text"
               value=""
-              class="grow bg-transparent outline-none border-none focus:outline-none focus:ring-0 shadow-none p-0"
+              class="min-w-0 grow bg-transparent border-none p-0 text-[0.95rem] font-bold text-on-surface placeholder:text-on-surface/60 outline-none focus:outline-none focus:ring-0 shadow-none"
               placeholder="${fn:escapeXml(resolvedPlaceholder)}"
               autocomplete="off"
               spellcheck="false"
               data-location-query />
           <button
               type="button"
-              class="btn btn-ghost btn-xs btn-circle opacity-0 pointer-events-none"
+              class="btn btn-ghost btn-xs btn-circle text-primary opacity-0 pointer-events-none"
               aria-label="${fn:escapeXml(clearLocationLabel)}"
               data-location-clear>
             <span class="material-symbols-outlined text-base">close</span>
           </button>
-          <span class="material-symbols-outlined shrink-0 text-outline text-base transition-transform duration-150" data-location-chevron>expand_more</span>
+          <span class="material-symbols-outlined shrink-0 text-primary text-base transition-transform duration-150" data-location-chevron>expand_more</span>
         </label>
 
         <div

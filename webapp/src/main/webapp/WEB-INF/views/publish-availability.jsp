@@ -10,6 +10,7 @@
 <c:url var="marketplaceUrl" value="/marketplace" />
 <spring:message code="publish.availability.noRanges" var="publishNoRangesLabel" />
 <spring:message code="publish.step2.deleteRange" var="publishDeleteRangeLabel" />
+<spring:message code="publish.availability.day.empty.client" var="publishMissingRangeLabel" />
 <spring:message code="publish.actions.saveDraft" var="publishSaveDraftLabel" />
 <spring:message code="publish.actions.continueContact" var="publishContinueContactLabel" />
 
@@ -31,7 +32,7 @@
       <span><spring:message code="publish.step2.progress" /></span>
       <span><spring:message code="publish.step2.badge" /></span>
     </div>
-    <progress class="progress progress-primary mt-3 w-full" value="66" max="100"></progress>
+    <progress class="progress progress-primary mt-3 w-full" value="33" max="100"></progress>
     <h1 class="mt-6 text-4xl font-extrabold tracking-tight text-on-background m-0"><spring:message code="publish.step2.title" /></h1>
     <p class="text-on-surface-variant mt-2 text-lg m-0"><spring:message code="publish.step2.subtitle" /></p>
   </div>
@@ -40,12 +41,18 @@
     <paw:sectionCard icon="schedule">
       <jsp:attribute name="title"><spring:message code="publish.step2.section.slots" /></jsp:attribute>
       <jsp:body>
-          <div
-              data-weekly-availability-grid
-              data-existing-slots='${existingSlotsJson}'
-              data-min-duration="120"
-              data-no-ranges-text="${publishNoRangesLabel}"
-              data-delete-text="${publishDeleteRangeLabel}">
+        <c:if test="${param.availabilityAction == 'invalidMethod'}">
+          <paw:alertMessage type="error" cssClass="mb-4">
+            <c:out value="${publishMissingRangeLabel}" />
+          </paw:alertMessage>
+        </c:if>
+        <div
+            data-weekly-availability-grid
+            data-existing-slots='${existingSlotsJson}'
+            data-min-duration="120"
+            data-no-ranges-text="${publishNoRangesLabel}"
+            data-delete-text="${publishDeleteRangeLabel}"
+            data-missing-range-text="${publishMissingRangeLabel}">
 
           <p class="text-xs text-outline m-0"><spring:message code="publish.step2.instructions" /></p>
 
@@ -57,6 +64,10 @@
               </paw:alertMessage>
             </c:forEach>
           </spring:hasBindErrors>
+          <div role="alert" class="alert alert-error alert-soft rounded-xl text-sm items-start mt-2 hidden" data-availability-client-alert>
+            <span class="material-symbols-outlined text-lg shrink-0">error</span>
+            <span><c:out value="${publishMissingRangeLabel}" /></span>
+          </div>
 
           <div class="space-y-4 mt-6">
             <c:forEach var="day" items="${['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY','SUNDAY']}">
@@ -94,6 +105,7 @@
                   </div>
                 </div>
                 <div data-day-summary="${day}"></div>
+                <p class="mt-2 hidden text-xs font-bold text-error" data-day-error="${day}"></p>
               </div>
             </c:forEach>
           </div>

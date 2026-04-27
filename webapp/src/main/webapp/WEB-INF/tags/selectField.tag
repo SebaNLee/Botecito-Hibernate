@@ -3,6 +3,7 @@
 <%@ attribute name="label" required="true" %>
 <%@ attribute name="options" required="true" type="java.util.Map" %>
 <%@ attribute name="placeholder" required="false" %>
+<%@ attribute name="required" required="false" %>
 <%@ attribute name="cssClass" required="false" %>
 <%@ attribute name="containerClass" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
@@ -15,6 +16,7 @@
 <fieldset class="${fieldContainerClass}">
   <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
     <c:out value="${label}" />
+    <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
   </legend>
   <form:select id="${path}" path="${path}" cssClass="${selectCssClass}" cssErrorClass="${selectErrorCssClass}">
     <c:if test="${not empty placeholder}">

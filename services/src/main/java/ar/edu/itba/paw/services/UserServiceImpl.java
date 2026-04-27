@@ -56,6 +56,34 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public Optional<User> updateProfile(
+            final int userId,
+            final String givenName,
+            final String lastName,
+            final String email,
+            final String phone,
+            final String paymentAlias,
+            final String preferredLanguage) {
+        final String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
+        final Optional<User> emailOwner = userDao.findByEmail(normalizedEmail);
+        if (normalizedEmail.isBlank()
+                || emailOwner
+                        .filter(user -> user.getId() == null || user.getId() != userId)
+                        .isPresent()) {
+            return Optional.empty();
+        }
+
+        return userDao.updateProfile(
+                userId,
+                safeTrim(givenName),
+                safeTrim(lastName),
+                normalizedEmail,
+                normalizeNullable(phone),
+                normalizePaymentAlias(paymentAlias),
+                normalizePreferredLanguage(preferredLanguage));
+    }
+
+    @Override
     public Optional<User> requestPasswordRecovery(final String email) {
         if (email == null || email.isBlank()) {
             return Optional.empty();
@@ -95,10 +123,25 @@ public class UserServiceImpl implements UserService {
     }
 
     private static String normalizePaymentAlias(final String paymentAlias) {
-        if (paymentAlias == null) {
+        return normalizeNullable(paymentAlias);
+    }
+
+    private static String normalizePreferredLanguage(final String preferredLanguage) {
+        if ("en".equalsIgnoreCase(preferredLanguage)) {
+            return "en";
+        }
+        return "es";
+    }
+
+    private static String safeTrim(final String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private static String normalizeNullable(final String value) {
+        if (value == null) {
             return null;
         }
-        final String trimmedPaymentAlias = paymentAlias.trim();
-        return trimmedPaymentAlias.isEmpty() ? null : trimmedPaymentAlias;
+        final String trimmedValue = value.trim();
+        return trimmedValue.isEmpty() ? null : trimmedValue;
     }
 }

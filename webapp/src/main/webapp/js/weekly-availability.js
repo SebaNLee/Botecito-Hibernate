@@ -17,7 +17,9 @@
 
   function WeeklyAvailabilityGrid(root) {
     this.root = root;
-    this.hiddenContainer = root.querySelector("[data-availability-hidden-inputs]");
+    this.hiddenContainer = root.querySelector(
+      "[data-availability-hidden-inputs]",
+    );
     this.form = root.closest("form");
     this.minDuration = parseInt(root.dataset.minDuration || MIN_DURATION_MINUTES, 10);
     this.minSteps = Math.max(1, Math.ceil(this.minDuration / SLOT_STEP_MINUTES));
@@ -25,6 +27,13 @@
     this.deleteText = root.dataset.deleteText || "Delete";
     this.blockTemplate = root.querySelector("[data-availability-block-template]");
     this.dragState = null;
+    this.minDuration = parseInt(
+      root.dataset.minDuration || MIN_DURATION_MINUTES,
+      10,
+    );
+    this.missingRangeText =
+      root.dataset.missingRangeText || "Choose a time range for this day.";
+    this.clientAlert = root.querySelector("[data-availability-client-alert]");
 
     this.days = {};
     for (var i = 0; i < WEEKDAYS.length; i++) {
@@ -180,6 +189,11 @@
   };
 
   WeeklyAvailabilityGrid.prototype.renderDay = function (weekday) {
+    var container = this.root.querySelector(
+      '[data-day-slots="' + weekday + '"]',
+    );
+    if (!container) return;
+
     var day = this.days[weekday];
     if (!day || !day.dom) return;
 
@@ -270,7 +284,9 @@
   };
 
   WeeklyAvailabilityGrid.prototype.renderRangeSummary = function (weekday) {
-    var summaryEl = this.root.querySelector('[data-day-summary="' + weekday + '"]');
+    var summaryEl = this.root.querySelector(
+      '[data-day-summary="' + weekday + '"]',
+    );
     if (!summaryEl) return;
 
     var day = this.days[weekday];
@@ -636,9 +652,53 @@
     var self = this;
     if (!this.form) return;
 
-    this.form.addEventListener("submit", function () {
+    this.form.addEventListener("submit", function (event) {
+      if (!self.validateEnabledDays()) {
+        event.preventDefault();
+        self.showClientAlert();
+        return;
+      }
+      self.hideClientAlert();
       self.serializeToHiddenInputs();
     });
+  };
+
+  WeeklyAvailabilityGrid.prototype.showClientAlert = function () {
+    if (!this.clientAlert) return;
+    this.clientAlert.classList.remove("hidden");
+  };
+
+  WeeklyAvailabilityGrid.prototype.hideClientAlert = function () {
+    if (!this.clientAlert) return;
+    this.clientAlert.classList.add("hidden");
+  };
+
+  WeeklyAvailabilityGrid.prototype.validateEnabledDays = function () {
+    var firstInvalidToggle = null;
+
+    for (var i = 0; i < WEEKDAYS.length; i++) {
+      var key = WEEKDAYS[i].key;
+      var day = this.days[key];
+      var errorNode = this.root.querySelector('[data-day-error="' + key + '"]');
+      var toggle = this.root.querySelector('[data-day-toggle="' + key + '"]');
+      var isInvalid = day.enabled && day.ranges.length === 0;
+
+      if (errorNode) {
+        errorNode.textContent = isInvalid ? this.missingRangeText : "";
+        errorNode.classList.toggle("hidden", !isInvalid);
+      }
+
+      if (isInvalid && !firstInvalidToggle) {
+        firstInvalidToggle = toggle;
+      }
+    }
+
+    if (firstInvalidToggle) {
+      firstInvalidToggle.focus();
+      return false;
+    }
+
+    return true;
   };
 
   WeeklyAvailabilityGrid.prototype.serializeToHiddenInputs = function () {
@@ -759,6 +819,10 @@
     input.name = name;
     input.value = value;
     return input;
+  }
+
+  function displayTime(time) {
+    return time ? time + " hs" : "";
   }
 
   document.addEventListener("DOMContentLoaded", function () {

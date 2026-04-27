@@ -15,6 +15,15 @@ public interface UserService {
 
     Optional<User> findById(int id);
 
+    Optional<User> updateProfile(
+            int userId,
+            String givenName,
+            String lastName,
+            String email,
+            String phone,
+            String paymentAlias,
+            String preferredLanguage);
+
     Optional<User> requestPasswordRecovery(String email);
 
     Optional<User> findByPasswordRecoveryToken(String token);

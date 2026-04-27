@@ -348,6 +348,7 @@ public class AuthController {
         mav.addObject("pendingGuestItemReviewsByBookingId", pendingGuestItemReviewsByBookingId);
         mav.addObject("pendingOwnerUserReviewsByBookingId", pendingOwnerUserReviewsByBookingId);
         mav.addObject("authoredItemReviewsByBookingId", buildAuthoredItemReviewsByBookingId(user.getId()));
+        mav.addObject("authoredUserReviewsByBookingId", buildAuthoredUserReviewsByBookingId(user.getId()));
         mav.addObject("receivedGuestReviews", buildReceivedUserReviews(user.getId()));
         mav.addObject(
                 "receivedItemReviewsByOwnedItems", buildReceivedItemReviewsByOwnedItems(user.getId(), ownedItems));
@@ -541,6 +542,21 @@ public class AuthController {
         final Map<Integer, AuthoredItemReviewSummaryView> reviewsByBookingId = new LinkedHashMap<>();
         for (final Review review : reviewService.listAuthoredReviews(reviewerUserId)) {
             if (review.getBookingId() == null || review.getTargetType() != ReviewTargetType.ITEM) {
+                continue;
+            }
+            reviewsByBookingId.put(
+                    review.getBookingId(),
+                    new AuthoredItemReviewSummaryView(
+                            review.getRating() == null ? 0 : review.getRating(),
+                            review.getComment() == null ? "" : review.getComment()));
+        }
+        return reviewsByBookingId;
+    }
+
+    private Map<Integer, AuthoredItemReviewSummaryView> buildAuthoredUserReviewsByBookingId(final int reviewerUserId) {
+        final Map<Integer, AuthoredItemReviewSummaryView> reviewsByBookingId = new LinkedHashMap<>();
+        for (final Review review : reviewService.listAuthoredReviews(reviewerUserId)) {
+            if (review.getBookingId() == null || review.getTargetType() != ReviewTargetType.USER) {
                 continue;
             }
             reviewsByBookingId.put(

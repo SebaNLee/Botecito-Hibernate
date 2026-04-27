@@ -139,6 +139,7 @@
                     <c:url var="declineBookingUrl" value="/bookings/${receivedRequest.id}/decline" />
                     <c:url var="receivedPaymentProofUrl" value="/bookings/${receivedRequest.id}/payment-proof" />
                     <c:url var="confirmPaymentUrl" value="/bookings/${receivedRequest.id}/payment/confirm" />
+                    <c:set var="authoredUserReview" value="${authoredUserReviewsByBookingId[receivedRequest.id]}" />
                     <c:set var="receivedStatusClass" value="badge-ghost" />
                     <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.pending'}"><c:set var="receivedStatusClass" value="badge-warning" /></c:if>
                     <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.confirmed'}"><c:set var="receivedStatusClass" value="badge-success" /></c:if>
@@ -147,7 +148,15 @@
                     <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.paid'}"><c:set var="receivedStatusClass" value="badge-success" /></c:if>
                     <div class="rounded-xl bg-base-200 p-4 space-y-4">
                       <div class="flex items-start justify-between gap-3">
-                        <p class="m-0 min-w-0 break-words text-sm font-bold text-on-surface"><c:out value="${receivedRequest.itemTitle}" /></p>
+                        <div class="min-w-0 space-y-1">
+                          <p class="m-0 min-w-0 break-words text-sm font-bold text-on-surface"><c:out value="${receivedRequest.itemTitle}" /></p>
+                          <c:if test="${not empty authoredUserReview}">
+                            <p class="m-0 text-[11px] font-bold text-success flex items-center gap-1">
+                              <span class="material-symbols-outlined text-sm leading-none">check_circle</span>
+                              <spring:message code="profile.reviews.authoredSummary.done" />
+                            </p>
+                          </c:if>
+                        </div>
                         <span class="badge ${receivedStatusClass} badge-sm shrink-0 font-bold"><spring:message code="${receivedRequest.statusMessageCode}" /></span>
                       </div>
                       <p class="m-0 text-xs text-on-surface-variant"><c:out value="${receivedRequest.dateLabel}" /> · <c:out value="${receivedRequest.timeRangeLabel}" /></p>
@@ -234,6 +243,7 @@
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
                   <c:forEach var="sentRequest" items="${sentBookingRequests}">
                     <c:url var="sentPaymentProofUrl" value="/bookings/${sentRequest.id}/payment-proof" />
+                    <c:set var="authoredItemReview" value="${authoredItemReviewsByBookingId[sentRequest.id]}" />
                     <c:set var="sentStatusClass" value="badge-ghost" />
                     <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.pending'}"><c:set var="sentStatusClass" value="badge-warning" /></c:if>
                     <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.confirmed'}"><c:set var="sentStatusClass" value="badge-success" /></c:if>
@@ -242,7 +252,15 @@
                     <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paid'}"><c:set var="sentStatusClass" value="badge-success" /></c:if>
                     <div class="rounded-xl bg-base-200 p-4 space-y-4">
                       <div class="flex items-start justify-between gap-3">
-                        <p class="m-0 min-w-0 break-words text-sm font-bold text-on-surface"><c:out value="${sentRequest.itemTitle}" /></p>
+                        <div class="min-w-0 space-y-1">
+                          <p class="m-0 min-w-0 break-words text-sm font-bold text-on-surface"><c:out value="${sentRequest.itemTitle}" /></p>
+                          <c:if test="${not empty authoredItemReview}">
+                            <p class="m-0 text-[11px] font-bold text-success flex items-center gap-1">
+                              <span class="material-symbols-outlined text-sm leading-none">check_circle</span>
+                              <spring:message code="profile.reviews.authoredSummary.done" />
+                            </p>
+                          </c:if>
+                        </div>
                         <span class="badge ${sentStatusClass} badge-sm shrink-0 font-bold"><spring:message code="${sentRequest.statusMessageCode}" /></span>
                       </div>
                       <p class="m-0 text-xs text-on-surface-variant"><c:out value="${sentRequest.dateLabel}" /> · <c:out value="${sentRequest.timeRangeLabel}" /></p>
@@ -291,7 +309,6 @@
                           <paw:button type="submit" color="primary" size="sm" text="${reviewSubmitLabel}" />
                         </form>
                       </c:if>
-                      <c:set var="authoredItemReview" value="${authoredItemReviewsByBookingId[sentRequest.id]}" />
                       <c:if test="${not empty authoredItemReview}">
                         <div class="rounded-lg bg-base-100 p-3 space-y-2 border-t border-outline-variant/20">
                           <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${authoredReviewSummaryLabel}" /></p>

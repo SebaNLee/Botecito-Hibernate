@@ -9,6 +9,7 @@
 <c:url var="stepTwoUrl" value="/publish/availability" />
 <c:url var="marketplaceUrl" value="/marketplace" />
 <spring:message code="publish.availability.noRanges" var="publishNoRangesLabel" />
+<spring:message code="publish.step2.deleteRange" var="publishDeleteRangeLabel" />
 <spring:message code="publish.actions.saveDraft" var="publishSaveDraftLabel" />
 <spring:message code="publish.actions.continueContact" var="publishContinueContactLabel" />
 
@@ -39,15 +40,16 @@
     <paw:sectionCard icon="schedule">
       <jsp:attribute name="title"><spring:message code="publish.step2.section.slots" /></jsp:attribute>
       <jsp:body>
-        <div
-            data-weekly-availability-grid
-            data-existing-slots='${existingSlotsJson}'
-            data-min-duration="120"
-            data-no-ranges-text="${publishNoRangesLabel}">
+          <div
+              data-weekly-availability-grid
+              data-existing-slots='${existingSlotsJson}'
+              data-min-duration="120"
+              data-no-ranges-text="${publishNoRangesLabel}"
+              data-delete-text="${publishDeleteRangeLabel}">
 
           <div class="flex flex-wrap items-center gap-4 text-[10px] font-bold text-on-surface-variant">
             <span class="inline-flex items-center gap-1.5">
-              <span class="inline-block h-3 w-3 rounded bg-base-200 border border-outline-variant/30"></span>
+              <span class="inline-block h-3 w-3 rounded bg-primary/15 border border-primary/40"></span>
               <spring:message code="publish.step2.legend.available" />
             </span>
             <span class="inline-flex items-center gap-1.5">
@@ -55,11 +57,11 @@
               <spring:message code="publish.step2.legend.selected" />
             </span>
             <span class="inline-flex items-center gap-1.5">
-              <span class="inline-block h-3 w-3 rounded bg-primary/15 border border-primary"></span>
+              <span class="inline-block h-3 w-3 rounded bg-primary/80"></span>
               <spring:message code="publish.step2.legend.start" />
             </span>
             <span class="inline-flex items-center gap-1.5">
-              <span class="inline-block h-3 w-3 rounded bg-base-300/40"></span>
+              <span class="inline-block h-3 w-3 rounded bg-error/20 border border-error/40"></span>
               <spring:message code="publish.step2.legend.unavailable" />
             </span>
           </div>
@@ -83,7 +85,7 @@
                   <input type="checkbox" id="${dayId}" name="enabledDays" value="${day}" class="checkbox checkbox-primary checkbox-sm" data-day-toggle="${day}" <c:if test="${enabledWeekdays[day]}">checked="checked"</c:if> />
                   <spring:message code="weekday.${dayLower}" />
                 </label>
-                <div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5" data-day-slots="${day}"></div>
+                <div data-day-slots="${day}"></div>
                 <div data-day-summary="${day}"></div>
               </div>
             </c:forEach>

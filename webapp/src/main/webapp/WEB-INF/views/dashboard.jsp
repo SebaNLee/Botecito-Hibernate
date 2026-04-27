@@ -1,5 +1,6 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
@@ -35,6 +36,7 @@
 <spring:message code="profile.reviews.submit" var="reviewSubmitLabel" />
 <spring:message code="profile.reviews.target.item" var="reviewTargetItemLabel" />
 <spring:message code="profile.reviews.target.user" var="reviewTargetUserLabel" />
+<spring:message code="profile.reviews.authoredSummary.label" var="authoredReviewSummaryLabel" />
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-14 max-w-7xl mx-auto px-6">
   <div class="grid grid-cols-1 lg:grid-cols-[18rem_minmax(0,1fr)] gap-8 items-start">
@@ -181,14 +183,14 @@
                           </div>
                           <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
                             <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-owner-rating-${receivedRequest.id}"><c:out value="${reviewRatingLabel}" /></label>
-                            <select id="review-owner-rating-${receivedRequest.id}" name="rating" class="select select-bordered select-sm w-full" required>
-                              <option value=""><spring:message code="profile.reviews.rating.placeholder" /></option>
-                              <option value="5">5</option>
-                              <option value="4">4</option>
-                              <option value="3">3</option>
-                              <option value="2">2</option>
-                              <option value="1">1</option>
-                            </select>
+                            <div class="flex items-center gap-1" data-rating-stars>
+                              <input id="review-owner-rating-${receivedRequest.id}" type="hidden" name="rating" value="" data-rating-value />
+                              <c:forEach var="starIndex" begin="1" end="5">
+                                <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${reviewRatingLabel} ${starIndex}">
+                                  <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
+                                </button>
+                              </c:forEach>
+                            </div>
                           </div>
                           <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
                             <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-owner-comment-${receivedRequest.id}"><c:out value="${reviewCommentLabel}" /></label>
@@ -262,14 +264,14 @@
                           </div>
                           <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
                             <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-guest-rating-${sentRequest.id}"><c:out value="${reviewRatingLabel}" /></label>
-                            <select id="review-guest-rating-${sentRequest.id}" name="rating" class="select select-bordered select-sm w-full" required>
-                              <option value=""><spring:message code="profile.reviews.rating.placeholder" /></option>
-                              <option value="5">5</option>
-                              <option value="4">4</option>
-                              <option value="3">3</option>
-                              <option value="2">2</option>
-                              <option value="1">1</option>
-                            </select>
+                            <div class="flex items-center gap-1" data-rating-stars>
+                              <input id="review-guest-rating-${sentRequest.id}" type="hidden" name="rating" value="" data-rating-value />
+                              <c:forEach var="starIndex" begin="1" end="5">
+                                <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${reviewRatingLabel} ${starIndex}">
+                                  <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
+                                </button>
+                              </c:forEach>
+                            </div>
                           </div>
                           <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
                             <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-guest-comment-${sentRequest.id}"><c:out value="${reviewCommentLabel}" /></label>
@@ -277,6 +279,27 @@
                           </div>
                           <paw:button type="submit" color="primary" size="sm" text="${reviewSubmitLabel}" />
                         </form>
+                      </c:if>
+                      <c:set var="authoredItemReview" value="${authoredItemReviewsByBookingId[sentRequest.id]}" />
+                      <c:if test="${not empty authoredItemReview}">
+                        <div class="rounded-lg bg-base-100 p-3 space-y-2 border-t border-outline-variant/20">
+                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${authoredReviewSummaryLabel}" /></p>
+                          <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-0.5" aria-label="${authoredItemReview.rating} of 5">
+                              <c:forEach var="starIndex" begin="1" end="5">
+                                <span class="material-symbols-outlined text-sm leading-none ${starIndex <= authoredItemReview.rating ? 'text-warning' : 'text-outline'}" style="opacity: ${starIndex <= authoredItemReview.rating ? '1' : '0.35'};">star</span>
+                              </c:forEach>
+                            </div>
+                          </div>
+                          <c:if test="${not empty authoredItemReview.comment}">
+                            <p class="m-0 text-xs text-on-surface-variant break-words">
+                              <c:choose>
+                                <c:when test="${fn:length(authoredItemReview.comment) > 80}"><c:out value="${fn:substring(authoredItemReview.comment, 0, 80)}" />...</c:when>
+                                <c:otherwise><c:out value="${authoredItemReview.comment}" /></c:otherwise>
+                              </c:choose>
+                            </p>
+                          </c:if>
+                        </div>
                       </c:if>
                     </div>
                   </c:forEach>
@@ -304,7 +327,11 @@
                             <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${receivedReview.contextTitle}" /></p>
                             <p class="m-0 text-xs text-on-surface-variant"><c:out value="${receivedReview.reviewerName}" /> · <c:out value="${receivedReview.reviewerEmail}" /></p>
                           </div>
-                          <span class="badge badge-outline badge-sm shrink-0 font-bold">${receivedReview.rating}/5</span>
+                          <div class="flex items-center gap-0.5 shrink-0" aria-label="${receivedReview.rating} of 5">
+                            <c:forEach var="starIndex" begin="1" end="5">
+                              <span class="material-symbols-outlined text-sm leading-none ${starIndex <= receivedReview.rating ? 'text-warning' : 'text-outline'}" style="opacity: ${starIndex <= receivedReview.rating ? '1' : '0.35'};">star</span>
+                            </c:forEach>
+                          </div>
                         </div>
                         <p class="m-0 text-xs text-on-surface-variant"><c:out value="${receivedReview.createdAtLabel}" /></p>
                         <c:if test="${not empty receivedReview.comment}">
@@ -333,7 +360,11 @@
                                 <div>
                                   <p class="m-0 text-xs text-on-surface-variant"><c:out value="${receivedReview.reviewerName}" /> · <c:out value="${receivedReview.reviewerEmail}" /></p>
                                 </div>
-                                <span class="badge badge-outline badge-sm shrink-0 font-bold">${receivedReview.rating}/5</span>
+                                <div class="flex items-center gap-0.5 shrink-0" aria-label="${receivedReview.rating} of 5">
+                                  <c:forEach var="starIndex" begin="1" end="5">
+                                    <span class="material-symbols-outlined text-sm leading-none ${starIndex <= receivedReview.rating ? 'text-warning' : 'text-outline'}" style="opacity: ${starIndex <= receivedReview.rating ? '1' : '0.35'};">star</span>
+                                  </c:forEach>
+                                </div>
                               </div>
                               <p class="m-0 text-xs text-on-surface-variant"><c:out value="${receivedReview.createdAtLabel}" /></p>
                               <c:if test="${not empty receivedReview.comment}">

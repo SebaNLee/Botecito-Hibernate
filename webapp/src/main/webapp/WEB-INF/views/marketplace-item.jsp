@@ -243,14 +243,14 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                 <h3 class="m-0 text-sm font-bold text-on-surface"><c:out value="${itemReviewLeaveLabel}" /></h3>
                 <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
                   <label class="text-xs font-bold uppercase tracking-wider text-outline" for="item-review-rating"><c:out value="${itemReviewRatingLabel}" /></label>
-                  <select id="item-review-rating" name="rating" class="select select-bordered w-full" required>
-                    <option value="">-</option>
-                    <option value="5">5</option>
-                    <option value="4">4</option>
-                    <option value="3">3</option>
-                    <option value="2">2</option>
-                    <option value="1">1</option>
-                  </select>
+                  <div class="flex items-center gap-1" data-rating-stars>
+                    <input id="item-review-rating" type="hidden" name="rating" value="" data-rating-value />
+                    <c:forEach var="starIndex" begin="1" end="5">
+                      <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${itemReviewRatingLabel} ${starIndex}">
+                        <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
+                      </button>
+                    </c:forEach>
+                  </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
                   <label class="text-xs font-bold uppercase tracking-wider text-outline pt-2" for="item-review-comment"><c:out value="${itemReviewCommentLabel}" /></label>
@@ -267,7 +267,11 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                     <div class="rounded-xl bg-base-200 p-4 space-y-2">
                       <div class="flex items-center justify-between gap-3">
                         <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${reviewAuthorNames[review.reviewerUserId]}" /></p>
-                        <span class="badge badge-outline badge-sm font-bold"><c:out value="${review.rating}" />/5</span>
+                        <div class="flex items-center gap-0.5 shrink-0" aria-label="${review.rating} of 5">
+                          <c:forEach var="starIndex" begin="1" end="5">
+                            <span class="material-symbols-outlined text-sm leading-none ${starIndex <= review.rating ? 'text-warning' : 'text-outline'}" style="opacity: ${starIndex <= review.rating ? '1' : '0.35'};">star</span>
+                          </c:forEach>
+                        </div>
                       </div>
                       <p class="m-0 text-xs text-on-surface-variant"><c:out value="${review.createdAt}" /></p>
                       <c:if test="${not empty review.comment}">

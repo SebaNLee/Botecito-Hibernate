@@ -38,5 +38,6 @@
     <script src="<c:url value='/js/image-upload-preview.js' />"></script>
     <script src="<c:url value='/js/image-gallery.js' />"></script>
     <script src="<c:url value='/js/image-carousel.js' />"></script>
+    <script src="<c:url value='/js/rating-stars.js' />"></script>
   </body>
 </html>

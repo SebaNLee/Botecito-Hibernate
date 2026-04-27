@@ -81,12 +81,24 @@ public interface ItemService {
 
     Optional<byte[]> findImageById(final int id);
 
-    List<Integer> listImageIdsByItemId(final int itemId);
+    List<Integer> listImageIdsByItemIdOrdered(final int itemId);
+
+    Optional<Integer> findCoverImageIdByItemId(final int itemId);
+
+    int countImagesByItemId(final int itemId);
+
+    int maxImagesPerItem();
 
     Integer insertAvailability(
             final int itemId, final DayOfWeek weekday, final LocalTime startTime, final LocalTime endTime);
 
-    Integer insertImage(final int itemId, final byte[] imageData);
+    Integer appendImage(final int itemId, final byte[] imageData);
+
+    void replaceGallery(final int itemId, final List<byte[]> orderedImages);
+
+    boolean deleteImageFromItem(final int itemId, final int imageId);
+
+    void reorderImagesForItem(final int itemId, final List<Integer> imageIdsInOrder);
 
     Integer replacePrimaryImage(final int itemId, final byte[] imageData);
 }

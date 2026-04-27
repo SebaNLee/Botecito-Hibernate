@@ -28,7 +28,10 @@ public class ItemMediaTableJdbcTest {
         final JdbcTemplate jdbcTemplate = jdbcTemplate();
         final int itemId = insertItem("a@a.com", "item-a");
 
-        jdbcTemplate.update("INSERT INTO item_media (item_id, image_data) VALUES (?, ?)", itemId, new byte[] {1, 2, 3});
+        jdbcTemplate.update(
+                "INSERT INTO item_media (item_id, image_data, display_order) VALUES (?, ?, 0)",
+                itemId,
+                new byte[] {1, 2, 3});
 
         Assertions.assertEquals(
                 1, JdbcTestUtils.countRowsInTableWhere(jdbcTemplate, "item_media", "item_id = " + itemId));
@@ -39,14 +42,17 @@ public class ItemMediaTableJdbcTest {
         final int itemId = insertItem("a@a.com", "item-a");
 
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
-                .update("INSERT INTO item_media (item_id, image_data) VALUES (?, ?)", itemId, null));
+                .update("INSERT INTO item_media (item_id, image_data, display_order) VALUES (?, ?, 0)", itemId, null));
     }
 
     @Test
     public void testDeleteItemAlsoDeletesMedia() {
         final JdbcTemplate jdbcTemplate = jdbcTemplate();
         final int itemId = insertItem("a@a.com", "item-a");
-        jdbcTemplate.update("INSERT INTO item_media (item_id, image_data) VALUES (?, ?)", itemId, new byte[] {4, 5, 6});
+        jdbcTemplate.update(
+                "INSERT INTO item_media (item_id, image_data, display_order) VALUES (?, ?, 0)",
+                itemId,
+                new byte[] {4, 5, 6});
 
         jdbcTemplate.update("DELETE FROM item WHERE id = ?", itemId);
 

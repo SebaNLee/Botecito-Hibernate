@@ -13,6 +13,7 @@
 <spring:message code="profile.publications.enable" var="enableLabel" />
 <spring:message code="profile.publications.disable" var="disableLabel" />
 <spring:message code="profile.publications.delete" var="deleteLabel" />
+<spring:message code="profile.publications.manageGallery" var="manageGalleryLabel" />
 <spring:message code="profile.publications.actions" var="actionsLabel" />
 <spring:message code="profile.publications.delete.confirm.title" var="deleteConfirmTitle" />
 <spring:message code="profile.publications.delete.confirm.message" var="deleteConfirmMessage" />
@@ -138,6 +139,7 @@
                   </div>
                   <p class="m-0 text-xs text-on-surface-variant"><spring:message code="profile.publications.price" arguments="${item.pricePerHour}" /></p>
                 </div>
+                <c:url var="manageGalleryUrl" value="/item/${item.id}/gallery" />
 
                 <paw:kebabMenu id="${kebabId}" ariaLabel="${actionsLabel}">
                   <li>
@@ -150,6 +152,12 @@
                     <a href="${manageAvailabilityItemUrl}" class="flex items-center gap-2">
                       <span class="material-symbols-outlined text-base leading-none">event_available</span>
                       <span><c:out value="${manageAvailabilityLabel}" /></span>
+                    </a>
+                  </li>
+                  <li>
+                    <a href="${manageGalleryUrl}" class="flex items-center gap-2">
+                      <span class="material-symbols-outlined text-base leading-none">photo_library</span>
+                      <span><c:out value="${manageGalleryLabel}" /></span>
                     </a>
                   </li>
                   <li>

@@ -146,11 +146,15 @@ public class WebConfig implements WebMvcConfigurer {
     private record CredentialsSelection(String credentialsFile, String fallbackCredentialsFile) {}
 
     @Bean(initMethod = "migrate")
-    public Flyway flyway(final DataSource dataSource) {
+    public Flyway flyway(final DataSource dataSource, final Properties credentialsProperties) {
+        final boolean outOfOrder =
+                Boolean.parseBoolean(credentialsProperties.getProperty("flyway.outOfOrder", "false"));
+
         return Flyway.configure()
                 .dataSource(dataSource)
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
+                .outOfOrder(outOfOrder)
                 .load();
     }
 

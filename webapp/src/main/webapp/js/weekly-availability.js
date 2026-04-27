@@ -28,7 +28,7 @@
   var HANDLE_LABEL_CLASS =
     "absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-outline-variant/30 bg-surface px-2 py-0.5 text-[10px] font-bold text-on-surface";
   var DELETE_CLASS =
-    "absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-error/40 bg-error/15 px-2 py-0.5 text-[10px] font-bold text-error hover:bg-error/25 transition-colors";
+    "absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-error/40 bg-error/15 px-2 py-0.5 text-[10px] font-bold text-error hover:bg-error/25 transition-colors";
 
   function WeeklyAvailabilityGrid(root) {
     this.root = root;
@@ -105,13 +105,13 @@
       container.innerHTML = "";
 
       var shell = document.createElement("div");
-      shell.className = "mt-1";
+      shell.className = "mt-2";
 
       var wrapper = document.createElement("div");
-      wrapper.className = "relative pt-7 pb-8";
+      wrapper.className = "relative pt-1 pb-8";
 
       var axis = document.createElement("div");
-      axis.className = "absolute inset-x-0 top-0 flex items-center justify-between text-[11px] font-bold text-outline";
+      axis.className = "absolute inset-x-0 bottom-0 flex items-center justify-between text-[11px] font-bold text-outline";
       var axisStart = document.createElement("span");
       axisStart.textContent = "00:00h";
       var axisEnd = document.createElement("span");

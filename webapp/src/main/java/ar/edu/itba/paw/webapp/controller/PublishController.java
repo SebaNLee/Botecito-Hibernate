@@ -317,6 +317,7 @@ public class PublishController {
     }
 
     private static final long MIN_RANGE_MINUTES = 120;
+    private static final long MIN_SEPARATION_MINUTES = 30;
     private static final String AVAILABILITY_RANGE_SEPARATOR = "\\|";
 
     private static final Map<DayOfWeek, String> WEEKDAY_LABELS = new LinkedHashMap<>();
@@ -619,6 +620,8 @@ public class PublishController {
         final String dayLabel = dayLabel(locale, weekday);
         final List<LocalTime[]> parsed = new ArrayList<>();
 
+        LocalTime previousEnd = null;
+
         for (final TimeRange slot : daySlots) {
             if (slot == null || slot.getStart() == null || slot.getEnd() == null) {
                 errors.reject("publish.availability.format.invalid", new Object[] {dayLabel}, null);
@@ -636,6 +639,13 @@ public class PublishController {
                 errors.reject("publish.availability.min.duration", new Object[] {dayLabel}, null);
                 return;
             }
+
+            if (previousEnd != null && Duration.between(previousEnd, start).toMinutes() < MIN_SEPARATION_MINUTES) {
+                errors.reject("publish.availability.min.separation", new Object[] {dayLabel}, null);
+                return;
+            }
+
+            previousEnd = end;
 
             parsed.add(new LocalTime[] {start, end});
         }

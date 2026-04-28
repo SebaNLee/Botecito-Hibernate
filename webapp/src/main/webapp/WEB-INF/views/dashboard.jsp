@@ -22,6 +22,7 @@
 <spring:message code="profile.bookings.decline" var="declineLabel" />
 <spring:message code="profile.paymentProofs.confirmReceived" var="paymentReceivedLabel" />
 <spring:message code="profile.sentBookings.paymentProof.upload" var="uploadPaymentProofLabel" />
+<spring:message code="payment.refuse.submit" var="refuseSubmitLabel" />
 <spring:message code="profile.bookings.paymentInfo.price" var="paymentInfoPriceLabel" />
 <spring:message code="profile.bookings.paymentInfo.alias" var="paymentInfoAliasLabel" />
 <spring:message code="dashboard.tabs.hosting" var="hostingTabLabel" />
@@ -128,7 +129,8 @@
             <c:if test="${param.bookingAction == 'rejected'}"><paw:alertMessage type="warning"><spring:message code="profile.bookings.rejected" /></paw:alertMessage></c:if>
             <c:if test="${param.bookingAction == 'forbidden' || param.bookingAction == 'error' || param.bookingAction == 'notFound'}"><paw:alertMessage type="error"><spring:message code="profile.bookings.error" /></paw:alertMessage></c:if>
             <c:if test="${param.paymentAction == 'paid'}"><paw:alertMessage type="success"><spring:message code="profile.payment.paid" /></paw:alertMessage></c:if>
-            <c:if test="${param.paymentAction == 'confirmError'}"><paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage></c:if>
+            <c:if test="${param.paymentAction == 'refused'}"><paw:alertMessage type="success"><spring:message code="profile.payment.refused" /></paw:alertMessage></c:if>
+            <c:if test="${param.paymentAction == 'confirmError' || param.paymentAction == 'refuseError'}"><paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage></c:if>
             <c:choose>
               <c:when test="${not empty receivedBookingRequests}">
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -144,6 +146,8 @@
                     <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.rejected' || receivedRequest.statusMessageCode == 'profile.sentBookings.status.cancelled'}"><c:set var="receivedStatusClass" value="badge-error" /></c:if>
                     <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.paymentSubmitted'}"><c:set var="receivedStatusClass" value="badge-info" /></c:if>
                     <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.paid'}"><c:set var="receivedStatusClass" value="badge-success" /></c:if>
+                    <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.paymentRefused'}"><c:set var="receivedStatusClass" value="badge-error" /></c:if>
+                    <c:url var="refusePaymentUrl" value="/bookings/${receivedRequest.id}/payment/refuse" />
                     <div class="rounded-xl bg-base-200 p-4 space-y-4">
                       <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0 space-y-1">
@@ -188,8 +192,30 @@
                           <form action="${declineBookingUrl}" method="post" class="m-0"><paw:button type="submit" color="danger" variant="outline" size="sm" text="${declineLabel}" /></form>
                         </div>
                       </c:if>
+                      <c:if test="${receivedRequest.hasPaymentGuestReply}">
+                        <div class="rounded-lg bg-base-100 p-3 border-l-4 border-info">
+                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-info"><spring:message code="payment.guestReply.label" /></p>
+                          <p class="m-0 mt-1 text-sm text-on-surface whitespace-pre-wrap"><c:out value="${receivedRequest.paymentGuestReply}" /></p>
+                        </div>
+                      </c:if>
                       <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.paymentSubmitted' && receivedRequest.hasPaymentProof}">
-                        <form action="${confirmPaymentUrl}" method="post" class="m-0 border-t border-outline-variant/20 pt-3"><paw:button type="submit" color="success" size="sm" text="${paymentReceivedLabel}" /></form>
+                        <div class="border-t border-outline-variant/20 pt-3 space-y-3">
+                          <form action="${confirmPaymentUrl}" method="post" class="m-0"><paw:button type="submit" color="success" size="sm" text="${paymentReceivedLabel}" /></form>
+                          <details class="rounded-lg bg-base-100 p-3">
+                            <summary class="cursor-pointer text-sm font-bold text-error"><spring:message code="payment.refuse.button" /></summary>
+                            <form action="${refusePaymentUrl}" method="post" class="mt-3 space-y-2">
+                              <label class="text-[11px] font-bold uppercase tracking-wider text-outline" for="refuse-reason-${receivedRequest.id}"><spring:message code="payment.refuse.reason.label" /></label>
+                              <textarea id="refuse-reason-${receivedRequest.id}" name="reason" rows="3" maxlength="500" required class="textarea textarea-bordered w-full" placeholder="<spring:message code="payment.refuse.reason.placeholder" />"></textarea>
+                              <paw:button type="submit" color="danger" size="sm" text="${refuseSubmitLabel}" />
+                            </form>
+                          </details>
+                        </div>
+                      </c:if>
+                      <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.paymentRefused' && receivedRequest.hasPaymentRefusalReason}">
+                        <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error">
+                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error"><spring:message code="payment.refused.shownToGuest" /></p>
+                          <p class="m-0 mt-1 text-sm text-on-surface whitespace-pre-wrap"><c:out value="${receivedRequest.paymentRefusalReason}" /></p>
+                        </div>
                       </c:if>
                       <c:set var="ownerPendingReview" value="${pendingOwnerUserReviewsByBookingId[receivedRequest.id]}" />
                       <c:if test="${not empty ownerPendingReview}">
@@ -235,6 +261,7 @@
             <c:if test="${param.reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
             <c:if test="${param.reviewAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.error" /></paw:alertMessage></c:if>
             <c:if test="${param.paymentAction == 'submitted'}"><paw:alertMessage type="success"><spring:message code="profile.payment.submitted" /></paw:alertMessage></c:if>
+            <c:if test="${param.paymentAction == 'resubmitted'}"><paw:alertMessage type="success"><spring:message code="profile.payment.resubmitted" /></paw:alertMessage></c:if>
             <c:if test="${param.paymentAction == 'invalidFile'}"><paw:alertMessage type="error"><spring:message code="profile.payment.invalidFile" /></paw:alertMessage></c:if>
             <c:if test="${param.paymentAction == 'forbidden' || param.paymentAction == 'submitError' || param.paymentAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage></c:if>
             <c:choose>
@@ -249,6 +276,7 @@
                     <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.rejected' || sentRequest.statusMessageCode == 'profile.sentBookings.status.cancelled'}"><c:set var="sentStatusClass" value="badge-error" /></c:if>
                     <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paymentSubmitted'}"><c:set var="sentStatusClass" value="badge-info" /></c:if>
                     <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paid'}"><c:set var="sentStatusClass" value="badge-success" /></c:if>
+                    <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paymentRefused'}"><c:set var="sentStatusClass" value="badge-error" /></c:if>
                     <div class="rounded-xl bg-base-200 p-4 space-y-4">
                       <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0 space-y-1">
@@ -276,6 +304,22 @@
                       <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.confirmed'}">
                         <form action="${sentPaymentProofUrl}" method="post" enctype="multipart/form-data" class="space-y-2 border-t border-outline-variant/20 pt-3">
                           <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" class="file-input file-input-bordered file-input-sm w-full" required />
+                          <paw:button type="submit" color="primary" size="sm" text="${uploadPaymentProofLabel}" />
+                        </form>
+                      </c:if>
+                      <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paymentRefused'}">
+                        <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error space-y-2">
+                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error"><spring:message code="payment.refused.banner" /></p>
+                          <c:if test="${sentRequest.hasPaymentRefusalReason}">
+                            <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="payment.refused.reasonLabel" /></p>
+                            <p class="m-0 text-sm text-on-surface whitespace-pre-wrap"><c:out value="${sentRequest.paymentRefusalReason}" /></p>
+                          </c:if>
+                          <a href="${sentPaymentProofUrl}" class="link link-hover text-xs font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></a>
+                        </div>
+                        <form action="${sentPaymentProofUrl}" method="post" enctype="multipart/form-data" class="space-y-2 border-t border-outline-variant/20 pt-3">
+                          <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" class="file-input file-input-bordered file-input-sm w-full" required />
+                          <label class="text-[11px] font-bold uppercase tracking-wider text-outline" for="guest-reply-${sentRequest.id}"><spring:message code="payment.reply.label" /></label>
+                          <textarea id="guest-reply-${sentRequest.id}" name="guestReply" rows="2" maxlength="500" class="textarea textarea-bordered w-full" placeholder="<spring:message code="payment.reply.placeholder" />"></textarea>
                           <paw:button type="submit" color="primary" size="sm" text="${uploadPaymentProofLabel}" />
                         </form>
                       </c:if>

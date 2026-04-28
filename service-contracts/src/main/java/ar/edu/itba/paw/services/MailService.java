@@ -17,6 +17,9 @@ public interface MailService {
 
     void sendPaymentReceivedEmail(String requesterEmail, String requesterLocaleTag, String itemTitle);
 
+    void sendPaymentProofRefusedEmail(
+            String requesterEmail, String requesterLocaleTag, String ownerName, String itemTitle, String reason);
+
     void sendPasswordRecoveryEmail(String recipientEmail, String recipientName, String recoveryToken);
 
     Locale resolveLocale(String recipientIdentifier);

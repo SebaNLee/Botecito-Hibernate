@@ -10,14 +10,17 @@ import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.PaymentProofForm;
+import ar.edu.itba.paw.webapp.form.RefusePaymentForm;
 import java.io.IOException;
 import java.util.Set;
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -87,13 +90,15 @@ public class BookingRequestActionController {
             return new ModelAndView("redirect:/dashboard?paymentAction=invalidFile#sent-booking-requests");
         }
 
+        final boolean isResubmit = booking.getState() == BookingState.BOOKING_PAYMENT_REFUSED;
         try {
             final var proof = bookingRequestService.submitPaymentProof(
                     bookingId,
                     currentUser.getId(),
                     cleanFileName(file.getOriginalFilename()),
                     file.getContentType(),
-                    file.getBytes());
+                    file.getBytes(),
+                    form.getGuestReply());
             if (proof.isEmpty()) {
                 return new ModelAndView("redirect:/dashboard?paymentAction=submitError#sent-booking-requests");
             }
@@ -112,10 +117,41 @@ public class BookingRequestActionController {
                         proof.get().getFileData(),
                         proof.get().getContentType());
             }
-            return new ModelAndView("redirect:/dashboard?paymentAction=submitted#sent-booking-requests");
+            final String action = isResubmit ? "resubmitted" : "submitted";
+            return new ModelAndView("redirect:/profile/dashboard?paymentAction=" + action + "#sent-booking-requests");
         } catch (final IOException e) {
             return new ModelAndView("redirect:/dashboard?paymentAction=submitError#sent-booking-requests");
         }
+    }
+
+    @RequestMapping(value = "/bookings/{id:[0-9]+}/payment/refuse", method = RequestMethod.POST)
+    public ModelAndView refusePaymentProof(
+            @PathVariable("id") final int bookingId,
+            @Valid @ModelAttribute("refusePaymentForm") final RefusePaymentForm form,
+            final BindingResult errors) {
+        final User currentUser = currentAuthenticatedUser();
+        if (currentUser == null) {
+            return new ModelAndView("redirect:/login");
+        }
+        if (errors.hasErrors()) {
+            return new ModelAndView("redirect:/profile/dashboard?paymentAction=refuseError#received-booking-requests");
+        }
+
+        final var refused = bookingRequestService.refusePaymentProof(bookingId, currentUser.getId(), form.getReason());
+        if (refused.isEmpty()) {
+            return new ModelAndView("redirect:/profile/dashboard?paymentAction=refuseError#received-booking-requests");
+        }
+
+        final Item item = refused.get().getItemId() == null
+                ? null
+                : itemService.findAnyItemById(refused.get().getItemId()).orElse(null);
+        mailService.sendPaymentProofRefusedEmail(
+                refused.get().getRequesterEmail(),
+                refused.get().getRequesterLocaleTag(),
+                currentUser.getName(),
+                item == null ? "" : item.getTitle(),
+                form.getReason());
+        return new ModelAndView("redirect:/profile/dashboard?paymentAction=refused#received-booking-requests");
     }
 
     @RequestMapping(value = "/bookings/{id:[0-9]+}/payment-proof", method = RequestMethod.GET)

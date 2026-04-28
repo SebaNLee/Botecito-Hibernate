@@ -28,14 +28,11 @@
 </c:if>
 <c:set var="initials" value="${fn:toUpperCase(initials)}" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-14 max-w-7xl mx-auto px-6">
-  <div class="grid grid-cols-1 lg:grid-cols-[18rem_minmax(0,1fr)] gap-8 items-start">
-    <paw:accountSidebar active="profile" />
-
-    <section class="min-w-0">
-      <div class="card bg-base-100 shadow-sm">
-        <div class="card-body p-8 gap-8">
-          <div class="flex min-w-0 items-center gap-5 pb-6 border-b border-outline-variant/20">
+<paw:layout title="Botecito" mainClass="pt-24 pb-10 w-full max-w-7xl mx-auto px-6">
+  <section class="min-w-0">
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body p-6 gap-6">
+          <div class="flex min-w-0 items-center gap-4 pb-4 border-b border-outline-variant/20">
             <div class="avatar placeholder shrink-0">
               <div class="bg-primary text-primary-content rounded-full w-16 h-16 flex items-center justify-center">
                 <span class="font-bold text-2xl font-headline">${initials}</span>
@@ -58,8 +55,8 @@
             <paw:alertMessage type="success"><spring:message code="profile.passwordRecovery.sent" /></paw:alertMessage>
           </c:if>
 
-          <form:form action="${profileUrl}" method="post" modelAttribute="profileForm" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <form:form action="${profileUrl}" method="post" modelAttribute="profileForm" class="space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <paw:formField path="givenName" label="${givenNameLabel}" maxlength="100" required="true" />
               <paw:formField path="lastName" label="${lastNameLabel}" maxlength="100" required="true" />
               <paw:formField path="email" type="email" label="${emailLabel}" maxlength="150" required="true" />
@@ -86,7 +83,7 @@
               </div>
             </div>
 
-            <div class="flex justify-end border-t border-outline-variant/20 pt-6">
+            <div class="flex justify-end border-t border-outline-variant/20 pt-4">
               <paw:button type="submit" color="primary" icon="save" text="${profileSaveLabel}" />
             </div>
           </form:form>
@@ -101,8 +98,7 @@
               <paw:button type="submit" variant="outline" icon="logout" text="${logoutLabel}" />
             </form>
           </div>
-        </div>
       </div>
-    </section>
-  </div>
+    </div>
+  </section>
 </paw:layout>

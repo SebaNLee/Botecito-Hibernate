@@ -308,7 +308,7 @@ public class AuthController {
         return new ModelAndView("redirect:/profile?profileAction=updated");
     }
 
-    @RequestMapping(value = "/profile/dashboard", method = RequestMethod.GET)
+    @RequestMapping(value = "/dashboard", method = RequestMethod.GET)
     public ModelAndView dashboard(@RequestParam(value = "dashboardTab", required = false) final String dashboardTab) {
         final User user = currentAuthenticatedUser();
         if (user == null) {
@@ -320,6 +320,11 @@ public class AuthController {
         mav.addObject("activeDashboardTab", resolveDashboardTab(dashboardTab));
         addDashboardData(mav, user);
         return mav;
+    }
+
+    @RequestMapping(value = "/profile/dashboard", method = RequestMethod.GET)
+    public ModelAndView legacyDashboardRedirect() {
+        return new ModelAndView("redirect:/dashboard");
     }
 
     private ModelAndView buildProfileView(final User user) {

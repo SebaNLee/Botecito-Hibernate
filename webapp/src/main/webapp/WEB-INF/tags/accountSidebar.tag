@@ -4,7 +4,7 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
 <c:url var="profileUrl" value="/profile" />
-<c:url var="dashboardUrl" value="/profile/dashboard" />
+<c:url var="dashboardUrl" value="/dashboard" />
 
 <aside class="card bg-base-100 shadow-sm lg:sticky lg:top-24">
   <nav class="card-body gap-2 p-4">

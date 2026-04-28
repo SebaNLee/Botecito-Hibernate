@@ -310,7 +310,7 @@ public class AuthController {
         return new ModelAndView("redirect:/profile?profileAction=updated");
     }
 
-    @RequestMapping(value = "/profile/dashboard", method = RequestMethod.GET)
+    @RequestMapping(value = "/dashboard", method = RequestMethod.GET)
     public ModelAndView dashboard(@RequestParam(value = "dashboardTab", required = false) final String dashboardTab) {
         final User user = currentAuthenticatedUser();
         if (user == null) {
@@ -322,6 +322,11 @@ public class AuthController {
         mav.addObject("activeDashboardTab", resolveDashboardTab(dashboardTab));
         addDashboardData(mav, user);
         return mav;
+    }
+
+    @RequestMapping(value = "/profile/dashboard", method = RequestMethod.GET)
+    public ModelAndView legacyDashboardRedirect() {
+        return new ModelAndView("redirect:/dashboard");
     }
 
     private ModelAndView buildProfileView(final User user) {
@@ -483,6 +488,8 @@ public class AuthController {
                                                 .orElse(0.0);
                                         return new RatingSummary(average, reviews.size());
                                     })));
+            final java.util.Optional<BookingPaymentProof> proof =
+                    bookingRequestService.findPaymentProofByBookingId(booking.getId());
             receivedBookings.add(new ReceivedBookingView(
                     booking.getId(),
                     item.getTitle(),
@@ -497,10 +504,9 @@ public class AuthController {
                     formatTotalPriceLabel(booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
                     resolvePaymentAlias(owner),
                     statusMessageCode(booking.getState()),
-                    bookingRequestService
-                            .findPaymentProofByBookingId(booking.getId())
-                            .map(BookingPaymentProof::getFileName)
-                            .orElse("")));
+                    proof.map(BookingPaymentProof::getFileName).orElse(""),
+                    proof.map(BookingPaymentProof::getRefusalReason).orElse(""),
+                    proof.map(BookingPaymentProof::getGuestReply).orElse("")));
         }
         return receivedBookings;
     }
@@ -524,6 +530,8 @@ public class AuthController {
             final User owner = item.getOwnerId() == null
                     ? null
                     : itemService.findUserById(item.getOwnerId()).orElse(null);
+            final java.util.Optional<BookingPaymentProof> proof =
+                    bookingRequestService.findPaymentProofByBookingId(booking.getId());
             sentBookings.add(new SentBookingView(
                     booking.getId(),
                     item.getTitle(),
@@ -535,7 +543,9 @@ public class AuthController {
                     formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
                     formatTotalPriceLabel(booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
                     resolvePaymentAlias(owner),
-                    statusMessageCode(booking.getState())));
+                    statusMessageCode(booking.getState()),
+                    proof.map(BookingPaymentProof::getRefusalReason).orElse(""),
+                    proof.map(BookingPaymentProof::getGuestReply).orElse("")));
         }
         return sentBookings;
     }
@@ -741,6 +751,7 @@ public class AuthController {
             case BOOKING_COMPLETED -> "profile.sentBookings.status.completed";
             case BOOKING_PAYMENT_SUBMITTED -> "profile.sentBookings.status.paymentSubmitted";
             case BOOKING_PAID -> "profile.sentBookings.status.paid";
+            case BOOKING_PAYMENT_REFUSED -> "profile.sentBookings.status.paymentRefused";
         };
     }
 
@@ -788,7 +799,9 @@ public class AuthController {
             String totalPriceLabel,
             String paymentAlias,
             String statusMessageCode,
-            String paymentProofFileName) {
+            String paymentProofFileName,
+            String paymentRefusalReason,
+            String paymentGuestReply) {
 
         public int getId() {
             return id;
@@ -861,6 +874,22 @@ public class AuthController {
         public String getPaymentProofFileName() {
             return paymentProofFileName;
         }
+
+        public String getPaymentRefusalReason() {
+            return paymentRefusalReason;
+        }
+
+        public boolean getHasPaymentRefusalReason() {
+            return paymentRefusalReason != null && !paymentRefusalReason.isBlank();
+        }
+
+        public String getPaymentGuestReply() {
+            return paymentGuestReply;
+        }
+
+        public boolean getHasPaymentGuestReply() {
+            return paymentGuestReply != null && !paymentGuestReply.isBlank();
+        }
     }
 
     public record SentBookingView(
@@ -874,7 +903,9 @@ public class AuthController {
             String timeRangeLabel,
             String totalPriceLabel,
             String paymentAlias,
-            String statusMessageCode) {
+            String statusMessageCode,
+            String paymentRefusalReason,
+            String paymentGuestReply) {
 
         public int getId() {
             return id;
@@ -918,6 +949,22 @@ public class AuthController {
 
         public String getStatusMessageCode() {
             return statusMessageCode;
+        }
+
+        public String getPaymentRefusalReason() {
+            return paymentRefusalReason;
+        }
+
+        public boolean getHasPaymentRefusalReason() {
+            return paymentRefusalReason != null && !paymentRefusalReason.isBlank();
+        }
+
+        public String getPaymentGuestReply() {
+            return paymentGuestReply;
+        }
+
+        public boolean getHasPaymentGuestReply() {
+            return paymentGuestReply != null && !paymentGuestReply.isBlank();
         }
     }
 

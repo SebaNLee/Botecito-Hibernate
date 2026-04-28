@@ -60,7 +60,7 @@ public class PublishActionController {
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
         if (item.isEmpty()) {
-            return new ModelAndView("redirect:/profile/dashboard?publishAction=forbidden");
+            return new ModelAndView("redirect:/dashboard?publishAction=forbidden");
         }
 
         final EditPublicationForm form = new EditPublicationForm();
@@ -92,7 +92,7 @@ public class PublishActionController {
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
         if (item.isEmpty()) {
-            return new ModelAndView("redirect:/profile/dashboard?publishAction=forbidden");
+            return new ModelAndView("redirect:/dashboard?publishAction=forbidden");
         }
 
         validateUploadedImage(form.getFile(), errors);
@@ -156,7 +156,7 @@ public class PublishActionController {
             return editPublicationModelAndView(item.get(), request);
         }
 
-        return new ModelAndView("redirect:/profile/dashboard?publishAction=updated#my-publications");
+        return new ModelAndView("redirect:/dashboard?publishAction=updated#my-publications");
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/disable", method = RequestMethod.POST)
@@ -168,14 +168,14 @@ public class PublishActionController {
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
         if (item.isEmpty()) {
-            return new ModelAndView("redirect:/profile/dashboard?publishAction=forbidden#my-publications");
+            return new ModelAndView("redirect:/dashboard?publishAction=forbidden#my-publications");
         }
 
         if (!itemService.setItemActiveForOwner(itemId, currentUser.getId(), false)) {
-            return new ModelAndView("redirect:/profile/dashboard?publishAction=forbidden#my-publications");
+            return new ModelAndView("redirect:/dashboard?publishAction=forbidden#my-publications");
         }
 
-        return new ModelAndView("redirect:/profile/dashboard?publishAction=disabled#my-publications");
+        return new ModelAndView("redirect:/dashboard?publishAction=disabled#my-publications");
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/enable", method = RequestMethod.POST)
@@ -187,14 +187,14 @@ public class PublishActionController {
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
         if (item.isEmpty()) {
-            return new ModelAndView("redirect:/profile/dashboard?publishAction=forbidden#my-publications");
+            return new ModelAndView("redirect:/dashboard?publishAction=forbidden#my-publications");
         }
 
         if (!itemService.setItemActiveForOwner(itemId, currentUser.getId(), true)) {
-            return new ModelAndView("redirect:/profile/dashboard?publishAction=forbidden#my-publications");
+            return new ModelAndView("redirect:/dashboard?publishAction=forbidden#my-publications");
         }
 
-        return new ModelAndView("redirect:/profile/dashboard?publishAction=enabled#my-publications");
+        return new ModelAndView("redirect:/dashboard?publishAction=enabled#my-publications");
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/delete", method = RequestMethod.POST)
@@ -206,22 +206,22 @@ public class PublishActionController {
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
         if (item.isEmpty()) {
-            return new ModelAndView("redirect:/profile/dashboard?publishAction=forbidden#my-publications");
+            return new ModelAndView("redirect:/dashboard?publishAction=forbidden#my-publications");
         }
 
         try {
             if (!itemService.deleteItemByIdForOwner(itemId, currentUser.getId())) {
                 if (!Boolean.TRUE.equals(item.get().getActive())) {
                     return new ModelAndView(
-                            "redirect:/profile/dashboard?publishAction=deleteBlockedByBookings#my-publications");
+                            "redirect:/dashboard?publishAction=deleteBlockedByBookings#my-publications");
                 }
-                return new ModelAndView("redirect:/profile/dashboard?publishAction=error#my-publications");
+                return new ModelAndView("redirect:/dashboard?publishAction=error#my-publications");
             }
         } catch (final DataAccessException e) {
-            return new ModelAndView("redirect:/profile/dashboard?publishAction=error#my-publications");
+            return new ModelAndView("redirect:/dashboard?publishAction=error#my-publications");
         }
 
-        return new ModelAndView("redirect:/profile/dashboard?publishAction=deleted#my-publications");
+        return new ModelAndView("redirect:/dashboard?publishAction=deleted#my-publications");
     }
 
     private User currentAuthenticatedUser() {
@@ -335,6 +335,7 @@ public class PublishActionController {
                         case BOOKING_COMPLETED -> "profile.sentBookings.status.completed";
                         case BOOKING_PAYMENT_SUBMITTED -> "profile.sentBookings.status.paymentSubmitted";
                         case BOOKING_PAID -> "profile.sentBookings.status.paid";
+                        case BOOKING_PAYMENT_REFUSED -> "profile.sentBookings.status.paymentRefused";
                     });
         }
         return statusCodesByBooking;

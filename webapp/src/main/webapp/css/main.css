@@ -1,15 +1,23 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
+
+html {
+  scrollbar-gutter: stable;
+}
 
 .material-symbols-outlined {
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    vertical-align: middle;
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+  vertical-align: middle;
 }
 
 body {
-    font-family: 'Inter', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 main,
@@ -18,84 +26,107 @@ main,
 .alert,
 .modal-box,
 .tab-content {
-    min-width: 0;
-    overflow-wrap: anywhere;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 input,
 textarea,
 select {
-    min-width: 0;
+  min-width: 0;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    font-family: 'Manrope', sans-serif;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Manrope", sans-serif;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .bg-hero-mesh {
-    background-color: var(--color-background);
-    background-image: 
-        radial-gradient(at 0% 0%, color-mix(in oklab, var(--color-primary) 15%, transparent) 0px, transparent 50%),
-        radial-gradient(at 100% 0%, color-mix(in oklab, var(--color-secondary) 10%, transparent) 0px, transparent 50%);
+  background-color: var(--color-background);
+  background-image:
+    radial-gradient(
+      at 0% 0%,
+      color-mix(in oklab, var(--color-primary) 15%, transparent) 0px,
+      transparent 50%
+    ),
+    radial-gradient(
+      at 100% 0%,
+      color-mix(in oklab, var(--color-secondary) 10%, transparent) 0px,
+      transparent 50%
+    );
 }
 
 [data-picker-calendar-wrap] {
-    isolation: isolate;
+  isolation: isolate;
 }
 
 [data-picker-calendar].cally {
-    --color-accent: var(--color-primary);
-    --color-text-on-accent: var(--color-primary-content);
-    display: block;
-    width: fit-content;
-    max-width: 100%;
+  --color-accent: var(--color-primary);
+  --color-text-on-accent: var(--color-primary-content);
+  display: block;
+  width: fit-content;
+  max-width: 100%;
 }
 
 [data-picker-calendar].cally::part(container) {
-    gap: 0.75rem;
-    padding-inline: 0;
-    justify-content: center;
-    align-items: center;
+  gap: 0.75rem;
+  padding-inline: 0;
+  justify-content: center;
+  align-items: center;
 }
 
 [data-picker-calendar].cally::part(heading) {
-    font-family: var(--font-headline, 'Manrope', sans-serif);
-    font-size: 1rem;
-    font-weight: 800;
-    color: var(--color-on-background);
+  font-family: var(--font-headline, "Manrope", sans-serif);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-on-background);
 }
 
 [data-picker-calendar].cally::part(button) {
-    min-width: 2.25rem;
-    min-height: 2.25rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
 }
 
 [data-picker-calendar].cally::part(selected),
 [data-picker-calendar].cally::part(today) {
-    background: var(--color-primary);
-    color: var(--color-primary-content);
+  background: var(--color-primary);
+  color: var(--color-primary-content);
 }
 
 [data-picker-calendar].cally::part(available) {
-    background: color-mix(in oklab, var(--color-primary) 10%, var(--color-base-100));
-    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-primary) 24%, transparent);
-    color: var(--color-on-surface);
-    opacity: 1;
+  background: color-mix(
+    in oklab,
+    var(--color-primary) 10%,
+    var(--color-base-100)
+  );
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklab, var(--color-primary) 24%, transparent);
+  color: var(--color-on-surface);
+  opacity: 1;
 }
 
 [data-picker-calendar].cally::part(occupied) {
-    background: color-mix(in oklab, var(--color-error) 12%, var(--color-base-100));
-    color: color-mix(in oklab, var(--color-error) 76%, var(--color-on-surface));
-    text-decoration: line-through;
-    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-error) 18%, transparent);
-    opacity: 1;
+  background: color-mix(
+    in oklab,
+    var(--color-error) 12%,
+    var(--color-base-100)
+  );
+  color: color-mix(in oklab, var(--color-error) 76%, var(--color-on-surface));
+  text-decoration: line-through;
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklab, var(--color-error) 18%, transparent);
+  opacity: 1;
 }

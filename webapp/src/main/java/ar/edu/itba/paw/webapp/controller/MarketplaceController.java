@@ -3,6 +3,7 @@ package ar.edu.itba.paw.webapp.controller;
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
+import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.RatingSummary;
@@ -28,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -141,6 +143,7 @@ public class MarketplaceController {
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "startTime", required = false) final String requestedStartTime,
             @RequestParam(value = "endTime", required = false) final String requestedEndTime,
+            @RequestParam(value = "snapshotVersionId", required = false) final Integer snapshotVersionId,
             @ModelAttribute("reservationRequestForm") final ReservationRequestForm form) {
         if (isBlank(form.getDate())) {
             form.setDate(requestedDate);
@@ -151,7 +154,31 @@ public class MarketplaceController {
         if (isBlank(form.getEndTime())) {
             form.setEndTime(requestedEndTime);
         }
-        return buildMarketplaceItemView(request.getContextPath(), itemId, form);
+        return buildMarketplaceItemView(request.getContextPath(), itemId, snapshotVersionId, form);
+    }
+
+    @RequestMapping(value = "/item/{itemId:[0-9]+}/snapshot/{versionId:[0-9]+}/cover", method = RequestMethod.GET)
+    public void snapshotCoverImage(
+            @PathVariable("itemId") final int itemId,
+            @PathVariable("versionId") final int versionId,
+            final HttpServletResponse response)
+            throws java.io.IOException {
+        final User currentUser = currentAuthenticatedUser();
+        if (currentUser == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        final ItemSnapshot snapshot =
+                resolveAuthorizedSnapshotVersion(versionId, itemId, currentUser).orElse(null);
+        if (snapshot == null || snapshot.getCoverImageData() == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        response.setContentType("image/jpeg");
+        response.setContentLength(snapshot.getCoverImageData().length);
+        response.getOutputStream().write(snapshot.getCoverImageData());
     }
 
     @RequestMapping(value = "/item/{id:[0-9]+}", method = RequestMethod.POST)
@@ -179,7 +206,7 @@ public class MarketplaceController {
         }
 
         if (errors.hasErrors()) {
-            return buildMarketplaceItemView(request.getContextPath(), itemId, form);
+            return buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
         }
 
         try {
@@ -194,18 +221,21 @@ public class MarketplaceController {
                     buildReservationRequestDescription(item.get(), owner.orElse(null), form));
             mailService.sendBookingReviewEmail(
                     bookingRequest, owner.map(User::getEmail).orElse(null));
-            final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, form);
+            final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
             mav.addObject("mailSuccessCode", "reservation.request.success");
             return mav;
         } catch (final IllegalArgumentException e) {
-            final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, form);
+            final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
             mav.addObject("mailErrorCode", "reservation.request.error");
             return mav;
         }
     }
 
     private ModelAndView buildMarketplaceItemView(
-            final String servletContextPath, final int itemId, final ReservationRequestForm form) {
+            final String servletContextPath,
+            final int itemId,
+            final Integer snapshotVersionId,
+            final ReservationRequestForm form) {
         final Optional<Item> item = itemService.findItemById(itemId);
         if (item.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
@@ -228,6 +258,21 @@ public class MarketplaceController {
             reviewAuthorNames.put(review.getReviewerUserId(), authorName);
         }
         final User currentUser = currentAuthenticatedUser();
+        final Optional<ItemSnapshot> selectedSnapshot = currentUser == null || snapshotVersionId == null
+                ? Optional.empty()
+                : resolveAuthorizedSnapshotVersion(snapshotVersionId, itemId, currentUser);
+        final Item displayItem =
+                selectedSnapshot.<Item>map(snapshot -> snapshot).orElse(item.get());
+        final String displayImageUrl = selectedSnapshot
+                .filter(snapshot -> snapshot.getCoverImageData() != null)
+                .map(snapshot ->
+                        servletContextPath + "/item/" + itemId + "/snapshot/" + snapshot.getVersionId() + "/cover")
+                .orElse(ItemImageUtils.resolveImageUrl(itemService, itemId, servletContextPath));
+        final List<String> displayImageUrls = selectedSnapshot
+                        .filter(snapshot -> snapshot.getCoverImageData() != null)
+                        .isPresent()
+                ? List.of(displayImageUrl)
+                : ItemImageUtils.resolveImageUrls(itemService, itemId, servletContextPath);
         final AvailabilityPickerSupport.AvailabilityPickerData reservationAvailability =
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
                         itemService.listAvailabilitiesByItemId(itemId),
@@ -237,13 +282,27 @@ public class MarketplaceController {
         final Map<String, List<String>> offeredTimesByDate = reservationAvailability.getOfferedTimesByDate();
         final ModelAndView mav = new ModelAndView("marketplace-item");
         mav.addObject("item", item.get());
+        mav.addObject("displayItem", displayItem);
+        mav.addObject("selectedSnapshot", selectedSnapshot.orElse(null));
+        mav.addObject(
+                "guestSnapshots",
+                currentUser == null
+                        ? List.of()
+                        : itemService.listSnapshotsByItemIdForGuest(itemId, currentUser.getId()));
+        mav.addObject(
+                "hostSnapshots",
+                currentUser != null
+                                && item.get().getOwnerId() != null
+                                && item.get().getOwnerId().equals(currentUser.getId())
+                        ? itemService.listSnapshotsByItemIdForOwner(itemId, currentUser.getId())
+                        : List.of());
         mav.addObject("itemOwner", owner.orElse(null));
         mav.addObject("itemType", itemType.orElse(null));
         mav.addObject("itemRatingSummary", itemRatingSummary);
         mav.addObject("itemReviews", itemReviews);
         mav.addObject("reviewAuthorNames", reviewAuthorNames);
-        mav.addObject("itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, itemId, servletContextPath));
-        mav.addObject("itemImageUrls", ItemImageUtils.resolveImageUrls(itemService, itemId, servletContextPath));
+        mav.addObject("itemImageUrl", displayImageUrl);
+        mav.addObject("itemImageUrls", displayImageUrls);
         mav.addObject(
                 "ownerInitial",
                 owner.map(MarketplaceController::buildOwnerInitial).orElse("I"));
@@ -482,6 +541,16 @@ public class MarketplaceController {
         return LocalDateTime.of(localDate, localTime)
                 .atZone(ZoneId.systemDefault())
                 .toOffsetDateTime();
+    }
+
+    private Optional<ItemSnapshot> resolveAuthorizedSnapshotVersion(
+            final int versionId, final int itemId, final User currentUser) {
+        final Optional<ItemSnapshot> guestSnapshot =
+                itemService.findSnapshotVersionByIdForGuest(versionId, itemId, currentUser.getId());
+        if (guestSnapshot.isPresent()) {
+            return guestSnapshot;
+        }
+        return itemService.findSnapshotVersionByIdForOwner(versionId, itemId, currentUser.getId());
     }
 
     private User currentAuthenticatedUser() {

@@ -24,6 +24,8 @@
 <spring:message code="publish.form.location.placeholder" var="publishLocationPlaceholder" />
 <spring:message code="editPublication.actions.save" var="saveLabel" />
 <spring:message code="editPublication.actions.cancel" var="cancelLabel" />
+<spring:message code="editPublication.conflict.confirmChanges" var="confirmChangesLabel" />
+<spring:message code="editPublication.conflict.discard" var="discardEditLabel" />
 
 <paw:layout
     title="Botecito"
@@ -142,7 +144,180 @@
 
     <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
       <paw:button href="${profileUrl}" color="ghost" size="lg" cssClass="w-full sm:w-auto" text="${cancelLabel}" />
-      <paw:button type="submit" color="primary" size="lg" cssClass="w-full sm:w-auto" text="${saveLabel}" />
+      <c:choose>
+        <c:when test="${not empty activeEditBookings}">
+          <button type="button" class="btn btn-primary btn-lg w-full sm:w-auto" data-edit-conflict-open>
+            <c:out value="${saveLabel}" />
+          </button>
+        </c:when>
+        <c:otherwise>
+          <paw:button type="submit" color="primary" size="lg" cssClass="w-full sm:w-auto" text="${saveLabel}" />
+        </c:otherwise>
+      </c:choose>
     </div>
+
+    <c:if test="${not empty activeEditBookings}">
+      <dialog class="modal" data-edit-conflict-modal ${showEditConflictModal ? 'open="open"' : ''}>
+        <div class="modal-box max-w-3xl p-0 bg-transparent shadow-none">
+          <div class="card bg-base-100 shadow-xl">
+            <div class="card-body p-8 gap-5">
+              <div class="flex items-start gap-4">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
+                  <span class="material-symbols-outlined">warning</span>
+                </div>
+                <div class="space-y-2">
+                  <h2 class="card-title m-0 text-2xl font-extrabold tracking-tight">
+                    <spring:message code="editPublication.conflict.title" />
+                  </h2>
+                  <p class="m-0 leading-relaxed text-on-surface-variant">
+                    <spring:message code="editPublication.conflict.message" />
+                  </p>
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <p class="m-0 text-sm font-semibold text-on-surface-variant">
+                    <spring:message code="editPublication.conflict.bookingProgress" />
+                  </p>
+                  <div class="flex items-center gap-2">
+                    <button type="button" class="btn btn-ghost btn-sm btn-square" data-edit-conflict-prev aria-label="Previous booking">
+                      <span class="material-symbols-outlined">chevron_left</span>
+                    </button>
+                    <span class="text-sm font-bold min-w-14 text-center" data-edit-conflict-counter>1/1</span>
+                    <button type="button" class="btn btn-ghost btn-sm btn-square" data-edit-conflict-next aria-label="Next booking">
+                      <span class="material-symbols-outlined">chevron_right</span>
+                    </button>
+                  </div>
+                </div>
+
+                <c:forEach items="${activeEditBookings}" var="booking" varStatus="bookingStatus">
+                  <div class="rounded-2xl bg-base-200 p-4 space-y-3 ${bookingStatus.first ? '' : 'hidden'}" data-edit-booking-card data-edit-booking-index="${bookingStatus.index}">
+                    <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p class="m-0 font-bold text-on-surface">
+                          <spring:message code="editPublication.conflict.booking" arguments="${booking.id}" />
+                        </p>
+                        <p class="m-0 text-xs text-on-surface-variant">
+                          <c:out value="${editBookingGuests[booking.id]}" /> · <c:out value="${editBookingStartLabels[booking.id]}" />
+                        </p>
+                      </div>
+                      <span class="badge badge-outline">
+                        <spring:message code="${editBookingStatusCodes[booking.id]}" />
+                      </span>
+                    </div>
+
+                    <c:choose>
+                      <c:when test="${booking.state == 'BOOKING_PENDING'}">
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <label class="label cursor-pointer justify-start gap-2">
+                            <input type="radio" class="radio radio-success radio-sm" name="bookingDecision_${booking.id}" value="accept" />
+                            <span class="label-text"><spring:message code="editPublication.conflict.pending.accept" /></span>
+                          </label>
+                          <label class="label cursor-pointer justify-start gap-2">
+                            <input type="radio" class="radio radio-error radio-sm" name="bookingDecision_${booking.id}" value="decline" />
+                            <span class="label-text"><spring:message code="editPublication.conflict.pending.decline" /></span>
+                          </label>
+                        </div>
+                      </c:when>
+                      <c:otherwise>
+                        <p class="m-0 text-sm text-on-surface-variant">
+                          <spring:message code="editPublication.conflict.nonPending" />
+                        </p>
+                      </c:otherwise>
+                    </c:choose>
+                  </div>
+                </c:forEach>
+              </div>
+
+              <div class="rounded-xl bg-info/10 p-4 text-sm text-on-surface-variant">
+                <spring:message code="editPublication.conflict.snapshotNotice" />
+              </div>
+
+              <div class="card-actions mt-2 flex flex-col gap-3 sm:flex-row">
+                <button type="submit" name="confirmEditWithSnapshots" value="true" class="btn btn-primary flex-1">
+                  <c:out value="${confirmChangesLabel}" />
+                </button>
+                <a href="${profileUrl}" class="btn btn-outline flex-1 no-underline">
+                  <c:out value="${discardEditLabel}" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="modal-backdrop" aria-label="${discardEditLabel}" data-edit-conflict-close>close</button>
+      </dialog>
+    </c:if>
   </form:form>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const openButton = document.querySelector("[data-edit-conflict-open]");
+      const modal = document.querySelector("[data-edit-conflict-modal]");
+      const bookingCards = Array.from(document.querySelectorAll("[data-edit-booking-card]"));
+      const counter = document.querySelector("[data-edit-conflict-counter]");
+      const prevButton = document.querySelector("[data-edit-conflict-prev]");
+      const nextButton = document.querySelector("[data-edit-conflict-next]");
+      let activeIndex = 0;
+
+      function renderBookingCarousel() {
+        if (!bookingCards.length) {
+          return;
+        }
+        bookingCards.forEach(function (card, index) {
+          card.classList.toggle("hidden", index !== activeIndex);
+        });
+        if (counter) {
+          counter.textContent = (activeIndex + 1) + "/" + bookingCards.length;
+        }
+      }
+
+      function moveBooking(step) {
+        if (!bookingCards.length) {
+          return;
+        }
+        activeIndex = (activeIndex + step + bookingCards.length) % bookingCards.length;
+        renderBookingCarousel();
+      }
+
+      renderBookingCarousel();
+      if (openButton && modal) {
+        openButton.addEventListener("click", function () {
+          if (typeof modal.showModal === "function") {
+            modal.showModal();
+          } else {
+            modal.setAttribute("open", "open");
+          }
+        });
+      }
+      if (prevButton) {
+        prevButton.addEventListener("click", function () {
+          moveBooking(-1);
+        });
+      }
+      if (nextButton) {
+        nextButton.addEventListener("click", function () {
+          moveBooking(1);
+        });
+      }
+      document.querySelectorAll("[data-edit-conflict-close]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          if (modal && typeof modal.close === "function") {
+            modal.close();
+          } else if (modal) {
+            modal.removeAttribute("open");
+          }
+        });
+      });
+      document.addEventListener("keydown", function (event) {
+        if (!modal || !modal.hasAttribute("open")) {
+          return;
+        }
+        if (event.key === "ArrowLeft") {
+          moveBooking(-1);
+        } else if (event.key === "ArrowRight") {
+          moveBooking(1);
+        }
+      });
+    });
+  </script>
 </paw:layout>

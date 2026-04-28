@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.RatingSummary;
 import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.ReviewTargetType;
@@ -28,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
@@ -414,7 +416,11 @@ public class AuthController {
                 continue;
             }
 
-            final Item item = itemService.findAnyItemById(booking.getItemId()).orElse(null);
+            final Item item = itemService
+                    .findSnapshotByBookingIdForOwner(booking.getId(), owner.getId())
+                    .<Item>map(snapshot -> snapshot)
+                    .orElseGet(() ->
+                            itemService.findAnyItemById(booking.getItemId()).orElse(null));
             if (item == null) {
                 continue;
             }
@@ -466,7 +472,11 @@ public class AuthController {
                 continue;
             }
 
-            final Item item = itemService.findAnyItemById(booking.getItemId()).orElse(null);
+            final Optional<ItemSnapshot> snapshot =
+                    itemService.findSnapshotByBookingIdForGuest(booking.getId(), guestId);
+            final Item item = snapshot.<Item>map(existingSnapshot -> existingSnapshot)
+                    .orElseGet(() ->
+                            itemService.findAnyItemById(booking.getItemId()).orElse(null));
             if (item == null) {
                 continue;
             }

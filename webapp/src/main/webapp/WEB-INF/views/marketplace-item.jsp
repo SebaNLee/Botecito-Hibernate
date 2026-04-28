@@ -9,6 +9,8 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 <c:url var="publishUrl" value="/publish" />
 <c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="reservationRequestUrl" value="/item/${item.id}" />
+<c:url var="currentVersionUrl" value="/item/${item.id}" />
+<c:set var="viewItem" value="${displayItem != null ? displayItem : item}" />
 <spring:message code="filters.date" var="dateLabel" />
 <spring:message code="filters.date.placeholder" var="datePlaceholder" />
 <spring:message code="filters.time" var="timeLabel" />
@@ -102,7 +104,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 
   <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-8 items-start">
     <section class="order-2 lg:order-1 min-w-0 space-y-8">
-      <paw:imageCarousel imageUrls="${itemImageUrls}" altText="${item.title}" />
+      <paw:imageCarousel imageUrls="${itemImageUrls}" altText="${viewItem.title}" />
 
       <paw:sectionCard>
         <jsp:attribute name="title"
@@ -110,7 +112,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
         /></jsp:attribute>
         <jsp:body>
           <p class="m-0 break-words text-on-surface-variant leading-relaxed">
-            <c:out value="${item.description}" />
+            <c:out value="${viewItem.description}" />
           </p>
         </jsp:body>
       </paw:sectionCard>
@@ -143,7 +145,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
               >
               <spring:message
                 code="itemDetail.capacity"
-                arguments="${item.capacityPeople}"
+                arguments="${viewItem.capacityPeople}"
               />
               </span>
             </li>
@@ -154,10 +156,10 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                 >check_circle</span
               >
               <c:choose>
-                <c:when test="${item.maxWeightKg != null}">
+                <c:when test="${viewItem.maxWeightKg != null}">
                   <spring:message
                     code="itemDetail.weight"
-                    arguments="${item.maxWeightKg}"
+                    arguments="${viewItem.maxWeightKg}"
                   />
                 </c:when>
                 <c:otherwise><c:out value="${notAvailableLabel}" /></c:otherwise>
@@ -172,7 +174,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
               >
               <spring:message
                 code="itemDetail.difficulty"
-                arguments="${item.difficultyLevel}"
+                arguments="${viewItem.difficultyLevel}"
               />
               </span>
             </li>
@@ -293,18 +295,67 @@ charset=UTF-8" pageEncoding="UTF-8" %>
     <aside class="order-1 lg:order-2 w-full min-w-0 lg:sticky lg:top-24 space-y-6">
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body p-8 gap-4">
+          <c:if test="${selectedSnapshot != null || not empty guestSnapshots || not empty hostSnapshots}">
+            <div class="rounded-2xl bg-base-200/70 p-3 space-y-2">
+              <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline">
+                <spring:message code="itemDetail.version.title" />
+              </p>
+              <c:choose>
+                <c:when test="${selectedSnapshot != null}">
+                  <p class="m-0 text-xs text-on-surface-variant"><spring:message code="itemDetail.version.snapshotNotice" /></p>
+                </c:when>
+                <c:otherwise>
+                  <p class="m-0 text-xs text-on-surface-variant"><spring:message code="itemDetail.version.currentNotice" /></p>
+                </c:otherwise>
+              </c:choose>
+              <div class="flex flex-wrap items-center gap-2">
+                <a href="${currentVersionUrl}" class="btn ${selectedSnapshot == null ? 'btn-primary' : 'btn-outline'} btn-xs no-underline">
+                  <spring:message code="itemDetail.version.seeCurrent" />
+                </a>
+                <div class="dropdown dropdown-end">
+                  <button type="button" tabindex="0" class="btn btn-outline btn-xs">
+                    <spring:message code="itemDetail.version.seeOlder" />
+                  </button>
+                  <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-64 max-h-56 overflow-auto border border-outline-variant/20">
+                    <c:set var="selectedSnapshotSignature" value="|${selectedSnapshot != null ? selectedSnapshot.title : ''}|${selectedSnapshot != null ? selectedSnapshot.description : ''}|${selectedSnapshot != null ? selectedSnapshot.pricePerHour : ''}|${selectedSnapshot != null ? selectedSnapshot.capacityPeople : ''}|${selectedSnapshot != null ? selectedSnapshot.maxWeightKg : ''}|${selectedSnapshot != null ? selectedSnapshot.difficultyLevel : ''}|${selectedSnapshot != null ? selectedSnapshot.locationOptionId : ''}|${selectedSnapshot != null ? selectedSnapshot.location : ''}|" />
+                    <c:set var="renderedSnapshotSignatures" value="||" />
+                    <c:forEach items="${guestSnapshots}" var="snapshot">
+                      <c:set var="snapshotSignature" value="|${snapshot.title}|${snapshot.description}|${snapshot.pricePerHour}|${snapshot.capacityPeople}|${snapshot.maxWeightKg}|${snapshot.difficultyLevel}|${snapshot.locationOptionId}|${snapshot.location}|" />
+                      <c:url var="snapshotUrl" value="/item/${item.id}">
+                        <c:param name="snapshotVersionId" value="${snapshot.versionId}" />
+                      </c:url>
+                      <c:if test="${!renderedSnapshotSignatures.contains(snapshotSignature)}">
+                        <li><a href="${snapshotUrl}" class="${selectedSnapshotSignature == snapshotSignature ? 'active' : ''}"><spring:message code="itemDetail.version.guestSnapshot" arguments="${snapshot.versionId}" /></a></li>
+                        <c:set var="renderedSnapshotSignatures" value="${renderedSnapshotSignatures}${snapshotSignature}|" />
+                      </c:if>
+                    </c:forEach>
+                    <c:forEach items="${hostSnapshots}" var="snapshot">
+                      <c:set var="snapshotSignature" value="|${snapshot.title}|${snapshot.description}|${snapshot.pricePerHour}|${snapshot.capacityPeople}|${snapshot.maxWeightKg}|${snapshot.difficultyLevel}|${snapshot.locationOptionId}|${snapshot.location}|" />
+                      <c:url var="snapshotUrl" value="/item/${item.id}">
+                        <c:param name="snapshotVersionId" value="${snapshot.versionId}" />
+                      </c:url>
+                      <c:if test="${!renderedSnapshotSignatures.contains(snapshotSignature)}">
+                        <li><a href="${snapshotUrl}" class="${selectedSnapshotSignature == snapshotSignature ? 'active' : ''}"><spring:message code="itemDetail.version.hostSnapshot" arguments="${snapshot.versionId}" /></a></li>
+                        <c:set var="renderedSnapshotSignatures" value="${renderedSnapshotSignatures}${snapshotSignature}|" />
+                      </c:if>
+                    </c:forEach>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </c:if>
           <h1 class="text-3xl font-extrabold tracking-tight m-0 break-words">
-            <c:out value="${item.title}" />
+            <c:out value="${viewItem.title}" />
           </h1>
           <div class="flex min-w-0 items-center text-on-surface-variant text-sm gap-1">
             <span class="material-symbols-outlined text-primary text-lg"
               >location_on</span
             >
-            <span class="min-w-0 break-words"><c:out value="${item.location}" /></span>
+            <span class="min-w-0 break-words"><c:out value="${viewItem.location}" /></span>
           </div>
           <div class="flex items-baseline gap-2">
             <span class="text-4xl font-black text-primary whitespace-nowrap"
-              >$<fmt:formatNumber value="${item.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0"
+              >$<fmt:formatNumber value="${viewItem.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0"
             /></span>
             <span
               class="text-xs font-bold uppercase tracking-wider text-outline"
@@ -315,7 +366,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
           <div
             class="hidden rounded-2xl bg-base-200 px-4 py-4"
             data-reservation-price-summary
-            data-price-per-hour="${item.pricePerHour}"
+            data-price-per-hour="${viewItem.pricePerHour}"
             data-currency-symbol="$"
             data-price-pending="${pricePendingLabel}"
             data-price-pending-help="${pricePendingHelpLabel}"
@@ -342,6 +393,11 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             </p>
           </div>
 
+          <c:choose>
+            <c:when test="${selectedSnapshot != null}">
+              <paw:alertMessage type="info"><spring:message code="itemDetail.version.snapshotBookingDisabled" /></paw:alertMessage>
+            </c:when>
+            <c:otherwise>
           <form:form
             id="reservation-request-form"
             action="${reservationRequestUrl}"
@@ -446,6 +502,8 @@ charset=UTF-8" pageEncoding="UTF-8" %>
               </span>
             </button>
           </form:form>
+            </c:otherwise>
+          </c:choose>
         </div>
       </div>
 
@@ -456,10 +514,10 @@ charset=UTF-8" pageEncoding="UTF-8" %>
     class="modal"
     data-item-unavailable-alert
     data-marketplace-url="${marketplaceUrl}"
-    data-item-location-option-id="${item.locationOptionId}"
-    data-item-capacity="${item.capacityPeople}"
-    data-item-max-weight="${item.maxWeightKg}"
-    data-item-difficulty-level="${item.difficultyLevel}"
+    data-item-location-option-id="${viewItem.locationOptionId}"
+    data-item-capacity="${viewItem.capacityPeople}"
+    data-item-max-weight="${viewItem.maxWeightKg}"
+    data-item-difficulty-level="${viewItem.difficultyLevel}"
     data-mismatch-prefix="${unavailableMismatchPrefix}"
     data-mismatch-suffix="${unavailableMismatchSuffix}"
     data-mismatch-join="${andLabel}"

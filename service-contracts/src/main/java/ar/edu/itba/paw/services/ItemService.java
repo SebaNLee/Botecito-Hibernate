@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
+import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
@@ -24,6 +25,8 @@ public interface ItemService {
 
     Optional<Item> findItemById(final int id);
 
+    Optional<Item> findItemByIdForOwner(final int id, final int ownerId);
+
     Optional<Item> findAnyItemById(final int id);
 
     Optional<User> findUserById(final int id);
@@ -32,17 +35,19 @@ public interface ItemService {
 
     Optional<ItemType> findItemTypeById(final int id);
 
-    boolean updatePublication(
+    boolean updatePublicationForOwner(
             int itemId,
+            int ownerId,
             String title,
             String description,
             int pricePerHour,
             Integer difficultyLevel,
-            int locationOptionId);
+            int locationOptionId,
+            byte[] primaryImageData);
 
     boolean hasBlockingBookingsForEdition(int itemId);
 
-    boolean deleteItemById(int itemId);
+    boolean deleteItemByIdForOwner(int itemId, int ownerId);
 
     Item createPublication(
             String ownerGivenName,
@@ -59,7 +64,7 @@ public interface ItemService {
             Integer locationOptionId,
             List<ItemAvailability> availabilities);
 
-    boolean setItemActive(final int itemId, final boolean active);
+    boolean setItemActiveForOwner(final int itemId, final int ownerId, final boolean active);
 
     List<ItemAvailability> listAvailabilities();
 
@@ -76,6 +81,20 @@ public interface ItemService {
     List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId);
 
     List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId);
+
+    List<ItemBooking> listActiveBookingsByItemId(final int itemId);
+
+    Optional<ItemSnapshot> findSnapshotByBookingIdForGuest(final int bookingId, final int guestId);
+
+    Optional<ItemSnapshot> findSnapshotByBookingIdForOwner(final int bookingId, final int ownerId);
+
+    Optional<ItemSnapshot> findSnapshotVersionByIdForGuest(final int versionId, final int itemId, final int guestId);
+
+    Optional<ItemSnapshot> findSnapshotVersionByIdForOwner(final int versionId, final int itemId, final int ownerId);
+
+    List<ItemSnapshot> listSnapshotsByItemIdForGuest(final int itemId, final int guestId);
+
+    List<ItemSnapshot> listSnapshotsByItemIdForOwner(final int itemId, final int ownerId);
 
     Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId);
 
@@ -99,6 +118,4 @@ public interface ItemService {
     boolean deleteImageFromItem(final int itemId, final int imageId);
 
     void reorderImagesForItem(final int itemId, final List<Integer> imageIdsInOrder);
-
-    Integer replacePrimaryImage(final int itemId, final byte[] imageData);
 }

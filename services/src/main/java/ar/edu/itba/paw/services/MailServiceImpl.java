@@ -192,6 +192,33 @@ public class MailServiceImpl implements MailService {
 
     @Override
     @Async("mailTaskExecutor")
+    public void sendPaymentProofRefusedEmail(
+            final String requesterEmail,
+            final String requesterLocaleTag,
+            final String ownerName,
+            final String itemTitle,
+            final String reason) {
+        if (requesterEmail == null || requesterEmail.isBlank()) {
+            return;
+        }
+        try {
+            final Locale locale = toSupportedLocale(requesterLocaleTag);
+            final Context context = new Context(locale);
+            context.setVariable("ownerName", ownerName);
+            context.setVariable("itemTitle", itemTitle);
+            context.setVariable("reason", reason);
+            context.setVariable("profileUrl", accountBaseUrl + "#sent-booking-requests");
+            sendHtmlEmail(
+                    requesterEmail,
+                    getMessage("mail.paymentProofRefused.subject", locale, itemTitle),
+                    templateEngine.process("payment-proof-refused", context));
+        } catch (final RuntimeException e) {
+            LOGGER.error("Could not send payment proof refused email to {}.", requesterEmail, e);
+        }
+    }
+
+    @Override
+    @Async("mailTaskExecutor")
     public void sendPasswordRecoveryEmail(
             final String recipientEmail, final String recipientName, final String recoveryToken) {
         if (recipientEmail == null || recipientEmail.isBlank() || recoveryToken == null || recoveryToken.isBlank()) {
@@ -302,6 +329,7 @@ public class MailServiceImpl implements MailService {
             case BOOKING_REJECTED -> "request.status.declined";
             case BOOKING_PAYMENT_SUBMITTED -> "request.status.paymentSubmitted";
             case BOOKING_PAID -> "request.status.paid";
+            case BOOKING_PAYMENT_REFUSED -> "request.status.paymentRefused";
             default -> "request.status.updated";
         };
     }

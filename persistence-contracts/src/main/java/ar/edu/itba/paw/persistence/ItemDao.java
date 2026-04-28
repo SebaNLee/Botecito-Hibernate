@@ -108,15 +108,22 @@ public interface ItemDao {
             final int uploaderId,
             final String fileName,
             final String contentType,
-            final byte[] fileData);
+            final byte[] fileData,
+            final String guestReply);
 
     Optional<BookingPaymentProof> findPaymentProofByBookingId(final int bookingId);
 
     Optional<BookingPaymentProof> findPaymentProofById(final int proofId);
 
+    boolean deletePaymentProofByBookingId(final int bookingId);
+
     boolean markBookingPaymentSubmitted(final int bookingId, final int guestId);
 
+    boolean markBookingPaymentResubmitted(final int bookingId, final int guestId);
+
     boolean markBookingPaid(final int bookingId, final int ownerId);
+
+    boolean markBookingPaymentRefused(final int bookingId, final int ownerId, final String reason);
 
     Optional<Review> createReview(
             int bookingId,

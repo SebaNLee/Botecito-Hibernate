@@ -10,6 +10,9 @@ public class BookingPaymentProof {
     private String contentType;
     private byte[] fileData;
     private OffsetDateTime createdAt;
+    private String refusalReason;
+    private OffsetDateTime refusedAt;
+    private String guestReply;
 
     public Integer getId() {
         return id;
@@ -69,5 +72,29 @@ public class BookingPaymentProof {
 
     public void setCreatedAt(final String createdAt) {
         this.createdAt = createdAt == null ? null : OffsetDateTime.parse(createdAt);
+    }
+
+    public String getRefusalReason() {
+        return refusalReason;
+    }
+
+    public void setRefusalReason(final String refusalReason) {
+        this.refusalReason = refusalReason;
+    }
+
+    public OffsetDateTime getRefusedAt() {
+        return refusedAt;
+    }
+
+    public void setRefusedAt(final OffsetDateTime refusedAt) {
+        this.refusedAt = refusedAt;
+    }
+
+    public String getGuestReply() {
+        return guestReply;
+    }
+
+    public void setGuestReply(final String guestReply) {
+        this.guestReply = guestReply;
     }
 }

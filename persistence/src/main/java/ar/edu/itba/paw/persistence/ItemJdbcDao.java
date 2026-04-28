@@ -126,6 +126,9 @@ public class ItemJdbcDao implements ItemDao {
                 proof.setContentType(rs.getString("content_type"));
                 proof.setFileData(rs.getBytes("file_data"));
                 proof.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
+                proof.setRefusalReason(rs.getString("refusal_reason"));
+                proof.setRefusedAt(readOffsetDateTime(rs, "refused_at"));
+                proof.setGuestReply(rs.getString("guest_reply"));
                 return proof;
             };
 
@@ -495,19 +498,21 @@ public class ItemJdbcDao implements ItemDao {
             final int uploaderId,
             final String fileName,
             final String contentType,
-            final byte[] fileData) {
+            final byte[] fileData,
+            final String guestReply) {
         final int id = Objects.requireNonNull(
                 jdbcTemplate.queryForObject(
                         "INSERT INTO booking_payment_proof"
-                                + " (booking_id, uploader_id, file_name, content_type, file_data)"
-                                + " VALUES (?, ?, ?, ?, ?)"
+                                + " (booking_id, uploader_id, file_name, content_type, file_data, guest_reply)"
+                                + " VALUES (?, ?, ?, ?, ?, ?)"
                                 + " RETURNING id",
                         Integer.class,
                         bookingId,
                         uploaderId,
                         fileName,
                         contentType,
-                        fileData),
+                        fileData,
+                        guestReply),
                 "Could not create payment proof for booking " + bookingId);
         return findPaymentProofById(id)
                 .orElseThrow(() -> new IllegalStateException("Could not read inserted payment proof " + id));
@@ -541,6 +546,46 @@ public class ItemJdbcDao implements ItemDao {
                 bookingId,
                 guestId);
         return updatedRows > 0;
+    }
+
+    @Override
+    public boolean deletePaymentProofByBookingId(final int bookingId) {
+        return jdbcTemplate.update("DELETE FROM booking_payment_proof WHERE booking_id = ?", bookingId) > 0;
+    }
+
+    @Override
+    public boolean markBookingPaymentResubmitted(final int bookingId, final int guestId) {
+        final int updatedRows = jdbcTemplate.update(
+                "UPDATE item_booking"
+                        + " SET state = 'BOOKING_PAYMENT_SUBMITTED', updated_at = CURRENT_TIMESTAMP"
+                        + " WHERE id = ? AND guest_id = ? AND state = 'BOOKING_PAYMENT_REFUSED'",
+                bookingId,
+                guestId);
+        return updatedRows > 0;
+    }
+
+    @Override
+    public boolean markBookingPaymentRefused(final int bookingId, final int ownerId, final String reason) {
+        final int updatedRows = jdbcTemplate.update(
+                "UPDATE item_booking b"
+                        + " SET state = 'BOOKING_PAYMENT_REFUSED', updated_at = CURRENT_TIMESTAMP"
+                        + " FROM item i"
+                        + " WHERE b.item_id = i.id"
+                        + " AND b.id = ?"
+                        + " AND i.owner_id = ?"
+                        + " AND b.state = 'BOOKING_PAYMENT_SUBMITTED'",
+                bookingId,
+                ownerId);
+        if (updatedRows == 0) {
+            return false;
+        }
+        jdbcTemplate.update(
+                "UPDATE booking_payment_proof"
+                        + " SET refusal_reason = ?, refused_at = CURRENT_TIMESTAMP"
+                        + " WHERE booking_id = ?",
+                reason,
+                bookingId);
+        return true;
     }
 
     @Override

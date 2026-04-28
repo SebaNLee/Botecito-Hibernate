@@ -84,7 +84,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 
 <paw:layout
   title="Botecito"
-  mainClass="pt-24 pb-12 max-w-7xl mx-auto px-6 flex flex-col gap-8"
+  mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8"
 >
   <div class="w-full">
     <a
@@ -100,7 +100,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
   <c:if test="${param.reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
   <c:if test="${param.reviewAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.error" /></paw:alertMessage></c:if>
 
-  <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-8 items-start">
+  <div class="w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-8 items-start">
     <section class="order-2 lg:order-1 min-w-0 space-y-8">
       <paw:imageCarousel imageUrls="${itemImageUrls}" altText="${item.title}" />
 
@@ -269,7 +269,14 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                         <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${reviewAuthorNames[review.reviewerUserId]}" /></p>
                         <div class="flex items-center gap-0.5 shrink-0" aria-label="${review.rating} of 5">
                           <c:forEach var="starIndex" begin="1" end="5">
-                            <span class="material-symbols-outlined text-sm leading-none ${starIndex <= review.rating ? 'text-warning' : 'text-outline'}" style="opacity: ${starIndex <= review.rating ? '1' : '0.35'};">star</span>
+                            <c:choose>
+                              <c:when test="${starIndex <= review.rating}">
+                                <span class="material-symbols-outlined text-sm leading-none text-warning">star</span>
+                              </c:when>
+                              <c:otherwise>
+                                <span class="material-symbols-outlined text-sm leading-none text-outline opacity-[0.35]">star</span>
+                              </c:otherwise>
+                            </c:choose>
                           </c:forEach>
                         </div>
                       </div>

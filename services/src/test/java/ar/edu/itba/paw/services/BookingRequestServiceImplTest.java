@@ -1,7 +1,9 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
+import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
@@ -116,5 +118,55 @@ public class BookingRequestServiceImplTest {
         Assertions.assertTrue(result.isPresent());
         Assertions.assertEquals("t", result.get().getToken());
         Assertions.assertEquals("a@a.com", result.get().getRequesterEmail());
+    }
+
+    @Test
+    public void testConfirmPaymentReceivedUsesInactivePublicationForOwnerAuthorization() {
+        final ItemBooking submittedBooking = new ItemBooking();
+        submittedBooking.setId(30);
+        submittedBooking.setItemId(20);
+        submittedBooking.setGuestId(5);
+        submittedBooking.setHostDecisionToken("t");
+        submittedBooking.setRequestMessage("a");
+        submittedBooking.setState(BookingState.BOOKING_PAYMENT_SUBMITTED);
+        submittedBooking.setCreatedAt(OffsetDateTime.now());
+
+        final ItemBooking paidBooking = new ItemBooking();
+        paidBooking.setId(30);
+        paidBooking.setItemId(20);
+        paidBooking.setGuestId(5);
+        paidBooking.setHostDecisionToken("t");
+        paidBooking.setRequestMessage("a");
+        paidBooking.setState(BookingState.BOOKING_PAID);
+        paidBooking.setCreatedAt(submittedBooking.getCreatedAt());
+
+        final Item inactiveItem = new Item();
+        inactiveItem.setId(20);
+        inactiveItem.setOwnerId(9);
+        inactiveItem.setActive(false);
+
+        final User requester = new User();
+        requester.setId(5);
+        requester.setGivenName("A");
+        requester.setLastName("A");
+        requester.setEmail("a@a.com");
+        requester.setPreferredLanguage("es");
+
+        final BookingPaymentProof proof = new BookingPaymentProof();
+        proof.setBookingId(30);
+
+        Mockito.when(itemDao.findBookingById(30))
+                .thenReturn(Optional.of(submittedBooking))
+                .thenReturn(Optional.of(paidBooking));
+        Mockito.when(itemDao.findPaymentProofByBookingId(30)).thenReturn(Optional.of(proof));
+        Mockito.when(itemDao.findAnyItemById(20)).thenReturn(Optional.of(inactiveItem));
+        Mockito.when(itemDao.markBookingPaid(30, 9)).thenReturn(true);
+        Mockito.when(itemDao.findUserById(5)).thenReturn(Optional.of(requester));
+
+        final Optional<BookingRequest> result = bookingRequestService.confirmPaymentReceived(30, 9);
+
+        Assertions.assertTrue(result.isPresent());
+        Assertions.assertEquals(BookingState.BOOKING_PAID, result.get().getStatus());
+        Mockito.verify(itemDao, Mockito.never()).findItemById(20);
     }
 }

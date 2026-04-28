@@ -209,13 +209,12 @@ public class PublishActionController {
             return new ModelAndView("redirect:/profile/dashboard?publishAction=forbidden#my-publications");
         }
 
-        if (itemService.hasBlockingBookingsForEdition(itemId)) {
-            return new ModelAndView(
-                    "redirect:/profile/dashboard?publishAction=deleteBlockedByBookings#my-publications");
-        }
-
         try {
             if (!itemService.deleteItemByIdForOwner(itemId, currentUser.getId())) {
+                if (!Boolean.TRUE.equals(item.get().getActive())) {
+                    return new ModelAndView(
+                            "redirect:/profile/dashboard?publishAction=deleteBlockedByBookings#my-publications");
+                }
                 return new ModelAndView("redirect:/profile/dashboard?publishAction=error#my-publications");
             }
         } catch (final DataAccessException e) {

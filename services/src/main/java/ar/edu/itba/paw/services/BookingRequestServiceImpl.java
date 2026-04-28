@@ -90,7 +90,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             return Optional.empty();
         }
 
-        final Optional<Item> item = itemDao.findItemById(booking.get().getItemId());
+        final Optional<Item> item = itemDao.findAnyItemById(booking.get().getItemId());
         if (item.isEmpty()
                 || item.get().getOwnerId() == null
                 || !item.get().getOwnerId().equals(ownerId)) {

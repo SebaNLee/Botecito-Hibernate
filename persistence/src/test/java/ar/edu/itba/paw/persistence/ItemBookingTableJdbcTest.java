@@ -168,21 +168,51 @@ public class ItemBookingTableJdbcTest {
     }
 
     @Test
-    public void testDeletePublicationWithVersionedBookingHidesItemAndPreservesSnapshot() {
+    public void testDeletePublicationWithVersionedBookingDeactivatesItemAndPreservesSnapshot() {
         final int ownerId = insertUser("owner-delete-versioned@a.com");
         final int guestId = insertUser("guest-delete-versioned@a.com");
         final int itemId = insertItem(ownerId, "delete-versioned-booking");
-        final OffsetDateTime start = OffsetDateTime.parse("2026-01-02T10:00:00Z");
+        final OffsetDateTime start = OffsetDateTime.now().plusDays(1);
         final ItemBooking booking = itemDao.createBookingRequest(
                 itemId, guestId, start, start.plusHours(1), "message", "delete-versioned-token");
         Assertions.assertTrue(itemDao.snapshotBookingsForPublicationEdit(itemId));
 
         Assertions.assertTrue(itemDao.deleteItemById(itemId));
 
-        Assertions.assertTrue(itemDao.listItemsByOwnerId(ownerId).isEmpty());
-        Assertions.assertTrue(itemDao.findAnyItemById(itemId).isPresent());
+        Assertions.assertEquals(1, itemDao.listItemsByOwnerId(ownerId).size());
+        Assertions.assertFalse(itemDao.findAnyItemById(itemId).orElseThrow().getActive());
         Assertions.assertTrue(itemDao.findSnapshotByBookingIdForOwner(booking.getId(), ownerId)
                 .isPresent());
+    }
+
+    @Test
+    public void testDeleteInactivePublicationWithFutureBookingIsBlocked() {
+        final int ownerId = insertUser("owner-delete-future@a.com");
+        final int guestId = insertUser("guest-delete-future@a.com");
+        final int itemId = insertItem(ownerId, "delete-future-booking");
+        final OffsetDateTime start = OffsetDateTime.now().plusDays(1);
+        itemDao.createBookingRequest(itemId, guestId, start, start.plusHours(1), "message", "delete-future-token");
+        Assertions.assertTrue(itemDao.deleteItemById(itemId));
+
+        Assertions.assertFalse(itemDao.deleteItemById(itemId));
+
+        Assertions.assertEquals(1, itemDao.listItemsByOwnerId(ownerId).size());
+        Assertions.assertTrue(itemDao.findAnyItemById(itemId).isPresent());
+    }
+
+    @Test
+    public void testDeleteInactivePublicationAfterLastBookingHidesItemFromOwner() {
+        final int ownerId = insertUser("owner-delete-past@a.com");
+        final int guestId = insertUser("guest-delete-past@a.com");
+        final int itemId = insertItem(ownerId, "delete-past-booking");
+        final OffsetDateTime start = OffsetDateTime.now().minusDays(2);
+        itemDao.createBookingRequest(itemId, guestId, start, start.plusHours(1), "message", "delete-past-token");
+        Assertions.assertTrue(itemDao.deleteItemById(itemId));
+
+        Assertions.assertTrue(itemDao.deleteItemById(itemId));
+
+        Assertions.assertTrue(itemDao.listItemsByOwnerId(ownerId).isEmpty());
+        Assertions.assertTrue(itemDao.findAnyItemById(itemId).isEmpty());
     }
 
     private int insertUser(final String email) {

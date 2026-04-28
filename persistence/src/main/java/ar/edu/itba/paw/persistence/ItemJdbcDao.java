@@ -51,7 +51,7 @@ public class ItemJdbcDao implements ItemDao {
     private static final String ITEM_SELECT = "SELECT i.id, i.owner_id, i.type_id, i.title, i.description,"
             + " i.price_per_hour, i.capacity_people, i.max_weight_kg, i.difficulty_level,"
             + " i.location_option_id, lo.name AS location,"
-            + " i.active, i.owner_delete_token, i.owner_delete_used_at, i.created_at"
+            + " i.active, i.owner_delete_token, i.created_at"
             + " FROM item i"
             + " JOIN location_option lo ON lo.id = i.location_option_id";
 
@@ -70,7 +70,6 @@ public class ItemJdbcDao implements ItemDao {
         item.setLocation(rs.getString("location"));
         item.setActive(rs.getBoolean("active"));
         item.setOwnerDeleteToken(rs.getString("owner_delete_token"));
-        item.setOwnerDeleteUsedAt(formatDateTime(readOffsetDateTime(rs, "owner_delete_used_at")));
         item.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
         return item;
     };
@@ -219,10 +218,7 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     public List<Item> listItemsByOwnerId(final int ownerId) {
-        return jdbcTemplate.query(
-                ITEM_SELECT + " WHERE i.owner_id = ? AND i.owner_delete_used_at IS NULL ORDER BY i.id DESC",
-                ITEM_ROW_MAPPER,
-                ownerId);
+        return jdbcTemplate.query(ITEM_SELECT + " WHERE i.owner_id = ? ORDER BY i.id DESC", ITEM_ROW_MAPPER, ownerId);
     }
 
     @Override
@@ -244,11 +240,7 @@ public class ItemJdbcDao implements ItemDao {
     @Override
     public Optional<Item> findItemByIdForOwner(final int id, final int ownerId) {
         return jdbcTemplate
-                .query(
-                        ITEM_SELECT + " WHERE i.id = ? AND i.owner_id = ? AND i.owner_delete_used_at IS NULL",
-                        ITEM_ROW_MAPPER,
-                        id,
-                        ownerId)
+                .query(ITEM_SELECT + " WHERE i.id = ? AND i.owner_id = ?", ITEM_ROW_MAPPER, id, ownerId)
                 .stream()
                 .findAny();
     }
@@ -338,7 +330,7 @@ public class ItemJdbcDao implements ItemDao {
         final int updatedRows = jdbcTemplate.update(
                 "UPDATE item"
                         + " SET title = ?, description = ?, price_per_hour = ?, difficulty_level = ?, location_option_id = ?"
-                        + " WHERE id = ? AND owner_id = ? AND owner_delete_used_at IS NULL",
+                        + " WHERE id = ? AND owner_id = ?",
                 title,
                 description,
                 pricePerHour,
@@ -364,15 +356,21 @@ public class ItemJdbcDao implements ItemDao {
 
     @Override
     public boolean deleteItemById(final int itemId) {
-        final Integer bookingCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM item_booking WHERE item_id = ?", Integer.class, itemId);
-        if (bookingCount != null && bookingCount > 0) {
-            final int updatedRows = jdbcTemplate.update(
-                    "UPDATE item"
-                            + " SET active = FALSE, owner_delete_used_at = CURRENT_TIMESTAMP"
-                            + " WHERE id = ? AND owner_delete_used_at IS NULL",
-                    itemId);
-            return updatedRows > 0;
+        final Optional<Item> item = findAnyItemById(itemId);
+        if (item.isEmpty()) {
+            return false;
+        }
+        if (hasBookings(itemId)) {
+            if (Boolean.TRUE.equals(item.get().getActive())) {
+                snapshotBookingsForPublicationEdit(itemId);
+                final int updatedRows = jdbcTemplate.update("UPDATE item SET active = FALSE WHERE id = ?", itemId);
+                return updatedRows > 0;
+            }
+            if (hasFutureRetainedBookings(itemId)) {
+                return false;
+            }
+            final int deletedRows = jdbcTemplate.update("DELETE FROM item WHERE id = ?", itemId);
+            return deletedRows > 0;
         }
         final int deletedRows = jdbcTemplate.update("DELETE FROM item WHERE id = ?", itemId);
         return deletedRows > 0;
@@ -380,19 +378,23 @@ public class ItemJdbcDao implements ItemDao {
 
     @Override
     public boolean deleteItemByIdForOwner(final int itemId, final int ownerId) {
-        if (findItemByIdForOwner(itemId, ownerId).isEmpty()) {
+        final Optional<Item> item = findItemByIdForOwner(itemId, ownerId);
+        if (item.isEmpty()) {
             return false;
         }
-        final Integer bookingCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM item_booking WHERE item_id = ?", Integer.class, itemId);
-        if (bookingCount != null && bookingCount > 0) {
-            final int updatedRows = jdbcTemplate.update(
-                    "UPDATE item"
-                            + " SET active = FALSE, owner_delete_used_at = CURRENT_TIMESTAMP"
-                            + " WHERE id = ? AND owner_id = ? AND owner_delete_used_at IS NULL",
-                    itemId,
-                    ownerId);
-            return updatedRows > 0;
+        if (hasBookings(itemId)) {
+            if (Boolean.TRUE.equals(item.get().getActive())) {
+                snapshotBookingsForPublicationEdit(itemId);
+                final int updatedRows = jdbcTemplate.update(
+                        "UPDATE item SET active = FALSE WHERE id = ? AND owner_id = ?", itemId, ownerId);
+                return updatedRows > 0;
+            }
+            if (hasFutureRetainedBookings(itemId)) {
+                return false;
+            }
+            final int deletedRows =
+                    jdbcTemplate.update("DELETE FROM item WHERE id = ? AND owner_id = ?", itemId, ownerId);
+            return deletedRows > 0;
         }
         final int deletedRows = jdbcTemplate.update("DELETE FROM item WHERE id = ? AND owner_id = ?", itemId, ownerId);
         return deletedRows > 0;
@@ -947,10 +949,7 @@ public class ItemJdbcDao implements ItemDao {
     @Override
     public boolean setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
         final int updatedRows = jdbcTemplate.update(
-                "UPDATE item SET active = ? WHERE id = ? AND owner_id = ? AND owner_delete_used_at IS NULL",
-                active,
-                itemId,
-                ownerId);
+                "UPDATE item SET active = ? WHERE id = ? AND owner_id = ?", active, itemId, ownerId);
         return updatedRows > 0;
     }
 
@@ -1208,6 +1207,24 @@ public class ItemJdbcDao implements ItemDao {
                         "created_at")
                 .usingGeneratedKeyColumns("id");
         return insert.executeAndReturnKey(itemData).intValue();
+    }
+
+    private boolean hasBookings(final int itemId) {
+        final Integer bookingCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM item_booking WHERE item_id = ?", Integer.class, itemId);
+        return bookingCount != null && bookingCount > 0;
+    }
+
+    private boolean hasFutureRetainedBookings(final int itemId) {
+        final Integer bookingCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*)"
+                        + " FROM item_booking"
+                        + " WHERE item_id = ?"
+                        + " AND state NOT IN ('BOOKING_REJECTED', 'BOOKING_CANCELLED')"
+                        + " AND end_time > CURRENT_TIMESTAMP",
+                Integer.class,
+                itemId);
+        return bookingCount != null && bookingCount > 0;
     }
 
     private boolean hasTable(final String tableName) {

@@ -134,6 +134,7 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public boolean deleteItemByIdForOwner(final int itemId, final int ownerId) {
         return itemDao.deleteItemByIdForOwner(itemId, ownerId);
     }

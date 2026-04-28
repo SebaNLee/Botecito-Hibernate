@@ -23,6 +23,9 @@
         </a>
       </sec:authorize>
       <sec:authorize access="isAuthenticated()">
+        <a href="<c:url value='/dashboard' />" class="btn btn-secondary btn-sm no-underline">
+          <spring:message code="account.nav.publications" />
+        </a>
         <a href="<c:url value='/profile' />" class="btn btn-ghost btn-circle btn-sm no-underline" title="<sec:authentication property='name' />" aria-label="Profile">
           <span class="material-symbols-outlined text-xl">account_circle</span>
         </a>

@@ -39,11 +39,8 @@
 <spring:message code="profile.reviews.target.user" var="reviewTargetUserLabel" />
 <spring:message code="profile.reviews.authoredSummary.label" var="authoredReviewSummaryLabel" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-14 max-w-7xl mx-auto px-6">
-  <div class="grid grid-cols-1 lg:grid-cols-[18rem_minmax(0,1fr)] gap-8 items-start">
-    <paw:accountSidebar active="dashboard" />
-
-    <section class="min-w-0 space-y-6">
+<paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6">
+  <section class="min-w-0 space-y-6">
       <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0">
           <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="dashboard.title" /></h1>
@@ -55,9 +52,10 @@
         </a>
       </div>
 
-      <div role="tablist" class="tabs tabs-lifted">
+      <div role="tablist" class="tabs tabs-lifted w-full">
         <input type="radio" name="dashboard_tabs" role="tab" class="tab font-bold" aria-label="${hostingTabLabel}" ${activeDashboardTab == 'hosting' ? 'checked="checked"' : ''} />
-        <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6">
+        <div role="tabpanel" class="tab-content min-w-0 bg-base-100 border-base-300 rounded-box p-6">
+          <div class="space-y-8">
           <div id="my-publications" class="scroll-mt-24 space-y-4">
             <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.publications.title" /></h2>
             <c:if test="${param.publishAction == 'deleted'}"><paw:alertMessage type="success"><spring:message code="profile.publications.deleted" /></paw:alertMessage></c:if>
@@ -122,7 +120,7 @@
             </c:choose>
           </div>
 
-          <div id="received-booking-requests" class="scroll-mt-24 mt-8 space-y-4">
+          <div id="received-booking-requests" class="scroll-mt-24 space-y-4">
             <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.bookings.title" /></h2>
             <c:if test="${param.reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
             <c:if test="${param.reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
@@ -252,10 +250,11 @@
               <c:otherwise><p class="m-0 text-sm text-on-surface-variant"><spring:message code="profile.bookings.empty" /></p></c:otherwise>
             </c:choose>
           </div>
+          </div>
         </div>
 
         <input type="radio" name="dashboard_tabs" role="tab" class="tab font-bold" aria-label="${bookingsTabLabel}" ${activeDashboardTab == 'bookings' ? 'checked="checked"' : ''} />
-        <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6">
+        <div role="tabpanel" class="tab-content min-w-0 bg-base-100 border-base-300 rounded-box p-6">
           <div id="sent-booking-requests" class="scroll-mt-24 space-y-4">
             <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.sentBookings.title" /></h2>
             <c:if test="${param.reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
@@ -383,7 +382,7 @@
         </div>
 
         <input type="radio" name="dashboard_tabs" role="tab" class="tab font-bold" aria-label="${reviewsTabLabel}" ${activeDashboardTab == 'reviews' ? 'checked="checked"' : ''} />
-        <div role="tabpanel" class="tab-content bg-base-100 border-base-300 rounded-box p-6">
+        <div role="tabpanel" class="tab-content min-w-0 bg-base-100 border-base-300 rounded-box p-6">
           <div id="reviews" class="scroll-mt-24 space-y-6">
             <div class="space-y-4">
               <h3 class="text-lg font-extrabold tracking-tight m-0"><c:out value="${receivedGuestReviewsTitle}" /></h3>
@@ -453,6 +452,5 @@
           </div>
         </div>
       </div>
-    </section>
-  </div>
+  </section>
 </paw:layout>

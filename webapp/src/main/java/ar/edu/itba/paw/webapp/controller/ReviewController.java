@@ -69,12 +69,12 @@ public class ReviewController {
             return "/item/" + itemId + "?reviewAction=" + action;
         }
         if ("dashboardHosting".equals(returnTo)) {
-            return "/profile/dashboard?dashboardTab=hosting&reviewAction=" + action + "#received-booking-requests";
+            return "/dashboard?dashboardTab=hosting&reviewAction=" + action + "#received-booking-requests";
         }
         if ("dashboardBookings".equals(returnTo)) {
-            return "/profile/dashboard?dashboardTab=bookings&reviewAction=" + action + "#sent-booking-requests";
+            return "/dashboard?dashboardTab=bookings&reviewAction=" + action + "#sent-booking-requests";
         }
-        return "/profile/dashboard?dashboardTab=reviews&reviewAction=" + action + "#reviews";
+        return "/dashboard?dashboardTab=reviews&reviewAction=" + action + "#reviews";
     }
 
     private User currentAuthenticatedUser() {

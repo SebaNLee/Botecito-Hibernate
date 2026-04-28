@@ -60,21 +60,61 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             final int requesterId,
             final String fileName,
             final String contentType,
-            final byte[] fileData) {
+            final byte[] fileData,
+            final String guestReply) {
         final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
         if (booking.isEmpty()
                 || booking.get().getGuestId() == null
                 || booking.get().getGuestId() != requesterId
-                || !canSubmitPaymentProof(booking.get().getState())
-                || itemDao.findPaymentProofByBookingId(bookingId).isPresent()) {
+                || !canSubmitPaymentProof(booking.get().getState())) {
             return Optional.empty();
         }
 
-        if (booking.get().getState() == BookingState.BOOKING_CONFIRMED
-                && !itemDao.markBookingPaymentSubmitted(bookingId, requesterId)) {
+        final BookingState state = booking.get().getState();
+        if (state == BookingState.BOOKING_CONFIRMED) {
+            if (itemDao.findPaymentProofByBookingId(bookingId).isPresent()) {
+                return Optional.empty();
+            }
+            if (!itemDao.markBookingPaymentSubmitted(bookingId, requesterId)) {
+                return Optional.empty();
+            }
+        } else if (state == BookingState.BOOKING_PAYMENT_REFUSED) {
+            itemDao.deletePaymentProofByBookingId(bookingId);
+            if (!itemDao.markBookingPaymentResubmitted(bookingId, requesterId)) {
+                return Optional.empty();
+            }
+        } else {
             return Optional.empty();
         }
-        return Optional.of(itemDao.createPaymentProof(bookingId, requesterId, fileName, contentType, fileData));
+        return Optional.of(itemDao.createPaymentProof(
+                bookingId, requesterId, fileName, contentType, fileData, normalizeReply(guestReply)));
+    }
+
+    @Override
+    public Optional<BookingRequest> refusePaymentProof(final int bookingId, final int ownerId, final String reason) {
+        final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
+        if (booking.isEmpty()
+                || booking.get().getItemId() == null
+                || booking.get().getState() != BookingState.BOOKING_PAYMENT_SUBMITTED
+                || itemDao.findPaymentProofByBookingId(bookingId).isEmpty()) {
+            return Optional.empty();
+        }
+
+        final Optional<Item> item = itemDao.findItemById(booking.get().getItemId());
+        if (item.isEmpty()
+                || item.get().getOwnerId() == null
+                || !item.get().getOwnerId().equals(ownerId)) {
+            return Optional.empty();
+        }
+
+        final String trimmed = reason == null ? "" : reason.trim();
+        if (trimmed.isEmpty()) {
+            return Optional.empty();
+        }
+        if (!itemDao.markBookingPaymentRefused(bookingId, ownerId, trimmed)) {
+            return Optional.empty();
+        }
+        return itemDao.findBookingById(bookingId).flatMap(this::toBookingRequest);
     }
 
     @Override
@@ -168,7 +208,15 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     }
 
     private static boolean canSubmitPaymentProof(final BookingState state) {
-        return state == BookingState.BOOKING_CONFIRMED || state == BookingState.BOOKING_PAYMENT_SUBMITTED;
+        return state == BookingState.BOOKING_CONFIRMED || state == BookingState.BOOKING_PAYMENT_REFUSED;
+    }
+
+    private static String normalizeReply(final String reply) {
+        if (reply == null) {
+            return null;
+        }
+        final String trimmed = reply.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private static String normalizePreferredLanguage(final String preferredLanguage) {

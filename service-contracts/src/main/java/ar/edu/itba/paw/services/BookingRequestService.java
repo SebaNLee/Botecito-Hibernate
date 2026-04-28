@@ -22,9 +22,11 @@ public interface BookingRequestService {
     Optional<BookingRequest> resolveBookingRequest(String token, BookingState newStatus);
 
     Optional<BookingPaymentProof> submitPaymentProof(
-            int bookingId, int requesterId, String fileName, String contentType, byte[] fileData);
+            int bookingId, int requesterId, String fileName, String contentType, byte[] fileData, String guestReply);
 
     Optional<BookingRequest> confirmPaymentReceived(int bookingId, int ownerId);
+
+    Optional<BookingRequest> refusePaymentProof(int bookingId, int ownerId, String reason);
 
     Optional<BookingPaymentProof> findPaymentProofByBookingId(int bookingId);
 }

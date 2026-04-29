@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.RatingSummary;
 import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.ReviewTargetType;
@@ -28,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
@@ -348,6 +350,8 @@ public class AuthController {
         }
 
         mav.addObject("ownedItems", ownedItems);
+        mav.addObject("publicationDeleteDeactivatesByItemId", buildDeleteDeactivationFlags(ownedItems));
+        mav.addObject("publicationDeleteDisabledByItemId", buildDeleteDisabledFlags(ownedItems));
         mav.addObject("receivedBookingRequests", buildReceivedBookings(user));
         mav.addObject("sentBookingRequests", buildSentBookings(user.getId()));
         mav.addObject("pendingGuestItemReviewsByBookingId", pendingGuestItemReviewsByBookingId);
@@ -370,6 +374,44 @@ public class AuthController {
         form.setPhone(user.getPhone());
         form.setPaymentAlias(user.getPaymentAlias());
         form.setPreferredLanguage(user.getPreferredLanguage());
+    }
+
+    private Map<Integer, Boolean> buildDeleteDeactivationFlags(final List<Item> ownedItems) {
+        final Map<Integer, Boolean> deactivatesByItemId = new LinkedHashMap<>();
+        for (final Item item : ownedItems) {
+            if (item.getId() == null) {
+                continue;
+            }
+            deactivatesByItemId.put(
+                    item.getId(),
+                    Boolean.TRUE.equals(item.getActive())
+                            && itemService.listBookingsByItemId(item.getId()).stream()
+                                    .anyMatch(booking -> shouldRetainBookingForDeletion(booking)));
+        }
+        return deactivatesByItemId;
+    }
+
+    private Map<Integer, Boolean> buildDeleteDisabledFlags(final List<Item> ownedItems) {
+        final Map<Integer, Boolean> disabledByItemId = new LinkedHashMap<>();
+        final OffsetDateTime now = OffsetDateTime.now();
+        for (final Item item : ownedItems) {
+            if (item.getId() == null) {
+                continue;
+            }
+            disabledByItemId.put(
+                    item.getId(),
+                    !Boolean.TRUE.equals(item.getActive())
+                            && itemService.listBookingsByItemId(item.getId()).stream()
+                                    .anyMatch(booking -> shouldRetainBookingForDeletion(booking)
+                                            && booking.getEndTime() != null
+                                            && booking.getEndTime().isAfter(now)));
+        }
+        return disabledByItemId;
+    }
+
+    private static boolean shouldRetainBookingForDeletion(final ItemBooking booking) {
+        return booking.getState() != BookingState.BOOKING_REJECTED
+                && booking.getState() != BookingState.BOOKING_CANCELLED;
     }
 
     private static String resolveDashboardTab(final String requestedTab) {
@@ -419,7 +461,11 @@ public class AuthController {
                 continue;
             }
 
-            final Item item = itemService.findAnyItemById(booking.getItemId()).orElse(null);
+            final Item item = itemService
+                    .findSnapshotByBookingIdForOwner(booking.getId(), owner.getId())
+                    .<Item>map(snapshot -> snapshot)
+                    .orElseGet(() ->
+                            itemService.findAnyItemById(booking.getItemId()).orElse(null));
             if (item == null) {
                 continue;
             }
@@ -472,7 +518,11 @@ public class AuthController {
                 continue;
             }
 
-            final Item item = itemService.findAnyItemById(booking.getItemId()).orElse(null);
+            final Optional<ItemSnapshot> snapshot =
+                    itemService.findSnapshotByBookingIdForGuest(booking.getId(), guestId);
+            final Item item = snapshot.<Item>map(existingSnapshot -> existingSnapshot)
+                    .orElseGet(() ->
+                            itemService.findAnyItemById(booking.getItemId()).orElse(null));
             if (item == null) {
                 continue;
             }

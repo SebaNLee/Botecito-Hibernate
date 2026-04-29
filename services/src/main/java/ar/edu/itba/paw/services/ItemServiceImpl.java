@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
+import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
@@ -74,6 +75,11 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public Optional<Item> findItemByIdForOwner(final int id, final int ownerId) {
+        return itemDao.findItemByIdForOwner(id, ownerId);
+    }
+
+    @Override
     public Optional<Item> findAnyItemById(final int id) {
         return itemDao.findAnyItemById(id);
     }
@@ -94,14 +100,32 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public boolean updatePublication(
+    @Transactional
+    public boolean updatePublicationForOwner(
             final int itemId,
+            final int ownerId,
             final String title,
             final String description,
             final int pricePerHour,
             final Integer difficultyLevel,
-            final int locationOptionId) {
-        return itemDao.updatePublication(itemId, title, description, pricePerHour, difficultyLevel, locationOptionId);
+            final int locationOptionId,
+            final byte[] primaryImageData) {
+        if (itemDao.findItemByIdForOwner(itemId, ownerId).isEmpty()) {
+            return false;
+        }
+        if (!itemDao.snapshotBookingsForPublicationEdit(itemId)) {
+            throw new IllegalStateException("Could not snapshot bookings for item " + itemId);
+        }
+        if (!itemDao.updatePublicationForOwner(
+                itemId, ownerId, title, description, pricePerHour, difficultyLevel, locationOptionId)) {
+            throw new IllegalStateException("Could not update item " + itemId);
+        }
+        if (primaryImageData != null && primaryImageData.length > 0) {
+            if (itemDao.replacePrimaryImageForOwner(itemId, ownerId, primaryImageData) == null) {
+                throw new IllegalStateException("Could not replace primary image for item " + itemId);
+            }
+        }
+        return true;
     }
 
     @Override
@@ -110,8 +134,9 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public boolean deleteItemById(final int itemId) {
-        return itemDao.deleteItemById(itemId);
+    @Transactional
+    public boolean deleteItemByIdForOwner(final int itemId, final int ownerId) {
+        return itemDao.deleteItemByIdForOwner(itemId, ownerId);
     }
 
     @Override
@@ -160,8 +185,8 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public boolean setItemActive(final int itemId, final boolean active) {
-        return itemDao.setItemActive(itemId, active);
+    public boolean setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
+        return itemDao.setItemActiveForOwner(itemId, ownerId, active);
     }
 
     @Override
@@ -202,6 +227,43 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId) {
         return itemDao.listPaymentSubmittedBookingsByOwnerId(ownerId);
+    }
+
+    @Override
+    public List<ItemBooking> listActiveBookingsByItemId(final int itemId) {
+        return itemDao.listActiveBookingsByItemId(itemId);
+    }
+
+    @Override
+    public Optional<ItemSnapshot> findSnapshotByBookingIdForGuest(final int bookingId, final int guestId) {
+        return itemDao.findSnapshotByBookingIdForGuest(bookingId, guestId);
+    }
+
+    @Override
+    public Optional<ItemSnapshot> findSnapshotByBookingIdForOwner(final int bookingId, final int ownerId) {
+        return itemDao.findSnapshotByBookingIdForOwner(bookingId, ownerId);
+    }
+
+    @Override
+    public Optional<ItemSnapshot> findSnapshotVersionByIdForGuest(
+            final int versionId, final int itemId, final int guestId) {
+        return itemDao.findSnapshotVersionByIdForGuest(versionId, itemId, guestId);
+    }
+
+    @Override
+    public Optional<ItemSnapshot> findSnapshotVersionByIdForOwner(
+            final int versionId, final int itemId, final int ownerId) {
+        return itemDao.findSnapshotVersionByIdForOwner(versionId, itemId, ownerId);
+    }
+
+    @Override
+    public List<ItemSnapshot> listSnapshotsByItemIdForGuest(final int itemId, final int guestId) {
+        return itemDao.listSnapshotsByItemIdForGuest(itemId, guestId);
+    }
+
+    @Override
+    public List<ItemSnapshot> listSnapshotsByItemIdForOwner(final int itemId, final int ownerId) {
+        return itemDao.listSnapshotsByItemIdForOwner(itemId, ownerId);
     }
 
     @Override
@@ -293,11 +355,6 @@ public final class ItemServiceImpl implements ItemService {
             throw new IllegalArgumentException("Reorder list does not match current gallery contents");
         }
         itemDao.reorderImages(itemId, imageIdsInOrder);
-    }
-
-    @Override
-    public Integer replacePrimaryImage(final int itemId, final byte[] imageData) {
-        return itemDao.replacePrimaryImage(itemId, imageData);
     }
 
     private User resolveOrCreateOwner(

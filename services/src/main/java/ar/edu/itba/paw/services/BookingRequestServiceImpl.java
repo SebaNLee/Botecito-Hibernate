@@ -12,6 +12,7 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BookingRequestServiceImpl implements BookingRequestService {
@@ -24,6 +25,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     }
 
     @Override
+    @Transactional
     public BookingRequest createBookingRequest(
             final Integer itemId,
             final String requesterGivenName,
@@ -128,7 +130,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             return Optional.empty();
         }
 
-        final Optional<Item> item = itemDao.findItemById(booking.get().getItemId());
+        final Optional<Item> item = itemDao.findAnyItemById(booking.get().getItemId());
         if (item.isEmpty()
                 || item.get().getOwnerId() == null
                 || !item.get().getOwnerId().equals(ownerId)) {

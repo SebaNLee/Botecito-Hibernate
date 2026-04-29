@@ -10,6 +10,8 @@
 <%@ attribute name="fullWidth" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="icon" required="false" %>
 <%@ attribute name="iconTrailing" required="false" type="java.lang.Boolean" %>
+<%@ attribute name="submitLoading" required="false" type="java.lang.Boolean" %>
+<%@ attribute name="loadingText" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <c:set var="btnColorAttr" value="${not empty color ? color : ''}" />
@@ -20,6 +22,7 @@
 <c:set var="btnType" value="${not empty type ? type : 'button'}" />
 <c:set var="btnFullWidth" value="${fullWidth ne null ? fullWidth : false}" />
 <c:set var="btnIconTrailing" value="${iconTrailing ne null ? iconTrailing : false}" />
+<c:set var="btnSubmitLoading" value="${submitLoading ne null ? submitLoading : false}" />
 
 <c:set var="btnColorResolved" value="${empty btnColorAttr and empty btnVariantAttr ? 'primary' : btnColorAttr}" />
 
@@ -110,13 +113,20 @@
     </span>
   </c:when>
   <c:otherwise>
-    <button type="${btnType}" class="${btnClasses}" <c:if test="${btnDisabled}">disabled</c:if>>
-      <c:if test="${not empty icon and not btnIconTrailing}">
-        <span class="material-symbols-outlined text-base leading-none"><c:out value="${icon}" /></span>
-      </c:if>
-      <span><c:out value="${text}" /></span>
-      <c:if test="${not empty icon and btnIconTrailing}">
-        <span class="material-symbols-outlined text-base leading-none"><c:out value="${icon}" /></span>
+    <button type="${btnType}" class="${btnClasses} ${btnSubmitLoading ? 'relative' : ''}" <c:if test="${btnDisabled}">disabled</c:if> <c:if test="${btnSubmitLoading}">data-submit-loading-button</c:if> <c:if test="${not empty loadingText}">data-loading-text="${loadingText}"</c:if>>
+      <span class="${btnSubmitLoading ? 'flex items-center justify-center gap-2' : ''}" <c:if test="${btnSubmitLoading}">data-submit-loading-content</c:if>>
+        <c:if test="${not empty icon and not btnIconTrailing}">
+          <span class="material-symbols-outlined text-base leading-none"><c:out value="${icon}" /></span>
+        </c:if>
+        <span><c:out value="${text}" /></span>
+        <c:if test="${not empty icon and btnIconTrailing}">
+          <span class="material-symbols-outlined text-base leading-none"><c:out value="${icon}" /></span>
+        </c:if>
+      </span>
+      <c:if test="${btnSubmitLoading}">
+        <span class="pointer-events-none absolute inset-0 hidden items-center justify-center" aria-hidden="true" data-submit-loading-spinner>
+          <span class="loading loading-spinner loading-sm"></span>
+        </span>
       </c:if>
     </button>
   </c:otherwise>

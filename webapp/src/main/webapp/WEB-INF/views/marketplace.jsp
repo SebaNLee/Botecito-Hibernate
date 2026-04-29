@@ -20,6 +20,13 @@
 <spring:message code="filters.maxWeight.helper" var="maxWeightHelper" />
 <spring:message code="filters.difficulty" var="difficultyFilterLabel" />
 <spring:message code="filters.difficulty.any" var="difficultyAnyLabel" />
+<spring:message code="filters.minRating" var="minRatingFilterLabel" />
+<spring:message code="filters.minRating.any" var="minRatingAnyLabel" />
+<spring:message code="filters.minRating.1plus" var="minRating1PlusLabel" />
+<spring:message code="filters.minRating.2plus" var="minRating2PlusLabel" />
+<spring:message code="filters.minRating.3plus" var="minRating3PlusLabel" />
+<spring:message code="filters.minRating.4plus" var="minRating4PlusLabel" />
+<spring:message code="filters.minRating.5plus" var="minRating5PlusLabel" />
 <spring:message code="itemDetail.value.notAvailable" var="notAvailableLabel" />
 <spring:message code="landing.hero.search" var="searchLabel" />
 <spring:message code="marketplace.filters.apply" var="filtersApplyLabel" />
@@ -58,6 +65,9 @@
     <c:if test="${not empty param.difficultyLevel}">
       <c:param name="difficultyLevel" value="${param.difficultyLevel}" />
     </c:if>
+    <c:if test="${not empty param.minRating}">
+      <c:param name="minRating" value="${param.minRating}" />
+    </c:if>
   </c:url>
 </c:if>
 <c:if test="${itemPage.hasNext}">
@@ -87,6 +97,9 @@
     </c:if>
     <c:if test="${not empty param.difficultyLevel}">
       <c:param name="difficultyLevel" value="${param.difficultyLevel}" />
+    </c:if>
+    <c:if test="${not empty param.minRating}">
+      <c:param name="minRating" value="${param.minRating}" />
     </c:if>
   </c:url>
 </c:if>
@@ -147,6 +160,20 @@
                 <option value="3" ${param.difficultyLevel == '3' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.3" /></option>
                 <option value="4" ${param.difficultyLevel == '4' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.4" /></option>
                 <option value="5" ${param.difficultyLevel == '5' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.5" /></option>
+              </select>
+            </div>
+
+            <div class="form-control w-full">
+              <label for="marketplace-min-rating" class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 block">
+                <c:out value="${minRatingFilterLabel}" />
+              </label>
+              <select id="marketplace-min-rating" name="minRating" class="select select-bordered w-full font-semibold text-on-surface">
+                <option value="" ${empty param.minRating ? 'selected="selected"' : ''}><c:out value="${minRatingAnyLabel}" /></option>
+                <option value="1" ${param.minRating == '1' ? 'selected="selected"' : ''}>★☆☆☆☆ <c:out value="${minRating1PlusLabel}" /></option>
+                <option value="2" ${param.minRating == '2' ? 'selected="selected"' : ''}>★★☆☆☆ <c:out value="${minRating2PlusLabel}" /></option>
+                <option value="3" ${param.minRating == '3' ? 'selected="selected"' : ''}>★★★☆☆ <c:out value="${minRating3PlusLabel}" /></option>
+                <option value="4" ${param.minRating == '4' ? 'selected="selected"' : ''}>★★★★☆ <c:out value="${minRating4PlusLabel}" /></option>
+                <option value="5" ${param.minRating == '5' ? 'selected="selected"' : ''}>★★★★★ <c:out value="${minRating5PlusLabel}" /></option>
               </select>
             </div>
 
@@ -219,6 +246,7 @@
         <input type="hidden" name="capacity" value="${param.capacity}" data-applied-filter-mirror />
         <input type="hidden" name="maxWeight" value="${param.maxWeight}" data-applied-filter-mirror />
         <input type="hidden" name="difficultyLevel" value="${param.difficultyLevel}" data-applied-filter-mirror />
+        <input type="hidden" name="minRating" value="${param.minRating}" data-applied-filter-mirror />
         <label for="marketplace-sort" class="shrink-0"><spring:message code="marketplace.sort.label" /></label>
         <select id="marketplace-sort" name="sort" class="select select-sm font-bold text-primary" onchange="this.form.submit()">
           <option value="newest" ${sort == 'newest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.newest" /></option>

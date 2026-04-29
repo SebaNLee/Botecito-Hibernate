@@ -92,6 +92,7 @@ public class MarketplaceController {
             @RequestParam(value = "capacity", required = false) final String requestedCapacity,
             @RequestParam(value = "maxWeight", required = false) final String requestedMaxWeight,
             @RequestParam(value = "difficultyLevel", required = false) final String requestedDifficultyLevel,
+            @RequestParam(value = "minRating", required = false) final String requestedMinRating,
             @RequestParam(value = "sort", required = false, defaultValue = DEFAULT_SORT) final String sort,
             @RequestParam(value = "page", required = false) final String requestedPage) {
         final String resolvedSort = resolveSort(sort);
@@ -104,6 +105,7 @@ public class MarketplaceController {
                 requestedCapacity,
                 requestedMaxWeight,
                 parseDifficultyLevel(requestedDifficultyLevel),
+                parseMinAverageRating(requestedMinRating),
                 resolvedSort);
         final Page<Item> itemPage =
                 itemService.searchItems(criteria, resolvePage(requestedPage), MARKETPLACE_PAGE_SIZE);
@@ -371,6 +373,7 @@ public class MarketplaceController {
             final String requestedCapacity,
             final String requestedMaxWeight,
             final Integer difficultyLevel,
+            final Integer minAverageRating,
             final String sort) {
         final ItemSearchCriteria criteria = new ItemSearchCriteria();
         criteria.setLocationOptionId(parseInteger(requestedLocationOptionId));
@@ -381,9 +384,18 @@ public class MarketplaceController {
         final Integer maxWeight = parseInteger(requestedMaxWeight);
         criteria.setMaxWeightKg(maxWeight == null ? null : BigDecimal.valueOf(maxWeight.longValue()));
         criteria.setDifficultyLevel(difficultyLevel);
+        criteria.setMinAverageRating(minAverageRating);
         criteria.setSort(sort);
         criteria.setSearchQuery(searchQuery);
         return criteria;
+    }
+
+    private static Integer parseMinAverageRating(final String value) {
+        final Integer parsed = parseInteger(value);
+        if (parsed == null || parsed < 1 || parsed > 5) {
+            return null;
+        }
+        return parsed;
     }
 
     private static Integer parseDifficultyLevel(final String value) {

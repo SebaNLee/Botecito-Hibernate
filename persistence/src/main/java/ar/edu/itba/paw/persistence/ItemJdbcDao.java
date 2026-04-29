@@ -1072,6 +1072,14 @@ public class ItemJdbcDao implements ItemDao {
             sql.append(" AND i.difficulty_level = ?");
             args.add(criteria.getDifficultyLevel());
         }
+        if (criteria.getMinAverageRating() != null) {
+            sql.append(" AND COALESCE((SELECT AVG(r.rating)"
+                    + " FROM review r"
+                    + " WHERE CAST(r.target_type AS VARCHAR(16)) = ?"
+                    + " AND r.target_id = i.id), 0) >= ?");
+            args.add(ReviewTargetType.ITEM.name());
+            args.add(criteria.getMinAverageRating());
+        }
         return sql.toString();
     }
 

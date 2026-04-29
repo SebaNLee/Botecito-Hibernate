@@ -11,6 +11,7 @@ public class ItemSearchCriteria {
     private Integer capacity;
     private BigDecimal maxWeightKg;
     private Integer difficultyLevel;
+    private Integer minAverageRating;
     private String sort;
 
     public String getSearchQuery() {
@@ -75,6 +76,14 @@ public class ItemSearchCriteria {
 
     public void setDifficultyLevel(final Integer difficultyLevel) {
         this.difficultyLevel = difficultyLevel;
+    }
+
+    public Integer getMinAverageRating() {
+        return minAverageRating;
+    }
+
+    public void setMinAverageRating(final Integer minAverageRating) {
+        this.minAverageRating = minAverageRating;
     }
 
     public String getSort() {

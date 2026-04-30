@@ -48,7 +48,7 @@
           <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="myBoats.title" /></h1>
           <p class="text-on-surface-variant mt-2 m-0"><spring:message code="myBoats.subtitle" /></p>
         </div>
-        <a href="${publishUrl}" class="btn btn-secondary w-[70%] self-center no-underline sm:w-auto sm:self-auto sm:shrink-0">
+        <a href="${publishUrl}" class="btn btn-primary w-[70%] self-center no-underline sm:w-auto sm:self-auto sm:shrink-0">
           <span class="material-symbols-outlined text-base">add</span>
           <c:out value="${publishCtaLabel}" />
         </a>

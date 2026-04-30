@@ -1,3 +1,7 @@
+<p align="center">
+  English | <a href="README.es.md">Español</a>
+</p>
+
 # Botecito
 
 Welcome to Botecito, a web application for renting and hosting nautical equipment such as kayaks, paddle boards, and more!

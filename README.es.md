@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="README.md">English</a> | Español
+</p>
+
 # Botecito
 
 ¡Bienvenido a Botecito, aplicación web para alquilar y hostear equipamiento náutico como kayaks, paddles y más! 

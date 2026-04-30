@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface BookingRequestService {
@@ -20,6 +21,8 @@ public interface BookingRequestService {
     Optional<BookingRequest> findByToken(String token);
 
     Optional<BookingRequest> resolveBookingRequest(String token, BookingState newStatus);
+
+    List<BookingRequest> resolveBookingRequests(List<String> tokens, BookingState newStatus);
 
     Optional<BookingPaymentProof> submitPaymentProof(
             int bookingId, int requesterId, String fileName, String contentType, byte[] fileData, String guestReply);

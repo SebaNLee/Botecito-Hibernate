@@ -735,7 +735,7 @@ public class AuthController {
                     formatDateLabel(booking.getStartTime()),
                     formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
                     formatTotalPriceLabel(booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
-                    resolvePaymentAlias(owner),
+                    "",
                     statusMessageCode(booking.getState()),
                     proof.map(BookingPaymentProof::getFileName).orElse(""),
                     proof.map(BookingPaymentProof::getRefusalReason).orElse(""),
@@ -777,12 +777,16 @@ public class AuthController {
                     formatDateLabel(booking.getStartTime()),
                     formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
                     formatTotalPriceLabel(booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
-                    resolvePaymentAlias(owner),
+                    shouldExposePaymentAliasToGuest(booking.getState()) ? resolvePaymentAlias(owner) : "",
                     statusMessageCode(booking.getState()),
                     proof.map(BookingPaymentProof::getRefusalReason).orElse(""),
                     proof.map(BookingPaymentProof::getGuestReply).orElse("")));
         }
         return sentBookings;
+    }
+
+    private static boolean shouldExposePaymentAliasToGuest(final BookingState state) {
+        return state == BookingState.BOOKING_CONFIRMED || state == BookingState.BOOKING_PAYMENT_REFUSED;
     }
 
     private List<PendingReviewView> buildPendingReviewActions(final int userId) {

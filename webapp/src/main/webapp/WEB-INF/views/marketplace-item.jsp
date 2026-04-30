@@ -83,6 +83,10 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 <spring:message code="itemDetail.reviews.rating" var="itemReviewRatingLabel" />
 <spring:message code="itemDetail.reviews.comment" var="itemReviewCommentLabel" />
 <spring:message code="reviews.empty.short" var="reviewsEmptyShortLabel" />
+<spring:message
+  code="itemDetail.description.empty"
+  var="itemDescriptionEmptyLabel"
+/>
 
 <paw:layout
   title="Botecito"
@@ -111,9 +115,20 @@ charset=UTF-8" pageEncoding="UTF-8" %>
           ><spring:message code="itemDetail.description.title"
         /></jsp:attribute>
         <jsp:body>
-          <p class="m-0 break-words text-on-surface-variant leading-relaxed">
-            <c:out value="${viewItem.description}" />
-          </p>
+          <c:choose>
+            <c:when test="${not empty viewItem.description}">
+              <p class="m-0 break-words text-on-surface-variant leading-relaxed">
+                <c:out value="${viewItem.description}" />
+              </p>
+            </c:when>
+            <c:otherwise>
+              <p
+                class="m-0 rounded-xl border border-dashed border-outline-variant/40 bg-base-200/45 px-4 py-3 text-sm italic text-outline"
+              >
+                <c:out value="${itemDescriptionEmptyLabel}" />
+              </p>
+            </c:otherwise>
+          </c:choose>
         </jsp:body>
       </paw:sectionCard>
 
@@ -303,7 +318,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body p-8 gap-4">
           <c:if test="${selectedSnapshot != null || not empty guestSnapshots || not empty hostSnapshots}">
-            <div class="rounded-2xl bg-base-200/70 p-3 space-y-2">
+            <div class="rounded-2xl bg-base-200/70 p-5 space-y-4">
               <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline">
                 <spring:message code="itemDetail.version.title" />
               </p>
@@ -315,7 +330,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                   <p class="m-0 text-xs text-on-surface-variant"><spring:message code="itemDetail.version.currentNotice" /></p>
                 </c:otherwise>
               </c:choose>
-              <div class="flex flex-wrap items-center gap-2">
+              <div class="flex flex-wrap items-center gap-4 pt-2">
                 <a href="${currentVersionUrl}" class="btn ${selectedSnapshot == null ? 'btn-primary' : 'btn-outline'} btn-xs no-underline">
                   <spring:message code="itemDetail.version.seeCurrent" />
                 </a>
@@ -323,7 +338,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                   <button type="button" tabindex="0" class="btn btn-outline btn-xs">
                     <spring:message code="itemDetail.version.seeOlder" />
                   </button>
-                  <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-64 max-h-56 overflow-auto border border-outline-variant/20">
+                  <ul tabindex="0" class="dropdown-content menu p-3 space-y-2 shadow bg-base-100 rounded-box w-64 max-h-56 overflow-auto border border-outline-variant/20">
                     <c:set var="selectedSnapshotSignature" value="|${selectedSnapshot != null ? selectedSnapshot.title : ''}|${selectedSnapshot != null ? selectedSnapshot.description : ''}|${selectedSnapshot != null ? selectedSnapshot.pricePerHour : ''}|${selectedSnapshot != null ? selectedSnapshot.capacityPeople : ''}|${selectedSnapshot != null ? selectedSnapshot.maxWeightKg : ''}|${selectedSnapshot != null ? selectedSnapshot.difficultyLevel : ''}|${selectedSnapshot != null ? selectedSnapshot.locationOptionId : ''}|${selectedSnapshot != null ? selectedSnapshot.location : ''}|" />
                     <c:set var="renderedSnapshotSignatures" value="||" />
                     <c:forEach items="${guestSnapshots}" var="snapshot">
@@ -416,6 +431,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             <c:if test="${not empty mailSuccessCode}">
               <spring:message
                 code="${mailSuccessCode}"
+                arguments="${mailSuccessHostName}"
                 var="mailSuccessMessage"
               />
               <paw:alertMessage

@@ -9,6 +9,10 @@ import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -54,6 +58,75 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             return Optional.empty();
         }
         return findByToken(token);
+    }
+
+    @Override
+    @Transactional
+    public List<BookingRequest> resolveBookingRequests(final List<String> tokens, final BookingState newStatus) {
+        if (tokens == null || tokens.isEmpty()) {
+            return List.of();
+        }
+        final LinkedHashSet<String> normalizedTokens = new LinkedHashSet<>();
+        for (final String token : tokens) {
+            if (token != null && !token.isBlank()) {
+                normalizedTokens.add(token);
+            }
+        }
+        if (normalizedTokens.isEmpty()) {
+            return List.of();
+        }
+
+        final List<ItemBooking> candidateBookings = itemDao.findBookingsByHostDecisionTokens(normalizedTokens);
+        if (candidateBookings.isEmpty()) {
+            return List.of();
+        }
+
+        final LinkedHashSet<String> pendingTokens = new LinkedHashSet<>();
+        for (final ItemBooking booking : candidateBookings) {
+            if (booking.getState() == BookingState.BOOKING_PENDING
+                    && booking.getHostDecisionUsedAt() == null
+                    && booking.getHostDecisionToken() != null
+                    && !booking.getHostDecisionToken().isBlank()) {
+                pendingTokens.add(booking.getHostDecisionToken());
+            }
+        }
+        if (pendingTokens.isEmpty()) {
+            return List.of();
+        }
+
+        final OffsetDateTime resolvedAt = OffsetDateTime.now();
+        itemDao.resolveBookingsByHostDecisionTokens(pendingTokens, newStatus, resolvedAt);
+
+        final List<ItemBooking> updatedBookings = itemDao.findBookingsByHostDecisionTokens(pendingTokens);
+        if (updatedBookings.isEmpty()) {
+            return List.of();
+        }
+
+        final LinkedHashSet<Integer> guestIds = new LinkedHashSet<>();
+        for (final ItemBooking booking : updatedBookings) {
+            if (booking.getState() == newStatus && booking.getGuestId() != null) {
+                guestIds.add(booking.getGuestId());
+            }
+        }
+        final Map<Integer, User> usersById = new LinkedHashMap<>();
+        for (final User user : itemDao.findUsersByIds(guestIds)) {
+            usersById.put(user.getId(), user);
+        }
+
+        final List<BookingRequest> resolvedRequests = new java.util.ArrayList<>();
+        for (final ItemBooking booking : updatedBookings) {
+            if (booking.getState() != newStatus || booking.getGuestId() == null) {
+                continue;
+            }
+            final User requester = usersById.get(booking.getGuestId());
+            if (requester == null) {
+                continue;
+            }
+            final BookingRequest request = toBookingRequest(booking, requester);
+            request.resolve(newStatus, resolvedAt.toInstant());
+            resolvedRequests.add(request);
+        }
+        return resolvedRequests;
     }
 
     @Override

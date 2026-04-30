@@ -109,7 +109,7 @@
         data-picker-panel
         hidden>
       <div
-          class="mb-1.5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 border-b border-outline-variant/20 px-0.5 pb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-on-surface-variant">
+          class="mb-1.5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-start gap-x-4 gap-y-2 border-b border-outline-variant/20 px-1.5 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-on-surface-variant">
         <div class="flex min-w-0 flex-col gap-1">
           <span class="inline-flex items-center gap-1.5">
             <span class="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-primary/15 ring-1 ring-primary/35"></span>

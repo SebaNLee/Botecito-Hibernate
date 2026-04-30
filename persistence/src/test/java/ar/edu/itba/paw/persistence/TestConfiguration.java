@@ -3,6 +3,7 @@ package ar.edu.itba.paw.persistence;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.UUID;
 import javax.sql.DataSource;
 import org.hsqldb.jdbc.JDBCDriver;
 import org.springframework.context.annotation.Bean;
@@ -28,7 +29,8 @@ public class TestConfiguration {
     public @NonNull DataSource dataSource() {
         final SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
         dataSource.setDriverClass(JDBCDriver.class);
-        dataSource.setUrl("jdbc:hsqldb:mem:paw;sql.syntax_pgs=true");
+        final String databaseName = "paw_" + UUID.randomUUID();
+        dataSource.setUrl("jdbc:hsqldb:mem:" + databaseName + ";sql.syntax_pgs=true");
         dataSource.setUsername("ha");
         dataSource.setPassword("");
         return dataSource;

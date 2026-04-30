@@ -225,6 +225,7 @@ public class MarketplaceController {
                     bookingRequest, owner.map(User::getEmail).orElse(null));
             final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
             mav.addObject("mailSuccessCode", "reservation.request.success");
+            mav.addObject("mailSuccessHostName", owner.map(User::getName).orElse(""));
             return mav;
         } catch (final IllegalArgumentException e) {
             final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
@@ -316,12 +317,12 @@ public class MarketplaceController {
                                 .findPendingItemReviewAction(currentUser.getId(), itemId)
                                 .orElse(null));
         AvailabilityPickerSupport.addAvailabilityPickerData(mav, "reservation", reservationAvailability);
-        final String defaultDate = offeredDates.isEmpty() ? "" : offeredDates.getFirst();
+        final String defaultDate = "";
         final String reservationDate =
                 AvailabilityPickerSupport.resolveSelectedDate(form.getDate(), offeredDates, defaultDate);
         final List<String> reservationSlots = offeredTimesByDate.getOrDefault(reservationDate, List.of());
-        final String defaultStartTime = reservationSlots.isEmpty() ? "" : reservationSlots.getFirst();
-        final String defaultEndTime = reservationSlots.size() > 1 ? reservationSlots.getLast() : defaultStartTime;
+        final String defaultStartTime = "";
+        final String defaultEndTime = "";
         final boolean hasValidRequestedRange = reservationDate.equals(form.getDate())
                 && !isBlank(form.getStartTime())
                 && !isBlank(form.getEndTime())

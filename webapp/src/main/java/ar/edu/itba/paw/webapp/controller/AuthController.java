@@ -706,6 +706,7 @@ public class AuthController {
             receivedBookings.add(new ReceivedBookingView(
                     booking.getId(),
                     booking.getItemId(),
+                    itemService.findCoverImageIdByItemId(booking.getItemId()).orElse(null),
                     item.getTitle(),
                     requester == null ? "" : requester.getName(),
                     requester == null ? "" : requester.getEmail(),
@@ -1002,6 +1003,7 @@ public class AuthController {
     public record ReceivedBookingView(
             int id,
             int itemId,
+            Integer imageId,
             String itemTitle,
             String requesterName,
             String requesterEmail,
@@ -1024,6 +1026,10 @@ public class AuthController {
 
         public int getItemId() {
             return itemId;
+        }
+
+        public Integer getImageId() {
+            return imageId;
         }
 
         public String getItemTitle() {

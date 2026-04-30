@@ -155,21 +155,21 @@
                         </div>
                         <div class="min-w-0 flex flex-1 flex-col space-y-3">
                           <div class="space-y-2">
-                            <a href="${sentRequestItemUrl}" class="link link-hover m-0 min-w-0 break-words text-base font-extrabold text-on-surface no-underline hover:text-primary">
+                            <a href="${sentRequestItemUrl}" class="link link-hover m-0 min-w-0 break-words text-base font-extrabold text-on-surface no-underline line-clamp-2 hover:text-primary">
                               <c:out value="${sentRequest.itemTitle}" />
                             </a>
-                            <p class="m-0 text-xs text-on-surface-variant"><c:out value="${sentRequest.dateLabel}" /> · <c:out value="${sentRequest.timeRangeLabel}" /></p>
+                            <p class="m-0 truncate text-xs text-on-surface-variant"><c:out value="${sentRequest.dateLabel}" /> · <c:out value="${sentRequest.timeRangeLabel}" /></p>
                           </div>
                           <div class="grid grid-cols-1 gap-3 lg:grid-cols-2 sm:mt-auto">
-                            <div class="rounded-lg bg-base-100 p-3 space-y-1">
+                            <div class="min-w-0 rounded-lg bg-base-100 p-3 space-y-1">
                               <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.sentBookings.owner.label" /></p>
-                              <p class="m-0 break-words text-sm font-bold text-on-surface"><c:out value="${sentRequest.ownerName}" /></p>
-                              <p class="m-0 break-all text-xs text-on-surface-variant"><c:out value="${sentRequest.ownerEmail}" /></p>
+                              <p class="m-0 truncate text-sm font-bold text-on-surface"><c:out value="${sentRequest.ownerName}" /></p>
+                              <p class="m-0 truncate text-xs text-on-surface-variant"><c:out value="${sentRequest.ownerEmail}" /></p>
                             </div>
-                            <div class="rounded-lg bg-base-100 p-3 space-y-2">
+                            <div class="min-w-0 rounded-lg bg-base-100 p-3 space-y-2">
                               <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${paymentInfoPriceLabel}" /></p>
-                              <p class="m-0 text-sm font-bold">$ <c:out value="${not empty sentRequest.totalPriceLabel ? sentRequest.totalPriceLabel : '-'}" /></p>
-                              <p class="m-0 break-all text-xs text-on-surface-variant"><c:out value="${paymentInfoAliasLabel}" />: <c:out value="${not empty sentRequest.paymentAlias ? sentRequest.paymentAlias : '-'}" /></p>
+                              <p class="m-0 truncate text-sm font-bold">$ <c:out value="${not empty sentRequest.totalPriceLabel ? sentRequest.totalPriceLabel : '-'}" /></p>
+                              <p class="m-0 truncate text-xs text-on-surface-variant"><c:out value="${paymentInfoAliasLabel}" />: <c:out value="${not empty sentRequest.paymentAlias ? sentRequest.paymentAlias : '-'}" /></p>
                             </div>
                           </div>
                           <c:if test="${not empty authoredItemReview}">
@@ -191,7 +191,7 @@
                           <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error"><spring:message code="payment.refused.banner" /></p>
                           <c:if test="${sentRequest.hasPaymentRefusalReason}">
                             <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="payment.refused.reasonLabel" /></p>
-                            <p class="m-0 text-sm text-on-surface whitespace-pre-wrap"><c:out value="${sentRequest.paymentRefusalReason}" /></p>
+                            <p class="m-0 line-clamp-4 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${sentRequest.paymentRefusalReason}" /></p>
                           </c:if>
                           <a href="${sentPaymentProofUrl}" class="link link-hover text-xs font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></a>
                         </div>
@@ -210,7 +210,7 @@
                         <form action="/reviews/booking/${sentRequest.id}" method="post" class="space-y-3 border-t border-outline-variant/20 pt-3">
                           <input type="hidden" name="returnTo" value="dashboardBookings" />
                           <div class="flex items-start justify-between gap-2">
-                            <p class="m-0 text-xs text-on-surface-variant break-words"><c:out value="${guestPendingReview.targetName}" /> · <c:out value="${guestPendingReview.targetEmail}" /></p>
+                            <p class="m-0 min-w-0 truncate text-xs text-on-surface-variant"><c:out value="${guestPendingReview.targetName}" /> · <c:out value="${guestPendingReview.targetEmail}" /></p>
                             <span class="badge badge-primary badge-sm shrink-0 font-bold"><c:out value="${reviewTargetItemLabel}" /></span>
                           </div>
                           <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
@@ -242,7 +242,7 @@
                             </div>
                           </div>
                           <c:if test="${not empty authoredItemReview.comment}">
-                            <p class="m-0 text-xs text-on-surface-variant break-words">
+                            <p class="m-0 line-clamp-2 break-words text-xs text-on-surface-variant">
                               <c:choose>
                                 <c:when test="${fn:length(authoredItemReview.comment) > 80}"><c:out value="${fn:substring(authoredItemReview.comment, 0, 80)}" />...</c:when>
                                 <c:otherwise><c:out value="${authoredItemReview.comment}" /></c:otherwise>

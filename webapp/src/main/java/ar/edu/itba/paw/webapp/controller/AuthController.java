@@ -320,6 +320,7 @@ public class AuthController {
     @RequestMapping(value = "/my-boats", method = RequestMethod.GET)
     public ModelAndView myBoats(
             @RequestParam(value = "status", required = false) final List<String> status,
+            @RequestParam(value = "q", required = false) final String query,
             @RequestParam(value = "page", required = false, defaultValue = "1") final int page) {
         final User user = currentAuthenticatedUser();
         if (user == null) {
@@ -328,13 +329,14 @@ public class AuthController {
 
         final ModelAndView mav = new ModelAndView("my-boats");
         mav.addObject("user", user);
-        addMyBoatsData(mav, user, resolveBookingStatusFilters(status), sanitizePage(page));
+        addMyBoatsData(mav, user, resolveBookingStatusFilters(status), normalizeQuery(query), sanitizePage(page));
         return mav;
     }
 
     @RequestMapping(value = "/bookings", method = RequestMethod.GET)
     public ModelAndView bookings(
             @RequestParam(value = "status", required = false) final List<String> status,
+            @RequestParam(value = "q", required = false) final String query,
             @RequestParam(value = "page", required = false, defaultValue = "1") final int page) {
         final User user = currentAuthenticatedUser();
         if (user == null) {
@@ -343,7 +345,7 @@ public class AuthController {
 
         final ModelAndView mav = new ModelAndView("bookings");
         mav.addObject("user", user);
-        addMyTripsData(mav, user, resolveBookingStatusFilters(status), sanitizePage(page));
+        addMyTripsData(mav, user, resolveBookingStatusFilters(status), normalizeQuery(query), sanitizePage(page));
         return mav;
     }
 
@@ -386,7 +388,8 @@ public class AuthController {
                 "receivedItemReviewsByOwnedItems", buildReceivedItemReviewsByOwnedItems(user.getId(), ownedItems));
     }
 
-    private void addMyBoatsData(final ModelAndView mav, final User user, final List<String> statuses, final int page) {
+    private void addMyBoatsData(
+            final ModelAndView mav, final User user, final List<String> statuses, final String query, final int page) {
         final List<Item> ownedItems = itemService.listItemsByOwnerId(user.getId());
         final List<PendingReviewView> pendingReviewActions = buildPendingReviewActions(user.getId());
         final Map<Integer, PendingReviewView> pendingOwnerUserReviewsByBookingId = new LinkedHashMap<>();
@@ -398,6 +401,7 @@ public class AuthController {
 
         final List<ReceivedBookingView> filteredBookings = buildReceivedBookings(user).stream()
                 .filter(booking -> matchesAnyStatusFilter(booking.getStatusMessageCode(), statuses))
+                .filter(booking -> matchesBoatNameSearch(booking.getItemTitle(), query))
                 .sorted(Comparator.comparing(
                                 ReceivedBookingView::getStartTime, Comparator.nullsLast(Comparator.reverseOrder()))
                         .thenComparing(ReceivedBookingView::getId, Comparator.reverseOrder()))
@@ -411,11 +415,13 @@ public class AuthController {
         mav.addObject("receivedBookingPage", receivedBookingPage);
         mav.addObject("selectedBookingStatusFilters", statuses);
         mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statuses));
+        mav.addObject("boatSearchQuery", query);
         mav.addObject("pendingOwnerUserReviewsByBookingId", pendingOwnerUserReviewsByBookingId);
         mav.addObject("authoredUserReviewsByBookingId", buildAuthoredUserReviewsByBookingId(user.getId()));
     }
 
-    private void addMyTripsData(final ModelAndView mav, final User user, final List<String> statuses, final int page) {
+    private void addMyTripsData(
+            final ModelAndView mav, final User user, final List<String> statuses, final String query, final int page) {
         final List<PendingReviewView> pendingReviewActions = buildPendingReviewActions(user.getId());
         final Map<Integer, PendingReviewView> pendingGuestItemReviewsByBookingId = new LinkedHashMap<>();
         for (final PendingReviewView pendingReview : pendingReviewActions) {
@@ -426,6 +432,7 @@ public class AuthController {
 
         final List<SentBookingView> filteredBookings = buildSentBookings(user.getId()).stream()
                 .filter(booking -> matchesAnyStatusFilter(booking.getStatusMessageCode(), statuses))
+                .filter(booking -> matchesBoatNameSearch(booking.getItemTitle(), query))
                 .sorted(Comparator.comparing(
                                 SentBookingView::getStartTime, Comparator.nullsLast(Comparator.reverseOrder()))
                         .thenComparing(SentBookingView::getId, Comparator.reverseOrder()))
@@ -436,6 +443,7 @@ public class AuthController {
         mav.addObject("sentBookingPage", sentBookingPage);
         mav.addObject("selectedBookingStatusFilters", statuses);
         mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statuses));
+        mav.addObject("boatSearchQuery", query);
         mav.addObject("pendingGuestItemReviewsByBookingId", pendingGuestItemReviewsByBookingId);
         mav.addObject("authoredItemReviewsByBookingId", buildAuthoredItemReviewsByBookingId(user.getId()));
     }
@@ -455,6 +463,23 @@ public class AuthController {
 
     private static int sanitizePage(final int page) {
         return Math.max(1, page);
+    }
+
+    private static String normalizeQuery(final String query) {
+        if (query == null) {
+            return "";
+        }
+        return query.trim();
+    }
+
+    private static boolean matchesBoatNameSearch(final String itemTitle, final String query) {
+        if (query == null || query.isBlank()) {
+            return true;
+        }
+        if (itemTitle == null) {
+            return false;
+        }
+        return itemTitle.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT));
     }
 
     private static String resolveBookingStatusFilter(final String status) {

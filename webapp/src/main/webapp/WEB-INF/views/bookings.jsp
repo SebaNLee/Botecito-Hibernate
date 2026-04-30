@@ -56,6 +56,15 @@
           <div id="sent-booking-requests" class="scroll-mt-24 space-y-4">
             <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.sentBookings.title" /></h2>
             <form action="<c:url value='/bookings' />" method="get" class="flex flex-col gap-3 rounded-xl bg-base-200 p-4 sm:flex-row sm:items-end">
+              <label class="form-control w-full sm:max-w-sm">
+                <span class="label-text text-xs font-bold uppercase tracking-wider text-outline"><spring:message code="dashboard.filters.boatName" /></span>
+                <span class="join w-full">
+                  <input type="search" name="q" value="${fn:escapeXml(boatSearchQuery)}" class="input input-bordered input-sm join-item w-full" placeholder="<spring:message code="dashboard.filters.boatName.placeholder" />" />
+                  <button type="submit" class="btn btn-primary btn-sm join-item px-3" aria-label="<spring:message code="dashboard.filters.search" />">
+                    <span class="material-symbols-outlined text-base">search</span>
+                  </button>
+                </span>
+              </label>
               <div class="form-control w-full sm:max-w-sm">
                 <span class="label-text text-xs font-bold uppercase tracking-wider text-outline"><spring:message code="dashboard.filters.status" /></span>
                 <details class="dropdown w-full">
@@ -99,7 +108,9 @@
                   </div>
                 </details>
               </div>
-              <button type="submit" class="btn btn-primary btn-sm"><spring:message code="dashboard.filters.apply" /></button>
+              <a href="<c:url value='/bookings' />" class="btn btn-outline btn-sm border-base-300 bg-base-100 no-underline hover:bg-base-100 sm:ml-auto">
+                <spring:message code="dashboard.filters.clear" />
+              </a>
             </form>
             <c:if test="${param.reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
             <c:if test="${param.reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
@@ -225,12 +236,14 @@
             <c:if test="${sentBookingPage.totalPages > 1}">
               <c:url var="sentPreviousPageUrl" value="/bookings">
                 <c:param name="page" value="${sentBookingPage.previousPage}" />
+                <c:if test="${not empty boatSearchQuery}"><c:param name="q" value="${boatSearchQuery}" /></c:if>
                 <c:forEach var="selectedStatus" items="${selectedBookingStatusFilters}">
                   <c:param name="status" value="${selectedStatus}" />
                 </c:forEach>
               </c:url>
               <c:url var="sentNextPageUrl" value="/bookings">
                 <c:param name="page" value="${sentBookingPage.nextPage}" />
+                <c:if test="${not empty boatSearchQuery}"><c:param name="q" value="${boatSearchQuery}" /></c:if>
                 <c:forEach var="selectedStatus" items="${selectedBookingStatusFilters}">
                   <c:param name="status" value="${selectedStatus}" />
                 </c:forEach>

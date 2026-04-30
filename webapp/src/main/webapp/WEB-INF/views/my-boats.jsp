@@ -48,7 +48,7 @@
           <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="myBoats.title" /></h1>
           <p class="text-on-surface-variant mt-2 m-0"><spring:message code="myBoats.subtitle" /></p>
         </div>
-        <a href="${publishUrl}" class="btn btn-secondary no-underline sm:shrink-0">
+        <a href="${publishUrl}" class="btn btn-secondary w-[70%] self-center no-underline sm:w-auto sm:self-auto sm:shrink-0">
           <span class="material-symbols-outlined text-base">add</span>
           <c:out value="${publishCtaLabel}" />
         </a>
@@ -67,7 +67,7 @@
 
             <c:choose>
               <c:when test="${not empty ownedItems}">
-                <div class="grid grid-cols-1 gap-3 px-2 sm:px-3 md:grid-cols-2">
+                <div class="grid grid-cols-2 gap-2 px-1 sm:px-3 md:gap-3">
                   <c:forEach var="item" items="${ownedItems}">
                     <c:url var="itemUrl" value="/item/${item.id}" />
                     <c:url var="editItemUrl" value="/profile/item/${item.id}/edit" />
@@ -83,24 +83,24 @@
                     <c:set var="deleteModalMessage" value="${publicationDeleteDeactivatesByItemId[item.id] ? deleteDeactivateConfirmMessage : deleteConfirmMessage}" />
                     <c:set var="deleteDisabled" value="${publicationDeleteDisabledByItemId[item.id]}" />
                     <c:set var="kebabId" value="publication-kebab-${item.id}" />
-                    <div class="rounded-xl bg-base-200 px-3 py-2.5 ${item.active ? '' : 'opacity-75'}">
-                      <div class="flex min-w-0 flex-col items-stretch gap-2.5 sm:flex-row">
-                        <a href="${itemUrl}" class="h-28 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 no-underline sm:h-auto sm:w-32">
+                    <div class="rounded-xl bg-base-200 px-2 py-2 sm:px-3 sm:py-2.5 ${item.active ? '' : 'opacity-75'}">
+                      <div class="flex min-w-0 flex-col items-stretch gap-1.5 sm:flex-row sm:gap-2.5">
+                        <a href="${itemUrl}" class="h-20 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 no-underline sm:h-auto sm:w-32">
                           <c:choose>
                             <c:when test="${not empty publicationCoverImageId}">
                               <img src="${publicationCoverImageUrl}" alt="" class="h-full w-full object-cover" loading="lazy" />
                             </c:when>
                             <c:otherwise>
                               <div class="flex h-full w-full items-center justify-center text-outline">
-                                <span class="material-symbols-outlined text-2xl">directions_boat</span>
+                                <span class="material-symbols-outlined text-xl sm:text-2xl">directions_boat</span>
                               </div>
                             </c:otherwise>
                           </c:choose>
                         </a>
-                        <div class="min-w-0 flex flex-1 flex-col gap-1.5">
-                          <div class="space-y-1.5">
-                            <div class="flex min-w-0 items-start gap-1.5">
-                              <a href="${itemUrl}" class="link link-hover m-0 min-w-0 flex-1 break-words text-sm font-extrabold text-on-surface no-underline line-clamp-2 hover:text-primary">
+                        <div class="min-w-0 flex flex-1 flex-col gap-1 sm:gap-1.5">
+                          <div class="space-y-1 sm:space-y-1.5">
+                            <div class="flex min-w-0 items-start gap-1 sm:gap-1.5">
+                              <a href="${itemUrl}" class="link link-hover m-0 min-w-0 flex-1 break-words text-xs font-extrabold text-on-surface no-underline line-clamp-1 hover:text-primary sm:text-sm sm:line-clamp-2">
                                 <c:out value="${item.title}" />
                               </a>
                               <span class="badge ${item.active ? 'badge-success' : 'badge-ghost'} badge-xs shrink-0 font-bold">
@@ -134,26 +134,26 @@
                               </paw:kebabMenu>
                             </div>
                             <c:if test="${not empty item.location}">
-                              <p class="m-0 flex min-w-0 items-center gap-1 text-[11px] text-on-surface-variant">
-                                <span class="material-symbols-outlined text-sm leading-none text-primary">location_on</span>
+                              <p class="m-0 flex min-w-0 items-center gap-1 text-[10px] text-on-surface-variant sm:text-[11px]">
+                                <span class="material-symbols-outlined text-xs leading-none text-primary sm:text-sm">location_on</span>
                                 <span class="min-w-0 truncate"><c:out value="${item.location}" /></span>
                               </p>
                             </c:if>
                           </div>
-                          <div class="mt-auto grid grid-cols-1 gap-2 sm:grid-cols-2">
-                            <div class="rounded-lg bg-base-100 p-2 space-y-0.5">
-                              <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-outline"><spring:message code="item.capacityPeople" /></p>
-                              <p class="m-0 flex items-center gap-1 text-xs font-bold text-on-surface">
-                                <span class="material-symbols-outlined text-sm leading-none text-primary">groups</span>
+                          <div class="mt-auto grid grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2">
+                            <div class="rounded-lg bg-base-100 p-1.5 space-y-0.5 sm:p-2">
+                              <p class="m-0 text-[9px] font-bold uppercase tracking-wider text-outline sm:text-[10px]"><spring:message code="item.capacityPeople" /></p>
+                              <p class="m-0 flex items-center gap-1 text-[11px] font-bold text-on-surface sm:text-xs">
+                                <span class="material-symbols-outlined text-xs leading-none text-primary sm:text-sm">groups</span>
                                 <spring:message code="marketplace.card.people" arguments="${item.capacityPeople}" />
                               </p>
                             </div>
-                            <div class="rounded-lg bg-base-100 p-2 space-y-0.5">
-                              <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.bookings.paymentInfo.price" /></p>
-                              <p class="m-0 text-xs font-bold">
+                            <div class="rounded-lg bg-base-100 p-1.5 space-y-0.5 sm:p-2">
+                              <p class="m-0 text-[9px] font-bold uppercase tracking-wider text-outline sm:text-[10px]"><spring:message code="profile.bookings.paymentInfo.price" /></p>
+                              <p class="m-0 text-[11px] font-bold sm:text-xs">
                                 $<fmt:formatNumber value="${item.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0" />
                               </p>
-                              <p class="m-0 text-[11px] text-on-surface-variant"><spring:message code="marketplace.card.perHour" /></p>
+                              <p class="m-0 text-[10px] text-on-surface-variant sm:text-[11px]"><spring:message code="marketplace.card.perHour" /></p>
                             </div>
                           </div>
                         </div>
@@ -245,7 +245,7 @@
             <c:if test="${param.paymentAction == 'confirmError' || param.paymentAction == 'refuseError'}"><paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage></c:if>
             <c:choose>
               <c:when test="${not empty receivedBookingRequests}">
-                <div class="grid grid-cols-1 min-[56rem]:grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-2 sm:gap-4 min-[56rem]:grid-cols-2">
                   <c:forEach var="receivedRequest" items="${receivedBookingRequests}">
                     <c:url var="acceptBookingUrl" value="/bookings/${receivedRequest.id}/accept" />
                     <c:url var="declineBookingUrl" value="/bookings/${receivedRequest.id}/decline" />
@@ -264,37 +264,37 @@
                     <c:if test="${not empty receivedRequest.imageId}">
                       <c:url var="receivedRequestImageUrl" value="/image/${receivedRequest.imageId}" />
                     </c:if>
-                    <div class="rounded-xl bg-base-200 p-4 space-y-4">
+                    <div class="rounded-xl bg-base-200 p-2 space-y-2 sm:p-4 sm:space-y-4">
                       <div class="flex items-start justify-end">
-                        <span class="badge ${receivedStatusClass} badge-sm shrink-0 font-bold"><spring:message code="${receivedRequest.statusMessageCode}" /></span>
+                        <span class="badge ${receivedStatusClass} badge-xs shrink-0 font-bold sm:badge-sm"><spring:message code="${receivedRequest.statusMessageCode}" /></span>
                       </div>
-                      <div class="flex min-w-0 flex-col gap-4 sm:flex-row">
-                        <div class="h-40 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:w-44">
+                      <div class="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:gap-4">
+                        <div class="h-20 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:h-40 sm:w-44">
                           <c:choose>
                             <c:when test="${not empty receivedRequest.imageId}">
                               <img src="${receivedRequestImageUrl}" alt="" class="h-full w-full object-cover" loading="lazy" />
                             </c:when>
                             <c:otherwise>
                               <div class="flex h-full w-full items-center justify-center text-outline">
-                                <span class="material-symbols-outlined text-3xl">directions_boat</span>
+                                <span class="material-symbols-outlined text-xl sm:text-3xl">directions_boat</span>
                               </div>
                             </c:otherwise>
                           </c:choose>
                         </div>
-                        <div class="min-w-0 flex flex-1 flex-col space-y-3">
-                          <div class="space-y-2">
-                            <a href="${receivedRequestItemUrl}" class="link link-hover m-0 min-w-0 break-words text-base font-extrabold text-on-surface no-underline line-clamp-2 hover:text-primary">
+                        <div class="min-w-0 flex flex-1 flex-col space-y-1.5 sm:space-y-3">
+                          <div class="space-y-1 sm:space-y-2">
+                            <a href="${receivedRequestItemUrl}" class="link link-hover m-0 min-w-0 break-words text-xs font-extrabold text-on-surface no-underline line-clamp-1 hover:text-primary sm:text-base sm:line-clamp-2">
                               <c:out value="${receivedRequest.itemTitle}" />
                             </a>
-                            <p class="m-0 truncate text-xs text-on-surface-variant"><c:out value="${receivedRequest.dateLabel}" /> · <c:out value="${receivedRequest.timeRangeLabel}" /></p>
+                            <p class="m-0 truncate text-[10px] text-on-surface-variant sm:text-xs"><c:out value="${receivedRequest.dateLabel}" /> · <c:out value="${receivedRequest.timeRangeLabel}" /></p>
                           </div>
-                          <div class="grid grid-cols-1 gap-3 lg:grid-cols-2 sm:mt-auto">
-                            <div class="min-w-0 rounded-lg bg-base-100 p-3 space-y-1">
-                              <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.bookings.requester.label" /></p>
-                              <p class="m-0 truncate text-sm font-bold text-on-surface"><c:out value="${receivedRequest.requesterName}" /></p>
-                              <p class="m-0 truncate text-xs text-on-surface-variant"><c:out value="${receivedRequest.requesterEmail}" /></p>
-                              <p class="m-0 text-xs text-on-surface-variant flex min-w-0 items-center gap-1.5 truncate">
-                                <span class="material-symbols-outlined text-sm text-warning leading-none">star</span>
+                          <div class="grid grid-cols-1 gap-1.5 sm:mt-auto sm:gap-3 lg:grid-cols-2">
+                            <div class="min-w-0 rounded-lg bg-base-100 p-1.5 space-y-0.5 sm:p-3 sm:space-y-1">
+                              <p class="m-0 text-[9px] font-bold uppercase tracking-wider text-outline sm:text-[11px]"><spring:message code="profile.bookings.requester.label" /></p>
+                              <p class="m-0 truncate text-[11px] font-bold text-on-surface sm:text-sm"><c:out value="${receivedRequest.requesterName}" /></p>
+                              <p class="m-0 truncate text-[10px] text-on-surface-variant sm:text-xs"><c:out value="${receivedRequest.requesterEmail}" /></p>
+                              <p class="m-0 text-[10px] text-on-surface-variant flex min-w-0 items-center gap-1 truncate sm:text-xs sm:gap-1.5">
+                                <span class="material-symbols-outlined text-xs text-warning leading-none sm:text-sm">star</span>
                                 <c:choose>
                                   <c:when test="${receivedRequest.requesterHasReviews}">
                                     <fmt:formatNumber value="${receivedRequest.requesterAverageRating}" minFractionDigits="1" maxFractionDigits="1" />
@@ -305,15 +305,15 @@
                                 </c:choose>
                               </p>
                             </div>
-                            <div class="min-w-0 rounded-lg bg-base-100 p-3 space-y-2">
-                              <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${paymentInfoPriceLabel}" /></p>
-                              <p class="m-0 truncate text-sm font-bold">$ <c:out value="${not empty receivedRequest.totalPriceLabel ? receivedRequest.totalPriceLabel : '-'}" /></p>
-                              <p class="m-0 truncate text-xs text-on-surface-variant"><c:out value="${paymentInfoAliasLabel}" />: <c:out value="${not empty receivedRequest.paymentAlias ? receivedRequest.paymentAlias : '-'}" /></p>
+                            <div class="min-w-0 rounded-lg bg-base-100 p-1.5 space-y-0.5 sm:p-3 sm:space-y-2">
+                              <p class="m-0 text-[9px] font-bold uppercase tracking-wider text-outline sm:text-[11px]"><c:out value="${paymentInfoPriceLabel}" /></p>
+                              <p class="m-0 truncate text-[11px] font-bold sm:text-sm">$ <c:out value="${not empty receivedRequest.totalPriceLabel ? receivedRequest.totalPriceLabel : '-'}" /></p>
+                              <p class="m-0 truncate text-[10px] text-on-surface-variant sm:text-xs"><c:out value="${paymentInfoAliasLabel}" />: <c:out value="${not empty receivedRequest.paymentAlias ? receivedRequest.paymentAlias : '-'}" /></p>
                             </div>
                           </div>
                           <c:if test="${not empty authoredUserReview}">
-                            <p class="m-0 text-[11px] font-bold text-success flex items-center gap-1">
-                              <span class="material-symbols-outlined text-sm leading-none">check_circle</span>
+                            <p class="m-0 text-[10px] font-bold text-success flex items-center gap-1 sm:text-[11px]">
+                              <span class="material-symbols-outlined text-xs leading-none sm:text-sm">check_circle</span>
                               <spring:message code="profile.reviews.authoredSummary.done" />
                             </p>
                           </c:if>

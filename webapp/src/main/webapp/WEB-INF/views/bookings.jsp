@@ -115,7 +115,7 @@
             <c:if test="${param.paymentAction == 'forbidden' || param.paymentAction == 'submitError' || param.paymentAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage></c:if>
             <c:choose>
               <c:when test="${not empty sentBookingRequests}">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-2">
                   <c:forEach var="sentRequest" items="${sentBookingRequests}">
                     <c:url var="sentPaymentProofUrl" value="/bookings/${sentRequest.id}/payment-proof" />
                     <c:url var="sentRequestItemUrl" value="/item/${sentRequest.itemId}" />
@@ -130,45 +130,45 @@
                     <c:if test="${not empty sentRequest.imageId}">
                       <c:url var="sentRequestImageUrl" value="/image/${sentRequest.imageId}" />
                     </c:if>
-                    <div class="rounded-xl bg-base-200 p-4 space-y-4">
+                    <div class="rounded-xl bg-base-200 p-2 space-y-2 sm:p-4 sm:space-y-4">
                       <div class="flex items-start justify-end">
-                        <span class="badge ${sentStatusClass} badge-sm shrink-0 font-bold"><spring:message code="${sentRequest.statusMessageCode}" /></span>
+                        <span class="badge ${sentStatusClass} badge-xs shrink-0 font-bold sm:badge-sm"><spring:message code="${sentRequest.statusMessageCode}" /></span>
                       </div>
-                      <div class="flex min-w-0 flex-col gap-4 sm:flex-row">
-                        <div class="h-40 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:w-44">
+                      <div class="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:gap-4">
+                        <div class="h-20 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:h-40 sm:w-44">
                           <c:choose>
                             <c:when test="${not empty sentRequest.imageId}">
                               <img src="${sentRequestImageUrl}" alt="" class="h-full w-full object-cover" loading="lazy" />
                             </c:when>
                             <c:otherwise>
                               <div class="flex h-full w-full items-center justify-center text-outline">
-                                <span class="material-symbols-outlined text-3xl">directions_boat</span>
+                                <span class="material-symbols-outlined text-xl sm:text-3xl">directions_boat</span>
                               </div>
                             </c:otherwise>
                           </c:choose>
                         </div>
-                        <div class="min-w-0 flex flex-1 flex-col space-y-3">
-                          <div class="space-y-2">
-                            <a href="${sentRequestItemUrl}" class="link link-hover m-0 min-w-0 break-words text-base font-extrabold text-on-surface no-underline line-clamp-2 hover:text-primary">
+                        <div class="min-w-0 flex flex-1 flex-col space-y-1.5 sm:space-y-3">
+                          <div class="space-y-1 sm:space-y-2">
+                            <a href="${sentRequestItemUrl}" class="link link-hover m-0 min-w-0 break-words text-xs font-extrabold text-on-surface no-underline line-clamp-1 hover:text-primary sm:text-base sm:line-clamp-2">
                               <c:out value="${sentRequest.itemTitle}" />
                             </a>
-                            <p class="m-0 truncate text-xs text-on-surface-variant"><c:out value="${sentRequest.dateLabel}" /> · <c:out value="${sentRequest.timeRangeLabel}" /></p>
+                            <p class="m-0 truncate text-[10px] text-on-surface-variant sm:text-xs"><c:out value="${sentRequest.dateLabel}" /> · <c:out value="${sentRequest.timeRangeLabel}" /></p>
                           </div>
-                          <div class="grid grid-cols-1 gap-3 lg:grid-cols-2 sm:mt-auto">
-                            <div class="min-w-0 rounded-lg bg-base-100 p-3 space-y-1">
-                              <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.sentBookings.owner.label" /></p>
-                              <p class="m-0 truncate text-sm font-bold text-on-surface"><c:out value="${sentRequest.ownerName}" /></p>
-                              <p class="m-0 truncate text-xs text-on-surface-variant"><c:out value="${sentRequest.ownerEmail}" /></p>
+                          <div class="grid grid-cols-1 gap-1.5 sm:mt-auto sm:gap-3 lg:grid-cols-2">
+                            <div class="min-w-0 rounded-lg bg-base-100 p-1.5 space-y-0.5 sm:p-3 sm:space-y-1">
+                              <p class="m-0 text-[9px] font-bold uppercase tracking-wider text-outline sm:text-[11px]"><spring:message code="profile.sentBookings.owner.label" /></p>
+                              <p class="m-0 truncate text-[11px] font-bold text-on-surface sm:text-sm"><c:out value="${sentRequest.ownerName}" /></p>
+                              <p class="m-0 truncate text-[10px] text-on-surface-variant sm:text-xs"><c:out value="${sentRequest.ownerEmail}" /></p>
                             </div>
-                            <div class="min-w-0 rounded-lg bg-base-100 p-3 space-y-2">
-                              <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${paymentInfoPriceLabel}" /></p>
-                              <p class="m-0 truncate text-sm font-bold">$ <c:out value="${not empty sentRequest.totalPriceLabel ? sentRequest.totalPriceLabel : '-'}" /></p>
-                              <p class="m-0 truncate text-xs text-on-surface-variant"><c:out value="${paymentInfoAliasLabel}" />: <c:out value="${not empty sentRequest.paymentAlias ? sentRequest.paymentAlias : '-'}" /></p>
+                            <div class="min-w-0 rounded-lg bg-base-100 p-1.5 space-y-0.5 sm:p-3 sm:space-y-2">
+                              <p class="m-0 text-[9px] font-bold uppercase tracking-wider text-outline sm:text-[11px]"><c:out value="${paymentInfoPriceLabel}" /></p>
+                              <p class="m-0 truncate text-[11px] font-bold sm:text-sm">$ <c:out value="${not empty sentRequest.totalPriceLabel ? sentRequest.totalPriceLabel : '-'}" /></p>
+                              <p class="m-0 truncate text-[10px] text-on-surface-variant sm:text-xs"><c:out value="${paymentInfoAliasLabel}" />: <c:out value="${not empty sentRequest.paymentAlias ? sentRequest.paymentAlias : '-'}" /></p>
                             </div>
                           </div>
                           <c:if test="${not empty authoredItemReview}">
-                            <p class="m-0 text-[11px] font-bold text-success flex items-center gap-1">
-                              <span class="material-symbols-outlined text-sm leading-none">check_circle</span>
+                            <p class="m-0 text-[10px] font-bold text-success flex items-center gap-1 sm:text-[11px]">
+                              <span class="material-symbols-outlined text-xs leading-none sm:text-sm">check_circle</span>
                               <spring:message code="profile.reviews.authoredSummary.done" />
                             </p>
                           </c:if>

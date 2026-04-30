@@ -6,8 +6,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <fmt:setLocale value="es_AR" />
-<c:url var="publishUrl" value="/publish" />
-<spring:message code="nav.publishCta" var="publishCtaLabel" />
 <spring:message code="profile.publications.edit" var="editLabel" />
 <spring:message code="profile.publications.manageAvailability" var="manageAvailabilityLabel" />
 <spring:message code="profile.publications.enable" var="enableLabel" />
@@ -48,10 +46,6 @@
           <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="bookings.title" /></h1>
           <p class="text-on-surface-variant mt-2 m-0"><spring:message code="bookings.subtitle" /></p>
         </div>
-        <a href="${publishUrl}" class="btn btn-secondary no-underline sm:shrink-0">
-          <span class="material-symbols-outlined text-base">add</span>
-          <c:out value="${publishCtaLabel}" />
-        </a>
       </div>
           <div id="sent-booking-requests" class="scroll-mt-24 space-y-4">
             <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.sentBookings.title" /></h2>

@@ -33,6 +33,8 @@ public class BookingRequestActionController {
 
     private static final Set<String> PAYMENT_PROOF_CONTENT_TYPES =
             Set.of("application/pdf", "image/jpeg", "image/png", "image/webp");
+    private static final String DASHBOARD_BOOKINGS_PAYMENT_REDIRECT = "redirect:/bookings?paymentAction=";
+    private static final String DASHBOARD_HOSTING_PAYMENT_REDIRECT = "redirect:/my-boats?paymentAction=";
 
     private final BookingRequestService bookingRequestService;
     private final ItemService itemService;
@@ -82,12 +84,12 @@ public class BookingRequestActionController {
         if (booking == null
                 || booking.getGuestId() == null
                 || !booking.getGuestId().equals(currentUser.getId())) {
-            return new ModelAndView("redirect:/dashboard?paymentAction=forbidden#sent-booking-requests");
+            return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + "forbidden#sent-booking-requests");
         }
 
         final MultipartFile file = form.getFile();
         if (!isValidPaymentProof(file)) {
-            return new ModelAndView("redirect:/dashboard?paymentAction=invalidFile#sent-booking-requests");
+            return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + "invalidFile#sent-booking-requests");
         }
 
         final boolean isResubmit = booking.getState() == BookingState.BOOKING_PAYMENT_REFUSED;
@@ -100,7 +102,7 @@ public class BookingRequestActionController {
                     file.getBytes(),
                     form.getGuestReply());
             if (proof.isEmpty()) {
-                return new ModelAndView("redirect:/dashboard?paymentAction=submitError#sent-booking-requests");
+                return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + "submitError#sent-booking-requests");
             }
 
             final Item item = booking.getItemId() == null
@@ -118,9 +120,9 @@ public class BookingRequestActionController {
                         proof.get().getContentType());
             }
             final String action = isResubmit ? "resubmitted" : "submitted";
-            return new ModelAndView("redirect:/profile/dashboard?paymentAction=" + action + "#sent-booking-requests");
+            return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + action + "#sent-booking-requests");
         } catch (final IOException e) {
-            return new ModelAndView("redirect:/dashboard?paymentAction=submitError#sent-booking-requests");
+            return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + "submitError#sent-booking-requests");
         }
     }
 
@@ -134,12 +136,12 @@ public class BookingRequestActionController {
             return new ModelAndView("redirect:/login");
         }
         if (errors.hasErrors()) {
-            return new ModelAndView("redirect:/profile/dashboard?paymentAction=refuseError#received-booking-requests");
+            return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "refuseError#received-booking-requests");
         }
 
         final var refused = bookingRequestService.refusePaymentProof(bookingId, currentUser.getId(), form.getReason());
         if (refused.isEmpty()) {
-            return new ModelAndView("redirect:/profile/dashboard?paymentAction=refuseError#received-booking-requests");
+            return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "refuseError#received-booking-requests");
         }
 
         final Item item = refused.get().getItemId() == null
@@ -151,7 +153,7 @@ public class BookingRequestActionController {
                 currentUser.getName(),
                 item == null ? "" : item.getTitle(),
                 form.getReason());
-        return new ModelAndView("redirect:/profile/dashboard?paymentAction=refused#received-booking-requests");
+        return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "refused#received-booking-requests");
     }
 
     @RequestMapping(value = "/bookings/{id:[0-9]+}/payment-proof", method = RequestMethod.GET)
@@ -193,7 +195,7 @@ public class BookingRequestActionController {
 
         final var resolved = bookingRequestService.confirmPaymentReceived(bookingId, currentUser.getId());
         if (resolved.isEmpty()) {
-            return new ModelAndView("redirect:/dashboard?paymentAction=confirmError#received-booking-requests");
+            return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "confirmError#received-booking-requests");
         }
 
         final Item item = resolved.get().getItemId() == null
@@ -203,7 +205,7 @@ public class BookingRequestActionController {
                 resolved.get().getRequesterEmail(),
                 resolved.get().getRequesterLocaleTag(),
                 item == null ? "" : item.getTitle());
-        return new ModelAndView("redirect:/dashboard?paymentAction=paid#received-booking-requests");
+        return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "paid#received-booking-requests");
     }
 
     private ModelAndView resolveBookingRequestInAccount(final int bookingId, final BookingState bookingState) {
@@ -217,22 +219,22 @@ public class BookingRequestActionController {
                 .findFirst()
                 .orElse(null);
         if (booking == null || booking.getHostDecisionToken() == null) {
-            return new ModelAndView("redirect:/dashboard?bookingAction=notFound#received-booking-requests");
+            return new ModelAndView("redirect:/my-boats?bookingAction=notFound#received-booking-requests");
         }
 
         final var item = itemService.findAnyItemById(booking.getItemId()).orElse(null);
         if (item == null || item.getOwnerId() == null || !item.getOwnerId().equals(currentUser.getId())) {
-            return new ModelAndView("redirect:/dashboard?bookingAction=forbidden#received-booking-requests");
+            return new ModelAndView("redirect:/my-boats?bookingAction=forbidden#received-booking-requests");
         }
 
         final var resolved = bookingRequestService.resolveBookingRequest(booking.getHostDecisionToken(), bookingState);
         if (resolved.isEmpty()) {
-            return new ModelAndView("redirect:/dashboard?bookingAction=error#received-booking-requests");
+            return new ModelAndView("redirect:/my-boats?bookingAction=error#received-booking-requests");
         }
 
         mailService.sendBookingResolutionEmail(resolved.get());
         final String action = bookingState == BookingState.BOOKING_CONFIRMED ? "accepted" : "rejected";
-        return new ModelAndView("redirect:/dashboard?bookingAction=" + action + "#received-booking-requests");
+        return new ModelAndView("redirect:/my-boats?bookingAction=" + action + "#received-booking-requests");
     }
 
     private ItemBooking findBookingById(final int bookingId) {

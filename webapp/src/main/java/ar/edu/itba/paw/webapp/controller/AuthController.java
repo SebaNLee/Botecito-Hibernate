@@ -749,6 +749,8 @@ public class AuthController {
                     bookingRequestService.findPaymentProofByBookingId(booking.getId());
             sentBookings.add(new SentBookingView(
                     booking.getId(),
+                    booking.getItemId(),
+                    itemService.findCoverImageIdByItemId(booking.getItemId()).orElse(null),
                     item.getTitle(),
                     owner == null ? "" : owner.getName(),
                     owner == null ? "" : owner.getEmail(),
@@ -1119,6 +1121,8 @@ public class AuthController {
 
     public record SentBookingView(
             int id,
+            int itemId,
+            Integer imageId,
             String itemTitle,
             String ownerName,
             String ownerEmail,
@@ -1134,6 +1138,14 @@ public class AuthController {
 
         public int getId() {
             return id;
+        }
+
+        public int getItemId() {
+            return itemId;
+        }
+
+        public Integer getImageId() {
+            return imageId;
         }
 
         public String getItemTitle() {

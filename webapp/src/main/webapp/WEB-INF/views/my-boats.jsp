@@ -210,6 +210,7 @@
                     <c:url var="declineBookingUrl" value="/bookings/${receivedRequest.id}/decline" />
                     <c:url var="receivedPaymentProofUrl" value="/bookings/${receivedRequest.id}/payment-proof" />
                     <c:url var="confirmPaymentUrl" value="/bookings/${receivedRequest.id}/payment/confirm" />
+                    <c:url var="receivedRequestItemUrl" value="/item/${receivedRequest.itemId}" />
                     <c:set var="authoredUserReview" value="${authoredUserReviewsByBookingId[receivedRequest.id]}" />
                     <c:set var="receivedStatusClass" value="badge-ghost" />
                     <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.pending'}"><c:set var="receivedStatusClass" value="badge-warning" /></c:if>
@@ -241,7 +242,9 @@
                         </div>
                         <div class="min-w-0 flex flex-1 flex-col space-y-3">
                           <div class="space-y-2">
-                            <p class="m-0 min-w-0 break-words text-base font-extrabold text-on-surface"><c:out value="${receivedRequest.itemTitle}" /></p>
+                            <a href="${receivedRequestItemUrl}" class="link link-hover m-0 min-w-0 break-words text-base font-extrabold text-on-surface no-underline hover:text-primary">
+                              <c:out value="${receivedRequest.itemTitle}" />
+                            </a>
                             <p class="m-0 text-xs text-on-surface-variant"><c:out value="${receivedRequest.dateLabel}" /> · <c:out value="${receivedRequest.timeRangeLabel}" /></p>
                           </div>
                           <div class="grid grid-cols-1 gap-3 lg:grid-cols-2 sm:mt-auto">

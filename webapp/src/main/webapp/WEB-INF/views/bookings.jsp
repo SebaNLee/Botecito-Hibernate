@@ -56,16 +56,49 @@
           <div id="sent-booking-requests" class="scroll-mt-24 space-y-4">
             <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.sentBookings.title" /></h2>
             <form action="<c:url value='/bookings' />" method="get" class="flex flex-col gap-3 rounded-xl bg-base-200 p-4 sm:flex-row sm:items-end">
-              <label class="form-control w-full sm:max-w-xs">
+              <div class="form-control w-full sm:max-w-sm">
                 <span class="label-text text-xs font-bold uppercase tracking-wider text-outline"><spring:message code="dashboard.filters.status" /></span>
-                <select name="status" class="select select-bordered select-sm">
-                  <option value="all" ${bookingStatusFilter == 'all' ? 'selected="selected"' : ''}><spring:message code="dashboard.filters.status.all" /></option>
-                  <option value="pending" ${bookingStatusFilter == 'pending' ? 'selected="selected"' : ''}><spring:message code="dashboard.filters.status.pending" /></option>
-                  <option value="upcoming" ${bookingStatusFilter == 'upcoming' ? 'selected="selected"' : ''}><spring:message code="dashboard.filters.status.upcoming" /></option>
-                  <option value="completed" ${bookingStatusFilter == 'completed' ? 'selected="selected"' : ''}><spring:message code="dashboard.filters.status.completed" /></option>
-                  <option value="cancelled" ${bookingStatusFilter == 'cancelled' ? 'selected="selected"' : ''}><spring:message code="dashboard.filters.status.cancelled" /></option>
-                </select>
-              </label>
+                <details class="dropdown w-full">
+                  <summary class="btn btn-outline btn-sm w-full justify-between no-underline">
+                    <span><spring:message code="dashboard.filters.status" /></span>
+                    <span class="material-symbols-outlined text-base">expand_more</span>
+                  </summary>
+                  <div class="dropdown-content z-20 mt-2 w-full rounded-xl border border-outline-variant/30 bg-base-100 p-3 shadow-lg">
+                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
+                      <input type="checkbox" name="status" value="pending" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.pending ? 'checked="checked"' : ''} />
+                      <spring:message code="dashboard.filters.status.pending" />
+                    </label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
+                      <input type="checkbox" name="status" value="confirmed" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.confirmed ? 'checked="checked"' : ''} />
+                      <spring:message code="dashboard.filters.status.confirmed" />
+                    </label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
+                      <input type="checkbox" name="status" value="paymentSubmitted" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.paymentSubmitted ? 'checked="checked"' : ''} />
+                      <spring:message code="dashboard.filters.status.paymentSubmitted" />
+                    </label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
+                      <input type="checkbox" name="status" value="paid" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.paid ? 'checked="checked"' : ''} />
+                      <spring:message code="dashboard.filters.status.paid" />
+                    </label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
+                      <input type="checkbox" name="status" value="paymentRefused" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.paymentRefused ? 'checked="checked"' : ''} />
+                      <spring:message code="dashboard.filters.status.paymentRefused" />
+                    </label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
+                      <input type="checkbox" name="status" value="completed" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.completed ? 'checked="checked"' : ''} />
+                      <spring:message code="dashboard.filters.status.completed" />
+                    </label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
+                      <input type="checkbox" name="status" value="rejected" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.rejected ? 'checked="checked"' : ''} />
+                      <spring:message code="dashboard.filters.status.rejected" />
+                    </label>
+                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
+                      <input type="checkbox" name="status" value="cancelled" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.cancelled ? 'checked="checked"' : ''} />
+                      <spring:message code="dashboard.filters.status.cancelled" />
+                    </label>
+                  </div>
+                </details>
+              </div>
               <button type="submit" class="btn btn-primary btn-sm"><spring:message code="dashboard.filters.apply" /></button>
             </form>
             <c:if test="${param.reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
@@ -192,11 +225,15 @@
             <c:if test="${sentBookingPage.totalPages > 1}">
               <c:url var="sentPreviousPageUrl" value="/bookings">
                 <c:param name="page" value="${sentBookingPage.previousPage}" />
-                <c:param name="status" value="${bookingStatusFilter}" />
+                <c:forEach var="selectedStatus" items="${selectedBookingStatusFilters}">
+                  <c:param name="status" value="${selectedStatus}" />
+                </c:forEach>
               </c:url>
               <c:url var="sentNextPageUrl" value="/bookings">
                 <c:param name="page" value="${sentBookingPage.nextPage}" />
-                <c:param name="status" value="${bookingStatusFilter}" />
+                <c:forEach var="selectedStatus" items="${selectedBookingStatusFilters}">
+                  <c:param name="status" value="${selectedStatus}" />
+                </c:forEach>
               </c:url>
               <nav class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
                 <c:choose>

@@ -204,7 +204,7 @@
             <c:if test="${param.paymentAction == 'confirmError' || param.paymentAction == 'refuseError'}"><paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage></c:if>
             <c:choose>
               <c:when test="${not empty receivedBookingRequests}">
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 min-[56rem]:grid-cols-2 gap-4">
                   <c:forEach var="receivedRequest" items="${receivedBookingRequests}">
                     <c:url var="acceptBookingUrl" value="/bookings/${receivedRequest.id}/accept" />
                     <c:url var="declineBookingUrl" value="/bookings/${receivedRequest.id}/decline" />

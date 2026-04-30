@@ -523,10 +523,6 @@ public class MarketplaceController {
 
     private static boolean hasContinuousTwoHourWindowEndingAt(
             final List<String> availableTimes, final String requestedEndTime) {
-        if (!availableTimes.contains(requestedEndTime)) {
-            return false;
-        }
-
         for (final String possibleStartTime : availableTimes) {
             if (AvailabilityPickerSupport.hasContinuousAvailability(
                     availableTimes, possibleStartTime, requestedEndTime)) {

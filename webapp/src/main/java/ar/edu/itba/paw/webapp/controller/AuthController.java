@@ -375,6 +375,7 @@ public class AuthController {
         }
 
         mav.addObject("ownedItems", ownedItems);
+        mav.addObject("publicationCoverImageIdsByItemId", buildCoverImageIdsByItemId(ownedItems));
         mav.addObject("publicationDeleteDeactivatesByItemId", buildDeleteDeactivationFlags(ownedItems));
         mav.addObject("publicationDeleteDisabledByItemId", buildDeleteDisabledFlags(ownedItems));
         mav.addObject("receivedBookingRequests", buildReceivedBookings(user));
@@ -409,6 +410,7 @@ public class AuthController {
         final Page<ReceivedBookingView> receivedBookingPage = paginate(filteredBookings, page, 6);
 
         mav.addObject("ownedItems", ownedItems);
+        mav.addObject("publicationCoverImageIdsByItemId", buildCoverImageIdsByItemId(ownedItems));
         mav.addObject("publicationDeleteDeactivatesByItemId", buildDeleteDeactivationFlags(ownedItems));
         mav.addObject("publicationDeleteDisabledByItemId", buildDeleteDisabledFlags(ownedItems));
         mav.addObject("receivedBookingRequests", receivedBookingPage.getContent());
@@ -602,6 +604,22 @@ public class AuthController {
                                     .anyMatch(booking -> shouldRetainBookingForDeletion(booking)));
         }
         return deactivatesByItemId;
+    }
+
+    private Map<Integer, Integer> buildCoverImageIdsByItemId(final List<Item> items) {
+        final Map<Integer, Integer> coverImageIds = new LinkedHashMap<>();
+        if (items == null) {
+            return coverImageIds;
+        }
+        for (final Item item : items) {
+            if (item == null || item.getId() == null) {
+                continue;
+            }
+            itemService
+                    .findCoverImageIdByItemId(item.getId())
+                    .ifPresent(imageId -> coverImageIds.put(item.getId(), imageId));
+        }
+        return coverImageIds;
     }
 
     private Map<Integer, Boolean> buildDeleteDisabledFlags(final List<Item> ownedItems) {

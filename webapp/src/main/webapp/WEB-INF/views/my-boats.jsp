@@ -69,54 +69,95 @@
               <c:when test="${not empty ownedItems}">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <c:forEach var="item" items="${ownedItems}">
+                    <c:url var="itemUrl" value="/item/${item.id}" />
                     <c:url var="editItemUrl" value="/profile/item/${item.id}/edit" />
                     <c:url var="manageAvailabilityItemUrl" value="/profile/item/${item.id}/availability" />
                     <c:url var="disableItemUrl" value="/profile/item/${item.id}/disable" />
                     <c:url var="enableItemUrl" value="/profile/item/${item.id}/enable" />
                     <c:url var="deleteItemUrl" value="/profile/item/${item.id}/delete" />
+                    <c:set var="publicationCoverImageId" value="${publicationCoverImageIdsByItemId[item.id]}" />
+                    <c:if test="${not empty publicationCoverImageId}">
+                      <c:url var="publicationCoverImageUrl" value="/image/${publicationCoverImageId}" />
+                    </c:if>
                     <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
                     <c:set var="deleteModalMessage" value="${publicationDeleteDeactivatesByItemId[item.id] ? deleteDeactivateConfirmMessage : deleteConfirmMessage}" />
                     <c:set var="deleteDisabled" value="${publicationDeleteDisabledByItemId[item.id]}" />
                     <c:set var="kebabId" value="publication-kebab-${item.id}" />
-                    <div class="rounded-xl bg-base-200 p-4 flex min-w-0 items-start justify-between gap-4">
-                      <div class="min-w-0 ${item.active ? '' : 'opacity-75'}">
-                        <div class="flex min-w-0 flex-wrap items-center gap-2">
-                          <p class="m-0 min-w-0 break-words text-sm font-bold text-on-surface"><c:out value="${item.title}" /></p>
-                          <span class="badge ${item.active ? 'badge-success' : 'badge-ghost'} badge-sm shrink-0 font-bold">
-                            <spring:message code="${item.active ? 'profile.publications.status.active' : 'profile.publications.status.inactive'}" />
-                          </span>
+                    <div class="rounded-xl bg-base-200 p-3 ${item.active ? '' : 'opacity-75'}">
+                      <div class="flex min-w-0 flex-col gap-3 sm:flex-row">
+                        <a href="${itemUrl}" class="h-32 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 no-underline sm:w-36">
+                          <c:choose>
+                            <c:when test="${not empty publicationCoverImageId}">
+                              <img src="${publicationCoverImageUrl}" alt="" class="h-full w-full object-cover" loading="lazy" />
+                            </c:when>
+                            <c:otherwise>
+                              <div class="flex h-full w-full items-center justify-center text-outline">
+                                <span class="material-symbols-outlined text-3xl">directions_boat</span>
+                              </div>
+                            </c:otherwise>
+                          </c:choose>
+                        </a>
+                        <div class="min-w-0 flex flex-1 flex-col space-y-2">
+                          <div class="space-y-2">
+                            <div class="flex min-w-0 items-start gap-2">
+                              <a href="${itemUrl}" class="link link-hover m-0 min-w-0 flex-1 break-words text-base font-extrabold text-on-surface no-underline hover:text-primary">
+                                <c:out value="${item.title}" />
+                              </a>
+                              <span class="badge ${item.active ? 'badge-success' : 'badge-ghost'} badge-sm shrink-0 font-bold">
+                                <spring:message code="${item.active ? 'profile.publications.status.active' : 'profile.publications.status.inactive'}" />
+                              </span>
+                              <paw:kebabMenu id="${kebabId}" ariaLabel="${actionsLabel}">
+                                <li><a href="${editItemUrl}" class="flex items-center gap-2"><span class="material-symbols-outlined text-base leading-none">edit</span><span><c:out value="${editLabel}" /></span></a></li>
+                                <li><a href="${manageAvailabilityItemUrl}" class="flex items-center gap-2"><span class="material-symbols-outlined text-base leading-none">event_available</span><span><c:out value="${manageAvailabilityLabel}" /></span></a></li>
+                                <li>
+                                  <c:choose>
+                                    <c:when test="${item.active}">
+                                      <form action="${disableItemUrl}" method="post" class="m-0 w-full p-0"><button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left"><span class="material-symbols-outlined text-base leading-none">visibility_off</span><span><c:out value="${disableLabel}" /></span></button></form>
+                                    </c:when>
+                                    <c:otherwise>
+                                      <form action="${enableItemUrl}" method="post" class="m-0 w-full p-0"><button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left"><span class="material-symbols-outlined text-base leading-none">visibility</span><span><c:out value="${enableLabel}" /></span></button></form>
+                                    </c:otherwise>
+                                  </c:choose>
+                                </li>
+                                <li>
+                                  <c:choose>
+                                    <c:when test="${deleteDisabled}">
+                                      <button type="button" class="flex w-full cursor-not-allowed items-center gap-2 rounded-lg px-3 py-2 text-left text-error opacity-50" disabled="disabled" title="${deleteDisabledFutureBookingsLabel}">
+                                        <span class="material-symbols-outlined text-base leading-none">delete</span><span><c:out value="${deleteLabel}" /></span>
+                                      </button>
+                                    </c:when>
+                                    <c:otherwise>
+                                      <button type="button" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-error" onclick="document.getElementById('${deleteModalId}').showModal()"><span class="material-symbols-outlined text-base leading-none">delete</span><span><c:out value="${deleteLabel}" /></span></button>
+                                    </c:otherwise>
+                                  </c:choose>
+                                </li>
+                              </paw:kebabMenu>
+                            </div>
+                            <c:if test="${not empty item.location}">
+                              <p class="m-0 flex min-w-0 items-center gap-1.5 text-xs text-on-surface-variant">
+                                <span class="material-symbols-outlined text-base leading-none text-primary">location_on</span>
+                                <span class="min-w-0 truncate"><c:out value="${item.location}" /></span>
+                              </p>
+                            </c:if>
+                          </div>
+                          <div class="grid grid-cols-1 gap-2 lg:grid-cols-2 sm:mt-auto">
+                            <div class="rounded-lg bg-base-100 p-2.5 space-y-1">
+                              <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="item.capacityPeople" /></p>
+                              <p class="m-0 flex items-center gap-1.5 text-sm font-bold text-on-surface">
+                                <span class="material-symbols-outlined text-base leading-none text-primary">groups</span>
+                                <spring:message code="marketplace.card.people" arguments="${item.capacityPeople}" />
+                              </p>
+                            </div>
+                            <div class="rounded-lg bg-base-100 p-2.5 space-y-1">
+                              <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.bookings.paymentInfo.price" /></p>
+                              <p class="m-0 text-sm font-bold">
+                                $<fmt:formatNumber value="${item.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0" />
+                              </p>
+                              <p class="m-0 text-xs text-on-surface-variant"><spring:message code="marketplace.card.perHour" /></p>
+                            </div>
+                          </div>
                         </div>
-                        <p class="m-0 text-xs text-on-surface-variant">
-                          $<fmt:formatNumber value="${item.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0" />
-                          <spring:message code="marketplace.card.perHour" />
-                        </p>
                       </div>
-                      <paw:kebabMenu id="${kebabId}" ariaLabel="${actionsLabel}">
-                        <li><a href="${editItemUrl}" class="flex items-center gap-2"><span class="material-symbols-outlined text-base leading-none">edit</span><span><c:out value="${editLabel}" /></span></a></li>
-                        <li><a href="${manageAvailabilityItemUrl}" class="flex items-center gap-2"><span class="material-symbols-outlined text-base leading-none">event_available</span><span><c:out value="${manageAvailabilityLabel}" /></span></a></li>
-                        <li>
-                          <c:choose>
-                            <c:when test="${item.active}">
-                              <form action="${disableItemUrl}" method="post" class="m-0 w-full p-0"><button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left"><span class="material-symbols-outlined text-base leading-none">visibility_off</span><span><c:out value="${disableLabel}" /></span></button></form>
-                            </c:when>
-                            <c:otherwise>
-                              <form action="${enableItemUrl}" method="post" class="m-0 w-full p-0"><button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left"><span class="material-symbols-outlined text-base leading-none">visibility</span><span><c:out value="${enableLabel}" /></span></button></form>
-                            </c:otherwise>
-                          </c:choose>
-                        </li>
-                        <li>
-                          <c:choose>
-                            <c:when test="${deleteDisabled}">
-                              <button type="button" class="flex w-full cursor-not-allowed items-center gap-2 rounded-lg px-3 py-2 text-left text-error opacity-50" disabled="disabled" title="${deleteDisabledFutureBookingsLabel}">
-                                <span class="material-symbols-outlined text-base leading-none">delete</span><span><c:out value="${deleteLabel}" /></span>
-                              </button>
-                            </c:when>
-                            <c:otherwise>
-                              <button type="button" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-error" onclick="document.getElementById('${deleteModalId}').showModal()"><span class="material-symbols-outlined text-base leading-none">delete</span><span><c:out value="${deleteLabel}" /></span></button>
-                            </c:otherwise>
-                          </c:choose>
-                        </li>
-                      </paw:kebabMenu>
                     </div>
                     <c:if test="${!deleteDisabled}">
                       <paw:confirmModal id="${deleteModalId}" title="${deleteConfirmTitle}" message="${deleteModalMessage}" confirmText="${deleteConfirmConfirm}" cancelText="${deleteConfirmCancel}" confirmColor="danger" icon="delete_forever">

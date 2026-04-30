@@ -67,7 +67,7 @@
 
             <c:choose>
               <c:when test="${not empty ownedItems}">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-3 px-2 sm:px-3 md:grid-cols-2">
                   <c:forEach var="item" items="${ownedItems}">
                     <c:url var="itemUrl" value="/item/${item.id}" />
                     <c:url var="editItemUrl" value="/profile/item/${item.id}/edit" />
@@ -83,27 +83,27 @@
                     <c:set var="deleteModalMessage" value="${publicationDeleteDeactivatesByItemId[item.id] ? deleteDeactivateConfirmMessage : deleteConfirmMessage}" />
                     <c:set var="deleteDisabled" value="${publicationDeleteDisabledByItemId[item.id]}" />
                     <c:set var="kebabId" value="publication-kebab-${item.id}" />
-                    <div class="rounded-xl bg-base-200 p-3 ${item.active ? '' : 'opacity-75'}">
-                      <div class="flex min-w-0 flex-col gap-3 sm:flex-row">
-                        <a href="${itemUrl}" class="h-32 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 no-underline sm:w-36">
+                    <div class="rounded-xl bg-base-200 px-3 py-2.5 ${item.active ? '' : 'opacity-75'}">
+                      <div class="flex min-w-0 flex-col items-stretch gap-2.5 sm:flex-row">
+                        <a href="${itemUrl}" class="h-28 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 no-underline sm:h-auto sm:w-32">
                           <c:choose>
                             <c:when test="${not empty publicationCoverImageId}">
                               <img src="${publicationCoverImageUrl}" alt="" class="h-full w-full object-cover" loading="lazy" />
                             </c:when>
                             <c:otherwise>
                               <div class="flex h-full w-full items-center justify-center text-outline">
-                                <span class="material-symbols-outlined text-3xl">directions_boat</span>
+                                <span class="material-symbols-outlined text-2xl">directions_boat</span>
                               </div>
                             </c:otherwise>
                           </c:choose>
                         </a>
-                        <div class="min-w-0 flex flex-1 flex-col space-y-2">
-                          <div class="space-y-2">
-                            <div class="flex min-w-0 items-start gap-2">
-                              <a href="${itemUrl}" class="link link-hover m-0 min-w-0 flex-1 break-words text-base font-extrabold text-on-surface no-underline hover:text-primary">
+                        <div class="min-w-0 flex flex-1 flex-col gap-1.5">
+                          <div class="space-y-1.5">
+                            <div class="flex min-w-0 items-start gap-1.5">
+                              <a href="${itemUrl}" class="link link-hover m-0 min-w-0 flex-1 break-words text-sm font-extrabold text-on-surface no-underline line-clamp-2 hover:text-primary">
                                 <c:out value="${item.title}" />
                               </a>
-                              <span class="badge ${item.active ? 'badge-success' : 'badge-ghost'} badge-sm shrink-0 font-bold">
+                              <span class="badge ${item.active ? 'badge-success' : 'badge-ghost'} badge-xs shrink-0 font-bold">
                                 <spring:message code="${item.active ? 'profile.publications.status.active' : 'profile.publications.status.inactive'}" />
                               </span>
                               <paw:kebabMenu id="${kebabId}" ariaLabel="${actionsLabel}">
@@ -134,26 +134,26 @@
                               </paw:kebabMenu>
                             </div>
                             <c:if test="${not empty item.location}">
-                              <p class="m-0 flex min-w-0 items-center gap-1.5 text-xs text-on-surface-variant">
-                                <span class="material-symbols-outlined text-base leading-none text-primary">location_on</span>
+                              <p class="m-0 flex min-w-0 items-center gap-1 text-[11px] text-on-surface-variant">
+                                <span class="material-symbols-outlined text-sm leading-none text-primary">location_on</span>
                                 <span class="min-w-0 truncate"><c:out value="${item.location}" /></span>
                               </p>
                             </c:if>
                           </div>
-                          <div class="grid grid-cols-1 gap-2 lg:grid-cols-2 sm:mt-auto">
-                            <div class="rounded-lg bg-base-100 p-2.5 space-y-1">
-                              <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="item.capacityPeople" /></p>
-                              <p class="m-0 flex items-center gap-1.5 text-sm font-bold text-on-surface">
-                                <span class="material-symbols-outlined text-base leading-none text-primary">groups</span>
+                          <div class="mt-auto grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <div class="rounded-lg bg-base-100 p-2 space-y-0.5">
+                              <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-outline"><spring:message code="item.capacityPeople" /></p>
+                              <p class="m-0 flex items-center gap-1 text-xs font-bold text-on-surface">
+                                <span class="material-symbols-outlined text-sm leading-none text-primary">groups</span>
                                 <spring:message code="marketplace.card.people" arguments="${item.capacityPeople}" />
                               </p>
                             </div>
-                            <div class="rounded-lg bg-base-100 p-2.5 space-y-1">
-                              <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.bookings.paymentInfo.price" /></p>
-                              <p class="m-0 text-sm font-bold">
+                            <div class="rounded-lg bg-base-100 p-2 space-y-0.5">
+                              <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.bookings.paymentInfo.price" /></p>
+                              <p class="m-0 text-xs font-bold">
                                 $<fmt:formatNumber value="${item.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0" />
                               </p>
-                              <p class="m-0 text-xs text-on-surface-variant"><spring:message code="marketplace.card.perHour" /></p>
+                              <p class="m-0 text-[11px] text-on-surface-variant"><spring:message code="marketplace.card.perHour" /></p>
                             </div>
                           </div>
                         </div>

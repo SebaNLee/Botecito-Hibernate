@@ -23,8 +23,11 @@
         </a>
       </sec:authorize>
       <sec:authorize access="isAuthenticated()">
-        <a href="<c:url value='/dashboard' />" class="btn btn-secondary btn-sm no-underline">
-          <spring:message code="account.nav.publications" />
+        <a href="<c:url value='/my-boats' />" class="btn btn-ghost btn-sm no-underline">
+          <spring:message code="account.nav.myBoats" />
+        </a>
+        <a href="<c:url value='/bookings' />" class="btn btn-ghost btn-sm no-underline">
+          <spring:message code="account.nav.bookings" />
         </a>
         <a href="<c:url value='/profile' />" class="btn btn-ghost btn-circle btn-sm no-underline" title="<sec:authentication property='name' />" aria-label="Profile">
           <span class="material-symbols-outlined text-xl">account_circle</span>

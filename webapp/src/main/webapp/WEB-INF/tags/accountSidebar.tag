@@ -4,7 +4,8 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
 <c:url var="profileUrl" value="/profile" />
-<c:url var="dashboardUrl" value="/dashboard" />
+<c:url var="myBoatsUrl" value="/my-boats" />
+<c:url var="bookingsUrl" value="/bookings" />
 
 <aside class="card bg-base-100 shadow-sm lg:sticky lg:top-24">
   <nav class="card-body gap-2 p-4">
@@ -12,9 +13,13 @@
       <span class="material-symbols-outlined text-base">person</span>
       <spring:message code="account.nav.profile" />
     </a>
-    <a href="${dashboardUrl}" class="btn ${active == 'dashboard' ? 'btn-primary' : 'btn-ghost'} justify-start no-underline">
-      <span class="material-symbols-outlined text-base">view_list</span>
-      <spring:message code="account.nav.publications" />
+    <a href="${myBoatsUrl}" class="btn ${active == 'my-boats' ? 'btn-primary' : 'btn-ghost'} justify-start no-underline">
+      <span class="material-symbols-outlined text-base">directions_boat</span>
+      <spring:message code="account.nav.myBoats" />
+    </a>
+    <a href="${bookingsUrl}" class="btn ${active == 'bookings' ? 'btn-primary' : 'btn-ghost'} justify-start no-underline">
+      <span class="material-symbols-outlined text-base">luggage</span>
+      <spring:message code="account.nav.bookings" />
     </a>
   </nav>
 </aside>

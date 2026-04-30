@@ -1,0 +1,219 @@
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+
+<fmt:setLocale value="es_AR" />
+<c:url var="publishUrl" value="/publish" />
+<spring:message code="nav.publishCta" var="publishCtaLabel" />
+<spring:message code="profile.publications.edit" var="editLabel" />
+<spring:message code="profile.publications.manageAvailability" var="manageAvailabilityLabel" />
+<spring:message code="profile.publications.enable" var="enableLabel" />
+<spring:message code="profile.publications.disable" var="disableLabel" />
+<spring:message code="profile.publications.delete" var="deleteLabel" />
+<spring:message code="profile.publications.actions" var="actionsLabel" />
+<spring:message code="profile.publications.delete.confirm.title" var="deleteConfirmTitle" />
+<spring:message code="profile.publications.delete.confirm.message" var="deleteConfirmMessage" />
+<spring:message code="profile.publications.delete.confirm.deactivateMessage" var="deleteDeactivateConfirmMessage" />
+<spring:message code="profile.publications.delete.confirm.confirm" var="deleteConfirmConfirm" />
+<spring:message code="profile.publications.delete.confirm.cancel" var="deleteConfirmCancel" />
+<spring:message code="profile.publications.delete.disabled.futureBookings" var="deleteDisabledFutureBookingsLabel" />
+<spring:message code="profile.bookings.accept" var="acceptLabel" />
+<spring:message code="profile.bookings.decline" var="declineLabel" />
+<spring:message code="profile.paymentProofs.confirmReceived" var="paymentReceivedLabel" />
+<spring:message code="profile.sentBookings.paymentProof.upload" var="uploadPaymentProofLabel" />
+<spring:message code="payment.refuse.submit" var="refuseSubmitLabel" />
+<spring:message code="profile.bookings.paymentInfo.price" var="paymentInfoPriceLabel" />
+<spring:message code="profile.bookings.paymentInfo.alias" var="paymentInfoAliasLabel" />
+<spring:message code="dashboard.tabs.hosting" var="hostingTabLabel" />
+<spring:message code="dashboard.tabs.bookings" var="bookingsTabLabel" />
+<spring:message code="dashboard.tabs.reviews" var="reviewsTabLabel" />
+<spring:message code="profile.reviews.receivedAsGuest.title" var="receivedGuestReviewsTitle" />
+<spring:message code="profile.reviews.receivedAsGuest.empty" var="receivedGuestReviewsEmpty" />
+<spring:message code="profile.reviews.receivedOnItems.title" var="receivedOnItemsReviewsTitle" />
+<spring:message code="profile.reviews.receivedOnItems.empty" var="receivedOnItemsReviewsEmpty" />
+<spring:message code="profile.reviews.rating.label" var="reviewRatingLabel" />
+<spring:message code="profile.reviews.comment.label" var="reviewCommentLabel" />
+<spring:message code="profile.reviews.submit" var="reviewSubmitLabel" />
+<spring:message code="profile.reviews.target.item" var="reviewTargetItemLabel" />
+<spring:message code="profile.reviews.target.user" var="reviewTargetUserLabel" />
+<spring:message code="profile.reviews.authoredSummary.label" var="authoredReviewSummaryLabel" />
+
+<paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6">
+  <section class="min-w-0 space-y-6">
+      <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div class="min-w-0">
+          <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="bookings.title" /></h1>
+          <p class="text-on-surface-variant mt-2 m-0"><spring:message code="bookings.subtitle" /></p>
+        </div>
+        <a href="${publishUrl}" class="btn btn-secondary no-underline sm:shrink-0">
+          <span class="material-symbols-outlined text-base">add</span>
+          <c:out value="${publishCtaLabel}" />
+        </a>
+      </div>
+          <div id="sent-booking-requests" class="scroll-mt-24 space-y-4">
+            <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.sentBookings.title" /></h2>
+            <form action="<c:url value='/bookings' />" method="get" class="flex flex-col gap-3 rounded-xl bg-base-200 p-4 sm:flex-row sm:items-end">
+              <label class="form-control w-full sm:max-w-xs">
+                <span class="label-text text-xs font-bold uppercase tracking-wider text-outline"><spring:message code="dashboard.filters.status" /></span>
+                <select name="status" class="select select-bordered select-sm">
+                  <option value="all" ${bookingStatusFilter == 'all' ? 'selected="selected"' : ''}><spring:message code="dashboard.filters.status.all" /></option>
+                  <option value="pending" ${bookingStatusFilter == 'pending' ? 'selected="selected"' : ''}><spring:message code="dashboard.filters.status.pending" /></option>
+                  <option value="upcoming" ${bookingStatusFilter == 'upcoming' ? 'selected="selected"' : ''}><spring:message code="dashboard.filters.status.upcoming" /></option>
+                  <option value="completed" ${bookingStatusFilter == 'completed' ? 'selected="selected"' : ''}><spring:message code="dashboard.filters.status.completed" /></option>
+                  <option value="cancelled" ${bookingStatusFilter == 'cancelled' ? 'selected="selected"' : ''}><spring:message code="dashboard.filters.status.cancelled" /></option>
+                </select>
+              </label>
+              <button type="submit" class="btn btn-primary btn-sm"><spring:message code="dashboard.filters.apply" /></button>
+            </form>
+            <c:if test="${param.reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
+            <c:if test="${param.reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
+            <c:if test="${param.reviewAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.error" /></paw:alertMessage></c:if>
+            <c:if test="${param.paymentAction == 'submitted'}"><paw:alertMessage type="success"><spring:message code="profile.payment.submitted" /></paw:alertMessage></c:if>
+            <c:if test="${param.paymentAction == 'resubmitted'}"><paw:alertMessage type="success"><spring:message code="profile.payment.resubmitted" /></paw:alertMessage></c:if>
+            <c:if test="${param.paymentAction == 'invalidFile'}"><paw:alertMessage type="error"><spring:message code="profile.payment.invalidFile" /></paw:alertMessage></c:if>
+            <c:if test="${param.paymentAction == 'forbidden' || param.paymentAction == 'submitError' || param.paymentAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage></c:if>
+            <c:choose>
+              <c:when test="${not empty sentBookingRequests}">
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  <c:forEach var="sentRequest" items="${sentBookingRequests}">
+                    <c:url var="sentPaymentProofUrl" value="/bookings/${sentRequest.id}/payment-proof" />
+                    <c:set var="authoredItemReview" value="${authoredItemReviewsByBookingId[sentRequest.id]}" />
+                    <c:set var="sentStatusClass" value="badge-ghost" />
+                    <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.pending'}"><c:set var="sentStatusClass" value="badge-warning" /></c:if>
+                    <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.confirmed'}"><c:set var="sentStatusClass" value="badge-success" /></c:if>
+                    <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.rejected' || sentRequest.statusMessageCode == 'profile.sentBookings.status.cancelled'}"><c:set var="sentStatusClass" value="badge-error" /></c:if>
+                    <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paymentSubmitted'}"><c:set var="sentStatusClass" value="badge-info" /></c:if>
+                    <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paid'}"><c:set var="sentStatusClass" value="badge-success" /></c:if>
+                    <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paymentRefused'}"><c:set var="sentStatusClass" value="badge-error" /></c:if>
+                    <div class="rounded-xl bg-base-200 p-4 space-y-4">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0 space-y-1">
+                          <p class="m-0 min-w-0 break-words text-sm font-bold text-on-surface"><c:out value="${sentRequest.itemTitle}" /></p>
+                          <c:if test="${not empty authoredItemReview}">
+                            <p class="m-0 text-[11px] font-bold text-success flex items-center gap-1">
+                              <span class="material-symbols-outlined text-sm leading-none">check_circle</span>
+                              <spring:message code="profile.reviews.authoredSummary.done" />
+                            </p>
+                          </c:if>
+                        </div>
+                        <span class="badge ${sentStatusClass} badge-sm shrink-0 font-bold"><spring:message code="${sentRequest.statusMessageCode}" /></span>
+                      </div>
+                      <p class="m-0 text-xs text-on-surface-variant"><c:out value="${sentRequest.dateLabel}" /> · <c:out value="${sentRequest.timeRangeLabel}" /></p>
+                      <div class="rounded-lg bg-base-100 p-3">
+                        <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.sentBookings.owner.label" /></p>
+                        <p class="m-0 mt-1 break-words text-sm font-bold text-on-surface"><c:out value="${sentRequest.ownerName}" /></p>
+                        <p class="m-0 break-all text-xs text-on-surface-variant"><c:out value="${sentRequest.ownerEmail}" /></p>
+                      </div>
+                      <div class="rounded-lg bg-base-100 p-3 space-y-2">
+                        <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${paymentInfoPriceLabel}" /></p>
+                        <p class="m-0 text-sm font-bold">$ <c:out value="${not empty sentRequest.totalPriceLabel ? sentRequest.totalPriceLabel : '-'}" /></p>
+                        <p class="m-0 break-all text-xs text-on-surface-variant"><c:out value="${paymentInfoAliasLabel}" />: <c:out value="${not empty sentRequest.paymentAlias ? sentRequest.paymentAlias : '-'}" /></p>
+                      </div>
+                      <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.confirmed'}">
+                        <form action="${sentPaymentProofUrl}" method="post" enctype="multipart/form-data" class="space-y-2 border-t border-outline-variant/20 pt-3" data-submit-loading-form="true">
+                          <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" class="file-input file-input-bordered file-input-sm w-full" required />
+                          <paw:button type="submit" color="primary" size="sm" text="${uploadPaymentProofLabel}" submitLoading="true" />
+                        </form>
+                      </c:if>
+                      <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paymentRefused'}">
+                        <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error space-y-2">
+                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error"><spring:message code="payment.refused.banner" /></p>
+                          <c:if test="${sentRequest.hasPaymentRefusalReason}">
+                            <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="payment.refused.reasonLabel" /></p>
+                            <p class="m-0 text-sm text-on-surface whitespace-pre-wrap"><c:out value="${sentRequest.paymentRefusalReason}" /></p>
+                          </c:if>
+                          <a href="${sentPaymentProofUrl}" class="link link-hover text-xs font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></a>
+                        </div>
+                        <form action="${sentPaymentProofUrl}" method="post" enctype="multipart/form-data" class="space-y-2 border-t border-outline-variant/20 pt-3" data-submit-loading-form="true">
+                          <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" class="file-input file-input-bordered file-input-sm w-full" required />
+                          <label class="text-[11px] font-bold uppercase tracking-wider text-outline" for="guest-reply-${sentRequest.id}"><spring:message code="payment.reply.label" /></label>
+                          <textarea id="guest-reply-${sentRequest.id}" name="guestReply" rows="2" maxlength="500" class="textarea textarea-bordered w-full" placeholder="<spring:message code="payment.reply.placeholder" />"></textarea>
+                          <paw:button type="submit" color="primary" size="sm" text="${uploadPaymentProofLabel}" submitLoading="true" />
+                        </form>
+                      </c:if>
+                      <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paymentSubmitted' || sentRequest.statusMessageCode == 'profile.sentBookings.status.paid'}">
+                        <a href="${sentPaymentProofUrl}" class="link link-hover block border-t border-outline-variant/20 pt-3 text-sm font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></a>
+                      </c:if>
+                      <c:set var="guestPendingReview" value="${pendingGuestItemReviewsByBookingId[sentRequest.id]}" />
+                      <c:if test="${not empty guestPendingReview}">
+                        <form action="/reviews/booking/${sentRequest.id}" method="post" class="space-y-3 border-t border-outline-variant/20 pt-3">
+                          <input type="hidden" name="returnTo" value="dashboardBookings" />
+                          <div class="flex items-start justify-between gap-2">
+                            <p class="m-0 text-xs text-on-surface-variant break-words"><c:out value="${guestPendingReview.targetName}" /> · <c:out value="${guestPendingReview.targetEmail}" /></p>
+                            <span class="badge badge-primary badge-sm shrink-0 font-bold"><c:out value="${reviewTargetItemLabel}" /></span>
+                          </div>
+                          <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
+                            <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-guest-rating-${sentRequest.id}"><c:out value="${reviewRatingLabel}" /></label>
+                            <div class="flex items-center gap-1" data-rating-stars>
+                              <input id="review-guest-rating-${sentRequest.id}" type="hidden" name="rating" value="" data-rating-value />
+                              <c:forEach var="starIndex" begin="1" end="5">
+                                <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${reviewRatingLabel} ${starIndex}">
+                                  <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
+                                </button>
+                              </c:forEach>
+                            </div>
+                          </div>
+                          <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
+                            <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-guest-comment-${sentRequest.id}"><c:out value="${reviewCommentLabel}" /></label>
+                            <textarea id="review-guest-comment-${sentRequest.id}" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
+                          </div>
+                          <paw:button type="submit" color="primary" size="sm" text="${reviewSubmitLabel}" />
+                        </form>
+                      </c:if>
+                      <c:if test="${not empty authoredItemReview}">
+                        <div class="rounded-lg bg-base-100 p-3 space-y-2 border-t border-outline-variant/20">
+                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${authoredReviewSummaryLabel}" /></p>
+                          <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-0.5" aria-label="${authoredItemReview.rating} of 5">
+                              <c:forEach var="starIndex" begin="1" end="5">
+                                <span class="material-symbols-outlined text-sm leading-none ${starIndex <= authoredItemReview.rating ? 'text-warning' : 'text-outline'}" style="opacity: ${starIndex <= authoredItemReview.rating ? '1' : '0.35'};">star</span>
+                              </c:forEach>
+                            </div>
+                          </div>
+                          <c:if test="${not empty authoredItemReview.comment}">
+                            <p class="m-0 text-xs text-on-surface-variant break-words">
+                              <c:choose>
+                                <c:when test="${fn:length(authoredItemReview.comment) > 80}"><c:out value="${fn:substring(authoredItemReview.comment, 0, 80)}" />...</c:when>
+                                <c:otherwise><c:out value="${authoredItemReview.comment}" /></c:otherwise>
+                              </c:choose>
+                            </p>
+                          </c:if>
+                        </div>
+                      </c:if>
+                    </div>
+                  </c:forEach>
+                </div>
+              </c:when>
+              <c:otherwise><p class="m-0 text-sm text-on-surface-variant"><spring:message code="profile.sentBookings.empty" /></p></c:otherwise>
+            </c:choose>
+            <c:if test="${sentBookingPage.totalPages > 1}">
+              <c:url var="sentPreviousPageUrl" value="/bookings">
+                <c:param name="page" value="${sentBookingPage.previousPage}" />
+                <c:param name="status" value="${bookingStatusFilter}" />
+              </c:url>
+              <c:url var="sentNextPageUrl" value="/bookings">
+                <c:param name="page" value="${sentBookingPage.nextPage}" />
+                <c:param name="status" value="${bookingStatusFilter}" />
+              </c:url>
+              <nav class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
+                <c:choose>
+                  <c:when test="${sentBookingPage.hasPrevious}">
+                    <a href="${sentPreviousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2"><span class="material-symbols-outlined text-sm">arrow_back</span><spring:message code="marketplace.pagination.previous" /></a>
+                  </c:when>
+                  <c:otherwise><span class="btn btn-outline btn-sm btn-disabled gap-2"><span class="material-symbols-outlined text-sm">arrow_back</span><spring:message code="marketplace.pagination.previous" /></span></c:otherwise>
+                </c:choose>
+                <span><spring:message code="marketplace.pagination.page" arguments="${sentBookingPage.page},${sentBookingPage.totalPages}" /></span>
+                <c:choose>
+                  <c:when test="${sentBookingPage.hasNext}">
+                    <a href="${sentNextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2"><spring:message code="marketplace.pagination.next" /><span class="material-symbols-outlined text-sm">arrow_forward</span></a>
+                  </c:when>
+                  <c:otherwise><span class="btn btn-outline btn-sm btn-disabled gap-2"><spring:message code="marketplace.pagination.next" /><span class="material-symbols-outlined text-sm">arrow_forward</span></span></c:otherwise>
+                </c:choose>
+              </nav>
+            </c:if>
+          </div>
+  </section>
+</paw:layout>

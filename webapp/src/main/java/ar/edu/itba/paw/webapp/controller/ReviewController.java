@@ -69,12 +69,12 @@ public class ReviewController {
             return "/item/" + itemId + "?reviewAction=" + action;
         }
         if ("dashboardHosting".equals(returnTo)) {
-            return "/dashboard?dashboardTab=hosting&reviewAction=" + action + "#received-booking-requests";
+            return "/my-boats?reviewAction=" + action + "#received-booking-requests";
         }
         if ("dashboardBookings".equals(returnTo)) {
-            return "/dashboard?dashboardTab=bookings&reviewAction=" + action + "#sent-booking-requests";
+            return "/bookings?reviewAction=" + action + "#sent-booking-requests";
         }
-        return "/dashboard?dashboardTab=reviews&reviewAction=" + action + "#reviews";
+        return "/bookings?reviewAction=" + action + "#sent-booking-requests";
     }
 
     private User currentAuthenticatedUser() {

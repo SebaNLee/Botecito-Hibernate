@@ -68,7 +68,7 @@ public class PublicationAvailabilityController {
         }
         final Item item = itemService.findItemById(itemId).orElse(null);
         if (item == null || !currentUser.getId().equals(item.getOwnerId())) {
-            return new ModelAndView("redirect:/dashboard?publishAction=forbidden");
+            return new ModelAndView("redirect:/my-boats?publishAction=forbidden");
         }
 
         return buildManageAvailabilityView(item, requestedDate);
@@ -85,7 +85,7 @@ public class PublicationAvailabilityController {
         }
         final Item item = itemService.findItemById(itemId).orElse(null);
         if (item == null || !currentUser.getId().equals(item.getOwnerId())) {
-            return new ModelAndView("redirect:/dashboard?publishAction=forbidden");
+            return new ModelAndView("redirect:/my-boats?publishAction=forbidden");
         }
 
         if (errors.hasErrors()) {
@@ -121,7 +121,7 @@ public class PublicationAvailabilityController {
         }
         final Item item = itemService.findItemById(itemId).orElse(null);
         if (item == null || !currentUser.getId().equals(item.getOwnerId())) {
-            return new ModelAndView("redirect:/dashboard?publishAction=forbidden");
+            return new ModelAndView("redirect:/my-boats?publishAction=forbidden");
         }
 
         final boolean removed = disabledTimeSlotService.reEnable(itemId, disabledSlotId);

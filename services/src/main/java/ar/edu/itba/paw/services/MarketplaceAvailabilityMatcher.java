@@ -154,7 +154,7 @@ final class MarketplaceAvailabilityMatcher {
     private static void addTimeRange(final TreeSet<String> times, final LocalTime startTime, final LocalTime endTime) {
         final int startMinute = startTime.toSecondOfDay() / 60;
         final int endMinute = endTime.toSecondOfDay() / 60;
-        for (int minute = startMinute; minute <= endMinute; minute += TIME_SLOT_STEP_MINUTES) {
+        for (int minute = startMinute; minute < endMinute; minute += TIME_SLOT_STEP_MINUTES) {
             times.add(LocalTime.ofSecondOfDay((long) minute * 60).toString());
         }
     }
@@ -231,7 +231,7 @@ final class MarketplaceAvailabilityMatcher {
                 return false;
             }
             for (int minute = startTime.toSecondOfDay() / 60;
-                    minute <= endTime.toSecondOfDay() / 60;
+                    minute < endTime.toSecondOfDay() / 60;
                     minute += TIME_SLOT_STEP_MINUTES) {
                 if (!availableTimeSet.contains(
                         LocalTime.ofSecondOfDay((long) minute * 60).toString())) {

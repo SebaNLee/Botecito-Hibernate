@@ -7,6 +7,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -16,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BookingRequestServiceImpl implements BookingRequestService {
+
+    private static final int MIN_ANTICIPATION_MINUTES = 120;
+
     private final ItemDao itemDao;
     private final MailService mailService;
 
@@ -35,12 +39,25 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             final OffsetDateTime startTime,
             final OffsetDateTime endTime,
             final String description) {
+        validateAnticipation(startTime);
         final User requesterUser = resolveOrCreateRequesterUser(
                 requesterGivenName, requesterLastName, requesterEmail, requesterPreferredLanguage);
         final String token = UUID.randomUUID().toString();
         final ItemBooking booking =
                 itemDao.createBookingRequest(itemId, requesterUser.getId(), startTime, endTime, description, token);
         return toBookingRequest(booking, requesterUser);
+    }
+
+    private static void validateAnticipation(final OffsetDateTime bookingStartTime) {
+        final Instant now = OffsetDateTime.now().minusHours(3).toInstant();
+        final Instant bookingStart = bookingStartTime.toInstant();
+        final Instant earliestAllowedStart = now.plus(Duration.ofMinutes(MIN_ANTICIPATION_MINUTES));
+        if (bookingStart.isBefore(earliestAllowedStart)) {
+            String times = "Current: " + now + " | Booking starts: " + bookingStart + " | Calculated difference: "
+                    + Duration.between(now, bookingStart);
+            throw new RuntimeException("Requested booking starts in less than the minimum anticipation time of "
+                    + MIN_ANTICIPATION_MINUTES + " minutes + (" + times + ")");
+        }
     }
 
     @Override

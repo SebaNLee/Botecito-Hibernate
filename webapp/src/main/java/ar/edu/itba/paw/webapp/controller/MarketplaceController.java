@@ -211,16 +211,17 @@ public class MarketplaceController {
             return buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
         }
 
+        final BookingRequest bookingRequest = bookingRequestService.createBookingRequest(
+                itemId,
+                currentUser.getGivenName(),
+                currentUser.getLastName(),
+                currentUser.getEmail(),
+                currentUser.getPreferredLanguage(),
+                toOffsetDateTime(form.getDate(), form.getStartTime()),
+                toOffsetDateTime(form.getDate(), form.getEndTime()),
+                buildReservationRequestDescription(item.get(), owner.orElse(null), form));
+
         try {
-            final BookingRequest bookingRequest = bookingRequestService.createBookingRequest(
-                    itemId,
-                    currentUser.getGivenName(),
-                    currentUser.getLastName(),
-                    currentUser.getEmail(),
-                    currentUser.getPreferredLanguage(),
-                    toOffsetDateTime(form.getDate(), form.getStartTime()),
-                    toOffsetDateTime(form.getDate(), form.getEndTime()),
-                    buildReservationRequestDescription(item.get(), owner.orElse(null), form));
             mailService.sendBookingReviewEmail(
                     bookingRequest, owner.map(User::getEmail).orElse(null));
             final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);

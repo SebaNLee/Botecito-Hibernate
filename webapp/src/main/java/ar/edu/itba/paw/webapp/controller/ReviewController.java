@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class ReviewController {
@@ -34,47 +35,51 @@ public class ReviewController {
             @Valid @ModelAttribute("reviewForm") final ReviewForm form,
             final BindingResult errors,
             @RequestParam(value = "returnTo", required = false, defaultValue = "dashboard") final String returnTo,
-            @RequestParam(value = "itemId", required = false) final Integer itemId) {
+            @RequestParam(value = "itemId", required = false) final Integer itemId,
+            final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
 
         if (errors.hasErrors()) {
-            return new ModelAndView("redirect:" + buildReturnUrl(returnTo, itemId, "validationError"));
+            return redirectWithReviewAction(returnTo, itemId, "validationError", redirectAttributes);
         }
 
         final boolean created = reviewService
                 .createReviewForBooking(bookingId, currentUser.getId(), form.getRating(), form.getComment())
                 .isPresent();
-        return new ModelAndView("redirect:" + buildReturnUrl(returnTo, itemId, created ? "created" : "error"));
+        return redirectWithReviewAction(returnTo, itemId, created ? "created" : "error", redirectAttributes);
     }
 
     @RequestMapping(value = "/reviews/{reviewId:[0-9]+}/delete", method = RequestMethod.POST)
     public ModelAndView deleteReview(
             @PathVariable("reviewId") final int reviewId,
             @RequestParam(value = "returnTo", required = false, defaultValue = "dashboard") final String returnTo,
-            @RequestParam(value = "itemId", required = false) final Integer itemId) {
+            @RequestParam(value = "itemId", required = false) final Integer itemId,
+            final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
 
         final boolean deleted = reviewService.deleteReview(reviewId, currentUser.getId());
-        return new ModelAndView("redirect:" + buildReturnUrl(returnTo, itemId, deleted ? "deleted" : "deleteError"));
+        return redirectWithReviewAction(returnTo, itemId, deleted ? "deleted" : "deleteError", redirectAttributes);
     }
 
-    private static String buildReturnUrl(final String returnTo, final Integer itemId, final String action) {
+    private static ModelAndView redirectWithReviewAction(
+            final String returnTo,
+            final Integer itemId,
+            final String action,
+            final RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("reviewAction", action);
         if ("item".equals(returnTo) && itemId != null) {
-            return "/item/" + itemId + "?reviewAction=" + action;
+            return new ModelAndView("redirect:/item/" + itemId);
         }
         if ("dashboardHosting".equals(returnTo)) {
-            return "/my-boats?reviewAction=" + action + "#received-booking-requests";
+            return new ModelAndView("redirect:/my-boats#received-booking-requests");
         }
-        if ("dashboardBookings".equals(returnTo)) {
-            return "/bookings?reviewAction=" + action + "#sent-booking-requests";
-        }
-        return "/bookings?reviewAction=" + action + "#sent-booking-requests";
+        return new ModelAndView("redirect:/bookings#sent-booking-requests");
     }
 
     private User currentAuthenticatedUser() {

@@ -361,34 +361,6 @@ public class AuthController {
         return mav;
     }
 
-    private void addDashboardData(final ModelAndView mav, final User user) {
-        final List<Item> ownedItems = itemService.listItemsByOwnerId(user.getId());
-        final List<PendingReviewView> pendingReviewActions = buildPendingReviewActions(user.getId());
-        final Map<Integer, PendingReviewView> pendingGuestItemReviewsByBookingId = new LinkedHashMap<>();
-        final Map<Integer, PendingReviewView> pendingOwnerUserReviewsByBookingId = new LinkedHashMap<>();
-        for (final PendingReviewView pendingReview : pendingReviewActions) {
-            if (pendingReview.targetType() == ReviewTargetType.ITEM) {
-                pendingGuestItemReviewsByBookingId.put(pendingReview.bookingId(), pendingReview);
-            } else if (pendingReview.targetType() == ReviewTargetType.USER) {
-                pendingOwnerUserReviewsByBookingId.put(pendingReview.bookingId(), pendingReview);
-            }
-        }
-
-        mav.addObject("ownedItems", ownedItems);
-        mav.addObject("publicationCoverImageIdsByItemId", buildCoverImageIdsByItemId(ownedItems));
-        mav.addObject("publicationDeleteDeactivatesByItemId", buildDeleteDeactivationFlags(ownedItems));
-        mav.addObject("publicationDeleteDisabledByItemId", buildDeleteDisabledFlags(ownedItems));
-        mav.addObject("receivedBookingRequests", buildReceivedBookings(user));
-        mav.addObject("sentBookingRequests", buildSentBookings(user.getId()));
-        mav.addObject("pendingGuestItemReviewsByBookingId", pendingGuestItemReviewsByBookingId);
-        mav.addObject("pendingOwnerUserReviewsByBookingId", pendingOwnerUserReviewsByBookingId);
-        mav.addObject("authoredItemReviewsByBookingId", buildAuthoredItemReviewsByBookingId(user.getId()));
-        mav.addObject("authoredUserReviewsByBookingId", buildAuthoredUserReviewsByBookingId(user.getId()));
-        mav.addObject("receivedGuestReviews", buildReceivedUserReviews(user.getId()));
-        mav.addObject(
-                "receivedItemReviewsByOwnedItems", buildReceivedItemReviewsByOwnedItems(user.getId(), ownedItems));
-    }
-
     private void addMyBoatsData(
             final ModelAndView mav, final User user, final List<String> statuses, final String query, final int page) {
         final List<Item> ownedItems = itemService.listItemsByOwnerId(user.getId());
@@ -767,19 +739,20 @@ public class AuthController {
                     : itemService.findUserById(item.getOwnerId()).orElse(null);
             final java.util.Optional<BookingPaymentProof> proof =
                     bookingRequestService.findPaymentProofByBookingId(booking.getId());
+            final boolean exposeContact = shouldExposePaymentAliasToGuest(booking.getState());
             sentBookings.add(new SentBookingView(
                     booking.getId(),
                     booking.getItemId(),
                     itemService.findCoverImageIdByItemId(booking.getItemId()).orElse(null),
                     item.getTitle(),
                     owner == null ? "" : owner.getName(),
-                    owner == null ? "" : owner.getEmail(),
+                    exposeContact && owner != null ? owner.getEmail() : "",
                     booking.getStartTime(),
                     booking.getEndTime(),
                     formatDateLabel(booking.getStartTime()),
                     formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
                     formatTotalPriceLabel(booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
-                    shouldExposePaymentAliasToGuest(booking.getState()) ? resolvePaymentAlias(owner) : "",
+                    exposeContact ? resolvePaymentAlias(owner) : "",
                     statusMessageCode(booking.getState()),
                     proof.map(BookingPaymentProof::getContentType).orElse(""),
                     proof.map(BookingPaymentProof::getRefusalReason).orElse(""),

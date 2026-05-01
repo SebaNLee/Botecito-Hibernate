@@ -27,13 +27,6 @@
 <spring:message code="payment.refuse.submit" var="refuseSubmitLabel" />
 <spring:message code="profile.bookings.paymentInfo.price" var="paymentInfoPriceLabel" />
 <spring:message code="profile.bookings.paymentInfo.alias" var="paymentInfoAliasLabel" />
-<spring:message code="dashboard.tabs.hosting" var="hostingTabLabel" />
-<spring:message code="dashboard.tabs.bookings" var="bookingsTabLabel" />
-<spring:message code="dashboard.tabs.reviews" var="reviewsTabLabel" />
-<spring:message code="profile.reviews.receivedAsGuest.title" var="receivedGuestReviewsTitle" />
-<spring:message code="profile.reviews.receivedAsGuest.empty" var="receivedGuestReviewsEmpty" />
-<spring:message code="profile.reviews.receivedOnItems.title" var="receivedOnItemsReviewsTitle" />
-<spring:message code="profile.reviews.receivedOnItems.empty" var="receivedOnItemsReviewsEmpty" />
 <spring:message code="profile.reviews.rating.label" var="reviewRatingLabel" />
 <spring:message code="profile.reviews.comment.label" var="reviewCommentLabel" />
 <spring:message code="profile.reviews.submit" var="reviewSubmitLabel" />
@@ -174,7 +167,9 @@
                 </div>
               </c:when>
               <c:otherwise>
-                <p class="m-0 text-sm text-on-surface-variant"><spring:message code="profile.publications.empty" /></p>
+                <div class="mx-1 rounded-xl bg-base-200 px-4 py-6 text-center sm:mx-3">
+                  <p class="m-0 text-sm text-on-surface-variant"><spring:message code="profile.publications.empty" /></p>
+                </div>
               </c:otherwise>
             </c:choose>
           </div>
@@ -238,15 +233,15 @@
                 <spring:message code="dashboard.filters.clear" />
               </a>
             </form>
-            <c:if test="${param.reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
-            <c:if test="${param.reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
-            <c:if test="${param.reviewAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.error" /></paw:alertMessage></c:if>
-            <c:if test="${param.bookingAction == 'accepted'}"><paw:alertMessage type="success"><spring:message code="profile.bookings.accepted" /></paw:alertMessage></c:if>
-            <c:if test="${param.bookingAction == 'rejected'}"><paw:alertMessage type="warning"><spring:message code="profile.bookings.rejected" /></paw:alertMessage></c:if>
-            <c:if test="${param.bookingAction == 'forbidden' || param.bookingAction == 'error' || param.bookingAction == 'notFound'}"><paw:alertMessage type="error"><spring:message code="profile.bookings.error" /></paw:alertMessage></c:if>
-            <c:if test="${param.paymentAction == 'paid'}"><paw:alertMessage type="success"><spring:message code="profile.payment.paid" /></paw:alertMessage></c:if>
-            <c:if test="${param.paymentAction == 'refused'}"><paw:alertMessage type="success"><spring:message code="profile.payment.refused" /></paw:alertMessage></c:if>
-            <c:if test="${param.paymentAction == 'confirmError' || param.paymentAction == 'refuseError'}"><paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage></c:if>
+            <c:if test="${reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
+            <c:if test="${reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
+            <c:if test="${reviewAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.error" /></paw:alertMessage></c:if>
+            <c:if test="${bookingAction == 'accepted'}"><paw:alertMessage type="success"><spring:message code="profile.bookings.accepted" /></paw:alertMessage></c:if>
+            <c:if test="${bookingAction == 'rejected'}"><paw:alertMessage type="warning"><spring:message code="profile.bookings.rejected" /></paw:alertMessage></c:if>
+            <c:if test="${bookingAction == 'forbidden' || bookingAction == 'error' || bookingAction == 'notFound'}"><paw:alertMessage type="error"><spring:message code="profile.bookings.error" /></paw:alertMessage></c:if>
+            <c:if test="${paymentAction == 'paid'}"><paw:alertMessage type="success"><spring:message code="profile.payment.paid" /></paw:alertMessage></c:if>
+            <c:if test="${paymentAction == 'refused'}"><paw:alertMessage type="success"><spring:message code="profile.payment.refused" /></paw:alertMessage></c:if>
+            <c:if test="${paymentAction == 'confirmError' || paymentAction == 'refuseError'}"><paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage></c:if>
             <c:choose>
               <c:when test="${not empty receivedBookingRequests}">
                 <div class="grid grid-cols-2 gap-2 sm:gap-4 min-[56rem]:grid-cols-2">
@@ -419,7 +414,11 @@
                   </c:forEach>
                 </div>
               </c:when>
-              <c:otherwise><p class="m-0 text-sm text-on-surface-variant"><spring:message code="profile.bookings.empty" /></p></c:otherwise>
+              <c:otherwise>
+                <div class="rounded-xl bg-base-200 px-4 py-6 text-center">
+                  <p class="m-0 text-sm text-on-surface-variant"><spring:message code="profile.bookings.empty" /></p>
+                </div>
+              </c:otherwise>
             </c:choose>
             <c:if test="${receivedBookingPage.totalPages > 1}">
               <c:url var="receivedPreviousPageUrl" value="/my-boats">

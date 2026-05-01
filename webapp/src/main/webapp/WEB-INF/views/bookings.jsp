@@ -25,13 +25,6 @@
 <spring:message code="payment.refuse.submit" var="refuseSubmitLabel" />
 <spring:message code="profile.bookings.paymentInfo.price" var="paymentInfoPriceLabel" />
 <spring:message code="profile.bookings.paymentInfo.alias" var="paymentInfoAliasLabel" />
-<spring:message code="dashboard.tabs.hosting" var="hostingTabLabel" />
-<spring:message code="dashboard.tabs.bookings" var="bookingsTabLabel" />
-<spring:message code="dashboard.tabs.reviews" var="reviewsTabLabel" />
-<spring:message code="profile.reviews.receivedAsGuest.title" var="receivedGuestReviewsTitle" />
-<spring:message code="profile.reviews.receivedAsGuest.empty" var="receivedGuestReviewsEmpty" />
-<spring:message code="profile.reviews.receivedOnItems.title" var="receivedOnItemsReviewsTitle" />
-<spring:message code="profile.reviews.receivedOnItems.empty" var="receivedOnItemsReviewsEmpty" />
 <spring:message code="profile.reviews.rating.label" var="reviewRatingLabel" />
 <spring:message code="profile.reviews.comment.label" var="reviewCommentLabel" />
 <spring:message code="profile.reviews.submit" var="reviewSubmitLabel" />
@@ -106,13 +99,13 @@
                 <spring:message code="dashboard.filters.clear" />
               </a>
             </form>
-            <c:if test="${param.reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
-            <c:if test="${param.reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
-            <c:if test="${param.reviewAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.error" /></paw:alertMessage></c:if>
-            <c:if test="${param.paymentAction == 'submitted'}"><paw:alertMessage type="success"><spring:message code="profile.payment.submitted" /></paw:alertMessage></c:if>
-            <c:if test="${param.paymentAction == 'resubmitted'}"><paw:alertMessage type="success"><spring:message code="profile.payment.resubmitted" /></paw:alertMessage></c:if>
-            <c:if test="${param.paymentAction == 'invalidFile'}"><paw:alertMessage type="error"><spring:message code="profile.payment.invalidFile" /></paw:alertMessage></c:if>
-            <c:if test="${param.paymentAction == 'forbidden' || param.paymentAction == 'submitError' || param.paymentAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage></c:if>
+            <c:if test="${reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
+            <c:if test="${reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
+            <c:if test="${reviewAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.error" /></paw:alertMessage></c:if>
+            <c:if test="${paymentAction == 'submitted'}"><paw:alertMessage type="success"><spring:message code="profile.payment.submitted" /></paw:alertMessage></c:if>
+            <c:if test="${paymentAction == 'resubmitted'}"><paw:alertMessage type="success"><spring:message code="profile.payment.resubmitted" /></paw:alertMessage></c:if>
+            <c:if test="${paymentAction == 'invalidFile'}"><paw:alertMessage type="error"><spring:message code="profile.payment.invalidFile" /></paw:alertMessage></c:if>
+            <c:if test="${paymentAction == 'forbidden' || paymentAction == 'submitError' || paymentAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage></c:if>
             <c:choose>
               <c:when test="${not empty sentBookingRequests}">
                 <div class="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-2">
@@ -158,7 +151,9 @@
                             <div class="min-w-0 rounded-lg bg-base-100 p-1.5 space-y-0.5 sm:p-3 sm:space-y-1">
                               <p class="m-0 text-[9px] font-bold uppercase tracking-wider text-outline sm:text-[11px]"><spring:message code="profile.sentBookings.owner.label" /></p>
                               <p class="m-0 truncate text-[11px] font-bold text-on-surface sm:text-sm"><c:out value="${sentRequest.ownerName}" /></p>
-                              <p class="m-0 truncate text-[10px] text-on-surface-variant sm:text-xs"><c:out value="${sentRequest.ownerEmail}" /></p>
+                              <c:if test="${not empty sentRequest.ownerEmail}">
+                                <p class="m-0 truncate text-[10px] text-on-surface-variant sm:text-xs"><c:out value="${sentRequest.ownerEmail}" /></p>
+                              </c:if>
                             </div>
                             <div class="min-w-0 rounded-lg bg-base-100 p-1.5 space-y-0.5 sm:p-3 sm:space-y-2">
                               <p class="m-0 text-[9px] font-bold uppercase tracking-wider text-outline sm:text-[11px]"><c:out value="${paymentInfoPriceLabel}" /></p>
@@ -275,7 +270,11 @@
                   </c:forEach>
                 </div>
               </c:when>
-              <c:otherwise><p class="m-0 text-sm text-on-surface-variant"><spring:message code="profile.sentBookings.empty" /></p></c:otherwise>
+              <c:otherwise>
+                <div class="rounded-xl bg-base-200 px-4 py-6 text-center">
+                  <p class="m-0 text-sm text-on-surface-variant"><spring:message code="profile.sentBookings.empty" /></p>
+                </div>
+              </c:otherwise>
             </c:choose>
             <c:if test="${sentBookingPage.totalPages > 1}">
               <c:url var="sentPreviousPageUrl" value="/bookings">

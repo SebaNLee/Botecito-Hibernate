@@ -63,6 +63,12 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         }
     }
 
+    private void validateAnticipationByToken(final String hostDecisionToken) {
+        itemDao.findBookingByHostDecisionToken(hostDecisionToken)
+                .map(ItemBooking::getStartTime)
+                .ifPresent(BookingRequestServiceImpl::validateAnticipation);
+    }
+
     @Override
     public Optional<BookingRequest> findByToken(final String token) {
         return itemDao.findBookingByHostDecisionToken(token).flatMap(this::toBookingRequest);
@@ -70,7 +76,10 @@ public class BookingRequestServiceImpl implements BookingRequestService {
 
     @Override
     public Optional<BookingRequest> resolveBookingRequest(final String token, final BookingState newStatus) {
-        if (!itemDao.resolveBookingByHostDecisionToken(token, newStatus, OffsetDateTime.now())) {
+        if (newStatus == BookingState.BOOKING_CONFIRMED) {
+            validateAnticipationByToken(token);
+        }
+        if (!itemDao.resolveBookingByHostDecisionToken(token, newStatus, currentDateTime())) {
             return Optional.empty();
         }
         return findByToken(token);
@@ -91,6 +100,8 @@ public class BookingRequestServiceImpl implements BookingRequestService {
                 || !canSubmitPaymentProof(booking.get().getState())) {
             return Optional.empty();
         }
+
+        validateAnticipation(booking.get().getStartTime());
 
         final BookingState state = booking.get().getState();
         if (state == BookingState.BOOKING_CONFIRMED) {
@@ -133,6 +144,9 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         if (trimmed.isEmpty()) {
             return Optional.empty();
         }
+
+        validateAnticipation(booking.get().getStartTime());
+
         if (!itemDao.markBookingPaymentRefused(bookingId, ownerId, trimmed)) {
             return Optional.empty();
         }

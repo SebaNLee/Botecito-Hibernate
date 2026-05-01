@@ -83,10 +83,10 @@ public class BookingRequestServiceImplTest {
     @Test
     public void testResolveBookingRequestWhenTokenCannotBeResolved() {
         Mockito.when(itemDao.resolveBookingByHostDecisionToken(
-                        Mockito.eq("t"), Mockito.eq(BookingState.BOOKING_CONFIRMED), Mockito.any()))
+                        Mockito.eq("t"), Mockito.eq(BookingState.BOOKING_REJECTED), Mockito.any()))
                 .thenReturn(false);
         final Optional<BookingRequest> result =
-                bookingRequestService.resolveBookingRequest("t", BookingState.BOOKING_CONFIRMED);
+                bookingRequestService.resolveBookingRequest("t", BookingState.BOOKING_REJECTED);
         Assertions.assertFalse(result.isPresent());
     }
 
@@ -98,6 +98,7 @@ public class BookingRequestServiceImplTest {
         booking.setHostDecisionToken("t");
         booking.setRequestMessage("a");
         booking.setState(BookingState.BOOKING_CONFIRMED);
+        booking.setStartTime(OffsetDateTime.now().plusDays(1));
         booking.setCreatedAt(OffsetDateTime.now());
         booking.setHostDecisionUsedAt(OffsetDateTime.now());
 

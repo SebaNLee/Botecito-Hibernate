@@ -92,8 +92,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         itemDao.expireAllDueBookings(currentDateTime.plusMinutes(MIN_ANTICIPATION_MINUTES));
     }
 
-    // @Scheduled(cron = "0 0,30 * * * *")
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 0,30 * * * *")
     @Transactional
     public void expireDueBookingsSchedule() {
         expireAllDue(currentDateTime());

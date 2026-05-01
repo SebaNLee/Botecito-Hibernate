@@ -7,7 +7,7 @@ Se detallan abajo los comandos para el manejo de la DB local con Bash:
 Para conectarse:
 
 ```
-psql -h localhost -U pawdbuser -d paw -W
+psql -h localhost -U postgres -d paw -W
 ```
 
 Para borrar y recrear DB:

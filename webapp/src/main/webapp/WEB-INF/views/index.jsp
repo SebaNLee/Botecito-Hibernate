@@ -33,7 +33,7 @@
     </div>
     <div class="relative z-10 w-full max-w-6xl mx-auto text-center">
       <h1
-        class="font-headline font-extrabold text-4xl md:text-6xl text-white mb-6 tracking-tight drop-shadow-sm"
+        class="hero-title font-extrabold text-4xl md:text-6xl text-white mb-6 tracking-tight drop-shadow-sm"
       >
         <spring:message code="landing.hero.title.line1" /><br class="hidden md:block" />
         <spring:message code="landing.hero.title.line2" />

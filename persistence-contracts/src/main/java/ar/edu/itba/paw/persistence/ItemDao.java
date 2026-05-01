@@ -133,6 +133,8 @@ public interface ItemDao {
     boolean resolveBookingByHostDecisionToken(
             final String hostDecisionToken, final BookingState newState, final OffsetDateTime hostDecisionUsedAt);
 
+    void expireAllDueBookings(final OffsetDateTime startTimeThreshold);
+
     BookingPaymentProof createPaymentProof(
             final int bookingId,
             final int uploaderId,

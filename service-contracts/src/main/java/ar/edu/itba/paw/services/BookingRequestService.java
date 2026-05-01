@@ -21,6 +21,8 @@ public interface BookingRequestService {
 
     Optional<BookingRequest> resolveBookingRequest(String token, BookingState newStatus);
 
+    void expireAllDue(OffsetDateTime currentDateTime);
+
     Optional<BookingPaymentProof> submitPaymentProof(
             int bookingId, int requesterId, String fileName, String contentType, byte[] fileData, String guestReply);
 

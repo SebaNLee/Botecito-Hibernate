@@ -86,6 +86,12 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     }
 
     @Override
+    @Transactional
+    public void expireAllDue(final OffsetDateTime currentDateTime) {
+        itemDao.expireAllDueBookings(currentDateTime.plusMinutes(MIN_ANTICIPATION_MINUTES));
+    }
+
+    @Override
     public Optional<BookingPaymentProof> submitPaymentProof(
             final int bookingId,
             final int requesterId,

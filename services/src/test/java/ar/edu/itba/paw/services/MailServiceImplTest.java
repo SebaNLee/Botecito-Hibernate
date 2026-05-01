@@ -75,7 +75,7 @@ public class MailServiceImplTest {
         Mockito.when(templateEngine.process(Mockito.eq("booking-review"), Mockito.any()))
                 .thenReturn("<p>ok</p>");
 
-        mailService.sendBookingReviewEmail(bookingRequest, "b@b.com");
+        mailService.sendBookingReviewEmail(bookingRequest, "b@b.com", "Boat", "Loc", "2026-05-02", "10:00 - 12:00");
 
         Mockito.verify(mailSender).send(mimeMessage);
         Mockito.verify(mailSender, Mockito.never()).send(Mockito.any(org.springframework.mail.SimpleMailMessage.class));

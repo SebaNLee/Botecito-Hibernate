@@ -735,11 +735,13 @@ public class AuthController {
                     formatDateLabel(booking.getStartTime()),
                     formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
                     formatTotalPriceLabel(booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
-                    resolvePaymentAlias(owner),
+                    "",
                     statusMessageCode(booking.getState()),
                     proof.map(BookingPaymentProof::getFileName).orElse(""),
+                    proof.map(BookingPaymentProof::getContentType).orElse(""),
                     proof.map(BookingPaymentProof::getRefusalReason).orElse(""),
-                    proof.map(BookingPaymentProof::getGuestReply).orElse("")));
+                    proof.map(BookingPaymentProof::getGuestReply).orElse(""),
+                    booking.getRequestMessage()));
         }
         return receivedBookings;
     }
@@ -777,12 +779,17 @@ public class AuthController {
                     formatDateLabel(booking.getStartTime()),
                     formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
                     formatTotalPriceLabel(booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
-                    resolvePaymentAlias(owner),
+                    shouldExposePaymentAliasToGuest(booking.getState()) ? resolvePaymentAlias(owner) : "",
                     statusMessageCode(booking.getState()),
+                    proof.map(BookingPaymentProof::getContentType).orElse(""),
                     proof.map(BookingPaymentProof::getRefusalReason).orElse(""),
                     proof.map(BookingPaymentProof::getGuestReply).orElse("")));
         }
         return sentBookings;
+    }
+
+    private static boolean shouldExposePaymentAliasToGuest(final BookingState state) {
+        return state == BookingState.BOOKING_CONFIRMED || state == BookingState.BOOKING_PAYMENT_REFUSED;
     }
 
     private List<PendingReviewView> buildPendingReviewActions(final int userId) {
@@ -1037,8 +1044,10 @@ public class AuthController {
             String paymentAlias,
             String statusMessageCode,
             String paymentProofFileName,
+            String paymentProofContentType,
             String paymentRefusalReason,
-            String paymentGuestReply) {
+            String paymentGuestReply,
+            String requestMessage) {
 
         public int getId() {
             return id;
@@ -1120,6 +1129,21 @@ public class AuthController {
             return paymentProofFileName;
         }
 
+        public String getPaymentProofContentType() {
+            return paymentProofContentType;
+        }
+
+        public boolean getIsPaymentProofImage() {
+            return paymentProofContentType != null
+                    && paymentProofContentType
+                            .toLowerCase(java.util.Locale.ROOT)
+                            .startsWith("image/");
+        }
+
+        public boolean getIsPaymentProofPdf() {
+            return paymentProofContentType != null && "application/pdf".equalsIgnoreCase(paymentProofContentType);
+        }
+
         public String getPaymentRefusalReason() {
             return paymentRefusalReason;
         }
@@ -1134,6 +1158,14 @@ public class AuthController {
 
         public boolean getHasPaymentGuestReply() {
             return paymentGuestReply != null && !paymentGuestReply.isBlank();
+        }
+
+        public String getRequestMessage() {
+            return requestMessage;
+        }
+
+        public boolean getHasRequestMessage() {
+            return requestMessage != null && !requestMessage.isBlank();
         }
     }
 
@@ -1151,6 +1183,7 @@ public class AuthController {
             String totalPriceLabel,
             String paymentAlias,
             String statusMessageCode,
+            String paymentProofContentType,
             String paymentRefusalReason,
             String paymentGuestReply) {
 
@@ -1204,6 +1237,21 @@ public class AuthController {
 
         public String getStatusMessageCode() {
             return statusMessageCode;
+        }
+
+        public String getPaymentProofContentType() {
+            return paymentProofContentType;
+        }
+
+        public boolean getIsPaymentProofImage() {
+            return paymentProofContentType != null
+                    && paymentProofContentType
+                            .toLowerCase(java.util.Locale.ROOT)
+                            .startsWith("image/");
+        }
+
+        public boolean getIsPaymentProofPdf() {
+            return paymentProofContentType != null && "application/pdf".equalsIgnoreCase(paymentProofContentType);
         }
 
         public String getPaymentRefusalReason() {

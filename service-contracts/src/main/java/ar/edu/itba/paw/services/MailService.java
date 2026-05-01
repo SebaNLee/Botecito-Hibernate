@@ -8,7 +8,13 @@ public interface MailService {
 
     void sendPublishConfirmationEmail(String recipientEmail, String ownerName, String itemTitle);
 
-    void sendBookingReviewEmail(BookingRequest bookingRequest, String ownerEmail);
+    void sendBookingReviewEmail(
+            BookingRequest bookingRequest,
+            String ownerEmail,
+            String itemTitle,
+            String location,
+            String requestedDateLabel,
+            String requestedTimeLabel);
 
     void sendBookingResolutionEmail(BookingRequest bookingRequest);
 

@@ -88,42 +88,44 @@ public class BookingRequestActionController {
         }
 
         final MultipartFile file = form.getFile();
-        if (!isValidPaymentProof(file)) {
+        final byte[] fileBytes;
+        try {
+            fileBytes = file == null || file.isEmpty() ? new byte[0] : file.getBytes();
+        } catch (final IOException e) {
+            return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + "invalidFile#sent-booking-requests");
+        }
+        if (!isValidPaymentProof(file, fileBytes)) {
             return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + "invalidFile#sent-booking-requests");
         }
 
         final boolean isResubmit = booking.getState() == BookingState.BOOKING_PAYMENT_REFUSED;
-        try {
-            final var proof = bookingRequestService.submitPaymentProof(
-                    bookingId,
-                    currentUser.getId(),
-                    cleanFileName(file.getOriginalFilename()),
-                    file.getContentType(),
-                    file.getBytes(),
-                    form.getGuestReply());
-            if (proof.isEmpty()) {
-                return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + "submitError#sent-booking-requests");
-            }
-
-            final Item item = booking.getItemId() == null
-                    ? null
-                    : itemService.findAnyItemById(booking.getItemId()).orElse(null);
-            final User owner = item == null || item.getOwnerId() == null
-                    ? null
-                    : itemService.findUserById(item.getOwnerId()).orElse(null);
-            if (item != null && owner != null) {
-                mailService.sendPaymentProofSubmittedEmail(
-                        owner.getEmail(),
-                        currentUser.getName(),
-                        item.getTitle(),
-                        proof.get().getFileData(),
-                        proof.get().getContentType());
-            }
-            final String action = isResubmit ? "resubmitted" : "submitted";
-            return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + action + "#sent-booking-requests");
-        } catch (final IOException e) {
+        final var proof = bookingRequestService.submitPaymentProof(
+                bookingId,
+                currentUser.getId(),
+                cleanFileName(file.getOriginalFilename()),
+                file.getContentType(),
+                fileBytes,
+                form.getGuestReply());
+        if (proof.isEmpty()) {
             return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + "submitError#sent-booking-requests");
         }
+
+        final Item item = booking.getItemId() == null
+                ? null
+                : itemService.findAnyItemById(booking.getItemId()).orElse(null);
+        final User owner = item == null || item.getOwnerId() == null
+                ? null
+                : itemService.findUserById(item.getOwnerId()).orElse(null);
+        if (item != null && owner != null) {
+            mailService.sendPaymentProofSubmittedEmail(
+                    owner.getEmail(),
+                    currentUser.getName(),
+                    item.getTitle(),
+                    proof.get().getFileData(),
+                    proof.get().getContentType());
+        }
+        final String action = isResubmit ? "resubmitted" : "submitted";
+        return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + action + "#sent-booking-requests");
     }
 
     @RequestMapping(value = "/bookings/{id:[0-9]+}/payment/refuse", method = RequestMethod.POST)
@@ -255,12 +257,49 @@ public class BookingRequestActionController {
         return item != null && item.getOwnerId() != null && item.getOwnerId().equals(userId);
     }
 
-    private static boolean isValidPaymentProof(final MultipartFile file) {
+    private static boolean isValidPaymentProof(final MultipartFile file, final byte[] fileBytes) {
         if (file == null || file.isEmpty() || file.getSize() > 5242880) {
             return false;
         }
         final String contentType = file.getContentType();
-        return contentType != null && PAYMENT_PROOF_CONTENT_TYPES.contains(contentType.toLowerCase());
+        if (contentType == null || !PAYMENT_PROOF_CONTENT_TYPES.contains(contentType.toLowerCase())) {
+            return false;
+        }
+        return matchesMagicBytes(contentType.toLowerCase(), fileBytes);
+    }
+
+    private static boolean matchesMagicBytes(final String contentType, final byte[] data) {
+        if (data == null || data.length < 4) {
+            return false;
+        }
+        switch (contentType) {
+            case "image/jpeg":
+                return (data[0] & 0xFF) == 0xFF && (data[1] & 0xFF) == 0xD8 && (data[2] & 0xFF) == 0xFF;
+            case "image/png":
+                return data.length >= 8
+                        && (data[0] & 0xFF) == 0x89
+                        && data[1] == 'P'
+                        && data[2] == 'N'
+                        && data[3] == 'G'
+                        && (data[4] & 0xFF) == 0x0D
+                        && (data[5] & 0xFF) == 0x0A
+                        && (data[6] & 0xFF) == 0x1A
+                        && (data[7] & 0xFF) == 0x0A;
+            case "image/webp":
+                return data.length >= 12
+                        && data[0] == 'R'
+                        && data[1] == 'I'
+                        && data[2] == 'F'
+                        && data[3] == 'F'
+                        && data[8] == 'W'
+                        && data[9] == 'E'
+                        && data[10] == 'B'
+                        && data[11] == 'P';
+            case "application/pdf":
+                return data.length >= 4 && data[0] == '%' && data[1] == 'P' && data[2] == 'D' && data[3] == 'F';
+            default:
+                return false;
+        }
     }
 
     private static String cleanFileName(final String fileName) {

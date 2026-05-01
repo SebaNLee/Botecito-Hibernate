@@ -212,6 +212,9 @@ public class MarketplaceController {
         }
 
         try {
+            final String trimmedMessage = isBlank(form.getRequestMessage())
+                    ? null
+                    : form.getRequestMessage().trim();
             final BookingRequest bookingRequest = bookingRequestService.createBookingRequest(
                     itemId,
                     currentUser.getGivenName(),
@@ -220,11 +223,17 @@ public class MarketplaceController {
                     currentUser.getPreferredLanguage(),
                     toOffsetDateTime(form.getDate(), form.getStartTime()),
                     toOffsetDateTime(form.getDate(), form.getEndTime()),
-                    buildReservationRequestDescription(item.get(), owner.orElse(null), form));
+                    trimmedMessage);
             mailService.sendBookingReviewEmail(
-                    bookingRequest, owner.map(User::getEmail).orElse(null));
+                    bookingRequest,
+                    owner.map(User::getEmail).orElse(null),
+                    item.get().getTitle(),
+                    item.get().getLocation(),
+                    form.getDate(),
+                    form.getStartTime() + " - " + form.getEndTime());
             final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
             mav.addObject("mailSuccessCode", "reservation.request.success");
+            mav.addObject("mailSuccessHostName", owner.map(User::getName).orElse(""));
             return mav;
         } catch (final IllegalArgumentException e) {
             final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
@@ -316,12 +325,12 @@ public class MarketplaceController {
                                 .findPendingItemReviewAction(currentUser.getId(), itemId)
                                 .orElse(null));
         AvailabilityPickerSupport.addAvailabilityPickerData(mav, "reservation", reservationAvailability);
-        final String defaultDate = offeredDates.isEmpty() ? "" : offeredDates.getFirst();
+        final String defaultDate = "";
         final String reservationDate =
                 AvailabilityPickerSupport.resolveSelectedDate(form.getDate(), offeredDates, defaultDate);
         final List<String> reservationSlots = offeredTimesByDate.getOrDefault(reservationDate, List.of());
-        final String defaultStartTime = reservationSlots.isEmpty() ? "" : reservationSlots.getFirst();
-        final String defaultEndTime = reservationSlots.size() > 1 ? reservationSlots.getLast() : defaultStartTime;
+        final String defaultStartTime = "";
+        final String defaultEndTime = "";
         final boolean hasValidRequestedRange = reservationDate.equals(form.getDate())
                 && !isBlank(form.getStartTime())
                 && !isBlank(form.getEndTime())
@@ -423,38 +432,6 @@ public class MarketplaceController {
             itemImages.put(item.getId(), ItemImageUtils.resolveImageUrl(itemService, item.getId(), servletContextPath));
         }
         return itemImages;
-    }
-
-    private static String buildReservationRequestDescription(
-            final Item item, final User owner, final ReservationRequestForm form) {
-        final StringBuilder description = new StringBuilder();
-        description
-                .append("Item: ")
-                .append(item.getTitle())
-                .append(" (#")
-                .append(item.getId())
-                .append(")\n");
-        description.append("Location: ").append(item.getLocation()).append('\n');
-        if (owner != null) {
-            description
-                    .append("Owner: ")
-                    .append(owner.getName())
-                    .append(" <")
-                    .append(owner.getEmail())
-                    .append(">\n");
-        }
-        description.append("Requested date: ").append(form.getDate()).append('\n');
-        description
-                .append("Requested time: ")
-                .append(form.getStartTime())
-                .append(" - ")
-                .append(form.getEndTime());
-
-        if (!isBlank(form.getRequestMessage())) {
-            description.append("\n\nMessage:\n").append(form.getRequestMessage().trim());
-        }
-
-        return description.toString();
     }
 
     private boolean matchesMarketplaceAvailability(

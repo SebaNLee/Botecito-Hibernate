@@ -17,6 +17,9 @@
       Botecito
     </a>
     <div class="flex items-center gap-2">
+      <a href="<c:url value='/marketplace' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+        <spring:message code="nav.marketplace" />
+      </a>
       <sec:authorize access="isAnonymous()">
         <a href="<c:url value='/login' />" class="btn btn-ghost btn-sm no-underline">
           <spring:message code="nav.login" />
@@ -40,6 +43,8 @@
               <spring:message code="${resolvedCtaMessageCode}" />
             </a>
           </sec:authorize>
+        </c:when>
+        <c:when test="${resolvedCtaVariant == 'rent'}">
         </c:when>
         <c:otherwise>
           <a href="<c:url value='${resolvedCtaHref}' />" class="${resolvedCtaClass}">

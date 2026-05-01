@@ -25,6 +25,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -550,6 +551,18 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    public List<ItemBooking> findBookingsByHostDecisionTokens(final Collection<String> hostDecisionTokens) {
+        if (hostDecisionTokens == null || hostDecisionTokens.isEmpty()) {
+            return List.of();
+        }
+        final String placeholders = String.join(", ", Collections.nCopies(hostDecisionTokens.size(), "?"));
+        return jdbcTemplate.query(
+                "SELECT * FROM item_booking WHERE host_decision_token IN (" + placeholders + ")",
+                ITEM_BOOKING_ROW_MAPPER,
+                hostDecisionTokens.toArray());
+    }
+
+    @Override
     public Optional<ItemBooking> findBookingById(final int bookingId) {
         return jdbcTemplate
                 .query("SELECT * FROM item_booking WHERE id = ?", ITEM_BOOKING_ROW_MAPPER, bookingId)
@@ -730,6 +743,38 @@ public class ItemJdbcDao implements ItemDao {
                 Timestamp.from(hostDecisionUsedAt.toInstant()),
                 hostDecisionToken);
         return updatedRows > 0;
+    }
+
+    @Override
+    public int resolveBookingsByHostDecisionTokens(
+            final Collection<String> hostDecisionTokens,
+            final BookingState newState,
+            final OffsetDateTime hostDecisionUsedAt) {
+        if (hostDecisionTokens == null || hostDecisionTokens.isEmpty()) {
+            return 0;
+        }
+        final String placeholders = String.join(", ", Collections.nCopies(hostDecisionTokens.size(), "?"));
+        final List<Object> args = new ArrayList<>();
+        args.add(newState.name());
+        args.add(Timestamp.from(hostDecisionUsedAt.toInstant()));
+        args.addAll(hostDecisionTokens);
+        return jdbcTemplate.update(
+                "UPDATE item_booking"
+                        + " SET state = ?::booking_state, host_decision_used_at = ?, updated_at = CURRENT_TIMESTAMP"
+                        + " WHERE host_decision_token IN (" + placeholders + ")"
+                        + " AND state = 'BOOKING_PENDING'"
+                        + " AND host_decision_used_at IS NULL",
+                args.toArray());
+    }
+
+    @Override
+    public List<User> findUsersByIds(final Collection<Integer> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        final String placeholders = String.join(", ", Collections.nCopies(userIds.size(), "?"));
+        return jdbcTemplate.query(
+                "SELECT * FROM users WHERE id IN (" + placeholders + ")", USER_ROW_MAPPER, userIds.toArray());
     }
 
     @Override

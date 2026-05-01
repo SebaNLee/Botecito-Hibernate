@@ -18,6 +18,10 @@
     <c:set var="confirmBtnColorClass" value="btn-success" />
     <c:set var="iconTintClass" value="bg-success/15 text-success" />
   </c:when>
+  <c:when test="${confirmColorResolved == 'secondary'}">
+    <c:set var="confirmBtnColorClass" value="btn-secondary" />
+    <c:set var="iconTintClass" value="bg-secondary/15 text-secondary" />
+  </c:when>
   <c:otherwise>
     <c:set var="confirmBtnColorClass" value="btn-error" />
     <c:set var="iconTintClass" value="bg-error/15 text-error" />

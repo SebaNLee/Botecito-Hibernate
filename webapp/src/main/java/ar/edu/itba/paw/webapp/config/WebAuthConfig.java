@@ -14,7 +14,6 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-// TODO I kinda read the deprecated warnings (2022), should be fine. I think it is bc of this old af stack we are using
 @Configuration
 @EnableWebSecurity
 public class WebAuthConfig extends WebSecurityConfigurerAdapter {
@@ -51,11 +50,19 @@ public class WebAuthConfig extends WebSecurityConfigurerAdapter {
                 .anonymous()
                 .antMatchers("/password-recovery/**")
                 .permitAll()
+                .antMatchers(HttpMethod.GET, "/dashboard", "/my-boats", "/bookings")
+                .authenticated()
+                .antMatchers(HttpMethod.GET, "/bookings/*/payment-proof")
+                .authenticated()
                 .antMatchers(HttpMethod.POST, "/item/*")
+                .authenticated()
+                .antMatchers("/item/*/book")
                 .authenticated()
                 .antMatchers("/item/*/gallery/**")
                 .authenticated()
                 .antMatchers(HttpMethod.POST, "/bookings/**")
+                .authenticated()
+                .antMatchers(HttpMethod.POST, "/reviews/**")
                 .authenticated()
                 .antMatchers("/profile/**")
                 .authenticated()
@@ -90,6 +97,6 @@ public class WebAuthConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     public void configure(final WebSecurity web) throws Exception {
-        web.ignoring().antMatchers("/css/**", "/js/**", "/img/**", "/favicon.ico");
+        web.ignoring().antMatchers("/css/**", "/js/**", "/img/**", "/favicon.ico"); // aca va "/403" maybe
     }
 }

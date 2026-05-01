@@ -63,6 +63,15 @@ mvn jetty:run
 
 > App: `http://localhost:8080`
 
+### Users (per authentication level)
+
+#### Logged user:
+
+```
+botecito.dev@gmail.com
+oakrmirkfcudrwes
+```
+
 ### Deployear
 
 ```bash

@@ -48,15 +48,18 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         return toBookingRequest(booking, requesterUser);
     }
 
+    private static OffsetDateTime currentDateTime() {
+        // UTC-3 (otras formas de hacer esto no funcionaron)
+        return OffsetDateTime.now().minusHours(3);
+    }
+
     private static void validateAnticipation(final OffsetDateTime bookingStartTime) {
-        final Instant now = OffsetDateTime.now().minusHours(3).toInstant();
+        final Instant now = currentDateTime().toInstant();
         final Instant bookingStart = bookingStartTime.toInstant();
         final Instant earliestAllowedStart = now.plus(Duration.ofMinutes(MIN_ANTICIPATION_MINUTES));
         if (bookingStart.isBefore(earliestAllowedStart)) {
-            String times = "Current: " + now + " | Booking starts: " + bookingStart + " | Calculated difference: "
-                    + Duration.between(now, bookingStart);
             throw new RuntimeException("Requested booking starts in less than the minimum anticipation time of "
-                    + MIN_ANTICIPATION_MINUTES + " minutes + (" + times + ")");
+                    + MIN_ANTICIPATION_MINUTES + " minutes");
         }
     }
 

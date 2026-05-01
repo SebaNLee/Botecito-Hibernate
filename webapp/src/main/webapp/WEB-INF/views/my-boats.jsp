@@ -325,6 +325,16 @@
                           </c:if>
                         </div>
                       </div>
+                      <c:if test="${receivedRequest.hasRequestMessage}">
+                        <div class="rounded-lg bg-base-100 p-3 border-l-4 border-primary">
+                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline">
+                            <spring:message code="booking.requestMessage" />
+                          </p>
+                          <p class="m-0 mt-1 line-clamp-4 break-words text-sm text-on-surface whitespace-pre-line">
+                            <c:out value="${receivedRequest.requestMessage}" />
+                          </p>
+                        </div>
+                      </c:if>
                       <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.pending'}">
                         <div class="flex flex-wrap gap-2 border-t border-outline-variant/20 pt-3">
                           <form action="${acceptBookingUrl}" method="post" class="m-0" data-submit-loading-form="true"><paw:button type="submit" color="success" size="sm" text="${acceptLabel}" submitLoading="true" /></form>
@@ -342,7 +352,14 @@
                           <details class="rounded-lg bg-base-100 p-3">
                             <summary class="cursor-pointer text-xs font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></summary>
                             <div class="mt-3 overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
-                              <img src="${receivedPaymentProofUrl}" alt="<spring:message code='profile.sentBookings.paymentProof.view' />" class="max-h-80 w-full object-contain" loading="lazy" />
+                              <c:choose>
+                                <c:when test="${receivedRequest.isPaymentProofPdf}">
+                                  <embed src="${receivedPaymentProofUrl}" type="application/pdf" class="h-80 w-full" />
+                                </c:when>
+                                <c:otherwise>
+                                  <img src="${receivedPaymentProofUrl}" alt="<spring:message code='profile.sentBookings.paymentProof.view' />" class="max-h-80 w-full object-contain" loading="lazy" />
+                                </c:otherwise>
+                              </c:choose>
                             </div>
                           </details>
                         </div>
@@ -367,8 +384,8 @@
                         </div>
                       </c:if>
                       <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.paymentRefused' && receivedRequest.hasPaymentRefusalReason}">
-                        <div class="rounded-lg bg-info/10 p-3 border-l-4 border-info">
-                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-info"><spring:message code="payment.refused.shownToGuest" /></p>
+                        <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error">
+                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error"><spring:message code="payment.refused.shownToGuest" /></p>
                           <p class="m-0 mt-1 line-clamp-4 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${receivedRequest.paymentRefusalReason}" /></p>
                         </div>
                       </c:if>

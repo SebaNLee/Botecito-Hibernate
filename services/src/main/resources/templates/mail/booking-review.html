@@ -46,10 +46,36 @@
                         <p th:text="${bookingRequest.requesterEmail}"
                           style="margin: 0 0 20px; font-size: 16px; font-weight: 500; color: #0f172a;"></p>
 
-                        <p
+                        <p th:if="${itemTitle != null and !itemTitle.isEmpty()}"
                           style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
-                          <span th:text="#{mail.requestReview.label.description}">Description</span></p>
-                        <p th:text="${bookingRequest.description}"
+                          <span th:text="#{mail.requestReview.label.item}">Item</span></p>
+                        <p th:if="${itemTitle != null and !itemTitle.isEmpty()}" th:text="${itemTitle}"
+                          style="margin: 0 0 20px; font-size: 16px; font-weight: 500; color: #0f172a;"></p>
+
+                        <p th:if="${location != null and !location.isEmpty()}"
+                          style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+                          <span th:text="#{mail.requestReview.label.location}">Location</span></p>
+                        <p th:if="${location != null and !location.isEmpty()}" th:text="${location}"
+                          style="margin: 0 0 20px; font-size: 16px; font-weight: 500; color: #0f172a;"></p>
+
+                        <p th:if="${requestedDateLabel != null and !requestedDateLabel.isEmpty()}"
+                          style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+                          <span th:text="#{mail.requestReview.label.date}">Date</span></p>
+                        <p th:if="${requestedDateLabel != null and !requestedDateLabel.isEmpty()}"
+                          th:text="${requestedDateLabel}"
+                          style="margin: 0 0 20px; font-size: 16px; font-weight: 500; color: #0f172a;"></p>
+
+                        <p th:if="${requestedTimeLabel != null and !requestedTimeLabel.isEmpty()}"
+                          style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+                          <span th:text="#{mail.requestReview.label.time}">Time</span></p>
+                        <p th:if="${requestedTimeLabel != null and !requestedTimeLabel.isEmpty()}"
+                          th:text="${requestedTimeLabel}"
+                          style="margin: 0 0 20px; font-size: 16px; font-weight: 500; color: #0f172a;"></p>
+
+                        <p th:if="${hasRequestMessage}"
+                          style="margin: 0 0 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+                          <span th:text="#{mail.requestReview.label.message}">Message</span></p>
+                        <p th:if="${hasRequestMessage}" th:text="${requestMessage}"
                           style="margin: 0; font-size: 15px; line-height: 1.6; color: #334155; white-space: pre-wrap;">
                         </p>
                       </td>

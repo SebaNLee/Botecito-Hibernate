@@ -90,7 +90,13 @@ public class MailServiceImpl implements MailService {
 
     @Override
     @Async("mailTaskExecutor")
-    public void sendBookingReviewEmail(final BookingRequest bookingRequest, final String ownerEmail) {
+    public void sendBookingReviewEmail(
+            final BookingRequest bookingRequest,
+            final String ownerEmail,
+            final String itemTitle,
+            final String location,
+            final String requestedDateLabel,
+            final String requestedTimeLabel) {
         try {
             final String recipientEmail;
             if (ownerEmail != null && !ownerEmail.isBlank()) {
@@ -101,6 +107,15 @@ public class MailServiceImpl implements MailService {
             final Locale locale = resolveLocale(recipientEmail);
             final Context context = new Context(locale);
             context.setVariable("bookingRequest", bookingRequest);
+            context.setVariable("itemTitle", itemTitle);
+            context.setVariable("location", location);
+            context.setVariable("requestedDateLabel", requestedDateLabel);
+            context.setVariable("requestedTimeLabel", requestedTimeLabel);
+            final String message = bookingRequest.getDescription() == null
+                    ? ""
+                    : bookingRequest.getDescription().trim();
+            context.setVariable("hasRequestMessage", !message.isEmpty());
+            context.setVariable("requestMessage", message);
             context.setVariable("profileUrl", accountBaseUrl);
             sendHtmlEmail(
                     recipientEmail,

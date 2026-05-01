@@ -178,20 +178,20 @@
                       </div>
                       <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.confirmed'}">
                         <form action="${sentPaymentProofUrl}" method="post" enctype="multipart/form-data" class="space-y-2 border-t border-outline-variant/20 pt-3" data-submit-loading-form="true">
-                          <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" class="file-input file-input-bordered file-input-sm w-full" required />
+                          <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" class="file-input file-input-bordered file-input-sm w-full" />
                           <paw:button type="submit" color="primary" size="sm" text="${uploadPaymentProofLabel}" submitLoading="true" />
                         </form>
                       </c:if>
                       <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paymentRefused'}">
-                        <div class="rounded-lg bg-info/10 p-3 border-l-4 border-info space-y-2">
-                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-info"><spring:message code="payment.refused.banner" /></p>
+                        <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error space-y-2">
+                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error"><spring:message code="payment.refused.banner" /></p>
                           <c:if test="${sentRequest.hasPaymentRefusalReason}">
                             <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="payment.refused.reasonLabel" /></p>
                             <p class="m-0 line-clamp-4 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${sentRequest.paymentRefusalReason}" /></p>
                           </c:if>
                         </div>
                         <form action="${sentPaymentProofUrl}" method="post" enctype="multipart/form-data" class="space-y-2 border-t border-outline-variant/20 pt-3 mt-2" data-submit-loading-form="true">
-                          <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" class="file-input file-input-bordered file-input-sm w-full" required />
+                          <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" class="file-input file-input-bordered file-input-sm w-full" />
                           <label class="text-[11px] font-bold uppercase tracking-wider text-outline" for="guest-reply-${sentRequest.id}"><spring:message code="payment.reply.label" /></label>
                           <textarea id="guest-reply-${sentRequest.id}" name="guestReply" rows="2" maxlength="500" class="textarea textarea-bordered w-full" placeholder="<spring:message code="payment.reply.placeholder" />"></textarea>
                           <paw:button type="submit" color="primary" size="sm" text="${uploadPaymentProofLabel}" submitLoading="true" />
@@ -199,7 +199,14 @@
                         <details class="rounded-lg bg-base-100 p-3 mt-2">
                           <summary class="cursor-pointer text-xs font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></summary>
                           <div class="mt-3 overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
-                            <img src="${sentPaymentProofUrl}" alt="<spring:message code='profile.sentBookings.paymentProof.view' />" class="max-h-80 w-full object-contain" loading="lazy" />
+                            <c:choose>
+                              <c:when test="${sentRequest.isPaymentProofPdf}">
+                                <embed src="${sentPaymentProofUrl}" type="application/pdf" class="h-80 w-full" />
+                              </c:when>
+                              <c:otherwise>
+                                <img src="${sentPaymentProofUrl}" alt="<spring:message code='profile.sentBookings.paymentProof.view' />" class="max-h-80 w-full object-contain" loading="lazy" />
+                              </c:otherwise>
+                            </c:choose>
                           </div>
                         </details>
                       </c:if>
@@ -207,7 +214,14 @@
                         <details class="rounded-lg bg-base-100 p-3 border-t border-outline-variant/20 pt-3">
                           <summary class="cursor-pointer text-sm font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></summary>
                           <div class="mt-3 overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
-                            <img src="${sentPaymentProofUrl}" alt="<spring:message code='profile.sentBookings.paymentProof.view' />" class="max-h-80 w-full object-contain" loading="lazy" />
+                            <c:choose>
+                              <c:when test="${sentRequest.isPaymentProofPdf}">
+                                <embed src="${sentPaymentProofUrl}" type="application/pdf" class="h-80 w-full" />
+                              </c:when>
+                              <c:otherwise>
+                                <img src="${sentPaymentProofUrl}" alt="<spring:message code='profile.sentBookings.paymentProof.view' />" class="max-h-80 w-full object-contain" loading="lazy" />
+                              </c:otherwise>
+                            </c:choose>
                           </div>
                         </details>
                       </c:if>

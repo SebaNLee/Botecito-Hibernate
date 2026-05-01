@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -89,6 +90,13 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     @Transactional
     public void expireAllDue(final OffsetDateTime currentDateTime) {
         itemDao.expireAllDueBookings(currentDateTime.plusMinutes(MIN_ANTICIPATION_MINUTES));
+    }
+
+    // @Scheduled(cron = "0 0,30 * * * *")
+    @Scheduled(cron = "0 * * * * *")
+    @Transactional
+    public void expireDueBookingsSchedule() {
+        expireAllDue(currentDateTime());
     }
 
     @Override

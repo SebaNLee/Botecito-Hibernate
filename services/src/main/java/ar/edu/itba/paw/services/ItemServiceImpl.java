@@ -1,6 +1,5 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.DisabledTimeSlot;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
@@ -9,7 +8,6 @@ import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.persistence.DisabledTimeSlotDao;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -31,12 +29,10 @@ public final class ItemServiceImpl implements ItemService {
     private static final int TIME_STEP_MINUTES = 30;
 
     private final ItemDao itemDao;
-    private final DisabledTimeSlotDao disabledTimeSlotDao;
 
     @Autowired
-    public ItemServiceImpl(final ItemDao itemDao, final DisabledTimeSlotDao disabledTimeSlotDao) {
+    public ItemServiceImpl(final ItemDao itemDao) {
         this.itemDao = itemDao;
-        this.disabledTimeSlotDao = disabledTimeSlotDao;
     }
 
     @Override
@@ -440,16 +436,12 @@ public final class ItemServiceImpl implements ItemService {
         final Map<Integer, List<ItemAvailability>> availabilitiesByItemId =
                 groupAvailabilitiesByItemId(itemDao.listAvailabilities());
         final Map<Integer, List<ItemBooking>> bookingsByItemId = groupBookingsByItemId(itemDao.listBookings());
-        final Map<Integer, List<DisabledTimeSlot>> disabledSlotsByItemId = new LinkedHashMap<>();
         final List<Item> filteredItems = new ArrayList<>();
         for (final Item item : candidates) {
-            final List<DisabledTimeSlot> disabledSlots =
-                    disabledSlotsByItemId.computeIfAbsent(item.getId(), id -> disabledTimeSlotDao.listByItem(id));
             if (MarketplaceAvailabilityMatcher.matches(
                     criteria,
                     availabilitiesByItemId.getOrDefault(item.getId(), List.of()),
-                    bookingsByItemId.getOrDefault(item.getId(), List.of()),
-                    disabledSlots)) {
+                    bookingsByItemId.getOrDefault(item.getId(), List.of()))) {
                 filteredItems.add(item);
             }
         }

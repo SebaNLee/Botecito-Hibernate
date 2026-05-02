@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.BookingState;
-import ar.edu.itba.paw.models.DisabledTimeSlot;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
@@ -24,14 +23,12 @@ final class MarketplaceAvailabilityMatcher {
     static boolean matches(
             final ItemSearchCriteria criteria,
             final List<ItemAvailability> availabilities,
-            final List<ItemBooking> bookings,
-            final List<DisabledTimeSlot> disabledSlots) {
+            final List<ItemBooking> bookings) {
         if (isBlank(criteria.getDate())) {
             return matchesWithoutCalendarDate(criteria, availabilities);
         }
 
-        final TreeSet<String> availableTimes =
-                availableTimesForDate(criteria.getDate(), availabilities, bookings, disabledSlots);
+        final TreeSet<String> availableTimes = availableTimesForDate(criteria.getDate(), availabilities, bookings);
         if (availableTimes.isEmpty()) {
             return false;
         }
@@ -119,15 +116,11 @@ final class MarketplaceAvailabilityMatcher {
     }
 
     private static TreeSet<String> availableTimesForDate(
-            final String requestedDate,
-            final List<ItemAvailability> availabilities,
-            final List<ItemBooking> bookings,
-            final List<DisabledTimeSlot> disabledSlots) {
+            final String requestedDate, final List<ItemAvailability> availabilities, final List<ItemBooking> bookings) {
         try {
             final LocalDate date = LocalDate.parse(requestedDate);
             final TreeSet<String> scheduledTimes = new TreeSet<>();
             final TreeSet<String> bookedTimes = new TreeSet<>();
-            final TreeSet<String> disabledTimes = new TreeSet<>();
             for (final ItemAvailability availability : availabilities) {
                 if (availability.getWeekday() == date.getDayOfWeek()) {
                     addTimeRange(scheduledTimes, availability.getStartTime(), availability.getEndTime());
@@ -136,15 +129,7 @@ final class MarketplaceAvailabilityMatcher {
             for (final ItemBooking booking : bookings) {
                 addBookedTimesForDate(bookedTimes, date, booking);
             }
-            if (disabledSlots != null) {
-                for (final DisabledTimeSlot disabled : disabledSlots) {
-                    if (date.equals(disabled.getSlotDate())) {
-                        addTimeRange(disabledTimes, disabled.getStartTime(), disabled.getEndTime());
-                    }
-                }
-            }
             scheduledTimes.removeAll(bookedTimes);
-            scheduledTimes.removeAll(disabledTimes);
             return scheduledTimes;
         } catch (final DateTimeParseException exception) {
             return new TreeSet<>();

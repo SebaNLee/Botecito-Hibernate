@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.BookingState;
-import ar.edu.itba.paw.models.DisabledTimeSlot;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import java.time.DayOfWeek;
@@ -40,17 +39,9 @@ final class AvailabilityPickerSupport {
 
     static AvailabilityPickerData buildAvailabilityPickerData(
             final List<ItemAvailability> availabilities, final List<ItemBooking> bookings) {
-        return buildAvailabilityPickerData(availabilities, bookings, List.of());
-    }
-
-    static AvailabilityPickerData buildAvailabilityPickerData(
-            final List<ItemAvailability> availabilities,
-            final List<ItemBooking> bookings,
-            final List<DisabledTimeSlot> disabledSlots) {
         final Set<Integer> itemIds = new LinkedHashSet<>();
         final Map<Integer, List<ItemAvailability>> availabilitiesByItemId = new LinkedHashMap<>();
         final Map<Integer, List<ItemBooking>> bookingsByItemId = new LinkedHashMap<>();
-        final Map<Integer, List<DisabledTimeSlot>> disabledSlotsByItemId = new LinkedHashMap<>();
         final Map<String, TreeSet<String>> scheduledTimesByDate = new TreeMap<>();
         final Map<String, TreeSet<String>> availableTimesByDate = new TreeMap<>();
 
@@ -68,26 +59,13 @@ final class AvailabilityPickerSupport {
                     .add(booking);
         }
 
-        if (disabledSlots != null) {
-            for (final DisabledTimeSlot disabled : disabledSlots) {
-                itemIds.add(disabled.getItemId());
-                disabledSlotsByItemId
-                        .computeIfAbsent(disabled.getItemId(), ignored -> new ArrayList<>())
-                        .add(disabled);
-            }
-        }
-
         for (final Integer itemId : itemIds) {
             final Map<String, TreeSet<String>> itemScheduledTimesByDate =
                     buildScheduledTimesByDate(availabilitiesByItemId.getOrDefault(itemId, List.of()));
             final Map<String, TreeSet<String>> itemBookedTimesByDate =
                     buildBookedTimesByDate(bookingsByItemId.getOrDefault(itemId, List.of()));
-            final Map<String, TreeSet<String>> itemDisabledTimesByDate =
-                    buildDisabledTimesByDate(disabledSlotsByItemId.getOrDefault(itemId, List.of()));
-            final Map<String, TreeSet<String>> itemUnavailableTimesByDate =
-                    mergeMaps(itemBookedTimesByDate, itemDisabledTimesByDate);
             final Map<String, TreeSet<String>> itemAvailableTimesByDate =
-                    subtractTimes(itemScheduledTimesByDate, itemUnavailableTimesByDate);
+                    subtractTimes(itemScheduledTimesByDate, itemBookedTimesByDate);
 
             mergeTimesByDate(scheduledTimesByDate, itemScheduledTimesByDate);
             mergeTimesByDate(availableTimesByDate, itemAvailableTimesByDate);
@@ -208,38 +186,6 @@ final class AvailabilityPickerSupport {
         }
 
         return collectedTimesByDate;
-    }
-
-    private static Map<String, TreeSet<String>> buildDisabledTimesByDate(final List<DisabledTimeSlot> disabledSlots) {
-        final Map<String, TreeSet<String>> collectedTimesByDate = new TreeMap<>();
-        final LocalDate startDate = availabilityStartDate();
-        final LocalDate endDate = pickerEndDate();
-
-        for (final DisabledTimeSlot disabled : disabledSlots) {
-            final LocalDate date = disabled.getSlotDate();
-            if (date == null || date.isBefore(startDate) || date.isAfter(endDate)) {
-                continue;
-            }
-            addTimeRange(
-                    collectedTimesByDate,
-                    date.format(INPUT_DATE_FORMAT),
-                    disabled.getStartTime(),
-                    disabled.getEndTime());
-        }
-
-        return collectedTimesByDate;
-    }
-
-    private static Map<String, TreeSet<String>> mergeMaps(
-            final Map<String, TreeSet<String>> left, final Map<String, TreeSet<String>> right) {
-        final Map<String, TreeSet<String>> merged = new TreeMap<>();
-        for (final Map.Entry<String, TreeSet<String>> entry : left.entrySet()) {
-            merged.computeIfAbsent(entry.getKey(), ignored -> new TreeSet<>()).addAll(entry.getValue());
-        }
-        for (final Map.Entry<String, TreeSet<String>> entry : right.entrySet()) {
-            merged.computeIfAbsent(entry.getKey(), ignored -> new TreeSet<>()).addAll(entry.getValue());
-        }
-        return merged;
     }
 
     private static boolean isBlockingBooking(final ItemBooking booking) {

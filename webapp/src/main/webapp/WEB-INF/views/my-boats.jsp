@@ -20,6 +20,7 @@
 <spring:message code="profile.publications.delete.confirm.confirm" var="deleteConfirmConfirm" />
 <spring:message code="profile.publications.delete.confirm.cancel" var="deleteConfirmCancel" />
 <spring:message code="profile.publications.delete.disabled.futureBookings" var="deleteDisabledFutureBookingsLabel" />
+<spring:message code="profile.publications.viewDetail" var="publicationViewDetailLabel" />
 <spring:message code="profile.bookings.accept" var="acceptLabel" />
 <spring:message code="profile.bookings.decline" var="declineLabel" />
 <spring:message code="payment.confirm.button" var="paymentConfirmLabel" />
@@ -48,7 +49,7 @@
           <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="myBoats.title" /></h1>
           <p class="text-on-surface-variant mt-2 m-0"><spring:message code="myBoats.subtitle" /></p>
         </div>
-        <a href="${publishUrl}" class="btn btn-primary w-[70%] self-center no-underline sm:w-auto sm:self-auto sm:shrink-0">
+        <a href="${publishUrl}" class="btn btn-secondary w-[70%] self-center no-underline sm:w-auto sm:self-auto sm:shrink-0">
           <span class="material-symbols-outlined text-base">add</span>
           <c:out value="${publishCtaLabel}" />
         </a>
@@ -69,9 +70,11 @@
               <c:when test="${not empty ownedItems}">
                 <div class="grid grid-cols-2 gap-2 px-1 sm:px-3 md:gap-3">
                   <c:forEach var="item" items="${ownedItems}">
-                    <c:url var="itemUrl" value="/item/${item.id}" />
+                    <c:url var="itemDetailUrl" value="/item/${item.id}" />
                     <c:url var="editItemUrl" value="/profile/item/${item.id}/edit" />
-                    <c:url var="manageAvailabilityItemUrl" value="/profile/item/${item.id}/availability" />
+                    <c:url var="manageAvailabilityItemUrl" value="/profile/item/${item.id}/availability">
+                      <c:param name="return" value="/my-boats" />
+                    </c:url>
                     <c:url var="disableItemUrl" value="/profile/item/${item.id}/disable" />
                     <c:url var="enableItemUrl" value="/profile/item/${item.id}/enable" />
                     <c:url var="deleteItemUrl" value="/profile/item/${item.id}/delete" />
@@ -83,13 +86,14 @@
                     <c:set var="pubDeleteDeactivates" value="${publicationDeleteDeactivatesByItemId[item.id]}" />
                     <c:set var="deleteModalMessage" value="${pubDeleteDeactivates ? deleteDeactivateConfirmMessage : deleteConfirmMessage}" />
                     <c:set var="deleteModalConfirmText" value="${pubDeleteDeactivates ? disableLabel : deleteConfirmConfirm}" />
-                    <c:set var="deleteModalConfirmColor" value="${pubDeleteDeactivates ? 'primary' : 'danger'}" />
+                    <c:set var="deleteModalConfirmColor" value="${pubDeleteDeactivates ? 'secondary' : 'danger'}" />
                     <c:set var="deleteModalIcon" value="${pubDeleteDeactivates ? 'visibility_off' : 'delete_forever'}" />
                     <c:set var="deleteDisabled" value="${publicationDeleteDisabledByItemId[item.id]}" />
                     <c:set var="kebabId" value="publication-kebab-${item.id}" />
-                    <div class="rounded-xl bg-base-200 px-2 py-2 sm:px-3 sm:py-2.5 ${item.active ? '' : 'opacity-75'}">
-                      <div class="flex min-w-0 flex-col items-stretch gap-1.5 sm:flex-row sm:gap-2.5">
-                        <a href="${itemUrl}" class="h-20 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 no-underline sm:h-auto sm:w-32">
+                    <div class="relative rounded-xl bg-base-200 px-2 py-2 sm:px-3 sm:py-2.5 ${item.active ? '' : 'opacity-75'}">
+                      <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-xl" tabindex="-1" aria-label="${publicationViewDetailLabel}"></a>
+                      <div class="relative z-10 flex min-w-0 flex-col items-stretch gap-1.5 pointer-events-none sm:flex-row sm:gap-2.5">
+                        <div class="h-20 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:h-auto sm:w-32">
                           <c:choose>
                             <c:when test="${not empty publicationCoverImageId}">
                               <img src="${publicationCoverImageUrl}" alt="" class="h-full w-full object-cover" loading="lazy" />
@@ -100,16 +104,17 @@
                               </div>
                             </c:otherwise>
                           </c:choose>
-                        </a>
+                        </div>
                         <div class="min-w-0 flex flex-1 flex-col gap-1 sm:gap-1.5">
                           <div class="space-y-1 sm:space-y-1.5">
                             <div class="flex min-w-0 items-start gap-1 sm:gap-1.5">
-                              <a href="${itemUrl}" class="link link-hover m-0 min-w-0 flex-1 break-words text-xs font-extrabold text-on-surface no-underline line-clamp-1 hover:text-primary sm:text-sm sm:line-clamp-2">
+                              <p class="m-0 min-w-0 flex-1 break-words text-xs font-extrabold text-on-surface line-clamp-1 sm:text-sm sm:line-clamp-2">
                                 <c:out value="${item.title}" />
-                              </a>
+                              </p>
                               <span class="badge ${item.active ? 'badge-success' : 'badge-ghost'} badge-xs shrink-0 font-bold">
                                 <spring:message code="${item.active ? 'profile.publications.status.active' : 'profile.publications.status.inactive'}" />
                               </span>
+                              <div class="relative z-20 shrink-0 pointer-events-auto">
                               <paw:kebabMenu id="${kebabId}" ariaLabel="${actionsLabel}">
                                 <li><a href="${editItemUrl}" class="flex items-center gap-2"><span class="material-symbols-outlined text-base leading-none">edit</span><span><c:out value="${editLabel}" /></span></a></li>
                                 <li><a href="${manageAvailabilityItemUrl}" class="flex items-center gap-2"><span class="material-symbols-outlined text-base leading-none">event_available</span><span><c:out value="${manageAvailabilityLabel}" /></span></a></li>
@@ -136,10 +141,11 @@
                                   </c:choose>
                                 </li>
                               </paw:kebabMenu>
+                              </div>
                             </div>
                             <c:if test="${not empty item.location}">
                               <p class="m-0 flex min-w-0 items-center gap-1 text-[10px] text-on-surface-variant sm:text-[11px]">
-                                <span class="material-symbols-outlined text-xs leading-none text-primary sm:text-sm">location_on</span>
+                                <span class="material-symbols-outlined text-xs leading-none text-secondary sm:text-sm">location_on</span>
                                 <span class="min-w-0 truncate"><c:out value="${item.location}" /></span>
                               </p>
                             </c:if>
@@ -148,7 +154,7 @@
                             <div class="rounded-lg bg-base-100 p-1.5 space-y-0.5 sm:p-2">
                               <p class="m-0 text-[9px] font-bold uppercase tracking-wider text-outline sm:text-[10px]"><spring:message code="item.capacityPeople" /></p>
                               <p class="m-0 flex items-center gap-1 text-[11px] font-bold text-on-surface sm:text-xs">
-                                <span class="material-symbols-outlined text-xs leading-none text-primary sm:text-sm">groups</span>
+                                <span class="material-symbols-outlined text-xs leading-none text-secondary sm:text-sm">groups</span>
                                 <spring:message code="marketplace.card.people" arguments="${item.capacityPeople}" />
                               </p>
                             </div>
@@ -186,7 +192,7 @@
                 <span class="label-text text-xs font-bold uppercase tracking-wider text-outline"><spring:message code="dashboard.filters.boatName" /></span>
                 <span class="join w-full">
                   <input type="search" name="q" value="${fn:escapeXml(boatSearchQuery)}" class="input input-bordered input-sm join-item w-full" placeholder="<spring:message code="dashboard.filters.boatName.placeholder" />" />
-                  <button type="submit" class="btn btn-primary btn-sm join-item px-3" aria-label="<spring:message code="dashboard.filters.search" />">
+                  <button type="submit" class="btn btn-secondary btn-sm join-item px-3" aria-label="<spring:message code="dashboard.filters.search" />">
                     <span class="material-symbols-outlined text-base">search</span>
                   </button>
                 </span>
@@ -287,7 +293,7 @@
                         </div>
                         <div class="min-w-0 flex flex-1 flex-col space-y-1.5 sm:space-y-3">
                           <div class="space-y-1 sm:space-y-2">
-                            <a href="${receivedRequestItemUrl}" class="link link-hover m-0 min-w-0 break-words text-xs font-extrabold text-on-surface no-underline line-clamp-1 hover:text-primary sm:text-base sm:line-clamp-2">
+                            <a href="${receivedRequestItemUrl}" class="link link-hover m-0 min-w-0 break-words text-xs font-extrabold text-on-surface no-underline line-clamp-1 hover:text-secondary sm:text-base sm:line-clamp-2">
                               <c:out value="${receivedRequest.itemTitle}" />
                             </a>
                             <p class="m-0 truncate text-[10px] text-on-surface-variant sm:text-xs"><c:out value="${receivedRequest.dateLabel}" /> · <c:out value="${receivedRequest.timeRangeLabel}" /></p>
@@ -326,7 +332,7 @@
                         </div>
                       </div>
                       <c:if test="${receivedRequest.hasRequestMessage}">
-                        <div class="rounded-lg bg-base-100 p-3 border-l-4 border-primary">
+                        <div class="rounded-lg bg-base-100 p-3 border-l-4 border-secondary">
                           <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline">
                             <spring:message code="booking.requestMessage" />
                           </p>
@@ -350,7 +356,7 @@
                       <c:if test="${receivedRequest.hasPaymentProof}">
                         <div class="space-y-2">
                           <details class="rounded-lg bg-base-100 p-3">
-                            <summary class="cursor-pointer text-xs font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></summary>
+                            <summary class="cursor-pointer text-xs font-bold text-secondary"><spring:message code="profile.sentBookings.paymentProof.view" /></summary>
                             <div class="mt-3 overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
                               <c:choose>
                                 <c:when test="${receivedRequest.isPaymentProofPdf}">
@@ -395,7 +401,7 @@
                           <input type="hidden" name="returnTo" value="dashboardHosting" />
                           <div class="flex items-start justify-between gap-2">
                             <p class="m-0 min-w-0 truncate text-xs text-on-surface-variant"><c:out value="${ownerPendingReview.targetName}" /> · <c:out value="${ownerPendingReview.targetEmail}" /></p>
-                            <span class="badge badge-primary badge-sm shrink-0 font-bold"><c:out value="${reviewTargetUserLabel}" /></span>
+                            <span class="badge badge-secondary badge-sm shrink-0 font-bold"><c:out value="${reviewTargetUserLabel}" /></span>
                           </div>
                           <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
                             <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-owner-rating-${receivedRequest.id}"><c:out value="${reviewRatingLabel}" /></label>
@@ -412,7 +418,7 @@
                             <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-owner-comment-${receivedRequest.id}"><c:out value="${reviewCommentLabel}" /></label>
                             <textarea id="review-owner-comment-${receivedRequest.id}" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
                           </div>
-                          <paw:button type="submit" color="primary" size="sm" text="${reviewSubmitLabel}" />
+                          <paw:button type="submit" color="secondary" size="sm" text="${reviewSubmitLabel}" />
                         </form>
                       </c:if>
                     </div>

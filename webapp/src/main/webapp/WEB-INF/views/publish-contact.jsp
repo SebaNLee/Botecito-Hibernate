@@ -20,7 +20,7 @@
   headerCtaHref="/marketplace"
   headerCtaVariant="rent">
   <div class="mb-8">
-    <a href="${stepTwoUrl}" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
+    <a href="${stepTwoUrl}" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
       <span class="material-symbols-outlined">arrow_back</span>
       <span><spring:message code="common.back" /></span>
     </a>
@@ -31,7 +31,7 @@
       <span><spring:message code="publish.step3.progress" /></span>
       <span><spring:message code="publish.step3.badge" /></span>
     </div>
-    <progress class="progress progress-primary mt-3 w-full" value="66" max="100"></progress>
+    <progress class="progress progress-secondary mt-3 w-full" value="66" max="100"></progress>
     <h1 class="mt-6 text-4xl font-extrabold tracking-tight text-on-background m-0"><spring:message code="publish.step3.title" /></h1>
     <p class="text-on-surface-variant mt-2 text-lg m-0"><spring:message code="publish.step3.subtitle" /></p>
   </div>
@@ -52,7 +52,7 @@
       data-submit-loading-form="true">
 
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-      <paw:sectionCard element="aside" cssClass="lg:col-span-2" icon="inventory_2">
+      <paw:sectionCard element="aside" cssClass="lg:col-span-2" icon="inventory_2" hostAccent="true">
         <jsp:attribute name="title"><spring:message code="publish.step3.summary.title" /></jsp:attribute>
         <jsp:body>
           <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-base-200">
@@ -131,7 +131,7 @@
         </jsp:body>
       </paw:sectionCard>
 
-      <paw:sectionCard cssClass="lg:col-span-3" icon="person">
+      <paw:sectionCard cssClass="lg:col-span-3" icon="person" hostAccent="true">
         <jsp:attribute name="title"><spring:message code="publish.step3.account.title" /></jsp:attribute>
         <jsp:body>
           <div class="rounded-xl bg-base-200 p-4 text-sm text-on-surface-variant leading-relaxed">
@@ -142,7 +142,7 @@
             <paw:button href="${marketplaceUrl}" color="ghost" size="lg" cssClass="w-full sm:w-auto" text="${publishSaveDraftLabel}" />
             <button
               type="submit"
-              class="btn btn-primary btn-lg w-full sm:w-auto"
+              class="btn btn-secondary btn-lg w-full sm:w-auto"
               data-submit-loading-button>
               <span class="flex items-center justify-center gap-2" data-submit-loading-content>
                 <spring:message code="publish.actions.submit" />

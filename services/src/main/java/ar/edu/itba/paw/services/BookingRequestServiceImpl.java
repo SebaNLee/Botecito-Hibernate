@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -41,10 +42,59 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             final String description) {
         final User requesterUser = resolveOrCreateRequesterUser(
                 requesterGivenName, requesterLastName, requesterEmail, requesterPreferredLanguage);
+        final Item item = itemDao.findAnyItemById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("Item not found: " + itemId));
+        if (item.getOwnerId() != null && item.getOwnerId().equals(requesterUser.getId())) {
+            throw new SelfBookingNotAllowedException();
+        }
         final String token = UUID.randomUUID().toString();
         final ItemBooking booking =
                 itemDao.createBookingRequest(itemId, requesterUser.getId(), startTime, endTime, description, token);
         return toBookingRequest(booking, requesterUser);
+    }
+
+    @Override
+    @Transactional
+    public ItemBooking createOwnerSelfBlock(
+            final int itemId, final int ownerId, final OffsetDateTime startTime, final OffsetDateTime endTime) {
+        final Item item = itemDao.findItemByIdForOwner(itemId, ownerId)
+                .orElseThrow(() -> new IllegalArgumentException("Item not found or not owned by user"));
+        if (!startTime.isBefore(endTime)) {
+            throw new IllegalArgumentException("Personal block start must be before end");
+        }
+        for (final ItemBooking booking : itemDao.listBookingsByItemId(item.getId())) {
+            if (isBlockingBooking(booking)
+                    && rangesOverlap(startTime, endTime, booking.getStartTime(), booking.getEndTime())) {
+                throw new OverlappingActiveBookingException();
+            }
+        }
+        final OffsetDateTime recordedAt = OffsetDateTime.now();
+        return itemDao.insertOwnerPersonalBlock(
+                itemId, ownerId, startTime, endTime, UUID.randomUUID().toString(), recordedAt);
+    }
+
+    @Override
+    @Transactional
+    public boolean removeOwnerSelfBlock(final int bookingId, final int ownerId) {
+        final Optional<ItemBooking> bookingOpt = itemDao.findBookingById(bookingId);
+        if (bookingOpt.isEmpty()) {
+            return false;
+        }
+        final ItemBooking booking = bookingOpt.get();
+        if (booking.getItemId() == null
+                || booking.getGuestId() == null
+                || !Objects.equals(booking.getGuestId(), ownerId)
+                || booking.getState() != BookingState.BOOKING_CONFIRMED) {
+            return false;
+        }
+        final Item item = itemDao.findAnyItemById(booking.getItemId()).orElse(null);
+        if (item == null
+                || item.getOwnerId() == null
+                || !Objects.equals(item.getOwnerId(), ownerId)
+                || !Objects.equals(item.getOwnerId(), booking.getGuestId())) {
+            return false;
+        }
+        return itemDao.markBookingCancelled(bookingId);
     }
 
     @Override
@@ -299,5 +349,23 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             return "en";
         }
         return "es";
+    }
+
+    private static boolean isBlockingBooking(final ItemBooking booking) {
+        return booking.getState() == BookingState.BOOKING_PENDING
+                || booking.getState() == BookingState.BOOKING_CONFIRMED
+                || booking.getState() == BookingState.BOOKING_PAYMENT_SUBMITTED
+                || booking.getState() == BookingState.BOOKING_PAID;
+    }
+
+    private static boolean rangesOverlap(
+            final OffsetDateTime aStart,
+            final OffsetDateTime aEnd,
+            final OffsetDateTime bStart,
+            final OffsetDateTime bEnd) {
+        if (aStart == null || aEnd == null || bStart == null || bEnd == null) {
+            return false;
+        }
+        return aStart.isBefore(bEnd) && bStart.isBefore(aEnd);
     }
 }

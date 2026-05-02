@@ -1305,6 +1305,12 @@
 
       this.helperNode.textContent = helperText || "";
       this.updateTriggerLabel();
+
+      if (this.applyButton) {
+        this.applyButton.disabled = !(
+          this.startInput.value && this.endInput.value
+        );
+      }
     }
 
     baseStartState(time) {

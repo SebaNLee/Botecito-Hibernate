@@ -20,6 +20,7 @@
 <spring:message code="profile.publications.delete.confirm.confirm" var="deleteConfirmConfirm" />
 <spring:message code="profile.publications.delete.confirm.cancel" var="deleteConfirmCancel" />
 <spring:message code="profile.publications.delete.disabled.futureBookings" var="deleteDisabledFutureBookingsLabel" />
+<spring:message code="profile.publications.viewDetail" var="publicationViewDetailLabel" />
 <spring:message code="profile.bookings.accept" var="acceptLabel" />
 <spring:message code="profile.bookings.decline" var="declineLabel" />
 <spring:message code="payment.confirm.button" var="paymentConfirmLabel" />
@@ -40,6 +41,7 @@
 <spring:message code="profile.reviews.target.item" var="reviewTargetItemLabel" />
 <spring:message code="profile.reviews.target.user" var="reviewTargetUserLabel" />
 <spring:message code="profile.reviews.authoredSummary.label" var="authoredReviewSummaryLabel" />
+<spring:message code="profile.sentBookings.viewBookedListing" var="sentBookingViewListingLabel" />
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6">
   <section class="min-w-0 space-y-6">
@@ -72,8 +74,11 @@
               <c:when test="${not empty ownedItems}">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <c:forEach var="item" items="${ownedItems}">
+                    <c:url var="itemDetailUrl" value="/item/${item.id}" />
                     <c:url var="editItemUrl" value="/profile/item/${item.id}/edit" />
-                    <c:url var="manageAvailabilityItemUrl" value="/profile/item/${item.id}/availability" />
+                    <c:url var="manageAvailabilityItemUrl" value="/profile/item/${item.id}/availability">
+                      <c:param name="return" value="/my-boats" />
+                    </c:url>
                     <c:url var="disableItemUrl" value="/profile/item/${item.id}/disable" />
                     <c:url var="enableItemUrl" value="/profile/item/${item.id}/enable" />
                     <c:url var="deleteItemUrl" value="/profile/item/${item.id}/delete" />
@@ -81,12 +86,13 @@
                     <c:set var="pubDeleteDeactivates" value="${publicationDeleteDeactivatesByItemId[item.id]}" />
                     <c:set var="deleteModalMessage" value="${pubDeleteDeactivates ? deleteDeactivateConfirmMessage : deleteConfirmMessage}" />
                     <c:set var="deleteModalConfirmText" value="${pubDeleteDeactivates ? disableLabel : deleteConfirmConfirm}" />
-                    <c:set var="deleteModalConfirmColor" value="${pubDeleteDeactivates ? 'primary' : 'danger'}" />
+                    <c:set var="deleteModalConfirmColor" value="${pubDeleteDeactivates ? 'secondary' : 'danger'}" />
                     <c:set var="deleteModalIcon" value="${pubDeleteDeactivates ? 'visibility_off' : 'delete_forever'}" />
                     <c:set var="deleteDisabled" value="${publicationDeleteDisabledByItemId[item.id]}" />
                     <c:set var="kebabId" value="publication-kebab-${item.id}" />
-                    <div class="rounded-xl bg-base-200 p-4 flex min-w-0 items-start justify-between gap-4">
-                      <div class="min-w-0 ${item.active ? '' : 'opacity-75'}">
+                    <div class="relative rounded-xl bg-base-200 p-4 flex min-w-0 items-start justify-between gap-4">
+                      <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-xl" tabindex="-1" aria-label="${publicationViewDetailLabel}"></a>
+                      <div class="relative z-10 min-w-0 flex-1 pointer-events-none ${item.active ? '' : 'opacity-75'}">
                         <div class="flex min-w-0 flex-wrap items-center gap-2">
                           <p class="m-0 min-w-0 break-words text-sm font-bold text-on-surface"><c:out value="${item.title}" /></p>
                           <span class="badge ${item.active ? 'badge-success' : 'badge-ghost'} badge-sm shrink-0 font-bold">
@@ -98,6 +104,7 @@
                           <spring:message code="marketplace.card.perHour" />
                         </p>
                       </div>
+                      <div class="relative z-20 shrink-0 pointer-events-auto">
                       <paw:kebabMenu id="${kebabId}" ariaLabel="${actionsLabel}">
                         <li><a href="${editItemUrl}" class="flex items-center gap-2"><span class="material-symbols-outlined text-base leading-none">edit</span><span><c:out value="${editLabel}" /></span></a></li>
                         <li><a href="${manageAvailabilityItemUrl}" class="flex items-center gap-2"><span class="material-symbols-outlined text-base leading-none">event_available</span><span><c:out value="${manageAvailabilityLabel}" /></span></a></li>
@@ -124,6 +131,7 @@
                           </c:choose>
                         </li>
                       </paw:kebabMenu>
+                      </div>
                     </div>
                     <c:if test="${!deleteDisabled}">
                       <paw:confirmModal id="${deleteModalId}" title="${deleteConfirmTitle}" message="${deleteModalMessage}" confirmText="${deleteModalConfirmText}" cancelText="${deleteConfirmCancel}" confirmColor="${deleteModalConfirmColor}" icon="${deleteModalIcon}">
@@ -209,7 +217,7 @@
                       <c:if test="${receivedRequest.hasPaymentProof}">
                         <div class="space-y-2">
                           <details class="rounded-lg bg-base-100 p-3">
-                            <summary class="cursor-pointer text-xs font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></summary>
+                            <summary class="cursor-pointer text-xs font-bold text-secondary"><spring:message code="profile.sentBookings.paymentProof.view" /></summary>
                             <div class="mt-3 overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
                               <img src="${receivedPaymentProofUrl}" alt="<spring:message code='profile.sentBookings.paymentProof.view' />" class="max-h-80 w-full object-contain" loading="lazy" />
                             </div>
@@ -259,7 +267,7 @@
                           <input type="hidden" name="returnTo" value="dashboardHosting" />
                           <div class="flex items-start justify-between gap-2">
                             <p class="m-0 text-xs text-on-surface-variant break-words"><c:out value="${ownerPendingReview.targetName}" /> · <c:out value="${ownerPendingReview.targetEmail}" /></p>
-                            <span class="badge badge-primary badge-sm shrink-0 font-bold"><c:out value="${reviewTargetUserLabel}" /></span>
+                            <span class="badge badge-secondary badge-sm shrink-0 font-bold"><c:out value="${reviewTargetUserLabel}" /></span>
                           </div>
                           <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
                             <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-owner-rating-${receivedRequest.id}"><c:out value="${reviewRatingLabel}" /></label>
@@ -276,7 +284,7 @@
                             <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-owner-comment-${receivedRequest.id}"><c:out value="${reviewCommentLabel}" /></label>
                             <textarea id="review-owner-comment-${receivedRequest.id}" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
                           </div>
-                          <paw:button type="submit" color="primary" size="sm" text="${reviewSubmitLabel}" />
+                          <paw:button type="submit" color="secondary" size="sm" text="${reviewSubmitLabel}" />
                         </form>
                       </c:if>
                     </div>
@@ -304,6 +312,11 @@
               <c:when test="${not empty sentBookingRequests}">
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
                   <c:forEach var="sentRequest" items="${sentBookingRequests}">
+                    <c:url var="sentRequestItemUrl" value="/item/${sentRequest.itemId}">
+                      <c:if test="${not empty sentRequest.bookedSnapshotVersionId}">
+                        <c:param name="snapshotVersionId" value="${sentRequest.bookedSnapshotVersionId}" />
+                      </c:if>
+                    </c:url>
                     <c:url var="sentPaymentProofUrl" value="/bookings/${sentRequest.id}/payment-proof" />
                     <c:set var="authoredItemReview" value="${authoredItemReviewsByBookingId[sentRequest.id]}" />
                     <c:set var="sentStatusClass" value="badge-ghost" />
@@ -316,7 +329,7 @@
                     <div class="rounded-xl bg-base-200 p-4 space-y-4">
                       <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0 space-y-1">
-                          <p class="m-0 min-w-0 break-words text-sm font-bold text-on-surface"><c:out value="${sentRequest.itemTitle}" /></p>
+                          <a href="${sentRequestItemUrl}" class="link link-hover m-0 block min-w-0 break-words text-sm font-bold text-on-surface no-underline hover:text-primary" aria-label="${sentBookingViewListingLabel}: ${sentRequest.itemTitle}"><c:out value="${sentRequest.itemTitle}" /></a>
                           <c:if test="${not empty authoredItemReview}">
                             <p class="m-0 text-[11px] font-bold text-success flex items-center gap-1">
                               <span class="material-symbols-outlined text-sm leading-none">check_circle</span>

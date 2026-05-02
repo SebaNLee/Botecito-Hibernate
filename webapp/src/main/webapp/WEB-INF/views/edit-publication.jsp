@@ -34,7 +34,7 @@
     headerCtaHref="/marketplace"
     headerCtaVariant="rent">
   <div class="mb-8">
-    <a href="${profileUrl}" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
+    <a href="${profileUrl}" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
       <span class="material-symbols-outlined">arrow_back</span>
       <span><spring:message code="common.back" /></span>
     </a>
@@ -68,7 +68,7 @@
       </c:if>
     </spring:hasBindErrors>
 
-    <paw:sectionCard icon="edit">
+    <paw:sectionCard icon="edit" hostAccent="true">
       <jsp:attribute name="title"><spring:message code="editPublication.title" /></jsp:attribute>
       <jsp:body>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -101,13 +101,14 @@
                 value="${editForm.marina}"
                 placeholder="${publishLocationPlaceholder}"
                 icon="location_on"
-                errorPath="marina" />
+                errorPath="marina"
+                hostAccent="true" />
           </div>
         </div>
       </jsp:body>
     </paw:sectionCard>
 
-    <paw:sectionCard icon="add_a_photo">
+    <paw:sectionCard icon="add_a_photo" hostAccent="true">
       <jsp:attribute name="title"><spring:message code="publish.step1.section.photo" /></jsp:attribute>
       <jsp:body>
         <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-base-200">
@@ -128,10 +129,10 @@
               data-image-preview-target-id="edit-file-preview"
               data-image-preview-filename-id="edit-file-name-display"
               data-image-preview-placeholder="${not empty itemImageUrl ? itemImageUrl : placeholderImageUrl}" />
-          <div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+          <div class="w-16 h-16 bg-secondary/10 text-secondary rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <span class="material-symbols-outlined text-3xl">upload_file</span>
           </div>
-          <span class="font-bold text-lg text-primary"><spring:message code="publish.image.upload" /></span>
+          <span class="font-bold text-lg text-secondary"><spring:message code="publish.image.upload" /></span>
           <span id="edit-file-name-display" class="text-sm text-outline mt-1"><spring:message code="publish.image.helper" /></span>
           <form:errors path="file" cssClass="text-error text-xs mt-2" element="p" />
         </label>
@@ -146,12 +147,12 @@
       <paw:button href="${profileUrl}" color="ghost" size="lg" cssClass="w-full sm:w-auto" text="${cancelLabel}" />
       <c:choose>
         <c:when test="${not empty activeEditBookings}">
-          <button type="button" class="btn btn-primary btn-lg w-full sm:w-auto" data-edit-conflict-open>
+          <button type="button" class="btn btn-secondary btn-lg w-full sm:w-auto" data-edit-conflict-open>
             <c:out value="${saveLabel}" />
           </button>
         </c:when>
         <c:otherwise>
-          <paw:button type="submit" color="primary" size="lg" cssClass="w-full sm:w-auto" text="${saveLabel}" />
+          <paw:button type="submit" color="secondary" size="lg" cssClass="w-full sm:w-auto" text="${saveLabel}" />
         </c:otherwise>
       </c:choose>
     </div>
@@ -193,7 +194,7 @@
                     <div class="card-body gap-4 p-4 sm:p-5">
                       <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div class="flex min-w-0 items-start gap-3">
-                          <div class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                          <div class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary/15 text-secondary">
                             <span class="material-symbols-outlined text-base">event</span>
                           </div>
                           <div class="min-w-0 grid grid-cols-1 gap-1.5">
@@ -222,11 +223,11 @@
                         <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                           <label class="label cursor-pointer justify-start gap-3 rounded-xl border border-success/25 bg-success/10 px-3 py-2.5">
                             <input type="radio" class="radio radio-success radio-sm" name="bookingDecision_${booking.id}" value="accept" />
-                            <span class="label-text font-semibold text-success-content"><spring:message code="editPublication.conflict.pending.accept" /></span>
+                            <span class="label-text font-semibold text-on-surface"><spring:message code="editPublication.conflict.pending.accept" /></span>
                           </label>
                           <label class="label cursor-pointer justify-start gap-3 rounded-xl border border-error/25 bg-error/10 px-3 py-2.5">
                             <input type="radio" class="radio radio-error radio-sm" name="bookingDecision_${booking.id}" value="decline" />
-                            <span class="label-text font-semibold text-error-content"><spring:message code="editPublication.conflict.pending.decline" /></span>
+                            <span class="label-text font-semibold text-on-surface"><spring:message code="editPublication.conflict.pending.decline" /></span>
                           </label>
                         </div>
                       </c:if>
@@ -243,7 +244,7 @@
                 <a href="${profileUrl}" class="btn btn-outline flex-1 no-underline">
                   <c:out value="${discardEditLabel}" />
                 </a>
-                <button type="submit" name="confirmEditWithSnapshots" value="true" class="btn btn-primary flex-1">
+                <button type="submit" name="confirmEditWithSnapshots" value="true" class="btn btn-secondary flex-1">
                   <c:out value="${confirmChangesLabel}" />
                 </button>
               </div>

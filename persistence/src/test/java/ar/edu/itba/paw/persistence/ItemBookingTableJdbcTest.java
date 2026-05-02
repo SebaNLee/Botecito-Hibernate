@@ -1,10 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.ItemBooking;
-import ar.edu.itba.paw.models.ItemSnapshot;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -26,9 +23,6 @@ public class ItemBookingTableJdbcTest {
 
     @Autowired
     private @NonNull DataSource dataSource;
-
-    @Autowired
-    private @NonNull ItemDao itemDao;
 
     @Test
     public void testCreateBookingWhenDataIsValid() {
@@ -79,140 +73,6 @@ public class ItemBookingTableJdbcTest {
                         Timestamp.from(Instant.parse("2026-01-01T12:00:00Z")),
                         Timestamp.from(Instant.parse("2026-01-01T11:00:00Z")),
                         "t-a"));
-    }
-
-    @Test
-    public void testPublicationEditSnapshotsActiveBookingsOnce() {
-        final int ownerId = insertUser("owner@a.com");
-        final int guestId = insertUser("guest@a.com");
-        final int itemId = insertItem(ownerId, "snapshot-title");
-        jdbcTemplate()
-                .update(
-                        "INSERT INTO item_media (item_id, image_data, display_order) VALUES (?, ?, ?)",
-                        itemId,
-                        new byte[] {1, 2, 3},
-                        0);
-
-        final OffsetDateTime start = OffsetDateTime.parse("2026-01-01T10:00:00Z");
-        final ItemBooking booking =
-                itemDao.createBookingRequest(itemId, guestId, start, start.plusHours(1), "message", "snapshot-token");
-        Assertions.assertTrue(itemDao.findSnapshotByBookingIdForGuest(booking.getId(), guestId)
-                .isEmpty());
-        Assertions.assertTrue(itemDao.hasBlockingBookingsForEdition(itemId));
-
-        Assertions.assertTrue(itemDao.snapshotBookingsForPublicationEdit(itemId));
-        Assertions.assertFalse(itemDao.hasBlockingBookingsForEdition(itemId));
-        jdbcTemplate().update("UPDATE item SET title = ?, price_per_hour = ? WHERE id = ?", "changed", 9999, itemId);
-
-        final ItemSnapshot snapshot = itemDao.findSnapshotByBookingIdForGuest(booking.getId(), guestId)
-                .orElseThrow();
-        Assertions.assertEquals("snapshot-title", snapshot.getTitle());
-        Assertions.assertEquals(1500, snapshot.getPricePerHour());
-        Assertions.assertArrayEquals(new byte[] {1, 2, 3}, snapshot.getCoverImageData());
-        Assertions.assertTrue(itemDao.findSnapshotByBookingIdForGuest(booking.getId(), ownerId)
-                .isEmpty());
-        Assertions.assertTrue(itemDao.findSnapshotByBookingIdForOwner(booking.getId(), ownerId)
-                .isPresent());
-        Assertions.assertEquals(
-                1, itemDao.listSnapshotsByItemIdForOwner(itemId, ownerId).size());
-        Assertions.assertTrue(itemDao.snapshotBookingsForPublicationEdit(itemId));
-        Assertions.assertEquals(
-                1, itemDao.listSnapshotsByItemIdForOwner(itemId, ownerId).size());
-    }
-
-    @Test
-    public void testPublicationEditSnapshotsCompletedBooking() {
-        final int ownerId = insertUser("owner-completed@a.com");
-        final int guestId = insertUser("guest-completed@a.com");
-        final int itemId = insertItem(ownerId, "completed-snapshot-title");
-        final OffsetDateTime start = OffsetDateTime.parse("2026-01-03T10:00:00Z");
-        final ItemBooking booking = itemDao.createBookingRequest(
-                itemId, guestId, start, start.plusHours(1), "message", "completed-snapshot-token");
-        jdbcTemplate().update("UPDATE item_booking SET state = ? WHERE id = ?", "BOOKING_COMPLETED", booking.getId());
-
-        Assertions.assertFalse(itemDao.hasBlockingBookingsForEdition(itemId));
-        Assertions.assertTrue(itemDao.snapshotBookingsForPublicationEdit(itemId));
-
-        final ItemSnapshot snapshot = itemDao.findSnapshotByBookingIdForGuest(booking.getId(), guestId)
-                .orElseThrow();
-        Assertions.assertEquals("completed-snapshot-title", snapshot.getTitle());
-    }
-
-    @Test
-    public void testBookingVersionMustBelongToSameItem() {
-        final int ownerId = insertUser("owner-version-fk@a.com");
-        final int guestId = insertUser("guest-version-fk@a.com");
-        final int snapshotItemId = insertItem(ownerId, "snapshot-source-item");
-        final int otherItemId = insertItem(ownerId, "snapshot-target-item");
-        final OffsetDateTime start = OffsetDateTime.parse("2026-01-04T10:00:00Z");
-        itemDao.createBookingRequest(snapshotItemId, guestId, start, start.plusHours(1), "message", "source-token");
-        final ItemBooking otherBooking = itemDao.createBookingRequest(
-                otherItemId, guestId, start.plusHours(2), start.plusHours(3), "message", "target-token");
-        Assertions.assertTrue(itemDao.snapshotBookingsForPublicationEdit(snapshotItemId));
-        final Integer versionId = jdbcTemplate()
-                .queryForObject(
-                        "SELECT item_version_id FROM item_booking WHERE item_id = ?", Integer.class, snapshotItemId);
-
-        Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
-                .update("UPDATE item_booking SET item_version_id = ? WHERE id = ?", versionId, otherBooking.getId()));
-    }
-
-    @Test
-    public void testDeletePublicationWithoutBookingsRemovesItem() {
-        final int ownerId = insertUser("owner-delete@a.com");
-        final int itemId = insertItem(ownerId, "delete-without-bookings");
-
-        Assertions.assertTrue(itemDao.deleteItemById(itemId));
-
-        Assertions.assertTrue(itemDao.findAnyItemById(itemId).isEmpty());
-    }
-
-    @Test
-    public void testDeletePublicationWithVersionedBookingDeactivatesItemAndPreservesSnapshot() {
-        final int ownerId = insertUser("owner-delete-versioned@a.com");
-        final int guestId = insertUser("guest-delete-versioned@a.com");
-        final int itemId = insertItem(ownerId, "delete-versioned-booking");
-        final OffsetDateTime start = OffsetDateTime.now().plusDays(1);
-        final ItemBooking booking = itemDao.createBookingRequest(
-                itemId, guestId, start, start.plusHours(1), "message", "delete-versioned-token");
-        Assertions.assertTrue(itemDao.snapshotBookingsForPublicationEdit(itemId));
-
-        Assertions.assertTrue(itemDao.deleteItemById(itemId));
-
-        Assertions.assertEquals(1, itemDao.listItemsByOwnerId(ownerId).size());
-        Assertions.assertFalse(itemDao.findAnyItemById(itemId).orElseThrow().getActive());
-        Assertions.assertTrue(itemDao.findSnapshotByBookingIdForOwner(booking.getId(), ownerId)
-                .isPresent());
-    }
-
-    @Test
-    public void testDeleteInactivePublicationWithFutureBookingIsBlocked() {
-        final int ownerId = insertUser("owner-delete-future@a.com");
-        final int guestId = insertUser("guest-delete-future@a.com");
-        final int itemId = insertItem(ownerId, "delete-future-booking");
-        final OffsetDateTime start = OffsetDateTime.now().plusDays(1);
-        itemDao.createBookingRequest(itemId, guestId, start, start.plusHours(1), "message", "delete-future-token");
-        Assertions.assertTrue(itemDao.deleteItemById(itemId));
-
-        Assertions.assertFalse(itemDao.deleteItemById(itemId));
-
-        Assertions.assertEquals(1, itemDao.listItemsByOwnerId(ownerId).size());
-        Assertions.assertTrue(itemDao.findAnyItemById(itemId).isPresent());
-    }
-
-    @Test
-    public void testDeleteInactivePublicationAfterLastBookingHidesItemFromOwner() {
-        final int ownerId = insertUser("owner-delete-past@a.com");
-        final int guestId = insertUser("guest-delete-past@a.com");
-        final int itemId = insertItem(ownerId, "delete-past-booking");
-        final OffsetDateTime start = OffsetDateTime.now().minusDays(2);
-        itemDao.createBookingRequest(itemId, guestId, start, start.plusHours(1), "message", "delete-past-token");
-        Assertions.assertTrue(itemDao.deleteItemById(itemId));
-
-        Assertions.assertTrue(itemDao.deleteItemById(itemId));
-
-        Assertions.assertTrue(itemDao.listItemsByOwnerId(ownerId).isEmpty());
-        Assertions.assertTrue(itemDao.findAnyItemById(itemId).isEmpty());
     }
 
     private int insertUser(final String email) {

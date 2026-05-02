@@ -12,6 +12,7 @@ import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
+import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.PasswordRecoveryRequestForm;
@@ -25,6 +26,7 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -311,22 +313,45 @@ public class AuthController {
     }
 
     @RequestMapping(value = "/dashboard", method = RequestMethod.GET)
-    public ModelAndView dashboard(@RequestParam(value = "dashboardTab", required = false) final String dashboardTab) {
+    public ModelAndView dashboard() {
+        return new ModelAndView("redirect:/my-boats");
+    }
+
+    @RequestMapping(value = "/my-boats", method = RequestMethod.GET)
+    public ModelAndView myBoats(
+            @RequestParam(value = "status", required = false) final List<String> status,
+            @RequestParam(value = "q", required = false) final String query,
+            @RequestParam(value = "page", required = false, defaultValue = "1") final int page) {
         final User user = currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        final ModelAndView mav = new ModelAndView("dashboard");
+        final ModelAndView mav = new ModelAndView("my-boats");
         mav.addObject("user", user);
-        mav.addObject("activeDashboardTab", resolveDashboardTab(dashboardTab));
-        addDashboardData(mav, user);
+        addMyBoatsData(mav, user, resolveBookingStatusFilters(status), normalizeQuery(query), sanitizePage(page));
+        return mav;
+    }
+
+    @RequestMapping(value = "/bookings", method = RequestMethod.GET)
+    public ModelAndView bookings(
+            @RequestParam(value = "status", required = false) final List<String> status,
+            @RequestParam(value = "q", required = false) final String query,
+            @RequestParam(value = "page", required = false, defaultValue = "1") final int page) {
+        final User user = currentAuthenticatedUser();
+        if (user == null) {
+            return new ModelAndView("redirect:/login");
+        }
+
+        final ModelAndView mav = new ModelAndView("bookings");
+        mav.addObject("user", user);
+        addMyTripsData(mav, user, resolveBookingStatusFilters(status), normalizeQuery(query), sanitizePage(page));
         return mav;
     }
 
     @RequestMapping(value = "/profile/dashboard", method = RequestMethod.GET)
     public ModelAndView legacyDashboardRedirect() {
-        return new ModelAndView("redirect:/dashboard");
+        return new ModelAndView("redirect:/my-boats");
     }
 
     private ModelAndView buildProfileView(final User user) {
@@ -350,6 +375,7 @@ public class AuthController {
         }
 
         mav.addObject("ownedItems", ownedItems);
+        mav.addObject("publicationCoverImageIdsByItemId", buildCoverImageIdsByItemId(ownedItems));
         mav.addObject("publicationDeleteDeactivatesByItemId", buildDeleteDeactivationFlags(ownedItems));
         mav.addObject("publicationDeleteDisabledByItemId", buildDeleteDisabledFlags(ownedItems));
         mav.addObject("receivedBookingRequests", buildReceivedBookings(user));
@@ -361,6 +387,67 @@ public class AuthController {
         mav.addObject("receivedGuestReviews", buildReceivedUserReviews(user.getId()));
         mav.addObject(
                 "receivedItemReviewsByOwnedItems", buildReceivedItemReviewsByOwnedItems(user.getId(), ownedItems));
+    }
+
+    private void addMyBoatsData(
+            final ModelAndView mav, final User user, final List<String> statuses, final String query, final int page) {
+        final List<Item> ownedItems = itemService.listItemsByOwnerId(user.getId());
+        final List<PendingReviewView> pendingReviewActions = buildPendingReviewActions(user.getId());
+        final Map<Integer, PendingReviewView> pendingOwnerUserReviewsByBookingId = new LinkedHashMap<>();
+        for (final PendingReviewView pendingReview : pendingReviewActions) {
+            if (pendingReview.targetType() == ReviewTargetType.USER) {
+                pendingOwnerUserReviewsByBookingId.put(pendingReview.bookingId(), pendingReview);
+            }
+        }
+
+        final List<ReceivedBookingView> filteredBookings = buildReceivedBookings(user).stream()
+                .filter(booking -> matchesAnyStatusFilter(booking.getStatusMessageCode(), statuses))
+                .filter(booking -> matchesBoatNameSearch(booking.getItemTitle(), query))
+                .sorted(Comparator.comparing(
+                                ReceivedBookingView::getStartTime, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(ReceivedBookingView::getId, Comparator.reverseOrder()))
+                .toList();
+        final Page<ReceivedBookingView> receivedBookingPage = paginate(filteredBookings, page, 6);
+
+        mav.addObject("ownedItems", ownedItems);
+        mav.addObject("publicationCoverImageIdsByItemId", buildCoverImageIdsByItemId(ownedItems));
+        mav.addObject("publicationDeleteDeactivatesByItemId", buildDeleteDeactivationFlags(ownedItems));
+        mav.addObject("publicationDeleteDisabledByItemId", buildDeleteDisabledFlags(ownedItems));
+        mav.addObject("receivedBookingRequests", receivedBookingPage.getContent());
+        mav.addObject("receivedBookingPage", receivedBookingPage);
+        mav.addObject("selectedBookingStatusFilters", statuses);
+        mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statuses));
+        mav.addObject("boatSearchQuery", query);
+        mav.addObject("pendingOwnerUserReviewsByBookingId", pendingOwnerUserReviewsByBookingId);
+        mav.addObject("authoredUserReviewsByBookingId", buildAuthoredUserReviewsByBookingId(user.getId()));
+    }
+
+    private void addMyTripsData(
+            final ModelAndView mav, final User user, final List<String> statuses, final String query, final int page) {
+        final List<PendingReviewView> pendingReviewActions = buildPendingReviewActions(user.getId());
+        final Map<Integer, PendingReviewView> pendingGuestItemReviewsByBookingId = new LinkedHashMap<>();
+        for (final PendingReviewView pendingReview : pendingReviewActions) {
+            if (pendingReview.targetType() == ReviewTargetType.ITEM) {
+                pendingGuestItemReviewsByBookingId.put(pendingReview.bookingId(), pendingReview);
+            }
+        }
+
+        final List<SentBookingView> filteredBookings = buildSentBookings(user.getId()).stream()
+                .filter(booking -> matchesAnyStatusFilter(booking.getStatusMessageCode(), statuses))
+                .filter(booking -> matchesBoatNameSearch(booking.getItemTitle(), query))
+                .sorted(Comparator.comparing(
+                                SentBookingView::getStartTime, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(SentBookingView::getId, Comparator.reverseOrder()))
+                .toList();
+        final Page<SentBookingView> sentBookingPage = paginate(filteredBookings, page, 6);
+
+        mav.addObject("sentBookingRequests", sentBookingPage.getContent());
+        mav.addObject("sentBookingPage", sentBookingPage);
+        mav.addObject("selectedBookingStatusFilters", statuses);
+        mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statuses));
+        mav.addObject("boatSearchQuery", query);
+        mav.addObject("pendingGuestItemReviewsByBookingId", pendingGuestItemReviewsByBookingId);
+        mav.addObject("authoredItemReviewsByBookingId", buildAuthoredItemReviewsByBookingId(user.getId()));
     }
 
     private static void populateProfileForm(final ProfileForm form, final User user) {
@@ -376,6 +463,134 @@ public class AuthController {
         form.setPreferredLanguage(user.getPreferredLanguage());
     }
 
+    private static int sanitizePage(final int page) {
+        return Math.max(1, page);
+    }
+
+    private static String normalizeQuery(final String query) {
+        if (query == null) {
+            return "";
+        }
+        return query.trim();
+    }
+
+    private static boolean matchesBoatNameSearch(final String itemTitle, final String query) {
+        if (query == null || query.isBlank()) {
+            return true;
+        }
+        if (itemTitle == null) {
+            return false;
+        }
+        return itemTitle.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT));
+    }
+
+    private static String resolveBookingStatusFilter(final String status) {
+        if ("pending".equals(status)
+                || "upcoming".equals(status)
+                || "completed".equals(status)
+                || "cancelled".equals(status)) {
+            return status;
+        }
+        return "all";
+    }
+
+    private static List<String> resolveBookingStatusFilters(final List<String> statuses) {
+        if (statuses == null || statuses.isEmpty()) {
+            return List.of();
+        }
+
+        final List<String> resolvedStatuses = new ArrayList<>();
+        for (final String status : statuses) {
+            if (isExactBookingStatusFilter(status) && !resolvedStatuses.contains(status)) {
+                resolvedStatuses.add(status);
+            }
+        }
+        return resolvedStatuses;
+    }
+
+    private static boolean isExactBookingStatusFilter(final String status) {
+        return "pending".equals(status)
+                || "confirmed".equals(status)
+                || "paymentSubmitted".equals(status)
+                || "paid".equals(status)
+                || "paymentRefused".equals(status)
+                || "completed".equals(status)
+                || "rejected".equals(status)
+                || "cancelled".equals(status);
+    }
+
+    private static Map<String, Boolean> buildSelectedStatusFilterMap(final List<String> statuses) {
+        final Map<String, Boolean> selectedByStatus = new LinkedHashMap<>();
+        for (final String status : List.of(
+                "pending",
+                "confirmed",
+                "paymentSubmitted",
+                "paid",
+                "paymentRefused",
+                "completed",
+                "rejected",
+                "cancelled")) {
+            selectedByStatus.put(status, statuses != null && statuses.contains(status));
+        }
+        return selectedByStatus;
+    }
+
+    private static boolean matchesAnyStatusFilter(final String statusMessageCode, final List<String> filters) {
+        if (filters == null || filters.isEmpty()) {
+            return true;
+        }
+        for (final String filter : filters) {
+            if (matchesExactStatusFilter(statusMessageCode, filter)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean matchesExactStatusFilter(final String statusMessageCode, final String filter) {
+        return switch (filter) {
+            case "pending" -> "profile.sentBookings.status.pending".equals(statusMessageCode);
+            case "confirmed" -> "profile.sentBookings.status.confirmed".equals(statusMessageCode);
+            case "paymentSubmitted" -> "profile.sentBookings.status.paymentSubmitted".equals(statusMessageCode);
+            case "paid" -> "profile.sentBookings.status.paid".equals(statusMessageCode);
+            case "paymentRefused" -> "profile.sentBookings.status.paymentRefused".equals(statusMessageCode);
+            case "completed" -> "profile.sentBookings.status.completed".equals(statusMessageCode);
+            case "rejected" -> "profile.sentBookings.status.rejected".equals(statusMessageCode);
+            case "cancelled" -> "profile.sentBookings.status.cancelled".equals(statusMessageCode);
+            default -> false;
+        };
+    }
+
+    private static boolean matchesStatusFilter(final String statusMessageCode, final String filter) {
+        if ("all".equals(filter)) {
+            return true;
+        }
+        if ("pending".equals(filter)) {
+            return "profile.sentBookings.status.pending".equals(statusMessageCode);
+        }
+        if ("upcoming".equals(filter)) {
+            return "profile.sentBookings.status.confirmed".equals(statusMessageCode)
+                    || "profile.sentBookings.status.paymentSubmitted".equals(statusMessageCode)
+                    || "profile.sentBookings.status.paymentRefused".equals(statusMessageCode)
+                    || "profile.sentBookings.status.paid".equals(statusMessageCode);
+        }
+        if ("completed".equals(filter)) {
+            return "profile.sentBookings.status.completed".equals(statusMessageCode);
+        }
+        return "profile.sentBookings.status.rejected".equals(statusMessageCode)
+                || "profile.sentBookings.status.cancelled".equals(statusMessageCode);
+    }
+
+    private static <T> Page<T> paginate(final List<T> items, final int page, final int pageSize) {
+        final int totalItems = items == null ? 0 : items.size();
+        final int totalPages = pageSize <= 0 ? 0 : (int) Math.ceil((double) totalItems / pageSize);
+        final int resolvedPage = totalPages == 0 ? 1 : Math.min(Math.max(1, page), totalPages);
+        final int fromIndex = totalItems == 0 ? 0 : Math.min((resolvedPage - 1) * pageSize, totalItems);
+        final int toIndex = totalItems == 0 ? 0 : Math.min(fromIndex + pageSize, totalItems);
+        return new Page<>(
+                items == null ? List.of() : items.subList(fromIndex, toIndex), resolvedPage, pageSize, totalItems);
+    }
+
     private Map<Integer, Boolean> buildDeleteDeactivationFlags(final List<Item> ownedItems) {
         final Map<Integer, Boolean> deactivatesByItemId = new LinkedHashMap<>();
         for (final Item item : ownedItems) {
@@ -389,6 +604,22 @@ public class AuthController {
                                     .anyMatch(booking -> shouldRetainBookingForDeletion(booking)));
         }
         return deactivatesByItemId;
+    }
+
+    private Map<Integer, Integer> buildCoverImageIdsByItemId(final List<Item> items) {
+        final Map<Integer, Integer> coverImageIds = new LinkedHashMap<>();
+        if (items == null) {
+            return coverImageIds;
+        }
+        for (final Item item : items) {
+            if (item == null || item.getId() == null) {
+                continue;
+            }
+            itemService
+                    .findCoverImageIdByItemId(item.getId())
+                    .ifPresent(imageId -> coverImageIds.put(item.getId(), imageId));
+        }
+        return coverImageIds;
     }
 
     private Map<Integer, Boolean> buildDeleteDisabledFlags(final List<Item> ownedItems) {
@@ -492,6 +723,8 @@ public class AuthController {
                     bookingRequestService.findPaymentProofByBookingId(booking.getId());
             receivedBookings.add(new ReceivedBookingView(
                     booking.getId(),
+                    booking.getItemId(),
+                    itemService.findCoverImageIdByItemId(booking.getItemId()).orElse(null),
                     item.getTitle(),
                     requester == null ? "" : requester.getName(),
                     requester == null ? "" : requester.getEmail(),
@@ -502,11 +735,13 @@ public class AuthController {
                     formatDateLabel(booking.getStartTime()),
                     formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
                     formatTotalPriceLabel(booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
-                    resolvePaymentAlias(owner),
+                    "",
                     statusMessageCode(booking.getState()),
                     proof.map(BookingPaymentProof::getFileName).orElse(""),
+                    proof.map(BookingPaymentProof::getContentType).orElse(""),
                     proof.map(BookingPaymentProof::getRefusalReason).orElse(""),
-                    proof.map(BookingPaymentProof::getGuestReply).orElse("")));
+                    proof.map(BookingPaymentProof::getGuestReply).orElse(""),
+                    booking.getRequestMessage()));
         }
         return receivedBookings;
     }
@@ -534,6 +769,8 @@ public class AuthController {
                     bookingRequestService.findPaymentProofByBookingId(booking.getId());
             sentBookings.add(new SentBookingView(
                     booking.getId(),
+                    booking.getItemId(),
+                    itemService.findCoverImageIdByItemId(booking.getItemId()).orElse(null),
                     item.getTitle(),
                     owner == null ? "" : owner.getName(),
                     owner == null ? "" : owner.getEmail(),
@@ -542,12 +779,17 @@ public class AuthController {
                     formatDateLabel(booking.getStartTime()),
                     formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
                     formatTotalPriceLabel(booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
-                    resolvePaymentAlias(owner),
+                    shouldExposePaymentAliasToGuest(booking.getState()) ? resolvePaymentAlias(owner) : "",
                     statusMessageCode(booking.getState()),
+                    proof.map(BookingPaymentProof::getContentType).orElse(""),
                     proof.map(BookingPaymentProof::getRefusalReason).orElse(""),
                     proof.map(BookingPaymentProof::getGuestReply).orElse("")));
         }
         return sentBookings;
+    }
+
+    private static boolean shouldExposePaymentAliasToGuest(final BookingState state) {
+        return state == BookingState.BOOKING_CONFIRMED || state == BookingState.BOOKING_PAYMENT_REFUSED;
     }
 
     private List<PendingReviewView> buildPendingReviewActions(final int userId) {
@@ -787,6 +1029,8 @@ public class AuthController {
 
     public record ReceivedBookingView(
             int id,
+            int itemId,
+            Integer imageId,
             String itemTitle,
             String requesterName,
             String requesterEmail,
@@ -800,11 +1044,21 @@ public class AuthController {
             String paymentAlias,
             String statusMessageCode,
             String paymentProofFileName,
+            String paymentProofContentType,
             String paymentRefusalReason,
-            String paymentGuestReply) {
+            String paymentGuestReply,
+            String requestMessage) {
 
         public int getId() {
             return id;
+        }
+
+        public int getItemId() {
+            return itemId;
+        }
+
+        public Integer getImageId() {
+            return imageId;
         }
 
         public String getItemTitle() {
@@ -875,6 +1129,21 @@ public class AuthController {
             return paymentProofFileName;
         }
 
+        public String getPaymentProofContentType() {
+            return paymentProofContentType;
+        }
+
+        public boolean getIsPaymentProofImage() {
+            return paymentProofContentType != null
+                    && paymentProofContentType
+                            .toLowerCase(java.util.Locale.ROOT)
+                            .startsWith("image/");
+        }
+
+        public boolean getIsPaymentProofPdf() {
+            return paymentProofContentType != null && "application/pdf".equalsIgnoreCase(paymentProofContentType);
+        }
+
         public String getPaymentRefusalReason() {
             return paymentRefusalReason;
         }
@@ -890,10 +1159,20 @@ public class AuthController {
         public boolean getHasPaymentGuestReply() {
             return paymentGuestReply != null && !paymentGuestReply.isBlank();
         }
+
+        public String getRequestMessage() {
+            return requestMessage;
+        }
+
+        public boolean getHasRequestMessage() {
+            return requestMessage != null && !requestMessage.isBlank();
+        }
     }
 
     public record SentBookingView(
             int id,
+            int itemId,
+            Integer imageId,
             String itemTitle,
             String ownerName,
             String ownerEmail,
@@ -904,11 +1183,20 @@ public class AuthController {
             String totalPriceLabel,
             String paymentAlias,
             String statusMessageCode,
+            String paymentProofContentType,
             String paymentRefusalReason,
             String paymentGuestReply) {
 
         public int getId() {
             return id;
+        }
+
+        public int getItemId() {
+            return itemId;
+        }
+
+        public Integer getImageId() {
+            return imageId;
         }
 
         public String getItemTitle() {
@@ -949,6 +1237,21 @@ public class AuthController {
 
         public String getStatusMessageCode() {
             return statusMessageCode;
+        }
+
+        public String getPaymentProofContentType() {
+            return paymentProofContentType;
+        }
+
+        public boolean getIsPaymentProofImage() {
+            return paymentProofContentType != null
+                    && paymentProofContentType
+                            .toLowerCase(java.util.Locale.ROOT)
+                            .startsWith("image/");
+        }
+
+        public boolean getIsPaymentProofPdf() {
+            return paymentProofContentType != null && "application/pdf".equalsIgnoreCase(paymentProofContentType);
         }
 
         public String getPaymentRefusalReason() {

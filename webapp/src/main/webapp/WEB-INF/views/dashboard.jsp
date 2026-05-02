@@ -22,7 +22,7 @@
 <spring:message code="profile.publications.delete.disabled.futureBookings" var="deleteDisabledFutureBookingsLabel" />
 <spring:message code="profile.bookings.accept" var="acceptLabel" />
 <spring:message code="profile.bookings.decline" var="declineLabel" />
-<spring:message code="profile.paymentProofs.confirmReceived" var="paymentReceivedLabel" />
+<spring:message code="payment.confirm.button" var="paymentConfirmLabel" />
 <spring:message code="profile.sentBookings.paymentProof.upload" var="uploadPaymentProofLabel" />
 <spring:message code="payment.refuse.submit" var="refuseSubmitLabel" />
 <spring:message code="profile.bookings.paymentInfo.price" var="paymentInfoPriceLabel" />
@@ -78,7 +78,11 @@
                     <c:url var="enableItemUrl" value="/profile/item/${item.id}/enable" />
                     <c:url var="deleteItemUrl" value="/profile/item/${item.id}/delete" />
                     <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
-                    <c:set var="deleteModalMessage" value="${publicationDeleteDeactivatesByItemId[item.id] ? deleteDeactivateConfirmMessage : deleteConfirmMessage}" />
+                    <c:set var="pubDeleteDeactivates" value="${publicationDeleteDeactivatesByItemId[item.id]}" />
+                    <c:set var="deleteModalMessage" value="${pubDeleteDeactivates ? deleteDeactivateConfirmMessage : deleteConfirmMessage}" />
+                    <c:set var="deleteModalConfirmText" value="${pubDeleteDeactivates ? disableLabel : deleteConfirmConfirm}" />
+                    <c:set var="deleteModalConfirmColor" value="${pubDeleteDeactivates ? 'primary' : 'danger'}" />
+                    <c:set var="deleteModalIcon" value="${pubDeleteDeactivates ? 'visibility_off' : 'delete_forever'}" />
                     <c:set var="deleteDisabled" value="${publicationDeleteDisabledByItemId[item.id]}" />
                     <c:set var="kebabId" value="publication-kebab-${item.id}" />
                     <div class="rounded-xl bg-base-200 p-4 flex min-w-0 items-start justify-between gap-4">
@@ -122,9 +126,9 @@
                       </paw:kebabMenu>
                     </div>
                     <c:if test="${!deleteDisabled}">
-                      <paw:confirmModal id="${deleteModalId}" title="${deleteConfirmTitle}" message="${deleteModalMessage}" confirmText="${deleteConfirmConfirm}" cancelText="${deleteConfirmCancel}" confirmColor="danger" icon="delete_forever">
+                      <paw:confirmModal id="${deleteModalId}" title="${deleteConfirmTitle}" message="${deleteModalMessage}" confirmText="${deleteModalConfirmText}" cancelText="${deleteConfirmCancel}" confirmColor="${deleteModalConfirmColor}" icon="${deleteModalIcon}">
                         <form action="${deleteItemUrl}" method="post" class="m-0">
-                          <paw:button type="submit" color="danger" cssClass="w-full sm:w-auto" text="${deleteConfirmConfirm}" />
+                          <paw:button type="submit" color="${deleteModalConfirmColor}" cssClass="w-full sm:w-auto" text="${deleteModalConfirmText}" />
                         </form>
                       </paw:confirmModal>
                     </c:if>
@@ -198,15 +202,24 @@
                       <div class="rounded-lg bg-base-100 p-3 space-y-2">
                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${paymentInfoPriceLabel}" /></p>
                         <p class="m-0 text-sm font-bold">$ <c:out value="${not empty receivedRequest.totalPriceLabel ? receivedRequest.totalPriceLabel : '-'}" /></p>
-                        <p class="m-0 break-all text-xs text-on-surface-variant"><c:out value="${paymentInfoAliasLabel}" />: <c:out value="${not empty receivedRequest.paymentAlias ? receivedRequest.paymentAlias : '-'}" /></p>
+                        <c:if test="${not empty receivedRequest.paymentAlias}">
+                          <p class="m-0 break-all text-xs text-on-surface-variant"><c:out value="${paymentInfoAliasLabel}" />: <c:out value="${receivedRequest.paymentAlias}" /></p>
+                        </c:if>
                       </div>
                       <c:if test="${receivedRequest.hasPaymentProof}">
-                        <a href="${receivedPaymentProofUrl}" class="link link-hover block max-w-full break-all text-sm font-bold text-primary"><c:out value="${receivedRequest.paymentProofFileName}" /></a>
+                        <div class="space-y-2">
+                          <details class="rounded-lg bg-base-100 p-3">
+                            <summary class="cursor-pointer text-xs font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></summary>
+                            <div class="mt-3 overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
+                              <img src="${receivedPaymentProofUrl}" alt="<spring:message code='profile.sentBookings.paymentProof.view' />" class="max-h-80 w-full object-contain" loading="lazy" />
+                            </div>
+                          </details>
+                        </div>
                       </c:if>
                       <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.pending'}">
                         <div class="flex flex-wrap gap-2 border-t border-outline-variant/20 pt-3">
-                          <form action="${acceptBookingUrl}" method="post" class="m-0"><paw:button type="submit" color="success" size="sm" text="${acceptLabel}" /></form>
-                          <form action="${declineBookingUrl}" method="post" class="m-0"><paw:button type="submit" color="danger" variant="outline" size="sm" text="${declineLabel}" /></form>
+                          <form action="${acceptBookingUrl}" method="post" class="m-0" data-submit-loading-form="true"><paw:button type="submit" color="success" size="sm" text="${acceptLabel}" submitLoading="true" /></form>
+                          <form action="${declineBookingUrl}" method="post" class="m-0" data-submit-loading-form="true"><paw:button type="submit" color="danger" variant="outline" size="sm" text="${declineLabel}" submitLoading="true" /></form>
                         </div>
                       </c:if>
                       <c:if test="${receivedRequest.hasPaymentGuestReply}">
@@ -217,20 +230,26 @@
                       </c:if>
                       <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.paymentSubmitted' && receivedRequest.hasPaymentProof}">
                         <div class="border-t border-outline-variant/20 pt-3 space-y-3">
-                          <form action="${confirmPaymentUrl}" method="post" class="m-0"><paw:button type="submit" color="success" size="sm" text="${paymentReceivedLabel}" /></form>
-                          <details class="rounded-lg bg-base-100 p-3">
-                            <summary class="cursor-pointer text-sm font-bold text-error"><spring:message code="payment.refuse.button" /></summary>
-                            <form action="${refusePaymentUrl}" method="post" class="mt-3 space-y-2">
-                              <label class="text-[11px] font-bold uppercase tracking-wider text-outline" for="refuse-reason-${receivedRequest.id}"><spring:message code="payment.refuse.reason.label" /></label>
-                              <textarea id="refuse-reason-${receivedRequest.id}" name="reason" rows="3" maxlength="500" required class="textarea textarea-bordered w-full" placeholder="<spring:message code="payment.refuse.reason.placeholder" />"></textarea>
-                              <paw:button type="submit" color="danger" size="sm" text="${refuseSubmitLabel}" />
+                          <div class="flex flex-wrap items-center gap-2">
+                            <details class="m-0">
+                              <summary class="list-none">
+                                <span class="btn btn-error btn-sm"><spring:message code="payment.refuse.button" /></span>
+                              </summary>
+                              <form action="${refusePaymentUrl}" method="post" class="mt-3 space-y-2" data-submit-loading-form="true">
+                                <label class="text-[11px] font-bold uppercase tracking-wider text-outline" for="refuse-reason-${receivedRequest.id}"><spring:message code="payment.refuse.reason.label" /></label>
+                                <textarea id="refuse-reason-${receivedRequest.id}" name="reason" rows="3" maxlength="500" required class="textarea textarea-bordered w-full" placeholder="<spring:message code="payment.refuse.reason.placeholder" />"></textarea>
+                                <paw:button type="submit" color="danger" size="sm" text="${refuseSubmitLabel}" submitLoading="true" />
+                              </form>
+                            </details>
+                            <form action="${confirmPaymentUrl}" method="post" class="m-0" data-submit-loading-form="true">
+                              <paw:button type="submit" color="success" size="sm" text="${paymentConfirmLabel}" submitLoading="true" />
                             </form>
-                          </details>
+                          </div>
                         </div>
                       </c:if>
                       <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.paymentRefused' && receivedRequest.hasPaymentRefusalReason}">
-                        <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error">
-                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error"><spring:message code="payment.refused.shownToGuest" /></p>
+                        <div class="rounded-lg bg-info/10 p-3 border-l-4 border-info">
+                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-info"><spring:message code="payment.refused.shownToGuest" /></p>
                           <p class="m-0 mt-1 text-sm text-on-surface whitespace-pre-wrap"><c:out value="${receivedRequest.paymentRefusalReason}" /></p>
                         </div>
                       </c:if>
@@ -316,32 +335,44 @@
                       <div class="rounded-lg bg-base-100 p-3 space-y-2">
                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${paymentInfoPriceLabel}" /></p>
                         <p class="m-0 text-sm font-bold">$ <c:out value="${not empty sentRequest.totalPriceLabel ? sentRequest.totalPriceLabel : '-'}" /></p>
-                        <p class="m-0 break-all text-xs text-on-surface-variant"><c:out value="${paymentInfoAliasLabel}" />: <c:out value="${not empty sentRequest.paymentAlias ? sentRequest.paymentAlias : '-'}" /></p>
+                        <c:if test="${not empty sentRequest.paymentAlias}">
+                          <p class="m-0 break-all text-xs text-on-surface-variant"><c:out value="${paymentInfoAliasLabel}" />: <c:out value="${sentRequest.paymentAlias}" /></p>
+                        </c:if>
                       </div>
                       <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.confirmed'}">
-                        <form action="${sentPaymentProofUrl}" method="post" enctype="multipart/form-data" class="space-y-2 border-t border-outline-variant/20 pt-3">
+                        <form action="${sentPaymentProofUrl}" method="post" enctype="multipart/form-data" class="space-y-2 border-t border-outline-variant/20 pt-3" data-submit-loading-form="true">
                           <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" class="file-input file-input-bordered file-input-sm w-full" required />
-                          <paw:button type="submit" color="primary" size="sm" text="${uploadPaymentProofLabel}" />
+                          <paw:button type="submit" color="primary" size="sm" text="${uploadPaymentProofLabel}" submitLoading="true" />
                         </form>
                       </c:if>
                       <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paymentRefused'}">
-                        <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error space-y-2">
-                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error"><spring:message code="payment.refused.banner" /></p>
+                        <div class="rounded-lg bg-info/10 p-3 border-l-4 border-info space-y-2">
+                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-info"><spring:message code="payment.refused.banner" /></p>
                           <c:if test="${sentRequest.hasPaymentRefusalReason}">
                             <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="payment.refused.reasonLabel" /></p>
                             <p class="m-0 text-sm text-on-surface whitespace-pre-wrap"><c:out value="${sentRequest.paymentRefusalReason}" /></p>
                           </c:if>
-                          <a href="${sentPaymentProofUrl}" class="link link-hover text-xs font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></a>
                         </div>
-                        <form action="${sentPaymentProofUrl}" method="post" enctype="multipart/form-data" class="space-y-2 border-t border-outline-variant/20 pt-3">
+                        <form action="${sentPaymentProofUrl}" method="post" enctype="multipart/form-data" class="space-y-2 border-t border-outline-variant/20 pt-3 mt-2" data-submit-loading-form="true">
                           <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" class="file-input file-input-bordered file-input-sm w-full" required />
                           <label class="text-[11px] font-bold uppercase tracking-wider text-outline" for="guest-reply-${sentRequest.id}"><spring:message code="payment.reply.label" /></label>
                           <textarea id="guest-reply-${sentRequest.id}" name="guestReply" rows="2" maxlength="500" class="textarea textarea-bordered w-full" placeholder="<spring:message code="payment.reply.placeholder" />"></textarea>
-                          <paw:button type="submit" color="primary" size="sm" text="${uploadPaymentProofLabel}" />
+                          <paw:button type="submit" color="primary" size="sm" text="${uploadPaymentProofLabel}" submitLoading="true" />
                         </form>
+                        <details class="rounded-lg bg-base-100 p-3 mt-2">
+                          <summary class="cursor-pointer text-xs font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></summary>
+                          <div class="mt-3 overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
+                            <img src="${sentPaymentProofUrl}" alt="<spring:message code='profile.sentBookings.paymentProof.view' />" class="max-h-80 w-full object-contain" loading="lazy" />
+                          </div>
+                        </details>
                       </c:if>
                       <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paymentSubmitted' || sentRequest.statusMessageCode == 'profile.sentBookings.status.paid'}">
-                        <a href="${sentPaymentProofUrl}" class="link link-hover block border-t border-outline-variant/20 pt-3 text-sm font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></a>
+                        <details class="rounded-lg bg-base-100 p-3 border-t border-outline-variant/20 pt-3">
+                          <summary class="cursor-pointer text-sm font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></summary>
+                          <div class="mt-3 overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
+                            <img src="${sentPaymentProofUrl}" alt="<spring:message code='profile.sentBookings.paymentProof.view' />" class="max-h-80 w-full object-contain" loading="lazy" />
+                          </div>
+                        </details>
                       </c:if>
                       <c:set var="guestPendingReview" value="${pendingGuestItemReviewsByBookingId[sentRequest.id]}" />
                       <c:if test="${not empty guestPendingReview}">

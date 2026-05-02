@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -106,6 +107,8 @@ public interface ItemDao {
 
     Optional<ItemBooking> findBookingByHostDecisionToken(final String hostDecisionToken);
 
+    List<ItemBooking> findBookingsByHostDecisionTokens(Collection<String> hostDecisionTokens);
+
     Optional<ItemBooking> findBookingById(final int bookingId);
 
     Optional<ItemSnapshot> findSnapshotByBookingIdForGuest(final int bookingId, final int guestId);
@@ -134,6 +137,11 @@ public interface ItemDao {
             final String hostDecisionToken, final BookingState newState, final OffsetDateTime hostDecisionUsedAt);
 
     void expireAllDueBookings(final OffsetDateTime startTimeThreshold);
+
+    int resolveBookingsByHostDecisionTokens(
+            Collection<String> hostDecisionTokens, BookingState newState, OffsetDateTime hostDecisionUsedAt);
+
+    List<User> findUsersByIds(Collection<Integer> userIds);
 
     BookingPaymentProof createPaymentProof(
             final int bookingId,

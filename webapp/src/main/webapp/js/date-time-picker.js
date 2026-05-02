@@ -346,7 +346,23 @@
   }
 
   function dateObjectToIsoDate(date) {
-    return toIsoDate(date.getFullYear(), date.getMonth(), date.getDate());
+    return toIsoDate(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+    );
+  }
+
+  function normalizePickerDateValue(value) {
+    if (!value) {
+      return "";
+    }
+
+    if (value instanceof Date) {
+      return dateObjectToIsoDate(value);
+    }
+
+    return String(value);
   }
 
   function todayIsoDate() {
@@ -680,7 +696,7 @@
 
       if (this.calendar) {
         this.calendar.addEventListener("change", () => {
-          this.selectDate(this.calendar.value || "", true);
+          this.selectDate(normalizePickerDateValue(this.calendar.value), true);
         });
         this.calendar.addEventListener("keydown", (event) => {
           if (event.key === "Escape") {

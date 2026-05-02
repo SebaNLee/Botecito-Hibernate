@@ -4,7 +4,7 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<c:url var="profileUrl" value="/profile" />
+<c:url var="profileUrl" value="/my-boats" />
 <c:url var="editActionUrl" value="/profile/item/${item.id}/edit" />
 <c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
 <spring:message code="publish.form.title.label" var="publishTitleLabel" />
@@ -177,9 +177,6 @@
 
               <div class="space-y-3">
                 <div class="flex items-center justify-between">
-                  <p class="m-0 text-sm font-semibold text-on-surface-variant">
-                    <spring:message code="editPublication.conflict.bookingProgress" />
-                  </p>
                   <div class="flex items-center gap-2">
                     <button type="button" class="btn btn-ghost btn-sm btn-square" data-edit-conflict-prev aria-label="Previous booking">
                       <span class="material-symbols-outlined">chevron_left</span>
@@ -192,40 +189,48 @@
                 </div>
 
                 <c:forEach items="${activeEditBookings}" var="booking" varStatus="bookingStatus">
-                  <div class="rounded-2xl bg-base-200 p-4 space-y-3 ${bookingStatus.first ? '' : 'hidden'}" data-edit-booking-card data-edit-booking-index="${bookingStatus.index}">
-                    <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p class="m-0 font-bold text-on-surface">
-                          <spring:message code="editPublication.conflict.booking" arguments="${booking.id}" />
-                        </p>
-                        <p class="m-0 text-xs text-on-surface-variant">
-                          <c:out value="${editBookingGuests[booking.id]}" /> · <c:out value="${editBookingStartLabels[booking.id]}" />
-                        </p>
+                  <div class="card border border-outline-variant/30 bg-base-100 shadow-md ${bookingStatus.first ? '' : 'hidden'}" data-edit-booking-card data-edit-booking-index="${bookingStatus.index}">
+                    <div class="card-body gap-4 p-4 sm:p-5">
+                      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                          <div class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                            <span class="material-symbols-outlined text-base">event</span>
+                          </div>
+                          <div class="min-w-0 grid grid-cols-1 gap-1.5">
+                            <p class="m-0 text-sm font-semibold text-on-surface break-words">
+                              <c:out value="${editBookingGuests[booking.id]}" />
+                            </p>
+                            <p class="m-0 text-xs text-on-surface-variant break-words">
+                              <c:out value="${editBookingFriendlyDates[booking.id]}" />
+                            </p>
+                            <p class="m-0 text-xs text-on-surface-variant">
+                              from <c:out value="${editBookingFriendlyTimeRanges[booking.id]}" />
+                            </p>
+                            <p class="m-0 text-sm font-bold text-success">
+                              $<c:out value="${editBookingFriendlyPrices[booking.id]}" />
+                            </p>
+                          </div>
+                        </div>
+                        <div class="sm:pl-2">
+                          <span class="badge badge-outline font-semibold">
+                            <spring:message code="${editBookingStatusCodes[booking.id]}" />
+                          </span>
+                        </div>
                       </div>
-                      <span class="badge badge-outline">
-                        <spring:message code="${editBookingStatusCodes[booking.id]}" />
-                      </span>
-                    </div>
 
-                    <c:choose>
-                      <c:when test="${booking.state == 'BOOKING_PENDING'}">
-                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                          <label class="label cursor-pointer justify-start gap-2">
+                      <c:if test="${booking.state == 'BOOKING_PENDING'}">
+                        <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                          <label class="label cursor-pointer justify-start gap-3 rounded-xl border border-success/25 bg-success/10 px-3 py-2.5">
                             <input type="radio" class="radio radio-success radio-sm" name="bookingDecision_${booking.id}" value="accept" />
-                            <span class="label-text"><spring:message code="editPublication.conflict.pending.accept" /></span>
+                            <span class="label-text font-semibold text-success-content"><spring:message code="editPublication.conflict.pending.accept" /></span>
                           </label>
-                          <label class="label cursor-pointer justify-start gap-2">
+                          <label class="label cursor-pointer justify-start gap-3 rounded-xl border border-error/25 bg-error/10 px-3 py-2.5">
                             <input type="radio" class="radio radio-error radio-sm" name="bookingDecision_${booking.id}" value="decline" />
-                            <span class="label-text"><spring:message code="editPublication.conflict.pending.decline" /></span>
+                            <span class="label-text font-semibold text-error-content"><spring:message code="editPublication.conflict.pending.decline" /></span>
                           </label>
                         </div>
-                      </c:when>
-                      <c:otherwise>
-                        <p class="m-0 text-sm text-on-surface-variant">
-                          <spring:message code="editPublication.conflict.nonPending" />
-                        </p>
-                      </c:otherwise>
-                    </c:choose>
+                      </c:if>
+                    </div>
                   </div>
                 </c:forEach>
               </div>
@@ -235,12 +240,12 @@
               </div>
 
               <div class="card-actions mt-2 flex flex-col gap-3 sm:flex-row">
-                <button type="submit" name="confirmEditWithSnapshots" value="true" class="btn btn-primary flex-1">
-                  <c:out value="${confirmChangesLabel}" />
-                </button>
                 <a href="${profileUrl}" class="btn btn-outline flex-1 no-underline">
                   <c:out value="${discardEditLabel}" />
                 </a>
+                <button type="submit" name="confirmEditWithSnapshots" value="true" class="btn btn-primary flex-1">
+                  <c:out value="${confirmChangesLabel}" />
+                </button>
               </div>
             </div>
           </div>
@@ -261,6 +266,12 @@
 
       function renderBookingCarousel() {
         if (!bookingCards.length) {
+          if (prevButton) {
+            prevButton.disabled = true;
+          }
+          if (nextButton) {
+            nextButton.disabled = true;
+          }
           return;
         }
         bookingCards.forEach(function (card, index) {
@@ -269,13 +280,23 @@
         if (counter) {
           counter.textContent = (activeIndex + 1) + "/" + bookingCards.length;
         }
+        if (prevButton) {
+          prevButton.disabled = activeIndex <= 0;
+        }
+        if (nextButton) {
+          nextButton.disabled = activeIndex >= bookingCards.length - 1;
+        }
       }
 
       function moveBooking(step) {
         if (!bookingCards.length) {
           return;
         }
-        activeIndex = (activeIndex + step + bookingCards.length) % bookingCards.length;
+        const nextIndex = activeIndex + step;
+        if (nextIndex < 0 || nextIndex >= bookingCards.length) {
+          return;
+        }
+        activeIndex = nextIndex;
         renderBookingCarousel();
       }
 

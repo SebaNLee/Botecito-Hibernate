@@ -52,13 +52,18 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         final String token = UUID.randomUUID().toString();
         final ItemBooking booking =
                 itemDao.createBookingRequest(itemId, requesterUser.getId(), startTime, endTime, description, token);
-        LOGGER.info("Booking request created for item {} by user {}", itemId, requesterUser.getId());
+        LOGGER.info(
+                "Booking request created for item {} by user {} done at {} for startTime: {} and endTime: {}",
+                itemId,
+                requesterUser.getId(),
+                currentDateTime().toString(),
+                startTime.toString(),
+                endTime.toString());
         return toBookingRequest(booking, requesterUser);
     }
 
     private static OffsetDateTime currentDateTime() {
-        // UTC-3 (otras formas de hacer esto no funcionaron)
-        return OffsetDateTime.now().minusHours(3);
+        return OffsetDateTime.now();
     }
 
     private static void validateAnticipation(final OffsetDateTime bookingStartTime) {
@@ -101,10 +106,10 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         itemDao.expireAllDueBookings(currentDateTime.plusMinutes(MIN_ANTICIPATION_MINUTES));
     }
 
-    @Scheduled(cron = "0 0,30 * * * *")
+    @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void expireDueBookingsSchedule() {
-        LOGGER.info("Running cron job!");
+        LOGGER.info("Running cron job! currentDateTime: {} ", currentDateTime().toString());
         expireAllDue(currentDateTime());
     }
 

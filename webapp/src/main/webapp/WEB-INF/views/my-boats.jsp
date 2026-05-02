@@ -123,7 +123,7 @@
                         </div>
                       </div>
                       <div class="flex flex-wrap gap-2 border-t border-outline-variant/20 pt-4">
-                        <a href="${itemUrl}" class="btn btn-outline btn-sm no-underline">
+                        <a href="${itemDetailUrl}" class="btn btn-outline btn-sm no-underline">
                           <span class="material-symbols-outlined text-base">open_in_new</span>
                           <spring:message code="common.viewListing" />
                         </a>

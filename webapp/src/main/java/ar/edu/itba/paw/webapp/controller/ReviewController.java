@@ -43,13 +43,19 @@ public class ReviewController {
         }
 
         if (errors.hasErrors()) {
-            return redirectWithReviewAction(returnTo, itemId, "validationError", redirectAttributes);
+            ToastSupport.error(redirectAttributes, "profile.reviews.validationError");
+            return reviewRedirect(returnTo, itemId);
         }
 
         final boolean created = reviewService
                 .createReviewForBooking(bookingId, currentUser.getId(), form.getRating(), form.getComment())
                 .isPresent();
-        return redirectWithReviewAction(returnTo, itemId, created ? "created" : "error", redirectAttributes);
+        if (created) {
+            ToastSupport.success(redirectAttributes, "profile.reviews.created");
+        } else {
+            ToastSupport.error(redirectAttributes, "profile.reviews.error");
+        }
+        return reviewRedirect(returnTo, itemId);
     }
 
     @RequestMapping(value = "/reviews/{reviewId:[0-9]+}/delete", method = RequestMethod.POST)
@@ -64,15 +70,15 @@ public class ReviewController {
         }
 
         final boolean deleted = reviewService.deleteReview(reviewId, currentUser.getId());
-        return redirectWithReviewAction(returnTo, itemId, deleted ? "deleted" : "deleteError", redirectAttributes);
+        if (deleted) {
+            ToastSupport.success(redirectAttributes, "profile.reviews.deleted");
+        } else {
+            ToastSupport.error(redirectAttributes, "profile.reviews.error");
+        }
+        return reviewRedirect(returnTo, itemId);
     }
 
-    private static ModelAndView redirectWithReviewAction(
-            final String returnTo,
-            final Integer itemId,
-            final String action,
-            final RedirectAttributes redirectAttributes) {
-        redirectAttributes.addFlashAttribute("reviewAction", action);
+    private static ModelAndView reviewRedirect(final String returnTo, final Integer itemId) {
         if ("item".equals(returnTo) && itemId != null) {
             return new ModelAndView("redirect:/item/" + itemId);
         }

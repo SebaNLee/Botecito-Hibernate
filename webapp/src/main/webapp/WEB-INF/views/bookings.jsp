@@ -33,6 +33,7 @@
 <spring:message code="profile.reviews.authoredSummary.label" var="authoredReviewSummaryLabel" />
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6">
+  <paw:toastNotifier />
   <section class="min-w-0 space-y-6">
       <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0">
@@ -99,16 +100,9 @@
                 <spring:message code="dashboard.filters.clear" />
               </a>
             </form>
-            <c:if test="${reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
-            <c:if test="${reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
-            <c:if test="${reviewAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.error" /></paw:alertMessage></c:if>
-            <c:if test="${paymentAction == 'submitted'}"><paw:alertMessage type="success"><spring:message code="profile.payment.submitted" /></paw:alertMessage></c:if>
-            <c:if test="${paymentAction == 'resubmitted'}"><paw:alertMessage type="success"><spring:message code="profile.payment.resubmitted" /></paw:alertMessage></c:if>
-            <c:if test="${paymentAction == 'invalidFile'}"><paw:alertMessage type="error"><spring:message code="profile.payment.invalidFile" /></paw:alertMessage></c:if>
-            <c:if test="${paymentAction == 'forbidden' || paymentAction == 'submitError' || paymentAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage></c:if>
             <c:choose>
               <c:when test="${not empty sentBookingRequests}">
-                <div class="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
                   <c:forEach var="sentRequest" items="${sentBookingRequests}">
                     <c:url var="sentPaymentProofUrl" value="/bookings/${sentRequest.id}/payment-proof" />
                     <c:url var="sentRequestItemUrl" value="/item/${sentRequest.itemId}">
@@ -124,22 +118,11 @@
                     <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paymentSubmitted'}"><c:set var="sentStatusClass" value="badge-info" /></c:if>
                     <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paid'}"><c:set var="sentStatusClass" value="badge-success" /></c:if>
                     <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.paymentRefused'}"><c:set var="sentStatusClass" value="badge-error" /></c:if>
-                    <c:if test="${not empty sentRequest.imageId}">
-                      <c:url var="sentRequestImageUrl" value="/image/${sentRequest.imageId}" />
-                    </c:if>
+                    <c:set var="sentRequestImageUrl" value="${imageUrlsByItemId[sentRequest.itemId]}" />
                     <c:set var="sentDetailsModalId" value="sent-booking-details-modal-${sentRequest.id}" />
-                    <button type="button" class="flex h-full w-full flex-col gap-2 rounded-xl bg-base-200 p-2 text-left transition hover:bg-base-300 sm:p-3" onclick="document.getElementById('${sentDetailsModalId}').showModal()">
+                    <button type="button" class="flex h-full w-full max-w-sm flex-col gap-2 rounded-xl bg-base-200 p-2 text-left transition hover:bg-base-300 sm:p-3" onclick="document.getElementById('${sentDetailsModalId}').showModal()">
                       <div class="h-24 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:h-32">
-                        <c:choose>
-                          <c:when test="${not empty sentRequest.imageId}">
-                            <img src="${sentRequestImageUrl}" alt="" class="h-full w-full object-cover" loading="lazy" />
-                          </c:when>
-                          <c:otherwise>
-                            <div class="flex h-full w-full items-center justify-center text-outline">
-                              <span class="material-symbols-outlined text-2xl sm:text-3xl">directions_boat</span>
-                            </div>
-                          </c:otherwise>
-                        </c:choose>
+                        <img src="${sentRequestImageUrl}" alt="${sentRequest.itemTitle}" class="h-full w-full object-cover" loading="lazy" />
                       </div>
                       <div class="flex min-w-0 flex-1 flex-col gap-1">
                         <div class="flex min-w-0 items-start gap-1.5">
@@ -160,16 +143,7 @@
                         </a>
                       </div>
                       <div class="overflow-hidden rounded-lg bg-base-100">
-                        <c:choose>
-                          <c:when test="${not empty sentRequest.imageId}">
-                            <img src="${sentRequestImageUrl}" alt="" class="h-48 w-full object-cover" loading="lazy" />
-                          </c:when>
-                          <c:otherwise>
-                            <div class="flex h-48 w-full items-center justify-center text-outline">
-                              <span class="material-symbols-outlined text-5xl">directions_boat</span>
-                            </div>
-                          </c:otherwise>
-                        </c:choose>
+                        <img src="${sentRequestImageUrl}" alt="${sentRequest.itemTitle}" class="h-48 w-full object-cover" loading="lazy" />
                       </div>
                       <p class="m-0 text-sm text-on-surface-variant"><c:out value="${sentRequest.dateLabel}" /> · <c:out value="${sentRequest.timeRangeLabel}" /></p>
                       <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">

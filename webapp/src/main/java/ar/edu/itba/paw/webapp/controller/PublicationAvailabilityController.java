@@ -41,6 +41,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 public class PublicationAvailabilityController {
@@ -75,14 +76,16 @@ public class PublicationAvailabilityController {
             @PathVariable("id") final int itemId,
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "return", required = false) final String returnParam,
-            @ModelAttribute("blockSlotForm") final BlockSlotForm form) {
+            @ModelAttribute("blockSlotForm") final BlockSlotForm form,
+            final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
         final Item item = itemService.findItemById(itemId).orElse(null);
         if (item == null || !currentUser.getId().equals(item.getOwnerId())) {
-            return new ModelAndView("redirect:/my-boats?publishAction=forbidden");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats");
         }
 
         return buildManageAvailabilityView(item, requestedDate, currentUser.getId(), sanitizeReturnPath(returnParam));
@@ -93,14 +96,16 @@ public class PublicationAvailabilityController {
             @PathVariable("id") final int itemId,
             @RequestParam(value = "return", required = false) final String returnParam,
             @Valid @ModelAttribute("blockSlotForm") final BlockSlotForm form,
-            final BindingResult errors) {
+            final BindingResult errors,
+            final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
         final Item item = itemService.findItemById(itemId).orElse(null);
         if (item == null || !currentUser.getId().equals(item.getOwnerId())) {
-            return new ModelAndView("redirect:/my-boats?publishAction=forbidden");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats");
         }
 
         final String safeReturn = sanitizeReturnPath(returnParam);
@@ -139,14 +144,16 @@ public class PublicationAvailabilityController {
             @PathVariable("id") final int itemId,
             @RequestParam("blockBookingId") final int blockBookingId,
             @RequestParam(value = "date", required = false) final String requestedDate,
-            @RequestParam(value = "return", required = false) final String returnParam) {
+            @RequestParam(value = "return", required = false) final String returnParam,
+            final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
         final Item item = itemService.findItemById(itemId).orElse(null);
         if (item == null || !currentUser.getId().equals(item.getOwnerId())) {
-            return new ModelAndView("redirect:/my-boats?publishAction=forbidden");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats");
         }
 
         final String safeReturn = sanitizeReturnPath(returnParam);

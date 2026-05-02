@@ -36,6 +36,7 @@
 <spring:message code="profile.reviews.authoredSummary.label" var="authoredReviewSummaryLabel" />
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6">
+  <paw:toastNotifier />
   <section class="min-w-0 space-y-6">
       <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div class="min-w-0">
@@ -51,17 +52,9 @@
       <div class="space-y-8">
           <div id="my-publications" class="scroll-mt-24 space-y-4">
             <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.publications.title" /></h2>
-            <c:if test="${param.publishAction == 'deleted'}"><paw:alertMessage type="success"><spring:message code="profile.publications.deleted" /></paw:alertMessage></c:if>
-            <c:if test="${param.publishAction == 'updated'}"><paw:alertMessage type="success"><spring:message code="profile.publications.updated" /></paw:alertMessage></c:if>
-            <c:if test="${param.publishAction == 'disabled'}"><paw:alertMessage type="success"><spring:message code="profile.publications.disabled" /></paw:alertMessage></c:if>
-            <c:if test="${param.publishAction == 'enabled'}"><paw:alertMessage type="success"><spring:message code="profile.publications.enabled" /></paw:alertMessage></c:if>
-            <c:if test="${param.publishAction == 'alreadyDeleted'}"><paw:alertMessage type="warning"><spring:message code="profile.publications.alreadyDeleted" /></paw:alertMessage></c:if>
-            <c:if test="${param.publishAction == 'forbidden' || param.publishAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.publications.error" /></paw:alertMessage></c:if>
-            <c:if test="${param.publishAction == 'deleteBlockedByBookings'}"><paw:alertMessage type="error"><spring:message code="profile.publications.deleteBlockedByBookings" /></paw:alertMessage></c:if>
-
             <c:choose>
               <c:when test="${not empty ownedItems}">
-                <div class="grid grid-cols-2 gap-2 px-1 sm:px-3 md:gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 px-1 sm:px-3 md:gap-3">
                   <c:forEach var="item" items="${ownedItems}">
                     <c:url var="itemDetailUrl" value="/item/${item.id}" />
                     <c:url var="editItemUrl" value="/profile/item/${item.id}/edit" />
@@ -71,10 +64,7 @@
                     <c:url var="disableItemUrl" value="/profile/item/${item.id}/disable" />
                     <c:url var="enableItemUrl" value="/profile/item/${item.id}/enable" />
                     <c:url var="deleteItemUrl" value="/profile/item/${item.id}/delete" />
-                    <c:set var="publicationCoverImageId" value="${publicationCoverImageIdsByItemId[item.id]}" />
-                    <c:if test="${not empty publicationCoverImageId}">
-                      <c:url var="publicationCoverImageUrl" value="/image/${publicationCoverImageId}" />
-                    </c:if>
+                    <c:set var="publicationImageUrl" value="${imageUrlsByItemId[item.id]}" />
                     <c:set var="detailsModalId" value="publication-details-modal-${item.id}" />
                     <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
                     <c:set var="pubDeleteDeactivates" value="${publicationDeleteDeactivatesByItemId[item.id]}" />
@@ -83,18 +73,9 @@
                     <c:set var="deleteModalConfirmColor" value="${pubDeleteDeactivates ? 'secondary' : 'danger'}" />
                     <c:set var="deleteModalIcon" value="${pubDeleteDeactivates ? 'visibility_off' : 'delete_forever'}" />
                     <c:set var="deleteDisabled" value="${publicationDeleteDisabledByItemId[item.id]}" />
-                    <button type="button" class="flex h-full w-full flex-col gap-2 rounded-xl bg-base-200 p-2 text-left transition hover:bg-base-300 sm:p-3 ${item.active ? '' : 'opacity-75'}" onclick="document.getElementById('${detailsModalId}').showModal()">
+                    <button type="button" class="flex h-full w-full max-w-sm flex-col gap-2 rounded-xl bg-base-200 p-2 text-left transition hover:bg-base-300 sm:p-3 ${item.active ? '' : 'opacity-75'}" onclick="document.getElementById('${detailsModalId}').showModal()">
                       <div class="h-24 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:h-32">
-                        <c:choose>
-                          <c:when test="${not empty publicationCoverImageId}">
-                            <img src="${publicationCoverImageUrl}" alt="" class="h-full w-full object-cover" loading="lazy" />
-                          </c:when>
-                          <c:otherwise>
-                            <div class="flex h-full w-full items-center justify-center text-outline">
-                              <span class="material-symbols-outlined text-2xl sm:text-3xl">directions_boat</span>
-                            </div>
-                          </c:otherwise>
-                        </c:choose>
+                        <img src="${publicationImageUrl}" alt="${item.title}" class="h-full w-full object-cover" loading="lazy" />
                       </div>
                       <div class="flex min-w-0 flex-1 flex-col gap-1">
                         <div class="flex min-w-0 items-start gap-1.5">
@@ -113,16 +94,7 @@
                     </button>
                     <paw:detailsModal id="${detailsModalId}" title="${item.title}">
                       <div class="overflow-hidden rounded-lg bg-base-100">
-                        <c:choose>
-                          <c:when test="${not empty publicationCoverImageId}">
-                            <img src="${publicationCoverImageUrl}" alt="" class="h-56 w-full object-cover" loading="lazy" />
-                          </c:when>
-                          <c:otherwise>
-                            <div class="flex h-56 w-full items-center justify-center text-outline">
-                              <span class="material-symbols-outlined text-5xl">directions_boat</span>
-                            </div>
-                          </c:otherwise>
-                        </c:choose>
+                        <img src="${publicationImageUrl}" alt="${item.title}" class="h-56 w-full object-cover" loading="lazy" />
                       </div>
                       <div class="flex flex-wrap items-center gap-2">
                         <span class="badge ${item.active ? 'badge-success' : 'badge-ghost'} font-bold">
@@ -275,18 +247,9 @@
                 <spring:message code="dashboard.filters.clear" />
               </a>
             </form>
-            <c:if test="${reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
-            <c:if test="${reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
-            <c:if test="${reviewAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.error" /></paw:alertMessage></c:if>
-            <c:if test="${bookingAction == 'accepted'}"><paw:alertMessage type="success"><spring:message code="profile.bookings.accepted" /></paw:alertMessage></c:if>
-            <c:if test="${bookingAction == 'rejected'}"><paw:alertMessage type="warning"><spring:message code="profile.bookings.rejected" /></paw:alertMessage></c:if>
-            <c:if test="${bookingAction == 'forbidden' || bookingAction == 'error' || bookingAction == 'notFound'}"><paw:alertMessage type="error"><spring:message code="profile.bookings.error" /></paw:alertMessage></c:if>
-            <c:if test="${paymentAction == 'paid'}"><paw:alertMessage type="success"><spring:message code="profile.payment.paid" /></paw:alertMessage></c:if>
-            <c:if test="${paymentAction == 'refused'}"><paw:alertMessage type="success"><spring:message code="profile.payment.refused" /></paw:alertMessage></c:if>
-            <c:if test="${paymentAction == 'confirmError' || paymentAction == 'refuseError'}"><paw:alertMessage type="error"><spring:message code="profile.payment.error" /></paw:alertMessage></c:if>
             <c:choose>
               <c:when test="${not empty receivedBookingRequests}">
-                <div class="grid grid-cols-2 gap-2 sm:gap-4 min-[56rem]:grid-cols-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
                   <c:forEach var="receivedRequest" items="${receivedBookingRequests}">
                     <c:url var="acceptBookingUrl" value="/bookings/${receivedRequest.id}/accept" />
                     <c:url var="declineBookingUrl" value="/bookings/${receivedRequest.id}/decline" />
@@ -302,22 +265,11 @@
                     <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.paid'}"><c:set var="receivedStatusClass" value="badge-success" /></c:if>
                     <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.paymentRefused'}"><c:set var="receivedStatusClass" value="badge-error" /></c:if>
                     <c:url var="refusePaymentUrl" value="/bookings/${receivedRequest.id}/payment/refuse" />
-                    <c:if test="${not empty receivedRequest.imageId}">
-                      <c:url var="receivedRequestImageUrl" value="/image/${receivedRequest.imageId}" />
-                    </c:if>
+                    <c:set var="receivedRequestImageUrl" value="${imageUrlsByItemId[receivedRequest.itemId]}" />
                     <c:set var="receivedDetailsModalId" value="received-booking-details-modal-${receivedRequest.id}" />
-                    <button type="button" class="flex h-full w-full flex-col gap-2 rounded-xl bg-base-200 p-2 text-left transition hover:bg-base-300 sm:p-3" onclick="document.getElementById('${receivedDetailsModalId}').showModal()">
+                    <button type="button" class="flex h-full w-full max-w-sm flex-col gap-2 rounded-xl bg-base-200 p-2 text-left transition hover:bg-base-300 sm:p-3" onclick="document.getElementById('${receivedDetailsModalId}').showModal()">
                       <div class="h-24 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:h-32">
-                        <c:choose>
-                          <c:when test="${not empty receivedRequest.imageId}">
-                            <img src="${receivedRequestImageUrl}" alt="" class="h-full w-full object-cover" loading="lazy" />
-                          </c:when>
-                          <c:otherwise>
-                            <div class="flex h-full w-full items-center justify-center text-outline">
-                              <span class="material-symbols-outlined text-2xl sm:text-3xl">directions_boat</span>
-                            </div>
-                          </c:otherwise>
-                        </c:choose>
+                        <img src="${receivedRequestImageUrl}" alt="${receivedRequest.itemTitle}" class="h-full w-full object-cover" loading="lazy" />
                       </div>
                       <div class="flex min-w-0 flex-1 flex-col gap-1">
                         <div class="flex min-w-0 items-start gap-1.5">
@@ -338,16 +290,7 @@
                         </a>
                       </div>
                       <div class="overflow-hidden rounded-lg bg-base-100">
-                        <c:choose>
-                          <c:when test="${not empty receivedRequest.imageId}">
-                            <img src="${receivedRequestImageUrl}" alt="" class="h-48 w-full object-cover" loading="lazy" />
-                          </c:when>
-                          <c:otherwise>
-                            <div class="flex h-48 w-full items-center justify-center text-outline">
-                              <span class="material-symbols-outlined text-5xl">directions_boat</span>
-                            </div>
-                          </c:otherwise>
-                        </c:choose>
+                        <img src="${receivedRequestImageUrl}" alt="${receivedRequest.itemTitle}" class="h-48 w-full object-cover" loading="lazy" />
                       </div>
                       <p class="m-0 text-sm text-on-surface-variant"><c:out value="${receivedRequest.dateLabel}" /> · <c:out value="${receivedRequest.timeRangeLabel}" /></p>
                       <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">

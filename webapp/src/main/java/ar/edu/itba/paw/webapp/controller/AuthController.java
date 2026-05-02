@@ -323,7 +323,8 @@ public class AuthController {
     public ModelAndView myBoats(
             @RequestParam(value = "status", required = false) final List<String> status,
             @RequestParam(value = "q", required = false) final String query,
-            @RequestParam(value = "page", required = false, defaultValue = "1") final int page) {
+            @RequestParam(value = "page", required = false, defaultValue = "1") final int page,
+            final HttpServletRequest request) {
         final User user = currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
@@ -331,7 +332,13 @@ public class AuthController {
 
         final ModelAndView mav = new ModelAndView("my-boats");
         mav.addObject("user", user);
-        addMyBoatsData(mav, user, resolveBookingStatusFilters(status), normalizeQuery(query), sanitizePage(page));
+        addMyBoatsData(
+                mav,
+                user,
+                resolveBookingStatusFilters(status),
+                normalizeQuery(query),
+                sanitizePage(page),
+                request.getContextPath());
         return mav;
     }
 
@@ -339,7 +346,8 @@ public class AuthController {
     public ModelAndView bookings(
             @RequestParam(value = "status", required = false) final List<String> status,
             @RequestParam(value = "q", required = false) final String query,
-            @RequestParam(value = "page", required = false, defaultValue = "1") final int page) {
+            @RequestParam(value = "page", required = false, defaultValue = "1") final int page,
+            final HttpServletRequest request) {
         final User user = currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
@@ -347,7 +355,13 @@ public class AuthController {
 
         final ModelAndView mav = new ModelAndView("bookings");
         mav.addObject("user", user);
-        addMyTripsData(mav, user, resolveBookingStatusFilters(status), normalizeQuery(query), sanitizePage(page));
+        addMyTripsData(
+                mav,
+                user,
+                resolveBookingStatusFilters(status),
+                normalizeQuery(query),
+                sanitizePage(page),
+                request.getContextPath());
         return mav;
     }
 
@@ -365,7 +379,12 @@ public class AuthController {
     }
 
     private void addMyBoatsData(
-            final ModelAndView mav, final User user, final List<String> statuses, final String query, final int page) {
+            final ModelAndView mav,
+            final User user,
+            final List<String> statuses,
+            final String query,
+            final int page,
+            final String contextPath) {
         final List<Item> ownedItems = itemService.listItemsByOwnerId(user.getId());
         final List<PendingReviewView> pendingReviewActions = buildPendingReviewActions(user.getId());
         final Map<Integer, PendingReviewView> pendingOwnerUserReviewsByBookingId = new LinkedHashMap<>();
@@ -386,6 +405,9 @@ public class AuthController {
 
         mav.addObject("ownedItems", ownedItems);
         mav.addObject("publicationCoverImageIdsByItemId", buildCoverImageIdsByItemId(ownedItems));
+        mav.addObject(
+                "imageUrlsByItemId",
+                buildImageUrlsByItemId(collectItemIds(ownedItems, receivedBookingPage.getContent()), contextPath));
         mav.addObject("publicationDeleteDeactivatesByItemId", buildDeleteDeactivationFlags(ownedItems));
         mav.addObject("publicationDeleteDisabledByItemId", buildDeleteDisabledFlags(ownedItems));
         mav.addObject("receivedBookingRequests", receivedBookingPage.getContent());
@@ -398,7 +420,12 @@ public class AuthController {
     }
 
     private void addMyTripsData(
-            final ModelAndView mav, final User user, final List<String> statuses, final String query, final int page) {
+            final ModelAndView mav,
+            final User user,
+            final List<String> statuses,
+            final String query,
+            final int page,
+            final String contextPath) {
         final List<PendingReviewView> pendingReviewActions = buildPendingReviewActions(user.getId());
         final Map<Integer, PendingReviewView> pendingGuestItemReviewsByBookingId = new LinkedHashMap<>();
         for (final PendingReviewView pendingReview : pendingReviewActions) {
@@ -418,6 +445,9 @@ public class AuthController {
 
         mav.addObject("sentBookingRequests", sentBookingPage.getContent());
         mav.addObject("sentBookingPage", sentBookingPage);
+        mav.addObject(
+                "imageUrlsByItemId",
+                buildImageUrlsByItemId(collectSentItemIds(sentBookingPage.getContent()), contextPath));
         mav.addObject("selectedBookingStatusFilters", statuses);
         mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statuses));
         mav.addObject("boatSearchQuery", query);
@@ -579,6 +609,49 @@ public class AuthController {
                                     .anyMatch(booking -> shouldRetainBookingForDeletion(booking)));
         }
         return deactivatesByItemId;
+    }
+
+    private static java.util.Set<Integer> collectItemIds(
+            final List<Item> ownedItems, final List<ReceivedBookingView> receivedBookings) {
+        final java.util.LinkedHashSet<Integer> ids = new java.util.LinkedHashSet<>();
+        if (ownedItems != null) {
+            for (final Item item : ownedItems) {
+                if (item != null && item.getId() != null) {
+                    ids.add(item.getId());
+                }
+            }
+        }
+        if (receivedBookings != null) {
+            for (final ReceivedBookingView booking : receivedBookings) {
+                ids.add(booking.getItemId());
+            }
+        }
+        return ids;
+    }
+
+    private static java.util.Set<Integer> collectSentItemIds(final List<SentBookingView> sentBookings) {
+        final java.util.LinkedHashSet<Integer> ids = new java.util.LinkedHashSet<>();
+        if (sentBookings != null) {
+            for (final SentBookingView booking : sentBookings) {
+                ids.add(booking.getItemId());
+            }
+        }
+        return ids;
+    }
+
+    private Map<Integer, String> buildImageUrlsByItemId(
+            final java.util.Set<Integer> itemIds, final String contextPath) {
+        final Map<Integer, String> urls = new LinkedHashMap<>();
+        if (itemIds == null) {
+            return urls;
+        }
+        for (final Integer itemId : itemIds) {
+            if (itemId == null) {
+                continue;
+            }
+            urls.put(itemId, ItemImageUtils.resolveImageUrl(itemService, itemId, contextPath));
+        }
+        return urls;
     }
 
     private Map<Integer, Integer> buildCoverImageIdsByItemId(final List<Item> items) {

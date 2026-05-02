@@ -94,6 +94,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
   title="Botecito"
   mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8"
 >
+  <paw:toastNotifier />
   <div class="w-full">
     <a
       href="${marketplaceUrl}"
@@ -104,9 +105,6 @@ charset=UTF-8" pageEncoding="UTF-8" %>
     </a>
   </div>
 
-  <c:if test="${reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
-  <c:if test="${reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
-  <c:if test="${reviewAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.error" /></paw:alertMessage></c:if>
   <c:if test="${listingInactiveNotice}"><paw:alertMessage type="warning"><spring:message code="itemDetail.listingInactive.notice" /></paw:alertMessage></c:if>
 
   <div class="w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-8 items-start">
@@ -324,7 +322,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             <c:when test="${hideListingLiveVersionNavigation}">
               <paw:alertMessage type="info"><spring:message code="itemDetail.listingInactive.guestBookedSnapshotOnly" /></paw:alertMessage>
             </c:when>
-            <c:when test="${selectedSnapshot != null || not empty guestSnapshots || not empty hostSnapshots}">
+            <c:when test="${not empty guestSnapshots}">
             <div class="rounded-2xl bg-base-200/70 p-5 space-y-4">
               <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline">
                 <spring:message code="itemDetail.version.title" />
@@ -355,16 +353,6 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                       </c:url>
                       <c:if test="${!renderedSnapshotSignatures.contains(snapshotSignature)}">
                         <li><a href="${snapshotUrl}" class="${selectedSnapshotSignature == snapshotSignature ? 'active' : ''}"><spring:message code="itemDetail.version.guestSnapshot" arguments="${snapshot.versionId}" /></a></li>
-                        <c:set var="renderedSnapshotSignatures" value="${renderedSnapshotSignatures}${snapshotSignature}|" />
-                      </c:if>
-                    </c:forEach>
-                    <c:forEach items="${hostSnapshots}" var="snapshot">
-                      <c:set var="snapshotSignature" value="|${snapshot.title}|${snapshot.description}|${snapshot.pricePerHour}|${snapshot.capacityPeople}|${snapshot.maxWeightKg}|${snapshot.difficultyLevel}|${snapshot.locationOptionId}|${snapshot.location}|" />
-                      <c:url var="snapshotUrl" value="/item/${item.id}">
-                        <c:param name="snapshotVersionId" value="${snapshot.versionId}" />
-                      </c:url>
-                      <c:if test="${!renderedSnapshotSignatures.contains(snapshotSignature)}">
-                        <li><a href="${snapshotUrl}" class="${selectedSnapshotSignature == snapshotSignature ? 'active' : ''}"><spring:message code="itemDetail.version.hostSnapshot" arguments="${snapshot.versionId}" /></a></li>
                         <c:set var="renderedSnapshotSignatures" value="${renderedSnapshotSignatures}${snapshotSignature}|" />
                       </c:if>
                     </c:forEach>

@@ -134,3 +134,8 @@ h6 {
     color-mix(in oklab, var(--color-error) 18%, transparent);
   opacity: 1;
 }
+
+.paw-toast-fading {
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+}

@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import java.time.OffsetDateTime;
@@ -72,6 +73,28 @@ public class ItemJdbcDaoTest {
 
         Assertions.assertTrue(itemDao.deleteItemById(itemId));
         Assertions.assertFalse(itemDao.deleteItemById(itemId));
+    }
+
+    @Test
+    public void testExpireAllDueBookingsCancelsOnlyPastBookings() {
+        final int ownerId = insertUser("owner-expire@a.com");
+        final int guestId = insertUser("guest-expire@a.com");
+        final int itemId = insertItem(ownerId, "expire-bookings");
+        final OffsetDateTime threshold = OffsetDateTime.parse("2026-01-10T10:00:00Z");
+
+        final ItemBooking pastBooking = itemDao.createBookingRequest(
+                itemId, guestId, threshold.minusHours(2), threshold.minusHours(1), "message", "expire-past-token");
+        final ItemBooking futureBooking = itemDao.createBookingRequest(
+                itemId, guestId, threshold.plusHours(1), threshold.plusHours(2), "message", "expire-future-token");
+
+        itemDao.expireAllDueBookings(threshold);
+
+        Assertions.assertEquals(
+                BookingState.BOOKING_CANCELLED,
+                itemDao.findBookingById(pastBooking.getId()).orElseThrow().getState());
+        Assertions.assertEquals(
+                BookingState.BOOKING_PENDING,
+                itemDao.findBookingById(futureBooking.getId()).orElseThrow().getState());
     }
 
     private int insertUser(final String email) {

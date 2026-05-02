@@ -18,8 +18,12 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
 
+@Getter
+@Setter
 public class PublishBoatForm {
 
     public interface Step1 {}
@@ -57,80 +61,13 @@ public class PublishBoatForm {
     private String maxWeight;
 
     @ImageGalleryUpload(groups = Step1.class)
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Spring multipart binding")
     private List<MultipartFile> files = new ArrayList<>();
 
     private final List<UploadedImage> uploadedImages = new ArrayList<>();
 
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Required for Spring indexed property binding")
     private final Map<DayOfWeek, TimeRangeList> availabilityByWeekday = new EnumMap<>(DayOfWeek.class);
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(final String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(final String description) {
-        this.description = description;
-    }
-
-    public String getLocationOptionId() {
-        return locationOptionId;
-    }
-
-    public void setLocationOptionId(final String locationOptionId) {
-        this.locationOptionId = locationOptionId;
-    }
-
-    public String getCapacity() {
-        return capacity;
-    }
-
-    public void setCapacity(final String capacity) {
-        this.capacity = capacity;
-    }
-
-    public String getItemTypeId() {
-        return itemTypeId;
-    }
-
-    public void setItemTypeId(final String itemTypeId) {
-        this.itemTypeId = itemTypeId;
-    }
-
-    public String getPricePerHour() {
-        return pricePerHour;
-    }
-
-    public void setPricePerHour(final String pricePerHour) {
-        this.pricePerHour = pricePerHour;
-    }
-
-    public Integer getDifficultyLevel() {
-        return difficultyLevel;
-    }
-
-    public void setDifficultyLevel(final Integer difficultyLevel) {
-        this.difficultyLevel = difficultyLevel;
-    }
-
-    public String getMaxWeight() {
-        return maxWeight;
-    }
-
-    public void setMaxWeight(final String maxWeight) {
-        this.maxWeight = maxWeight;
-    }
-
-    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Spring multipart binding")
-    public List<MultipartFile> getFiles() {
-        return files;
-    }
 
     public void setFiles(final List<MultipartFile> files) {
         this.files = files == null ? new ArrayList<>() : files;
@@ -221,11 +158,6 @@ public class PublishBoatForm {
         availabilityByWeekday.put(safeWeekday, copy);
     }
 
-    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Required for Spring indexed property binding")
-    public Map<DayOfWeek, TimeRangeList> getAvailabilityByWeekday() {
-        return availabilityByWeekday;
-    }
-
     public void setAvailabilityByWeekday(final Map<DayOfWeek, TimeRangeList> availabilityByWeekday) {
         this.availabilityByWeekday.clear();
         if (availabilityByWeekday == null) {
@@ -237,6 +169,7 @@ public class PublishBoatForm {
         }
     }
 
+    @Getter
     public static final class UploadedImage implements Serializable {
         private static final long serialVersionUID = 1L;
 
@@ -254,10 +187,6 @@ public class PublishBoatForm {
 
         public int getSize() {
             return data.length;
-        }
-
-        public String getContentType() {
-            return contentType;
         }
     }
 }

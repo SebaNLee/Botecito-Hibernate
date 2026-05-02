@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -38,6 +39,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
+@RequiredArgsConstructor
 public class PublishActionController {
     private static final DateTimeFormatter BOOKING_START_LABEL_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -48,17 +50,6 @@ public class PublishActionController {
     private final UserService userService;
     private final BookingRequestService bookingRequestService;
     private final MailService mailService;
-
-    public PublishActionController(
-            final ItemService itemService,
-            final UserService userService,
-            final BookingRequestService bookingRequestService,
-            final MailService mailService) {
-        this.itemService = itemService;
-        this.userService = userService;
-        this.bookingRequestService = bookingRequestService;
-        this.mailService = mailService;
-    }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/edit", method = RequestMethod.GET)
     public ModelAndView editPublicationForm(

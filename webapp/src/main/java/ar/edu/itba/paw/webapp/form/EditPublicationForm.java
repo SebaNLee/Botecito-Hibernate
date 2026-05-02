@@ -6,8 +6,12 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
 
+@Getter
+@Setter
 public class EditPublicationForm {
 
     @NotBlank(message = "{publish.validation.title.required}")
@@ -31,52 +35,4 @@ public class EditPublicationForm {
 
     @FileSize(max = 5242880)
     private MultipartFile file;
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(final String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(final String description) {
-        this.description = description;
-    }
-
-    public String getPricePerHour() {
-        return pricePerHour;
-    }
-
-    public void setPricePerHour(final String pricePerHour) {
-        this.pricePerHour = pricePerHour;
-    }
-
-    public Integer getDifficultyLevel() {
-        return difficultyLevel;
-    }
-
-    public void setDifficultyLevel(final Integer difficultyLevel) {
-        this.difficultyLevel = difficultyLevel;
-    }
-
-    public String getMarina() {
-        return marina;
-    }
-
-    public void setMarina(final String marina) {
-        this.marina = marina;
-    }
-
-    public MultipartFile getFile() {
-        return file;
-    }
-
-    public void setFile(final MultipartFile file) {
-        this.file = file;
-    }
 }

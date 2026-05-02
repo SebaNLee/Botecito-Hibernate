@@ -30,6 +30,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import javax.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -44,6 +45,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
+@RequiredArgsConstructor
 public class PublicationAvailabilityController {
 
     private static final int PICKER_MONTHS_AROUND_TODAY = 2;
@@ -56,15 +58,6 @@ public class PublicationAvailabilityController {
     private final ItemService itemService;
     private final UserService userService;
     private final BookingRequestService bookingRequestService;
-
-    public PublicationAvailabilityController(
-            final ItemService itemService,
-            final UserService userService,
-            final BookingRequestService bookingRequestService) {
-        this.itemService = itemService;
-        this.userService = userService;
-        this.bookingRequestService = bookingRequestService;
-    }
 
     @ModelAttribute("blockSlotForm")
     public BlockSlotForm blockSlotForm() {

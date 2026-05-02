@@ -31,7 +31,7 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -47,6 +47,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
+@RequiredArgsConstructor
 public class MarketplaceController {
     private static final String DEFAULT_SORT = "newest";
     private static final int MARKETPLACE_PAGE_SIZE = 10;
@@ -56,20 +57,6 @@ public class MarketplaceController {
     private final BookingRequestService bookingRequestService;
     private final UserService userService;
     private final ReviewService reviewService;
-
-    @Autowired
-    public MarketplaceController(
-            final ItemService itemService,
-            final MailService mailService,
-            final BookingRequestService bookingRequestService,
-            final UserService userService,
-            final ReviewService reviewService) {
-        this.itemService = itemService;
-        this.mailService = mailService;
-        this.bookingRequestService = bookingRequestService;
-        this.userService = userService;
-        this.reviewService = reviewService;
-    }
 
     @ModelAttribute("reservationRequestForm")
     public ReservationRequestForm reservationRequestForm(final Locale locale) {

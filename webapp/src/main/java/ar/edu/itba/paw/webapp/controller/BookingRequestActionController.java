@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.util.Set;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,6 +31,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
+@RequiredArgsConstructor
 public class BookingRequestActionController {
 
     private static final Set<String> PAYMENT_PROOF_CONTENT_TYPES =
@@ -41,17 +43,6 @@ public class BookingRequestActionController {
     private final ItemService itemService;
     private final MailService mailService;
     private final UserService userService;
-
-    public BookingRequestActionController(
-            final BookingRequestService bookingRequestService,
-            final ItemService itemService,
-            final MailService mailService,
-            final UserService userService) {
-        this.bookingRequestService = bookingRequestService;
-        this.itemService = itemService;
-        this.mailService = mailService;
-        this.userService = userService;
-    }
 
     @RequestMapping(value = "/bookings/{token}/accept", method = RequestMethod.GET)
     public ModelAndView acceptBookingRequest(@PathVariable("token") final String token) {

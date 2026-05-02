@@ -25,7 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
@@ -48,6 +48,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 @SessionAttributes("publishForm")
+@RequiredArgsConstructor
 public class PublishController {
 
     private static final String PUBLISH_PREVIEW_IMAGE_PATH = "/publish/preview-image";
@@ -57,18 +58,6 @@ public class PublishController {
     private final MailService mailService;
     private final UserService userService;
     private final MessageSource messageSource;
-
-    @Autowired
-    public PublishController(
-            final ItemService itemService,
-            final MailService mailService,
-            final UserService userService,
-            final MessageSource messageSource) {
-        this.itemService = itemService;
-        this.mailService = mailService;
-        this.userService = userService;
-        this.messageSource = messageSource;
-    }
 
     @ModelAttribute("publishForm")
     public PublishBoatForm publishForm(final Locale locale) {

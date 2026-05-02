@@ -14,16 +14,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class ReviewServiceImpl implements ReviewService {
 
     private final ItemDao itemDao;
-
-    public ReviewServiceImpl(final ItemDao itemDao) {
-        this.itemDao = itemDao;
-    }
 
     @Override
     public Optional<Review> createReviewForBooking(

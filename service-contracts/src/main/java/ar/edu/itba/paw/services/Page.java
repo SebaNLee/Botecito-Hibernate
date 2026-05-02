@@ -1,7 +1,9 @@
 package ar.edu.itba.paw.services;
 
 import java.util.List;
+import lombok.Getter;
 
+@Getter
 public class Page<T> {
     private final List<T> content;
     private final int page;
@@ -15,26 +17,6 @@ public class Page<T> {
         this.pageSize = pageSize;
         this.totalItems = totalItems;
         this.totalPages = pageSize <= 0 ? 0 : (int) Math.ceil((double) totalItems / pageSize);
-    }
-
-    public List<T> getContent() {
-        return content;
-    }
-
-    public int getPage() {
-        return page;
-    }
-
-    public int getPageSize() {
-        return pageSize;
-    }
-
-    public int getTotalItems() {
-        return totalItems;
-    }
-
-    public int getTotalPages() {
-        return totalPages;
     }
 
     public boolean isHasPrevious() {

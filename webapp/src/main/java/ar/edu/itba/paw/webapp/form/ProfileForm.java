@@ -4,7 +4,11 @@ import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class ProfileForm {
 
     @NotBlank(message = "{profile.validation.givenName.required}")
@@ -28,52 +32,4 @@ public class ProfileForm {
 
     @Pattern(regexp = "es|en", message = "{profile.validation.preferredLanguage.invalid}")
     private String preferredLanguage = "es";
-
-    public String getGivenName() {
-        return givenName;
-    }
-
-    public void setGivenName(final String givenName) {
-        this.givenName = givenName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(final String lastName) {
-        this.lastName = lastName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(final String email) {
-        this.email = email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(final String phone) {
-        this.phone = phone;
-    }
-
-    public String getPaymentAlias() {
-        return paymentAlias;
-    }
-
-    public void setPaymentAlias(final String paymentAlias) {
-        this.paymentAlias = paymentAlias;
-    }
-
-    public String getPreferredLanguage() {
-        return preferredLanguage;
-    }
-
-    public void setPreferredLanguage(final String preferredLanguage) {
-        this.preferredLanguage = preferredLanguage;
-    }
 }

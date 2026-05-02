@@ -16,18 +16,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class BookingRequestServiceImpl implements BookingRequestService {
     private final ItemDao itemDao;
     private final MailService mailService;
-
-    public BookingRequestServiceImpl(final ItemDao itemDao, final MailService mailService) {
-        this.itemDao = itemDao;
-        this.mailService = mailService;
-    }
 
     @Override
     @Transactional

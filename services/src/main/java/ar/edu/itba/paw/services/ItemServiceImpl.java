@@ -18,22 +18,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public final class ItemServiceImpl implements ItemService {
 
     private static final int MAX_IMAGES_PER_ITEM = 10;
     private static final int TIME_STEP_MINUTES = 30;
 
     private final ItemDao itemDao;
-
-    @Autowired
-    public ItemServiceImpl(final ItemDao itemDao) {
-        this.itemDao = itemDao;
-    }
 
     @Override
     public List<Item> listItems() {

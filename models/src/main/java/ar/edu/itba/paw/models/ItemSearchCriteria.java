@@ -1,7 +1,11 @@
 package ar.edu.itba.paw.models;
 
 import java.math.BigDecimal;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 public class ItemSearchCriteria {
     private String searchQuery;
     private Integer locationOptionId;
@@ -13,84 +17,4 @@ public class ItemSearchCriteria {
     private Integer difficultyLevel;
     private Integer minAverageRating;
     private String sort;
-
-    public String getSearchQuery() {
-        return searchQuery;
-    }
-
-    public void setSearchQuery(final String searchQuery) {
-        this.searchQuery = searchQuery;
-    }
-
-    public Integer getLocationOptionId() {
-        return locationOptionId;
-    }
-
-    public void setLocationOptionId(final Integer locationOptionId) {
-        this.locationOptionId = locationOptionId;
-    }
-
-    public String getDate() {
-        return date;
-    }
-
-    public void setDate(final String date) {
-        this.date = date;
-    }
-
-    public String getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(final String startTime) {
-        this.startTime = startTime;
-    }
-
-    public String getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(final String endTime) {
-        this.endTime = endTime;
-    }
-
-    public Integer getCapacity() {
-        return capacity;
-    }
-
-    public void setCapacity(final Integer capacity) {
-        this.capacity = capacity;
-    }
-
-    public BigDecimal getMaxWeightKg() {
-        return maxWeightKg;
-    }
-
-    public void setMaxWeightKg(final BigDecimal maxWeightKg) {
-        this.maxWeightKg = maxWeightKg;
-    }
-
-    public Integer getDifficultyLevel() {
-        return difficultyLevel;
-    }
-
-    public void setDifficultyLevel(final Integer difficultyLevel) {
-        this.difficultyLevel = difficultyLevel;
-    }
-
-    public Integer getMinAverageRating() {
-        return minAverageRating;
-    }
-
-    public void setMinAverageRating(final Integer minAverageRating) {
-        this.minAverageRating = minAverageRating;
-    }
-
-    public String getSort() {
-        return sort;
-    }
-
-    public void setSort(final String sort) {
-        this.sort = sort;
-    }
 }

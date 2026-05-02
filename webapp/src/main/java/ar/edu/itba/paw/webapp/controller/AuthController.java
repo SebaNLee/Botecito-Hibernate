@@ -35,6 +35,7 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -55,6 +56,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
+@RequiredArgsConstructor
 public class AuthController {
 
     private final UserService userService;
@@ -63,21 +65,6 @@ public class AuthController {
     private final MailService mailService;
     private final ReviewService reviewService;
     private final AuthenticationManager authenticationManager;
-
-    public AuthController(
-            final UserService userService,
-            final ItemService itemService,
-            final BookingRequestService bookingRequestService,
-            final MailService mailService,
-            final ReviewService reviewService,
-            final AuthenticationManager authenticationManager) {
-        this.userService = userService;
-        this.itemService = itemService;
-        this.bookingRequestService = bookingRequestService;
-        this.mailService = mailService;
-        this.reviewService = reviewService;
-        this.authenticationManager = authenticationManager;
-    }
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ModelAndView login(

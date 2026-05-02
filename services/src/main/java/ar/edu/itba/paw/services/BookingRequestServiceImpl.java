@@ -52,7 +52,13 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         final String token = UUID.randomUUID().toString();
         final ItemBooking booking =
                 itemDao.createBookingRequest(itemId, requesterUser.getId(), startTime, endTime, description, token);
-        LOGGER.info("Booking request created for item {} by user {}", itemId, requesterUser.getId());
+        LOGGER.info(
+                "Booking request created for item {} by user {} done at {} for startTime: {} and endTime: {}",
+                itemId,
+                requesterUser.getId(),
+                currentDateTime().toString(),
+                startTime.toString(),
+                endTime.toString());
         return toBookingRequest(booking, requesterUser);
     }
 

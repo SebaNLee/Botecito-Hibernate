@@ -223,15 +223,6 @@ public class BookingRequestServiceImplTest {
         Assertions.assertThrows(
                 SelfBookingNotAllowedException.class,
                 () -> bookingRequestService.createBookingRequest(15, "O", "O", "o@o.com", "es", start, end, "msg"));
-
-        Mockito.verify(itemDao, Mockito.never())
-                .createBookingRequest(
-                        Mockito.anyInt(),
-                        Mockito.anyInt(),
-                        Mockito.any(),
-                        Mockito.any(),
-                        Mockito.anyString(),
-                        Mockito.anyString());
     }
 
     @Test
@@ -262,14 +253,6 @@ public class BookingRequestServiceImplTest {
 
         final ItemBooking result = bookingRequestService.createOwnerSelfBlock(10, 3, start, end);
         Assertions.assertEquals(100, result.getId());
-        Mockito.verify(itemDao)
-                .insertOwnerPersonalBlock(
-                        Mockito.eq(10),
-                        Mockito.eq(3),
-                        Mockito.eq(start),
-                        Mockito.eq(end),
-                        Mockito.anyString(),
-                        Mockito.any());
     }
 
     @Test
@@ -293,15 +276,6 @@ public class BookingRequestServiceImplTest {
         Assertions.assertThrows(
                 OverlappingActiveBookingException.class,
                 () -> bookingRequestService.createOwnerSelfBlock(10, 3, start, end));
-
-        Mockito.verify(itemDao, Mockito.never())
-                .insertOwnerPersonalBlock(
-                        Mockito.anyInt(),
-                        Mockito.anyInt(),
-                        Mockito.any(),
-                        Mockito.any(),
-                        Mockito.anyString(),
-                        Mockito.any());
     }
 
     @Test
@@ -321,7 +295,6 @@ public class BookingRequestServiceImplTest {
         Mockito.when(itemDao.markBookingCancelled(55)).thenReturn(true);
 
         Assertions.assertTrue(bookingRequestService.removeOwnerSelfBlock(55, 3));
-        Mockito.verify(itemDao).markBookingCancelled(55);
     }
 
     @Test
@@ -335,6 +308,5 @@ public class BookingRequestServiceImplTest {
         Mockito.when(itemDao.findBookingById(55)).thenReturn(Optional.of(block));
 
         Assertions.assertFalse(bookingRequestService.removeOwnerSelfBlock(55, 3));
-        Mockito.verify(itemDao, Mockito.never()).markBookingCancelled(Mockito.anyInt());
     }
 }

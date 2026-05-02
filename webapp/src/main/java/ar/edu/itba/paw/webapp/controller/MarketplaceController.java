@@ -235,7 +235,7 @@ public class MarketplaceController {
             mav.addObject("mailSuccessCode", "reservation.request.success");
             mav.addObject("mailSuccessHostName", owner.map(User::getName).orElse(""));
             return mav;
-        } catch (final IllegalArgumentException e) {
+        } catch (final Exception e) {
             final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
             mav.addObject("mailErrorCode", "reservation.request.error");
             return mav;
@@ -500,10 +500,6 @@ public class MarketplaceController {
 
     private static boolean hasContinuousTwoHourWindowEndingAt(
             final List<String> availableTimes, final String requestedEndTime) {
-        if (!availableTimes.contains(requestedEndTime)) {
-            return false;
-        }
-
         for (final String possibleStartTime : availableTimes) {
             if (AvailabilityPickerSupport.hasContinuousAvailability(
                     availableTimes, possibleStartTime, requestedEndTime)) {

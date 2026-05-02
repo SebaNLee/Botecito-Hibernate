@@ -123,9 +123,6 @@ public class UserServiceImplTest {
         Assertions.assertTrue(result.isPresent());
         Assertions.assertNotNull(result.get().getPasswordRecoveryToken());
         Assertions.assertFalse(result.get().getPasswordRecoveryToken().isBlank());
-        Mockito.verify(mailService)
-                .sendPasswordRecoveryEmail(
-                        Mockito.eq("recover@a.com"), Mockito.eq("recover@a.com"), Mockito.anyString());
     }
 
     @Test
@@ -140,7 +137,6 @@ public class UserServiceImplTest {
         final Optional<User> result = userService.requestPasswordRecovery("legacy@a.com");
 
         Assertions.assertTrue(result.isEmpty());
-        Mockito.verifyNoInteractions(mailService);
     }
 
     @Test

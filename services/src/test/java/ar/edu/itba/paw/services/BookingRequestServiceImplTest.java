@@ -52,7 +52,13 @@ public class BookingRequestServiceImplTest {
         final Item item = new Item();
         item.setId(15);
         item.setOwnerId(99);
+        item.setTitle("Item A");
+        item.setLocation("Dock A");
+        final User owner = new User();
+        owner.setId(99);
+        owner.setEmail("owner@a.com");
         Mockito.when(itemDao.findAnyItemById(15)).thenReturn(Optional.of(item));
+        Mockito.when(itemDao.findUserById(99)).thenReturn(Optional.of(owner));
         Mockito.when(itemDao.findUserByEmail("a@a.com")).thenReturn(Optional.of(existingUser));
         Mockito.when(itemDao.createBookingRequest(
                         Mockito.eq(15),
@@ -72,6 +78,15 @@ public class BookingRequestServiceImplTest {
         Assertions.assertFalse(result.getToken().isBlank());
         Assertions.assertEquals("A B", result.getRequesterName());
         Assertions.assertEquals("en", result.getRequesterLocaleTag());
+        Mockito.verify(mailService)
+                .sendBookingReviewEmail(
+                        Mockito.same(result),
+                        Mockito.eq("owner@a.com"),
+                        Mockito.eq("Item A"),
+                        Mockito.eq("Dock A"),
+                        Mockito.eq(start.toLocalDate().toString()),
+                        Mockito.eq(start.toLocalTime().withSecond(0).withNano(0) + " - "
+                                + end.toLocalTime().withSecond(0).withNano(0)));
     }
 
     @Test
@@ -86,6 +101,7 @@ public class BookingRequestServiceImplTest {
         final Optional<BookingRequest> result = bookingRequestService.findByToken("t");
 
         Assertions.assertTrue(result.isEmpty());
+        Mockito.verify(mailService, Mockito.never()).sendBookingResolutionEmail(Mockito.any());
     }
 
     @Test
@@ -131,6 +147,7 @@ public class BookingRequestServiceImplTest {
         Assertions.assertTrue(result.isPresent());
         Assertions.assertEquals(BookingState.BOOKING_CONFIRMED, result.get().getStatus());
         Assertions.assertEquals("a@a.com", result.get().getRequesterEmail());
+        Mockito.verify(mailService).sendBookingResolutionEmail(result.get());
     }
 
     @Test
@@ -157,6 +174,7 @@ public class BookingRequestServiceImplTest {
         inactiveItem.setId(20);
         inactiveItem.setOwnerId(9);
         inactiveItem.setActive(false);
+        inactiveItem.setTitle("Inactive item");
 
         final User requester = new User();
         requester.setId(5);
@@ -180,6 +198,7 @@ public class BookingRequestServiceImplTest {
 
         Assertions.assertTrue(result.isPresent());
         Assertions.assertEquals(BookingState.BOOKING_PAID, result.get().getStatus());
+        Mockito.verify(mailService).sendPaymentReceivedEmail("a@a.com", "es", "Inactive item");
     }
 
     @Test

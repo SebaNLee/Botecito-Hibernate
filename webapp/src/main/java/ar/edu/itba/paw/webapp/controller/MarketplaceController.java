@@ -1,6 +1,5 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemSnapshot;
@@ -11,7 +10,6 @@ import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.SelfBookingNotAllowedException;
@@ -53,7 +51,6 @@ public class MarketplaceController {
     private static final int MARKETPLACE_PAGE_SIZE = 10;
 
     private final ItemService itemService;
-    private final MailService mailService;
     private final BookingRequestService bookingRequestService;
     private final UserService userService;
     private final ReviewService reviewService;
@@ -201,7 +198,7 @@ public class MarketplaceController {
             final String trimmedMessage = isBlank(form.getRequestMessage())
                     ? null
                     : form.getRequestMessage().trim();
-            final BookingRequest bookingRequest = bookingRequestService.createBookingRequest(
+            bookingRequestService.createBookingRequest(
                     itemId,
                     currentUser.getGivenName(),
                     currentUser.getLastName(),
@@ -210,13 +207,6 @@ public class MarketplaceController {
                     toOffsetDateTime(form.getDate(), form.getStartTime()),
                     toOffsetDateTime(form.getDate(), form.getEndTime()),
                     trimmedMessage);
-            mailService.sendBookingReviewEmail(
-                    bookingRequest,
-                    owner.map(User::getEmail).orElse(null),
-                    item.get().getTitle(),
-                    item.get().getLocation(),
-                    form.getDate(),
-                    form.getStartTime() + " - " + form.getEndTime());
             final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
             mav.addObject("mailSuccessCode", "reservation.request.success");
             mav.addObject("mailSuccessHostName", owner.map(User::getName).orElse(""));

@@ -5,7 +5,6 @@ import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.EditPublicationForm;
 import java.io.IOException;
@@ -49,7 +48,6 @@ public class PublishActionController {
     private final ItemService itemService;
     private final UserService userService;
     private final BookingRequestService bookingRequestService;
-    private final MailService mailService;
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/edit", method = RequestMethod.GET)
     public ModelAndView editPublicationForm(
@@ -302,12 +300,10 @@ public class PublishActionController {
                 tokensToDecline.add(booking.getHostDecisionToken());
             }
         }
-        bookingRequestService
-                .resolveBookingRequests(tokensToAccept, ar.edu.itba.paw.models.BookingState.BOOKING_CONFIRMED)
-                .forEach(mailService::sendBookingResolutionEmail);
-        bookingRequestService
-                .resolveBookingRequests(tokensToDecline, ar.edu.itba.paw.models.BookingState.BOOKING_REJECTED)
-                .forEach(mailService::sendBookingResolutionEmail);
+        bookingRequestService.resolveBookingRequests(
+                tokensToAccept, ar.edu.itba.paw.models.BookingState.BOOKING_CONFIRMED);
+        bookingRequestService.resolveBookingRequests(
+                tokensToDecline, ar.edu.itba.paw.models.BookingState.BOOKING_REJECTED);
     }
 
     private static boolean allPendingBookingsHaveDecisions(

@@ -28,6 +28,9 @@ public class ItemServiceImplTest {
     @Mock
     private ItemDao itemDao;
 
+    @Mock
+    private MailService mailService;
+
     @Test
     public void testFindItemByIdWhenItemExists() {
         final Item item = new Item();
@@ -101,6 +104,7 @@ public class ItemServiceImplTest {
         Assertions.assertEquals(1, result.getOwnerId());
         Assertions.assertEquals("item-a", result.getTitle());
         Assertions.assertEquals(2000, result.getPricePerHour());
+        Mockito.verify(mailService).sendPublishConfirmationEmail("a@a.com", "A A", "item-a");
     }
 
     @Test

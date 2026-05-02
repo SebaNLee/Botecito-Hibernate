@@ -18,6 +18,7 @@ public class UserServiceImpl implements UserService {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserServiceImpl.class);
     private final UserDao userDao;
     private final PasswordEncoder passwordEncoder;
+    private final MailService mailService;
 
     @Override
     public User register(
@@ -104,8 +105,10 @@ public class UserServiceImpl implements UserService {
         }
 
         LOGGER.info("Password recovery requested for user {}", user.get().getId());
-        return userDao.updatePasswordRecoveryToken(
+        final Optional<User> updatedUser = userDao.updatePasswordRecoveryToken(
                 user.get().getId(), UUID.randomUUID().toString());
+        updatedUser.ifPresent(this::sendPasswordRecoveryEmail);
+        return updatedUser;
     }
 
     @Override
@@ -161,5 +164,16 @@ public class UserServiceImpl implements UserService {
         }
         final String trimmedValue = value.trim();
         return trimmedValue.isEmpty() ? null : trimmedValue;
+    }
+
+    private void sendPasswordRecoveryEmail(final User user) {
+        try {
+            mailService.sendPasswordRecoveryEmail(
+                    user.getEmail(),
+                    user.getName().isBlank() ? user.getEmail() : user.getName(),
+                    user.getPasswordRecoveryToken());
+        } catch (final RuntimeException e) {
+            LOGGER.error("Could not trigger password recovery email for user {}.", user.getId(), e);
+        }
     }
 }

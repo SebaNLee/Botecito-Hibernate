@@ -24,6 +24,9 @@ public class UserServiceImplTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private MailService mailService;
+
     @Test
     public void testRegisterCreatesUserWhenEmailDoesNotExist() {
         Mockito.when(passwordEncoder.encode("password123")).thenReturn("hashed-password");
@@ -120,6 +123,9 @@ public class UserServiceImplTest {
         Assertions.assertTrue(result.isPresent());
         Assertions.assertNotNull(result.get().getPasswordRecoveryToken());
         Assertions.assertFalse(result.get().getPasswordRecoveryToken().isBlank());
+        Mockito.verify(mailService)
+                .sendPasswordRecoveryEmail(
+                        Mockito.eq("recover@a.com"), Mockito.eq("recover@a.com"), Mockito.anyString());
     }
 
     @Test
@@ -134,6 +140,7 @@ public class UserServiceImplTest {
         final Optional<User> result = userService.requestPasswordRecovery("legacy@a.com");
 
         Assertions.assertTrue(result.isEmpty());
+        Mockito.verifyNoInteractions(mailService);
     }
 
     @Test

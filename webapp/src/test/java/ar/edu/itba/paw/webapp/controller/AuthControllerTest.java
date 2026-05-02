@@ -3,7 +3,6 @@ package ar.edu.itba.paw.webapp.controller;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.RegisterForm;
@@ -39,9 +38,6 @@ public class AuthControllerTest {
     private BookingRequestService bookingRequestService;
 
     @Mock
-    private MailService mailService;
-
-    @Mock
     private ReviewService reviewService;
 
     @Mock
@@ -52,7 +48,7 @@ public class AuthControllerTest {
     @BeforeEach
     public void setUp() {
         controller = new AuthController(
-                userService, itemService, bookingRequestService, mailService, reviewService, authenticationManager);
+                userService, itemService, bookingRequestService, reviewService, authenticationManager);
     }
 
     @AfterEach

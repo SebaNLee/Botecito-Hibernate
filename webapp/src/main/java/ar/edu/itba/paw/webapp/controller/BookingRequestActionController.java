@@ -7,7 +7,6 @@ import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.PaymentProofForm;
 import ar.edu.itba.paw.webapp.form.RefusePaymentForm;
@@ -41,7 +40,6 @@ public class BookingRequestActionController {
 
     private final BookingRequestService bookingRequestService;
     private final ItemService itemService;
-    private final MailService mailService;
     private final UserService userService;
 
     @RequestMapping(value = "/bookings/{token}/accept", method = RequestMethod.GET)
@@ -111,21 +109,6 @@ public class BookingRequestActionController {
                 return new ModelAndView(DASHBOARD_BOOKINGS_REDIRECT);
             }
 
-            final Item item = booking.getItemId() == null
-                    ? null
-                    : itemService.findAnyItemById(booking.getItemId()).orElse(null);
-            final User owner = item == null || item.getOwnerId() == null
-                    ? null
-                    : itemService.findUserById(item.getOwnerId()).orElse(null);
-            if (item != null && owner != null) {
-                mailService.sendPaymentProofSubmittedEmail(
-                        owner.getEmail(),
-                        currentUser.getName(),
-                        item.getTitle(),
-                        proof.get().getFileData(),
-                        proof.get().getContentType());
-            }
-            final String action = isResubmit ? "resubmitted" : "submitted";
             ToastSupport.success(
                     redirectAttributes, isResubmit ? "profile.payment.resubmitted" : "profile.payment.submitted");
             return new ModelAndView(DASHBOARD_BOOKINGS_REDIRECT);
@@ -158,15 +141,6 @@ public class BookingRequestActionController {
                 return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
             }
 
-            final Item item = refused.get().getItemId() == null
-                    ? null
-                    : itemService.findAnyItemById(refused.get().getItemId()).orElse(null);
-            mailService.sendPaymentProofRefusedEmail(
-                    refused.get().getRequesterEmail(),
-                    refused.get().getRequesterLocaleTag(),
-                    currentUser.getName(),
-                    item == null ? "" : item.getTitle(),
-                    form.getReason());
             ToastSupport.success(redirectAttributes, "profile.payment.refused");
             return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
         } catch (final RuntimeException e) {
@@ -220,13 +194,6 @@ public class BookingRequestActionController {
                 return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
             }
 
-            final Item item = resolved.get().getItemId() == null
-                    ? null
-                    : itemService.findAnyItemById(resolved.get().getItemId()).orElse(null);
-            mailService.sendPaymentReceivedEmail(
-                    resolved.get().getRequesterEmail(),
-                    resolved.get().getRequesterLocaleTag(),
-                    item == null ? "" : item.getTitle());
             ToastSupport.success(redirectAttributes, "profile.payment.paid");
             return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
         } catch (final RuntimeException e) {
@@ -265,7 +232,6 @@ public class BookingRequestActionController {
                 return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
             }
 
-            mailService.sendBookingResolutionEmail(resolved.get());
             if (bookingState == BookingState.BOOKING_CONFIRMED) {
                 ToastSupport.success(redirectAttributes, "profile.bookings.accepted");
             } else {

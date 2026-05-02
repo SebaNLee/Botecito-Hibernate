@@ -10,6 +10,7 @@ import ar.edu.itba.paw.persistence.ItemDao;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,6 +31,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BookingRequestServiceImpl.class);
 
     private static final int MIN_ANTICIPATION_MINUTES = 120;
+    private static final DateTimeFormatter TIME_LABEL_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private final ItemDao itemDao;
     private final MailService mailService;
 
@@ -62,7 +64,9 @@ public class BookingRequestServiceImpl implements BookingRequestService {
                 currentDateTime().toString(),
                 startTime.toString(),
                 endTime.toString());
-        return toBookingRequest(booking, requesterUser);
+        final BookingRequest bookingRequest = toBookingRequest(booking, requesterUser);
+        sendBookingReviewEmail(bookingRequest, item, startTime, endTime);
+        return bookingRequest;
     }
 
     private static OffsetDateTime currentDateTime() {
@@ -144,7 +148,9 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         if (!itemDao.resolveBookingByHostDecisionToken(token, newStatus, currentDateTime())) {
             return Optional.empty();
         }
-        return findByToken(token);
+        final Optional<BookingRequest> resolved = findByToken(token);
+        resolved.ifPresent(this::sendBookingResolutionEmail);
+        return resolved;
     }
 
     @Override
@@ -225,6 +231,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             request.resolve(newStatus, resolvedAt.toInstant());
             resolvedRequests.add(request);
         }
+        resolvedRequests.forEach(this::sendBookingResolutionEmail);
         return resolvedRequests;
     }
 
@@ -272,8 +279,10 @@ public class BookingRequestServiceImpl implements BookingRequestService {
 
         LOGGER.info("Submitting payment proof for booking {}", bookingId);
 
-        return Optional.of(itemDao.createPaymentProof(
-                bookingId, requesterId, fileName, contentType, fileData, normalizeReply(guestReply)));
+        final BookingPaymentProof proof = itemDao.createPaymentProof(
+                bookingId, requesterId, fileName, contentType, fileData, normalizeReply(guestReply));
+        sendPaymentProofSubmittedEmail(booking.get(), requesterId, proof);
+        return Optional.of(proof);
     }
 
     @Override
@@ -307,7 +316,10 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         if (!itemDao.markBookingPaymentRefused(bookingId, ownerId, trimmed)) {
             return Optional.empty();
         }
-        return itemDao.findBookingById(bookingId).flatMap(this::toBookingRequest);
+        final Optional<BookingRequest> refused =
+                itemDao.findBookingById(bookingId).flatMap(this::toBookingRequest);
+        refused.ifPresent(request -> sendPaymentProofRefusedEmail(request, ownerId, trimmed));
+        return refused;
     }
 
     @Override
@@ -335,7 +347,9 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         if (!itemDao.markBookingPaid(bookingId, ownerId)) {
             return Optional.empty();
         }
-        return itemDao.findBookingById(bookingId).flatMap(this::toBookingRequest);
+        final Optional<BookingRequest> paid = itemDao.findBookingById(bookingId).flatMap(this::toBookingRequest);
+        paid.ifPresent(this::sendPaymentReceivedEmail);
+        return paid;
     }
 
     @Override
@@ -395,6 +409,103 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             return requesterUser.getPreferredLanguage();
         }
         return mailService.resolveLocale(requesterUser.getEmail()).toLanguageTag();
+    }
+
+    private void sendBookingReviewEmail(
+            final BookingRequest bookingRequest,
+            final Item item,
+            final OffsetDateTime startTime,
+            final OffsetDateTime endTime) {
+        try {
+            final String ownerEmail = item.getOwnerId() == null
+                    ? null
+                    : itemDao.findUserById(item.getOwnerId())
+                            .map(User::getEmail)
+                            .orElse(null);
+            mailService.sendBookingReviewEmail(
+                    bookingRequest,
+                    ownerEmail,
+                    item.getTitle(),
+                    item.getLocation(),
+                    startTime.toLocalDate().toString(),
+                    startTime.toLocalTime().format(TIME_LABEL_FORMATTER) + " - "
+                            + endTime.toLocalTime().format(TIME_LABEL_FORMATTER));
+        } catch (final RuntimeException e) {
+            LOGGER.error("Could not trigger booking review email for booking token {}.", bookingRequest.getToken(), e);
+        }
+    }
+
+    private void sendBookingResolutionEmail(final BookingRequest bookingRequest) {
+        try {
+            mailService.sendBookingResolutionEmail(bookingRequest);
+        } catch (final RuntimeException e) {
+            LOGGER.error(
+                    "Could not trigger booking resolution email for booking token {}.", bookingRequest.getToken(), e);
+        }
+    }
+
+    private void sendPaymentProofSubmittedEmail(
+            final ItemBooking booking, final int requesterId, final BookingPaymentProof proof) {
+        try {
+            if (booking.getItemId() == null) {
+                return;
+            }
+            final Optional<Item> item = itemDao.findAnyItemById(booking.getItemId());
+            if (item.isEmpty() || item.get().getOwnerId() == null) {
+                return;
+            }
+            final Optional<User> owner = itemDao.findUserById(item.get().getOwnerId());
+            if (owner.isEmpty()) {
+                return;
+            }
+            final String requesterName =
+                    itemDao.findUserById(requesterId).map(User::getName).orElse("");
+            mailService.sendPaymentProofSubmittedEmail(
+                    owner.get().getEmail(),
+                    requesterName,
+                    item.get().getTitle(),
+                    proof.getFileData(),
+                    proof.getContentType());
+        } catch (final RuntimeException e) {
+            LOGGER.error("Could not trigger payment proof submitted email for booking {}.", booking.getId(), e);
+        }
+    }
+
+    private void sendPaymentProofRefusedEmail(
+            final BookingRequest bookingRequest, final int ownerId, final String reason) {
+        try {
+            final Optional<Item> item = bookingRequest.getItemId() == null
+                    ? Optional.empty()
+                    : itemDao.findAnyItemById(bookingRequest.getItemId());
+            final String ownerName =
+                    itemDao.findUserById(ownerId).map(User::getName).orElse("");
+            mailService.sendPaymentProofRefusedEmail(
+                    bookingRequest.getRequesterEmail(),
+                    bookingRequest.getRequesterLocaleTag(),
+                    ownerName,
+                    item.map(Item::getTitle).orElse(""),
+                    reason);
+        } catch (final RuntimeException e) {
+            LOGGER.error(
+                    "Could not trigger payment proof refused email for booking token {}.",
+                    bookingRequest.getToken(),
+                    e);
+        }
+    }
+
+    private void sendPaymentReceivedEmail(final BookingRequest bookingRequest) {
+        try {
+            final Optional<Item> item = bookingRequest.getItemId() == null
+                    ? Optional.empty()
+                    : itemDao.findAnyItemById(bookingRequest.getItemId());
+            mailService.sendPaymentReceivedEmail(
+                    bookingRequest.getRequesterEmail(),
+                    bookingRequest.getRequesterLocaleTag(),
+                    item.map(Item::getTitle).orElse(""));
+        } catch (final RuntimeException e) {
+            LOGGER.error(
+                    "Could not trigger payment received email for booking token {}.", bookingRequest.getToken(), e);
+        }
     }
 
     private static String normalizeNamePart(final String value, final String fallback) {

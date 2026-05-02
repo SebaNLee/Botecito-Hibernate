@@ -131,21 +131,30 @@ public class MailServiceImpl implements MailService {
     }
 
     @Override
+    @Async("mailTaskExecutor")
     public void sendBookingResolutionEmail(final BookingRequest bookingRequest) {
-        final Locale locale = bookingRequest.getRequesterLocale();
-        final Context context = new Context(locale);
-        context.setVariable("bookingRequest", bookingRequest);
-        context.setVariable("statusLabel", getMessage(statusMessageCode(bookingRequest.getStatus()), locale));
-        if (bookingRequest.getItemId() != null) {
-            context.setVariable("itemUrl", itemBaseUrl + "/" + bookingRequest.getItemId());
+        try {
+            final Locale locale = bookingRequest.getRequesterLocale();
+            final Context context = new Context(locale);
+            context.setVariable("bookingRequest", bookingRequest);
+            context.setVariable("statusLabel", getMessage(statusMessageCode(bookingRequest.getStatus()), locale));
+            if (bookingRequest.getItemId() != null) {
+                context.setVariable("itemUrl", itemBaseUrl + "/" + bookingRequest.getItemId());
+            }
+            sendHtmlEmail(
+                    bookingRequest.getRequesterEmail(),
+                    getMessage(
+                            "mail.requestResolution.subject",
+                            locale,
+                            getMessage(statusMessageCode(bookingRequest.getStatus()), locale)),
+                    templateEngine.process("booking-resolution", context));
+        } catch (final RuntimeException e) {
+            LOGGER.error(
+                    "Could not send booking resolution email for booking token {} and requester {}.",
+                    bookingRequest.getToken(),
+                    bookingRequest.getRequesterEmail(),
+                    e);
         }
-        sendHtmlEmail(
-                bookingRequest.getRequesterEmail(),
-                getMessage(
-                        "mail.requestResolution.subject",
-                        locale,
-                        getMessage(statusMessageCode(bookingRequest.getStatus()), locale)),
-                templateEngine.process("booking-resolution", context));
     }
 
     @Override

@@ -33,6 +33,7 @@ public final class ItemServiceImpl implements ItemService {
     private static final int TIME_STEP_MINUTES = 30;
 
     private final ItemDao itemDao;
+    private final MailService mailService;
 
     @Override
     public List<Item> listItems() {
@@ -191,6 +192,7 @@ public final class ItemServiceImpl implements ItemService {
                     availability.getEndTime().toString());
         }
 
+        sendPublishConfirmationEmail(ownerUser, item);
         LOGGER.info("Item {} created successfully for owner {}", item.getId(), ownerUser.getId());
         return item;
     }
@@ -508,5 +510,13 @@ public final class ItemServiceImpl implements ItemService {
             return true;
         }
         return !isBlank(criteria.getStartTime()) || !isBlank(criteria.getEndTime());
+    }
+
+    private void sendPublishConfirmationEmail(final User ownerUser, final Item item) {
+        try {
+            mailService.sendPublishConfirmationEmail(ownerUser.getEmail(), ownerUser.getName(), item.getTitle());
+        } catch (final RuntimeException e) {
+            LOGGER.error("Could not trigger publish confirmation email for item {}.", item.getId(), e);
+        }
     }
 }

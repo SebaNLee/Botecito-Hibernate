@@ -4,7 +4,6 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.services.utils.TimeRange;
 import ar.edu.itba.paw.services.utils.TimeRangeList;
@@ -55,7 +54,6 @@ public class PublishController {
     private static final int MAX_GALLERY_IMAGES = 10;
 
     private final ItemService itemService;
-    private final MailService mailService;
     private final UserService userService;
     private final MessageSource messageSource;
 
@@ -243,10 +241,6 @@ public class PublishController {
                 itemService.replaceGallery(createdItem.getId(), form.orderedImageBytes());
             }
 
-            mailService.sendPublishConfirmationEmail(
-                    currentUser.getEmail(),
-                    currentUser.getName(),
-                    form.getTitle().trim());
         } catch (final IllegalArgumentException e) {
             final ModelAndView mav = new ModelAndView("publish-contact");
             errors.reject("publish.submit.persistenceError");

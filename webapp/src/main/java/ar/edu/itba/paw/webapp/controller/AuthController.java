@@ -11,7 +11,6 @@ import ar.edu.itba.paw.models.ReviewTargetType;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.UserService;
@@ -62,7 +61,6 @@ public class AuthController {
     private final UserService userService;
     private final ItemService itemService;
     private final BookingRequestService bookingRequestService;
-    private final MailService mailService;
     private final ReviewService reviewService;
     private final AuthenticationManager authenticationManager;
 
@@ -183,12 +181,7 @@ public class AuthController {
             return new ModelAndView("password-recovery-request");
         }
 
-        userService
-                .requestPasswordRecovery(form.getEmail().trim())
-                .ifPresent(user -> mailService.sendPasswordRecoveryEmail(
-                        user.getEmail(),
-                        user.getName().isBlank() ? user.getEmail() : user.getName(),
-                        user.getPasswordRecoveryToken()));
+        userService.requestPasswordRecovery(form.getEmail().trim());
 
         return new ModelAndView("redirect:/password-recovery?sent=true");
     }
@@ -247,12 +240,9 @@ public class AuthController {
             return new ModelAndView("redirect:/login");
         }
 
-        userService.findByEmail(authentication.getName()).ifPresent(user -> userService
-                .requestPasswordRecovery(user.getEmail())
-                .ifPresent(updatedUser -> mailService.sendPasswordRecoveryEmail(
-                        updatedUser.getEmail(),
-                        updatedUser.getName().isBlank() ? updatedUser.getEmail() : updatedUser.getName(),
-                        updatedUser.getPasswordRecoveryToken())));
+        userService
+                .findByEmail(authentication.getName())
+                .ifPresent(user -> userService.requestPasswordRecovery(user.getEmail()));
 
         return new ModelAndView("redirect:/profile?passwordRecovery=sent");
     }

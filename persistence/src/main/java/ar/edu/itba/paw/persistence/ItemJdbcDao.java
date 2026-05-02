@@ -349,10 +349,12 @@ public class ItemJdbcDao implements ItemDao {
     public boolean hasBlockingBookingsForEdition(final int itemId) {
         final Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*)"
-                        + " FROM item_booking"
-                        + " WHERE item_id = ?"
-                        + " AND item_version_id IS NULL"
-                        + " AND state IN (" + EDIT_CONFLICT_BOOKING_STATES + ")",
+                        + " FROM item_booking b"
+                        + " INNER JOIN item i ON i.id = b.item_id"
+                        + " WHERE b.item_id = ?"
+                        + " AND b.item_version_id IS NULL"
+                        + " AND b.state IN (" + EDIT_CONFLICT_BOOKING_STATES + ")"
+                        + " AND (b.guest_id IS NULL OR b.guest_id <> i.owner_id)",
                 Integer.class,
                 itemId);
         return count != null && count > 0;
@@ -530,11 +532,13 @@ public class ItemJdbcDao implements ItemDao {
     @Override
     public List<ItemBooking> listActiveBookingsByItemId(final int itemId) {
         return jdbcTemplate.query(
-                "SELECT *"
-                        + " FROM item_booking"
-                        + " WHERE item_id = ?"
-                        + " AND state IN (" + EDIT_CONFLICT_BOOKING_STATES + ")"
-                        + " ORDER BY created_at DESC, id DESC",
+                "SELECT b.*"
+                        + " FROM item_booking b"
+                        + " INNER JOIN item i ON i.id = b.item_id"
+                        + " WHERE b.item_id = ?"
+                        + " AND b.state IN (" + EDIT_CONFLICT_BOOKING_STATES + ")"
+                        + " AND (b.guest_id IS NULL OR b.guest_id <> i.owner_id)"
+                        + " ORDER BY b.created_at DESC, b.id DESC",
                 ITEM_BOOKING_ROW_MAPPER,
                 itemId);
     }
@@ -728,6 +732,63 @@ public class ItemJdbcDao implements ItemDao {
         }
         return findBookingById(id)
                 .orElseThrow(() -> new IllegalStateException("Could not read inserted booking " + id));
+    }
+
+    @Override
+    public ItemBooking insertOwnerPersonalBlock(
+            final int itemId,
+            final int ownerId,
+            final OffsetDateTime startTime,
+            final OffsetDateTime endTime,
+            final String hostDecisionToken,
+            final OffsetDateTime hostDecisionRecordedAt) {
+        final int id;
+        if (postgresDialect) {
+            id = Objects.requireNonNull(
+                    jdbcTemplate.queryForObject(
+                            "INSERT INTO item_booking"
+                                    + " (item_id, guest_id, start_time, end_time, state, request_message, host_decision_token, host_decision_used_at)"
+                                    + " VALUES (?, ?, ?, ?, ?::booking_state, NULL, ?, ?)"
+                                    + " RETURNING id",
+                            Integer.class,
+                            itemId,
+                            ownerId,
+                            Timestamp.from(startTime.toInstant()),
+                            Timestamp.from(endTime.toInstant()),
+                            BookingState.BOOKING_CONFIRMED.name(),
+                            hostDecisionToken,
+                            Timestamp.from(hostDecisionRecordedAt.toInstant())),
+                    "Could not create owner personal block for item " + itemId);
+        } else {
+            final SimpleJdbcInsert insert = new SimpleJdbcInsert(jdbcTemplate)
+                    .withTableName("item_booking")
+                    .usingGeneratedKeyColumns("id");
+            final Map<String, Object> args = new HashMap<>();
+            args.put("item_id", itemId);
+            args.put("guest_id", ownerId);
+            args.put("start_time", Timestamp.from(startTime.toInstant()));
+            args.put("end_time", Timestamp.from(endTime.toInstant()));
+            args.put("state", BookingState.BOOKING_CONFIRMED.name());
+            args.put("request_message", null);
+            args.put("host_decision_token", hostDecisionToken);
+            args.put("host_decision_used_at", Timestamp.from(hostDecisionRecordedAt.toInstant()));
+            args.put("created_at", Timestamp.from(Instant.now()));
+            args.put("updated_at", Timestamp.from(Instant.now()));
+            id = insert.executeAndReturnKey(args).intValue();
+        }
+        return findBookingById(id)
+                .orElseThrow(() -> new IllegalStateException("Could not read inserted personal block booking " + id));
+    }
+
+    @Override
+    public boolean markBookingCancelled(final int bookingId) {
+        return jdbcTemplate.update(
+                        "UPDATE item_booking"
+                                + " SET state = 'BOOKING_CANCELLED', updated_at = CURRENT_TIMESTAMP"
+                                + " WHERE id = ?"
+                                + " AND state = 'BOOKING_CONFIRMED'",
+                        bookingId)
+                > 0;
     }
 
     @Override

@@ -3,7 +3,11 @@ package ar.edu.itba.paw.webapp.form;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class RegisterForm {
 
     @NotBlank(message = "{register.validation.givenName.required}")
@@ -28,52 +32,4 @@ public class RegisterForm {
 
     @Size(max = 120, message = "{register.validation.paymentAlias.max}")
     private String paymentAlias;
-
-    public String getGivenName() {
-        return givenName;
-    }
-
-    public void setGivenName(final String givenName) {
-        this.givenName = givenName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(final String lastName) {
-        this.lastName = lastName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(final String email) {
-        this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(final String password) {
-        this.password = password;
-    }
-
-    public String getConfirmPassword() {
-        return confirmPassword;
-    }
-
-    public void setConfirmPassword(final String confirmPassword) {
-        this.confirmPassword = confirmPassword;
-    }
-
-    public String getPaymentAlias() {
-        return paymentAlias;
-    }
-
-    public void setPaymentAlias(final String paymentAlias) {
-        this.paymentAlias = paymentAlias;
-    }
 }

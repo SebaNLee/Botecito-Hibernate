@@ -21,7 +21,7 @@
   headerCtaHref="/marketplace"
   headerCtaVariant="rent">
   <div class="mb-8">
-    <a href="${stepOneUrl}" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
+    <a href="${stepOneUrl}" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
       <span class="material-symbols-outlined">arrow_back</span>
       <span><spring:message code="common.back" /></span>
     </a>
@@ -32,13 +32,13 @@
       <span><spring:message code="publish.step2.progress" /></span>
       <span><spring:message code="publish.step2.badge" /></span>
     </div>
-    <progress class="progress progress-primary mt-3 w-full" value="33" max="100"></progress>
+    <progress class="progress progress-secondary mt-3 w-full" value="33" max="100"></progress>
     <h1 class="mt-6 text-4xl font-extrabold tracking-tight text-on-background m-0"><spring:message code="publish.step2.title" /></h1>
     <p class="text-on-surface-variant mt-2 text-lg m-0"><spring:message code="publish.step2.subtitle" /></p>
   </div>
 
   <form:form action="${stepTwoUrl}" method="post" modelAttribute="publishForm" class="space-y-8">
-    <paw:sectionCard icon="schedule">
+    <paw:sectionCard icon="schedule" hostAccent="true">
       <jsp:attribute name="title"><spring:message code="publish.step2.section.slots" /></jsp:attribute>
       <jsp:body>
         <c:if test="${param.availabilityAction == 'invalidMethod'}">
@@ -75,7 +75,7 @@
               <c:set var="dayId" value="${dayLower}Enabled" />
               <div class="rounded-xl border border-outline-variant/25 bg-base-200/60 p-4" data-availability-row="${day}">
                 <label class="inline-flex items-center gap-3 font-bold text-on-surface mb-3 cursor-pointer" for="${dayId}">
-                  <input type="checkbox" id="${dayId}" name="enabledDays" value="${day}" class="checkbox checkbox-primary checkbox-sm" data-day-toggle="${day}" <c:if test="${enabledWeekdays[day]}">checked="checked"</c:if> />
+                  <input type="checkbox" id="${dayId}" name="enabledDays" value="${day}" class="checkbox checkbox-secondary checkbox-sm" data-day-toggle="${day}" <c:if test="${enabledWeekdays[day]}">checked="checked"</c:if> />
                   <spring:message code="weekday.${dayLower}" />
                 </label>
                 <div data-day-slots="${day}">
@@ -95,8 +95,8 @@
                           </c:forEach>
                         </div>
                         <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 pointer-events-none">
-                          <div data-timeline-preview class="absolute top-0 h-8 rounded-md border border-primary/60 bg-primary/20 hidden pointer-events-none">
-                            <div data-timeline-preview-label class="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-primary/35 bg-surface px-2 py-0.5 text-[10px] font-bold text-primary"></div>
+                          <div data-timeline-preview class="absolute top-0 h-8 rounded-md border border-secondary/60 bg-secondary/20 hidden pointer-events-none">
+                            <div data-timeline-preview-label class="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-secondary/35 bg-surface px-2 py-0.5 text-[10px] font-bold text-secondary"></div>
                           </div>
                         </div>
                         <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2" data-timeline-blocks></div>
@@ -111,13 +111,13 @@
           </div>
 
           <template data-availability-block-template>
-            <div data-role="availability-block" class="absolute top-0 h-8 rounded-md bg-gradient-to-r from-primary to-primary-container text-on-primary shadow-[0_8px_16px_rgba(0,93,167,0.28)] cursor-grab active:cursor-grabbing">
+            <div data-role="availability-block" class="absolute top-0 h-8 rounded-md bg-gradient-to-r from-secondary to-secondary-container text-on-secondary shadow-[0_8px_16px_rgba(174,49,35,0.28)] cursor-grab active:cursor-grabbing">
               <button type="button" data-role="left-handle" class="absolute top-0 h-8 w-4 -translate-x-1/2 cursor-ew-resize touch-none" style="left:0%">
-                <span class="absolute left-1/2 top-0 h-8 w-[3px] -translate-x-1/2 rounded-full bg-on-primary"></span>
+                <span class="absolute left-1/2 top-0 h-8 w-[3px] -translate-x-1/2 rounded-full bg-on-secondary"></span>
                 <span data-role="left-label" class="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-outline-variant/30 bg-surface px-2 py-0.5 text-[10px] font-bold text-on-surface"></span>
               </button>
               <button type="button" data-role="right-handle" class="absolute top-0 h-8 w-4 -translate-x-1/2 cursor-ew-resize touch-none" style="left:100%">
-                <span class="absolute left-1/2 top-0 h-8 w-[3px] -translate-x-1/2 rounded-full bg-on-primary"></span>
+                <span class="absolute left-1/2 top-0 h-8 w-[3px] -translate-x-1/2 rounded-full bg-on-secondary"></span>
                 <span data-role="right-label" class="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-outline-variant/30 bg-surface px-2 py-0.5 text-[10px] font-bold text-on-surface"></span>
               </button>
               <button type="button" data-role="delete-button" class="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-error/40 bg-error/15 px-2 py-0.5 text-[10px] font-bold text-error hover:bg-error/25 transition-colors"></button>

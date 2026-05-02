@@ -1,29 +1,36 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.BookingState;
-import ar.edu.itba.paw.models.DisabledTimeSlot;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.services.DisabledTimeSlotService;
+import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.SlotHasActiveBookingsException;
+import ar.edu.itba.paw.services.OverlappingActiveBookingException;
 import ar.edu.itba.paw.services.UserService;
-import ar.edu.itba.paw.webapp.form.DisableSlotForm;
+import ar.edu.itba.paw.webapp.form.BlockSlotForm;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import javax.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -35,61 +42,69 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
+@RequiredArgsConstructor
 public class PublicationAvailabilityController {
 
     private static final int PICKER_MONTHS_AROUND_TODAY = 2;
     private static final int SLOT_STEP_MINUTES = 30;
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final int MAX_RETURN_PATH_LENGTH = 512;
+    private static final String DEFAULT_AVAILABILITY_BACK_PATH = "/profile";
 
     private final ItemService itemService;
     private final UserService userService;
-    private final DisabledTimeSlotService disabledTimeSlotService;
+    private final BookingRequestService bookingRequestService;
 
-    public PublicationAvailabilityController(
-            final ItemService itemService,
-            final UserService userService,
-            final DisabledTimeSlotService disabledTimeSlotService) {
-        this.itemService = itemService;
-        this.userService = userService;
-        this.disabledTimeSlotService = disabledTimeSlotService;
+    @ModelAttribute("blockSlotForm")
+    public BlockSlotForm blockSlotForm() {
+        return new BlockSlotForm();
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/availability", method = RequestMethod.GET)
     public ModelAndView manageAvailability(
             @PathVariable("id") final int itemId,
             @RequestParam(value = "date", required = false) final String requestedDate,
-            @ModelAttribute("disableSlotForm") final DisableSlotForm form) {
+            @RequestParam(value = "return", required = false) final String returnParam,
+            @ModelAttribute("blockSlotForm") final BlockSlotForm form,
+            final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
         final Item item = itemService.findItemById(itemId).orElse(null);
         if (item == null || !currentUser.getId().equals(item.getOwnerId())) {
-            return new ModelAndView("redirect:/my-boats?publishAction=forbidden");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats");
         }
 
-        return buildManageAvailabilityView(item, requestedDate);
+        return buildManageAvailabilityView(item, requestedDate, currentUser.getId(), sanitizeReturnPath(returnParam));
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/availability/disable", method = RequestMethod.POST)
-    public ModelAndView disableSlot(
+    public ModelAndView blockSlot(
             @PathVariable("id") final int itemId,
-            @Valid @ModelAttribute("disableSlotForm") final DisableSlotForm form,
-            final BindingResult errors) {
+            @RequestParam(value = "return", required = false) final String returnParam,
+            @Valid @ModelAttribute("blockSlotForm") final BlockSlotForm form,
+            final BindingResult errors,
+            final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
         final Item item = itemService.findItemById(itemId).orElse(null);
         if (item == null || !currentUser.getId().equals(item.getOwnerId())) {
-            return new ModelAndView("redirect:/my-boats?publishAction=forbidden");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats");
         }
 
+        final String safeReturn = sanitizeReturnPath(returnParam);
+
         if (errors.hasErrors()) {
-            return buildManageAvailabilityView(item, form.getDate());
+            return buildManageAvailabilityView(item, form.getDate(), currentUser.getId(), safeReturn);
         }
 
         final String redirectBase = "redirect:/profile/item/" + itemId + "/availability";
@@ -98,42 +113,57 @@ public class PublicationAvailabilityController {
             final LocalTime startTime = LocalTime.parse(form.getStartTime());
             final LocalTime endTime = LocalTime.parse(form.getEndTime());
             if (date.isBefore(LocalDate.now())) {
-                return new ModelAndView(redirectBase + "?availabilityAction=pastDate");
+                return new ModelAndView(appendReturnQuery(redirectBase + "?availabilityAction=pastDate", safeReturn));
             }
-            disabledTimeSlotService.disable(itemId, date, startTime, endTime);
-        } catch (final SlotHasActiveBookingsException exception) {
-            return new ModelAndView(redirectBase + "?date=" + form.getDate() + "&availabilityAction=hasBookings");
+            final ZoneId zone = ZoneId.systemDefault();
+            final OffsetDateTime startOdt =
+                    LocalDateTime.of(date, startTime).atZone(zone).toOffsetDateTime();
+            final OffsetDateTime endOdt =
+                    LocalDateTime.of(date, endTime).atZone(zone).toOffsetDateTime();
+            bookingRequestService.createOwnerSelfBlock(itemId, currentUser.getId(), startOdt, endOdt);
+        } catch (final OverlappingActiveBookingException exception) {
+            return new ModelAndView(appendReturnQuery(
+                    redirectBase + "?date=" + form.getDate() + "&availabilityAction=hasBookings", safeReturn));
         } catch (final DateTimeParseException | IllegalArgumentException exception) {
-            return new ModelAndView(redirectBase + "?availabilityAction=invalid");
+            return new ModelAndView(appendReturnQuery(redirectBase + "?availabilityAction=invalid", safeReturn));
         }
 
-        return new ModelAndView(redirectBase + "?date=" + form.getDate() + "&availabilityAction=disabled");
+        return new ModelAndView(appendReturnQuery(
+                redirectBase + "?date=" + form.getDate() + "&availabilityAction=blocked", safeReturn));
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/availability/enable", method = RequestMethod.POST)
-    public ModelAndView enableSlot(
+    public ModelAndView unblockSlot(
             @PathVariable("id") final int itemId,
-            @RequestParam("disabledSlotId") final int disabledSlotId,
-            @RequestParam(value = "date", required = false) final String requestedDate) {
+            @RequestParam("blockBookingId") final int blockBookingId,
+            @RequestParam(value = "date", required = false) final String requestedDate,
+            @RequestParam(value = "return", required = false) final String returnParam,
+            final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
         final Item item = itemService.findItemById(itemId).orElse(null);
         if (item == null || !currentUser.getId().equals(item.getOwnerId())) {
-            return new ModelAndView("redirect:/my-boats?publishAction=forbidden");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats");
         }
 
-        final boolean removed = disabledTimeSlotService.reEnable(itemId, disabledSlotId);
+        final String safeReturn = sanitizeReturnPath(returnParam);
+        final boolean removed = bookingRequestService.removeOwnerSelfBlock(blockBookingId, currentUser.getId());
         final String redirectDate = requestedDate == null || requestedDate.isBlank() ? "" : "&date=" + requestedDate;
-        return new ModelAndView("redirect:/profile/item/" + itemId + "/availability?availabilityAction="
-                + (removed ? "enabled" : "notFound") + redirectDate);
+        return new ModelAndView(appendReturnQuery(
+                "redirect:/profile/item/" + itemId + "/availability?availabilityAction="
+                        + (removed ? "enabled" : "notFound") + redirectDate,
+                safeReturn));
     }
 
-    private ModelAndView buildManageAvailabilityView(final Item item, final String requestedDate) {
+    private ModelAndView buildManageAvailabilityView(
+            final Item item, final String requestedDate, final int ownerId, final String sanitizedReturnPath) {
         final List<ItemAvailability> availabilities = itemService.listAvailabilitiesByItemId(item.getId());
         final List<ItemBooking> bookings = itemService.listBookingsByItemId(item.getId());
-        final List<DisabledTimeSlot> disabledSlots = disabledTimeSlotService.listByItem(item.getId());
+        final List<ItemBooking> personalBlocks = listPersonalBlocks(bookings, ownerId);
+        final List<PersonalBlockListRow> personalBlockRows = toPersonalBlockRows(personalBlocks);
 
         final LocalDate startDate = LocalDate.now();
         final LocalDate endDate =
@@ -141,7 +171,8 @@ public class PublicationAvailabilityController {
 
         final Map<String, TreeSet<String>> scheduledTimesByDate =
                 buildScheduledTimesByDate(availabilities, startDate, endDate);
-        final Map<String, TreeSet<String>> bookedTimesByDate = buildBookedTimesByDate(bookings, startDate, endDate);
+        final Map<String, TreeSet<String>> guestBookedTimesByDate =
+                buildGuestBookedTimesByDate(bookings, ownerId, startDate, endDate);
 
         final List<String> offeredDates = new ArrayList<>(scheduledTimesByDate.keySet());
         final String selectedDate = resolveSelectedDate(requestedDate, offeredDates);
@@ -150,25 +181,147 @@ public class PublicationAvailabilityController {
                 ? List.of()
                 : buildSlots(
                         scheduledTimesByDate.getOrDefault(selectedDate, new TreeSet<>()),
-                        bookedTimesByDate.getOrDefault(selectedDate, new TreeSet<>()),
-                        indexDisabledSlotsByStartTime(disabledSlots, selectedDate));
+                        guestBookedTimesByDate.getOrDefault(selectedDate, new TreeSet<>()),
+                        indexOwnerPersonalBlockStartsBySlot(personalBlocks, selectedDate));
 
-        final List<String> disabledDates = new ArrayList<>();
-        for (final DisabledTimeSlot disabled : disabledSlots) {
-            final String iso = disabled.getSlotDate().format(DATE_FORMAT);
-            if (!disabledDates.contains(iso)) {
-                disabledDates.add(iso);
-            }
+        final List<String> blockedDates = new ArrayList<>();
+        for (final ItemBooking block : personalBlocks) {
+            addBookingDatesInRange(block, startDate, endDate, blockedDates);
         }
 
         final ModelAndView mav = new ModelAndView("manage-availability");
         mav.addObject("item", item);
         mav.addObject("offeredDatesJson", toJsonArray(offeredDates));
-        mav.addObject("disabledDatesJson", toJsonArray(disabledDates));
+        mav.addObject("blockedDatesJson", toJsonArray(blockedDates));
         mav.addObject("selectedDate", selectedDate == null ? "" : selectedDate);
         mav.addObject("slots", slots);
-        mav.addObject("disabledSlots", disabledSlots);
+        mav.addObject("slotsStateJson", slotsToJson(slots));
+        mav.addObject("personalBlocks", personalBlocks);
+        mav.addObject("personalBlockRows", personalBlockRows);
+        mav.addObject("manageAvailabilityReturnPath", sanitizedReturnPath);
+        mav.addObject(
+                "manageAvailabilityBackPath",
+                sanitizedReturnPath != null ? sanitizedReturnPath : DEFAULT_AVAILABILITY_BACK_PATH);
         return mav;
+    }
+
+    /**
+     * Accepts in-app paths only (same-origin relative), for a safe "back" target after managing availability.
+     */
+    private static String slotsToJson(final List<SlotViewModel> slots) {
+        final StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < slots.size(); i++) {
+            if (i > 0) {
+                json.append(',');
+            }
+            final SlotViewModel slot = slots.get(i);
+            json.append("{\"start\":\"")
+                    .append(jsonEscape(slot.getStartTime()))
+                    .append("\",\"end\":\"")
+                    .append(jsonEscape(slot.getEndTime()))
+                    .append("\",\"state\":\"")
+                    .append(jsonEscape(slot.getState()))
+                    .append("\"}");
+        }
+        return json.append(']').toString();
+    }
+
+    private static String jsonEscape(final String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    static String sanitizeReturnPath(final String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String candidate = raw.trim();
+        if (candidate.isEmpty()) {
+            return null;
+        }
+        try {
+            candidate = URLDecoder.decode(candidate, StandardCharsets.UTF_8);
+        } catch (final IllegalArgumentException ignored) {
+            return null;
+        }
+        candidate = candidate.trim();
+        if (candidate.length() > MAX_RETURN_PATH_LENGTH) {
+            return null;
+        }
+        if (!candidate.startsWith("/")) {
+            return null;
+        }
+        if (candidate.startsWith("//")) {
+            return null;
+        }
+        if (candidate.contains("://") || candidate.contains("\\") || candidate.indexOf('\n') >= 0) {
+            return null;
+        }
+        if (candidate.indexOf('\r') >= 0 || candidate.indexOf('\0') >= 0) {
+            return null;
+        }
+        return candidate;
+    }
+
+    private static String appendReturnQuery(final String redirectModelViewUrl, final String sanitizedReturnPath) {
+        if (sanitizedReturnPath == null) {
+            return redirectModelViewUrl;
+        }
+        final int q = redirectModelViewUrl.indexOf('?');
+        final String sep = q >= 0 ? "&" : "?";
+        return redirectModelViewUrl + sep + "return=" + URLEncoder.encode(sanitizedReturnPath, StandardCharsets.UTF_8);
+    }
+
+    private static List<PersonalBlockListRow> toPersonalBlockRows(final List<ItemBooking> personalBlocks) {
+        final List<ItemBooking> sorted = new ArrayList<>(personalBlocks);
+        sorted.sort(Comparator.comparing(ItemBooking::getStartTime, Comparator.nullsLast(Comparator.naturalOrder())));
+        final List<PersonalBlockListRow> rows = new ArrayList<>();
+        for (final ItemBooking block : sorted) {
+            if (block.getId() == null || block.getStartTime() == null || block.getEndTime() == null) {
+                continue;
+            }
+            rows.add(new PersonalBlockListRow(
+                    block.getId(),
+                    block.getStartTime().toLocalDate().format(DATE_FORMAT),
+                    block.getStartTime().toLocalTime().format(TIME_FORMAT),
+                    block.getEndTime().toLocalTime().format(TIME_FORMAT)));
+        }
+        return rows;
+    }
+
+    private static List<ItemBooking> listPersonalBlocks(final List<ItemBooking> bookings, final int ownerId) {
+        final List<ItemBooking> out = new ArrayList<>();
+        for (final ItemBooking booking : bookings) {
+            if (booking.getGuestId() != null
+                    && Objects.equals(booking.getGuestId(), ownerId)
+                    && booking.getState() == BookingState.BOOKING_CONFIRMED) {
+                out.add(booking);
+            }
+        }
+        return out;
+    }
+
+    private static void addBookingDatesInRange(
+            final ItemBooking booking,
+            final LocalDate rangeStart,
+            final LocalDate rangeEnd,
+            final List<String> outIsoDates) {
+        if (booking.getStartTime() == null || booking.getEndTime() == null) {
+            return;
+        }
+        LocalDate d = booking.getStartTime().toLocalDate();
+        final LocalDate last = booking.getEndTime().toLocalDate();
+        while (!d.isAfter(last)) {
+            if (!d.isBefore(rangeStart) && !d.isAfter(rangeEnd)) {
+                final String iso = d.format(DATE_FORMAT);
+                if (!outIsoDates.contains(iso)) {
+                    outIsoDates.add(iso);
+                }
+            }
+            d = d.plusDays(1);
+        }
     }
 
     private static Map<String, TreeSet<String>> buildScheduledTimesByDate(
@@ -187,11 +340,14 @@ public class PublicationAvailabilityController {
         return collected;
     }
 
-    private static Map<String, TreeSet<String>> buildBookedTimesByDate(
-            final List<ItemBooking> bookings, final LocalDate startDate, final LocalDate endDate) {
+    private static Map<String, TreeSet<String>> buildGuestBookedTimesByDate(
+            final List<ItemBooking> bookings, final int ownerId, final LocalDate startDate, final LocalDate endDate) {
         final Map<String, TreeSet<String>> collected = new TreeMap<>();
         for (final ItemBooking booking : bookings) {
             if (!isBlockingBooking(booking)) {
+                continue;
+            }
+            if (booking.getGuestId() != null && Objects.equals(booking.getGuestId(), ownerId)) {
                 continue;
             }
             OffsetDateTime cursor = booking.getStartTime();
@@ -217,23 +373,26 @@ public class PublicationAvailabilityController {
                 || booking.getState() == BookingState.BOOKING_PAID;
     }
 
-    private static Map<String, Integer> indexDisabledSlotsByStartTime(
-            final List<DisabledTimeSlot> disabledSlots, final String selectedDate) {
+    private static Map<String, Integer> indexOwnerPersonalBlockStartsBySlot(
+            final List<ItemBooking> personalBlocks, final String selectedDateIso) {
         final Map<String, Integer> index = new TreeMap<>();
         final LocalDate parsedSelected;
         try {
-            parsedSelected = LocalDate.parse(selectedDate);
+            parsedSelected = LocalDate.parse(selectedDateIso);
         } catch (final DateTimeParseException exception) {
             return index;
         }
-        for (final DisabledTimeSlot disabled : disabledSlots) {
-            if (!parsedSelected.equals(disabled.getSlotDate())) {
+        for (final ItemBooking block : personalBlocks) {
+            if (block.getId() == null || block.getStartTime() == null || block.getEndTime() == null) {
                 continue;
             }
-            final int startMinute = disabled.getStartTime().toSecondOfDay() / 60;
-            final int endMinute = disabled.getEndTime().toSecondOfDay() / 60;
-            for (int minute = startMinute; minute < endMinute; minute += SLOT_STEP_MINUTES) {
-                index.put(LocalTime.ofSecondOfDay((long) minute * 60).format(TIME_FORMAT), disabled.getId());
+            OffsetDateTime cursor = block.getStartTime();
+            final OffsetDateTime end = block.getEndTime();
+            while (cursor.isBefore(end)) {
+                if (parsedSelected.equals(cursor.toLocalDate())) {
+                    index.put(cursor.toLocalTime().format(TIME_FORMAT), block.getId());
+                }
+                cursor = cursor.plusMinutes(SLOT_STEP_MINUTES);
             }
         }
         return index;
@@ -241,16 +400,16 @@ public class PublicationAvailabilityController {
 
     private static List<SlotViewModel> buildSlots(
             final TreeSet<String> scheduledTimes,
-            final TreeSet<String> bookedTimes,
-            final Map<String, Integer> disabledStartToId) {
+            final TreeSet<String> guestBookedTimes,
+            final Map<String, Integer> ownerBlockStartToBookingId) {
         final List<SlotViewModel> slots = new ArrayList<>();
         for (final String time : scheduledTimes) {
             final LocalTime startTime = LocalTime.parse(time);
             final String endTime = startTime.plusMinutes(SLOT_STEP_MINUTES).format(TIME_FORMAT);
-            final boolean booked = bookedTimes.contains(time);
-            final Integer disabledId = disabledStartToId.get(time);
-            final String state = disabledId != null ? "DISABLED" : (booked ? "BOOKED" : "AVAILABLE");
-            slots.add(new SlotViewModel(time, endTime, state, disabledId));
+            final boolean guestBooked = guestBookedTimes.contains(time);
+            final Integer blockBookingId = ownerBlockStartToBookingId.get(time);
+            final String state = blockBookingId != null ? "BLOCKED" : (guestBooked ? "BOOKED" : "AVAILABLE");
+            slots.add(new SlotViewModel(time, endTime, state, blockBookingId));
         }
         return slots;
     }
@@ -301,14 +460,14 @@ public class PublicationAvailabilityController {
         private final String startTime;
         private final String endTime;
         private final String state;
-        private final Integer disabledSlotId;
+        private final Integer blockBookingId;
 
         public SlotViewModel(
-                final String startTime, final String endTime, final String state, final Integer disabledSlotId) {
+                final String startTime, final String endTime, final String state, final Integer blockBookingId) {
             this.startTime = startTime;
             this.endTime = endTime;
             this.state = state;
-            this.disabledSlotId = disabledSlotId;
+            this.blockBookingId = blockBookingId;
         }
 
         public String getStartTime() {
@@ -323,12 +482,43 @@ public class PublicationAvailabilityController {
             return state;
         }
 
-        public Integer getDisabledSlotId() {
-            return disabledSlotId;
+        public Integer getBlockBookingId() {
+            return blockBookingId;
         }
 
         public String getModalIdSuffix() {
             return startTime.replace(":", "");
+        }
+    }
+
+    public static final class PersonalBlockListRow {
+        private final int bookingId;
+        private final String dateIso;
+        private final String startTime;
+        private final String endTime;
+
+        public PersonalBlockListRow(
+                final int bookingId, final String dateIso, final String startTime, final String endTime) {
+            this.bookingId = bookingId;
+            this.dateIso = dateIso;
+            this.startTime = startTime;
+            this.endTime = endTime;
+        }
+
+        public int getBookingId() {
+            return bookingId;
+        }
+
+        public String getDateIso() {
+            return dateIso;
+        }
+
+        public String getStartTime() {
+            return startTime;
+        }
+
+        public String getEndTime() {
+            return endTime;
         }
     }
 }

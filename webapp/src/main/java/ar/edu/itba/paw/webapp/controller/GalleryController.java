@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
+@RequiredArgsConstructor
 public class GalleryController {
 
     private static final long MAX_BYTES_PER_FILE = 5_242_880L;
@@ -30,11 +32,6 @@ public class GalleryController {
 
     private final ItemService itemService;
     private final UserService userService;
-
-    public GalleryController(final ItemService itemService, final UserService userService) {
-        this.itemService = itemService;
-        this.userService = userService;
-    }
 
     @RequestMapping(value = "/item/{id}/gallery", method = RequestMethod.GET)
     public ModelAndView gallery(

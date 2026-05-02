@@ -5,7 +5,6 @@ import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.persistence.DisabledTimeSlotDao;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -28,9 +27,6 @@ public class ItemServiceImplTest {
 
     @Mock
     private ItemDao itemDao;
-
-    @Mock
-    private DisabledTimeSlotDao disabledTimeSlotDao;
 
     @Test
     public void testFindItemByIdWhenItemExists() {

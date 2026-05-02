@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -35,8 +36,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
+@RequiredArgsConstructor
 public class PublishActionController {
     private static final DateTimeFormatter BOOKING_START_LABEL_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -48,19 +51,11 @@ public class PublishActionController {
     private final BookingRequestService bookingRequestService;
     private final MailService mailService;
 
-    public PublishActionController(
-            final ItemService itemService,
-            final UserService userService,
-            final BookingRequestService bookingRequestService,
-            final MailService mailService) {
-        this.itemService = itemService;
-        this.userService = userService;
-        this.bookingRequestService = bookingRequestService;
-        this.mailService = mailService;
-    }
-
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/edit", method = RequestMethod.GET)
-    public ModelAndView editPublicationForm(@PathVariable("id") final int itemId, final HttpServletRequest request) {
+    public ModelAndView editPublicationForm(
+            @PathVariable("id") final int itemId,
+            final HttpServletRequest request,
+            final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
@@ -68,7 +63,8 @@ public class PublishActionController {
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
         if (item.isEmpty()) {
-            return new ModelAndView("redirect:/my-boats?publishAction=forbidden");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats");
         }
 
         final EditPublicationForm form = new EditPublicationForm();
@@ -92,7 +88,8 @@ public class PublishActionController {
             @PathVariable("id") final int itemId,
             @Valid @ModelAttribute("editForm") final EditPublicationForm form,
             final BindingResult errors,
-            final HttpServletRequest request) {
+            final HttpServletRequest request,
+            final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
@@ -100,7 +97,8 @@ public class PublishActionController {
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
         if (item.isEmpty()) {
-            return new ModelAndView("redirect:/my-boats?publishAction=forbidden");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats");
         }
 
         validateUploadedImage(form.getFile(), errors);
@@ -136,7 +134,8 @@ public class PublishActionController {
 
         final List<ItemBooking> activeBookings = itemService.listActiveBookingsByItemId(itemId);
         if (!hasPublicationChanges) {
-            return new ModelAndView("redirect:/my-boats?publishAction=updated#my-publications");
+            ToastSupport.success(redirectAttributes, "profile.publications.updated");
+            return new ModelAndView("redirect:/my-boats#my-publications");
         }
         if (!activeBookings.isEmpty() && !isConfirmedSnapshotEdit(request)) {
             return editPublicationModelAndView(item.get(), request).addObject("showEditConflictModal", true);
@@ -181,49 +180,49 @@ public class PublishActionController {
             return editPublicationModelAndView(item.get(), request);
         }
 
-        return new ModelAndView("redirect:/my-boats?publishAction=updated#my-publications");
+        ToastSupport.success(redirectAttributes, "profile.publications.updated");
+        return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/disable", method = RequestMethod.POST)
-    public ModelAndView disablePublication(@PathVariable("id") final int itemId) {
+    public ModelAndView disablePublication(
+            @PathVariable("id") final int itemId, final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
-        if (item.isEmpty()) {
-            return new ModelAndView("redirect:/my-boats?publishAction=forbidden#my-publications");
+        if (item.isEmpty() || !itemService.setItemActiveForOwner(itemId, currentUser.getId(), false)) {
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats#my-publications");
         }
 
-        if (!itemService.setItemActiveForOwner(itemId, currentUser.getId(), false)) {
-            return new ModelAndView("redirect:/my-boats?publishAction=forbidden#my-publications");
-        }
-
-        return new ModelAndView("redirect:/my-boats?publishAction=disabled#my-publications");
+        ToastSupport.success(redirectAttributes, "profile.publications.disabled");
+        return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/enable", method = RequestMethod.POST)
-    public ModelAndView enablePublication(@PathVariable("id") final int itemId) {
+    public ModelAndView enablePublication(
+            @PathVariable("id") final int itemId, final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
-        if (item.isEmpty()) {
-            return new ModelAndView("redirect:/my-boats?publishAction=forbidden#my-publications");
+        if (item.isEmpty() || !itemService.setItemActiveForOwner(itemId, currentUser.getId(), true)) {
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats#my-publications");
         }
 
-        if (!itemService.setItemActiveForOwner(itemId, currentUser.getId(), true)) {
-            return new ModelAndView("redirect:/my-boats?publishAction=forbidden#my-publications");
-        }
-
-        return new ModelAndView("redirect:/my-boats?publishAction=enabled#my-publications");
+        ToastSupport.success(redirectAttributes, "profile.publications.enabled");
+        return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/delete", method = RequestMethod.POST)
-    public ModelAndView hardDeletePublication(@PathVariable("id") final int itemId) {
+    public ModelAndView hardDeletePublication(
+            @PathVariable("id") final int itemId, final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
@@ -231,21 +230,26 @@ public class PublishActionController {
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
         if (item.isEmpty()) {
-            return new ModelAndView("redirect:/my-boats?publishAction=forbidden#my-publications");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats#my-publications");
         }
 
         try {
             if (!itemService.deleteItemByIdForOwner(itemId, currentUser.getId())) {
                 if (!Boolean.TRUE.equals(item.get().getActive())) {
-                    return new ModelAndView("redirect:/my-boats?publishAction=deleteBlockedByBookings#my-publications");
+                    ToastSupport.error(redirectAttributes, "profile.publications.deleteBlockedByBookings");
+                    return new ModelAndView("redirect:/my-boats#my-publications");
                 }
-                return new ModelAndView("redirect:/my-boats?publishAction=error#my-publications");
+                ToastSupport.error(redirectAttributes, "profile.publications.error");
+                return new ModelAndView("redirect:/my-boats#my-publications");
             }
         } catch (final DataAccessException e) {
-            return new ModelAndView("redirect:/my-boats?publishAction=error#my-publications");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats#my-publications");
         }
 
-        return new ModelAndView("redirect:/my-boats?publishAction=deleted#my-publications");
+        ToastSupport.success(redirectAttributes, "profile.publications.deleted");
+        return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
     private User currentAuthenticatedUser() {

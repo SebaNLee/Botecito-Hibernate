@@ -47,13 +47,15 @@
       </div>
     </div>
 
-    <div class="modal-action mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-      <form method="dialog" class="m-0">
-        <button type="submit" class="btn btn-outline w-full sm:w-auto">
+    <div class="modal-action mt-6 flex flex-row flex-nowrap items-center justify-end gap-3">
+      <form method="dialog" class="m-0 shrink-0">
+        <button type="submit" class="btn btn-outline min-h-11 whitespace-nowrap px-5">
           <c:out value="${cancelText}" />
         </button>
       </form>
-      <jsp:doBody />
+      <div class="m-0 flex shrink-0 items-center [&_form]:m-0">
+        <jsp:doBody />
+      </div>
     </div>
   </div>
   <form method="dialog" class="modal-backdrop">

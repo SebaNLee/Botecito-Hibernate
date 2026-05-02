@@ -35,6 +35,7 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -55,6 +56,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
+@RequiredArgsConstructor
 public class AuthController {
 
     private final UserService userService;
@@ -63,21 +65,6 @@ public class AuthController {
     private final MailService mailService;
     private final ReviewService reviewService;
     private final AuthenticationManager authenticationManager;
-
-    public AuthController(
-            final UserService userService,
-            final ItemService itemService,
-            final BookingRequestService bookingRequestService,
-            final MailService mailService,
-            final ReviewService reviewService,
-            final AuthenticationManager authenticationManager) {
-        this.userService = userService;
-        this.itemService = itemService;
-        this.bookingRequestService = bookingRequestService;
-        this.mailService = mailService;
-        this.reviewService = reviewService;
-        this.authenticationManager = authenticationManager;
-    }
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ModelAndView login(
@@ -271,14 +258,16 @@ public class AuthController {
     }
 
     @RequestMapping(value = "/profile", method = RequestMethod.GET)
-    public ModelAndView profile(@ModelAttribute("profileForm") final ProfileForm form) {
+    public ModelAndView profile(
+            @RequestParam(value = "edit", defaultValue = "false") final boolean edit,
+            @ModelAttribute("profileForm") final ProfileForm form) {
         final User user = currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
 
         populateProfileForm(form, user);
-        return buildProfileView(user);
+        return buildProfileView(user, edit);
     }
 
     @RequestMapping(value = "/profile", method = RequestMethod.POST)
@@ -290,7 +279,7 @@ public class AuthController {
         }
 
         if (errors.hasErrors()) {
-            return buildProfileView(currentUser);
+            return buildProfileView(currentUser, true);
         }
 
         final User updatedUser = userService
@@ -305,7 +294,7 @@ public class AuthController {
                 .orElse(null);
         if (updatedUser == null) {
             errors.rejectValue("email", "profile.validation.email.duplicate");
-            return buildProfileView(currentUser);
+            return buildProfileView(currentUser, true);
         }
 
         refreshAuthenticatedPrincipal(updatedUser);
@@ -321,7 +310,8 @@ public class AuthController {
     public ModelAndView myBoats(
             @RequestParam(value = "status", required = false) final List<String> status,
             @RequestParam(value = "q", required = false) final String query,
-            @RequestParam(value = "page", required = false, defaultValue = "1") final int page) {
+            @RequestParam(value = "page", required = false, defaultValue = "1") final int page,
+            final HttpServletRequest request) {
         final User user = currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
@@ -329,7 +319,13 @@ public class AuthController {
 
         final ModelAndView mav = new ModelAndView("my-boats");
         mav.addObject("user", user);
-        addMyBoatsData(mav, user, resolveBookingStatusFilters(status), normalizeQuery(query), sanitizePage(page));
+        addMyBoatsData(
+                mav,
+                user,
+                resolveBookingStatusFilters(status),
+                normalizeQuery(query),
+                sanitizePage(page),
+                request.getContextPath());
         return mav;
     }
 
@@ -337,7 +333,8 @@ public class AuthController {
     public ModelAndView bookings(
             @RequestParam(value = "status", required = false) final List<String> status,
             @RequestParam(value = "q", required = false) final String query,
-            @RequestParam(value = "page", required = false, defaultValue = "1") final int page) {
+            @RequestParam(value = "page", required = false, defaultValue = "1") final int page,
+            final HttpServletRequest request) {
         final User user = currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
@@ -345,7 +342,13 @@ public class AuthController {
 
         final ModelAndView mav = new ModelAndView("bookings");
         mav.addObject("user", user);
-        addMyTripsData(mav, user, resolveBookingStatusFilters(status), normalizeQuery(query), sanitizePage(page));
+        addMyTripsData(
+                mav,
+                user,
+                resolveBookingStatusFilters(status),
+                normalizeQuery(query),
+                sanitizePage(page),
+                request.getContextPath());
         return mav;
     }
 
@@ -354,43 +357,21 @@ public class AuthController {
         return new ModelAndView("redirect:/my-boats");
     }
 
-    private ModelAndView buildProfileView(final User user) {
+    private ModelAndView buildProfileView(final User user, final boolean profileEdit) {
         final ModelAndView mav = new ModelAndView("profile");
         mav.addObject("user", user);
         mav.addObject("memberSinceDisplay", formatMemberSince(user.getCreatedAt()));
+        mav.addObject("profileEdit", profileEdit);
         return mav;
     }
 
-    private void addDashboardData(final ModelAndView mav, final User user) {
-        final List<Item> ownedItems = itemService.listItemsByOwnerId(user.getId());
-        final List<PendingReviewView> pendingReviewActions = buildPendingReviewActions(user.getId());
-        final Map<Integer, PendingReviewView> pendingGuestItemReviewsByBookingId = new LinkedHashMap<>();
-        final Map<Integer, PendingReviewView> pendingOwnerUserReviewsByBookingId = new LinkedHashMap<>();
-        for (final PendingReviewView pendingReview : pendingReviewActions) {
-            if (pendingReview.targetType() == ReviewTargetType.ITEM) {
-                pendingGuestItemReviewsByBookingId.put(pendingReview.bookingId(), pendingReview);
-            } else if (pendingReview.targetType() == ReviewTargetType.USER) {
-                pendingOwnerUserReviewsByBookingId.put(pendingReview.bookingId(), pendingReview);
-            }
-        }
-
-        mav.addObject("ownedItems", ownedItems);
-        mav.addObject("publicationCoverImageIdsByItemId", buildCoverImageIdsByItemId(ownedItems));
-        mav.addObject("publicationDeleteDeactivatesByItemId", buildDeleteDeactivationFlags(ownedItems));
-        mav.addObject("publicationDeleteDisabledByItemId", buildDeleteDisabledFlags(ownedItems));
-        mav.addObject("receivedBookingRequests", buildReceivedBookings(user));
-        mav.addObject("sentBookingRequests", buildSentBookings(user.getId()));
-        mav.addObject("pendingGuestItemReviewsByBookingId", pendingGuestItemReviewsByBookingId);
-        mav.addObject("pendingOwnerUserReviewsByBookingId", pendingOwnerUserReviewsByBookingId);
-        mav.addObject("authoredItemReviewsByBookingId", buildAuthoredItemReviewsByBookingId(user.getId()));
-        mav.addObject("authoredUserReviewsByBookingId", buildAuthoredUserReviewsByBookingId(user.getId()));
-        mav.addObject("receivedGuestReviews", buildReceivedUserReviews(user.getId()));
-        mav.addObject(
-                "receivedItemReviewsByOwnedItems", buildReceivedItemReviewsByOwnedItems(user.getId(), ownedItems));
-    }
-
     private void addMyBoatsData(
-            final ModelAndView mav, final User user, final List<String> statuses, final String query, final int page) {
+            final ModelAndView mav,
+            final User user,
+            final List<String> statuses,
+            final String query,
+            final int page,
+            final String contextPath) {
         final List<Item> ownedItems = itemService.listItemsByOwnerId(user.getId());
         final List<PendingReviewView> pendingReviewActions = buildPendingReviewActions(user.getId());
         final Map<Integer, PendingReviewView> pendingOwnerUserReviewsByBookingId = new LinkedHashMap<>();
@@ -411,6 +392,9 @@ public class AuthController {
 
         mav.addObject("ownedItems", ownedItems);
         mav.addObject("publicationCoverImageIdsByItemId", buildCoverImageIdsByItemId(ownedItems));
+        mav.addObject(
+                "imageUrlsByItemId",
+                buildImageUrlsByItemId(collectItemIds(ownedItems, receivedBookingPage.getContent()), contextPath));
         mav.addObject("publicationDeleteDeactivatesByItemId", buildDeleteDeactivationFlags(ownedItems));
         mav.addObject("publicationDeleteDisabledByItemId", buildDeleteDisabledFlags(ownedItems));
         mav.addObject("receivedBookingRequests", receivedBookingPage.getContent());
@@ -423,7 +407,12 @@ public class AuthController {
     }
 
     private void addMyTripsData(
-            final ModelAndView mav, final User user, final List<String> statuses, final String query, final int page) {
+            final ModelAndView mav,
+            final User user,
+            final List<String> statuses,
+            final String query,
+            final int page,
+            final String contextPath) {
         final List<PendingReviewView> pendingReviewActions = buildPendingReviewActions(user.getId());
         final Map<Integer, PendingReviewView> pendingGuestItemReviewsByBookingId = new LinkedHashMap<>();
         for (final PendingReviewView pendingReview : pendingReviewActions) {
@@ -443,6 +432,9 @@ public class AuthController {
 
         mav.addObject("sentBookingRequests", sentBookingPage.getContent());
         mav.addObject("sentBookingPage", sentBookingPage);
+        mav.addObject(
+                "imageUrlsByItemId",
+                buildImageUrlsByItemId(collectSentItemIds(sentBookingPage.getContent()), contextPath));
         mav.addObject("selectedBookingStatusFilters", statuses);
         mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statuses));
         mav.addObject("boatSearchQuery", query);
@@ -606,6 +598,49 @@ public class AuthController {
         return deactivatesByItemId;
     }
 
+    private static java.util.Set<Integer> collectItemIds(
+            final List<Item> ownedItems, final List<ReceivedBookingView> receivedBookings) {
+        final java.util.LinkedHashSet<Integer> ids = new java.util.LinkedHashSet<>();
+        if (ownedItems != null) {
+            for (final Item item : ownedItems) {
+                if (item != null && item.getId() != null) {
+                    ids.add(item.getId());
+                }
+            }
+        }
+        if (receivedBookings != null) {
+            for (final ReceivedBookingView booking : receivedBookings) {
+                ids.add(booking.getItemId());
+            }
+        }
+        return ids;
+    }
+
+    private static java.util.Set<Integer> collectSentItemIds(final List<SentBookingView> sentBookings) {
+        final java.util.LinkedHashSet<Integer> ids = new java.util.LinkedHashSet<>();
+        if (sentBookings != null) {
+            for (final SentBookingView booking : sentBookings) {
+                ids.add(booking.getItemId());
+            }
+        }
+        return ids;
+    }
+
+    private Map<Integer, String> buildImageUrlsByItemId(
+            final java.util.Set<Integer> itemIds, final String contextPath) {
+        final Map<Integer, String> urls = new LinkedHashMap<>();
+        if (itemIds == null) {
+            return urls;
+        }
+        for (final Integer itemId : itemIds) {
+            if (itemId == null) {
+                continue;
+            }
+            urls.put(itemId, ItemImageUtils.resolveImageUrl(itemService, itemId, contextPath));
+        }
+        return urls;
+    }
+
     private Map<Integer, Integer> buildCoverImageIdsByItemId(final List<Item> items) {
         final Map<Integer, Integer> coverImageIds = new LinkedHashMap<>();
         if (items == null) {
@@ -691,6 +726,9 @@ public class AuthController {
             if (booking.getItemId() == null || booking.getId() == null || booking.getGuestId() == null) {
                 continue;
             }
+            if (booking.getGuestId().equals(owner.getId())) {
+                continue;
+            }
 
             final Item item = itemService
                     .findSnapshotByBookingIdForOwner(booking.getId(), owner.getId())
@@ -761,25 +799,30 @@ public class AuthController {
             if (item == null) {
                 continue;
             }
+            if (item.getOwnerId() != null && item.getOwnerId().equals(guestId)) {
+                continue;
+            }
 
             final User owner = item.getOwnerId() == null
                     ? null
                     : itemService.findUserById(item.getOwnerId()).orElse(null);
             final java.util.Optional<BookingPaymentProof> proof =
                     bookingRequestService.findPaymentProofByBookingId(booking.getId());
+            final boolean exposeContact = shouldExposePaymentAliasToGuest(booking.getState());
             sentBookings.add(new SentBookingView(
                     booking.getId(),
                     booking.getItemId(),
+                    snapshot.map(ItemSnapshot::getVersionId).orElse(null),
                     itemService.findCoverImageIdByItemId(booking.getItemId()).orElse(null),
                     item.getTitle(),
                     owner == null ? "" : owner.getName(),
-                    owner == null ? "" : owner.getEmail(),
+                    exposeContact && owner != null ? owner.getEmail() : "",
                     booking.getStartTime(),
                     booking.getEndTime(),
                     formatDateLabel(booking.getStartTime()),
                     formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
                     formatTotalPriceLabel(booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
-                    shouldExposePaymentAliasToGuest(booking.getState()) ? resolvePaymentAlias(owner) : "",
+                    exposeContact ? resolvePaymentAlias(owner) : "",
                     statusMessageCode(booking.getState()),
                     proof.map(BookingPaymentProof::getContentType).orElse(""),
                     proof.map(BookingPaymentProof::getRefusalReason).orElse(""),
@@ -1172,6 +1215,7 @@ public class AuthController {
     public record SentBookingView(
             int id,
             int itemId,
+            Integer bookedSnapshotVersionId,
             Integer imageId,
             String itemTitle,
             String ownerName,
@@ -1193,6 +1237,10 @@ public class AuthController {
 
         public int getItemId() {
             return itemId;
+        }
+
+        public Integer getBookedSnapshotVersionId() {
+            return bookedSnapshotVersionId;
         }
 
         public Integer getImageId() {

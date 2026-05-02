@@ -4,7 +4,7 @@ prefix="paw" tagdir="/WEB-INF/tags" %> <%@ taglib prefix="spring"
 uri="http://www.springframework.org/tags" %> <%@ page contentType="text/html;
 charset=UTF-8" pageEncoding="UTF-8" %>
 
-<c:url var="homeUrl" value="/" />
+<c:url var="myBoatsUrl" value="/my-boats" />
 <c:url var="publishUrl" value="/publish" />
 <c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
@@ -90,8 +90,8 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 >
   <div class="mb-8">
     <a
-      href="${homeUrl}"
-      class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit"
+      href="${myBoatsUrl}"
+      class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit"
     >
       <span class="material-symbols-outlined">arrow_back</span>
       <span><spring:message code="common.back" /></span>
@@ -106,7 +106,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
       <span><spring:message code="publish.step1.badge" /></span>
     </div>
     <progress
-      class="progress progress-primary mt-3 w-full"
+      class="progress progress-secondary mt-3 w-full"
       value="0"
       max="100"
     ></progress>
@@ -122,7 +122,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 
   <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
     <form:form action="${publishUrl}" method="post" modelAttribute="publishForm" class="space-y-8 lg:col-span-3">
-      <paw:sectionCard icon="directions_boat">
+      <paw:sectionCard icon="directions_boat" hostAccent="true">
         <jsp:attribute name="title"><spring:message code="publish.step1.section.base" /></jsp:attribute>
         <jsp:body>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -195,6 +195,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                 errorPath="locationOptionId"
                 locationRequiredMessage="${publishLocationRequiredMsg}"
                 required="true"
+                hostAccent="true"
               />
             </div>
             <paw:peopleCount
@@ -207,6 +208,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
               max="20"
               errorPath="capacity"
               required="true"
+              hostAccent="true"
             />
             <fieldset class="fieldset">
               <legend
@@ -278,7 +280,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
       </div>
     </form:form>
 
-    <paw:sectionCard element="aside" cssClass="lg:col-span-2" icon="add_a_photo">
+    <paw:sectionCard element="aside" cssClass="lg:col-span-2" icon="add_a_photo" hostAccent="true">
       <jsp:attribute name="title"><spring:message code="publish.step1.section.photo" /></jsp:attribute>
       <jsp:body>
         <paw:imageGalleryEditor
@@ -288,7 +290,8 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             reorderUrl="${publishImagesReorderUrl}"
             maxImages="${maxGalleryImages}"
             errorMessage="${filesError}"
-            displayMode="modal" />
+            displayMode="modal"
+            hostAccent="true" />
         <div class="rounded-xl bg-base-200 p-4 text-sm text-on-surface-variant leading-relaxed">
           <spring:message code="publish.image.note" />
         </div>

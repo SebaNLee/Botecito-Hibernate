@@ -2,7 +2,11 @@ package ar.edu.itba.paw.webapp.form;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class PasswordResetForm {
 
     @NotBlank(message = "{passwordRecovery.reset.validation.password.required}")
@@ -11,20 +15,4 @@ public class PasswordResetForm {
 
     @NotBlank(message = "{passwordRecovery.reset.validation.confirmPassword.required}")
     private String confirmPassword;
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(final String password) {
-        this.password = password;
-    }
-
-    public String getConfirmPassword() {
-        return confirmPassword;
-    }
-
-    public void setConfirmPassword(final String confirmPassword) {
-        this.confirmPassword = confirmPassword;
-    }
 }

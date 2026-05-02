@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.net.URLConnection;
 import java.time.Duration;
 import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,16 +17,12 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 @Controller
 @RequestMapping("/image")
+@RequiredArgsConstructor
 public class ImageController {
 
     private static final Duration IMAGE_CACHE_MAX_AGE = Duration.ofHours(1);
 
     private final ItemService itemService;
-
-    @Autowired
-    public ImageController(final ItemService itemService) {
-        this.itemService = itemService;
-    }
 
     @RequestMapping(value = "/{id:[0-9]+}", method = RequestMethod.GET)
     public ResponseEntity<byte[]> imageById(@PathVariable("id") final int imageId) {

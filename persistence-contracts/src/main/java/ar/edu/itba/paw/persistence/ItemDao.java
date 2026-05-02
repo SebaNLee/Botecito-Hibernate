@@ -66,6 +66,7 @@ public interface ItemDao {
             Integer difficultyLevel,
             int locationOptionId);
 
+    /** True when non-owner guest bookings would block publication edits (excludes owner personal blocks). */
     boolean hasBlockingBookingsForEdition(int itemId);
 
     boolean deleteItemById(int itemId);
@@ -103,6 +104,7 @@ public interface ItemDao {
 
     List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId);
 
+    /** Active edit-conflict bookings; excludes rows where guest_id equals the item owner (personal blocks). */
     List<ItemBooking> listActiveBookingsByItemId(final int itemId);
 
     Optional<ItemBooking> findBookingByHostDecisionToken(final String hostDecisionToken);
@@ -132,6 +134,16 @@ public interface ItemDao {
             final OffsetDateTime endTime,
             final String requestMessage,
             final String hostDecisionToken);
+
+    ItemBooking insertOwnerPersonalBlock(
+            final int itemId,
+            final int ownerId,
+            final OffsetDateTime startTime,
+            final OffsetDateTime endTime,
+            final String hostDecisionToken,
+            final OffsetDateTime hostDecisionRecordedAt);
+
+    boolean markBookingCancelled(int bookingId);
 
     boolean resolveBookingByHostDecisionToken(
             final String hostDecisionToken, final BookingState newState, final OffsetDateTime hostDecisionUsedAt);

@@ -8,6 +8,7 @@ import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,10 @@ public class BookingRequestServiceImplTest {
 
         final OffsetDateTime start = OffsetDateTime.now().plusDays(1);
         final OffsetDateTime end = start.plusHours(2);
+        final Item item = new Item();
+        item.setId(15);
+        item.setOwnerId(99);
+        Mockito.when(itemDao.findAnyItemById(15)).thenReturn(Optional.of(item));
         Mockito.when(itemDao.findUserByEmail("a@a.com")).thenReturn(Optional.of(existingUser));
         Mockito.when(itemDao.createBookingRequest(
                         Mockito.eq(15),
@@ -175,5 +180,142 @@ public class BookingRequestServiceImplTest {
 
         Assertions.assertTrue(result.isPresent());
         Assertions.assertEquals(BookingState.BOOKING_PAID, result.get().getStatus());
+    }
+
+    @Test
+    public void testCreateBookingRequestWhenRequesterIsOwnerThrowsSelfBookingNotAllowed() {
+        final User ownerUser = new User();
+        ownerUser.setId(7);
+        ownerUser.setGivenName("O");
+        ownerUser.setLastName("O");
+        ownerUser.setEmail("o@o.com");
+        ownerUser.setPreferredLanguage("es");
+
+        final Item item = new Item();
+        item.setId(15);
+        item.setOwnerId(7);
+
+        Mockito.when(itemDao.findUserByEmail("o@o.com")).thenReturn(Optional.of(ownerUser));
+        Mockito.when(itemDao.findAnyItemById(15)).thenReturn(Optional.of(item));
+
+        final OffsetDateTime start = OffsetDateTime.now().plusDays(1);
+        final OffsetDateTime end = start.plusHours(2);
+
+        Assertions.assertThrows(
+                SelfBookingNotAllowedException.class,
+                () -> bookingRequestService.createBookingRequest(15, "O", "O", "o@o.com", "es", start, end, "msg"));
+
+        Mockito.verify(itemDao, Mockito.never())
+                .createBookingRequest(
+                        Mockito.anyInt(),
+                        Mockito.anyInt(),
+                        Mockito.any(),
+                        Mockito.any(),
+                        Mockito.anyString(),
+                        Mockito.anyString());
+    }
+
+    @Test
+    public void testCreateOwnerSelfBlockInsertsWhenNoOverlap() {
+        final Item item = new Item();
+        item.setId(10);
+        item.setOwnerId(3);
+
+        final OffsetDateTime start = OffsetDateTime.parse("2030-01-15T10:00:00+00:00");
+        final OffsetDateTime end = OffsetDateTime.parse("2030-01-15T12:00:00+00:00");
+
+        final ItemBooking inserted = new ItemBooking();
+        inserted.setId(100);
+        inserted.setItemId(10);
+        inserted.setGuestId(3);
+        inserted.setState(BookingState.BOOKING_CONFIRMED);
+
+        Mockito.when(itemDao.findItemByIdForOwner(10, 3)).thenReturn(Optional.of(item));
+        Mockito.when(itemDao.listBookingsByItemId(10)).thenReturn(List.of());
+        Mockito.when(itemDao.insertOwnerPersonalBlock(
+                        Mockito.eq(10),
+                        Mockito.eq(3),
+                        Mockito.eq(start),
+                        Mockito.eq(end),
+                        Mockito.anyString(),
+                        Mockito.any()))
+                .thenReturn(inserted);
+
+        final ItemBooking result = bookingRequestService.createOwnerSelfBlock(10, 3, start, end);
+        Assertions.assertEquals(100, result.getId());
+        Mockito.verify(itemDao)
+                .insertOwnerPersonalBlock(
+                        Mockito.eq(10),
+                        Mockito.eq(3),
+                        Mockito.eq(start),
+                        Mockito.eq(end),
+                        Mockito.anyString(),
+                        Mockito.any());
+    }
+
+    @Test
+    public void testCreateOwnerSelfBlockWhenGuestBookingOverlapsThrows() {
+        final Item item = new Item();
+        item.setId(10);
+        item.setOwnerId(3);
+
+        final ItemBooking guestBooking = new ItemBooking();
+        guestBooking.setGuestId(99);
+        guestBooking.setState(BookingState.BOOKING_CONFIRMED);
+        guestBooking.setStartTime(OffsetDateTime.parse("2030-01-15T10:00:00+00:00"));
+        guestBooking.setEndTime(OffsetDateTime.parse("2030-01-15T11:00:00+00:00"));
+
+        Mockito.when(itemDao.findItemByIdForOwner(10, 3)).thenReturn(Optional.of(item));
+        Mockito.when(itemDao.listBookingsByItemId(10)).thenReturn(List.of(guestBooking));
+
+        final OffsetDateTime start = OffsetDateTime.parse("2030-01-15T10:30:00+00:00");
+        final OffsetDateTime end = OffsetDateTime.parse("2030-01-15T12:00:00+00:00");
+
+        Assertions.assertThrows(
+                OverlappingActiveBookingException.class,
+                () -> bookingRequestService.createOwnerSelfBlock(10, 3, start, end));
+
+        Mockito.verify(itemDao, Mockito.never())
+                .insertOwnerPersonalBlock(
+                        Mockito.anyInt(),
+                        Mockito.anyInt(),
+                        Mockito.any(),
+                        Mockito.any(),
+                        Mockito.anyString(),
+                        Mockito.any());
+    }
+
+    @Test
+    public void testRemoveOwnerSelfBlockWhenValidCancelsBooking() {
+        final ItemBooking block = new ItemBooking();
+        block.setId(55);
+        block.setItemId(10);
+        block.setGuestId(3);
+        block.setState(BookingState.BOOKING_CONFIRMED);
+
+        final Item item = new Item();
+        item.setId(10);
+        item.setOwnerId(3);
+
+        Mockito.when(itemDao.findBookingById(55)).thenReturn(Optional.of(block));
+        Mockito.when(itemDao.findAnyItemById(10)).thenReturn(Optional.of(item));
+        Mockito.when(itemDao.markBookingCancelled(55)).thenReturn(true);
+
+        Assertions.assertTrue(bookingRequestService.removeOwnerSelfBlock(55, 3));
+        Mockito.verify(itemDao).markBookingCancelled(55);
+    }
+
+    @Test
+    public void testRemoveOwnerSelfBlockWhenGuestMismatchReturnsFalse() {
+        final ItemBooking block = new ItemBooking();
+        block.setId(55);
+        block.setItemId(10);
+        block.setGuestId(99);
+        block.setState(BookingState.BOOKING_CONFIRMED);
+
+        Mockito.when(itemDao.findBookingById(55)).thenReturn(Optional.of(block));
+
+        Assertions.assertFalse(bookingRequestService.removeOwnerSelfBlock(55, 3));
+        Mockito.verify(itemDao, Mockito.never()).markBookingCancelled(Mockito.anyInt());
     }
 }

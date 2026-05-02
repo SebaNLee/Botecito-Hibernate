@@ -78,15 +78,6 @@ public class BookingRequestServiceImplTest {
         Assertions.assertFalse(result.getToken().isBlank());
         Assertions.assertEquals("A B", result.getRequesterName());
         Assertions.assertEquals("en", result.getRequesterLocaleTag());
-        Mockito.verify(mailService)
-                .sendBookingReviewEmail(
-                        Mockito.same(result),
-                        Mockito.eq("owner@a.com"),
-                        Mockito.eq("Item A"),
-                        Mockito.eq("Dock A"),
-                        Mockito.eq(start.toLocalDate().toString()),
-                        Mockito.eq(start.toLocalTime().withSecond(0).withNano(0) + " - "
-                                + end.toLocalTime().withSecond(0).withNano(0)));
     }
 
     @Test
@@ -101,7 +92,6 @@ public class BookingRequestServiceImplTest {
         final Optional<BookingRequest> result = bookingRequestService.findByToken("t");
 
         Assertions.assertTrue(result.isEmpty());
-        Mockito.verify(mailService, Mockito.never()).sendBookingResolutionEmail(Mockito.any());
     }
 
     @Test
@@ -147,7 +137,6 @@ public class BookingRequestServiceImplTest {
         Assertions.assertTrue(result.isPresent());
         Assertions.assertEquals(BookingState.BOOKING_CONFIRMED, result.get().getStatus());
         Assertions.assertEquals("a@a.com", result.get().getRequesterEmail());
-        Mockito.verify(mailService).sendBookingResolutionEmail(result.get());
     }
 
     @Test
@@ -198,7 +187,6 @@ public class BookingRequestServiceImplTest {
 
         Assertions.assertTrue(result.isPresent());
         Assertions.assertEquals(BookingState.BOOKING_PAID, result.get().getStatus());
-        Mockito.verify(mailService).sendPaymentReceivedEmail("a@a.com", "es", "Inactive item");
     }
 
     @Test

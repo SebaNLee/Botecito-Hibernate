@@ -57,8 +57,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     }
 
     private static OffsetDateTime currentDateTime() {
-        // UTC-3 (otras formas de hacer esto no funcionaron)
-        return OffsetDateTime.now().minusHours(3);
+        return OffsetDateTime.now();
     }
 
     private static void validateAnticipation(final OffsetDateTime bookingStartTime) {
@@ -101,10 +100,13 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         itemDao.expireAllDueBookings(currentDateTime.plusMinutes(MIN_ANTICIPATION_MINUTES));
     }
 
-    @Scheduled(cron = "0 0,30 * * * *")
+    @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void expireDueBookingsSchedule() {
-        LOGGER.info("Running cron job!");
+        LOGGER.info(
+                "Running cron job!, OffsetDateTime: {}, currentDateTime: {} ",
+                OffsetDateTime.now().toString(),
+                currentDateTime().toString());
         expireAllDue(currentDateTime());
     }
 

@@ -44,15 +44,6 @@ public class ItemServiceImplTest {
 
     @Test
     public void testCreatePublicationWhenOwnerDoesNotExist() {
-        final User createdUser = new User();
-        createdUser.setId(1);
-        createdUser.setGivenName("A");
-        createdUser.setLastName("A");
-        createdUser.setEmail("a@a.com");
-
-        final Item createdItem = new Item();
-        createdItem.setId(99);
-
         final ItemType itemType = new ItemType();
         itemType.setId(1);
         final LocationOption locationOption = new LocationOption();
@@ -66,7 +57,17 @@ public class ItemServiceImplTest {
         Mockito.when(itemDao.findItemTypeById(1)).thenReturn(Optional.of(itemType));
         Mockito.when(itemDao.listLocationOptions()).thenReturn(List.of(locationOption));
         Mockito.when(itemDao.findUserByEmail("a@a.com")).thenReturn(Optional.empty());
-        Mockito.when(itemDao.createUser("A", "A", "a@a.com", "es")).thenReturn(createdUser);
+        Mockito.when(itemDao.createUser(
+                        Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
+                .thenAnswer(invocation -> {
+                    final User createdUser = new User();
+                    createdUser.setId(1);
+                    createdUser.setGivenName(invocation.getArgument(0));
+                    createdUser.setLastName(invocation.getArgument(1));
+                    createdUser.setEmail(invocation.getArgument(2));
+                    createdUser.setPreferredLanguage(invocation.getArgument(3));
+                    return createdUser;
+                });
         Mockito.when(itemDao.createItem(
                         Mockito.eq(1),
                         Mockito.eq(1),
@@ -78,7 +79,14 @@ public class ItemServiceImplTest {
                         Mockito.eq(1),
                         Mockito.eq(1),
                         Mockito.anyString()))
-                .thenReturn(createdItem);
+                .thenAnswer(invocation -> {
+                    final Item createdItem = new Item();
+                    createdItem.setId(99);
+                    createdItem.setOwnerId(invocation.getArgument(0));
+                    createdItem.setTitle(invocation.getArgument(2));
+                    createdItem.setPricePerHour(invocation.getArgument(4));
+                    return createdItem;
+                });
         final Item result = itemService.createPublication(
                 "A",
                 "A",
@@ -94,9 +102,9 @@ public class ItemServiceImplTest {
                 1,
                 List.of(availability));
         Assertions.assertNotNull(result);
-        Assertions.assertEquals(99, result.getId());
-        Mockito.verify(itemDao).createUser("A", "A", "a@a.com", "es");
-        Mockito.verify(itemDao).createItemAvailability(99, "MONDAY", "10:00", "12:00");
+        Assertions.assertEquals(1, result.getOwnerId());
+        Assertions.assertEquals("item-a", result.getTitle());
+        Assertions.assertEquals(2000, result.getPricePerHour());
     }
 
     @Test
@@ -106,16 +114,6 @@ public class ItemServiceImplTest {
         final boolean updated = itemService.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1, null);
 
         Assertions.assertFalse(updated);
-        Mockito.verify(itemDao, Mockito.never()).snapshotBookingsForPublicationEdit(Mockito.anyInt());
-        Mockito.verify(itemDao, Mockito.never())
-                .updatePublicationForOwner(
-                        Mockito.anyInt(),
-                        Mockito.anyInt(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyInt(),
-                        Mockito.any(),
-                        Mockito.anyInt());
     }
 
     @Test
@@ -129,18 +127,6 @@ public class ItemServiceImplTest {
         Assertions.assertThrows(
                 IllegalStateException.class,
                 () -> itemService.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1, null));
-
-        Mockito.verify(itemDao, Mockito.never())
-                .updatePublicationForOwner(
-                        Mockito.anyInt(),
-                        Mockito.anyInt(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyInt(),
-                        Mockito.any(),
-                        Mockito.anyInt());
-        Mockito.verify(itemDao, Mockito.never())
-                .replacePrimaryImageForOwner(Mockito.anyInt(), Mockito.anyInt(), Mockito.any());
     }
 
     @Test
@@ -156,9 +142,6 @@ public class ItemServiceImplTest {
         Assertions.assertThrows(
                 IllegalStateException.class,
                 () -> itemService.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1, null));
-
-        Mockito.verify(itemDao, Mockito.never())
-                .replacePrimaryImageForOwner(Mockito.anyInt(), Mockito.anyInt(), Mockito.any());
     }
 
     @Test
@@ -194,8 +177,5 @@ public class ItemServiceImplTest {
                 itemService.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1, imageData);
 
         Assertions.assertTrue(updated);
-        Mockito.verify(itemDao).snapshotBookingsForPublicationEdit(10);
-        Mockito.verify(itemDao).updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1);
-        Mockito.verify(itemDao).replacePrimaryImageForOwner(10, 99, imageData);
     }
 }

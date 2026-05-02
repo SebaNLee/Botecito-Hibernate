@@ -99,33 +99,37 @@ public class BookingRequestActionController {
         }
 
         final boolean isResubmit = booking.getState() == BookingState.BOOKING_PAYMENT_REFUSED;
-        final var proof = bookingRequestService.submitPaymentProof(
-                bookingId,
-                currentUser.getId(),
-                cleanFileName(file.getOriginalFilename()),
-                file.getContentType(),
-                fileBytes,
-                form.getGuestReply());
-        if (proof.isEmpty()) {
-            return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + "submitError#sent-booking-requests");
-        }
+        try {
+            final var proof = bookingRequestService.submitPaymentProof(
+                    bookingId,
+                    currentUser.getId(),
+                    cleanFileName(file.getOriginalFilename()),
+                    file.getContentType(),
+                    fileBytes,
+                    form.getGuestReply());
+            if (proof.isEmpty()) {
+                return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + "submitError#sent-booking-requests");
+            }
 
-        final Item item = booking.getItemId() == null
-                ? null
-                : itemService.findAnyItemById(booking.getItemId()).orElse(null);
-        final User owner = item == null || item.getOwnerId() == null
-                ? null
-                : itemService.findUserById(item.getOwnerId()).orElse(null);
-        if (item != null && owner != null) {
-            mailService.sendPaymentProofSubmittedEmail(
-                    owner.getEmail(),
-                    currentUser.getName(),
-                    item.getTitle(),
-                    proof.get().getFileData(),
-                    proof.get().getContentType());
+            final Item item = booking.getItemId() == null
+                    ? null
+                    : itemService.findAnyItemById(booking.getItemId()).orElse(null);
+            final User owner = item == null || item.getOwnerId() == null
+                    ? null
+                    : itemService.findUserById(item.getOwnerId()).orElse(null);
+            if (item != null && owner != null) {
+                mailService.sendPaymentProofSubmittedEmail(
+                        owner.getEmail(),
+                        currentUser.getName(),
+                        item.getTitle(),
+                        proof.get().getFileData(),
+                        proof.get().getContentType());
+            }
+            final String action = isResubmit ? "resubmitted" : "submitted";
+            return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + action + "#sent-booking-requests");
+        } catch (final RuntimeException e) {
+            return new ModelAndView("redirect:/dashboard?paymentAction=submitError#sent-booking-requests");
         }
-        final String action = isResubmit ? "resubmitted" : "submitted";
-        return new ModelAndView(DASHBOARD_BOOKINGS_PAYMENT_REDIRECT + action + "#sent-booking-requests");
     }
 
     @RequestMapping(value = "/bookings/{id:[0-9]+}/payment/refuse", method = RequestMethod.POST)
@@ -141,21 +145,26 @@ public class BookingRequestActionController {
             return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "refuseError#received-booking-requests");
         }
 
-        final var refused = bookingRequestService.refusePaymentProof(bookingId, currentUser.getId(), form.getReason());
-        if (refused.isEmpty()) {
-            return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "refuseError#received-booking-requests");
-        }
+        try {
+            final var refused =
+                    bookingRequestService.refusePaymentProof(bookingId, currentUser.getId(), form.getReason());
+            if (refused.isEmpty()) {
+                return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "refuseError#received-booking-requests");
+            }
 
-        final Item item = refused.get().getItemId() == null
-                ? null
-                : itemService.findAnyItemById(refused.get().getItemId()).orElse(null);
-        mailService.sendPaymentProofRefusedEmail(
-                refused.get().getRequesterEmail(),
-                refused.get().getRequesterLocaleTag(),
-                currentUser.getName(),
-                item == null ? "" : item.getTitle(),
-                form.getReason());
-        return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "refused#received-booking-requests");
+            final Item item = refused.get().getItemId() == null
+                    ? null
+                    : itemService.findAnyItemById(refused.get().getItemId()).orElse(null);
+            mailService.sendPaymentProofRefusedEmail(
+                    refused.get().getRequesterEmail(),
+                    refused.get().getRequesterLocaleTag(),
+                    currentUser.getName(),
+                    item == null ? "" : item.getTitle(),
+                    form.getReason());
+            return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "refused#received-booking-requests");
+        } catch (final RuntimeException e) {
+            return new ModelAndView("redirect:/profile/dashboard?paymentAction=refuseError#received-booking-requests");
+        }
     }
 
     @RequestMapping(value = "/bookings/{id:[0-9]+}/payment-proof", method = RequestMethod.GET)
@@ -195,19 +204,23 @@ public class BookingRequestActionController {
             return new ModelAndView("redirect:/login");
         }
 
-        final var resolved = bookingRequestService.confirmPaymentReceived(bookingId, currentUser.getId());
-        if (resolved.isEmpty()) {
-            return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "confirmError#received-booking-requests");
-        }
+        try {
+            final var resolved = bookingRequestService.confirmPaymentReceived(bookingId, currentUser.getId());
+            if (resolved.isEmpty()) {
+                return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "confirmError#received-booking-requests");
+            }
 
-        final Item item = resolved.get().getItemId() == null
-                ? null
-                : itemService.findAnyItemById(resolved.get().getItemId()).orElse(null);
-        mailService.sendPaymentReceivedEmail(
-                resolved.get().getRequesterEmail(),
-                resolved.get().getRequesterLocaleTag(),
-                item == null ? "" : item.getTitle());
-        return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "paid#received-booking-requests");
+            final Item item = resolved.get().getItemId() == null
+                    ? null
+                    : itemService.findAnyItemById(resolved.get().getItemId()).orElse(null);
+            mailService.sendPaymentReceivedEmail(
+                    resolved.get().getRequesterEmail(),
+                    resolved.get().getRequesterLocaleTag(),
+                    item == null ? "" : item.getTitle());
+            return new ModelAndView(DASHBOARD_HOSTING_PAYMENT_REDIRECT + "paid#received-booking-requests");
+        } catch (final RuntimeException e) {
+            return new ModelAndView("redirect:/dashboard?paymentAction=confirmError#received-booking-requests");
+        }
     }
 
     private ModelAndView resolveBookingRequestInAccount(final int bookingId, final BookingState bookingState) {
@@ -229,14 +242,19 @@ public class BookingRequestActionController {
             return new ModelAndView("redirect:/my-boats?bookingAction=forbidden#received-booking-requests");
         }
 
-        final var resolved = bookingRequestService.resolveBookingRequest(booking.getHostDecisionToken(), bookingState);
-        if (resolved.isEmpty()) {
-            return new ModelAndView("redirect:/my-boats?bookingAction=error#received-booking-requests");
-        }
+        try {
+            final var resolved =
+                    bookingRequestService.resolveBookingRequest(booking.getHostDecisionToken(), bookingState);
+            if (resolved.isEmpty()) {
+                return new ModelAndView("redirect:/my-boats?bookingAction=error#received-booking-requests");
+            }
 
-        mailService.sendBookingResolutionEmail(resolved.get());
-        final String action = bookingState == BookingState.BOOKING_CONFIRMED ? "accepted" : "rejected";
-        return new ModelAndView("redirect:/my-boats?bookingAction=" + action + "#received-booking-requests");
+            mailService.sendBookingResolutionEmail(resolved.get());
+            final String action = bookingState == BookingState.BOOKING_CONFIRMED ? "accepted" : "rejected";
+            return new ModelAndView("redirect:/my-boats?bookingAction=" + action + "#received-booking-requests");
+        } catch (final RuntimeException e) {
+            return new ModelAndView("redirect:/dashboard?bookingAction=error#received-booking-requests");
+        }
     }
 
     private ItemBooking findBookingById(final int bookingId) {

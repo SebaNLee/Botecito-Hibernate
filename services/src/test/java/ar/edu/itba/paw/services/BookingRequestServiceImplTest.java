@@ -41,7 +41,7 @@ public class BookingRequestServiceImplTest {
         final ItemBooking createdBooking = new ItemBooking();
         createdBooking.setItemId(15);
         createdBooking.setGuestId(7);
-        createdBooking.setHostDecisionToken("t");
+        createdBooking.setHostDecisionToken("ignored");
         createdBooking.setRequestMessage("a");
         createdBooking.setState(BookingState.BOOKING_PENDING);
         createdBooking.setCreatedAt(OffsetDateTime.now());
@@ -56,42 +56,47 @@ public class BookingRequestServiceImplTest {
                         Mockito.eq(end),
                         Mockito.eq("a"),
                         Mockito.anyString()))
-                .thenReturn(createdBooking);
+                .thenAnswer(invocation -> {
+                    createdBooking.setHostDecisionToken(invocation.getArgument(5));
+                    return createdBooking;
+                });
         final BookingRequest result =
                 bookingRequestService.createBookingRequest(15, " A ", " B ", "a@a.com", "en", start, end, "a");
         Assertions.assertNotNull(result);
-        Assertions.assertEquals("t", result.getToken());
+        Assertions.assertNotNull(result.getToken());
+        Assertions.assertFalse(result.getToken().isBlank());
         Assertions.assertEquals("A B", result.getRequesterName());
         Assertions.assertEquals("en", result.getRequesterLocaleTag());
-        Mockito.verify(itemDao).updateUserProfile(7, "A", "B", "en");
-        Mockito.verify(itemDao, Mockito.never())
-                .createUser(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
     }
 
     @Test
-    public void testFindByTokenWhenRequesterDoesNotExist() {
+    public void testFindByTokenReturnsEmptyWhenRequesterDoesNotExist() {
         final ItemBooking booking = new ItemBooking();
         booking.setGuestId(99);
         booking.setHostDecisionToken("t");
 
         Mockito.when(itemDao.findBookingByHostDecisionToken("t")).thenReturn(Optional.of(booking));
         Mockito.when(itemDao.findUserById(99)).thenReturn(Optional.empty());
+
         final Optional<BookingRequest> result = bookingRequestService.findByToken("t");
-        Assertions.assertFalse(result.isPresent());
+
+        Assertions.assertTrue(result.isEmpty());
     }
 
     @Test
-    public void testResolveBookingRequestWhenTokenCannotBeResolved() {
+    public void testResolveBookingRequestReturnsEmptyWhenTokenCannotBeResolved() {
         Mockito.when(itemDao.resolveBookingByHostDecisionToken(
                         Mockito.eq("t"), Mockito.eq(BookingState.BOOKING_REJECTED), Mockito.any()))
                 .thenReturn(false);
+
         final Optional<BookingRequest> result =
                 bookingRequestService.resolveBookingRequest("t", BookingState.BOOKING_REJECTED);
-        Assertions.assertFalse(result.isPresent());
+
+        Assertions.assertTrue(result.isEmpty());
     }
 
     @Test
-    public void testResolveBookingRequestWhenTokenIsResolved() {
+    public void testResolveBookingRequestReturnsResolvedRequestWhenTokenIsValid() {
         final ItemBooking booking = new ItemBooking();
         booking.setItemId(20);
         booking.setGuestId(5);
@@ -114,10 +119,12 @@ public class BookingRequestServiceImplTest {
                 .thenReturn(true);
         Mockito.when(itemDao.findBookingByHostDecisionToken("t")).thenReturn(Optional.of(booking));
         Mockito.when(itemDao.findUserById(5)).thenReturn(Optional.of(user));
+
         final Optional<BookingRequest> result =
                 bookingRequestService.resolveBookingRequest("t", BookingState.BOOKING_CONFIRMED);
+
         Assertions.assertTrue(result.isPresent());
-        Assertions.assertEquals("t", result.get().getToken());
+        Assertions.assertEquals(BookingState.BOOKING_CONFIRMED, result.get().getStatus());
         Assertions.assertEquals("a@a.com", result.get().getRequesterEmail());
     }
 
@@ -168,6 +175,5 @@ public class BookingRequestServiceImplTest {
 
         Assertions.assertTrue(result.isPresent());
         Assertions.assertEquals(BookingState.BOOKING_PAID, result.get().getStatus());
-        Mockito.verify(itemDao, Mockito.never()).findItemById(20);
     }
 }

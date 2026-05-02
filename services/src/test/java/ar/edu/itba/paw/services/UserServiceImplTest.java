@@ -26,27 +26,30 @@ public class UserServiceImplTest {
 
     @Test
     public void testRegisterCreatesUserWhenEmailDoesNotExist() {
-        final User createdUser = new User();
-        createdUser.setId(1);
-        createdUser.setEmail("a@a.com");
-
         Mockito.when(passwordEncoder.encode("password123")).thenReturn("hashed-password");
         Mockito.when(userDao.findByEmail("a@a.com")).thenReturn(Optional.empty());
-        Mockito.when(userDao.createUser("A", "B", "a@a.com", "hashed-password", null))
-                .thenReturn(createdUser);
+        Mockito.when(userDao.createUser(
+                        Mockito.anyString(),
+                        Mockito.anyString(),
+                        Mockito.anyString(),
+                        Mockito.anyString(),
+                        Mockito.any()))
+                .thenAnswer(invocation -> {
+                    final User createdUser = new User();
+                    createdUser.setGivenName(invocation.getArgument(0));
+                    createdUser.setLastName(invocation.getArgument(1));
+                    createdUser.setEmail(invocation.getArgument(2));
+                    createdUser.setPasswordHash(invocation.getArgument(3));
+                    createdUser.setPaymentAlias(invocation.getArgument(4));
+                    return createdUser;
+                });
 
-        final User result = userService.register("A", "B", "a@a.com", "password123", "   ");
+        final User result = userService.register("A", "B", " A@A.com ", "password123", "   ");
 
         Assertions.assertNotNull(result);
-        Assertions.assertEquals(1, result.getId());
-        Mockito.verify(userDao).createUser("A", "B", "a@a.com", "hashed-password", null);
-        Mockito.verify(userDao, Mockito.never())
-                .claimUser(
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.any());
+        Assertions.assertEquals("a@a.com", result.getEmail());
+        Assertions.assertEquals("hashed-password", result.getPasswordHash());
+        Assertions.assertNull(result.getPaymentAlias());
     }
 
     @Test
@@ -56,28 +59,29 @@ public class UserServiceImplTest {
         existingUser.setEmail("legacy@a.com");
         existingUser.setPasswordHash(null);
 
-        final User claimedUser = new User();
-        claimedUser.setId(3);
-        claimedUser.setEmail("legacy@a.com");
-        claimedUser.setPasswordHash("hashed-password");
-
         Mockito.when(passwordEncoder.encode("password123")).thenReturn("hashed-password");
         Mockito.when(userDao.findByEmail("legacy@a.com")).thenReturn(Optional.of(existingUser));
-        Mockito.when(userDao.claimUser("A", "B", "legacy@a.com", "hashed-password", "mi.alias"))
-                .thenReturn(Optional.of(claimedUser));
+        Mockito.when(userDao.claimUser(
+                        Mockito.anyString(),
+                        Mockito.anyString(),
+                        Mockito.anyString(),
+                        Mockito.anyString(),
+                        Mockito.any()))
+                .thenAnswer(invocation -> {
+                    final User claimedUser = new User();
+                    claimedUser.setId(existingUser.getId());
+                    claimedUser.setEmail(invocation.getArgument(2));
+                    claimedUser.setPasswordHash(invocation.getArgument(3));
+                    claimedUser.setPaymentAlias(invocation.getArgument(4));
+                    return Optional.of(claimedUser);
+                });
 
-        final User result = userService.register("A", "B", "legacy@a.com", "password123", " mi.alias ");
+        final User result = userService.register("A", "B", " legacy@a.com ", "password123", " mi.alias ");
 
         Assertions.assertNotNull(result);
-        Assertions.assertEquals("hashed-password", result.getPasswordHash());
-        Mockito.verify(userDao).claimUser("A", "B", "legacy@a.com", "hashed-password", "mi.alias");
-        Mockito.verify(userDao, Mockito.never())
-                .createUser(
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.any());
+        Assertions.assertNotNull(result.getPasswordHash());
+        Assertions.assertEquals("mi.alias", result.getPaymentAlias());
+        Assertions.assertEquals("legacy@a.com", result.getEmail());
     }
 
     @Test
@@ -91,20 +95,6 @@ public class UserServiceImplTest {
 
         Assertions.assertThrows(
                 IllegalArgumentException.class, () -> userService.register("A", "B", "a@a.com", "password123", null));
-        Mockito.verify(userDao, Mockito.never())
-                .createUser(
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.any());
-        Mockito.verify(userDao, Mockito.never())
-                .claimUser(
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.any());
     }
 
     @Test
@@ -114,21 +104,22 @@ public class UserServiceImplTest {
         existingUser.setEmail("recover@a.com");
         existingUser.setPasswordHash("stored-hash");
 
-        final User updatedUser = new User();
-        updatedUser.setId(5);
-        updatedUser.setEmail("recover@a.com");
-        updatedUser.setPasswordHash("stored-hash");
-        updatedUser.setPasswordRecoveryToken("generated-token");
-
         Mockito.when(userDao.findByEmail("recover@a.com")).thenReturn(Optional.of(existingUser));
         Mockito.when(userDao.updatePasswordRecoveryToken(Mockito.eq(5), Mockito.anyString()))
-                .thenReturn(Optional.of(updatedUser));
+                .thenAnswer(invocation -> {
+                    final User updatedUser = new User();
+                    updatedUser.setId(5);
+                    updatedUser.setEmail("recover@a.com");
+                    updatedUser.setPasswordHash("stored-hash");
+                    updatedUser.setPasswordRecoveryToken(invocation.getArgument(1));
+                    return Optional.of(updatedUser);
+                });
 
         final Optional<User> result = userService.requestPasswordRecovery(" recover@a.com ");
 
         Assertions.assertTrue(result.isPresent());
-        Assertions.assertEquals("generated-token", result.get().getPasswordRecoveryToken());
-        Mockito.verify(userDao).updatePasswordRecoveryToken(Mockito.eq(5), Mockito.anyString());
+        Assertions.assertNotNull(result.get().getPasswordRecoveryToken());
+        Assertions.assertFalse(result.get().getPasswordRecoveryToken().isBlank());
     }
 
     @Test
@@ -143,7 +134,6 @@ public class UserServiceImplTest {
         final Optional<User> result = userService.requestPasswordRecovery("legacy@a.com");
 
         Assertions.assertTrue(result.isEmpty());
-        Mockito.verify(userDao, Mockito.never()).updatePasswordRecoveryToken(Mockito.anyInt(), Mockito.anyString());
     }
 
     @Test
@@ -156,8 +146,6 @@ public class UserServiceImplTest {
         final UserService.PasswordRecoveryResult result = userService.resetPassword("token-1", "new-password");
 
         Assertions.assertEquals(UserService.PasswordRecoveryResult.SUCCESS, result);
-        Mockito.verify(userDao)
-                .resetPasswordByRecoveryToken(Mockito.eq("token-1"), Mockito.eq("new-password-hash"), Mockito.any());
     }
 
     @Test

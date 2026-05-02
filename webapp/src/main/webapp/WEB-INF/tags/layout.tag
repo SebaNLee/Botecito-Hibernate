@@ -30,6 +30,7 @@
       <jsp:doBody />
     </main>
     <paw:siteFooter />
+    <script src="<c:url value='/js/dismissible-alerts.js' />"></script>
     <script type="module" src="<c:url value='/js/cally-loader.js' />"></script>
     <script src="<c:url value='/js/date-time-picker.js' />"></script>
     <script src="<c:url value='/js/search-filters.js' />"></script>

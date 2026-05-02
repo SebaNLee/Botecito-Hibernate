@@ -20,6 +20,7 @@
 <spring:message code="profile.publications.delete.confirm.confirm" var="deleteConfirmConfirm" />
 <spring:message code="profile.publications.delete.confirm.cancel" var="deleteConfirmCancel" />
 <spring:message code="profile.publications.delete.disabled.futureBookings" var="deleteDisabledFutureBookingsLabel" />
+<spring:message code="profile.publications.viewDetail" var="publicationViewDetailLabel" />
 <spring:message code="profile.bookings.accept" var="acceptLabel" />
 <spring:message code="profile.bookings.decline" var="declineLabel" />
 <spring:message code="payment.confirm.button" var="paymentConfirmLabel" />
@@ -41,7 +42,7 @@
           <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="myBoats.title" /></h1>
           <p class="text-on-surface-variant mt-2 m-0"><spring:message code="myBoats.subtitle" /></p>
         </div>
-        <a href="${publishUrl}" class="btn btn-primary w-[70%] self-center no-underline sm:w-auto sm:self-auto sm:shrink-0">
+        <a href="${publishUrl}" class="btn btn-secondary w-[70%] self-center no-underline sm:w-auto sm:self-auto sm:shrink-0">
           <span class="material-symbols-outlined text-base">add</span>
           <c:out value="${publishCtaLabel}" />
         </a>
@@ -62,9 +63,11 @@
               <c:when test="${not empty ownedItems}">
                 <div class="grid grid-cols-2 gap-2 px-1 sm:px-3 md:gap-3">
                   <c:forEach var="item" items="${ownedItems}">
-                    <c:url var="itemUrl" value="/item/${item.id}" />
+                    <c:url var="itemDetailUrl" value="/item/${item.id}" />
                     <c:url var="editItemUrl" value="/profile/item/${item.id}/edit" />
-                    <c:url var="manageAvailabilityItemUrl" value="/profile/item/${item.id}/availability" />
+                    <c:url var="manageAvailabilityItemUrl" value="/profile/item/${item.id}/availability">
+                      <c:param name="return" value="/my-boats" />
+                    </c:url>
                     <c:url var="disableItemUrl" value="/profile/item/${item.id}/disable" />
                     <c:url var="enableItemUrl" value="/profile/item/${item.id}/enable" />
                     <c:url var="deleteItemUrl" value="/profile/item/${item.id}/delete" />
@@ -77,7 +80,7 @@
                     <c:set var="pubDeleteDeactivates" value="${publicationDeleteDeactivatesByItemId[item.id]}" />
                     <c:set var="deleteModalMessage" value="${pubDeleteDeactivates ? deleteDeactivateConfirmMessage : deleteConfirmMessage}" />
                     <c:set var="deleteModalConfirmText" value="${pubDeleteDeactivates ? disableLabel : deleteConfirmConfirm}" />
-                    <c:set var="deleteModalConfirmColor" value="${pubDeleteDeactivates ? 'primary' : 'danger'}" />
+                    <c:set var="deleteModalConfirmColor" value="${pubDeleteDeactivates ? 'secondary' : 'danger'}" />
                     <c:set var="deleteModalIcon" value="${pubDeleteDeactivates ? 'visibility_off' : 'delete_forever'}" />
                     <c:set var="deleteDisabled" value="${publicationDeleteDisabledByItemId[item.id]}" />
                     <button type="button" class="flex h-full w-full flex-col gap-2 rounded-xl bg-base-200 p-2 text-left transition hover:bg-base-300 sm:p-3 ${item.active ? '' : 'opacity-75'}" onclick="document.getElementById('${detailsModalId}').showModal()">
@@ -220,7 +223,7 @@
                 <span class="label-text text-xs font-bold uppercase tracking-wider text-outline"><spring:message code="dashboard.filters.boatName" /></span>
                 <span class="join w-full">
                   <input type="search" name="q" value="${fn:escapeXml(boatSearchQuery)}" class="input input-bordered input-sm join-item w-full" placeholder="<spring:message code="dashboard.filters.boatName.placeholder" />" />
-                  <button type="submit" class="btn btn-primary btn-sm join-item px-3" aria-label="<spring:message code="dashboard.filters.search" />">
+                  <button type="submit" class="btn btn-secondary btn-sm join-item px-3" aria-label="<spring:message code="dashboard.filters.search" />">
                     <span class="material-symbols-outlined text-base">search</span>
                   </button>
                 </span>
@@ -442,7 +445,7 @@
                           <input type="hidden" name="returnTo" value="dashboardHosting" />
                           <div class="flex items-start justify-between gap-2">
                             <p class="m-0 min-w-0 truncate text-xs text-on-surface-variant"><c:out value="${ownerPendingReview.targetName}" /> · <c:out value="${ownerPendingReview.targetEmail}" /></p>
-                            <span class="badge badge-primary badge-sm shrink-0 font-bold"><c:out value="${reviewTargetUserLabel}" /></span>
+                            <span class="badge badge-secondary badge-sm shrink-0 font-bold"><c:out value="${reviewTargetUserLabel}" /></span>
                           </div>
                           <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
                             <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-owner-rating-${receivedRequest.id}"><c:out value="${reviewRatingLabel}" /></label>
@@ -459,7 +462,7 @@
                             <label class="text-xs font-bold uppercase tracking-wider text-outline mt-2" for="review-owner-comment-${receivedRequest.id}"><c:out value="${reviewCommentLabel}" /></label>
                             <textarea id="review-owner-comment-${receivedRequest.id}" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
                           </div>
-                          <paw:button type="submit" color="primary" size="sm" text="${reviewSubmitLabel}" />
+                          <paw:button type="submit" color="secondary" size="sm" text="${reviewSubmitLabel}" />
                         </form>
                       </c:if>
                     </paw:detailsModal>

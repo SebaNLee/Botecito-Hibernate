@@ -271,14 +271,16 @@ public class AuthController {
     }
 
     @RequestMapping(value = "/profile", method = RequestMethod.GET)
-    public ModelAndView profile(@ModelAttribute("profileForm") final ProfileForm form) {
+    public ModelAndView profile(
+            @RequestParam(value = "edit", defaultValue = "false") final boolean edit,
+            @ModelAttribute("profileForm") final ProfileForm form) {
         final User user = currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
 
         populateProfileForm(form, user);
-        return buildProfileView(user);
+        return buildProfileView(user, edit);
     }
 
     @RequestMapping(value = "/profile", method = RequestMethod.POST)
@@ -290,7 +292,7 @@ public class AuthController {
         }
 
         if (errors.hasErrors()) {
-            return buildProfileView(currentUser);
+            return buildProfileView(currentUser, true);
         }
 
         final User updatedUser = userService
@@ -305,7 +307,7 @@ public class AuthController {
                 .orElse(null);
         if (updatedUser == null) {
             errors.rejectValue("email", "profile.validation.email.duplicate");
-            return buildProfileView(currentUser);
+            return buildProfileView(currentUser, true);
         }
 
         refreshAuthenticatedPrincipal(updatedUser);
@@ -354,10 +356,11 @@ public class AuthController {
         return new ModelAndView("redirect:/my-boats");
     }
 
-    private ModelAndView buildProfileView(final User user) {
+    private ModelAndView buildProfileView(final User user, final boolean profileEdit) {
         final ModelAndView mav = new ModelAndView("profile");
         mav.addObject("user", user);
         mav.addObject("memberSinceDisplay", formatMemberSince(user.getCreatedAt()));
+        mav.addObject("profileEdit", profileEdit);
         return mav;
     }
 
@@ -663,6 +666,9 @@ public class AuthController {
             if (booking.getItemId() == null || booking.getId() == null || booking.getGuestId() == null) {
                 continue;
             }
+            if (booking.getGuestId().equals(owner.getId())) {
+                continue;
+            }
 
             final Item item = itemService
                     .findSnapshotByBookingIdForOwner(booking.getId(), owner.getId())
@@ -733,6 +739,9 @@ public class AuthController {
             if (item == null) {
                 continue;
             }
+            if (item.getOwnerId() != null && item.getOwnerId().equals(guestId)) {
+                continue;
+            }
 
             final User owner = item.getOwnerId() == null
                     ? null
@@ -743,6 +752,7 @@ public class AuthController {
             sentBookings.add(new SentBookingView(
                     booking.getId(),
                     booking.getItemId(),
+                    snapshot.map(ItemSnapshot::getVersionId).orElse(null),
                     itemService.findCoverImageIdByItemId(booking.getItemId()).orElse(null),
                     item.getTitle(),
                     owner == null ? "" : owner.getName(),
@@ -1145,6 +1155,7 @@ public class AuthController {
     public record SentBookingView(
             int id,
             int itemId,
+            Integer bookedSnapshotVersionId,
             Integer imageId,
             String itemTitle,
             String ownerName,
@@ -1166,6 +1177,10 @@ public class AuthController {
 
         public int getItemId() {
             return itemId;
+        }
+
+        public Integer getBookedSnapshotVersionId() {
+            return bookedSnapshotVersionId;
         }
 
         public Integer getImageId() {

@@ -10,11 +10,11 @@ import ar.edu.itba.paw.models.RatingSummary;
 import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
-import ar.edu.itba.paw.services.DisabledTimeSlotService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.ReviewService;
+import ar.edu.itba.paw.services.SelfBookingNotAllowedException;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import java.math.BigDecimal;
@@ -55,7 +55,6 @@ public class MarketplaceController {
     private final MailService mailService;
     private final BookingRequestService bookingRequestService;
     private final UserService userService;
-    private final DisabledTimeSlotService disabledTimeSlotService;
     private final ReviewService reviewService;
 
     @Autowired
@@ -64,13 +63,11 @@ public class MarketplaceController {
             final MailService mailService,
             final BookingRequestService bookingRequestService,
             final UserService userService,
-            final DisabledTimeSlotService disabledTimeSlotService,
             final ReviewService reviewService) {
         this.itemService = itemService;
         this.mailService = mailService;
         this.bookingRequestService = bookingRequestService;
         this.userService = userService;
-        this.disabledTimeSlotService = disabledTimeSlotService;
         this.reviewService = reviewService;
     }
 
@@ -123,9 +120,7 @@ public class MarketplaceController {
                 mav,
                 "search",
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilities(),
-                        itemService.listBookings(),
-                        disabledTimeSlotService.listAll()));
+                        itemService.listAvailabilities(), itemService.listBookings()));
         return mav;
     }
 
@@ -200,6 +195,10 @@ public class MarketplaceController {
         }
 
         final Optional<User> owner = itemService.findUserById(item.get().getOwnerId());
+        if (item.get().getOwnerId() != null && item.get().getOwnerId().equals(currentUser.getId())) {
+            errors.reject("reservation.selfBooking");
+            return buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
+        }
         if (!errors.hasFieldErrors("date")
                 && !errors.hasFieldErrors("startTime")
                 && !errors.hasFieldErrors("endTime")
@@ -235,6 +234,9 @@ public class MarketplaceController {
             mav.addObject("mailSuccessCode", "reservation.request.success");
             mav.addObject("mailSuccessHostName", owner.map(User::getName).orElse(""));
             return mav;
+        } catch (final SelfBookingNotAllowedException e) {
+            errors.reject("reservation.selfBooking");
+            return buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
         } catch (final IllegalArgumentException e) {
             final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
             mav.addObject("mailErrorCode", "reservation.request.error");
@@ -247,10 +249,39 @@ public class MarketplaceController {
             final int itemId,
             final Integer snapshotVersionId,
             final ReservationRequestForm form) {
-        final Optional<Item> item = itemService.findItemById(itemId);
+        final User currentUser = currentAuthenticatedUser();
+
+        if (snapshotVersionId != null && currentUser == null) {
+            return new ModelAndView("redirect:/login");
+        }
+
+        final Optional<ItemSnapshot> selectedSnapshot = snapshotVersionId == null || currentUser == null
+                ? Optional.empty()
+                : resolveAuthorizedSnapshotVersion(snapshotVersionId, itemId, currentUser);
+        if (snapshotVersionId != null && selectedSnapshot.isEmpty()) {
+            return new ModelAndView("redirect:/marketplace");
+        }
+
+        Optional<Item> item = itemService.findItemById(itemId);
+        if (item.isEmpty() && currentUser != null) {
+            item = itemService.findItemByIdForOwner(itemId, currentUser.getId());
+        }
+        if (item.isEmpty() && selectedSnapshot.isPresent()) {
+            item = itemService.findAnyItemById(itemId);
+        }
         if (item.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
         }
+
+        final boolean isOwner = currentUser != null
+                && item.get().getOwnerId() != null
+                && item.get().getOwnerId().equals(currentUser.getId());
+        final boolean isActive = Boolean.TRUE.equals(item.get().getActive());
+        if (!isActive && !isOwner && selectedSnapshot.isEmpty()) {
+            return new ModelAndView("redirect:/marketplace");
+        }
+
+        final boolean hideListingLiveVersionNavigation = selectedSnapshot.isPresent() && !isActive && !isOwner;
 
         final Optional<User> owner = itemService.findUserById(item.get().getOwnerId());
         final Optional<ItemType> itemType =
@@ -268,10 +299,6 @@ public class MarketplaceController {
                     .orElse("");
             reviewAuthorNames.put(review.getReviewerUserId(), authorName);
         }
-        final User currentUser = currentAuthenticatedUser();
-        final Optional<ItemSnapshot> selectedSnapshot = currentUser == null || snapshotVersionId == null
-                ? Optional.empty()
-                : resolveAuthorizedSnapshotVersion(snapshotVersionId, itemId, currentUser);
         final Item displayItem =
                 selectedSnapshot.<Item>map(snapshot -> snapshot).orElse(item.get());
         final String displayImageUrl = selectedSnapshot
@@ -286,15 +313,16 @@ public class MarketplaceController {
                 : ItemImageUtils.resolveImageUrls(itemService, itemId, servletContextPath);
         final AvailabilityPickerSupport.AvailabilityPickerData reservationAvailability =
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilitiesByItemId(itemId),
-                        itemService.listBookingsByItemId(itemId),
-                        disabledTimeSlotService.listByItem(itemId));
+                        itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
         final List<String> offeredDates = reservationAvailability.getOfferedDates();
         final Map<String, List<String>> offeredTimesByDate = reservationAvailability.getOfferedTimesByDate();
         final ModelAndView mav = new ModelAndView("marketplace-item");
         mav.addObject("item", item.get());
+        mav.addObject("isOwner", isOwner);
         mav.addObject("displayItem", displayItem);
         mav.addObject("selectedSnapshot", selectedSnapshot.orElse(null));
+        mav.addObject("hideListingLiveVersionNavigation", hideListingLiveVersionNavigation);
+        mav.addObject("listingInactiveNotice", !isActive);
         mav.addObject(
                 "guestSnapshots",
                 currentUser == null
@@ -445,9 +473,7 @@ public class MarketplaceController {
 
         final AvailabilityPickerSupport.AvailabilityPickerData availabilityData =
                 AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilitiesByItemId(itemId),
-                        itemService.listBookingsByItemId(itemId),
-                        disabledTimeSlotService.listByItem(itemId));
+                        itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
         final List<String> availableTimes =
                 availabilityData.getOfferedTimesByDate().get(requestedDate);
 

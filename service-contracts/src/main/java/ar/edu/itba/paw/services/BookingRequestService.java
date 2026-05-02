@@ -3,6 +3,7 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
+import ar.edu.itba.paw.models.ItemBooking;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -32,4 +33,8 @@ public interface BookingRequestService {
     Optional<BookingRequest> refusePaymentProof(int bookingId, int ownerId, String reason);
 
     Optional<BookingPaymentProof> findPaymentProofByBookingId(int bookingId);
+
+    ItemBooking createOwnerSelfBlock(int itemId, int ownerId, OffsetDateTime startTime, OffsetDateTime endTime);
+
+    boolean removeOwnerSelfBlock(int bookingId, int ownerId);
 }

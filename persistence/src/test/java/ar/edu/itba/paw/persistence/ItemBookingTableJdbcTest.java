@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.ItemSnapshot;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.List;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -155,6 +156,31 @@ public class ItemBookingTableJdbcTest {
 
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update("UPDATE item_booking SET item_version_id = ? WHERE id = ?", versionId, otherBooking.getId()));
+    }
+
+    @Test
+    public void testListActiveBookingsByItemIdExcludesOwnerPersonalBlock() {
+        final int ownerId = insertUser("owner-self-block@active-list.com");
+        final int guestId = insertUser("real-guest@active-list.com");
+        final int itemId = insertItem(ownerId, "item-active-list-owner-block");
+        final OffsetDateTime start = OffsetDateTime.parse("2026-05-04T08:30:00Z");
+        final OffsetDateTime end = OffsetDateTime.parse("2026-05-04T11:00:00Z");
+        final ItemBooking ownerBlock = itemDao.insertOwnerPersonalBlock(
+                itemId, ownerId, start, end, "token-owner-block-active-list", OffsetDateTime.now());
+        final ItemBooking guestBooking = itemDao.createBookingRequest(
+                itemId,
+                guestId,
+                start.plusDays(1),
+                start.plusDays(1).plusHours(2),
+                "message",
+                "token-guest-active-list");
+
+        final List<ItemBooking> active = itemDao.listActiveBookingsByItemId(itemId);
+        Assertions.assertEquals(1, active.size(), "Only real guest bookings should appear for edit conflicts");
+        Assertions.assertEquals(guestBooking.getId(), active.get(0).getId());
+        Assertions.assertTrue(
+                active.stream().noneMatch(b -> b.getId().equals(ownerBlock.getId())),
+                "Owner personal block (guest_id = owner_id) must not appear");
     }
 
     @Test

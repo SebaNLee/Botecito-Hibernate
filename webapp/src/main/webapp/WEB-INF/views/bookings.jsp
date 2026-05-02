@@ -111,7 +111,11 @@
                 <div class="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-2">
                   <c:forEach var="sentRequest" items="${sentBookingRequests}">
                     <c:url var="sentPaymentProofUrl" value="/bookings/${sentRequest.id}/payment-proof" />
-                    <c:url var="sentRequestItemUrl" value="/item/${sentRequest.itemId}" />
+                    <c:url var="sentRequestItemUrl" value="/item/${sentRequest.itemId}">
+                      <c:if test="${not empty sentRequest.bookedSnapshotVersionId}">
+                        <c:param name="snapshotVersionId" value="${sentRequest.bookedSnapshotVersionId}" />
+                      </c:if>
+                    </c:url>
                     <c:set var="authoredItemReview" value="${authoredItemReviewsByBookingId[sentRequest.id]}" />
                     <c:set var="sentStatusClass" value="badge-ghost" />
                     <c:if test="${sentRequest.statusMessageCode == 'profile.sentBookings.status.pending'}"><c:set var="sentStatusClass" value="badge-warning" /></c:if>

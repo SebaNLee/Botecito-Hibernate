@@ -82,6 +82,7 @@ public interface ItemService {
 
     List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId);
 
+    /** Guest-facing active bookings for an item; excludes rows where guest is the item owner (personal blocks). */
     List<ItemBooking> listActiveBookingsByItemId(final int itemId);
 
     Optional<ItemSnapshot> findSnapshotByBookingIdForGuest(final int bookingId, final int guestId);

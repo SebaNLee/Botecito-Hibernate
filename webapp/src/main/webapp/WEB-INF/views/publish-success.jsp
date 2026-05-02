@@ -38,7 +38,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
     </p>
   </div>
 
-  <paw:sectionCard cssClass="mb-8" icon="inventory_2">
+  <paw:sectionCard cssClass="mb-8" icon="inventory_2" hostAccent="true">
     <jsp:attribute name="title"
       ><spring:message code="publish.success.summary.title"
     /></jsp:attribute>
@@ -232,7 +232,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
   <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
     <paw:button
       href="${publishUrl}"
-      color="primary"
+      color="secondary"
       size="lg"
       icon="add"
       cssClass="w-full sm:w-auto"

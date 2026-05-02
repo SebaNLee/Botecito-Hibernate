@@ -87,6 +87,8 @@ charset=UTF-8" pageEncoding="UTF-8" %>
   code="itemDetail.description.empty"
   var="itemDescriptionEmptyLabel"
 />
+<spring:message code="itemDetail.owner.ownPublicationNotice" var="ownerPublicationNotice" />
+<spring:message code="itemDetail.owner.blockButton" var="ownerBlockButtonLabel" />
 
 <paw:layout
   title="Botecito"
@@ -105,6 +107,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
   <c:if test="${reviewAction == 'created'}"><paw:alertMessage type="success"><spring:message code="profile.reviews.created" /></paw:alertMessage></c:if>
   <c:if test="${reviewAction == 'validationError'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.validationError" /></paw:alertMessage></c:if>
   <c:if test="${reviewAction == 'error'}"><paw:alertMessage type="error"><spring:message code="profile.reviews.error" /></paw:alertMessage></c:if>
+  <c:if test="${listingInactiveNotice}"><paw:alertMessage type="warning"><spring:message code="itemDetail.listingInactive.notice" /></paw:alertMessage></c:if>
 
   <div class="w-full grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_400px] gap-8 items-start">
     <section class="order-2 lg:order-1 min-w-0 space-y-8">
@@ -317,7 +320,11 @@ charset=UTF-8" pageEncoding="UTF-8" %>
     <aside class="order-1 lg:order-2 w-full min-w-0 lg:sticky lg:top-24 space-y-6">
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body p-8 gap-4">
-          <c:if test="${selectedSnapshot != null || not empty guestSnapshots || not empty hostSnapshots}">
+          <c:choose>
+            <c:when test="${hideListingLiveVersionNavigation}">
+              <paw:alertMessage type="info"><spring:message code="itemDetail.listingInactive.guestBookedSnapshotOnly" /></paw:alertMessage>
+            </c:when>
+            <c:when test="${selectedSnapshot != null || not empty guestSnapshots || not empty hostSnapshots}">
             <div class="rounded-2xl bg-base-200/70 p-5 space-y-4">
               <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline">
                 <spring:message code="itemDetail.version.title" />
@@ -365,7 +372,8 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                 </div>
               </div>
             </div>
-          </c:if>
+            </c:when>
+          </c:choose>
           <h1 class="text-3xl font-extrabold tracking-tight m-0 break-words">
             <c:out value="${viewItem.title}" />
           </h1>
@@ -419,6 +427,16 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             <c:when test="${selectedSnapshot != null}">
               <paw:alertMessage type="info"><spring:message code="itemDetail.version.snapshotBookingDisabled" /></paw:alertMessage>
             </c:when>
+            <c:when test="${isOwner}">
+              <paw:alertMessage type="info"><c:out value="${ownerPublicationNotice}" /></paw:alertMessage>
+              <c:url var="ownerManageAvailabilityUrl" value="/profile/item/${item.id}/availability">
+                <c:param name="return" value="/item/${item.id}" />
+              </c:url>
+              <a href="${ownerManageAvailabilityUrl}" class="btn btn-primary btn-block btn-lg no-underline">
+                <c:out value="${ownerBlockButtonLabel}" />
+                <span class="material-symbols-outlined text-sm align-middle">event_busy</span>
+              </a>
+            </c:when>
             <c:otherwise>
           <form:form
             id="reservation-request-form"
@@ -428,6 +446,13 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             class="space-y-4"
             data-submit-loading-form="true"
           >
+            <spring:hasBindErrors name="reservationRequestForm">
+              <c:if test="${errors.hasGlobalErrors()}">
+                <c:forEach items="${errors.globalErrors}" var="globalErr">
+                  <paw:alertMessage type="error"><spring:message code="${globalErr.code}" /></paw:alertMessage>
+                </c:forEach>
+              </c:if>
+            </spring:hasBindErrors>
             <c:if test="${not empty mailSuccessCode}">
               <spring:message
                 code="${mailSuccessCode}"

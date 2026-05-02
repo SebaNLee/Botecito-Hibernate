@@ -109,10 +109,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void expireDueBookingsSchedule() {
-        LOGGER.info(
-                "Running cron job!, OffsetDateTime: {}, currentDateTime: {} ",
-                OffsetDateTime.now().toString(),
-                currentDateTime().toString());
+        LOGGER.info("Running cron job! currentDateTime: {} ", currentDateTime().toString());
         expireAllDue(currentDateTime());
     }
 

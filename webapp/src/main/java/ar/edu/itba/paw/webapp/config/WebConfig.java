@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.lang.NonNull;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
@@ -21,6 +22,7 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 @EnableWebMvc
 @EnableAsync
+@EnableScheduling
 @Import(MailConfig.class)
 @ComponentScan({
     "ar.edu.itba.paw.webapp.controller",

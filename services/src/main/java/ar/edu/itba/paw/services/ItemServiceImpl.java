@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public final class ItemServiceImpl implements ItemService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ItemServiceImpl.class);
     private static final int MAX_IMAGES_PER_ITEM = 10;
     private static final int TIME_STEP_MINUTES = 30;
 
@@ -103,20 +106,25 @@ public final class ItemServiceImpl implements ItemService {
             final int locationOptionId,
             final byte[] primaryImageData) {
         if (itemDao.findItemByIdForOwner(itemId, ownerId).isEmpty()) {
+            LOGGER.warn("Attempt to update non-existent item {} or unauthorized access by owner {}", itemId, ownerId);
             return false;
         }
         if (!itemDao.snapshotBookingsForPublicationEdit(itemId)) {
+            LOGGER.error("Could not snapshot bookings for item {}", itemId);
             throw new IllegalStateException("Could not snapshot bookings for item " + itemId);
         }
         if (!itemDao.updatePublicationForOwner(
                 itemId, ownerId, title, description, pricePerHour, difficultyLevel, locationOptionId)) {
+            LOGGER.error("Could not update item {}", itemId);
             throw new IllegalStateException("Could not update item " + itemId);
         }
         if (primaryImageData != null && primaryImageData.length > 0) {
             if (itemDao.replacePrimaryImageForOwner(itemId, ownerId, primaryImageData) == null) {
+                LOGGER.error("Could not replace primary image for item {}", itemId);
                 throw new IllegalStateException("Could not replace primary image for item " + itemId);
             }
         }
+        LOGGER.info("Item {} updated successfully by owner {}", itemId, ownerId);
         return true;
     }
 
@@ -128,7 +136,13 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public boolean deleteItemByIdForOwner(final int itemId, final int ownerId) {
-        return itemDao.deleteItemByIdForOwner(itemId, ownerId);
+        boolean deleted = itemDao.deleteItemByIdForOwner(itemId, ownerId);
+        if (deleted) {
+            LOGGER.info("Item {} deleted by owner {}", itemId, ownerId);
+        } else {
+            LOGGER.warn("Failed to delete item {} by owner {}", itemId, ownerId);
+        }
+        return deleted;
     }
 
     @Override
@@ -146,6 +160,9 @@ public final class ItemServiceImpl implements ItemService {
             final Integer difficultyLevel,
             final Integer locationOptionId,
             final List<ItemAvailability> availabilities) {
+
+        LOGGER.info("Creating new publication for owner with email {}", ownerEmail);
+
         final int validatedTypeId = validateItemTypeId(typeId);
         final int validatedLocationOptionId = validateLocationOptionId(locationOptionId);
         final int validatedCapacityPeople = requirePositive(capacityPeople, "capacity people");
@@ -173,6 +190,8 @@ public final class ItemServiceImpl implements ItemService {
                     availability.getStartTime().toString(),
                     availability.getEndTime().toString());
         }
+
+        LOGGER.info("Item {} created successfully for owner {}", item.getId(), ownerUser.getId());
         return item;
     }
 

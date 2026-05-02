@@ -807,6 +807,15 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    public void expireAllDueBookings(final OffsetDateTime startTimeThreshold) {
+        jdbcTemplate.update(
+                "UPDATE item_booking"
+                        + " SET state = 'BOOKING_CANCELLED', updated_at = CURRENT_TIMESTAMP"
+                        + " WHERE state NOT IN ('BOOKING_COMPLETED', 'BOOKING_PAID', 'BOOKING_CANCELLED')"
+                        + " AND start_time < ?",
+                Timestamp.from(startTimeThreshold.toInstant()));
+    }
+
     public int resolveBookingsByHostDecisionTokens(
             final Collection<String> hostDecisionTokens,
             final BookingState newState,

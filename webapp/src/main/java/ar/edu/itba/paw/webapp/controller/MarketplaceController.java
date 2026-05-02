@@ -224,7 +224,7 @@ public class MarketplaceController {
         } catch (final SelfBookingNotAllowedException e) {
             errors.reject("reservation.selfBooking");
             return buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
-        } catch (final IllegalArgumentException e) {
+        } catch (final Exception e) {
             final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
             mav.addObject("mailErrorCode", "reservation.request.error");
             return mav;
@@ -513,10 +513,6 @@ public class MarketplaceController {
 
     private static boolean hasContinuousTwoHourWindowEndingAt(
             final List<String> availableTimes, final String requestedEndTime) {
-        if (!availableTimes.contains(requestedEndTime)) {
-            return false;
-        }
-
         for (final String possibleStartTime : availableTimes) {
             if (AvailabilityPickerSupport.hasContinuousAvailability(
                     availableTimes, possibleStartTime, requestedEndTime)) {

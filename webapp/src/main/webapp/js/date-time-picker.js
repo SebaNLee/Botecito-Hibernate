@@ -1058,7 +1058,7 @@
         return false;
       }
 
-      for (let index = startIndex; index <= endIndex; index += 1) {
+      for (let index = startIndex; index < endIndex; index += 1) {
         if (!offeredTimes.has(ALL_TIMES[index])) {
           return false;
         }

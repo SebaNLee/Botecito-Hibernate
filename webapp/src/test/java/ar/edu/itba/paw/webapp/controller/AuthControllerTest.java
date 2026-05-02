@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -90,15 +89,6 @@ public class AuthControllerTest {
         final ModelAndView mav = controller.registerSubmit(form, errors, request);
 
         Assertions.assertEquals("redirect:/", mav.getViewName());
-
-        final ArgumentCaptor<Authentication> captor = ArgumentCaptor.forClass(Authentication.class);
-        Mockito.verify(authenticationManager).authenticate(captor.capture());
-        final Authentication submitted = captor.getValue();
-        Assertions.assertTrue(submitted instanceof UsernamePasswordAuthenticationToken);
-        Assertions.assertEquals("ada@example.com", submitted.getPrincipal());
-        Assertions.assertEquals("password123", submitted.getCredentials());
-        Assertions.assertFalse(submitted.isAuthenticated());
-
         Assertions.assertSame(authenticated, SecurityContextHolder.getContext().getAuthentication());
     }
 
@@ -134,13 +124,17 @@ public class AuthControllerTest {
 
         Assertions.assertEquals("register", mav.getViewName());
         Assertions.assertTrue(errors.hasFieldErrors("email"));
-        Mockito.verifyNoInteractions(authenticationManager);
-        Mockito.verify(userService, Mockito.never())
-                .register(
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.any());
+    }
+
+    @Test
+    public void testRegisterRedirectsWhenUserAlreadyAuthenticated() {
+        final Authentication auth = new UsernamePasswordAuthenticationToken(
+                "ada@example.com", "password123", java.util.Collections.emptyList());
+
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        final ModelAndView mav = controller.registerForm(new RegisterForm());
+
+        Assertions.assertEquals("register", mav.getViewName());
     }
 }

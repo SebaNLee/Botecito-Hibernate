@@ -7,6 +7,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
@@ -17,12 +18,18 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class BookingRequestServiceImpl implements BookingRequestService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BookingRequestServiceImpl.class);
+
+    private static final int MIN_ANTICIPATION_MINUTES = 120;
     private final ItemDao itemDao;
     private final MailService mailService;
 
@@ -37,6 +44,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             final OffsetDateTime startTime,
             final OffsetDateTime endTime,
             final String description) {
+        validateAnticipation(startTime);
         final User requesterUser = resolveOrCreateRequesterUser(
                 requesterGivenName, requesterLastName, requesterEmail, requesterPreferredLanguage);
         final Item item = itemDao.findAnyItemById(itemId)
@@ -47,7 +55,34 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         final String token = UUID.randomUUID().toString();
         final ItemBooking booking =
                 itemDao.createBookingRequest(itemId, requesterUser.getId(), startTime, endTime, description, token);
+        LOGGER.info(
+                "Booking request created for item {} by user {} done at {} for startTime: {} and endTime: {}",
+                itemId,
+                requesterUser.getId(),
+                currentDateTime().toString(),
+                startTime.toString(),
+                endTime.toString());
         return toBookingRequest(booking, requesterUser);
+    }
+
+    private static OffsetDateTime currentDateTime() {
+        return OffsetDateTime.now();
+    }
+
+    private static void validateAnticipation(final OffsetDateTime bookingStartTime) {
+        final Instant now = currentDateTime().toInstant();
+        final Instant bookingStart = bookingStartTime.toInstant();
+        final Instant earliestAllowedStart = now.plus(Duration.ofMinutes(MIN_ANTICIPATION_MINUTES));
+        if (bookingStart.isBefore(earliestAllowedStart)) {
+            throw new RuntimeException("Requested booking starts in less than the minimum anticipation time of "
+                    + MIN_ANTICIPATION_MINUTES + " minutes");
+        }
+    }
+
+    private void validateAnticipationByToken(final String hostDecisionToken) {
+        itemDao.findBookingByHostDecisionToken(hostDecisionToken)
+                .map(ItemBooking::getStartTime)
+                .ifPresent(BookingRequestServiceImpl::validateAnticipation);
     }
 
     @Override
@@ -101,7 +136,12 @@ public class BookingRequestServiceImpl implements BookingRequestService {
 
     @Override
     public Optional<BookingRequest> resolveBookingRequest(final String token, final BookingState newStatus) {
-        if (!itemDao.resolveBookingByHostDecisionToken(token, newStatus, OffsetDateTime.now())) {
+        expireAllDue(currentDateTime());
+        LOGGER.info("Resolving booking request to status {}", newStatus);
+        if (newStatus == BookingState.BOOKING_CONFIRMED) {
+            validateAnticipationByToken(token);
+        }
+        if (!itemDao.resolveBookingByHostDecisionToken(token, newStatus, currentDateTime())) {
             return Optional.empty();
         }
         return findByToken(token);
@@ -109,6 +149,17 @@ public class BookingRequestServiceImpl implements BookingRequestService {
 
     @Override
     @Transactional
+    public void expireAllDue(final OffsetDateTime currentDateTime) {
+        itemDao.expireAllDueBookings(currentDateTime.plusMinutes(MIN_ANTICIPATION_MINUTES));
+    }
+
+    @Scheduled(cron = "0 * * * * *")
+    @Transactional
+    public void expireDueBookingsSchedule() {
+        LOGGER.info("Running cron job! currentDateTime: {} ", currentDateTime().toString());
+        expireAllDue(currentDateTime());
+    }
+
     public List<BookingRequest> resolveBookingRequests(final List<String> tokens, final BookingState newStatus) {
         if (tokens == null || tokens.isEmpty()) {
             return List.of();
@@ -143,6 +194,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
 
         final OffsetDateTime resolvedAt = OffsetDateTime.now();
         itemDao.resolveBookingsByHostDecisionTokens(pendingTokens, newStatus, resolvedAt);
+        LOGGER.info("Resolved {} booking requests to status {}", pendingTokens.size(), newStatus);
 
         final List<ItemBooking> updatedBookings = itemDao.findBookingsByHostDecisionTokens(pendingTokens);
         if (updatedBookings.isEmpty()) {
@@ -184,37 +236,53 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             final String contentType,
             final byte[] fileData,
             final String guestReply) {
+        expireAllDue(currentDateTime());
         final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
         if (booking.isEmpty()
                 || booking.get().getGuestId() == null
                 || booking.get().getGuestId() != requesterId
                 || !canSubmitPaymentProof(booking.get().getState())) {
+            LOGGER.warn(
+                    "Attempt to submit payment proof for invalid booking {} by requester {}", bookingId, requesterId);
             return Optional.empty();
         }
+
+        validateAnticipation(booking.get().getStartTime());
 
         final BookingState state = booking.get().getState();
         if (state == BookingState.BOOKING_CONFIRMED) {
             if (itemDao.findPaymentProofByBookingId(bookingId).isPresent()) {
+                LOGGER.warn("Payment proof already exists for booking {}", bookingId);
                 return Optional.empty();
             }
             if (!itemDao.markBookingPaymentSubmitted(bookingId, requesterId)) {
+                LOGGER.error("Failed to mark booking {} as payment submitted", bookingId);
                 return Optional.empty();
             }
         } else if (state == BookingState.BOOKING_PAYMENT_REFUSED) {
             itemDao.deletePaymentProofByBookingId(bookingId);
             if (!itemDao.markBookingPaymentResubmitted(bookingId, requesterId)) {
+                LOGGER.error("Failed to mark booking {} as payment resubmitted", bookingId);
                 return Optional.empty();
             }
         } else {
+            LOGGER.warn("Invalid state {} for payment submission on booking {}", state, bookingId);
             return Optional.empty();
         }
+
+        LOGGER.info("Submitting payment proof for booking {}", bookingId);
+
         return Optional.of(itemDao.createPaymentProof(
                 bookingId, requesterId, fileName, contentType, fileData, normalizeReply(guestReply)));
     }
 
     @Override
     public Optional<BookingRequest> refusePaymentProof(final int bookingId, final int ownerId, final String reason) {
+        expireAllDue(currentDateTime());
         final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
+
+        LOGGER.debug("Refusing payment proof for booking {} by owner {}", bookingId, ownerId);
+
         if (booking.isEmpty()
                 || booking.get().getItemId() == null
                 || booking.get().getState() != BookingState.BOOKING_PAYMENT_SUBMITTED
@@ -233,6 +301,9 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         if (trimmed.isEmpty()) {
             return Optional.empty();
         }
+
+        validateAnticipation(booking.get().getStartTime());
+
         if (!itemDao.markBookingPaymentRefused(bookingId, ownerId, trimmed)) {
             return Optional.empty();
         }
@@ -241,7 +312,11 @@ public class BookingRequestServiceImpl implements BookingRequestService {
 
     @Override
     public Optional<BookingRequest> confirmPaymentReceived(final int bookingId, final int ownerId) {
+        expireAllDue(currentDateTime());
         final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
+
+        LOGGER.debug("Confirming payment for booking {} by owner {}", bookingId, ownerId);
+
         if (booking.isEmpty()
                 || booking.get().getItemId() == null
                 || booking.get().getHostDecisionToken() == null

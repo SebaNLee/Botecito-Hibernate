@@ -77,6 +77,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
 
     @Override
     public Optional<BookingRequest> resolveBookingRequest(final String token, final BookingState newStatus) {
+        expireAllDue(currentDateTime());
         if (newStatus == BookingState.BOOKING_CONFIRMED) {
             validateAnticipationByToken(token);
         }
@@ -106,6 +107,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             final String contentType,
             final byte[] fileData,
             final String guestReply) {
+        expireAllDue(currentDateTime());
         final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
         if (booking.isEmpty()
                 || booking.get().getGuestId() == null
@@ -138,6 +140,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
 
     @Override
     public Optional<BookingRequest> refusePaymentProof(final int bookingId, final int ownerId, final String reason) {
+        expireAllDue(currentDateTime());
         final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
         if (booking.isEmpty()
                 || booking.get().getItemId() == null
@@ -168,6 +171,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
 
     @Override
     public Optional<BookingRequest> confirmPaymentReceived(final int bookingId, final int ownerId) {
+        expireAllDue(currentDateTime());
         final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
         if (booking.isEmpty()
                 || booking.get().getItemId() == null

@@ -14,7 +14,6 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-// TODO I kinda read the deprecated warnings (2022), should be fine. I think it is bc of this old af stack we are using
 @Configuration
 @EnableWebSecurity
 public class WebAuthConfig extends WebSecurityConfigurerAdapter {
@@ -49,20 +48,16 @@ public class WebAuthConfig extends WebSecurityConfigurerAdapter {
                 .anonymous()
                 .antMatchers("/register")
                 .anonymous()
+                .antMatchers(HttpMethod.GET, "/", "/marketplace", "/location-options", "/errors", "/403")
+                .permitAll()
                 .antMatchers("/password-recovery/**")
                 .permitAll()
-                .antMatchers(HttpMethod.POST, "/item/*")
-                .authenticated()
-                .antMatchers("/item/*/gallery/**")
-                .authenticated()
-                .antMatchers(HttpMethod.POST, "/bookings/**")
-                .authenticated()
-                .antMatchers("/profile/**")
-                .authenticated()
-                .antMatchers("/publish/**")
-                .authenticated()
-                .antMatchers("/**")
+                .antMatchers(HttpMethod.GET, "/image/*", "/bookings/*/accept", "/bookings/*/decline")
                 .permitAll()
+                .regexMatchers(HttpMethod.GET, "/item/[0-9]+")
+                .permitAll()
+                .antMatchers("/**")
+                .authenticated()
                 .and()
                 .formLogin()
                 .usernameParameter("j_username")
@@ -90,6 +85,6 @@ public class WebAuthConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     public void configure(final WebSecurity web) throws Exception {
-        web.ignoring().antMatchers("/css/**", "/js/**", "/img/**", "/favicon.ico");
+        web.ignoring().antMatchers("/css/**", "/js/**", "/img/**", "/favicon.ico"); // aca va "/403" maybe
     }
 }

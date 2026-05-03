@@ -25,7 +25,7 @@ public class ItemBookingTableJdbcTest {
     private @NonNull DataSource dataSource;
 
     @Test
-    public void testCreateBookingWhenDataIsValid() {
+    public void testCreateBooking() {
         final JdbcTemplate jdbcTemplate = jdbcTemplate();
         final int ownerId = insertUser("a@a.com");
         final int guestId = insertUser("b@b.com");
@@ -45,7 +45,7 @@ public class ItemBookingTableJdbcTest {
     }
 
     @Test
-    public void testCreateBookingWhenTokenIsMissing() {
+    public void testBookingTokenMissing() {
         final int ownerId = insertUser("a@a.com");
         final int guestId = insertUser("b@b.com");
         final int itemId = insertItem(ownerId, "item-a");
@@ -60,7 +60,7 @@ public class ItemBookingTableJdbcTest {
     }
 
     @Test
-    public void testCreateBookingWhenTimeRangeIsInvalid() {
+    public void testBookingInvalidTime() {
         final int ownerId = insertUser("a@a.com");
         final int guestId = insertUser("b@b.com");
         final int itemId = insertItem(ownerId, "item-a");

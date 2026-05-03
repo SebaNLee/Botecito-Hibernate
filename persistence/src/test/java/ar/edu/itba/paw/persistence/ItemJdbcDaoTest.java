@@ -29,7 +29,7 @@ public class ItemJdbcDaoTest {
     private @NonNull DataSource dataSource;
 
     @Test
-    public void testPublicationEditCreatesSingleSnapshotForActiveBooking() {
+    public void testEditCreatesSnapshot() {
         final int ownerId = insertUser("owner@a.com");
         final int guestId = insertUser("guest@a.com");
         final int itemId = insertItem(ownerId, "snapshot-title");
@@ -55,7 +55,7 @@ public class ItemJdbcDaoTest {
     }
 
     @Test
-    public void testDeletePublicationWithoutBookingsRemovesItem() {
+    public void testDeleteWithoutBookings() {
         final int ownerId = insertUser("owner-delete@a.com");
         final int itemId = insertItem(ownerId, "delete-without-bookings");
 
@@ -64,7 +64,7 @@ public class ItemJdbcDaoTest {
     }
 
     @Test
-    public void testDeleteInactivePublicationWithFutureBookingIsBlocked() {
+    public void testDeleteInactiveWithBookings() {
         final int ownerId = insertUser("owner-delete-future@a.com");
         final int guestId = insertUser("guest-delete-future@a.com");
         final int itemId = insertItem(ownerId, "delete-future-booking");
@@ -76,7 +76,7 @@ public class ItemJdbcDaoTest {
     }
 
     @Test
-    public void testExpireAllDueBookingsCancelsOnlyPastBookings() {
+    public void testExpireDueBookings() {
         final int ownerId = insertUser("owner-expire@a.com");
         final int guestId = insertUser("guest-expire@a.com");
         final int itemId = insertItem(ownerId, "expire-bookings");

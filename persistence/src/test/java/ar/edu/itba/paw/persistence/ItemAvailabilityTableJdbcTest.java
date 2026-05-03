@@ -23,7 +23,7 @@ public class ItemAvailabilityTableJdbcTest {
     private @NonNull DataSource dataSource;
 
     @Test
-    public void testCreateAvailabilityWhenDataIsValid() {
+    public void testCreateAvailability() {
         final JdbcTemplate jdbcTemplate = jdbcTemplate();
         final int itemId = insertItem("a@a.com", "item-a");
 
@@ -40,7 +40,7 @@ public class ItemAvailabilityTableJdbcTest {
     }
 
     @Test
-    public void testCreateAvailabilityWhenWeekdayIsMissing() {
+    public void testAvailabilityWeekdayMissing() {
         final int itemId = insertItem("a@a.com", "item-a");
 
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
@@ -52,7 +52,7 @@ public class ItemAvailabilityTableJdbcTest {
     }
 
     @Test
-    public void testCreateAvailabilityWhenTimeRangeIsInvalid() {
+    public void testAvailabilityInvalidTime() {
         final int itemId = insertItem("a@a.com", "item-a");
 
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()

@@ -56,4 +56,17 @@ public interface BookingRequestService {
 
     /** Domain rule: only the booking's guest or the item's owner may view the proof. */
     boolean canAccessPaymentProof(int bookingId, int viewerUserId);
+
+    enum BlockSlotOutcome {
+        BLOCKED,
+        PAST_DATE,
+        OVERLAP,
+        INVALID
+    }
+
+    /**
+     * Parses raw date/time strings, validates them, and creates an owner self-block.
+     * Returns the outcome — controller maps it to the appropriate HTTP redirect query parameter.
+     */
+    BlockSlotOutcome blockSlotForOwner(int itemId, int ownerId, String date, String startTime, String endTime);
 }

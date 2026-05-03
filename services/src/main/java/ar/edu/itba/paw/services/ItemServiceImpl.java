@@ -17,14 +17,17 @@ import ar.edu.itba.paw.persistence.ItemDao;
 import ar.edu.itba.paw.services.dto.AuthoredItemReviewSummaryView;
 import ar.edu.itba.paw.services.dto.AvailabilityPickerData;
 import ar.edu.itba.paw.services.dto.BookingDecisionBatch;
+import ar.edu.itba.paw.services.dto.EditConflictView;
 import ar.edu.itba.paw.services.dto.GalleryImageUpload;
 import ar.edu.itba.paw.services.dto.MarketplaceItemView;
+import ar.edu.itba.paw.services.dto.OwnerAvailabilityView;
 import ar.edu.itba.paw.services.dto.OwnerDashboardView;
 import ar.edu.itba.paw.services.dto.PendingReviewView;
 import ar.edu.itba.paw.services.dto.PublicationDraft;
 import ar.edu.itba.paw.services.dto.ReceivedBookingView;
 import ar.edu.itba.paw.services.internal.AvailabilityPickerBuilder;
 import ar.edu.itba.paw.services.internal.BookingDisplayFormatter;
+import ar.edu.itba.paw.services.internal.OwnerAvailabilityViewBuilder;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -776,6 +779,16 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    public OwnerAvailabilityView buildOwnerAvailabilityView(
+            final int itemId, final String requestedDate, final int ownerId) {
+        return OwnerAvailabilityViewBuilder.build(
+                itemDao.listAvailabilitiesByItemId(itemId),
+                itemDao.listBookingsByItemId(itemId),
+                requestedDate,
+                ownerId);
+    }
+
+    @Override
     public AvailabilityPickerData buildAvailabilityPicker(final int itemId) {
         return AvailabilityPickerBuilder.build(
                 itemDao.listAvailabilitiesByItemId(itemId), itemDao.listBookingsByItemId(itemId));
@@ -949,6 +962,45 @@ public final class ItemServiceImpl implements ItemService {
             itemDao.resolveBookingsByHostDecisionTokens(
                     tokensToDecline, BookingState.BOOKING_REJECTED, OffsetDateTime.now());
         }
+    }
+
+    @Override
+    public EditConflictView buildEditConflictView(final int itemId) {
+        final List<ItemBooking> bookings = listActiveBookingsByItemId(itemId);
+        final Item item = itemDao.findAnyItemById(itemId).orElse(null);
+        final Integer pricePerHour = item == null ? null : item.getPricePerHour();
+        final Map<Integer, String> guestNames = new LinkedHashMap<>();
+        final Map<Integer, String> startLabels = new LinkedHashMap<>();
+        final Map<Integer, String> friendlyDates = new LinkedHashMap<>();
+        final Map<Integer, String> friendlyTimeRanges = new LinkedHashMap<>();
+        final Map<Integer, String> friendlyPrices = new LinkedHashMap<>();
+        final Map<Integer, String> statusCodes = new LinkedHashMap<>();
+        for (final ItemBooking booking : bookings) {
+            if (booking == null || booking.getId() == null) {
+                continue;
+            }
+            final int id = booking.getId();
+            guestNames.put(
+                    id,
+                    booking.getGuestId() == null
+                            ? ""
+                            : itemDao.findUserById(booking.getGuestId())
+                                    .map(User::getName)
+                                    .orElse(""));
+            startLabels.put(id, BookingDisplayFormatter.formatStartLabel(booking.getStartTime()));
+            friendlyDates.put(id, BookingDisplayFormatter.formatFriendlyDate(booking.getStartTime()));
+            friendlyTimeRanges.put(
+                    id, BookingDisplayFormatter.formatFriendlyTimeRange(booking.getStartTime(), booking.getEndTime()));
+            friendlyPrices.put(
+                    id,
+                    BookingDisplayFormatter.formatFriendlyTotalPrice(
+                            booking.getStartTime(), booking.getEndTime(), pricePerHour));
+            statusCodes.put(
+                    id,
+                    booking.getState() == null ? "" : BookingDisplayFormatter.statusMessageCode(booking.getState()));
+        }
+        return new EditConflictView(
+                bookings, guestNames, startLabels, friendlyDates, friendlyTimeRanges, friendlyPrices, statusCodes);
     }
 
     @Override

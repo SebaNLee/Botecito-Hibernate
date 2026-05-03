@@ -10,8 +10,10 @@ import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.dto.AvailabilityPickerData;
 import ar.edu.itba.paw.services.dto.BookingDecisionBatch;
+import ar.edu.itba.paw.services.dto.EditConflictView;
 import ar.edu.itba.paw.services.dto.GalleryImageUpload;
 import ar.edu.itba.paw.services.dto.MarketplaceItemView;
+import ar.edu.itba.paw.services.dto.OwnerAvailabilityView;
 import ar.edu.itba.paw.services.dto.OwnerDashboardView;
 import ar.edu.itba.paw.services.dto.PublicationDraft;
 import java.math.BigDecimal;
@@ -156,6 +158,8 @@ public interface ItemService {
 
     AvailabilityPickerData buildAvailabilityPicker(int itemId);
 
+    OwnerAvailabilityView buildOwnerAvailabilityView(int itemId, String requestedDate, int ownerId);
+
     AvailabilityPickerData buildGlobalAvailabilityPicker();
 
     boolean isRequestedRangeAvailable(int itemId, String date, String startTime, String endTime);
@@ -175,6 +179,8 @@ public interface ItemService {
             byte[] primaryImageData);
 
     void resolveEditConflict(int itemId, BookingDecisionBatch decisions);
+
+    EditConflictView buildEditConflictView(int itemId);
 
     Integer uploadGalleryImage(int itemId, int ownerId, GalleryImageUpload image);
 

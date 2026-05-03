@@ -16,8 +16,13 @@ import ar.edu.itba.paw.services.internal.BookingDisplayFormatter;
 import ar.edu.itba.paw.services.internal.PaymentProofValidator;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -655,6 +660,40 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         return item.isPresent()
                 && item.get().getOwnerId() != null
                 && item.get().getOwnerId().equals(viewerUserId);
+    }
+
+    @Override
+    public BlockSlotOutcome blockSlotForOwner(
+            final int itemId, final int ownerId, final String date, final String startTime, final String endTime) {
+        if (date == null || startTime == null || endTime == null) {
+            return BlockSlotOutcome.INVALID;
+        }
+        final LocalDate parsedDate;
+        final LocalTime parsedStart;
+        final LocalTime parsedEnd;
+        try {
+            parsedDate = LocalDate.parse(date);
+            parsedStart = LocalTime.parse(startTime);
+            parsedEnd = LocalTime.parse(endTime);
+        } catch (final DateTimeParseException exception) {
+            return BlockSlotOutcome.INVALID;
+        }
+        if (parsedDate.isBefore(LocalDate.now())) {
+            return BlockSlotOutcome.PAST_DATE;
+        }
+        final ZoneId zone = ZoneId.systemDefault();
+        final OffsetDateTime startOdt =
+                LocalDateTime.of(parsedDate, parsedStart).atZone(zone).toOffsetDateTime();
+        final OffsetDateTime endOdt =
+                LocalDateTime.of(parsedDate, parsedEnd).atZone(zone).toOffsetDateTime();
+        try {
+            createOwnerSelfBlock(itemId, ownerId, startOdt, endOdt);
+        } catch (final OverlappingActiveBookingException overlap) {
+            return BlockSlotOutcome.OVERLAP;
+        } catch (final IllegalArgumentException invalid) {
+            return BlockSlotOutcome.INVALID;
+        }
+        return BlockSlotOutcome.BLOCKED;
     }
 
     private List<SentBookingView> buildSentBookings(final int guestId) {

@@ -8,10 +8,17 @@ import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.services.dto.AvailabilityPickerData;
+import ar.edu.itba.paw.services.dto.BookingDecisionBatch;
+import ar.edu.itba.paw.services.dto.GalleryImageUpload;
+import ar.edu.itba.paw.services.dto.MarketplaceItemView;
+import ar.edu.itba.paw.services.dto.OwnerDashboardView;
+import ar.edu.itba.paw.services.dto.PublicationDraft;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface ItemService {
@@ -119,4 +126,57 @@ public interface ItemService {
     boolean deleteImageFromItem(final int itemId, final int imageId);
 
     void reorderImagesForItem(final int itemId, final List<Integer> imageIdsInOrder);
+
+    // ---- View / orchestration extensions ----------------------------------------------------
+
+    OwnerDashboardView buildOwnerDashboard(
+            int ownerId, List<String> statusFilters, String boatNameQuery, int page, int pageSize);
+
+    Optional<MarketplaceItemView> findMarketplaceItemView(
+            int itemId,
+            Integer viewerUserId,
+            Integer requestedSnapshotVersionId,
+            String requestedDate,
+            String requestedStartTime,
+            String requestedEndTime);
+
+    ItemSearchCriteria parseAndValidateSearchCriteria(
+            String searchQuery,
+            String locationOptionId,
+            String date,
+            String startTime,
+            String endTime,
+            String capacity,
+            String maxWeight,
+            String difficulty,
+            String minRating,
+            String sort);
+
+    Page<Item> searchMarketplace(ItemSearchCriteria criteria, int page, int pageSize);
+
+    AvailabilityPickerData buildAvailabilityPicker(int itemId);
+
+    AvailabilityPickerData buildGlobalAvailabilityPicker();
+
+    boolean isRequestedRangeAvailable(int itemId, String date, String startTime, String endTime);
+
+    /** Returns a map of fieldName → message-code; empty when the draft is valid. */
+    Map<String, String> validatePublicationDraft(PublicationDraft draft);
+
+    Item createPublicationFromDraft(PublicationDraft draft);
+
+    boolean hasPublicationChanges(
+            int itemId,
+            String title,
+            String description,
+            int pricePerHour,
+            Integer difficultyLevel,
+            int locationOptionId,
+            byte[] primaryImageData);
+
+    void resolveEditConflict(int itemId, BookingDecisionBatch decisions);
+
+    Integer uploadGalleryImage(int itemId, int ownerId, GalleryImageUpload image);
+
+    boolean reorderGalleryForOwner(int itemId, int ownerId, List<Integer> imageIdsInOrder);
 }

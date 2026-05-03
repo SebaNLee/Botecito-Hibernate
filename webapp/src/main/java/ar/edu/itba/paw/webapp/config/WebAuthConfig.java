@@ -45,7 +45,7 @@ public class WebAuthConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .authorizeRequests()
                 .antMatchers("/login")
-                .anonymous()
+                .permitAll()
                 .antMatchers("/register")
                 .anonymous()
                 .antMatchers(HttpMethod.GET, "/", "/marketplace", "/location-options", "/errors", "/403")

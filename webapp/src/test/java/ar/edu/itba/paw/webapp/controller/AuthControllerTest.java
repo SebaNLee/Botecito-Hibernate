@@ -68,7 +68,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void testRegisterSubmitAuthenticatesViaAuthenticationManagerOnSuccess() {
+    public void testRegisterAuthenticates() {
         final RegisterForm form = validForm();
         final BindingResult errors = new BeanPropertyBindingResult(form, "registerForm");
         final MockHttpServletRequest request = new MockHttpServletRequest();
@@ -89,7 +89,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void testRegisterSubmitFallsBackToLoginWhenAuthenticationFails() {
+    public void testRegisterFallback() {
         final RegisterForm form = validForm();
         final BindingResult errors = new BeanPropertyBindingResult(form, "registerForm");
         final MockHttpServletRequest request = new MockHttpServletRequest();
@@ -107,7 +107,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void testRegisterSubmitRejectsDuplicateEmailWithoutAuthenticating() {
+    public void testRegisterDuplicateEmail() {
         final RegisterForm form = validForm();
         final BindingResult errors = new BeanPropertyBindingResult(form, "registerForm");
         final MockHttpServletRequest request = new MockHttpServletRequest();
@@ -123,7 +123,7 @@ public class AuthControllerTest {
     }
 
     @Test
-    public void testRegisterRedirectsWhenUserAlreadyAuthenticated() {
+    public void testRegisterAlreadyAuthenticated() {
         final Authentication auth = new UsernamePasswordAuthenticationToken(
                 "ada@example.com", "password123", java.util.Collections.emptyList());
 

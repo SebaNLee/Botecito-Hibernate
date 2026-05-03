@@ -42,7 +42,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testCreateBookingRequestWhenUserExists() {
+    public void testCreateBookingRequest() {
         final User existingUser = new User();
         existingUser.setId(7);
         existingUser.setGivenName("A");
@@ -92,7 +92,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testFindByTokenReturnsEmptyWhenRequesterDoesNotExist() {
+    public void testFindByTokenNoRequester() {
         final ItemBooking booking = new ItemBooking();
         booking.setGuestId(99);
         booking.setHostDecisionToken("t");
@@ -106,7 +106,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testResolveBookingRequestReturnsEmptyWhenTokenCannotBeResolved() {
+    public void testResolveBookingBadToken() {
         Mockito.when(itemDao.resolveBookingByHostDecisionToken(
                         Mockito.eq("t"), Mockito.eq(BookingState.BOOKING_REJECTED), Mockito.any()))
                 .thenReturn(false);
@@ -118,7 +118,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testResolveBookingRequestReturnsResolvedRequestWhenTokenIsValid() {
+    public void testResolveBookingRequest() {
         final ItemBooking booking = new ItemBooking();
         booking.setItemId(20);
         booking.setGuestId(5);
@@ -151,7 +151,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testConfirmPaymentReceivedUsesInactivePublicationForOwnerAuthorization() {
+    public void testConfirmPaymentReceived() {
         final ItemBooking submittedBooking = new ItemBooking();
         submittedBooking.setId(30);
         submittedBooking.setItemId(20);
@@ -201,7 +201,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testCreateBookingRequestWhenRequesterIsOwnerThrowsSelfBookingNotAllowed() {
+    public void testCreateSelfBooking() {
         final User ownerUser = new User();
         ownerUser.setId(7);
         ownerUser.setGivenName("O");
@@ -225,7 +225,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testCreateOwnerSelfBlockInsertsWhenNoOverlap() {
+    public void testCreateOwnerSelfBlock() {
         final Item item = new Item();
         item.setId(10);
         item.setOwnerId(3);
@@ -255,7 +255,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testCreateOwnerSelfBlockWhenGuestBookingOverlapsThrows() {
+    public void testSelfBlockOverlaps() {
         final Item item = new Item();
         item.setId(10);
         item.setOwnerId(3);
@@ -278,7 +278,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testRemoveOwnerSelfBlockWhenValidCancelsBooking() {
+    public void testRemoveOwnerSelfBlock() {
         final ItemBooking block = new ItemBooking();
         block.setId(55);
         block.setItemId(10);
@@ -297,7 +297,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testRemoveOwnerSelfBlockWhenGuestMismatchReturnsFalse() {
+    public void testRemoveSelfBlockNotSelf() {
         final ItemBooking block = new ItemBooking();
         block.setId(55);
         block.setItemId(10);

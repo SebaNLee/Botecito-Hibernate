@@ -10,7 +10,7 @@ import org.springframework.web.servlet.ModelAndView;
 public class ErrorControllerTest {
 
     @Test
-    public void testRenderErrorUsesStatusAndPathFromRequest() {
+    public void testRenderErrorStatusAndPath() {
         final ErrorController controller = new ErrorController();
         final MockHttpServletRequest request = new MockHttpServletRequest();
         final MockHttpServletResponse response = new MockHttpServletResponse();
@@ -26,7 +26,7 @@ public class ErrorControllerTest {
     }
 
     @Test
-    public void testRenderErrorFallsBackTo404WhenStatusIsInvalid() {
+    public void testRenderErrorFallback() {
         final ErrorController controller = new ErrorController();
         final MockHttpServletRequest request = new MockHttpServletRequest();
         final MockHttpServletResponse response = new MockHttpServletResponse();

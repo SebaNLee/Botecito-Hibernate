@@ -18,7 +18,7 @@ public class ImageControllerTest {
     private ItemService itemService;
 
     @Test
-    public void testImageByIdReturnsNotFoundWhenImageIsMissing() {
+    public void testImageMissing() {
         Mockito.when(itemService.findImageById(10)).thenReturn(Optional.empty());
         final ImageController controller = new ImageController(itemService);
 
@@ -28,7 +28,7 @@ public class ImageControllerTest {
     }
 
     @Test
-    public void testImageByIdReturnsImageBytesWhenPresent() {
+    public void testImagePresent() {
         final byte[] pngBytes = new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
         Mockito.when(itemService.findImageById(11)).thenReturn(Optional.of(pngBytes));
         final ImageController controller = new ImageController(itemService);

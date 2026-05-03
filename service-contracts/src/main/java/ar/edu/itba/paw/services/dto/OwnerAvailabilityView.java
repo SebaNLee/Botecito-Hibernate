@@ -2,7 +2,10 @@ package ar.edu.itba.paw.services.dto;
 
 import ar.edu.itba.paw.models.ItemBooking;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
+@Getter
 public final class OwnerAvailabilityView {
     private final String offeredDatesJson;
     private final String blockedDatesJson;
@@ -29,96 +32,25 @@ public final class OwnerAvailabilityView {
         this.personalBlockRows = personalBlockRows == null ? List.of() : List.copyOf(personalBlockRows);
     }
 
-    public String getOfferedDatesJson() {
-        return offeredDatesJson;
-    }
-
-    public String getBlockedDatesJson() {
-        return blockedDatesJson;
-    }
-
-    public String getSelectedDate() {
-        return selectedDate;
-    }
-
-    public List<Slot> getSlots() {
-        return slots;
-    }
-
-    public String getSlotsStateJson() {
-        return slotsStateJson;
-    }
-
-    public List<ItemBooking> getPersonalBlocks() {
-        return personalBlocks;
-    }
-
-    public List<PersonalBlockRow> getPersonalBlockRows() {
-        return personalBlockRows;
-    }
-
+    @Getter
+    @AllArgsConstructor
     public static final class Slot {
         private final String startTime;
         private final String endTime;
         private final String state;
         private final Integer blockBookingId;
 
-        public Slot(final String startTime, final String endTime, final String state, final Integer blockBookingId) {
-            this.startTime = startTime;
-            this.endTime = endTime;
-            this.state = state;
-            this.blockBookingId = blockBookingId;
-        }
-
-        public String getStartTime() {
-            return startTime;
-        }
-
-        public String getEndTime() {
-            return endTime;
-        }
-
-        public String getState() {
-            return state;
-        }
-
-        public Integer getBlockBookingId() {
-            return blockBookingId;
-        }
-
         public String getModalIdSuffix() {
             return startTime == null ? "" : startTime.replace(":", "");
         }
     }
 
+    @Getter
+    @AllArgsConstructor
     public static final class PersonalBlockRow {
         private final int bookingId;
         private final String dateIso;
         private final String startTime;
         private final String endTime;
-
-        public PersonalBlockRow(
-                final int bookingId, final String dateIso, final String startTime, final String endTime) {
-            this.bookingId = bookingId;
-            this.dateIso = dateIso;
-            this.startTime = startTime;
-            this.endTime = endTime;
-        }
-
-        public int getBookingId() {
-            return bookingId;
-        }
-
-        public String getDateIso() {
-            return dateIso;
-        }
-
-        public String getStartTime() {
-            return startTime;
-        }
-
-        public String getEndTime() {
-            return endTime;
-        }
     }
 }

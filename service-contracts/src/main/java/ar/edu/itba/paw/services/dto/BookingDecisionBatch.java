@@ -2,7 +2,10 @@ package ar.edu.itba.paw.services.dto;
 
 import ar.edu.itba.paw.models.BookingState;
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
+@Getter
 public final class BookingDecisionBatch {
     private final List<Decision> decisions;
 
@@ -10,25 +13,10 @@ public final class BookingDecisionBatch {
         this.decisions = decisions == null ? List.of() : List.copyOf(decisions);
     }
 
-    public List<Decision> getDecisions() {
-        return decisions;
-    }
-
+    @Getter
+    @AllArgsConstructor
     public static final class Decision {
         private final String token;
         private final BookingState newState;
-
-        public Decision(final String token, final BookingState newState) {
-            this.token = token;
-            this.newState = newState;
-        }
-
-        public String getToken() {
-            return token;
-        }
-
-        public BookingState getNewState() {
-            return newState;
-        }
     }
 }

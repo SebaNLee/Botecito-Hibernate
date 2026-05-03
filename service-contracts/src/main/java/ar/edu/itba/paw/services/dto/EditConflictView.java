@@ -3,7 +3,9 @@ package ar.edu.itba.paw.services.dto;
 import ar.edu.itba.paw.models.ItemBooking;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 
+@Getter
 public final class EditConflictView {
     private final List<ItemBooking> activeBookings;
     private final Map<Integer, String> guestNames;
@@ -28,33 +30,5 @@ public final class EditConflictView {
         this.friendlyTimeRanges = friendlyTimeRanges == null ? Map.of() : Map.copyOf(friendlyTimeRanges);
         this.friendlyPrices = friendlyPrices == null ? Map.of() : Map.copyOf(friendlyPrices);
         this.statusCodes = statusCodes == null ? Map.of() : Map.copyOf(statusCodes);
-    }
-
-    public List<ItemBooking> getActiveBookings() {
-        return activeBookings;
-    }
-
-    public Map<Integer, String> getGuestNames() {
-        return guestNames;
-    }
-
-    public Map<Integer, String> getStartLabels() {
-        return startLabels;
-    }
-
-    public Map<Integer, String> getFriendlyDates() {
-        return friendlyDates;
-    }
-
-    public Map<Integer, String> getFriendlyTimeRanges() {
-        return friendlyTimeRanges;
-    }
-
-    public Map<Integer, String> getFriendlyPrices() {
-        return friendlyPrices;
-    }
-
-    public Map<Integer, String> getStatusCodes() {
-        return statusCodes;
     }
 }

@@ -9,7 +9,9 @@ import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.ReviewService.PendingReviewAction;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 
+@Getter
 public final class MarketplaceItemView {
     private final Item item;
     private final boolean isOwner;
@@ -79,93 +81,5 @@ public final class MarketplaceItemView {
         this.resolvedDate = resolvedDate;
         this.resolvedStartTime = resolvedStartTime;
         this.resolvedEndTime = resolvedEndTime;
-    }
-
-    public Item getItem() {
-        return item;
-    }
-
-    public boolean isOwner() {
-        return isOwner;
-    }
-
-    public Item getDisplayItem() {
-        return displayItem;
-    }
-
-    public ItemSnapshot getSelectedSnapshot() {
-        return selectedSnapshot;
-    }
-
-    public boolean isHideListingLiveVersionNavigation() {
-        return hideListingLiveVersionNavigation;
-    }
-
-    public boolean isListingInactiveNotice() {
-        return listingInactiveNotice;
-    }
-
-    public List<ItemSnapshot> getGuestSnapshots() {
-        return guestSnapshots;
-    }
-
-    public List<ItemSnapshot> getHostSnapshots() {
-        return hostSnapshots;
-    }
-
-    public User getItemOwner() {
-        return itemOwner;
-    }
-
-    public ItemType getItemType() {
-        return itemType;
-    }
-
-    public RatingSummary getItemRatingSummary() {
-        return itemRatingSummary;
-    }
-
-    public List<Review> getItemReviews() {
-        return itemReviews;
-    }
-
-    public Map<Integer, String> getReviewAuthorNames() {
-        return reviewAuthorNames;
-    }
-
-    public Integer getCoverImageId() {
-        return coverImageId;
-    }
-
-    public List<Integer> getGalleryImageIds() {
-        return galleryImageIds;
-    }
-
-    public boolean isUseSnapshotCoverImage() {
-        return useSnapshotCoverImage;
-    }
-
-    public String getOwnerInitial() {
-        return ownerInitial;
-    }
-
-    public PendingReviewAction getPendingItemReviewAction() {
-        return pendingItemReviewAction;
-    }
-
-    public AvailabilityPickerData getAvailability() {
-        return availability;
-    }
-
-    public String getResolvedDate() {
-        return resolvedDate;
-    }
-
-    public String getResolvedStartTime() {
-        return resolvedStartTime;
-    }
-
-    public String getResolvedEndTime() {
-        return resolvedEndTime;
     }
 }

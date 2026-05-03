@@ -3,7 +3,9 @@ package ar.edu.itba.paw.services.dto;
 import ar.edu.itba.paw.models.ItemAvailability;
 import java.math.BigDecimal;
 import java.util.List;
+import lombok.Getter;
 
+@Getter
 public final class PublicationDraft {
     private final String ownerGivenName;
     private final String ownerLastName;
@@ -49,61 +51,5 @@ public final class PublicationDraft {
         this.locationOptionId = locationOptionId;
         this.availabilities = availabilities == null ? List.of() : List.copyOf(availabilities);
         this.images = images == null ? List.of() : List.copyOf(images);
-    }
-
-    public String getOwnerGivenName() {
-        return ownerGivenName;
-    }
-
-    public String getOwnerLastName() {
-        return ownerLastName;
-    }
-
-    public String getOwnerEmail() {
-        return ownerEmail;
-    }
-
-    public String getOwnerPreferredLanguage() {
-        return ownerPreferredLanguage;
-    }
-
-    public Integer getTypeId() {
-        return typeId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public Integer getPricePerHour() {
-        return pricePerHour;
-    }
-
-    public Integer getCapacityPeople() {
-        return capacityPeople;
-    }
-
-    public BigDecimal getMaxWeightKg() {
-        return maxWeightKg;
-    }
-
-    public Integer getDifficultyLevel() {
-        return difficultyLevel;
-    }
-
-    public Integer getLocationOptionId() {
-        return locationOptionId;
-    }
-
-    public List<ItemAvailability> getAvailabilities() {
-        return availabilities;
-    }
-
-    public List<GalleryImageUpload> getImages() {
-        return images;
     }
 }

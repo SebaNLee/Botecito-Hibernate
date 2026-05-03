@@ -3,7 +3,9 @@ package ar.edu.itba.paw.services.dto;
 import ar.edu.itba.paw.services.Page;
 import java.util.Map;
 import java.util.Set;
+import lombok.Getter;
 
+@Getter
 public final class GuestTripsView {
     private final Page<SentBookingView> sentBookingPage;
     private final Set<Integer> itemIdsForImageUrls;
@@ -21,21 +23,5 @@ public final class GuestTripsView {
                 pendingGuestItemReviewsByBookingId == null ? Map.of() : Map.copyOf(pendingGuestItemReviewsByBookingId);
         this.authoredItemReviewsByBookingId =
                 authoredItemReviewsByBookingId == null ? Map.of() : Map.copyOf(authoredItemReviewsByBookingId);
-    }
-
-    public Page<SentBookingView> getSentBookingPage() {
-        return sentBookingPage;
-    }
-
-    public Set<Integer> getItemIdsForImageUrls() {
-        return itemIdsForImageUrls;
-    }
-
-    public Map<Integer, PendingReviewView> getPendingGuestItemReviewsByBookingId() {
-        return pendingGuestItemReviewsByBookingId;
-    }
-
-    public Map<Integer, AuthoredItemReviewSummaryView> getAuthoredItemReviewsByBookingId() {
-        return authoredItemReviewsByBookingId;
     }
 }

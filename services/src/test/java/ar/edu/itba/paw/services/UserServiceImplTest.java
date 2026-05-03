@@ -28,7 +28,7 @@ public class UserServiceImplTest {
     private MailService mailService;
 
     @Test
-    public void testRegisterCreatesUserWhenEmailDoesNotExist() {
+    public void testRegister() {
         Mockito.when(passwordEncoder.encode("password123")).thenReturn("hashed-password");
         Mockito.when(userDao.findByEmail("a@a.com")).thenReturn(Optional.empty());
         Mockito.when(userDao.createUser(
@@ -56,7 +56,7 @@ public class UserServiceImplTest {
     }
 
     @Test
-    public void testRegisterClaimsUserWhenEmailExistsWithoutPassword() {
+    public void testRegisterClaimsLegacy() {
         final User existingUser = new User();
         existingUser.setId(3);
         existingUser.setEmail("legacy@a.com");
@@ -88,7 +88,7 @@ public class UserServiceImplTest {
     }
 
     @Test
-    public void testRegisterFailsWhenEmailExistsWithPassword() {
+    public void testRegisterEmailTaken() {
         final User existingUser = new User();
         existingUser.setEmail("a@a.com");
         existingUser.setPasswordHash("already-hashed");
@@ -101,7 +101,7 @@ public class UserServiceImplTest {
     }
 
     @Test
-    public void testRequestPasswordRecoveryGeneratesNewTokenForExistingUser() {
+    public void testRequestPasswordRecovery() {
         final User existingUser = new User();
         existingUser.setId(5);
         existingUser.setEmail("recover@a.com");
@@ -126,7 +126,7 @@ public class UserServiceImplTest {
     }
 
     @Test
-    public void testRequestPasswordRecoverySkipsLegacyUserWithoutPassword() {
+    public void testPasswordRecoveryLegacy() {
         final User existingUser = new User();
         existingUser.setId(5);
         existingUser.setEmail("legacy@a.com");
@@ -140,7 +140,7 @@ public class UserServiceImplTest {
     }
 
     @Test
-    public void testResetPasswordConsumesRecoveryToken() {
+    public void testResetPasswordConsumesToken() {
         Mockito.when(passwordEncoder.encode("new-password")).thenReturn("new-password-hash");
         Mockito.when(userDao.resetPasswordByRecoveryToken(
                         Mockito.eq("token-1"), Mockito.eq("new-password-hash"), Mockito.any()))
@@ -152,7 +152,7 @@ public class UserServiceImplTest {
     }
 
     @Test
-    public void testFindByPasswordRecoveryTokenReturnsEmptyWhenAlreadyUsed() {
+    public void testFindUsedRecoveryToken() {
         final User user = new User();
         user.setPasswordRecoveryToken("token-2");
         user.setPasswordRecoveryUsedAt(java.time.OffsetDateTime.now());

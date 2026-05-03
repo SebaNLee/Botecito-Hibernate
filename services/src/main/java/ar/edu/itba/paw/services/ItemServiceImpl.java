@@ -148,6 +148,7 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public Item createPublication(
             final String ownerGivenName,
             final String ownerLastName,

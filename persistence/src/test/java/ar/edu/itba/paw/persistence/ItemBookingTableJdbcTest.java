@@ -81,16 +81,33 @@ public class ItemBookingTableJdbcTest {
     }
 
     private int insertItem(final int ownerId, final String title) {
+        final String locationName =
+                jdbcTemplate().queryForObject("SELECT name FROM location_option WHERE id = ?", String.class, 1);
         jdbcTemplate()
                 .update(
-                        "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id) VALUES (?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO item_publication_version"
+                                + " (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id, location_name, active, item_created_at)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
                         ownerId,
                         1,
                         title,
                         1500,
                         2,
-                        1);
-        return jdbcTemplate().queryForObject("SELECT id FROM item WHERE title = ?", Integer.class, title);
+                        1,
+                        locationName,
+                        Boolean.TRUE);
+        final int versionId = jdbcTemplate()
+                .queryForObject(
+                        "SELECT id FROM item_publication_version WHERE owner_id = ? AND title = ? ORDER BY id DESC LIMIT 1",
+                        Integer.class,
+                        ownerId,
+                        title);
+        jdbcTemplate().update("INSERT INTO item (version_id) VALUES (?)", versionId);
+        return jdbcTemplate()
+                .queryForObject(
+                        "SELECT i.id FROM item i JOIN item_publication_version v ON v.id = i.version_id WHERE v.id = ?",
+                        Integer.class,
+                        versionId);
     }
 
     private @NonNull JdbcTemplate jdbcTemplate() {

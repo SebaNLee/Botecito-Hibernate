@@ -22,12 +22,4 @@ public class Item {
     private Boolean active;
     private String ownerDeleteToken;
     private OffsetDateTime createdAt;
-
-    public void setCreatedAt(final OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public void setCreatedAt(final String createdAt) {
-        this.createdAt = createdAt == null ? null : OffsetDateTime.parse(createdAt);
-    }
 }

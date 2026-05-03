@@ -88,6 +88,12 @@ public class UserServiceImplTest {
     }
 
     @Test
+    public void testRegisterThrowsWhenGivenNameIsBlank() {
+        Assertions.assertThrows(
+                MissingUserNamesException.class, () -> userService.register(" ", "B", "a@a.com", "password123", null));
+    }
+
+    @Test
     public void testRegisterFailsWhenEmailExistsWithPassword() {
         final User existingUser = new User();
         existingUser.setEmail("a@a.com");

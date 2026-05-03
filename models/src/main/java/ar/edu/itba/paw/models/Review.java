@@ -1,11 +1,11 @@
 package ar.edu.itba.paw.models;
 
 import java.time.OffsetDateTime;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-@Setter
+@AllArgsConstructor
 public class Review {
     private Integer id;
     private Integer bookingId;
@@ -17,28 +17,4 @@ public class Review {
     private String comment;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-
-    public void setTargetType(final ReviewTargetType targetType) {
-        this.targetType = targetType;
-    }
-
-    public void setTargetType(final String targetType) {
-        this.targetType = targetType == null ? null : ReviewTargetType.valueOf(targetType);
-    }
-
-    public void setCreatedAt(final OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public void setCreatedAt(final String createdAt) {
-        this.createdAt = createdAt == null ? null : OffsetDateTime.parse(createdAt);
-    }
-
-    public void setUpdatedAt(final OffsetDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public void setUpdatedAt(final String updatedAt) {
-        this.updatedAt = updatedAt == null ? null : OffsetDateTime.parse(updatedAt);
-    }
 }

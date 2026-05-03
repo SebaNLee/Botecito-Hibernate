@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
@@ -26,7 +27,7 @@ public class UserJdbcDao implements UserDao {
         user.setEmail(rs.getString("email"));
         user.setPhone(rs.getString("phone"));
         user.setPaymentAlias(rs.getString("payment_alias"));
-        user.setPreferredLanguage(rs.getString("preferred_language"));
+        user.setPreferredLanguage(PreferredLanguage.fromPersistence(rs.getString("preferred_language")));
         user.setPasswordHash(rs.getString("password_hash"));
         user.setPasswordRecoveryToken(rs.getString("password_recovery_token"));
         user.setPasswordRecoveryUsedAt(readOffsetDateTime(rs, "password_recovery_used_at"));
@@ -65,7 +66,7 @@ public class UserJdbcDao implements UserDao {
                 givenName,
                 lastName,
                 email,
-                "es",
+                PreferredLanguage.ES.getPersistenceCode(),
                 passwordHash,
                 paymentAlias);
         if (insertedRows == 0) {

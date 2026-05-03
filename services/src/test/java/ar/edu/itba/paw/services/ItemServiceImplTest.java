@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
+import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.math.BigDecimal;
@@ -64,7 +65,7 @@ public class ItemServiceImplTest {
                     createdUser.setGivenName(invocation.getArgument(0));
                     createdUser.setLastName(invocation.getArgument(1));
                     createdUser.setEmail(invocation.getArgument(2));
-                    createdUser.setPreferredLanguage(invocation.getArgument(3));
+                    createdUser.setPreferredLanguage(PreferredLanguage.fromInput(invocation.getArgument(3)));
                     return createdUser;
                 });
         Mockito.when(itemDao.createItem(
@@ -104,6 +105,31 @@ public class ItemServiceImplTest {
         Assertions.assertEquals(1, result.getOwnerId());
         Assertions.assertEquals("item-a", result.getTitle());
         Assertions.assertEquals(2000, result.getPricePerHour());
+    }
+
+    @Test
+    public void testCreatePublicationThrowsWhenOwnerLastNameIsBlank() {
+        final ItemAvailability availability = new ItemAvailability();
+        availability.setWeekday(DayOfWeek.MONDAY);
+        availability.setStartTime(LocalTime.of(10, 0));
+        availability.setEndTime(LocalTime.of(12, 0));
+
+        Assertions.assertThrows(
+                MissingUserNamesException.class,
+                () -> itemService.createPublication(
+                        "A",
+                        " ",
+                        "a@a.com",
+                        "es",
+                        1,
+                        "item-a",
+                        "a",
+                        2000,
+                        2,
+                        BigDecimal.valueOf(100),
+                        1,
+                        1,
+                        List.of(availability)));
     }
 
     @Test

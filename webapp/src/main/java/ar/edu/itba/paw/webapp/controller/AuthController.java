@@ -11,6 +11,7 @@ import ar.edu.itba.paw.models.ReviewTargetType;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.MissingUserNamesException;
 import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.UserService;
@@ -119,11 +120,15 @@ public class AuthController {
 
         try {
             userService.register(
-                    form.getGivenName().trim(),
-                    form.getLastName().trim(),
+                    form.getGivenName(),
+                    form.getLastName(),
                     form.getEmail().trim(),
                     form.getPassword(),
                     form.getPaymentAlias());
+        } catch (final MissingUserNamesException exception) {
+            errors.rejectValue("givenName", "register.validation.names.required");
+            errors.rejectValue("lastName", "register.validation.names.required");
+            return new ModelAndView("register");
         } catch (final IllegalArgumentException exception) {
             errors.rejectValue("email", "register.validation.email.duplicate");
             return new ModelAndView("register");
@@ -272,16 +277,23 @@ public class AuthController {
             return buildProfileView(currentUser, true);
         }
 
-        final User updatedUser = userService
-                .updateProfile(
-                        currentUser.getId(),
-                        form.getGivenName(),
-                        form.getLastName(),
-                        form.getEmail(),
-                        form.getPhone(),
-                        form.getPaymentAlias(),
-                        form.getPreferredLanguage())
-                .orElse(null);
+        final User updatedUser;
+        try {
+            updatedUser = userService
+                    .updateProfile(
+                            currentUser.getId(),
+                            form.getGivenName(),
+                            form.getLastName(),
+                            form.getEmail(),
+                            form.getPhone(),
+                            form.getPaymentAlias(),
+                            form.getPreferredLanguage())
+                    .orElse(null);
+        } catch (final MissingUserNamesException exception) {
+            errors.rejectValue("givenName", "profile.validation.names.required");
+            errors.rejectValue("lastName", "profile.validation.names.required");
+            return buildProfileView(currentUser, true);
+        }
         if (updatedUser == null) {
             errors.rejectValue("email", "profile.validation.email.duplicate");
             return buildProfileView(currentUser, true);
@@ -442,7 +454,7 @@ public class AuthController {
         form.setEmail(user.getEmail());
         form.setPhone(user.getPhone());
         form.setPaymentAlias(user.getPaymentAlias());
-        form.setPreferredLanguage(user.getPreferredLanguage());
+        form.setPreferredLanguage(user.getPreferredLanguage().getPersistenceCode());
     }
 
     private static int sanitizePage(final int page) {
@@ -737,7 +749,7 @@ public class AuthController {
                             .collect(java.util.stream.Collectors.collectingAndThen(
                                     java.util.stream.Collectors.toList(), reviews -> {
                                         if (reviews.isEmpty()) {
-                                            return new RatingSummary();
+                                            return RatingSummary.empty();
                                         }
                                         final double average = reviews.stream()
                                                 .map(Review::getRating)

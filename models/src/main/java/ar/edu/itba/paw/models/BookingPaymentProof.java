@@ -17,12 +17,4 @@ public class BookingPaymentProof {
     private String refusalReason;
     private OffsetDateTime refusedAt;
     private String guestReply;
-
-    public void setCreatedAt(final OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public void setCreatedAt(final String createdAt) {
-        this.createdAt = createdAt == null ? null : OffsetDateTime.parse(createdAt);
-    }
 }

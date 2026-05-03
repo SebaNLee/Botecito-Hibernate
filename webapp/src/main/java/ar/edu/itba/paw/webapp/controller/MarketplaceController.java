@@ -2,19 +2,20 @@ package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
+import ar.edu.itba.paw.models.ItemSearchSort;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.RatingSummary;
 import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.ReviewService;
-import ar.edu.itba.paw.services.SelfBookingNotAllowedException;
 import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.controller.support.MarketplaceBookingRequestSubmitHelper;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
+import ar.edu.itba.paw.webapp.util.RequestParamParsers;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -47,11 +48,10 @@ import org.springframework.web.servlet.ModelAndView;
 @Controller
 @RequiredArgsConstructor
 public class MarketplaceController {
-    private static final String DEFAULT_SORT = "newest";
     private static final int MARKETPLACE_PAGE_SIZE = 10;
 
     private final ItemService itemService;
-    private final BookingRequestService bookingRequestService;
+    private final MarketplaceBookingRequestSubmitHelper bookingRequestSubmitHelper;
     private final UserService userService;
     private final ReviewService reviewService;
 
@@ -74,9 +74,9 @@ public class MarketplaceController {
             @RequestParam(value = "maxWeight", required = false) final String requestedMaxWeight,
             @RequestParam(value = "difficultyLevel", required = false) final String requestedDifficultyLevel,
             @RequestParam(value = "minRating", required = false) final String requestedMinRating,
-            @RequestParam(value = "sort", required = false, defaultValue = DEFAULT_SORT) final String sort,
+            @RequestParam(value = "sort", required = false, defaultValue = "newest") final String sort,
             @RequestParam(value = "page", required = false) final String requestedPage) {
-        final String resolvedSort = resolveSort(sort);
+        final ItemSearchSort resolvedSort = ItemSearchSort.fromRequestParam(sort);
         final ItemSearchCriteria criteria = buildItemSearchCriteria(
                 requestedSearchQuery,
                 requestedLocationOptionId,
@@ -95,7 +95,7 @@ public class MarketplaceController {
         mav.addObject("itemImages", buildItemImagesMap(itemPage.getContent(), request.getContextPath()));
         mav.addObject("itemsCount", itemPage.getTotalItems());
         mav.addObject("itemPage", itemPage);
-        mav.addObject("sort", resolvedSort);
+        mav.addObject("sort", resolvedSort.getRequestValue());
         mav.addObject(
                 "itemRatingSummaries",
                 reviewService.getItemRatingSummaries(
@@ -194,31 +194,39 @@ public class MarketplaceController {
             return buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
         }
 
-        try {
-            final String trimmedMessage = isBlank(form.getRequestMessage())
-                    ? null
-                    : form.getRequestMessage().trim();
-            bookingRequestService.createBookingRequest(
-                    itemId,
-                    currentUser.getGivenName(),
-                    currentUser.getLastName(),
-                    currentUser.getEmail(),
-                    currentUser.getPreferredLanguage(),
-                    toOffsetDateTime(form.getDate(), form.getStartTime()),
-                    toOffsetDateTime(form.getDate(), form.getEndTime()),
-                    trimmedMessage);
-            final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
-            mav.addObject("mailSuccessCode", "reservation.request.success");
-            mav.addObject("mailSuccessHostName", owner.map(User::getName).orElse(""));
-            return mav;
-        } catch (final SelfBookingNotAllowedException e) {
-            errors.reject("reservation.selfBooking");
-            return buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
-        } catch (final Exception e) {
-            final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
-            mav.addObject("mailErrorCode", "reservation.request.error");
-            return mav;
-        }
+        final String trimmedMessage = isBlank(form.getRequestMessage())
+                ? null
+                : form.getRequestMessage().trim();
+        final MarketplaceBookingRequestSubmitHelper.Outcome outcome = bookingRequestSubmitHelper.createBookingRequest(
+                itemId,
+                currentUser.getGivenName(),
+                currentUser.getLastName(),
+                currentUser.getEmail(),
+                currentUser.getPreferredLanguage().getPersistenceCode(),
+                toOffsetDateTime(form.getDate(), form.getStartTime()),
+                toOffsetDateTime(form.getDate(), form.getEndTime()),
+                trimmedMessage);
+        return switch (outcome) {
+            case SUCCESS -> {
+                final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
+                mav.addObject("mailSuccessCode", "reservation.request.success");
+                mav.addObject("mailSuccessHostName", owner.map(User::getName).orElse(""));
+                yield mav;
+            }
+            case SELF_BOOKING_NOT_ALLOWED -> {
+                errors.reject("reservation.selfBooking");
+                yield buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
+            }
+            case MISSING_USER_NAMES -> {
+                errors.reject("reservation.validation.requesterNames.required");
+                yield buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
+            }
+            case UNEXPECTED_ERROR -> {
+                final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, null, form);
+                mav.addObject("mailErrorCode", "reservation.request.error");
+                yield mav;
+            }
+        };
     }
 
     private ModelAndView buildMarketplaceItemView(
@@ -358,20 +366,8 @@ public class MarketplaceController {
         return mav;
     }
 
-    private static Integer parseInteger(final String value) {
-        if (isBlank(value)) {
-            return null;
-        }
-
-        try {
-            return Integer.parseInt(value.trim());
-        } catch (final NumberFormatException exception) {
-            return null;
-        }
-    }
-
     private static int resolvePage(final String page) {
-        final Integer parsedPage = parseInteger(page);
+        final Integer parsedPage = RequestParamParsers.parseInteger(page);
         if (parsedPage == null || parsedPage < 1) {
             return 1;
         }
@@ -388,14 +384,14 @@ public class MarketplaceController {
             final String requestedMaxWeight,
             final Integer difficultyLevel,
             final Integer minAverageRating,
-            final String sort) {
+            final ItemSearchSort sort) {
         final ItemSearchCriteria criteria = new ItemSearchCriteria();
-        criteria.setLocationOptionId(parseInteger(requestedLocationOptionId));
-        criteria.setDate(requestedDate);
-        criteria.setStartTime(requestedStartTime);
-        criteria.setEndTime(requestedEndTime);
-        criteria.setCapacity(parseInteger(requestedCapacity));
-        final Integer maxWeight = parseInteger(requestedMaxWeight);
+        criteria.setLocationOptionId(RequestParamParsers.parseInteger(requestedLocationOptionId));
+        criteria.setDate(RequestParamParsers.parseLocalDate(requestedDate));
+        criteria.setStartTime(RequestParamParsers.parseLocalTime(requestedStartTime));
+        criteria.setEndTime(RequestParamParsers.parseLocalTime(requestedEndTime));
+        criteria.setCapacity(RequestParamParsers.parseInteger(requestedCapacity));
+        final Integer maxWeight = RequestParamParsers.parseInteger(requestedMaxWeight);
         criteria.setMaxWeightKg(maxWeight == null ? null : BigDecimal.valueOf(maxWeight.longValue()));
         criteria.setDifficultyLevel(difficultyLevel);
         criteria.setMinAverageRating(minAverageRating);
@@ -405,7 +401,7 @@ public class MarketplaceController {
     }
 
     private static Integer parseMinAverageRating(final String value) {
-        final Integer parsed = parseInteger(value);
+        final Integer parsed = RequestParamParsers.parseInteger(value);
         if (parsed == null || parsed < 1 || parsed > 5) {
             return null;
         }
@@ -413,22 +409,11 @@ public class MarketplaceController {
     }
 
     private static Integer parseDifficultyLevel(final String value) {
-        final Integer parsed = parseInteger(value);
+        final Integer parsed = RequestParamParsers.parseInteger(value);
         if (parsed == null || parsed < 1 || parsed > 5) {
             return null;
         }
         return parsed;
-    }
-
-    private static String resolveSort(final String sort) {
-        if (sort == null) {
-            return DEFAULT_SORT;
-        }
-
-        return switch (sort) {
-            case "newest", "oldest", "priceAsc", "priceDesc" -> sort;
-            default -> DEFAULT_SORT;
-        };
     }
 
     private Map<Integer, String> buildItemImagesMap(final List<Item> items, final String servletContextPath) {

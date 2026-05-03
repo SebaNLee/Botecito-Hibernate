@@ -4,7 +4,11 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.MissingUserNamesException;
 import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.services.utils.PublishAvailabilityRules;
+import ar.edu.itba.paw.services.utils.PublishAvailabilityRules.DaySlotsIssue;
+import ar.edu.itba.paw.services.utils.PublishAvailabilityRules.SlotTimesIssue;
 import ar.edu.itba.paw.services.utils.TimeRange;
 import ar.edu.itba.paw.services.utils.TimeRangeList;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
@@ -12,7 +16,6 @@ import ar.edu.itba.paw.webapp.form.PublishBoatForm.UploadedImage;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
-import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -226,7 +229,7 @@ public class PublishController {
                     currentUser.getGivenName(),
                     currentUser.getLastName(),
                     currentUser.getEmail(),
-                    currentUser.getPreferredLanguage(),
+                    currentUser.getPreferredLanguage().getPersistenceCode(),
                     Integer.parseInt(form.getItemTypeId().trim()),
                     form.getTitle().trim(),
                     form.getDescription() == null ? "" : form.getDescription().trim(),
@@ -241,6 +244,11 @@ public class PublishController {
                 itemService.replaceGallery(createdItem.getId(), form.orderedImageBytes());
             }
 
+        } catch (final MissingUserNamesException e) {
+            final ModelAndView mav = new ModelAndView("publish-contact");
+            errors.reject("publish.validation.ownerNames.required");
+            addSummaryData(mav, form, locale);
+            return mav;
         } catch (final IllegalArgumentException e) {
             final ModelAndView mav = new ModelAndView("publish-contact");
             errors.reject("publish.submit.persistenceError");
@@ -299,8 +307,6 @@ public class PublishController {
         return new BigDecimal(maxWeight.trim());
     }
 
-    private static final long MIN_RANGE_MINUTES = 120;
-    private static final long MIN_SEPARATION_MINUTES = 30;
     private static final String AVAILABILITY_RANGE_SEPARATOR = "\\|";
 
     private static final Map<DayOfWeek, String> WEEKDAY_LABELS = new LinkedHashMap<>();
@@ -374,8 +380,18 @@ public class PublishController {
                 final LocalTime start = LocalTime.parse(parts[1]);
                 final LocalTime end = LocalTime.parse(parts[2]);
 
-                if (!end.isAfter(start)) {
+                final SlotTimesIssue slotIssue = PublishAvailabilityRules.validateSlotTimes(start, end);
+                if (slotIssue == SlotTimesIssue.END_NOT_AFTER_START) {
                     errors.reject("publish.availability.end.invalid", new Object[] {dayLabel(locale, weekday)}, null);
+                    continue;
+                }
+                if (slotIssue == SlotTimesIssue.OFF_TIME_GRID) {
+                    errors.reject("publish.availability.timeStep", new Object[] {dayLabel(locale, weekday)}, null);
+                    continue;
+                }
+                if (slotIssue == SlotTimesIssue.MISSING_TIMES) {
+                    errors.reject(
+                            "publish.availability.format.invalid", new Object[] {dayLabel(locale, weekday)}, null);
                     continue;
                 }
 
@@ -414,9 +430,9 @@ public class PublishController {
                 }
 
                 final ItemAvailability availability = new ItemAvailability();
-                availability.setWeekday(weekday.name());
-                availability.setStartTime(formatTime(range.getStart()));
-                availability.setEndTime(formatTime(range.getEnd()));
+                availability.setWeekday(weekday);
+                availability.setStartTime(range.getStart());
+                availability.setEndTime(range.getEnd());
                 availabilities.add(availability);
             }
         }
@@ -601,44 +617,20 @@ public class PublishController {
     private void validateDaySlots(
             final TimeRangeList daySlots, final DayOfWeek weekday, final BindingResult errors, final Locale locale) {
         final String dayLabel = dayLabel(locale, weekday);
-        final List<LocalTime[]> parsed = new ArrayList<>();
-
-        LocalTime previousEnd = null;
-
-        for (final TimeRange slot : daySlots) {
-            if (slot == null || slot.getStart() == null || slot.getEnd() == null) {
-                errors.reject("publish.availability.format.invalid", new Object[] {dayLabel}, null);
+        final DaySlotsIssue issue = PublishAvailabilityRules.validateOrderedDaySlots(daySlots);
+        switch (issue) {
+            case OK -> {
                 return;
             }
-
-            final LocalTime start = slot.getStart();
-            final LocalTime end = slot.getEnd();
-            if (!end.isAfter(start)) {
-                errors.reject("publish.availability.end.invalid", new Object[] {dayLabel}, null);
-                return;
-            }
-
-            if (Duration.between(start, end).toMinutes() < MIN_RANGE_MINUTES) {
-                errors.reject("publish.availability.min.duration", new Object[] {dayLabel}, null);
-                return;
-            }
-
-            if (previousEnd != null && Duration.between(previousEnd, start).toMinutes() < MIN_SEPARATION_MINUTES) {
-                errors.reject("publish.availability.min.separation", new Object[] {dayLabel}, null);
-                return;
-            }
-
-            previousEnd = end;
-
-            parsed.add(new LocalTime[] {start, end});
-        }
-
-        parsed.sort(Comparator.comparing(r -> r[0]));
-        for (int i = 1; i < parsed.size(); i++) {
-            if (parsed.get(i)[0].isBefore(parsed.get(i - 1)[1])) {
-                errors.reject("publish.availability.overlap", new Object[] {dayLabel}, null);
-                return;
-            }
+            case MISSING_SLOT_OR_TIME -> errors.reject(
+                    "publish.availability.format.invalid", new Object[] {dayLabel}, null);
+            case END_NOT_AFTER_START -> errors.reject(
+                    "publish.availability.end.invalid", new Object[] {dayLabel}, null);
+            case OFF_TIME_GRID -> errors.reject("publish.availability.timeStep", new Object[] {dayLabel}, null);
+            case RANGE_TOO_SHORT -> errors.reject("publish.availability.min.duration", new Object[] {dayLabel}, null);
+            case RANGES_TOO_CLOSE -> errors.reject(
+                    "publish.availability.min.separation", new Object[] {dayLabel}, null);
+            case OVERLAP -> errors.reject("publish.availability.overlap", new Object[] {dayLabel}, null);
         }
     }
 

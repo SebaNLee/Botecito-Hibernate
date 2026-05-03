@@ -11,12 +11,4 @@ public class ItemSnapshot extends Item {
     private Integer bookingId;
     private byte[] coverImageData;
     private OffsetDateTime snapshotCreatedAt;
-
-    public void setSnapshotCreatedAt(final OffsetDateTime snapshotCreatedAt) {
-        this.snapshotCreatedAt = snapshotCreatedAt;
-    }
-
-    public void setSnapshotCreatedAt(final String snapshotCreatedAt) {
-        this.snapshotCreatedAt = snapshotCreatedAt == null ? null : OffsetDateTime.parse(snapshotCreatedAt);
-    }
 }

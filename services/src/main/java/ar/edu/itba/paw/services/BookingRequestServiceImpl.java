@@ -5,8 +5,10 @@ import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
+import ar.edu.itba.paw.services.utils.UserNameRules;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -47,6 +49,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             final OffsetDateTime endTime,
             final String description) {
         validateAnticipation(startTime);
+        UserNameRules.requireBothLegalNames(requesterGivenName, requesterLastName);
         final User requesterUser = resolveOrCreateRequesterUser(
                 requesterGivenName, requesterLastName, requesterEmail, requesterPreferredLanguage);
         final Item item = itemDao.findAnyItemById(itemId)
@@ -362,21 +365,20 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             final String requesterLastName,
             final String requesterEmail,
             final String requesterPreferredLanguage) {
-        final String givenName = normalizeNamePart(requesterGivenName, "Guest");
-        final String lastName = normalizeNamePart(requesterLastName, "");
-        final String preferredLanguage = normalizePreferredLanguage(requesterPreferredLanguage);
+        final PreferredLanguage preferredLanguage = PreferredLanguage.fromInput(requesterPreferredLanguage);
+        final String preferredLanguageCode = preferredLanguage.getPersistenceCode();
 
         final Optional<User> existingUser = itemDao.findUserByEmail(requesterEmail);
         if (existingUser.isPresent()) {
             final User user = existingUser.get();
-            itemDao.updateUserProfile(user.getId(), givenName, lastName, preferredLanguage);
-            user.setGivenName(givenName);
-            user.setLastName(lastName);
+            itemDao.updateUserProfile(user.getId(), requesterGivenName, requesterLastName, preferredLanguageCode);
+            user.setGivenName(requesterGivenName);
+            user.setLastName(requesterLastName);
             user.setPreferredLanguage(preferredLanguage);
             return user;
         }
 
-        return itemDao.createUser(givenName, lastName, requesterEmail, preferredLanguage);
+        return itemDao.createUser(requesterGivenName, requesterLastName, requesterEmail, preferredLanguageCode);
     }
 
     private Optional<BookingRequest> toBookingRequest(final ItemBooking booking) {
@@ -404,9 +406,9 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     }
 
     private String resolveRequesterLocaleTag(final User requesterUser) {
-        if (requesterUser.getPreferredLanguage() != null
-                && !requesterUser.getPreferredLanguage().isBlank()) {
-            return requesterUser.getPreferredLanguage();
+        final PreferredLanguage preference = requesterUser.getPreferredLanguage();
+        if (preference != null) {
+            return preference.getPersistenceCode();
         }
         return mailService.resolveLocale(requesterUser.getEmail()).toLanguageTag();
     }
@@ -508,13 +510,6 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         }
     }
 
-    private static String normalizeNamePart(final String value, final String fallback) {
-        if (value == null || value.isBlank()) {
-            return fallback;
-        }
-        return value.trim();
-    }
-
     private static boolean canSubmitPaymentProof(final BookingState state) {
         return state == BookingState.BOOKING_CONFIRMED || state == BookingState.BOOKING_PAYMENT_REFUSED;
     }
@@ -525,13 +520,6 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         }
         final String trimmed = reply.trim();
         return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    private static String normalizePreferredLanguage(final String preferredLanguage) {
-        if ("en".equalsIgnoreCase(preferredLanguage)) {
-            return "en";
-        }
-        return "es";
     }
 
     private static boolean isBlockingBooking(final ItemBooking booking) {

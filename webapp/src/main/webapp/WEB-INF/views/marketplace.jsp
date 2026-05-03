@@ -306,7 +306,7 @@
             <div class="flex items-center gap-1 text-sm font-semibold text-on-surface-variant">
               <span class="material-symbols-outlined text-base text-warning">star</span>
               <c:choose>
-                <c:when test="${itemRating != null && itemRating.hasReviews}">
+                <c:when test="${itemRating != null && itemRating.hasReviews()}">
                   <fmt:formatNumber value="${itemRating.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
                   <span class="text-outline">(<c:out value="${itemRating.totalReviews}" />)</span>
                 </c:when>

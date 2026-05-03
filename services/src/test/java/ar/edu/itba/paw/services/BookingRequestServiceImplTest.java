@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.time.OffsetDateTime;
@@ -31,13 +32,23 @@ public class BookingRequestServiceImplTest {
     private MailService mailService;
 
     @Test
+    public void testCreateBookingRequestThrowsWhenRequesterLastNameIsBlank() {
+        final OffsetDateTime start = OffsetDateTime.now().plusDays(1);
+        final OffsetDateTime end = start.plusHours(2);
+
+        Assertions.assertThrows(
+                MissingUserNamesException.class,
+                () -> bookingRequestService.createBookingRequest(15, "A", " ", "a@a.com", "es", start, end, "a"));
+    }
+
+    @Test
     public void testCreateBookingRequestWhenUserExists() {
         final User existingUser = new User();
         existingUser.setId(7);
         existingUser.setGivenName("A");
         existingUser.setLastName("A");
         existingUser.setEmail("a@a.com");
-        existingUser.setPreferredLanguage("es");
+        existingUser.setPreferredLanguage(PreferredLanguage.ES);
 
         final ItemBooking createdBooking = new ItemBooking();
         createdBooking.setItemId(15);
@@ -72,7 +83,7 @@ public class BookingRequestServiceImplTest {
                     return createdBooking;
                 });
         final BookingRequest result =
-                bookingRequestService.createBookingRequest(15, " A ", " B ", "a@a.com", "en", start, end, "a");
+                bookingRequestService.createBookingRequest(15, "A", "B", "a@a.com", "en", start, end, "a");
         Assertions.assertNotNull(result);
         Assertions.assertNotNull(result.getToken());
         Assertions.assertFalse(result.getToken().isBlank());
@@ -123,7 +134,7 @@ public class BookingRequestServiceImplTest {
         user.setGivenName("A");
         user.setLastName("A");
         user.setEmail("a@a.com");
-        user.setPreferredLanguage("es");
+        user.setPreferredLanguage(PreferredLanguage.ES);
 
         Mockito.when(itemDao.resolveBookingByHostDecisionToken(
                         Mockito.eq("t"), Mockito.eq(BookingState.BOOKING_CONFIRMED), Mockito.any()))
@@ -170,7 +181,7 @@ public class BookingRequestServiceImplTest {
         requester.setGivenName("A");
         requester.setLastName("A");
         requester.setEmail("a@a.com");
-        requester.setPreferredLanguage("es");
+        requester.setPreferredLanguage(PreferredLanguage.ES);
 
         final BookingPaymentProof proof = new BookingPaymentProof();
         proof.setBookingId(30);
@@ -196,7 +207,7 @@ public class BookingRequestServiceImplTest {
         ownerUser.setGivenName("O");
         ownerUser.setLastName("O");
         ownerUser.setEmail("o@o.com");
-        ownerUser.setPreferredLanguage("es");
+        ownerUser.setPreferredLanguage(PreferredLanguage.ES);
 
         final Item item = new Item();
         item.setId(15);

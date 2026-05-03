@@ -9,7 +9,6 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -24,7 +23,7 @@ final class MarketplaceAvailabilityMatcher {
             final ItemSearchCriteria criteria,
             final List<ItemAvailability> availabilities,
             final List<ItemBooking> bookings) {
-        if (isBlank(criteria.getDate())) {
+        if (criteria.getDate() == null) {
             return matchesWithoutCalendarDate(criteria, availabilities);
         }
 
@@ -33,19 +32,24 @@ final class MarketplaceAvailabilityMatcher {
             return false;
         }
 
-        if (isBlank(criteria.getStartTime()) && isBlank(criteria.getEndTime())) {
+        if (criteria.getStartTime() == null && criteria.getEndTime() == null) {
             return hasAnyContinuousTwoHourWindow(List.copyOf(availableTimes));
         }
 
-        if (!isBlank(criteria.getStartTime()) && isBlank(criteria.getEndTime())) {
-            return hasContinuousTwoHourWindowStartingAt(List.copyOf(availableTimes), criteria.getStartTime());
+        if (criteria.getStartTime() != null && criteria.getEndTime() == null) {
+            return hasContinuousTwoHourWindowStartingAt(
+                    List.copyOf(availableTimes), criteria.getStartTime().toString());
         }
 
-        if (isBlank(criteria.getStartTime())) {
-            return hasContinuousTwoHourWindowEndingAt(List.copyOf(availableTimes), criteria.getEndTime());
+        if (criteria.getStartTime() == null) {
+            return hasContinuousTwoHourWindowEndingAt(
+                    List.copyOf(availableTimes), criteria.getEndTime().toString());
         }
 
-        return hasContinuousAvailability(List.copyOf(availableTimes), criteria.getStartTime(), criteria.getEndTime());
+        return hasContinuousAvailability(
+                List.copyOf(availableTimes),
+                criteria.getStartTime().toString(),
+                criteria.getEndTime().toString());
     }
 
     /**
@@ -54,19 +58,20 @@ final class MarketplaceAvailabilityMatcher {
      */
     private static boolean matchesWithoutCalendarDate(
             final ItemSearchCriteria criteria, final List<ItemAvailability> availabilities) {
-        if (isBlank(criteria.getStartTime()) && isBlank(criteria.getEndTime())) {
+        if (criteria.getStartTime() == null && criteria.getEndTime() == null) {
             return true;
         }
 
-        if (!isBlank(criteria.getStartTime()) && isBlank(criteria.getEndTime())) {
-            return matchesStartTimeAnyWeekday(criteria.getStartTime(), availabilities);
+        if (criteria.getStartTime() != null && criteria.getEndTime() == null) {
+            return matchesStartTimeAnyWeekday(criteria.getStartTime().toString(), availabilities);
         }
 
-        if (isBlank(criteria.getStartTime())) {
-            return matchesEndTimeAnyWeekday(criteria.getEndTime(), availabilities);
+        if (criteria.getStartTime() == null) {
+            return matchesEndTimeAnyWeekday(criteria.getEndTime().toString(), availabilities);
         }
 
-        return matchesRangeAnyWeekday(criteria.getStartTime(), criteria.getEndTime(), availabilities);
+        return matchesRangeAnyWeekday(
+                criteria.getStartTime().toString(), criteria.getEndTime().toString(), availabilities);
     }
 
     private static boolean matchesStartTimeAnyWeekday(
@@ -116,24 +121,22 @@ final class MarketplaceAvailabilityMatcher {
     }
 
     private static TreeSet<String> availableTimesForDate(
-            final String requestedDate, final List<ItemAvailability> availabilities, final List<ItemBooking> bookings) {
-        try {
-            final LocalDate date = LocalDate.parse(requestedDate);
-            final TreeSet<String> scheduledTimes = new TreeSet<>();
-            final TreeSet<String> bookedTimes = new TreeSet<>();
-            for (final ItemAvailability availability : availabilities) {
-                if (availability.getWeekday() == date.getDayOfWeek()) {
-                    addTimeRange(scheduledTimes, availability.getStartTime(), availability.getEndTime());
-                }
-            }
-            for (final ItemBooking booking : bookings) {
-                addBookedTimesForDate(bookedTimes, date, booking);
-            }
-            scheduledTimes.removeAll(bookedTimes);
-            return scheduledTimes;
-        } catch (final DateTimeParseException exception) {
+            final LocalDate date, final List<ItemAvailability> availabilities, final List<ItemBooking> bookings) {
+        if (date == null) {
             return new TreeSet<>();
         }
+        final TreeSet<String> scheduledTimes = new TreeSet<>();
+        final TreeSet<String> bookedTimes = new TreeSet<>();
+        for (final ItemAvailability availability : availabilities) {
+            if (availability.getWeekday() == date.getDayOfWeek()) {
+                addTimeRange(scheduledTimes, availability.getStartTime(), availability.getEndTime());
+            }
+        }
+        for (final ItemBooking booking : bookings) {
+            addBookedTimesForDate(bookedTimes, date, booking);
+        }
+        scheduledTimes.removeAll(bookedTimes);
+        return scheduledTimes;
     }
 
     private static void addTimeRange(final TreeSet<String> times, final LocalTime startTime, final LocalTime endTime) {
@@ -224,9 +227,5 @@ final class MarketplaceAvailabilityMatcher {
         } catch (final RuntimeException exception) {
             return false;
         }
-    }
-
-    private static boolean isBlank(final String value) {
-        return value == null || value.isBlank();
     }
 }

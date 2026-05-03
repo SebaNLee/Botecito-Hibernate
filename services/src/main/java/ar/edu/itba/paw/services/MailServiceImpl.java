@@ -3,6 +3,7 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
+import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -265,18 +266,22 @@ public class MailServiceImpl implements MailService {
     @Override
     public Locale resolveLocale(final String recipientIdentifier) {
         final Optional<Locale> userLocale = itemDao.findUserByEmail(recipientIdentifier)
-                .map(user -> toSupportedLocale(user.getPreferredLanguage()));
+                .map(user -> localeFromPreferredLanguage(user.getPreferredLanguage()));
         if (userLocale.isPresent()) {
             return userLocale.get();
         }
         return Locale.of("es");
     }
 
-    private static Locale toSupportedLocale(final String preferredLanguage) {
-        if ("en".equalsIgnoreCase(preferredLanguage)) {
-            return Locale.ENGLISH;
+    private static Locale localeFromPreferredLanguage(final PreferredLanguage preferredLanguage) {
+        if (preferredLanguage == null) {
+            return Locale.of("es");
         }
-        return Locale.of("es");
+        return preferredLanguage.toLocale();
+    }
+
+    private static Locale toSupportedLocale(final String preferredLanguage) {
+        return localeFromPreferredLanguage(PreferredLanguage.fromPersistence(preferredLanguage));
     }
 
     private static boolean isInlineProofImage(final byte[] proofFileData, final String proofContentType) {

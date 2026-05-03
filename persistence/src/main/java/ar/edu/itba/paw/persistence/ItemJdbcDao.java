@@ -6,9 +6,11 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
+import ar.edu.itba.paw.models.ItemSearchSort;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
+import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.RatingSummary;
 import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.ReviewTargetType;
@@ -23,7 +25,6 @@ import java.time.Instant;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,7 +45,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class ItemJdbcDao implements ItemDao {
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
     private static final String EDIT_CONFLICT_BOOKING_STATES =
             "'BOOKING_PENDING', 'BOOKING_CONFIRMED', 'BOOKING_PAYMENT_SUBMITTED', 'BOOKING_PAID'";
     private static final String PUBLICATION_EDIT_SNAPSHOT_STATES =
@@ -71,20 +71,20 @@ public class ItemJdbcDao implements ItemDao {
         item.setLocation(rs.getString("location"));
         item.setActive(rs.getBoolean("active"));
         item.setOwnerDeleteToken(rs.getString("owner_delete_token"));
-        item.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
+        item.setCreatedAt(readOffsetDateTime(rs, "created_at"));
         return item;
     };
 
     private static final @NonNull RowMapper<User> USER_ROW_MAPPER = (ResultSet rs, int rowNum) -> {
         final User user = new User();
         user.setId(rs.getInt("id"));
-        user.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
+        user.setCreatedAt(readOffsetDateTime(rs, "created_at"));
         user.setGivenName(rs.getString("given_name"));
         user.setLastName(rs.getString("last_name"));
         user.setEmail(rs.getString("email"));
         user.setPhone(rs.getString("phone"));
         user.setPaymentAlias(rs.getString("payment_alias"));
-        user.setPreferredLanguage(rs.getString("preferred_language"));
+        user.setPreferredLanguage(PreferredLanguage.fromPersistence(rs.getString("preferred_language")));
         return user;
     };
 
@@ -100,9 +100,12 @@ public class ItemJdbcDao implements ItemDao {
                 final ItemAvailability availability = new ItemAvailability();
                 availability.setId(rs.getInt("id"));
                 availability.setItemId(rs.getInt("item_id"));
-                availability.setWeekday(rs.getString("weekday"));
-                availability.setStartTime(rs.getTime("start_time").toLocalTime().format(TIME_FORMAT));
-                availability.setEndTime(rs.getTime("end_time").toLocalTime().format(TIME_FORMAT));
+                final String weekdayName = rs.getString("weekday");
+                availability.setWeekday(weekdayName == null ? null : DayOfWeek.valueOf(weekdayName));
+                final Time startSql = rs.getTime("start_time");
+                availability.setStartTime(startSql == null ? null : startSql.toLocalTime());
+                final Time endSql = rs.getTime("end_time");
+                availability.setEndTime(endSql == null ? null : endSql.toLocalTime());
                 return availability;
             };
 
@@ -111,14 +114,14 @@ public class ItemJdbcDao implements ItemDao {
         booking.setId(rs.getInt("id"));
         booking.setItemId(rs.getInt("item_id"));
         booking.setGuestId(rs.getInt("guest_id"));
-        booking.setStartTime(formatDateTime(readOffsetDateTime(rs, "start_time")));
-        booking.setEndTime(formatDateTime(readOffsetDateTime(rs, "end_time")));
-        booking.setState(rs.getString("state"));
+        booking.setStartTime(readOffsetDateTime(rs, "start_time"));
+        booking.setEndTime(readOffsetDateTime(rs, "end_time"));
+        booking.setState(BookingState.valueOf(rs.getString("state")));
         booking.setRequestMessage(rs.getString("request_message"));
         booking.setHostDecisionToken(rs.getString("host_decision_token"));
-        booking.setHostDecisionUsedAt(formatDateTime(readOffsetDateTime(rs, "host_decision_used_at")));
-        booking.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
-        booking.setUpdatedAt(formatDateTime(readOffsetDateTime(rs, "updated_at")));
+        booking.setHostDecisionUsedAt(readOffsetDateTime(rs, "host_decision_used_at"));
+        booking.setCreatedAt(readOffsetDateTime(rs, "created_at"));
+        booking.setUpdatedAt(readOffsetDateTime(rs, "updated_at"));
         return booking;
     };
 
@@ -137,7 +140,7 @@ public class ItemJdbcDao implements ItemDao {
         snapshot.setLocationOptionId((Integer) rs.getObject("location_option_id"));
         snapshot.setLocation(rs.getString("location_name"));
         snapshot.setCoverImageData(rs.getBytes("cover_image_data"));
-        snapshot.setSnapshotCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
+        snapshot.setSnapshotCreatedAt(readOffsetDateTime(rs, "created_at"));
         return snapshot;
     };
 
@@ -150,27 +153,24 @@ public class ItemJdbcDao implements ItemDao {
                 proof.setFileName(rs.getString("file_name"));
                 proof.setContentType(rs.getString("content_type"));
                 proof.setFileData(rs.getBytes("file_data"));
-                proof.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
+                proof.setCreatedAt(readOffsetDateTime(rs, "created_at"));
                 proof.setRefusalReason(rs.getString("refusal_reason"));
                 proof.setRefusedAt(readOffsetDateTime(rs, "refused_at"));
                 proof.setGuestReply(rs.getString("guest_reply"));
                 return proof;
             };
 
-    private static final @NonNull RowMapper<Review> REVIEW_ROW_MAPPER = (ResultSet rs, int rowNum) -> {
-        final Review review = new Review();
-        review.setId(rs.getInt("id"));
-        review.setBookingId(rs.getInt("booking_id"));
-        review.setReviewerUserId(rs.getInt("reviewer_user_id"));
-        review.setRevieweeUserId(rs.getInt("reviewee_user_id"));
-        review.setTargetType(rs.getString("target_type"));
-        review.setTargetId(rs.getInt("target_id"));
-        review.setRating(rs.getInt("rating"));
-        review.setComment(rs.getString("comment"));
-        review.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
-        review.setUpdatedAt(formatDateTime(readOffsetDateTime(rs, "updated_at")));
-        return review;
-    };
+    private static final @NonNull RowMapper<Review> REVIEW_ROW_MAPPER = (ResultSet rs, int rowNum) -> new Review(
+            readRequiredIntColumn(rs, "id"),
+            readRequiredIntColumn(rs, "booking_id"),
+            readRequiredIntColumn(rs, "reviewer_user_id"),
+            readRequiredIntColumn(rs, "reviewee_user_id"),
+            ReviewTargetType.valueOf(rs.getString("target_type")),
+            readRequiredIntColumn(rs, "target_id"),
+            readRequiredIntColumn(rs, "rating"),
+            rs.getString("comment"),
+            readOffsetDateTime(rs, "created_at"),
+            readOffsetDateTime(rs, "updated_at"));
 
     private final @NonNull JdbcTemplate jdbcTemplate;
     private final boolean postgresDialect;
@@ -1081,7 +1081,7 @@ public class ItemJdbcDao implements ItemDao {
                         + " FROM review WHERE CAST(target_type AS VARCHAR(16)) = ? AND target_id = ?",
                 rs -> {
                     if (!rs.next()) {
-                        return new RatingSummary();
+                        return RatingSummary.empty();
                     }
                     return new RatingSummary(rs.getDouble("avg_rating"), rs.getInt("total_reviews"));
                 },
@@ -1210,15 +1210,15 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     private static String marketplaceOrderBy(final ItemSearchCriteria criteria) {
-        final String sort = criteria == null ? null : criteria.getSort();
+        final ItemSearchSort sort = criteria == null ? null : criteria.getSort();
         if (sort == null) {
             return " ORDER BY i.created_at DESC, i.id DESC";
         }
         return switch (sort) {
-            case "oldest" -> " ORDER BY i.created_at ASC, i.id ASC";
-            case "priceAsc" -> " ORDER BY i.price_per_hour ASC, i.id ASC";
-            case "priceDesc" -> " ORDER BY i.price_per_hour DESC, i.id ASC";
-            default -> " ORDER BY i.created_at DESC, i.id DESC";
+            case OLDEST -> " ORDER BY i.created_at ASC, i.id ASC";
+            case PRICE_ASC -> " ORDER BY i.price_per_hour ASC, i.id ASC";
+            case PRICE_DESC -> " ORDER BY i.price_per_hour DESC, i.id ASC";
+            case NEWEST -> " ORDER BY i.created_at DESC, i.id DESC";
         };
     }
 
@@ -1404,6 +1404,14 @@ public class ItemJdbcDao implements ItemDao {
         return Boolean.TRUE.equals(hasTable);
     }
 
+    private static Integer readRequiredIntColumn(final ResultSet rs, final String column) throws SQLException {
+        final int value = rs.getInt(column);
+        if (rs.wasNull()) {
+            throw new IllegalStateException("Expected non-null integer column: " + column);
+        }
+        return value;
+    }
+
     private static OffsetDateTime readOffsetDateTime(final ResultSet rs, final String column) throws SQLException {
         final Object value = rs.getObject(column);
         if (value == null) {
@@ -1416,9 +1424,5 @@ public class ItemJdbcDao implements ItemDao {
             return timestamp.toInstant().atZone(ZoneId.systemDefault()).toOffsetDateTime();
         }
         return OffsetDateTime.parse(value.toString());
-    }
-
-    private static String formatDateTime(final OffsetDateTime dateTime) {
-        return dateTime == null ? null : dateTime.toString();
     }
 }

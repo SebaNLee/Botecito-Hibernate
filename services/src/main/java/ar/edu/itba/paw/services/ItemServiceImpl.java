@@ -7,8 +7,11 @@ import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
+import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
+import ar.edu.itba.paw.services.utils.PublishAvailabilityRules;
+import ar.edu.itba.paw.services.utils.UserNameRules;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -30,8 +33,6 @@ public final class ItemServiceImpl implements ItemService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ItemServiceImpl.class);
     private static final int MAX_IMAGES_PER_ITEM = 10;
-    private static final int TIME_STEP_MINUTES = 30;
-
     private final ItemDao itemDao;
     private final MailService mailService;
 
@@ -163,6 +164,7 @@ public final class ItemServiceImpl implements ItemService {
             final List<ItemAvailability> availabilities) {
 
         LOGGER.info("Creating new publication for owner with email {}", ownerEmail);
+        UserNameRules.requireBothLegalNames(ownerGivenName, ownerLastName);
 
         final int validatedTypeId = validateItemTypeId(typeId);
         final int validatedLocationOptionId = validateLocationOptionId(locationOptionId);
@@ -375,17 +377,18 @@ public final class ItemServiceImpl implements ItemService {
             final String ownerLastName,
             final String ownerEmail,
             final String ownerPreferredLanguage) {
-        final String preferredLanguage = "en".equalsIgnoreCase(ownerPreferredLanguage) ? "en" : "es";
+        final PreferredLanguage preferredLanguage = PreferredLanguage.fromInput(ownerPreferredLanguage);
+        final String preferredLanguageCode = preferredLanguage.getPersistenceCode();
         final Optional<User> existingOwner = itemDao.findUserByEmail(ownerEmail);
         if (existingOwner.isPresent()) {
             final User user = existingOwner.get();
-            itemDao.updateUserProfile(user.getId(), ownerGivenName, ownerLastName, preferredLanguage);
+            itemDao.updateUserProfile(user.getId(), ownerGivenName, ownerLastName, preferredLanguageCode);
             user.setGivenName(ownerGivenName);
             user.setLastName(ownerLastName);
             user.setPreferredLanguage(preferredLanguage);
             return user;
         }
-        return itemDao.createUser(ownerGivenName, ownerLastName, ownerEmail, preferredLanguage);
+        return itemDao.createUser(ownerGivenName, ownerLastName, ownerEmail, preferredLanguageCode);
     }
 
     private int validateItemTypeId(final Integer typeId) {
@@ -414,25 +417,9 @@ public final class ItemServiceImpl implements ItemService {
             if (availability == null) {
                 throw new IllegalArgumentException("availability is required");
             }
-            validateAvailabilitySlot(availability.getWeekday(), availability.getStartTime(), availability.getEndTime());
+            PublishAvailabilityRules.requireValidAvailabilitySlot(
+                    availability.getWeekday(), availability.getStartTime(), availability.getEndTime());
         }
-    }
-
-    private static void validateAvailabilitySlot(
-            final DayOfWeek weekday, final LocalTime startTime, final LocalTime endTime) {
-        if (weekday == null || startTime == null || endTime == null) {
-            throw new IllegalArgumentException("availability weekday, start time and end time are required");
-        }
-        if (!endTime.isAfter(startTime)) {
-            throw new IllegalArgumentException("availability end time must be after start time");
-        }
-        if (!isThirtyMinuteStep(startTime) || !isThirtyMinuteStep(endTime)) {
-            throw new IllegalArgumentException("availability times must use 30 minute steps");
-        }
-    }
-
-    private static boolean isThirtyMinuteStep(final LocalTime time) {
-        return time.getMinute() % TIME_STEP_MINUTES == 0 && time.getSecond() == 0 && time.getNano() == 0;
     }
 
     private static int requirePositive(final Integer value, final String fieldName) {
@@ -501,15 +488,11 @@ public final class ItemServiceImpl implements ItemService {
         return (page - 1) * pageSize;
     }
 
-    private static boolean isBlank(final String value) {
-        return value == null || value.isBlank();
-    }
-
     private static boolean needsAvailabilityPostFilter(final ItemSearchCriteria criteria) {
-        if (!isBlank(criteria.getDate())) {
+        if (criteria.getDate() != null) {
             return true;
         }
-        return !isBlank(criteria.getStartTime()) || !isBlank(criteria.getEndTime());
+        return criteria.getStartTime() != null || criteria.getEndTime() != null;
     }
 
     private void sendPublishConfirmationEmail(final User ownerUser, final Item item) {

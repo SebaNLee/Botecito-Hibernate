@@ -1,7 +1,9 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.UserDao;
+import ar.edu.itba.paw.services.utils.UserNameRules;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +29,7 @@ public class UserServiceImpl implements UserService {
             final String email,
             final String rawPassword,
             final String paymentAlias) {
+        UserNameRules.requireBothLegalNames(givenName, lastName);
         final String normalizedEmail = email.trim().toLowerCase();
         final String passwordHash = passwordEncoder.encode(rawPassword);
         final String normalizedPaymentAlias = normalizePaymentAlias(paymentAlias);
@@ -81,15 +84,17 @@ public class UserServiceImpl implements UserService {
             return Optional.empty();
         }
 
+        UserNameRules.requireBothLegalNames(givenName, lastName);
+
         LOGGER.info("Updating profile for user {}", userId);
         return userDao.updateProfile(
                 userId,
-                safeTrim(givenName),
-                safeTrim(lastName),
+                givenName,
+                lastName,
                 normalizedEmail,
                 normalizeNullable(phone),
                 normalizePaymentAlias(paymentAlias),
-                normalizePreferredLanguage(preferredLanguage));
+                PreferredLanguage.fromInput(preferredLanguage).getPersistenceCode());
     }
 
     @Override
@@ -145,17 +150,6 @@ public class UserServiceImpl implements UserService {
 
     private static String normalizePaymentAlias(final String paymentAlias) {
         return normalizeNullable(paymentAlias);
-    }
-
-    private static String normalizePreferredLanguage(final String preferredLanguage) {
-        if ("en".equalsIgnoreCase(preferredLanguage)) {
-            return "en";
-        }
-        return "es";
-    }
-
-    private static String safeTrim(final String value) {
-        return value == null ? "" : value.trim();
     }
 
     private static String normalizeNullable(final String value) {

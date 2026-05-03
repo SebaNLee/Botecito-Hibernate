@@ -1,6 +1,8 @@
 package ar.edu.itba.paw.models;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,12 +11,12 @@ import lombok.Setter;
 public class ItemSearchCriteria {
     private String searchQuery;
     private Integer locationOptionId;
-    private String date;
-    private String startTime;
-    private String endTime;
+    private LocalDate date;
+    private LocalTime startTime;
+    private LocalTime endTime;
     private Integer capacity;
     private BigDecimal maxWeightKg;
     private Integer difficultyLevel;
     private Integer minAverageRating;
-    private String sort;
+    private ItemSearchSort sort;
 }

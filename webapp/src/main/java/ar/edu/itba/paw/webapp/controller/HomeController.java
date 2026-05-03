@@ -16,11 +16,7 @@ public class HomeController {
     @RequestMapping(value = "/", method = RequestMethod.GET)
     public ModelAndView landing() {
         final ModelAndView mav = new ModelAndView("index");
-        AvailabilityPickerSupport.addAvailabilityPickerData(
-                mav,
-                "search",
-                AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilities(), itemService.listBookings()));
+        AvailabilityPickerSupport.addAvailabilityPickerData(mav, "search", itemService.buildGlobalAvailabilityPicker());
         return mav;
     }
 }

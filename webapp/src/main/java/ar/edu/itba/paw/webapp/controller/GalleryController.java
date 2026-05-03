@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.services.dto.GalleryImageUpload;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,11 +67,10 @@ public class GalleryController {
     public ModelAndView upload(
             @PathVariable("id") final int itemId,
             @RequestParam(value = "files", required = false) final List<MultipartFile> files) {
-        final Item item = ownedItemOrNull(itemId);
-        if (item == null) {
+        final User currentUser = currentAuthenticatedUser();
+        if (currentUser == null) {
             return notOwnerView(itemId);
         }
-
         if (files == null || files.isEmpty()) {
             return new ModelAndView("redirect:/item/" + itemId + "/gallery");
         }
@@ -86,12 +86,22 @@ public class GalleryController {
             if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
                 return new ModelAndView("redirect:/item/" + itemId + "/gallery?error=type");
             }
+            final byte[] bytes;
             try {
-                itemService.appendImage(itemId, file.getBytes());
-            } catch (final IllegalArgumentException ex) {
-                return new ModelAndView("redirect:/item/" + itemId + "/gallery?error=count");
+                bytes = file.getBytes();
             } catch (final IOException ex) {
                 return new ModelAndView("redirect:/item/" + itemId + "/gallery?error=read");
+            }
+            try {
+                final Integer assignedId = itemService.uploadGalleryImage(
+                        itemId,
+                        currentUser.getId(),
+                        new GalleryImageUpload(file.getOriginalFilename(), contentType, bytes));
+                if (assignedId == null) {
+                    return new ModelAndView("redirect:/item/" + itemId + "/gallery?error=type");
+                }
+            } catch (final IllegalArgumentException ex) {
+                return new ModelAndView("redirect:/item/" + itemId + "/gallery?error=count");
             }
         }
         return new ModelAndView("redirect:/item/" + itemId + "/gallery");
@@ -118,8 +128,14 @@ public class GalleryController {
         if (parsed.isEmpty()) {
             return new ModelAndView("redirect:/item/" + itemId + "/gallery");
         }
+        final User currentUser = currentAuthenticatedUser();
+        if (currentUser == null) {
+            return notOwnerView(itemId);
+        }
         try {
-            itemService.reorderImagesForItem(itemId, parsed);
+            if (!itemService.reorderGalleryForOwner(itemId, currentUser.getId(), parsed)) {
+                return new ModelAndView("redirect:/item/" + itemId + "/gallery?error=reorder");
+            }
         } catch (final IllegalArgumentException ex) {
             return new ModelAndView("redirect:/item/" + itemId + "/gallery?error=reorder");
         }

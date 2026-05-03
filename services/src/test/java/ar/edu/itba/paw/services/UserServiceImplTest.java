@@ -162,4 +162,62 @@ public class UserServiceImplTest {
 
         Assertions.assertTrue(result.isEmpty());
     }
+
+    @Test
+    public void testFindByEmailNormalizesBeforeLookup() {
+        final User user = new User();
+        user.setEmail("ada@example.com");
+        Mockito.when(userDao.findByEmail("ada@example.com")).thenReturn(Optional.of(user));
+
+        final Optional<User> result = userService.findByEmail(" Ada@Example.COM ");
+
+        Assertions.assertTrue(result.isPresent());
+        Assertions.assertEquals("ada@example.com", result.get().getEmail());
+    }
+
+    @Test
+    public void testUpdateProfileNormalizesOptionalFieldsAndPreferredLanguage() {
+        final User currentOwner = new User();
+        currentOwner.setId(5);
+        currentOwner.setEmail("new@example.com");
+        final User updatedUser = new User();
+        updatedUser.setId(5);
+        updatedUser.setEmail("new@example.com");
+        updatedUser.setPhone(null);
+        updatedUser.setPaymentAlias("pay.alias");
+        updatedUser.setPreferredLanguage("es");
+
+        Mockito.when(userDao.findByEmail("new@example.com")).thenReturn(Optional.of(currentOwner));
+        Mockito.when(userDao.updateProfile(5, "Ada", "Lovelace", "new@example.com", null, "pay.alias", "es"))
+                .thenReturn(Optional.of(updatedUser));
+
+        final Optional<User> result =
+                userService.updateProfile(5, " Ada ", " Lovelace ", " New@Example.COM ", "   ", " pay.alias ", "pt");
+
+        Assertions.assertTrue(result.isPresent());
+        Assertions.assertEquals("new@example.com", result.get().getEmail());
+        Assertions.assertNull(result.get().getPhone());
+        Assertions.assertEquals("pay.alias", result.get().getPaymentAlias());
+        Assertions.assertEquals("es", result.get().getPreferredLanguage());
+    }
+
+    @Test
+    public void testUpdateProfileReturnsEmptyWhenEmailBelongsToAnotherUser() {
+        final User otherUser = new User();
+        otherUser.setId(9);
+        otherUser.setEmail("taken@example.com");
+        Mockito.when(userDao.findByEmail("taken@example.com")).thenReturn(Optional.of(otherUser));
+
+        final Optional<User> result =
+                userService.updateProfile(5, "Ada", "Lovelace", "taken@example.com", null, null, "en");
+
+        Assertions.assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void testResetPasswordReturnsInvalidTokenWhenTokenIsBlank() {
+        final UserService.PasswordRecoveryResult result = userService.resetPassword("   ", "new-password");
+
+        Assertions.assertEquals(UserService.PasswordRecoveryResult.INVALID_TOKEN, result);
+    }
 }

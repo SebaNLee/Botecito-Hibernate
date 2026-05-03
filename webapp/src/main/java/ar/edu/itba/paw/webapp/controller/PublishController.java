@@ -4,11 +4,9 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.MissingUserNamesException;
 import ar.edu.itba.paw.services.UserService;
-import ar.edu.itba.paw.services.utils.PublishAvailabilityRules;
-import ar.edu.itba.paw.services.utils.PublishAvailabilityRules.DaySlotsIssue;
-import ar.edu.itba.paw.services.utils.PublishAvailabilityRules.SlotTimesIssue;
+import ar.edu.itba.paw.services.dto.GalleryImageUpload;
+import ar.edu.itba.paw.services.dto.PublicationDraft;
 import ar.edu.itba.paw.services.utils.TimeRange;
 import ar.edu.itba.paw.services.utils.TimeRangeList;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
@@ -25,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -40,6 +37,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -55,6 +53,19 @@ public class PublishController {
 
     private static final String PUBLISH_PREVIEW_IMAGE_PATH = "/publish/preview-image";
     private static final int MAX_GALLERY_IMAGES = 10;
+    private static final String AVAILABILITY_RANGE_SEPARATOR = "\\|";
+
+    private static final Map<DayOfWeek, String> WEEKDAY_LABELS = new LinkedHashMap<>();
+
+    static {
+        WEEKDAY_LABELS.put(DayOfWeek.MONDAY, "Lunes");
+        WEEKDAY_LABELS.put(DayOfWeek.TUESDAY, "Martes");
+        WEEKDAY_LABELS.put(DayOfWeek.WEDNESDAY, "Miercoles");
+        WEEKDAY_LABELS.put(DayOfWeek.THURSDAY, "Jueves");
+        WEEKDAY_LABELS.put(DayOfWeek.FRIDAY, "Viernes");
+        WEEKDAY_LABELS.put(DayOfWeek.SATURDAY, "Sabado");
+        WEEKDAY_LABELS.put(DayOfWeek.SUNDAY, "Domingo");
+    }
 
     private final ItemService itemService;
     private final UserService userService;
@@ -157,8 +168,8 @@ public class PublishController {
             return new ModelAndView("redirect:/publish");
         }
 
-        syncAvailabilityFromRequest(form, enabledDays, availabilityRanges, errors, locale);
-        validateAvailabilityStep(form, errors, locale);
+        syncAvailabilityFromRequest(form, enabledDays, availabilityRanges);
+        applyDraftValidation(form, errors, locale);
         if (errors.hasErrors()) {
             final ModelAndView mav = new ModelAndView("publish-availability");
             addAvailabilityEditorData(mav, form);
@@ -186,8 +197,7 @@ public class PublishController {
 
     @RequestMapping(value = "/publish/preview-image/{index}", method = RequestMethod.GET)
     public ResponseEntity<byte[]> publishPreviewImage(
-            @ModelAttribute("publishForm") final PublishBoatForm form,
-            @org.springframework.web.bind.annotation.PathVariable("index") final int index) {
+            @ModelAttribute("publishForm") final PublishBoatForm form, @PathVariable("index") final int index) {
         final UploadedImage image = form.getUploadedImageAt(index);
         if (image == null || image.getSize() == 0) {
             return ResponseEntity.notFound().build();
@@ -215,7 +225,7 @@ public class PublishController {
             return new ModelAndView("redirect:/publish");
         }
 
-        validateAvailabilityStep(form, errors, locale);
+        applyDraftValidation(form, errors, locale);
 
         if (errors.hasErrors()) {
             final ModelAndView mav = new ModelAndView("publish-contact");
@@ -225,30 +235,7 @@ public class PublishController {
 
         final Item createdItem;
         try {
-            createdItem = itemService.createPublication(
-                    currentUser.getGivenName(),
-                    currentUser.getLastName(),
-                    currentUser.getEmail(),
-                    currentUser.getPreferredLanguage().getPersistenceCode(),
-                    Integer.parseInt(form.getItemTypeId().trim()),
-                    form.getTitle().trim(),
-                    form.getDescription() == null ? "" : form.getDescription().trim(),
-                    Integer.parseInt(form.getPricePerHour().trim()),
-                    Integer.parseInt(form.getCapacity().trim()),
-                    parseMaxWeight(form.getMaxWeight()),
-                    form.getDifficultyLevel(),
-                    Integer.parseInt(form.getLocationOptionId().trim()),
-                    buildAvailabilitySlots(form));
-
-            if (form.hasUploadedImages()) {
-                itemService.replaceGallery(createdItem.getId(), form.orderedImageBytes());
-            }
-
-        } catch (final MissingUserNamesException e) {
-            final ModelAndView mav = new ModelAndView("publish-contact");
-            errors.reject("publish.validation.ownerNames.required");
-            addSummaryData(mav, form, locale);
-            return mav;
+            createdItem = itemService.createPublicationFromDraft(toDraft(form, currentUser));
         } catch (final IllegalArgumentException e) {
             final ModelAndView mav = new ModelAndView("publish-contact");
             errors.reject("publish.submit.persistenceError");
@@ -307,44 +294,21 @@ public class PublishController {
         return new BigDecimal(maxWeight.trim());
     }
 
-    private static final String AVAILABILITY_RANGE_SEPARATOR = "\\|";
-
-    private static final Map<DayOfWeek, String> WEEKDAY_LABELS = new LinkedHashMap<>();
-
-    static {
-        WEEKDAY_LABELS.put(DayOfWeek.MONDAY, "Lunes");
-        WEEKDAY_LABELS.put(DayOfWeek.TUESDAY, "Martes");
-        WEEKDAY_LABELS.put(DayOfWeek.WEDNESDAY, "Miercoles");
-        WEEKDAY_LABELS.put(DayOfWeek.THURSDAY, "Jueves");
-        WEEKDAY_LABELS.put(DayOfWeek.FRIDAY, "Viernes");
-        WEEKDAY_LABELS.put(DayOfWeek.SATURDAY, "Sabado");
-        WEEKDAY_LABELS.put(DayOfWeek.SUNDAY, "Domingo");
-    }
-
-    private static Set<DayOfWeek> enabledWeekdays(final PublishBoatForm form) {
-        return Set.copyOf(form.getAvailabilityByWeekday().keySet());
-    }
-
     private static void addAvailabilityEditorData(final ModelAndView mav, final PublishBoatForm form) {
         mav.addObject("existingSlotsJson", buildExistingSlotsJson(form));
         mav.addObject("enabledWeekdays", buildEnabledWeekdaysModel(form));
     }
 
     private static Map<String, Boolean> buildEnabledWeekdaysModel(final PublishBoatForm form) {
-        final Set<DayOfWeek> enabled = enabledWeekdays(form);
         final Map<String, Boolean> model = new LinkedHashMap<>();
         for (final DayOfWeek weekday : WEEKDAY_LABELS.keySet()) {
-            model.put(weekday.name(), enabled.contains(weekday));
+            model.put(weekday.name(), form.isDayEnabled(weekday));
         }
         return model;
     }
 
-    private void syncAvailabilityFromRequest(
-            final PublishBoatForm form,
-            final List<String> enabledDays,
-            final List<String> availabilityRanges,
-            final BindingResult errors,
-            final Locale locale) {
+    private static void syncAvailabilityFromRequest(
+            final PublishBoatForm form, final List<String> enabledDays, final List<String> availabilityRanges) {
         form.getAvailabilityByWeekday().clear();
 
         if (enabledDays != null) {
@@ -364,43 +328,71 @@ public class PublishController {
             if (!StringUtils.hasText(serializedRange)) {
                 continue;
             }
-
             final String[] parts = serializedRange.split(AVAILABILITY_RANGE_SEPARATOR, -1);
             if (parts.length != 3) {
-                errors.reject("publish.availability.format.invalid", new Object[] {dayLabel(locale, null)}, null);
                 continue;
             }
-
             final DayOfWeek weekday = parseWeekday(parts[0]);
             if (weekday == null || !form.isDayEnabled(weekday)) {
                 continue;
             }
-
             try {
                 final LocalTime start = LocalTime.parse(parts[1]);
                 final LocalTime end = LocalTime.parse(parts[2]);
-
-                final SlotTimesIssue slotIssue = PublishAvailabilityRules.validateSlotTimes(start, end);
-                if (slotIssue == SlotTimesIssue.END_NOT_AFTER_START) {
-                    errors.reject("publish.availability.end.invalid", new Object[] {dayLabel(locale, weekday)}, null);
-                    continue;
-                }
-                if (slotIssue == SlotTimesIssue.OFF_TIME_GRID) {
-                    errors.reject("publish.availability.timeStep", new Object[] {dayLabel(locale, weekday)}, null);
-                    continue;
-                }
-                if (slotIssue == SlotTimesIssue.MISSING_TIMES) {
-                    errors.reject(
-                            "publish.availability.format.invalid", new Object[] {dayLabel(locale, weekday)}, null);
-                    continue;
-                }
-
                 form.getAvailabilityFor(weekday).add(TimeRange.of(start, end));
-            } catch (final DateTimeParseException ex) {
-                errors.reject("publish.availability.format.invalid", new Object[] {dayLabel(locale, weekday)}, null);
-            } catch (final IllegalArgumentException ex) {
-                errors.reject("publish.availability.overlap", new Object[] {dayLabel(locale, weekday)}, null);
+            } catch (final DateTimeParseException | IllegalArgumentException ignored) {
+                // Validated against the draft below.
             }
+        }
+    }
+
+    private void applyDraftValidation(final PublishBoatForm form, final BindingResult errors, final Locale locale) {
+        final PublicationDraft draft = toDraft(form, null);
+        final Map<String, String> validationErrors = itemService.validatePublicationDraft(draft);
+        for (final Map.Entry<String, String> entry : validationErrors.entrySet()) {
+            errors.rejectValue(entry.getKey(), entry.getValue(), new Object[] {dayLabel(locale, null)}, null);
+        }
+    }
+
+    private PublicationDraft toDraft(final PublishBoatForm form, final User currentUser) {
+        return new PublicationDraft(
+                currentUser == null ? null : currentUser.getGivenName(),
+                currentUser == null ? null : currentUser.getLastName(),
+                currentUser == null ? null : currentUser.getEmail(),
+                currentUser == null || currentUser.getPreferredLanguage() == null
+                        ? null
+                        : currentUser.getPreferredLanguage().getPersistenceCode(),
+                parseIntOrNull(form.getItemTypeId()),
+                form.getTitle() == null ? null : form.getTitle().trim(),
+                form.getDescription() == null ? "" : form.getDescription().trim(),
+                parseIntOrNull(form.getPricePerHour()),
+                parseIntOrNull(form.getCapacity()),
+                parseMaxWeight(form.getMaxWeight()),
+                form.getDifficultyLevel(),
+                parseIntOrNull(form.getLocationOptionId()),
+                buildAvailabilitySlots(form),
+                buildImageUploads(form));
+    }
+
+    private static List<GalleryImageUpload> buildImageUploads(final PublishBoatForm form) {
+        if (!form.hasUploadedImages()) {
+            return List.of();
+        }
+        final List<GalleryImageUpload> uploads = new ArrayList<>();
+        for (final UploadedImage image : form.getUploadedImages()) {
+            uploads.add(new GalleryImageUpload(null, image.getContentType(), image.getData()));
+        }
+        return uploads;
+    }
+
+    private static Integer parseIntOrNull(final String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (final NumberFormatException e) {
+            return null;
         }
     }
 
@@ -408,7 +400,6 @@ public class PublishController {
         if (!StringUtils.hasText(rawWeekday)) {
             return null;
         }
-
         try {
             return DayOfWeek.valueOf(rawWeekday.trim().toUpperCase(Locale.ROOT));
         } catch (final IllegalArgumentException ex) {
@@ -418,19 +409,18 @@ public class PublishController {
 
     private static List<ItemAvailability> buildAvailabilitySlots(final PublishBoatForm form) {
         final List<ItemAvailability> availabilities = new ArrayList<>();
-        for (final DayOfWeek weekday : enabledWeekdays(form)) {
-            final TimeRangeList dayRanges = form.getAvailabilityFor(weekday);
+        for (final Map.Entry<DayOfWeek, TimeRangeList> entry :
+                form.getAvailabilityByWeekday().entrySet()) {
+            final TimeRangeList dayRanges = entry.getValue();
             if (dayRanges == null || dayRanges.isEmpty()) {
                 continue;
             }
-
             for (final TimeRange range : dayRanges) {
                 if (range.getStart() == null || range.getEnd() == null) {
                     continue;
                 }
-
                 final ItemAvailability availability = new ItemAvailability();
-                availability.setWeekday(weekday);
+                availability.setWeekday(entry.getKey());
                 availability.setStartTime(range.getStart());
                 availability.setEndTime(range.getEnd());
                 availabilities.add(availability);
@@ -449,7 +439,6 @@ public class PublishController {
         if (!StringUtils.hasText(locationOptionId)) {
             return "";
         }
-
         try {
             final int selectedId = Integer.parseInt(locationOptionId.trim());
             return itemService.listLocationOptions().stream()
@@ -475,7 +464,6 @@ public class PublishController {
         if (uploaded == null || uploaded.isEmpty()) {
             return;
         }
-
         for (final MultipartFile file : uploaded) {
             if (file == null || file.isEmpty()) {
                 continue;
@@ -522,7 +510,6 @@ public class PublishController {
         if (!StringUtils.hasText(contentType)) {
             return MediaType.APPLICATION_OCTET_STREAM;
         }
-
         try {
             return MediaType.parseMediaType(contentType);
         } catch (final IllegalArgumentException ignored) {
@@ -537,7 +524,6 @@ public class PublishController {
             if (daySlots == null || daySlots.isEmpty()) {
                 continue;
             }
-
             final List<TimeRange> sortedSlots = new ArrayList<>(daySlots);
             sortedSlots.sort(Comparator.comparing(TimeRange::getStart));
 
@@ -557,25 +543,20 @@ public class PublishController {
         if (form.getAvailabilityByWeekday().isEmpty()) {
             return "[]";
         }
-
         final StringBuilder sb = new StringBuilder("[");
         boolean first = true;
-
         for (final DayOfWeek weekday : WEEKDAY_LABELS.keySet()) {
             final TimeRangeList dayRanges = form.getAvailabilityFor(weekday);
             if (dayRanges == null || dayRanges.isEmpty()) {
                 continue;
             }
-
             for (final TimeRange range : dayRanges) {
                 if (range.getStart() == null || range.getEnd() == null) {
                     continue;
                 }
-
                 if (!first) {
                     sb.append(",");
                 }
-
                 sb.append("{\"weekday\":\"")
                         .append(weekday.name())
                         .append("\",\"startTime\":\"")
@@ -586,52 +567,7 @@ public class PublishController {
                 first = false;
             }
         }
-
-        sb.append("]");
-        return sb.toString();
-    }
-
-    private void validateAvailabilityStep(final PublishBoatForm form, final BindingResult errors, final Locale locale) {
-        final Set<DayOfWeek> enabled = enabledWeekdays(form);
-        if (enabled.isEmpty()) {
-            errors.rejectValue("availabilityByWeekday", "publish.availability.required");
-            return;
-        }
-
-        boolean hasAnySlot = false;
-        for (final DayOfWeek weekday : enabled) {
-            final TimeRangeList daySlots = form.getAvailabilityFor(weekday);
-            if (daySlots == null || daySlots.isEmpty()) {
-                errors.reject("publish.availability.day.empty", new Object[] {dayLabel(locale, weekday)}, null);
-                continue;
-            }
-            hasAnySlot = true;
-            validateDaySlots(daySlots, weekday, errors, locale);
-        }
-
-        if (!hasAnySlot) {
-            errors.rejectValue("availabilityByWeekday", "publish.availability.required");
-        }
-    }
-
-    private void validateDaySlots(
-            final TimeRangeList daySlots, final DayOfWeek weekday, final BindingResult errors, final Locale locale) {
-        final String dayLabel = dayLabel(locale, weekday);
-        final DaySlotsIssue issue = PublishAvailabilityRules.validateOrderedDaySlots(daySlots);
-        switch (issue) {
-            case OK -> {
-                return;
-            }
-            case MISSING_SLOT_OR_TIME -> errors.reject(
-                    "publish.availability.format.invalid", new Object[] {dayLabel}, null);
-            case END_NOT_AFTER_START -> errors.reject(
-                    "publish.availability.end.invalid", new Object[] {dayLabel}, null);
-            case OFF_TIME_GRID -> errors.reject("publish.availability.timeStep", new Object[] {dayLabel}, null);
-            case RANGE_TOO_SHORT -> errors.reject("publish.availability.min.duration", new Object[] {dayLabel}, null);
-            case RANGES_TOO_CLOSE -> errors.reject(
-                    "publish.availability.min.separation", new Object[] {dayLabel}, null);
-            case OVERLAP -> errors.reject("publish.availability.overlap", new Object[] {dayLabel}, null);
-        }
+        return sb.append("]").toString();
     }
 
     private static String formatTime(final LocalTime time) {

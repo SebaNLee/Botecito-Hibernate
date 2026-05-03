@@ -5,20 +5,33 @@ import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
-import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
-import ar.edu.itba.paw.services.utils.UserNameRules;
+import ar.edu.itba.paw.services.dto.AuthoredItemReviewSummaryView;
+import ar.edu.itba.paw.services.dto.GuestTripsView;
+import ar.edu.itba.paw.services.dto.PaymentProofUpload;
+import ar.edu.itba.paw.services.dto.PendingReviewView;
+import ar.edu.itba.paw.services.dto.SentBookingView;
+import ar.edu.itba.paw.services.internal.BookingDisplayFormatter;
+import ar.edu.itba.paw.services.internal.PaymentProofValidator;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -49,7 +62,6 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             final OffsetDateTime endTime,
             final String description) {
         validateAnticipation(startTime);
-        UserNameRules.requireBothLegalNames(requesterGivenName, requesterLastName);
         final User requesterUser = resolveOrCreateRequesterUser(
                 requesterGivenName, requesterLastName, requesterEmail, requesterPreferredLanguage);
         final Item item = itemDao.findAnyItemById(itemId)
@@ -365,20 +377,22 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             final String requesterLastName,
             final String requesterEmail,
             final String requesterPreferredLanguage) {
-        final PreferredLanguage preferredLanguage = PreferredLanguage.fromInput(requesterPreferredLanguage);
-        final String preferredLanguageCode = preferredLanguage.getPersistenceCode();
+        ar.edu.itba.paw.services.utils.UserNameRules.requireBothLegalNames(requesterGivenName, requesterLastName);
+        final String givenName = normalizeNamePart(requesterGivenName, "Guest");
+        final String lastName = normalizeNamePart(requesterLastName, "");
+        final String preferredLanguage = normalizePreferredLanguage(requesterPreferredLanguage);
 
         final Optional<User> existingUser = itemDao.findUserByEmail(requesterEmail);
         if (existingUser.isPresent()) {
             final User user = existingUser.get();
-            itemDao.updateUserProfile(user.getId(), requesterGivenName, requesterLastName, preferredLanguageCode);
-            user.setGivenName(requesterGivenName);
-            user.setLastName(requesterLastName);
-            user.setPreferredLanguage(preferredLanguage);
+            itemDao.updateUserProfile(user.getId(), givenName, lastName, preferredLanguage);
+            user.setGivenName(givenName);
+            user.setLastName(lastName);
+            user.setPreferredLanguage(ar.edu.itba.paw.models.PreferredLanguage.fromPersistence(preferredLanguage));
             return user;
         }
 
-        return itemDao.createUser(requesterGivenName, requesterLastName, requesterEmail, preferredLanguageCode);
+        return itemDao.createUser(givenName, lastName, requesterEmail, preferredLanguage);
     }
 
     private Optional<BookingRequest> toBookingRequest(final ItemBooking booking) {
@@ -406,9 +420,8 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     }
 
     private String resolveRequesterLocaleTag(final User requesterUser) {
-        final PreferredLanguage preference = requesterUser.getPreferredLanguage();
-        if (preference != null) {
-            return preference.getPersistenceCode();
+        if (requesterUser.getPreferredLanguage() != null) {
+            return requesterUser.getPreferredLanguage().getPersistenceCode();
         }
         return mailService.resolveLocale(requesterUser.getEmail()).toLanguageTag();
     }
@@ -510,6 +523,13 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         }
     }
 
+    private static String normalizeNamePart(final String value, final String fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        return value.trim();
+    }
+
     private static boolean canSubmitPaymentProof(final BookingState state) {
         return state == BookingState.BOOKING_CONFIRMED || state == BookingState.BOOKING_PAYMENT_REFUSED;
     }
@@ -520,6 +540,13 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         }
         final String trimmed = reply.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private static String normalizePreferredLanguage(final String preferredLanguage) {
+        if ("en".equalsIgnoreCase(preferredLanguage)) {
+            return "en";
+        }
+        return "es";
     }
 
     private static boolean isBlockingBooking(final ItemBooking booking) {
@@ -538,5 +565,220 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             return false;
         }
         return aStart.isBefore(bEnd) && bStart.isBefore(aEnd);
+    }
+
+    // ---- View / orchestration extensions ---------------------------------------------------
+
+    @Override
+    public GuestTripsView buildGuestTrips(
+            final int guestUserId,
+            final List<String> statusFilters,
+            final String boatNameQuery,
+            final int page,
+            final int pageSize) {
+        final List<SentBookingView> all = buildSentBookings(guestUserId);
+        final List<SentBookingView> filtered = all.stream()
+                .filter(b -> BookingDisplayFormatter.matchesAnyStatusFilter(b.getStatusMessageCode(), statusFilters))
+                .filter(b -> BookingDisplayFormatter.matchesBoatNameSearch(b.getItemTitle(), boatNameQuery))
+                .sorted(Comparator.comparing(
+                                SentBookingView::getStartTime, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(SentBookingView::getId, Comparator.reverseOrder()))
+                .toList();
+        final Page<SentBookingView> bookingPage = paginate(filtered, page, pageSize);
+
+        final Set<Integer> imageItemIds = new LinkedHashSet<>();
+        for (final SentBookingView v : bookingPage.getContent()) {
+            imageItemIds.add(v.getItemId());
+        }
+
+        final Map<Integer, PendingReviewView> pendingByBookingId = new LinkedHashMap<>();
+        for (final ReviewService.PendingReviewAction action : itemDao.listBookingsByGuestId(guestUserId).stream()
+                .flatMap(booking -> resolvePendingForGuest(guestUserId, booking).stream())
+                .toList()) {
+            final Item item = itemDao.findAnyItemById(action.getItemId()).orElse(null);
+            final User target = itemDao.findUserById(action.getTargetUserId()).orElse(null);
+            if (item == null || target == null) {
+                continue;
+            }
+            pendingByBookingId.put(
+                    action.getBookingId(),
+                    new PendingReviewView(
+                            action.getBookingId(),
+                            item.getId(),
+                            item.getTitle(),
+                            action.getTargetType(),
+                            target.getName(),
+                            target.getEmail(),
+                            BookingDisplayFormatter.formatDateLabel(action.getStartTime()),
+                            BookingDisplayFormatter.formatTimeRangeLabel(action.getStartTime(), action.getEndTime())));
+        }
+
+        final Map<Integer, AuthoredItemReviewSummaryView> authoredItemByBookingId = new LinkedHashMap<>();
+        for (final var review : itemDao.listReviewsByReviewer(guestUserId)) {
+            if (review.getBookingId() == null
+                    || review.getTargetType() != ar.edu.itba.paw.models.ReviewTargetType.ITEM) {
+                continue;
+            }
+            authoredItemByBookingId.put(
+                    review.getBookingId(),
+                    new AuthoredItemReviewSummaryView(
+                            review.getRating() == null ? 0 : review.getRating(),
+                            review.getComment() == null ? "" : review.getComment()));
+        }
+
+        return new GuestTripsView(bookingPage, imageItemIds, pendingByBookingId, authoredItemByBookingId);
+    }
+
+    @Override
+    public Optional<BookingPaymentProof> submitPaymentProof(
+            final int bookingId, final int requesterId, final PaymentProofUpload upload) {
+        if (!PaymentProofValidator.isValid(upload)) {
+            return Optional.empty();
+        }
+        return submitPaymentProof(
+                bookingId,
+                requesterId,
+                upload.getFileName(),
+                upload.getContentType(),
+                upload.getFileData(),
+                upload.getGuestReply());
+    }
+
+    @Override
+    public boolean canAccessPaymentProof(final int bookingId, final int viewerUserId) {
+        final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
+        if (booking.isEmpty()) {
+            return false;
+        }
+        if (booking.get().getGuestId() != null && booking.get().getGuestId().equals(viewerUserId)) {
+            return true;
+        }
+        if (booking.get().getItemId() == null) {
+            return false;
+        }
+        final Optional<Item> item = itemDao.findAnyItemById(booking.get().getItemId());
+        return item.isPresent()
+                && item.get().getOwnerId() != null
+                && item.get().getOwnerId().equals(viewerUserId);
+    }
+
+    @Override
+    public BlockSlotOutcome blockSlotForOwner(
+            final int itemId, final int ownerId, final String date, final String startTime, final String endTime) {
+        if (date == null || startTime == null || endTime == null) {
+            return BlockSlotOutcome.INVALID;
+        }
+        final LocalDate parsedDate;
+        final LocalTime parsedStart;
+        final LocalTime parsedEnd;
+        try {
+            parsedDate = LocalDate.parse(date);
+            parsedStart = LocalTime.parse(startTime);
+            parsedEnd = LocalTime.parse(endTime);
+        } catch (final DateTimeParseException exception) {
+            return BlockSlotOutcome.INVALID;
+        }
+        if (parsedDate.isBefore(LocalDate.now())) {
+            return BlockSlotOutcome.PAST_DATE;
+        }
+        final ZoneId zone = ZoneId.systemDefault();
+        final OffsetDateTime startOdt =
+                LocalDateTime.of(parsedDate, parsedStart).atZone(zone).toOffsetDateTime();
+        final OffsetDateTime endOdt =
+                LocalDateTime.of(parsedDate, parsedEnd).atZone(zone).toOffsetDateTime();
+        try {
+            createOwnerSelfBlock(itemId, ownerId, startOdt, endOdt);
+        } catch (final OverlappingActiveBookingException overlap) {
+            return BlockSlotOutcome.OVERLAP;
+        } catch (final IllegalArgumentException invalid) {
+            return BlockSlotOutcome.INVALID;
+        }
+        return BlockSlotOutcome.BLOCKED;
+    }
+
+    private List<SentBookingView> buildSentBookings(final int guestId) {
+        final List<SentBookingView> sent = new ArrayList<>();
+        for (final ItemBooking booking : itemDao.listBookingsByGuestId(guestId)) {
+            if (booking.getItemId() == null || booking.getId() == null) {
+                continue;
+            }
+            final Optional<ar.edu.itba.paw.models.ItemSnapshot> snapshot =
+                    itemDao.findSnapshotByBookingIdForGuest(booking.getId(), guestId);
+            final Item item = snapshot.<Item>map(s -> s).orElseGet(() -> itemDao.findAnyItemById(booking.getItemId())
+                    .orElse(null));
+            if (item == null) {
+                continue;
+            }
+            if (item.getOwnerId() != null && item.getOwnerId().equals(guestId)) {
+                continue;
+            }
+            final User owner = item.getOwnerId() == null
+                    ? null
+                    : itemDao.findUserById(item.getOwnerId()).orElse(null);
+            final Optional<BookingPaymentProof> proof = itemDao.findPaymentProofByBookingId(booking.getId());
+            final boolean exposeContact = BookingDisplayFormatter.shouldExposePaymentAliasToGuest(booking.getState());
+            sent.add(new SentBookingView(
+                    booking.getId(),
+                    booking.getItemId(),
+                    snapshot.map(ar.edu.itba.paw.models.ItemSnapshot::getVersionId)
+                            .orElse(null),
+                    itemDao.findCoverImageIdByItemId(booking.getItemId()).orElse(null),
+                    item.getTitle(),
+                    owner == null ? "" : owner.getName(),
+                    exposeContact && owner != null ? owner.getEmail() : "",
+                    booking.getStartTime(),
+                    booking.getEndTime(),
+                    BookingDisplayFormatter.formatDateLabel(booking.getStartTime()),
+                    BookingDisplayFormatter.formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
+                    BookingDisplayFormatter.formatTotalPriceLabel(
+                            booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
+                    exposeContact ? BookingDisplayFormatter.resolvePaymentAlias(owner) : "",
+                    BookingDisplayFormatter.statusMessageCode(booking.getState()),
+                    proof.map(BookingPaymentProof::getContentType).orElse(""),
+                    proof.map(BookingPaymentProof::getRefusalReason).orElse(""),
+                    proof.map(BookingPaymentProof::getGuestReply).orElse("")));
+        }
+        return sent;
+    }
+
+    private List<ReviewService.PendingReviewAction> resolvePendingForGuest(
+            final int guestId, final ItemBooking booking) {
+        if (booking == null || booking.getGuestId() == null || booking.getGuestId() != guestId) {
+            return List.of();
+        }
+        if (booking.getEndTime() == null
+                || !booking.getEndTime().isBefore(OffsetDateTime.now())
+                || (booking.getState() != BookingState.BOOKING_PAID
+                        && booking.getState() != BookingState.BOOKING_COMPLETED)) {
+            return List.of();
+        }
+        if (booking.getItemId() == null || booking.getId() == null) {
+            return List.of();
+        }
+        final Optional<Item> item = itemDao.findAnyItemById(booking.getItemId());
+        if (item.isEmpty() || item.get().getOwnerId() == null || item.get().getOwnerId() == guestId) {
+            return List.of();
+        }
+        if (itemDao.findReviewByBookingReviewerAndTargetType(
+                        booking.getId(), guestId, ar.edu.itba.paw.models.ReviewTargetType.ITEM)
+                .isPresent()) {
+            return List.of();
+        }
+        return List.of(new ReviewService.PendingReviewAction(
+                booking.getId(),
+                booking.getItemId(),
+                item.get().getOwnerId(),
+                ar.edu.itba.paw.models.ReviewTargetType.ITEM,
+                booking.getStartTime(),
+                booking.getEndTime()));
+    }
+
+    private static <T> Page<T> paginate(final List<T> items, final int page, final int pageSize) {
+        final int totalItems = items == null ? 0 : items.size();
+        final int totalPages = pageSize <= 0 ? 0 : (int) Math.ceil((double) totalItems / pageSize);
+        final int resolvedPage = totalPages == 0 ? 1 : Math.min(Math.max(1, page), totalPages);
+        final int from = totalItems == 0 ? 0 : Math.min((resolvedPage - 1) * pageSize, totalItems);
+        final int to = totalItems == 0 ? 0 : Math.min(from + pageSize, totalItems);
+        return new Page<>(items == null ? List.of() : items.subList(from, to), resolvedPage, pageSize, totalItems);
     }
 }

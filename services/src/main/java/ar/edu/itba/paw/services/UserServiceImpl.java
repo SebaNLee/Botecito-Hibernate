@@ -89,8 +89,8 @@ public class UserServiceImpl implements UserService {
         LOGGER.info("Updating profile for user {}", userId);
         return userDao.updateProfile(
                 userId,
-                givenName,
-                lastName,
+                givenName.trim(),
+                lastName.trim(),
                 normalizedEmail,
                 normalizeNullable(phone),
                 normalizePaymentAlias(paymentAlias),

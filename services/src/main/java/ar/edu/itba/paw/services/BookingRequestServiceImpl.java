@@ -7,7 +7,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
-import ar.edu.itba.paw.services.internal.PaymentProofValidator;
+import ar.edu.itba.paw.services.utils.PaymentProofValidator;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;

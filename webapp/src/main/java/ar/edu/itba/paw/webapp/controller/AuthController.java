@@ -12,6 +12,7 @@ import ar.edu.itba.paw.webapp.form.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.PasswordResetForm;
 import ar.edu.itba.paw.webapp.form.ProfileForm;
 import ar.edu.itba.paw.webapp.form.RegisterForm;
+import ar.edu.itba.paw.webapp.util.BookingDisplayFormatter;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -361,14 +362,76 @@ public class AuthController {
         final Page<ItemBooking> sentBookingPage =
                 paginate(itemService.listBookingsByGuestId(user.getId()), page, DASHBOARD_PAGE_SIZE);
         final Set<Integer> imageItemIds = new java.util.LinkedHashSet<>();
+        final Map<Integer, String> sentStatusMessageCodeByBookingId = new LinkedHashMap<>();
+        final Map<Integer, String> sentDateLabelByBookingId = new LinkedHashMap<>();
+        final Map<Integer, String> sentTimeRangeLabelByBookingId = new LinkedHashMap<>();
+        final Map<Integer, String> sentTotalPriceLabelByBookingId = new LinkedHashMap<>();
+        final Map<Integer, String> sentItemTitleByBookingId = new LinkedHashMap<>();
+        final Map<Integer, String> sentOwnerNameByBookingId = new LinkedHashMap<>();
+        final Map<Integer, String> sentOwnerEmailByBookingId = new LinkedHashMap<>();
+        final Map<Integer, String> sentPaymentAliasByBookingId = new LinkedHashMap<>();
+        final Map<Integer, String> sentPaymentRefusalReasonByBookingId = new LinkedHashMap<>();
+        final Map<Integer, Boolean> sentHasPaymentRefusalReasonByBookingId = new LinkedHashMap<>();
+        final Map<Integer, Boolean> sentPaymentProofPdfByBookingId = new LinkedHashMap<>();
+        final Map<Integer, Integer> sentBookedSnapshotVersionIdByBookingId = new LinkedHashMap<>();
+
         for (final ItemBooking booking : sentBookingPage.getContent()) {
             if (booking != null && booking.getItemId() != null) {
                 imageItemIds.add(booking.getItemId());
             }
+            if (booking == null || booking.getId() == null) {
+                continue;
+            }
+
+            final Integer bookingId = booking.getId();
+            final Item item = booking.getItemId() == null
+                    ? null
+                    : itemService.findItemById(booking.getItemId()).orElse(null);
+            final User owner = item != null && item.getOwnerId() != null
+                    ? itemService.findUserById(item.getOwnerId()).orElse(null)
+                    : null;
+            final Integer pricePerHour = item == null ? null : item.getPricePerHour();
+            final var paymentProof =
+                    bookingRequestService.findPaymentProofByBookingId(bookingId).orElse(null);
+            final String contentType = paymentProof == null ? null : paymentProof.getContentType();
+            final String refusalReason = paymentProof == null ? null : paymentProof.getRefusalReason();
+
+            sentStatusMessageCodeByBookingId.put(
+                    bookingId,
+                    booking.getState() == null ? "" : BookingDisplayFormatter.statusMessageCode(booking.getState()));
+            sentDateLabelByBookingId.put(bookingId, BookingDisplayFormatter.formatDateLabel(booking.getStartTime()));
+            sentTimeRangeLabelByBookingId.put(
+                    bookingId,
+                    BookingDisplayFormatter.formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()));
+            sentTotalPriceLabelByBookingId.put(
+                    bookingId,
+                    BookingDisplayFormatter.formatTotalPriceLabel(
+                            booking.getStartTime(), booking.getEndTime(), pricePerHour));
+            sentItemTitleByBookingId.put(bookingId, item == null ? "" : item.getTitle());
+            sentOwnerNameByBookingId.put(bookingId, owner == null ? "" : owner.getName());
+            sentOwnerEmailByBookingId.put(bookingId, owner == null ? "" : owner.getEmail());
+            sentPaymentAliasByBookingId.put(
+                    bookingId, owner == null ? "" : BookingDisplayFormatter.resolvePaymentAlias(owner));
+            sentPaymentRefusalReasonByBookingId.put(bookingId, refusalReason);
+            sentHasPaymentRefusalReasonByBookingId.put(bookingId, refusalReason != null && !refusalReason.isBlank());
+            sentPaymentProofPdfByBookingId.put(bookingId, "application/pdf".equalsIgnoreCase(contentType));
+            sentBookedSnapshotVersionIdByBookingId.put(bookingId, null);
         }
         mav.addObject("sentBookingRequests", sentBookingPage.getContent());
         mav.addObject("sentBookingPage", sentBookingPage);
         mav.addObject("imageUrlsByItemId", buildImageUrlsByItemId(imageItemIds, contextPath));
+        mav.addObject("sentStatusMessageCodeByBookingId", sentStatusMessageCodeByBookingId);
+        mav.addObject("sentDateLabelByBookingId", sentDateLabelByBookingId);
+        mav.addObject("sentTimeRangeLabelByBookingId", sentTimeRangeLabelByBookingId);
+        mav.addObject("sentTotalPriceLabelByBookingId", sentTotalPriceLabelByBookingId);
+        mav.addObject("sentItemTitleByBookingId", sentItemTitleByBookingId);
+        mav.addObject("sentOwnerNameByBookingId", sentOwnerNameByBookingId);
+        mav.addObject("sentOwnerEmailByBookingId", sentOwnerEmailByBookingId);
+        mav.addObject("sentPaymentAliasByBookingId", sentPaymentAliasByBookingId);
+        mav.addObject("sentPaymentRefusalReasonByBookingId", sentPaymentRefusalReasonByBookingId);
+        mav.addObject("sentHasPaymentRefusalReasonByBookingId", sentHasPaymentRefusalReasonByBookingId);
+        mav.addObject("sentPaymentProofPdfByBookingId", sentPaymentProofPdfByBookingId);
+        mav.addObject("sentBookedSnapshotVersionIdByBookingId", sentBookedSnapshotVersionIdByBookingId);
         mav.addObject("selectedBookingStatusFilters", statuses);
         mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statuses));
         mav.addObject("boatSearchQuery", query);

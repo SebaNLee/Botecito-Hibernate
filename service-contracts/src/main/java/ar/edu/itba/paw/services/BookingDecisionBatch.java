@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.services.dto;
+package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.BookingState;
 import java.util.List;

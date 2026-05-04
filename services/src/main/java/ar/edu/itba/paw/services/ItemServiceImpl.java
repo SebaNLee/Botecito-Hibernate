@@ -1,6 +1,5 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
@@ -12,23 +11,8 @@ import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.RatingSummary;
 import ar.edu.itba.paw.models.Review;
-import ar.edu.itba.paw.models.ReviewTargetType;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
-import ar.edu.itba.paw.services.dto.AuthoredItemReviewSummaryView;
-import ar.edu.itba.paw.services.dto.AvailabilityPickerData;
-import ar.edu.itba.paw.services.dto.BookingDecisionBatch;
-import ar.edu.itba.paw.services.dto.EditConflictView;
-import ar.edu.itba.paw.services.dto.GalleryImageUpload;
-import ar.edu.itba.paw.services.dto.MarketplaceItemView;
-import ar.edu.itba.paw.services.dto.OwnerAvailabilityView;
-import ar.edu.itba.paw.services.dto.OwnerDashboardView;
-import ar.edu.itba.paw.services.dto.PendingReviewView;
-import ar.edu.itba.paw.services.dto.PublicationDraft;
-import ar.edu.itba.paw.services.dto.ReceivedBookingView;
-import ar.edu.itba.paw.services.internal.AvailabilityPickerBuilder;
-import ar.edu.itba.paw.services.internal.BookingDisplayFormatter;
-import ar.edu.itba.paw.services.internal.OwnerAvailabilityViewBuilder;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -37,13 +21,11 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -274,6 +256,21 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemBooking> listActiveBookingsByItemId(final int itemId) {
         return itemDao.listActiveBookingsByItemId(itemId);
+    }
+
+    @Override
+    public RatingSummary getItemRatingSummary(final int itemId) {
+        return reviewService.getItemRatingSummary(itemId);
+    }
+
+    @Override
+    public List<Review> listLatestReviews(final int itemId, final int limit) {
+        return reviewService.listLatestItemReviews(itemId, limit);
+    }
+
+    @Override
+    public Optional<ReviewService.PendingReviewAction> findPendingReviewAction(final int userId, final int itemId) {
+        return reviewService.findPendingItemReviewAction(userId, itemId);
     }
 
     @Override
@@ -550,204 +547,7 @@ public final class ItemServiceImpl implements ItemService {
         }
     }
 
-    // ---- View / orchestration extensions ---------------------------------------------------
-
-    @Override
-    public OwnerDashboardView buildOwnerDashboard(
-            final int ownerId,
-            final List<String> statusFilters,
-            final String boatNameQuery,
-            final int page,
-            final int pageSize) {
-        final List<Item> ownedItems = itemDao.listItemsByOwnerId(ownerId);
-        final Map<Integer, Integer> coverImageIdsByItemId = new LinkedHashMap<>();
-        for (final Item item : ownedItems) {
-            if (item == null || item.getId() == null) {
-                continue;
-            }
-            itemDao.findCoverImageIdByItemId(item.getId())
-                    .ifPresent(imageId -> coverImageIdsByItemId.put(item.getId(), imageId));
-        }
-
-        final List<ReceivedBookingView> all = buildReceivedBookings(ownerId);
-        final List<ReceivedBookingView> filtered = all.stream()
-                .filter(b -> BookingDisplayFormatter.matchesAnyStatusFilter(b.getStatusMessageCode(), statusFilters))
-                .filter(b -> BookingDisplayFormatter.matchesBoatNameSearch(b.getItemTitle(), boatNameQuery))
-                .sorted(Comparator.comparing(
-                                ReceivedBookingView::getStartTime, Comparator.nullsLast(Comparator.reverseOrder()))
-                        .thenComparing(ReceivedBookingView::getId, Comparator.reverseOrder()))
-                .toList();
-        final Page<ReceivedBookingView> bookingPage = paginate(filtered, page, pageSize);
-
-        final Set<Integer> imageItemIds = new LinkedHashSet<>();
-        for (final Item item : ownedItems) {
-            if (item != null && item.getId() != null) {
-                imageItemIds.add(item.getId());
-            }
-        }
-        for (final ReceivedBookingView booking : bookingPage.getContent()) {
-            imageItemIds.add(booking.getItemId());
-        }
-
-        final OffsetDateTime now = OffsetDateTime.now();
-        final Map<Integer, Boolean> deactivates = new LinkedHashMap<>();
-        final Map<Integer, Boolean> disabled = new LinkedHashMap<>();
-        for (final Item item : ownedItems) {
-            if (item.getId() == null) {
-                continue;
-            }
-            final List<ItemBooking> itemBookings = itemDao.listBookingsByItemId(item.getId());
-            deactivates.put(
-                    item.getId(),
-                    Boolean.TRUE.equals(item.getActive())
-                            && itemBookings.stream()
-                                    .anyMatch(
-                                            b -> BookingDisplayFormatter.shouldRetainBookingForDeletion(b.getState())));
-            disabled.put(
-                    item.getId(),
-                    !Boolean.TRUE.equals(item.getActive())
-                            && itemBookings.stream()
-                                    .anyMatch(b -> BookingDisplayFormatter.shouldRetainBookingForDeletion(b.getState())
-                                            && b.getEndTime() != null
-                                            && b.getEndTime().isAfter(now)));
-        }
-
-        final Map<Integer, PendingReviewView> pendingByBookingId = new LinkedHashMap<>();
-        for (final PendingReviewView v : buildPendingReviewViews(ownerId)) {
-            if (v.getTargetType() == ReviewTargetType.USER) {
-                pendingByBookingId.put(v.getBookingId(), v);
-            }
-        }
-        final Map<Integer, AuthoredItemReviewSummaryView> authoredUserByBookingId =
-                buildAuthoredReviewsByBookingId(ownerId, ReviewTargetType.USER);
-
-        return new OwnerDashboardView(
-                ownedItems,
-                coverImageIdsByItemId,
-                imageItemIds,
-                deactivates,
-                disabled,
-                bookingPage,
-                pendingByBookingId,
-                authoredUserByBookingId);
-    }
-
-    @Override
-    public Optional<MarketplaceItemView> findMarketplaceItemView(
-            final int itemId,
-            final Integer viewerUserId,
-            final Integer requestedSnapshotVersionId,
-            final String requestedDate,
-            final String requestedStartTime,
-            final String requestedEndTime) {
-        final Optional<ItemSnapshot> selectedSnapshot = requestedSnapshotVersionId == null || viewerUserId == null
-                ? Optional.empty()
-                : resolveAuthorizedSnapshotVersion(requestedSnapshotVersionId, itemId, viewerUserId);
-        if (requestedSnapshotVersionId != null && selectedSnapshot.isEmpty()) {
-            return Optional.empty();
-        }
-
-        Optional<Item> item = itemDao.findItemById(itemId);
-        if (item.isEmpty() && viewerUserId != null) {
-            item = itemDao.findItemByIdForOwner(itemId, viewerUserId);
-        }
-        if (item.isEmpty() && selectedSnapshot.isPresent()) {
-            item = itemDao.findAnyItemById(itemId);
-        }
-        if (item.isEmpty()) {
-            return Optional.empty();
-        }
-
-        final boolean isOwner = viewerUserId != null
-                && item.get().getOwnerId() != null
-                && item.get().getOwnerId().equals(viewerUserId);
-        final boolean isActive = Boolean.TRUE.equals(item.get().getActive());
-        if (!isActive && !isOwner && selectedSnapshot.isEmpty()) {
-            return Optional.empty();
-        }
-
-        final boolean hideListingLiveVersionNavigation = selectedSnapshot.isPresent() && !isActive && !isOwner;
-        final User owner = item.get().getOwnerId() == null
-                ? null
-                : itemDao.findUserById(item.get().getOwnerId()).orElse(null);
-        final ItemType itemType =
-                itemDao.findItemTypeById(item.get().getTypeId()).orElse(null);
-        final RatingSummary ratingSummary = reviewService.getItemRatingSummary(itemId);
-        final List<Review> reviews = reviewService.listLatestItemReviews(itemId, 12);
-        final Map<Integer, String> reviewAuthorNames = new LinkedHashMap<>();
-        for (final Review review : reviews) {
-            if (review.getReviewerUserId() == null || reviewAuthorNames.containsKey(review.getReviewerUserId())) {
-                continue;
-            }
-            reviewAuthorNames.put(
-                    review.getReviewerUserId(),
-                    itemDao.findUserById(review.getReviewerUserId())
-                            .map(User::getName)
-                            .orElse(""));
-        }
-
-        final Item displayItem =
-                selectedSnapshot.<Item>map(snapshot -> snapshot).orElse(item.get());
-        final boolean useSnapshotCover =
-                selectedSnapshot.isPresent() && selectedSnapshot.get().getCoverImageData() != null;
-        final Integer coverImageId = itemDao.findCoverImageIdByItemId(itemId).orElse(null);
-        final List<Integer> galleryImageIds =
-                useSnapshotCover ? List.of() : itemDao.listImageIdsByItemIdOrdered(itemId);
-        final List<ItemSnapshot> guestSnapshots =
-                viewerUserId == null ? List.of() : itemDao.listSnapshotsByItemIdForGuest(itemId, viewerUserId);
-        final List<ItemSnapshot> hostSnapshots = isOwner && viewerUserId != null
-                ? itemDao.listSnapshotsByItemIdForOwner(itemId, viewerUserId)
-                : List.of();
-        final ReviewService.PendingReviewAction pendingItemReviewAction = viewerUserId == null
-                ? null
-                : reviewService
-                        .findPendingItemReviewAction(viewerUserId, itemId)
-                        .orElse(null);
-
-        final AvailabilityPickerData availability = AvailabilityPickerBuilder.build(
-                itemDao.listAvailabilitiesByItemId(itemId), itemDao.listBookingsByItemId(itemId));
-        final List<String> offeredDates = availability.getOfferedDates();
-        final Map<String, List<String>> offeredTimesByDate = availability.getOfferedTimesByDate();
-        final String resolvedDate = AvailabilityPickerBuilder.resolveSelectedDate(requestedDate, offeredDates, "");
-        final List<String> reservationSlots = offeredTimesByDate.getOrDefault(resolvedDate, List.of());
-        final boolean validRequestedRange = resolvedDate.equals(requestedDate)
-                && requestedStartTime != null
-                && !requestedStartTime.isBlank()
-                && requestedEndTime != null
-                && !requestedEndTime.isBlank()
-                && AvailabilityPickerBuilder.hasContinuousAvailability(
-                        reservationSlots, requestedStartTime, requestedEndTime);
-        final String resolvedStart = validRequestedRange
-                ? requestedStartTime
-                : AvailabilityPickerBuilder.resolveSelectedTime(requestedStartTime, reservationSlots, "");
-        final String resolvedEnd = validRequestedRange
-                ? requestedEndTime
-                : AvailabilityPickerBuilder.resolveSelectedTime(requestedEndTime, reservationSlots, "");
-
-        return Optional.of(new MarketplaceItemView(
-                item.get(),
-                isOwner,
-                displayItem,
-                selectedSnapshot.orElse(null),
-                hideListingLiveVersionNavigation,
-                !isActive,
-                guestSnapshots,
-                hostSnapshots,
-                owner,
-                itemType,
-                ratingSummary,
-                reviews,
-                reviewAuthorNames,
-                coverImageId,
-                galleryImageIds,
-                useSnapshotCover,
-                buildOwnerInitial(owner),
-                pendingItemReviewAction,
-                availability,
-                resolvedDate,
-                resolvedStart,
-                resolvedEnd));
-    }
+    // ---- web orchestration moved to webapp -------------------------------------------------
 
     @Override
     public ItemSearchCriteria parseAndValidateSearchCriteria(
@@ -781,53 +581,6 @@ public final class ItemServiceImpl implements ItemService {
         return searchItems(criteria, page, pageSize);
     }
 
-    @Override
-    public OwnerAvailabilityView buildOwnerAvailabilityView(
-            final int itemId, final String requestedDate, final int ownerId) {
-        return OwnerAvailabilityViewBuilder.build(
-                itemDao.listAvailabilitiesByItemId(itemId),
-                itemDao.listBookingsByItemId(itemId),
-                requestedDate,
-                ownerId);
-    }
-
-    @Override
-    public AvailabilityPickerData buildAvailabilityPicker(final int itemId) {
-        return AvailabilityPickerBuilder.build(
-                itemDao.listAvailabilitiesByItemId(itemId), itemDao.listBookingsByItemId(itemId));
-    }
-
-    @Override
-    public AvailabilityPickerData buildGlobalAvailabilityPicker() {
-        return AvailabilityPickerBuilder.build(itemDao.listAvailabilities(), itemDao.listBookings());
-    }
-
-    @Override
-    public boolean isRequestedRangeAvailable(
-            final int itemId, final String date, final String startTime, final String endTime) {
-        if (date == null || date.isBlank()) {
-            return true;
-        }
-        final AvailabilityPickerData data = buildAvailabilityPicker(itemId);
-        final List<String> times = data.getOfferedTimesByDate().get(date);
-        if (times == null || times.isEmpty()) {
-            return false;
-        }
-        final boolean blankStart = startTime == null || startTime.isBlank();
-        final boolean blankEnd = endTime == null || endTime.isBlank();
-        if (blankStart && blankEnd) {
-            return hasAnyContinuousTwoHourWindow(times);
-        }
-        if (!blankStart && blankEnd) {
-            return hasContinuousTwoHourWindowStartingAt(times, startTime);
-        }
-        if (blankStart) {
-            return hasContinuousTwoHourWindowEndingAt(times, endTime);
-        }
-        return AvailabilityPickerBuilder.hasContinuousAvailability(times, startTime, endTime);
-    }
-
-    @Override
     public Map<String, String> validatePublicationDraft(final PublicationDraft draft) {
         final Map<String, String> errors = new LinkedHashMap<>();
         if (draft == null) {
@@ -880,7 +633,6 @@ public final class ItemServiceImpl implements ItemService {
         return errors;
     }
 
-    @Override
     @Transactional
     public Item createPublicationFromDraft(final PublicationDraft draft) {
         final Item created = createPublication(
@@ -907,7 +659,6 @@ public final class ItemServiceImpl implements ItemService {
         return created;
     }
 
-    @Override
     public boolean hasPublicationChanges(
             final int itemId,
             final String title,
@@ -939,7 +690,6 @@ public final class ItemServiceImpl implements ItemService {
         return primaryImageData != null && primaryImageData.length > 0;
     }
 
-    @Override
     @Transactional
     public void resolveEditConflict(final int itemId, final BookingDecisionBatch decisions) {
         if (decisions == null || decisions.getDecisions().isEmpty()) {
@@ -967,46 +717,6 @@ public final class ItemServiceImpl implements ItemService {
         }
     }
 
-    @Override
-    public EditConflictView buildEditConflictView(final int itemId) {
-        final List<ItemBooking> bookings = listActiveBookingsByItemId(itemId);
-        final Item item = itemDao.findAnyItemById(itemId).orElse(null);
-        final Integer pricePerHour = item == null ? null : item.getPricePerHour();
-        final Map<Integer, String> guestNames = new LinkedHashMap<>();
-        final Map<Integer, String> startLabels = new LinkedHashMap<>();
-        final Map<Integer, String> friendlyDates = new LinkedHashMap<>();
-        final Map<Integer, String> friendlyTimeRanges = new LinkedHashMap<>();
-        final Map<Integer, String> friendlyPrices = new LinkedHashMap<>();
-        final Map<Integer, String> statusCodes = new LinkedHashMap<>();
-        for (final ItemBooking booking : bookings) {
-            if (booking == null || booking.getId() == null) {
-                continue;
-            }
-            final int id = booking.getId();
-            guestNames.put(
-                    id,
-                    booking.getGuestId() == null
-                            ? ""
-                            : itemDao.findUserById(booking.getGuestId())
-                                    .map(User::getName)
-                                    .orElse(""));
-            startLabels.put(id, BookingDisplayFormatter.formatStartLabel(booking.getStartTime()));
-            friendlyDates.put(id, BookingDisplayFormatter.formatFriendlyDate(booking.getStartTime()));
-            friendlyTimeRanges.put(
-                    id, BookingDisplayFormatter.formatFriendlyTimeRange(booking.getStartTime(), booking.getEndTime()));
-            friendlyPrices.put(
-                    id,
-                    BookingDisplayFormatter.formatFriendlyTotalPrice(
-                            booking.getStartTime(), booking.getEndTime(), pricePerHour));
-            statusCodes.put(
-                    id,
-                    booking.getState() == null ? "" : BookingDisplayFormatter.statusMessageCode(booking.getState()));
-        }
-        return new EditConflictView(
-                bookings, guestNames, startLabels, friendlyDates, friendlyTimeRanges, friendlyPrices, statusCodes);
-    }
-
-    @Override
     @Transactional
     public Integer uploadGalleryImage(final int itemId, final int ownerId, final GalleryImageUpload image) {
         if (itemDao.findItemByIdForOwner(itemId, ownerId).isEmpty()) {
@@ -1022,7 +732,6 @@ public final class ItemServiceImpl implements ItemService {
         return appendImage(itemId, image.getFileData());
     }
 
-    @Override
     @Transactional
     public boolean reorderGalleryForOwner(final int itemId, final int ownerId, final List<Integer> imageIdsInOrder) {
         if (itemDao.findItemByIdForOwner(itemId, ownerId).isEmpty()) {
@@ -1032,121 +741,7 @@ public final class ItemServiceImpl implements ItemService {
         return true;
     }
 
-    // ---- internal helpers for view assembly --------------------------------------------------
-
-    List<ReceivedBookingView> buildReceivedBookings(final int ownerId) {
-        final List<ReceivedBookingView> result = new ArrayList<>();
-        final Map<Integer, RatingSummary> requesterRatingByUserId = new LinkedHashMap<>();
-        for (final ItemBooking booking : itemDao.listBookingsByOwnerId(ownerId)) {
-            if (booking.getItemId() == null || booking.getId() == null || booking.getGuestId() == null) {
-                continue;
-            }
-            if (booking.getGuestId().equals(ownerId)) {
-                continue;
-            }
-            final Item item = itemDao.findSnapshotByBookingIdForOwner(booking.getId(), ownerId)
-                    .<Item>map(snapshot -> snapshot)
-                    .orElseGet(
-                            () -> itemDao.findAnyItemById(booking.getItemId()).orElse(null));
-            if (item == null) {
-                continue;
-            }
-            final User requester = itemDao.findUserById(booking.getGuestId()).orElse(null);
-            final RatingSummary rating = requesterRatingByUserId.computeIfAbsent(booking.getGuestId(), guestId -> {
-                final List<Review> received = itemDao.listReviewsByReviewee(guestId).stream()
-                        .filter(r -> r.getTargetType() == ReviewTargetType.USER)
-                        .toList();
-                if (received.isEmpty()) {
-                    return RatingSummary.empty();
-                }
-                final double avg = received.stream()
-                        .map(Review::getRating)
-                        .filter(Objects::nonNull)
-                        .mapToInt(Integer::intValue)
-                        .average()
-                        .orElse(0.0);
-                return new RatingSummary(avg, received.size());
-            });
-            final Optional<BookingPaymentProof> proof = itemDao.findPaymentProofByBookingId(booking.getId());
-            result.add(new ReceivedBookingView(
-                    booking.getId(),
-                    booking.getItemId(),
-                    itemDao.findCoverImageIdByItemId(booking.getItemId()).orElse(null),
-                    item.getTitle(),
-                    requester == null ? "" : requester.getName(),
-                    requester == null ? "" : requester.getEmail(),
-                    rating.getAverageRating(),
-                    rating.getTotalReviews(),
-                    booking.getStartTime(),
-                    booking.getEndTime(),
-                    BookingDisplayFormatter.formatDateLabel(booking.getStartTime()),
-                    BookingDisplayFormatter.formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
-                    BookingDisplayFormatter.formatTotalPriceLabel(
-                            booking.getStartTime(), booking.getEndTime(), item.getPricePerHour()),
-                    "",
-                    BookingDisplayFormatter.statusMessageCode(booking.getState()),
-                    proof.map(BookingPaymentProof::getFileName).orElse(""),
-                    proof.map(BookingPaymentProof::getContentType).orElse(""),
-                    proof.map(BookingPaymentProof::getRefusalReason).orElse(""),
-                    proof.map(BookingPaymentProof::getGuestReply).orElse(""),
-                    booking.getRequestMessage()));
-        }
-        return result;
-    }
-
-    List<PendingReviewView> buildPendingReviewViews(final int userId) {
-        final List<PendingReviewView> result = new ArrayList<>();
-        for (final ReviewService.PendingReviewAction action : reviewService.listPendingReviewActions(userId)) {
-            final Item item = itemDao.findAnyItemById(action.getItemId()).orElse(null);
-            final User target = itemDao.findUserById(action.getTargetUserId()).orElse(null);
-            if (item == null || target == null) {
-                continue;
-            }
-            result.add(new PendingReviewView(
-                    action.getBookingId(),
-                    item.getId(),
-                    item.getTitle(),
-                    action.getTargetType(),
-                    target.getName(),
-                    target.getEmail(),
-                    BookingDisplayFormatter.formatDateLabel(action.getStartTime()),
-                    BookingDisplayFormatter.formatTimeRangeLabel(action.getStartTime(), action.getEndTime())));
-        }
-        return result;
-    }
-
-    Map<Integer, AuthoredItemReviewSummaryView> buildAuthoredReviewsByBookingId(
-            final int reviewerUserId, final ReviewTargetType targetType) {
-        final Map<Integer, AuthoredItemReviewSummaryView> map = new LinkedHashMap<>();
-        for (final Review review : reviewService.listAuthoredReviews(reviewerUserId)) {
-            if (review.getBookingId() == null || review.getTargetType() != targetType) {
-                continue;
-            }
-            map.put(
-                    review.getBookingId(),
-                    new AuthoredItemReviewSummaryView(
-                            review.getRating() == null ? 0 : review.getRating(),
-                            review.getComment() == null ? "" : review.getComment()));
-        }
-        return map;
-    }
-
-    private Optional<ItemSnapshot> resolveAuthorizedSnapshotVersion(
-            final int versionId, final int itemId, final int viewerUserId) {
-        final Optional<ItemSnapshot> guestSnapshot =
-                itemDao.findSnapshotVersionByIdForGuest(versionId, itemId, viewerUserId);
-        if (guestSnapshot.isPresent()) {
-            return guestSnapshot;
-        }
-        return itemDao.findSnapshotVersionByIdForOwner(versionId, itemId, viewerUserId);
-    }
-
-    private static String buildOwnerInitial(final User user) {
-        if (user == null || user.getName() == null || user.getName().isEmpty()) {
-            return "I";
-        }
-        return user.getName().substring(0, 1).toUpperCase();
-    }
+    // ---- internal helpers --------------------------------------------------
 
     private static <T> Page<T> paginate(final List<T> items, final int page, final int pageSize) {
         final int totalItems = items == null ? 0 : items.size();
@@ -1200,37 +795,5 @@ public final class ItemServiceImpl implements ItemService {
 
     private static String safeStr(final String value) {
         return value == null ? "" : value.trim();
-    }
-
-    private static boolean hasAnyContinuousTwoHourWindow(final List<String> times) {
-        for (int i = 0; i < times.size(); i++) {
-            for (int j = i + 1; j < times.size(); j++) {
-                if (AvailabilityPickerBuilder.hasContinuousAvailability(times, times.get(i), times.get(j))) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean hasContinuousTwoHourWindowStartingAt(final List<String> times, final String start) {
-        if (!times.contains(start)) {
-            return false;
-        }
-        for (final String end : times) {
-            if (AvailabilityPickerBuilder.hasContinuousAvailability(times, start, end)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean hasContinuousTwoHourWindowEndingAt(final List<String> times, final String end) {
-        for (final String start : times) {
-            if (AvailabilityPickerBuilder.hasContinuousAvailability(times, start, end)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

@@ -23,7 +23,7 @@ public class UserServiceImpl implements UserService {
     private final MailService mailService;
 
     @Override
-    public User register(
+    public RegistrationResult register(
             final String givenName,
             final String lastName,
             final String email,
@@ -36,17 +36,19 @@ public class UserServiceImpl implements UserService {
         final Optional<User> existingUser = userDao.findByEmail(normalizedEmail);
         if (existingUser.isEmpty()) {
             LOGGER.info("Registering new user with email {}", normalizedEmail);
-            return userDao.createUser(givenName, lastName, normalizedEmail, passwordHash, normalizedPaymentAlias);
+            userDao.createUser(givenName, lastName, normalizedEmail, passwordHash, normalizedPaymentAlias);
+            return RegistrationResult.SUCCESS;
         }
 
         if (existingUser.get().getPasswordHash() == null) {
             LOGGER.info("Claiming account for user with email {}", normalizedEmail);
-            return userDao.claimUser(givenName, lastName, normalizedEmail, passwordHash, normalizedPaymentAlias)
+            userDao.claimUser(givenName, lastName, normalizedEmail, passwordHash, normalizedPaymentAlias)
                     .orElseThrow(() -> new IllegalStateException("Could not claim account for " + normalizedEmail));
+            return RegistrationResult.SUCCESS;
         }
 
         LOGGER.warn("Attempted registration with existing email: {}", normalizedEmail);
-        throw new IllegalArgumentException("User already exists with email " + normalizedEmail);
+        return RegistrationResult.EMAIL_ALREADY_EXISTS;
     }
 
     @Override

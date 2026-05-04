@@ -4,7 +4,6 @@ import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
-import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.PaymentProofForm;
 import ar.edu.itba.paw.webapp.form.RefusePaymentForm;
@@ -34,7 +33,6 @@ public class BookingRequestActionController {
     private static final String DASHBOARD_HOSTING_REDIRECT = "redirect:/my-boats#received-booking-requests";
 
     private final BookingRequestService bookingRequestService;
-    private final ItemService itemService;
     private final UserService userService;
 
     @RequestMapping(value = "/bookings/{token}/accept", method = RequestMethod.GET)
@@ -63,43 +61,42 @@ public class BookingRequestActionController {
     public ModelAndView submitPaymentProof(
             @PathVariable("id") final int bookingId,
             @ModelAttribute("paymentProofForm") final PaymentProofForm form,
-            final RedirectAttributes redirectAttributes) {
+            final RedirectAttributes redirectAttributes)
+            throws IOException {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
 
         final MultipartFile file = form.getFile();
-        final byte[] fileBytes;
-        try {
-            fileBytes = file == null || file.isEmpty() ? new byte[0] : file.getBytes();
-        } catch (final IOException e) {
+        final byte[] fileBytes = file == null || file.isEmpty() ? new byte[0] : file.getBytes();
+
+        final BookingRequestService.PaymentProofSubmissionOutcome outcome =
+                bookingRequestService.submitPaymentProofInAccount(
+                        bookingId,
+                        currentUser.getId(),
+                        cleanFileName(file == null ? null : file.getOriginalFilename()),
+                        file == null ? null : file.getContentType(),
+                        fileBytes,
+                        form.getGuestReply());
+        if (outcome == BookingRequestService.PaymentProofSubmissionOutcome.INVALID_FILE) {
             ToastSupport.error(redirectAttributes, "profile.payment.invalidFile");
             return new ModelAndView(DASHBOARD_BOOKINGS_REDIRECT);
         }
-
-        final var existingProof = bookingRequestService.findPaymentProofByBookingId(bookingId);
-
-        try {
-            final var proof = bookingRequestService.submitPaymentProof(
-                    bookingId,
-                    currentUser.getId(),
-                    cleanFileName(file == null ? null : file.getOriginalFilename()),
-                    file == null ? null : file.getContentType(),
-                    fileBytes,
-                    form.getGuestReply());
-            if (proof.isEmpty()) {
-                ToastSupport.error(redirectAttributes, "profile.payment.invalidFile");
-                return new ModelAndView(DASHBOARD_BOOKINGS_REDIRECT);
-            }
-            ToastSupport.success(
-                    redirectAttributes,
-                    existingProof.isPresent() ? "profile.payment.resubmitted" : "profile.payment.submitted");
-            return new ModelAndView(DASHBOARD_BOOKINGS_REDIRECT);
-        } catch (final RuntimeException e) {
+        if (outcome == BookingRequestService.PaymentProofSubmissionOutcome.ERROR) {
             ToastSupport.error(redirectAttributes, "profile.payment.error");
             return new ModelAndView(DASHBOARD_BOOKINGS_REDIRECT);
         }
+        if (outcome == BookingRequestService.PaymentProofSubmissionOutcome.RESUBMITTED) {
+            ToastSupport.success(redirectAttributes, "profile.payment.resubmitted");
+            return new ModelAndView(DASHBOARD_BOOKINGS_REDIRECT);
+        }
+        if (outcome != BookingRequestService.PaymentProofSubmissionOutcome.SUBMITTED) {
+            ToastSupport.error(redirectAttributes, "profile.payment.invalidFile");
+            return new ModelAndView(DASHBOARD_BOOKINGS_REDIRECT);
+        }
+        ToastSupport.success(redirectAttributes, "profile.payment.submitted");
+        return new ModelAndView(DASHBOARD_BOOKINGS_REDIRECT);
     }
 
     @RequestMapping(value = "/bookings/{id:[0-9]+}/payment/refuse", method = RequestMethod.POST)
@@ -116,19 +113,14 @@ public class BookingRequestActionController {
             ToastSupport.error(redirectAttributes, "profile.payment.refuseError");
             return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
         }
-        try {
-            final var refused =
-                    bookingRequestService.refusePaymentProof(bookingId, currentUser.getId(), form.getReason());
-            if (refused.isEmpty()) {
-                ToastSupport.error(redirectAttributes, "profile.payment.refuseError");
-                return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
-            }
-            ToastSupport.success(redirectAttributes, "profile.payment.refused");
-            return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
-        } catch (final RuntimeException e) {
+        final BookingRequestService.PaymentRefusalOutcome outcome =
+                bookingRequestService.refusePaymentProofInAccount(bookingId, currentUser.getId(), form.getReason());
+        if (outcome != BookingRequestService.PaymentRefusalOutcome.REFUSED) {
             ToastSupport.error(redirectAttributes, "profile.payment.refuseError");
             return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
         }
+        ToastSupport.success(redirectAttributes, "profile.payment.refused");
+        return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
     }
 
     @RequestMapping(value = "/bookings/{id:[0-9]+}/payment-proof", method = RequestMethod.GET)
@@ -167,18 +159,14 @@ public class BookingRequestActionController {
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
-        try {
-            final var resolved = bookingRequestService.confirmPaymentReceived(bookingId, currentUser.getId());
-            if (resolved.isEmpty()) {
-                ToastSupport.error(redirectAttributes, "profile.payment.error");
-                return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
-            }
-            ToastSupport.success(redirectAttributes, "profile.payment.paid");
-            return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
-        } catch (final RuntimeException e) {
+        final BookingRequestService.PaymentConfirmationOutcome outcome =
+                bookingRequestService.confirmPaymentReceivedInAccount(bookingId, currentUser.getId());
+        if (outcome != BookingRequestService.PaymentConfirmationOutcome.CONFIRMED) {
             ToastSupport.error(redirectAttributes, "profile.payment.error");
             return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
         }
+        ToastSupport.success(redirectAttributes, "profile.payment.paid");
+        return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
     }
 
     private ModelAndView resolveBookingRequestInAccount(
@@ -188,38 +176,18 @@ public class BookingRequestActionController {
             return new ModelAndView("redirect:/login");
         }
 
-        final var booking = itemService.listBookings().stream()
-                .filter(existingBooking -> existingBooking.getId() != null && existingBooking.getId() == bookingId)
-                .findFirst()
-                .orElse(null);
-        if (booking == null || booking.getHostDecisionToken() == null) {
+        final BookingRequestService.BookingResolutionOutcome outcome =
+                bookingRequestService.resolveBookingRequestInAccount(bookingId, currentUser.getId(), bookingState);
+        if (outcome == BookingRequestService.BookingResolutionOutcome.ERROR) {
             ToastSupport.error(redirectAttributes, "profile.bookings.error");
             return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
         }
-
-        final var item = itemService.findAnyItemById(booking.getItemId()).orElse(null);
-        if (item == null || item.getOwnerId() == null || !item.getOwnerId().equals(currentUser.getId())) {
-            ToastSupport.error(redirectAttributes, "profile.bookings.error");
-            return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
+        if (outcome == BookingRequestService.BookingResolutionOutcome.ACCEPTED) {
+            ToastSupport.success(redirectAttributes, "profile.bookings.accepted");
+        } else {
+            ToastSupport.warning(redirectAttributes, "profile.bookings.rejected");
         }
-
-        try {
-            final var resolved =
-                    bookingRequestService.resolveBookingRequest(booking.getHostDecisionToken(), bookingState);
-            if (resolved.isEmpty()) {
-                ToastSupport.error(redirectAttributes, "profile.bookings.error");
-                return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
-            }
-            if (bookingState == BookingState.BOOKING_CONFIRMED) {
-                ToastSupport.success(redirectAttributes, "profile.bookings.accepted");
-            } else {
-                ToastSupport.warning(redirectAttributes, "profile.bookings.rejected");
-            }
-            return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
-        } catch (final RuntimeException e) {
-            ToastSupport.error(redirectAttributes, "profile.bookings.error");
-            return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
-        }
+        return new ModelAndView(DASHBOARD_HOSTING_REDIRECT);
     }
 
     private static String cleanFileName(final String fileName) {

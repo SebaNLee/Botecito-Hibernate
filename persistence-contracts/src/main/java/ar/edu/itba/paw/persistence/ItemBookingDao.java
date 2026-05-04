@@ -59,6 +59,8 @@ public interface ItemBookingDao {
             String hostDecisionToken,
             OffsetDateTime hostDecisionRecordedAt);
 
+    boolean deleteOwnerSelfBlock(int bookingId, int ownerId);
+
     boolean markBookingCancelled(int bookingId);
 
     boolean resolveBookingByHostDecisionToken(

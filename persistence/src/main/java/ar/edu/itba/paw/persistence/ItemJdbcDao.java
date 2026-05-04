@@ -527,8 +527,7 @@ public class ItemJdbcDao implements ItemDao {
             sql.append(" AND owner_id = ?");
             args.add(ownerId);
         }
-        final String updateSql = Objects.requireNonNull(sql.toString());
-        return jdbcTemplate.update(updateSql, args.toArray()) > 0;
+        return jdbcTemplate.update(requireSql(sql), args.toArray()) > 0;
     }
 
     private Optional<Map<String, Object>> findCurrentPublicationVersionData(final int itemId, final Integer ownerId) {
@@ -544,8 +543,8 @@ public class ItemJdbcDao implements ItemDao {
             sql.append(" AND v.owner_id = ?");
             args.add(ownerId);
         }
-        final String selectSql = Objects.requireNonNull(sql.toString());
-        return jdbcTemplate.queryForList(selectSql, args.toArray()).stream().findFirst();
+        return jdbcTemplate.queryForList(requireSql(sql), args.toArray()).stream()
+                .findFirst();
     }
 
     private boolean currentVersionHasBookingReferences(final int currentVersionId) {
@@ -569,8 +568,7 @@ public class ItemJdbcDao implements ItemDao {
             sql.append(" AND owner_id = ?");
             args.add(ownerId);
         }
-        final String updateActiveSql = Objects.requireNonNull(sql.toString());
-        return jdbcTemplate.update(updateActiveSql, args.toArray());
+        return jdbcTemplate.update(requireSql(sql), args.toArray());
     }
 
     private void clearCurrentVersionOwnerDeleteToken(final int itemId) {
@@ -604,5 +602,13 @@ public class ItemJdbcDao implements ItemDao {
             throw new IllegalStateException("Expected numeric column: " + column);
         }
         return number;
+    }
+
+    private static @NonNull String requireSql(final @NonNull StringBuilder sql) {
+        final String value = sql.toString();
+        if (value == null) {
+            throw new IllegalStateException("Generated SQL cannot be null");
+        }
+        return value;
     }
 }

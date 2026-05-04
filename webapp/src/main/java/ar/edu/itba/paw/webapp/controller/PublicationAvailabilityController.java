@@ -146,6 +146,22 @@ public class PublicationAvailabilityController {
                 .filter(b -> b.getGuestId() != null && b.getGuestId() == ownerId)
                 .filter(b -> b.getState() == BookingState.BOOKING_CONFIRMED)
                 .toList();
+        final List<Map<String, Object>> personalBlockRows = personalBlocks.stream()
+                .filter(block -> block.getId() != null && block.getStartTime() != null && block.getEndTime() != null)
+                .sorted((left, right) -> left.getStartTime().compareTo(right.getStartTime()))
+                .map(block -> {
+                    final Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("bookingId", block.getId());
+                    row.put("dateIso", block.getStartTime().toLocalDate().toString());
+                    row.put(
+                            "startTime",
+                            block.getStartTime().toLocalTime().toString().substring(0, 5));
+                    row.put(
+                            "endTime",
+                            block.getEndTime().toLocalTime().toString().substring(0, 5));
+                    return row;
+                })
+                .toList();
         final List<Map<String, Object>> slots = buildSlots(selectedDate, availabilities, bookings, ownerId);
         final List<String> blockedDates = new ArrayList<>();
         for (final ItemBooking block : personalBlocks) {
@@ -162,7 +178,7 @@ public class PublicationAvailabilityController {
         mav.addObject("slots", slots);
         mav.addObject("slotsStateJson", slotsToJson(slots));
         mav.addObject("personalBlocks", personalBlocks);
-        mav.addObject("personalBlockRows", List.of());
+        mav.addObject("personalBlockRows", personalBlockRows);
         mav.addObject("manageAvailabilityReturnPath", sanitizedReturnPath);
         mav.addObject(
                 "manageAvailabilityBackPath",
@@ -279,6 +295,9 @@ public class PublicationAvailabilityController {
         final Set<String> guestBooked = new HashSet<>();
         final Map<String, Integer> ownerBlocks = new HashMap<>();
         for (final ItemBooking booking : bookings) {
+            if (booking.getState() == null || !isBlockingState(booking.getState())) {
+                continue;
+            }
             if (booking.getStartTime() == null || booking.getEndTime() == null) {
                 continue;
             }
@@ -310,6 +329,13 @@ public class PublicationAvailabilityController {
             slots.add(slot);
         }
         return slots;
+    }
+
+    private static boolean isBlockingState(final BookingState state) {
+        return state == BookingState.BOOKING_PENDING
+                || state == BookingState.BOOKING_CONFIRMED
+                || state == BookingState.BOOKING_PAYMENT_SUBMITTED
+                || state == BookingState.BOOKING_PAID;
     }
 
     private User currentAuthenticatedUser() {

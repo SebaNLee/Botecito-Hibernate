@@ -33,7 +33,7 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public final class MarketplaceMvcSupport {
 
-    private static final int MARKETPLACE_PAGE_SIZE = 10;
+    private static final int DEFAULT_MARKETPLACE_PAGE_SIZE = 12;
 
     private final ItemService itemService;
     private final BookingRequestService bookingRequestService;
@@ -58,7 +58,8 @@ public final class MarketplaceMvcSupport {
             final String difficultyLevel,
             final String minRating,
             final String sort,
-            final String page) {
+            final String page,
+            final String pageSize) {
         final ItemSearchCriteria criteria = itemService.parseAndValidateSearchCriteria(
                 searchQuery,
                 locationOptionId,
@@ -70,12 +71,14 @@ public final class MarketplaceMvcSupport {
                 difficultyLevel,
                 minRating,
                 sort);
-        final Page<Item> itemPage = itemService.searchMarketplace(criteria, parsePage(page), MARKETPLACE_PAGE_SIZE);
+        final int parsedPageSize = parsePageSize(pageSize);
+        final Page<Item> itemPage = itemService.searchMarketplace(criteria, parsePage(page), parsedPageSize);
         final ModelAndView mav = new ModelAndView("marketplace");
         mav.addObject("items", itemPage.getContent());
         mav.addObject("itemImages", buildItemImagesMap(itemPage.getContent(), request.getContextPath()));
         mav.addObject("itemsCount", itemPage.getTotalItems());
         mav.addObject("itemPage", itemPage);
+        mav.addObject("pageSize", parsedPageSize);
         mav.addObject(
                 "sort",
                 criteria.getSort() == null ? "newest" : criteria.getSort().getRequestValue());
@@ -296,6 +299,21 @@ public final class MarketplaceMvcSupport {
             return parsed < 1 ? 1 : parsed;
         } catch (final NumberFormatException ex) {
             return 1;
+        }
+    }
+
+    private static int parsePageSize(final String pageSize) {
+        if (pageSize == null || pageSize.isBlank()) {
+            return DEFAULT_MARKETPLACE_PAGE_SIZE;
+        }
+        try {
+            final int parsed = Integer.parseInt(pageSize.trim());
+            if (parsed == 6 || parsed == 12 || parsed == 18) {
+                return parsed;
+            }
+            return DEFAULT_MARKETPLACE_PAGE_SIZE;
+        } catch (final NumberFormatException ex) {
+            return DEFAULT_MARKETPLACE_PAGE_SIZE;
         }
     }
 

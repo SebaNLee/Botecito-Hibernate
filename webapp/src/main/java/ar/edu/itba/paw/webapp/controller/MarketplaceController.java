@@ -44,7 +44,8 @@ public class MarketplaceController {
             @RequestParam(value = "difficultyLevel", required = false) final String difficultyLevel,
             @RequestParam(value = "minRating", required = false) final String minRating,
             @RequestParam(value = "sort", required = false) final String sort,
-            @RequestParam(value = "page", required = false) final String page) {
+            @RequestParam(value = "page", required = false) final String page,
+            @RequestParam(value = "pageSize", required = false) final String pageSize) {
         return marketplaceMvcSupport.marketplace(
                 request,
                 searchQuery,
@@ -57,7 +58,8 @@ public class MarketplaceController {
                 difficultyLevel,
                 minRating,
                 sort,
-                page);
+                page,
+                pageSize);
     }
 
     @ResponseBody

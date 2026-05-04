@@ -2,6 +2,8 @@ package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.User;
 import java.time.OffsetDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface UserDao {
@@ -27,4 +29,11 @@ public interface UserDao {
     Optional<User> findByPasswordRecoveryToken(String token);
 
     boolean resetPasswordByRecoveryToken(String token, String passwordHash, OffsetDateTime usedAt);
+
+    /** Inserts a row with no password (e.g. guest or booking-created profile). */
+    User createUserWithoutCredentials(String givenName, String lastName, String email, String preferredLanguage);
+
+    boolean updateBasicProfileNamesAndLanguage(int userId, String givenName, String lastName, String preferredLanguage);
+
+    List<User> findUsersByIds(Collection<Integer> userIds);
 }

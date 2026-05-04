@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
+import ar.edu.itba.paw.persistence.UserDao;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
@@ -35,6 +36,9 @@ public class MailServiceImplTest {
     @Mock
     private ItemDao itemDao;
 
+    @Mock
+    private UserDao userDao;
+
     private MailServiceImpl mailService;
 
     @BeforeEach
@@ -43,21 +47,21 @@ public class MailServiceImplTest {
         properties.setProperty("app.baseUrl", "http://localhost:8080");
         properties.setProperty("mail.reviewRecipient", "a@a.com");
 
-        mailService = new MailServiceImpl(mailSender, templateEngine, messageSource, itemDao, properties);
+        mailService = new MailServiceImpl(mailSender, templateEngine, messageSource, itemDao, userDao, properties);
     }
 
     @Test
     public void testResolveEnglish() {
         final User user = new User();
         user.setPreferredLanguage(PreferredLanguage.EN);
-        Mockito.when(itemDao.findUserByEmail("a@a.com")).thenReturn(Optional.of(user));
+        Mockito.when(userDao.findByEmail("a@a.com")).thenReturn(Optional.of(user));
         final Locale result = mailService.resolveLocale("a@a.com");
         Assertions.assertEquals(Locale.ENGLISH, result);
     }
 
     @Test
     public void testResolveLocaleNoUser() {
-        Mockito.when(itemDao.findUserByEmail("b@b.com")).thenReturn(Optional.empty());
+        Mockito.when(userDao.findByEmail("b@b.com")).thenReturn(Optional.empty());
         final Locale result = mailService.resolveLocale("b@b.com");
         Assertions.assertEquals(Locale.of("es"), result);
     }
@@ -68,7 +72,7 @@ public class MailServiceImplTest {
                 new BookingRequest("t", 10, "A A", "a@a.com", "es", "a", BookingState.BOOKING_PENDING, Instant.now());
         final javax.mail.internet.MimeMessage mimeMessage = Mockito.mock(javax.mail.internet.MimeMessage.class);
 
-        Mockito.when(itemDao.findUserByEmail("b@b.com")).thenReturn(Optional.empty());
+        Mockito.when(userDao.findByEmail("b@b.com")).thenReturn(Optional.empty());
         Mockito.when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
         Mockito.when(messageSource.getMessage(
                         Mockito.eq("mail.requestReview.subject"), Mockito.any(), Mockito.any(Locale.class)))
@@ -84,7 +88,7 @@ public class MailServiceImplTest {
     public void testPasswordRecoveryEmail() {
         final javax.mail.internet.MimeMessage mimeMessage = Mockito.mock(javax.mail.internet.MimeMessage.class);
 
-        Mockito.when(itemDao.findUserByEmail("recover@a.com")).thenReturn(Optional.empty());
+        Mockito.when(userDao.findByEmail("recover@a.com")).thenReturn(Optional.empty());
         Mockito.when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
         Mockito.when(messageSource.getMessage(
                         Mockito.eq("mail.passwordRecovery.subject"), Mockito.any(), Mockito.any(Locale.class)))

@@ -6,6 +6,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
+import ar.edu.itba.paw.persistence.UserDao;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Locale;
 import java.util.Optional;
@@ -31,6 +32,7 @@ public class MailServiceImpl implements MailService {
     private final TemplateEngine templateEngine;
     private final MessageSource messageSource;
     private final ItemDao itemDao;
+    private final UserDao userDao;
     private final String reviewRecipient;
     private final String accountBaseUrl;
     private final String itemBaseUrl;
@@ -45,11 +47,13 @@ public class MailServiceImpl implements MailService {
             final TemplateEngine templateEngine,
             final MessageSource messageSource,
             final ItemDao itemDao,
+            final UserDao userDao,
             final Properties credentialsProperties) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
         this.messageSource = messageSource;
         this.itemDao = itemDao;
+        this.userDao = userDao;
         final String baseUrl = requireProperty(credentialsProperties, "app.baseUrl");
         this.reviewRecipient = requireProperty(credentialsProperties, "mail.reviewRecipient");
         this.accountBaseUrl = baseUrl + "/profile";
@@ -265,7 +269,7 @@ public class MailServiceImpl implements MailService {
 
     @Override
     public Locale resolveLocale(final String recipientIdentifier) {
-        final Optional<Locale> userLocale = itemDao.findUserByEmail(recipientIdentifier)
+        final Optional<Locale> userLocale = userDao.findByEmail(recipientIdentifier)
                 .map(user -> localeFromPreferredLanguage(user.getPreferredLanguage()));
         if (userLocale.isPresent()) {
             return userLocale.get();
@@ -301,7 +305,7 @@ public class MailServiceImpl implements MailService {
             return Optional.empty();
         }
 
-        final Optional<User> owner = itemDao.findUserById(item.get().getOwnerId());
+        final Optional<User> owner = userDao.findById(item.get().getOwnerId());
         if (owner.isEmpty()
                 || owner.get().getEmail() == null
                 || owner.get().getEmail().isBlank()) {

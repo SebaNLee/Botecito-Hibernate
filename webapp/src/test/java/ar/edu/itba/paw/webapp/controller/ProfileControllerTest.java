@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.controller.support.ProfileMvcSupport;
 import ar.edu.itba.paw.webapp.form.ProfileForm;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -29,7 +30,7 @@ public class ProfileControllerTest {
 
     @BeforeEach
     public void setUp() {
-        controller = new ProfileController(userService);
+        controller = new ProfileController(new ProfileMvcSupport(userService));
     }
 
     @AfterEach

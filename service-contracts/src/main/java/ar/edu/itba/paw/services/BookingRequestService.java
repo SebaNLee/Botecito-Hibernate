@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.ItemBooking;
+import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -19,9 +20,32 @@ public interface BookingRequestService {
             OffsetDateTime endTime,
             String description);
 
+    /**
+     * Creates a marketplace booking request for a guest, parsing {@code date} and time strings in the system default
+     * zone. Never throws for self-booking or recoverable failures; inspect {@link GuestMarketplaceReservationResult}.
+     */
+    GuestMarketplaceReservationResult placeGuestMarketplaceReservation(
+            int itemId,
+            String requesterGivenName,
+            String requesterLastName,
+            String requesterEmail,
+            String requesterPreferredLanguage,
+            String date,
+            String startTime,
+            String endTime,
+            String requestMessage);
+
     Optional<BookingRequest> findByToken(String token);
 
     Optional<BookingRequest> resolveBookingRequest(String token, BookingState newStatus);
+
+    enum BookingResolutionOutcome {
+        ACCEPTED,
+        REJECTED,
+        ERROR
+    }
+
+    BookingResolutionOutcome resolveBookingRequestInAccount(int bookingId, int ownerId, BookingState newStatus);
 
     void expireAllDue(OffsetDateTime currentDateTime);
 
@@ -30,9 +54,38 @@ public interface BookingRequestService {
     Optional<BookingPaymentProof> submitPaymentProof(
             int bookingId, int requesterId, String fileName, String contentType, byte[] fileData, String guestReply);
 
+    enum PaymentProofSubmissionOutcome {
+        SUBMITTED,
+        RESUBMITTED,
+        INVALID_FILE,
+        ERROR
+    }
+
+    PaymentProofSubmissionOutcome submitPaymentProofInAccount(
+            int bookingId,
+            int requesterId,
+            InputStream fileContent,
+            String originalFilename,
+            String contentType,
+            String guestReply);
+
     Optional<BookingRequest> confirmPaymentReceived(int bookingId, int ownerId);
 
+    enum PaymentConfirmationOutcome {
+        CONFIRMED,
+        ERROR
+    }
+
+    PaymentConfirmationOutcome confirmPaymentReceivedInAccount(int bookingId, int ownerId);
+
     Optional<BookingRequest> refusePaymentProof(int bookingId, int ownerId, String reason);
+
+    enum PaymentRefusalOutcome {
+        REFUSED,
+        ERROR
+    }
+
+    PaymentRefusalOutcome refusePaymentProofInAccount(int bookingId, int ownerId, String reason);
 
     Optional<BookingPaymentProof> findPaymentProofByBookingId(int bookingId);
 

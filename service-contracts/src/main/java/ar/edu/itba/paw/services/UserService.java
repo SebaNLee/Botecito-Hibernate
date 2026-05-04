@@ -9,7 +9,18 @@ public interface UserService {
         INVALID_TOKEN
     }
 
-    User register(String givenName, String lastName, String email, String rawPassword, String paymentAlias);
+    enum RegistrationResult {
+        SUCCESS,
+        EMAIL_ALREADY_EXISTS
+    }
+
+    RegistrationResult register(
+            String givenName,
+            String lastName,
+            String email,
+            String rawPassword,
+            String paymentAlias,
+            String preferredLanguage);
 
     Optional<User> findByEmail(String email);
 

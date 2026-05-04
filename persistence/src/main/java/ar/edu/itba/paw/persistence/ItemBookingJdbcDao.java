@@ -50,7 +50,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
     @Override
     public List<ItemBooking> listBookingsByGuestId(final int guestId) {
         return jdbcTemplate.query(
-                "SELECT * FROM item_booking WHERE guest_id = ? ORDER BY created_at DESC, id DESC",
+                ItemPersistenceSql.BOOKING_BY_GUEST_BASE + " ORDER BY b.created_at DESC, b.id DESC",
                 ItemJdbcRowMappers.ITEM_BOOKING_ROW_MAPPER,
                 guestId);
     }
@@ -287,6 +287,15 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
                                 + " WHERE id = ?"
                                 + " AND state = 'BOOKING_CONFIRMED'",
                         bookingId)
+                > 0;
+    }
+
+    @Override
+    public boolean deleteOwnerSelfBlock(final int bookingId, final int ownerId) {
+        return jdbcTemplate.update(
+                        "DELETE FROM item_booking WHERE id = ? AND guest_id = ? AND state = 'BOOKING_CONFIRMED'",
+                        bookingId,
+                        ownerId)
                 > 0;
     }
 

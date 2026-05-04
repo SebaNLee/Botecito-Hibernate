@@ -16,4 +16,13 @@
     <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     <Class name="~ar\.edu\.itba\.paw\.services\.dto\..+"/>
   </Match>
+  <!--
+    Page model exposes the loaded Item for the view; the domain type has no
+    copy API and cloning would not preserve identity semantics for the screen.
+  -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP"/>
+    <Class name="ar.edu.itba.paw.services.ManageAvailabilityPageModel"/>
+    <Method name="getItem" returns="ar.edu.itba.paw.models.Item"/>
+  </Match>
 </FindBugsFilter>

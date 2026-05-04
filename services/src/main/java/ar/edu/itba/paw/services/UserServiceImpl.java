@@ -23,30 +23,47 @@ public class UserServiceImpl implements UserService {
     private final MailService mailService;
 
     @Override
-    public User register(
+    public RegistrationResult register(
             final String givenName,
             final String lastName,
             final String email,
             final String rawPassword,
-            final String paymentAlias) {
+            final String paymentAlias,
+            final String preferredLanguage) {
         UserNameRules.requireBothLegalNames(givenName, lastName);
         final String normalizedEmail = email.trim().toLowerCase();
         final String passwordHash = passwordEncoder.encode(rawPassword);
         final String normalizedPaymentAlias = normalizePaymentAlias(paymentAlias);
+        final String normalizedPreferredLanguage =
+                PreferredLanguage.fromInput(preferredLanguage).getPersistenceCode();
         final Optional<User> existingUser = userDao.findByEmail(normalizedEmail);
         if (existingUser.isEmpty()) {
             LOGGER.info("Registering new user with email {}", normalizedEmail);
-            return userDao.createUser(givenName, lastName, normalizedEmail, passwordHash, normalizedPaymentAlias);
+            userDao.createUser(
+                    givenName,
+                    lastName,
+                    normalizedEmail,
+                    passwordHash,
+                    normalizedPaymentAlias,
+                    normalizedPreferredLanguage);
+            return RegistrationResult.SUCCESS;
         }
 
         if (existingUser.get().getPasswordHash() == null) {
             LOGGER.info("Claiming account for user with email {}", normalizedEmail);
-            return userDao.claimUser(givenName, lastName, normalizedEmail, passwordHash, normalizedPaymentAlias)
+            userDao.claimUser(
+                            givenName,
+                            lastName,
+                            normalizedEmail,
+                            passwordHash,
+                            normalizedPaymentAlias,
+                            normalizedPreferredLanguage)
                     .orElseThrow(() -> new IllegalStateException("Could not claim account for " + normalizedEmail));
+            return RegistrationResult.SUCCESS;
         }
 
         LOGGER.warn("Attempted registration with existing email: {}", normalizedEmail);
-        throw new IllegalArgumentException("User already exists with email " + normalizedEmail);
+        return RegistrationResult.EMAIL_ALREADY_EXISTS;
     }
 
     @Override

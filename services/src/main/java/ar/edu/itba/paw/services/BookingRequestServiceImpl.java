@@ -8,11 +8,12 @@ import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemBookingDao;
 import ar.edu.itba.paw.persistence.ItemDao;
-import ar.edu.itba.paw.persistence.ItemMediaDao;
-import ar.edu.itba.paw.persistence.ReviewDao;
 import ar.edu.itba.paw.persistence.UserDao;
 import ar.edu.itba.paw.services.utils.PaymentProofValidator;
 import ar.edu.itba.paw.services.utils.UserNameRules;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -45,8 +46,6 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     private static final DateTimeFormatter TIME_LABEL_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private final ItemDao itemDao;
     private final ItemBookingDao itemBookingDao;
-    private final ReviewDao reviewDao;
-    private final ItemMediaDao itemMediaDao;
     private final UserDao userDao;
     private final MailService mailService;
 
@@ -82,6 +81,51 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         final BookingRequest bookingRequest = toBookingRequest(booking, requesterUser);
         sendBookingReviewEmail(bookingRequest, item, startTime, endTime);
         return bookingRequest;
+    }
+
+    @Override
+    @Transactional
+    public GuestMarketplaceReservationResult placeGuestMarketplaceReservation(
+            final int itemId,
+            final String requesterGivenName,
+            final String requesterLastName,
+            final String requesterEmail,
+            final String requesterPreferredLanguage,
+            final String date,
+            final String startTime,
+            final String endTime,
+            final String requestMessage) {
+        try {
+            final OffsetDateTime start = toOffsetDateTime(date, startTime);
+            final OffsetDateTime end = toOffsetDateTime(date, endTime);
+            createBookingRequest(
+                    itemId,
+                    requesterGivenName,
+                    requesterLastName,
+                    requesterEmail,
+                    requesterPreferredLanguage,
+                    start,
+                    end,
+                    requestMessage == null || requestMessage.isBlank() ? null : requestMessage.trim());
+            final Item item = itemDao.findAnyItemById(itemId).orElse(null);
+            final String ownerDisplayName = item == null || item.getOwnerId() == null
+                    ? ""
+                    : userDao.findById(item.getOwnerId()).map(User::getName).orElse("");
+            return GuestMarketplaceReservationResult.success(ownerDisplayName);
+        } catch (final SelfBookingNotAllowedException e) {
+            return GuestMarketplaceReservationResult.selfBooking();
+        } catch (final RuntimeException e) {
+            LOGGER.error("Guest marketplace reservation failed for item {}", itemId, e);
+            return GuestMarketplaceReservationResult.error();
+        }
+    }
+
+    private static OffsetDateTime toOffsetDateTime(final String date, final String time) {
+        final LocalDate localDate = LocalDate.parse(date);
+        final LocalTime localTime = LocalTime.parse(time);
+        return LocalDateTime.of(localDate, localTime)
+                .atZone(ZoneId.systemDefault())
+                .toOffsetDateTime();
     }
 
     private static OffsetDateTime currentDateTime() {
@@ -146,7 +190,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
                 || !Objects.equals(item.getOwnerId(), booking.getGuestId())) {
             return false;
         }
-        return itemBookingDao.markBookingCancelled(bookingId);
+        return itemBookingDao.deleteOwnerSelfBlock(bookingId, ownerId);
     }
 
     @Override
@@ -167,6 +211,36 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         final Optional<BookingRequest> resolved = findByToken(token);
         resolved.ifPresent(this::sendBookingResolutionEmail);
         return resolved;
+    }
+
+    @Override
+    public BookingResolutionOutcome resolveBookingRequestInAccount(
+            final int bookingId, final int ownerId, final BookingState newStatus) {
+        try {
+            final Optional<ItemBooking> booking = itemBookingDao.findBookingById(bookingId);
+            if (booking.isEmpty()
+                    || booking.get().getHostDecisionToken() == null
+                    || booking.get().getItemId() == null) {
+                return BookingResolutionOutcome.ERROR;
+            }
+            final Optional<Item> item = itemDao.findAnyItemById(booking.get().getItemId());
+            if (item.isEmpty()
+                    || item.get().getOwnerId() == null
+                    || !item.get().getOwnerId().equals(ownerId)) {
+                return BookingResolutionOutcome.ERROR;
+            }
+            final Optional<BookingRequest> resolved =
+                    resolveBookingRequest(booking.get().getHostDecisionToken(), newStatus);
+            if (resolved.isEmpty()) {
+                return BookingResolutionOutcome.ERROR;
+            }
+            return newStatus == BookingState.BOOKING_CONFIRMED
+                    ? BookingResolutionOutcome.ACCEPTED
+                    : BookingResolutionOutcome.REJECTED;
+        } catch (final RuntimeException exception) {
+            LOGGER.error("Could not resolve booking {} in account for owner {}", bookingId, ownerId, exception);
+            return BookingResolutionOutcome.ERROR;
+        }
     }
 
     @Override
@@ -305,6 +379,76 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     }
 
     @Override
+    public PaymentProofSubmissionOutcome submitPaymentProofInAccount(
+            final int bookingId,
+            final int requesterId,
+            final InputStream fileContent,
+            final String originalFilename,
+            final String contentType,
+            final String guestReply) {
+        final byte[] fileData;
+        try (InputStream in = fileContent == null ? InputStream.nullInputStream() : fileContent) {
+            fileData = readPaymentProofUploadBytesCapped(in);
+        } catch (final IOException exception) {
+            LOGGER.error(
+                    "Could not read payment proof upload for booking {} and requester {}",
+                    bookingId,
+                    requesterId,
+                    exception);
+            return PaymentProofSubmissionOutcome.ERROR;
+        }
+        final String fileName = PaymentProofValidator.sanitizeUploadedBaseName(originalFilename);
+        return submitPaymentProofInAccountWithBytes(
+                bookingId, requesterId, fileName, contentType, fileData, guestReply);
+    }
+
+    private PaymentProofSubmissionOutcome submitPaymentProofInAccountWithBytes(
+            final int bookingId,
+            final int requesterId,
+            final String fileName,
+            final String contentType,
+            final byte[] fileData,
+            final String guestReply) {
+        try {
+            if (!PaymentProofValidator.isValid(fileName, contentType, fileData)) {
+                return PaymentProofSubmissionOutcome.INVALID_FILE;
+            }
+            final boolean hadExistingProof =
+                    findPaymentProofByBookingId(bookingId).isPresent();
+            final Optional<BookingPaymentProof> proof =
+                    submitPaymentProof(bookingId, requesterId, fileName, contentType, fileData, guestReply);
+            if (proof.isEmpty()) {
+                return PaymentProofSubmissionOutcome.INVALID_FILE;
+            }
+            return hadExistingProof
+                    ? PaymentProofSubmissionOutcome.RESUBMITTED
+                    : PaymentProofSubmissionOutcome.SUBMITTED;
+        } catch (final RuntimeException exception) {
+            LOGGER.error(
+                    "Could not submit payment proof in account for booking {} and requester {}",
+                    bookingId,
+                    requesterId,
+                    exception);
+            return PaymentProofSubmissionOutcome.ERROR;
+        }
+    }
+
+    private static byte[] readPaymentProofUploadBytesCapped(final InputStream in) throws IOException {
+        final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        final byte[] chunk = new byte[8192];
+        long total = 0;
+        int read;
+        while ((read = in.read(chunk)) != -1) {
+            total += read;
+            if (total > PaymentProofValidator.MAX_FILE_SIZE_BYTES) {
+                throw new IOException("Payment proof exceeds maximum size");
+            }
+            buffer.write(chunk, 0, read);
+        }
+        return buffer.toByteArray();
+    }
+
+    @Override
     public Optional<BookingRequest> refusePaymentProof(final int bookingId, final int ownerId, final String reason) {
         expireAllDue(currentDateTime());
         final Optional<ItemBooking> booking = itemBookingDao.findBookingById(bookingId);
@@ -342,6 +486,22 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     }
 
     @Override
+    public PaymentRefusalOutcome refusePaymentProofInAccount(
+            final int bookingId, final int ownerId, final String reason) {
+        try {
+            final Optional<BookingRequest> refused = refusePaymentProof(bookingId, ownerId, reason);
+            return refused.isPresent() ? PaymentRefusalOutcome.REFUSED : PaymentRefusalOutcome.ERROR;
+        } catch (final RuntimeException exception) {
+            LOGGER.error(
+                    "Could not refuse payment proof in account for booking {} and owner {}",
+                    bookingId,
+                    ownerId,
+                    exception);
+            return PaymentRefusalOutcome.ERROR;
+        }
+    }
+
+    @Override
     public Optional<BookingRequest> confirmPaymentReceived(final int bookingId, final int ownerId) {
         expireAllDue(currentDateTime());
         final Optional<ItemBooking> booking = itemBookingDao.findBookingById(bookingId);
@@ -370,6 +530,18 @@ public class BookingRequestServiceImpl implements BookingRequestService {
                 itemBookingDao.findBookingById(bookingId).flatMap(this::toBookingRequest);
         paid.ifPresent(this::sendPaymentReceivedEmail);
         return paid;
+    }
+
+    @Override
+    public PaymentConfirmationOutcome confirmPaymentReceivedInAccount(final int bookingId, final int ownerId) {
+        try {
+            final Optional<BookingRequest> paid = confirmPaymentReceived(bookingId, ownerId);
+            return paid.isPresent() ? PaymentConfirmationOutcome.CONFIRMED : PaymentConfirmationOutcome.ERROR;
+        } catch (final RuntimeException exception) {
+            LOGGER.error(
+                    "Could not confirm payment in account for booking {} and owner {}", bookingId, ownerId, exception);
+            return PaymentConfirmationOutcome.ERROR;
+        }
     }
 
     @Override

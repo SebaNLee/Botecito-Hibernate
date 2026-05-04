@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.webapp.controller;
+package ar.edu.itba.paw.webapp.controller.support;
 
 import java.util.ArrayList;
 import java.util.HashMap;

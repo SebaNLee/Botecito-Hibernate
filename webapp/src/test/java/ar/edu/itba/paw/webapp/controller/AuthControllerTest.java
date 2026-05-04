@@ -1,6 +1,5 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
@@ -69,10 +68,10 @@ public class AuthControllerTest {
         final RegisterForm form = validForm();
         final BindingResult errors = new BeanPropertyBindingResult(form, "registerForm");
         final MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addPreferredLocale(java.util.Locale.ENGLISH);
 
-        Mockito.when(userService.findByEmail("ada@example.com")).thenReturn(Optional.empty());
-        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null))
-                .thenReturn(new User());
+        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null, "en"))
+                .thenReturn(UserService.RegistrationResult.SUCCESS);
 
         final Authentication authenticated = new UsernamePasswordAuthenticationToken(
                 "ada@example.com", "password123", java.util.Collections.emptyList());
@@ -90,10 +89,10 @@ public class AuthControllerTest {
         final RegisterForm form = validForm();
         final BindingResult errors = new BeanPropertyBindingResult(form, "registerForm");
         final MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addPreferredLocale(java.util.Locale.ENGLISH);
 
-        Mockito.when(userService.findByEmail("ada@example.com")).thenReturn(Optional.empty());
-        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null))
-                .thenReturn(new User());
+        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null, "en"))
+                .thenReturn(UserService.RegistrationResult.SUCCESS);
         Mockito.when(authenticationManager.authenticate(Mockito.any(Authentication.class)))
                 .thenThrow(new BadCredentialsException("nope"));
 
@@ -108,10 +107,10 @@ public class AuthControllerTest {
         final RegisterForm form = validForm();
         final BindingResult errors = new BeanPropertyBindingResult(form, "registerForm");
         final MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addPreferredLocale(java.util.Locale.ENGLISH);
 
-        final User existing = new User();
-        existing.setPasswordHash("already-set");
-        Mockito.when(userService.findByEmail("ada@example.com")).thenReturn(Optional.of(existing));
+        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null, "en"))
+                .thenReturn(UserService.RegistrationResult.EMAIL_ALREADY_EXISTS);
 
         final ModelAndView mav = controller.registerSubmit(form, errors, request);
 

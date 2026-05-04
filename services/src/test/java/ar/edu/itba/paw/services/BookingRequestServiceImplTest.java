@@ -307,7 +307,7 @@ public class BookingRequestServiceImplTest {
 
         Mockito.when(itemBookingDao.findBookingById(55)).thenReturn(Optional.of(block));
         Mockito.when(itemDao.findAnyItemById(10)).thenReturn(Optional.of(item));
-        Mockito.when(itemBookingDao.markBookingCancelled(55)).thenReturn(true);
+        Mockito.when(itemBookingDao.deleteOwnerSelfBlock(55, 3)).thenReturn(true);
 
         Assertions.assertTrue(bookingRequestService.removeOwnerSelfBlock(55, 3));
     }

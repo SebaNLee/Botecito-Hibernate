@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.webapp.controller;
+package ar.edu.itba.paw.webapp.controller.support;
 
 import ar.edu.itba.paw.services.ItemService;
 import java.util.ArrayList;

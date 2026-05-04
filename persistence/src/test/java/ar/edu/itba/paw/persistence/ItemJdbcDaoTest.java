@@ -108,6 +108,70 @@ public class ItemJdbcDaoTest {
                         .getState());
     }
 
+    @Test
+    public void testListBookingsByGuestIdExcludesOwnerSelfBlocks() {
+        final int ownerId = insertUser("owner-self-guest@a.com");
+        final int externalGuestId = insertUser("external-self-guest@a.com");
+        final int itemId = insertItem(ownerId, "self-guest-list");
+        final OffsetDateTime start = OffsetDateTime.now().plusDays(2);
+
+        final ItemBooking externalBooking = itemBookingDao.createBookingRequest(
+                itemId, externalGuestId, start, start.plusHours(1), "external booking", "external-self-guest-token");
+        itemBookingDao.insertOwnerPersonalBlock(
+                itemId,
+                ownerId,
+                start.plusHours(2),
+                start.plusHours(3),
+                "owner-self-guest-token",
+                OffsetDateTime.now());
+
+        final var ownerGuestBookings = itemBookingDao.listBookingsByGuestId(ownerId);
+        final var externalGuestBookings = itemBookingDao.listBookingsByGuestId(externalGuestId);
+
+        Assertions.assertTrue(ownerGuestBookings.isEmpty());
+        Assertions.assertEquals(1, externalGuestBookings.size());
+        Assertions.assertEquals(
+                externalBooking.getId(), externalGuestBookings.getFirst().getId());
+    }
+
+    @Test
+    public void testListBookingsByOwnerIdExcludesOwnerSelfBlocks() {
+        final int ownerId = insertUser("owner-self-owner@a.com");
+        final int externalGuestId = insertUser("external-self-owner@a.com");
+        final int itemId = insertItem(ownerId, "self-owner-list");
+        final OffsetDateTime start = OffsetDateTime.now().plusDays(3);
+
+        final ItemBooking externalBooking = itemBookingDao.createBookingRequest(
+                itemId, externalGuestId, start, start.plusHours(1), "external booking", "external-self-owner-token");
+        itemBookingDao.insertOwnerPersonalBlock(
+                itemId,
+                ownerId,
+                start.plusHours(2),
+                start.plusHours(3),
+                "owner-self-owner-token",
+                OffsetDateTime.now());
+
+        final var ownerBookings = itemBookingDao.listBookingsByOwnerId(ownerId);
+
+        Assertions.assertEquals(1, ownerBookings.size());
+        Assertions.assertEquals(
+                externalBooking.getId(), ownerBookings.getFirst().getId());
+    }
+
+    @Test
+    public void testDeleteOwnerSelfBlockRemovesRow() {
+        final int ownerId = insertUser("owner-delete-self@a.com");
+        final int itemId = insertItem(ownerId, "delete-self-block");
+        final OffsetDateTime start = OffsetDateTime.now().plusDays(4);
+
+        final ItemBooking selfBlock = itemBookingDao.insertOwnerPersonalBlock(
+                itemId, ownerId, start, start.plusHours(1), "delete-self-block-token", OffsetDateTime.now());
+
+        Assertions.assertTrue(itemBookingDao.findBookingById(selfBlock.getId()).isPresent());
+        Assertions.assertTrue(itemBookingDao.deleteOwnerSelfBlock(selfBlock.getId(), ownerId));
+        Assertions.assertTrue(itemBookingDao.findBookingById(selfBlock.getId()).isEmpty());
+    }
+
     private int insertUser(final String email) {
         jdbcTemplate().update("INSERT INTO users (given_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
         return jdbcTemplate().queryForObject("SELECT id FROM users WHERE email = ?", Integer.class, email);

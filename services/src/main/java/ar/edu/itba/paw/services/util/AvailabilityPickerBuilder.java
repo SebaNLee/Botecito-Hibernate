@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.webapp.util;
+package ar.edu.itba.paw.services.util;
 
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.ItemAvailability;

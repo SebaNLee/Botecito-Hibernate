@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.config;
 
+import ar.edu.itba.paw.services.UserService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -14,6 +15,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -82,6 +84,11 @@ public class WebConfig implements WebMvcConfigurer {
         dataSource.setUsername(credentialsProperties.getProperty("jdbc.username"));
         dataSource.setPassword(credentialsProperties.getProperty("jdbc.password"));
         return dataSource;
+    }
+
+    @Bean
+    public LocaleResolver localeResolver(final UserService userService) {
+        return new UserLocaleResolver(userService);
     }
 
     private static CredentialsSelection resolveCredentialsSelection() {

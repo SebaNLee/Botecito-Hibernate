@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.services.SelfBookingNotAllowedException;
+import ar.edu.itba.paw.webapp.controller.support.ErrorPageSupport;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
@@ -24,7 +25,7 @@ public class GlobalMvcExceptionAdvice {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ModelAndView handleNotFound(final NoHandlerFoundException exception, final HttpServletResponse response) {
         response.setStatus(HttpStatus.NOT_FOUND.value());
-        return ErrorPageModel.build(HttpStatus.NOT_FOUND.value(), exception.getRequestURL());
+        return ErrorPageSupport.modelAndView(HttpStatus.NOT_FOUND.value(), exception.getRequestURL());
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -38,7 +39,7 @@ public class GlobalMvcExceptionAdvice {
         if (requestUri != null && requestUri.contains("/publish")) {
             return new ModelAndView("redirect:/publish/availability?availabilityAction=invalidMethod");
         }
-        return ErrorPageModel.build(HttpStatus.METHOD_NOT_ALLOWED.value(), null);
+        return ErrorPageSupport.modelAndView(HttpStatus.METHOD_NOT_ALLOWED.value(), null);
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
@@ -46,7 +47,7 @@ public class GlobalMvcExceptionAdvice {
     public ModelAndView handleUnsupportedMediaType(
             final HttpMediaTypeNotSupportedException exception, final HttpServletResponse response) {
         response.setStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value());
-        return ErrorPageModel.build(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(), null);
+        return ErrorPageSupport.modelAndView(HttpStatus.UNSUPPORTED_MEDIA_TYPE.value(), null);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -64,6 +65,6 @@ public class GlobalMvcExceptionAdvice {
     public ModelAndView handleUnexpected(final Exception exception, final HttpServletResponse response) {
         LOG.log(Level.SEVERE, exception, () -> "Unhandled exception in MVC layer");
         response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-        return ErrorPageModel.build(HttpStatus.INTERNAL_SERVER_ERROR.value(), null);
+        return ErrorPageSupport.modelAndView(HttpStatus.INTERNAL_SERVER_ERROR.value(), null);
     }
 }

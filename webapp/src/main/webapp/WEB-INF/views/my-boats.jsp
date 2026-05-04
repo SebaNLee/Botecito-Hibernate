@@ -353,7 +353,7 @@
                             <summary class="cursor-pointer text-xs font-bold text-primary"><spring:message code="profile.sentBookings.paymentProof.view" /></summary>
                             <div class="mt-3 overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
                               <c:choose>
-                                <c:when test="${receivedRequest.isPaymentProofPdf}">
+                                <c:when test="${receivedRequest.paymentProofPdf}">
                                   <embed src="${receivedPaymentProofUrl}" type="application/pdf" class="h-80 w-full" />
                                 </c:when>
                                 <c:otherwise>

@@ -9,7 +9,7 @@ repos:
         pass_filenames: true
       - id: java-maven-test
         name: Running Maven tests...
-        entry: mvn test
+        entry: mvn clean test
         language: system
         pass_filenames: false
       - id: java-maven-spotbugs

@@ -6,12 +6,24 @@ import java.util.Set;
 public final class PaymentProofValidator {
     private static final Set<String> ALLOWED_CONTENT_TYPES =
             Set.of("application/pdf", "image/jpeg", "image/png", "image/webp");
-    private static final long MAX_FILE_SIZE = 5_242_880L;
+    public static final long MAX_FILE_SIZE_BYTES = 5_242_880L;
 
     private PaymentProofValidator() {}
 
+    /**
+     * Returns a safe base file name for storage (path segments stripped, empty names defaulted).
+     */
+    public static String sanitizeUploadedBaseName(final String originalFilename) {
+        if (originalFilename == null || originalFilename.isBlank()) {
+            return "comprobante";
+        }
+        final int slash = Math.max(originalFilename.lastIndexOf('/'), originalFilename.lastIndexOf('\\'));
+        final String base = slash >= 0 ? originalFilename.substring(slash + 1) : originalFilename;
+        return base.isBlank() ? "comprobante" : base;
+    }
+
     public static boolean isValid(final String fileName, final String contentType, final byte[] data) {
-        if (data == null || data.length == 0 || data.length > MAX_FILE_SIZE) {
+        if (data == null || data.length == 0 || data.length > MAX_FILE_SIZE_BYTES) {
             return false;
         }
         if (contentType == null) {

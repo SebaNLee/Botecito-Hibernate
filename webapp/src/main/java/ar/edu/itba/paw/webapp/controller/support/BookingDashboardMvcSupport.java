@@ -1,8 +1,11 @@
 package ar.edu.itba.paw.webapp.controller.support;
 
+import ar.edu.itba.paw.models.Review;
+import ar.edu.itba.paw.models.ReviewTargetType;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingDashboardService;
 import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.UserService;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -27,6 +30,7 @@ public final class BookingDashboardMvcSupport {
     private final UserService userService;
     private final ItemService itemService;
     private final BookingDashboardService bookingDashboardService;
+    private final ReviewService reviewService;
 
     public ModelAndView myBoats(
             final List<String> status, final String query, final int page, final HttpServletRequest request) {
@@ -50,8 +54,10 @@ public final class BookingDashboardMvcSupport {
                     mav.addObject("selectedBookingStatusFilters", statusFilters);
                     mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statusFilters));
                     mav.addObject("boatSearchQuery", normalizeQuery(query));
-                    mav.addObject("pendingOwnerUserReviewsByBookingId", Map.of());
-                    mav.addObject("authoredUserReviewsByBookingId", Map.of());
+                    mav.addObject(
+                            "pendingOwnerUserReviewsByBookingId",
+                            buildPendingOwnerUserReviewsByBookingId(user.getId()));
+                    mav.addObject("authoredUserReviewsByBookingId", buildAuthoredUserReviewsByBookingId(user.getId()));
                     return mav;
                 })
                 .orElseGet(() -> new ModelAndView("redirect:/login"));
@@ -89,8 +95,10 @@ public final class BookingDashboardMvcSupport {
                     mav.addObject("selectedBookingStatusFilters", statusFilters);
                     mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statusFilters));
                     mav.addObject("boatSearchQuery", normalizeQuery(query));
-                    mav.addObject("pendingGuestItemReviewsByBookingId", Map.of());
-                    mav.addObject("authoredItemReviewsByBookingId", Map.of());
+                    mav.addObject(
+                            "pendingGuestItemReviewsByBookingId",
+                            buildPendingGuestItemReviewsByBookingId(user.getId()));
+                    mav.addObject("authoredItemReviewsByBookingId", buildAuthoredItemReviewsByBookingId(user.getId()));
                     return mav;
                 })
                 .orElseGet(() -> new ModelAndView("redirect:/login"));
@@ -169,5 +177,49 @@ public final class BookingDashboardMvcSupport {
             urls.put(itemId, ItemImageUtils.resolveImageUrl(itemService, itemId, contextPath));
         }
         return urls;
+    }
+
+    private Map<Integer, ReviewService.PendingReviewAction> buildPendingGuestItemReviewsByBookingId(final int userId) {
+        final Map<Integer, ReviewService.PendingReviewAction> byBookingId = new LinkedHashMap<>();
+        for (final ReviewService.PendingReviewAction action : reviewService.listPendingReviewActions(userId)) {
+            if (action.getTargetType() != ReviewTargetType.ITEM) {
+                continue;
+            }
+            byBookingId.put(action.getBookingId(), action);
+        }
+        return byBookingId;
+    }
+
+    private Map<Integer, ReviewService.PendingReviewAction> buildPendingOwnerUserReviewsByBookingId(final int userId) {
+        final Map<Integer, ReviewService.PendingReviewAction> byBookingId = new LinkedHashMap<>();
+        for (final ReviewService.PendingReviewAction action : reviewService.listPendingReviewActions(userId)) {
+            if (action.getTargetType() != ReviewTargetType.USER) {
+                continue;
+            }
+            byBookingId.put(action.getBookingId(), action);
+        }
+        return byBookingId;
+    }
+
+    private Map<Integer, Review> buildAuthoredItemReviewsByBookingId(final int userId) {
+        final Map<Integer, Review> byBookingId = new LinkedHashMap<>();
+        for (final Review review : reviewService.listAuthoredReviews(userId)) {
+            if (review.getBookingId() == null || review.getTargetType() != ReviewTargetType.ITEM) {
+                continue;
+            }
+            byBookingId.putIfAbsent(review.getBookingId(), review);
+        }
+        return byBookingId;
+    }
+
+    private Map<Integer, Review> buildAuthoredUserReviewsByBookingId(final int userId) {
+        final Map<Integer, Review> byBookingId = new LinkedHashMap<>();
+        for (final Review review : reviewService.listAuthoredReviews(userId)) {
+            if (review.getBookingId() == null || review.getTargetType() != ReviewTargetType.USER) {
+                continue;
+            }
+            byBookingId.putIfAbsent(review.getBookingId(), review);
+        }
+        return byBookingId;
     }
 }

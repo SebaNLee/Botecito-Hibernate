@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.LocationOption;
+import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.GuestMarketplaceReservationResult;
@@ -14,6 +15,8 @@ import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import ar.edu.itba.paw.webapp.util.AvailabilityPickerSupport;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -22,6 +25,7 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -230,6 +234,7 @@ public final class MarketplaceMvcSupport {
         mav.addObject("itemRatingSummary", view.itemRatingSummary());
         mav.addObject("itemReviews", view.itemReviews());
         mav.addObject("reviewAuthorNames", view.reviewAuthorNames());
+        mav.addObject("reviewCreatedAtLabels", buildReviewCreatedAtLabels(view.itemReviews()));
 
         final int resolvedItemId = view.item().getId();
         final String displayImageUrl;
@@ -411,6 +416,20 @@ public final class MarketplaceMvcSupport {
                 galleryImageIds,
                 pendingItemReviewAction,
                 availability));
+    }
+
+    private static Map<Integer, String> buildReviewCreatedAtLabels(final List<Review> reviews) {
+        final Locale locale = LocaleContextHolder.getLocale();
+        final DateTimeFormatter formatter =
+                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale);
+        final Map<Integer, String> labels = new LinkedHashMap<>();
+        for (final Review review : reviews) {
+            if (review.getId() == null || review.getCreatedAt() == null) {
+                continue;
+            }
+            labels.put(review.getId(), formatter.format(review.getCreatedAt()));
+        }
+        return labels;
     }
 
     private User currentAuthenticatedUserOrNull() {

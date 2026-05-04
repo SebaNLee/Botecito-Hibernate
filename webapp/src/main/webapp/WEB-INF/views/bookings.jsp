@@ -256,7 +256,7 @@
                             <div class="flex items-center gap-2">
                               <div class="flex items-center gap-0.5" aria-label="${authoredItemReview.rating} of 5">
                                 <c:forEach var="starIndex" begin="1" end="5">
-                                  <span class="material-symbols-outlined text-sm leading-none ${starIndex <= authoredItemReview.rating ? 'text-warning' : 'text-outline'}" style="opacity: ${starIndex <= authoredItemReview.rating ? '1' : '0.35'};">star</span>
+                                  <span class="material-symbols-outlined text-sm leading-none ${starIndex <= authoredItemReview.rating ? 'text-warning opacity-100' : 'text-outline opacity-[0.35]'}">star</span>
                                 </c:forEach>
                               </div>
                             </div>

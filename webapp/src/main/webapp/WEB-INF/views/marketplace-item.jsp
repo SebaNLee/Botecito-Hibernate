@@ -298,7 +298,9 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                           </c:forEach>
                         </div>
                       </div>
-                      <p class="m-0 text-xs text-on-surface-variant"><c:out value="${review.createdAt}" /></p>
+                      <p class="m-0 text-xs text-on-surface-variant">
+                        <time datetime="${review.createdAt}"><c:out value="${reviewCreatedAtLabels[review.id]}" /></time>
+                      </p>
                       <c:if test="${not empty review.comment}">
                         <p class="m-0 text-sm text-on-surface-variant break-words"><c:out value="${review.comment}" /></p>
                       </c:if>

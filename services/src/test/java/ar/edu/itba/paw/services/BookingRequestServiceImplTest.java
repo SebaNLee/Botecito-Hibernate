@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.time.OffsetDateTime;
@@ -31,13 +32,23 @@ public class BookingRequestServiceImplTest {
     private MailService mailService;
 
     @Test
-    public void testCreateBookingRequestWhenUserExists() {
+    public void testCreateBookingRequestThrowsWhenRequesterLastNameIsBlank() {
+        final OffsetDateTime start = OffsetDateTime.now().plusDays(1);
+        final OffsetDateTime end = start.plusHours(2);
+
+        Assertions.assertThrows(
+                MissingUserNamesException.class,
+                () -> bookingRequestService.createBookingRequest(15, "A", " ", "a@a.com", "es", start, end, "a"));
+    }
+
+    @Test
+    public void testCreateBookingRequest() {
         final User existingUser = new User();
         existingUser.setId(7);
         existingUser.setGivenName("A");
         existingUser.setLastName("A");
         existingUser.setEmail("a@a.com");
-        existingUser.setPreferredLanguage("es");
+        existingUser.setPreferredLanguage(PreferredLanguage.ES);
 
         final ItemBooking createdBooking = new ItemBooking();
         createdBooking.setItemId(15);
@@ -72,7 +83,7 @@ public class BookingRequestServiceImplTest {
                     return createdBooking;
                 });
         final BookingRequest result =
-                bookingRequestService.createBookingRequest(15, " A ", " B ", "a@a.com", "en", start, end, "a");
+                bookingRequestService.createBookingRequest(15, "A", "B", "a@a.com", "en", start, end, "a");
         Assertions.assertNotNull(result);
         Assertions.assertNotNull(result.getToken());
         Assertions.assertFalse(result.getToken().isBlank());
@@ -81,7 +92,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testFindByTokenReturnsEmptyWhenRequesterDoesNotExist() {
+    public void testFindByTokenNoRequester() {
         final ItemBooking booking = new ItemBooking();
         booking.setGuestId(99);
         booking.setHostDecisionToken("t");
@@ -95,7 +106,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testResolveBookingRequestReturnsEmptyWhenTokenCannotBeResolved() {
+    public void testResolveBookingBadToken() {
         Mockito.when(itemDao.resolveBookingByHostDecisionToken(
                         Mockito.eq("t"), Mockito.eq(BookingState.BOOKING_REJECTED), Mockito.any()))
                 .thenReturn(false);
@@ -107,7 +118,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testResolveBookingRequestReturnsResolvedRequestWhenTokenIsValid() {
+    public void testResolveBookingRequest() {
         final ItemBooking booking = new ItemBooking();
         booking.setItemId(20);
         booking.setGuestId(5);
@@ -123,7 +134,7 @@ public class BookingRequestServiceImplTest {
         user.setGivenName("A");
         user.setLastName("A");
         user.setEmail("a@a.com");
-        user.setPreferredLanguage("es");
+        user.setPreferredLanguage(PreferredLanguage.ES);
 
         Mockito.when(itemDao.resolveBookingByHostDecisionToken(
                         Mockito.eq("t"), Mockito.eq(BookingState.BOOKING_CONFIRMED), Mockito.any()))
@@ -140,7 +151,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testConfirmPaymentReceivedUsesInactivePublicationForOwnerAuthorization() {
+    public void testConfirmPaymentReceived() {
         final ItemBooking submittedBooking = new ItemBooking();
         submittedBooking.setId(30);
         submittedBooking.setItemId(20);
@@ -170,7 +181,7 @@ public class BookingRequestServiceImplTest {
         requester.setGivenName("A");
         requester.setLastName("A");
         requester.setEmail("a@a.com");
-        requester.setPreferredLanguage("es");
+        requester.setPreferredLanguage(PreferredLanguage.ES);
 
         final BookingPaymentProof proof = new BookingPaymentProof();
         proof.setBookingId(30);
@@ -190,13 +201,13 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testCreateBookingRequestWhenRequesterIsOwnerThrowsSelfBookingNotAllowed() {
+    public void testCreateSelfBooking() {
         final User ownerUser = new User();
         ownerUser.setId(7);
         ownerUser.setGivenName("O");
         ownerUser.setLastName("O");
         ownerUser.setEmail("o@o.com");
-        ownerUser.setPreferredLanguage("es");
+        ownerUser.setPreferredLanguage(PreferredLanguage.ES);
 
         final Item item = new Item();
         item.setId(15);
@@ -214,7 +225,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testCreateOwnerSelfBlockInsertsWhenNoOverlap() {
+    public void testCreateOwnerSelfBlock() {
         final Item item = new Item();
         item.setId(10);
         item.setOwnerId(3);
@@ -244,7 +255,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testCreateOwnerSelfBlockWhenGuestBookingOverlapsThrows() {
+    public void testSelfBlockOverlaps() {
         final Item item = new Item();
         item.setId(10);
         item.setOwnerId(3);
@@ -267,7 +278,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testRemoveOwnerSelfBlockWhenValidCancelsBooking() {
+    public void testRemoveOwnerSelfBlock() {
         final ItemBooking block = new ItemBooking();
         block.setId(55);
         block.setItemId(10);
@@ -286,7 +297,7 @@ public class BookingRequestServiceImplTest {
     }
 
     @Test
-    public void testRemoveOwnerSelfBlockWhenGuestMismatchReturnsFalse() {
+    public void testRemoveSelfBlockNotSelf() {
         final ItemBooking block = new ItemBooking();
         block.setId(55);
         block.setItemId(10);

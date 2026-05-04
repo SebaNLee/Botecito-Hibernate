@@ -89,7 +89,9 @@ public class MarketplaceController {
         mav.addObject("itemImages", buildItemImagesMap(itemPage.getContent(), request.getContextPath()));
         mav.addObject("itemsCount", itemPage.getTotalItems());
         mav.addObject("itemPage", itemPage);
-        mav.addObject("sort", criteria.getSort());
+        mav.addObject(
+                "sort",
+                criteria.getSort() == null ? "newest" : criteria.getSort().getRequestValue());
         mav.addObject(
                 "itemRatingSummaries",
                 reviewService.getItemRatingSummaries(
@@ -206,7 +208,9 @@ public class MarketplaceController {
                     currentUser.getGivenName(),
                     currentUser.getLastName(),
                     currentUser.getEmail(),
-                    currentUser.getPreferredLanguage(),
+                    currentUser.getPreferredLanguage() == null
+                            ? null
+                            : currentUser.getPreferredLanguage().getPersistenceCode(),
                     toOffsetDateTime(form.getDate(), form.getStartTime()),
                     toOffsetDateTime(form.getDate(), form.getEndTime()),
                     trimmedMessage);

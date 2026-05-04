@@ -242,7 +242,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
               <div class="flex items-center gap-2 text-lg font-black text-on-surface">
                 <span class="material-symbols-outlined text-warning">star</span>
                 <c:choose>
-                  <c:when test="${itemRatingSummary != null && itemRatingSummary.hasReviews}">
+                  <c:when test="${itemRatingSummary != null && itemRatingSummary.hasReviews()}">
                     <fmt:formatNumber value="${itemRatingSummary.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
                   </c:when>
                   <c:otherwise><c:out value="${reviewsEmptyShortLabel}" /></c:otherwise>

@@ -6,6 +6,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
+import ar.edu.itba.paw.models.ItemSearchSort;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
@@ -191,6 +192,7 @@ public final class ItemServiceImpl implements ItemService {
 
         LOGGER.info("Creating new publication for owner with email {}", ownerEmail);
 
+        ar.edu.itba.paw.services.utils.UserNameRules.requireBothLegalNames(ownerGivenName, ownerLastName);
         final int validatedTypeId = validateItemTypeId(typeId);
         final int validatedLocationOptionId = validateLocationOptionId(locationOptionId);
         final int validatedCapacityPeople = requirePositive(capacityPeople, "capacity people");
@@ -402,6 +404,7 @@ public final class ItemServiceImpl implements ItemService {
             final String ownerLastName,
             final String ownerEmail,
             final String ownerPreferredLanguage) {
+        ar.edu.itba.paw.services.utils.UserNameRules.requireBothLegalNames(ownerGivenName, ownerLastName);
         final String preferredLanguage = "en".equalsIgnoreCase(ownerPreferredLanguage) ? "en" : "es";
         final Optional<User> existingOwner = itemDao.findUserByEmail(ownerEmail);
         if (existingOwner.isPresent()) {
@@ -409,7 +412,7 @@ public final class ItemServiceImpl implements ItemService {
             itemDao.updateUserProfile(user.getId(), ownerGivenName, ownerLastName, preferredLanguage);
             user.setGivenName(ownerGivenName);
             user.setLastName(ownerLastName);
-            user.setPreferredLanguage(preferredLanguage);
+            user.setPreferredLanguage(ar.edu.itba.paw.models.PreferredLanguage.fromPersistence(preferredLanguage));
             return user;
         }
         return itemDao.createUser(ownerGivenName, ownerLastName, ownerEmail, preferredLanguage);
@@ -533,10 +536,10 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     private static boolean needsAvailabilityPostFilter(final ItemSearchCriteria criteria) {
-        if (!isBlank(criteria.getDate())) {
+        if (criteria.getDate() != null) {
             return true;
         }
-        return !isBlank(criteria.getStartTime()) || !isBlank(criteria.getEndTime());
+        return criteria.getStartTime() != null || criteria.getEndTime() != null;
     }
 
     private void sendPublishConfirmationEmail(final User ownerUser, final Item item) {
@@ -761,15 +764,15 @@ public final class ItemServiceImpl implements ItemService {
         final ItemSearchCriteria criteria = new ItemSearchCriteria();
         criteria.setSearchQuery(searchQuery);
         criteria.setLocationOptionId(parseInt(locationOptionId));
-        criteria.setDate(date);
-        criteria.setStartTime(startTime);
-        criteria.setEndTime(endTime);
+        criteria.setDate(parseLocalDate(date));
+        criteria.setStartTime(parseLocalTime(startTime));
+        criteria.setEndTime(parseLocalTime(endTime));
         criteria.setCapacity(parseInt(capacity));
         final Integer maxWeightInt = parseInt(maxWeight);
         criteria.setMaxWeightKg(maxWeightInt == null ? null : BigDecimal.valueOf(maxWeightInt.longValue()));
         criteria.setDifficultyLevel(parseRanged(difficulty, 1, 5));
         criteria.setMinAverageRating(parseRanged(minRating, 1, 5));
-        criteria.setSort(resolveSort(sort));
+        criteria.setSort(ItemSearchSort.fromRequestParam(sort));
         return criteria;
     }
 
@@ -1054,7 +1057,7 @@ public final class ItemServiceImpl implements ItemService {
                         .filter(r -> r.getTargetType() == ReviewTargetType.USER)
                         .toList();
                 if (received.isEmpty()) {
-                    return new RatingSummary();
+                    return RatingSummary.empty();
                 }
                 final double avg = received.stream()
                         .map(Review::getRating)
@@ -1173,14 +1176,26 @@ public final class ItemServiceImpl implements ItemService {
         return parsed;
     }
 
-    private static String resolveSort(final String sort) {
-        if (sort == null) {
-            return "newest";
+    private static java.time.LocalDate parseLocalDate(final String value) {
+        if (value == null || value.isBlank()) {
+            return null;
         }
-        return switch (sort) {
-            case "newest", "oldest", "priceAsc", "priceDesc" -> sort;
-            default -> "newest";
-        };
+        try {
+            return java.time.LocalDate.parse(value.trim());
+        } catch (final java.time.format.DateTimeParseException ex) {
+            return null;
+        }
+    }
+
+    private static java.time.LocalTime parseLocalTime(final String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return java.time.LocalTime.parse(value.trim());
+        } catch (final java.time.format.DateTimeParseException ex) {
+            return null;
+        }
     }
 
     private static String safeStr(final String value) {

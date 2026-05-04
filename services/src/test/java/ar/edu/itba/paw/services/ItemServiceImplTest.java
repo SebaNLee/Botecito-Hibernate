@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
+import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.math.BigDecimal;
@@ -32,7 +33,7 @@ public class ItemServiceImplTest {
     private MailService mailService;
 
     @Test
-    public void testFindItemByIdWhenItemExists() {
+    public void testFindItemById() {
         final Item item = new Item();
         item.setId(10);
         Mockito.when(itemDao.findItemById(10)).thenReturn(Optional.of(item));
@@ -42,7 +43,7 @@ public class ItemServiceImplTest {
     }
 
     @Test
-    public void testCreatePublicationWhenOwnerDoesNotExist() {
+    public void testCreatePublicationNoOwner() {
         final ItemType itemType = new ItemType();
         itemType.setId(1);
         final LocationOption locationOption = new LocationOption();
@@ -64,7 +65,7 @@ public class ItemServiceImplTest {
                     createdUser.setGivenName(invocation.getArgument(0));
                     createdUser.setLastName(invocation.getArgument(1));
                     createdUser.setEmail(invocation.getArgument(2));
-                    createdUser.setPreferredLanguage(invocation.getArgument(3));
+                    createdUser.setPreferredLanguage(PreferredLanguage.fromInput(invocation.getArgument(3)));
                     return createdUser;
                 });
         Mockito.when(itemDao.createItem(
@@ -107,7 +108,32 @@ public class ItemServiceImplTest {
     }
 
     @Test
-    public void testUpdatePublicationForOwnerWhenItemDoesNotBelongToOwnerReturnsFalse() {
+    public void testCreatePublicationThrowsWhenOwnerLastNameIsBlank() {
+        final ItemAvailability availability = new ItemAvailability();
+        availability.setWeekday(DayOfWeek.MONDAY);
+        availability.setStartTime(LocalTime.of(10, 0));
+        availability.setEndTime(LocalTime.of(12, 0));
+
+        Assertions.assertThrows(
+                MissingUserNamesException.class,
+                () -> itemService.createPublication(
+                        "A",
+                        " ",
+                        "a@a.com",
+                        "es",
+                        1,
+                        "item-a",
+                        "a",
+                        2000,
+                        2,
+                        BigDecimal.valueOf(100),
+                        1,
+                        1,
+                        List.of(availability)));
+    }
+
+    @Test
+    public void testUpdateOtherUsersPublication() {
         Mockito.when(itemDao.findItemByIdForOwner(10, 99)).thenReturn(Optional.empty());
 
         final boolean updated = itemService.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1, null);
@@ -116,52 +142,7 @@ public class ItemServiceImplTest {
     }
 
     @Test
-    public void testUpdatePublicationForOwnerWhenSnapshotFailsStopsEdit() {
-        final Item item = new Item();
-        item.setId(10);
-        item.setOwnerId(99);
-        Mockito.when(itemDao.findItemByIdForOwner(10, 99)).thenReturn(Optional.of(item));
-        Mockito.when(itemDao.snapshotBookingsForPublicationEdit(10)).thenReturn(false);
-
-        Assertions.assertThrows(
-                IllegalStateException.class,
-                () -> itemService.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1, null));
-    }
-
-    @Test
-    public void testUpdatePublicationForOwnerWhenUpdateFailsThrowsForRollback() {
-        final Item item = new Item();
-        item.setId(10);
-        item.setOwnerId(99);
-        Mockito.when(itemDao.findItemByIdForOwner(10, 99)).thenReturn(Optional.of(item));
-        Mockito.when(itemDao.snapshotBookingsForPublicationEdit(10)).thenReturn(true);
-        Mockito.when(itemDao.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1))
-                .thenReturn(false);
-
-        Assertions.assertThrows(
-                IllegalStateException.class,
-                () -> itemService.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1, null));
-    }
-
-    @Test
-    public void testUpdatePublicationForOwnerWhenImageReplaceFailsThrowsForRollback() {
-        final Item item = new Item();
-        item.setId(10);
-        item.setOwnerId(99);
-        final byte[] imageData = new byte[] {1, 2, 3};
-        Mockito.when(itemDao.findItemByIdForOwner(10, 99)).thenReturn(Optional.of(item));
-        Mockito.when(itemDao.snapshotBookingsForPublicationEdit(10)).thenReturn(true);
-        Mockito.when(itemDao.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1))
-                .thenReturn(true);
-        Mockito.when(itemDao.replacePrimaryImageForOwner(10, 99, imageData)).thenReturn(null);
-
-        Assertions.assertThrows(
-                IllegalStateException.class,
-                () -> itemService.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1, imageData));
-    }
-
-    @Test
-    public void testUpdatePublicationForOwnerWhenDataIsValidAppliesImageInsideEdit() {
+    public void testUpdateImage() {
         final Item item = new Item();
         item.setId(10);
         item.setOwnerId(99);

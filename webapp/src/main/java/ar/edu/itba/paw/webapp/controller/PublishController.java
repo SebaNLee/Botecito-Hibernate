@@ -359,7 +359,9 @@ public class PublishController {
                 currentUser == null ? null : currentUser.getGivenName(),
                 currentUser == null ? null : currentUser.getLastName(),
                 currentUser == null ? null : currentUser.getEmail(),
-                currentUser == null ? null : currentUser.getPreferredLanguage(),
+                currentUser == null || currentUser.getPreferredLanguage() == null
+                        ? null
+                        : currentUser.getPreferredLanguage().getPersistenceCode(),
                 parseIntOrNull(form.getItemTypeId()),
                 form.getTitle() == null ? null : form.getTitle().trim(),
                 form.getDescription() == null ? "" : form.getDescription().trim(),
@@ -418,9 +420,9 @@ public class PublishController {
                     continue;
                 }
                 final ItemAvailability availability = new ItemAvailability();
-                availability.setWeekday(entry.getKey().name());
-                availability.setStartTime(formatTime(range.getStart()));
-                availability.setEndTime(formatTime(range.getEnd()));
+                availability.setWeekday(entry.getKey());
+                availability.setStartTime(range.getStart());
+                availability.setEndTime(range.getEnd());
                 availabilities.add(availability);
             }
         }

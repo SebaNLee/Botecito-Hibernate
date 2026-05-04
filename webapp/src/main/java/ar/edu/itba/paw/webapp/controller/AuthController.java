@@ -364,7 +364,10 @@ public class AuthController {
         form.setEmail(user.getEmail());
         form.setPhone(user.getPhone());
         form.setPaymentAlias(user.getPaymentAlias());
-        form.setPreferredLanguage(user.getPreferredLanguage());
+        form.setPreferredLanguage(
+                user.getPreferredLanguage() == null
+                        ? null
+                        : user.getPreferredLanguage().getPersistenceCode());
     }
 
     private static int sanitizePage(final int page) {

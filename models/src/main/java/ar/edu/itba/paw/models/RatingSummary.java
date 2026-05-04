@@ -2,22 +2,18 @@ package ar.edu.itba.paw.models;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Setter
 @Getter
-@NoArgsConstructor
 @AllArgsConstructor
 public class RatingSummary {
-    private double averageRating;
-    private int totalReviews;
+    private final double averageRating;
+    private final int totalReviews;
+
+    public static RatingSummary empty() {
+        return new RatingSummary(0.0, 0);
+    }
 
     public boolean hasReviews() {
         return totalReviews > 0;
-    }
-
-    public boolean getHasReviews() {
-        return hasReviews();
     }
 }

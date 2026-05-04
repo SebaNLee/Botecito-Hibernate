@@ -23,7 +23,7 @@ public class ItemAvailabilityTableJdbcTest {
     private @NonNull DataSource dataSource;
 
     @Test
-    public void testCreateAvailabilityWhenDataIsValid() {
+    public void testCreateAvailability() {
         final JdbcTemplate jdbcTemplate = jdbcTemplate();
         final int itemId = insertItem("a@a.com", "item-a");
 
@@ -40,7 +40,7 @@ public class ItemAvailabilityTableJdbcTest {
     }
 
     @Test
-    public void testCreateAvailabilityWhenWeekdayIsMissing() {
+    public void testAvailabilityWeekdayMissing() {
         final int itemId = insertItem("a@a.com", "item-a");
 
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
@@ -52,7 +52,7 @@ public class ItemAvailabilityTableJdbcTest {
     }
 
     @Test
-    public void testCreateAvailabilityWhenTimeRangeIsInvalid() {
+    public void testAvailabilityInvalidTime() {
         final int itemId = insertItem("a@a.com", "item-a");
 
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
@@ -66,16 +66,33 @@ public class ItemAvailabilityTableJdbcTest {
 
     private int insertItem(final String ownerEmail, final String itemTitle) {
         final int ownerId = insertUser(ownerEmail);
+        final String locationName =
+                jdbcTemplate().queryForObject("SELECT name FROM location_option WHERE id = ?", String.class, 1);
         jdbcTemplate()
                 .update(
-                        "INSERT INTO item (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id) VALUES (?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO item_publication_version"
+                                + " (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id, location_name, active, item_created_at)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
                         ownerId,
                         1,
                         itemTitle,
                         1200,
                         2,
-                        1);
-        return jdbcTemplate().queryForObject("SELECT id FROM item WHERE title = ?", Integer.class, itemTitle);
+                        1,
+                        locationName,
+                        Boolean.TRUE);
+        final int versionId = jdbcTemplate()
+                .queryForObject(
+                        "SELECT id FROM item_publication_version WHERE owner_id = ? AND title = ? ORDER BY id DESC LIMIT 1",
+                        Integer.class,
+                        ownerId,
+                        itemTitle);
+        jdbcTemplate().update("INSERT INTO item (version_id) VALUES (?)", versionId);
+        return jdbcTemplate()
+                .queryForObject(
+                        "SELECT i.id FROM item i JOIN item_publication_version v ON v.id = i.version_id WHERE v.id = ?",
+                        Integer.class,
+                        versionId);
     }
 
     private int insertUser(final String email) {

@@ -2,15 +2,14 @@ package ar.edu.itba.paw.models;
 
 import java.time.Instant;
 import java.util.Locale;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 
 @ToString
-@Setter
 @Getter
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class BookingRequest {
 
     private final String token;

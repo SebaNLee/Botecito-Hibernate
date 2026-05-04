@@ -377,6 +377,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             final String requesterLastName,
             final String requesterEmail,
             final String requesterPreferredLanguage) {
+        ar.edu.itba.paw.services.utils.UserNameRules.requireBothLegalNames(requesterGivenName, requesterLastName);
         final String givenName = normalizeNamePart(requesterGivenName, "Guest");
         final String lastName = normalizeNamePart(requesterLastName, "");
         final String preferredLanguage = normalizePreferredLanguage(requesterPreferredLanguage);
@@ -387,7 +388,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             itemDao.updateUserProfile(user.getId(), givenName, lastName, preferredLanguage);
             user.setGivenName(givenName);
             user.setLastName(lastName);
-            user.setPreferredLanguage(preferredLanguage);
+            user.setPreferredLanguage(ar.edu.itba.paw.models.PreferredLanguage.fromPersistence(preferredLanguage));
             return user;
         }
 
@@ -419,9 +420,8 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     }
 
     private String resolveRequesterLocaleTag(final User requesterUser) {
-        if (requesterUser.getPreferredLanguage() != null
-                && !requesterUser.getPreferredLanguage().isBlank()) {
-            return requesterUser.getPreferredLanguage();
+        if (requesterUser.getPreferredLanguage() != null) {
+            return requesterUser.getPreferredLanguage().getPersistenceCode();
         }
         return mailService.resolveLocale(requesterUser.getEmail()).toLanguageTag();
     }

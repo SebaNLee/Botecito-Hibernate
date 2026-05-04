@@ -9,6 +9,7 @@ import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.BookingRequestService.BlockSlotOutcome;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
 import ar.edu.itba.paw.webapp.form.BlockSlotForm;
 import ar.edu.itba.paw.webapp.util.AvailabilityPickerBuilder;
 import java.net.URLDecoder;

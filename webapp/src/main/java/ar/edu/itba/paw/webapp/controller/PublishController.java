@@ -9,6 +9,7 @@ import ar.edu.itba.paw.services.PublicationDraft;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.services.utils.TimeRange;
 import ar.edu.itba.paw.services.utils.TimeRangeList;
+import ar.edu.itba.paw.webapp.controller.support.ItemImageUtils;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm.UploadedImage;
 import java.io.IOException;

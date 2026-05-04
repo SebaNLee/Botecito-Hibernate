@@ -1,13 +1,39 @@
-package ar.edu.itba.paw.webapp.controller;
+package ar.edu.itba.paw.webapp.controller.support;
 
+import javax.servlet.RequestDispatcher;
+import javax.servlet.http.HttpServletRequest;
 import org.springframework.web.servlet.ModelAndView;
 
-/** Builds the shared model for HTTP error views (4xx / 5xx). */
-public final class ErrorPageModel {
+/**
+ * Resolves forwarded error attributes and builds {@link ModelAndView} for the
+ * shared HTTP error JSP. Used by {@link ar.edu.itba.paw.webapp.controller.ErrorController}
+ * and {@link ar.edu.itba.paw.webapp.controller.GlobalMvcExceptionAdvice}.
+ */
+public final class ErrorPageSupport {
 
-    private ErrorPageModel() {}
+    private ErrorPageSupport() {}
 
-    public static ModelAndView build(final int status, final String failedPath) {
+    public static int resolveErrorStatus(final HttpServletRequest request) {
+        final Object statusAttr = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+        if (statusAttr instanceof Integer) {
+            return (Integer) statusAttr;
+        }
+        if (statusAttr instanceof String) {
+            try {
+                return Integer.parseInt((String) statusAttr);
+            } catch (final NumberFormatException ignored) {
+                return 404;
+            }
+        }
+        return 404;
+    }
+
+    public static String resolveFailedPath(final HttpServletRequest request) {
+        final Object uriAttr = request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI);
+        return uriAttr != null ? uriAttr.toString() : null;
+    }
+
+    public static ModelAndView modelAndView(final int status, final String failedPath) {
         final ModelAndView mav = new ModelAndView("error");
         mav.addObject("httpStatus", status);
         mav.addObject("errorTitleCode", titleMessageCode(status));

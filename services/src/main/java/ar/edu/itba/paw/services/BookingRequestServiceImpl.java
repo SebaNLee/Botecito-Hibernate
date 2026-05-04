@@ -11,6 +11,9 @@ import ar.edu.itba.paw.persistence.ItemDao;
 import ar.edu.itba.paw.persistence.UserDao;
 import ar.edu.itba.paw.services.utils.PaymentProofValidator;
 import ar.edu.itba.paw.services.utils.UserNameRules;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -334,6 +337,29 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     public PaymentProofSubmissionOutcome submitPaymentProofInAccount(
             final int bookingId,
             final int requesterId,
+            final InputStream fileContent,
+            final String originalFilename,
+            final String contentType,
+            final String guestReply) {
+        final byte[] fileData;
+        try (InputStream in = fileContent == null ? InputStream.nullInputStream() : fileContent) {
+            fileData = readPaymentProofUploadBytesCapped(in);
+        } catch (final IOException exception) {
+            LOGGER.error(
+                    "Could not read payment proof upload for booking {} and requester {}",
+                    bookingId,
+                    requesterId,
+                    exception);
+            return PaymentProofSubmissionOutcome.ERROR;
+        }
+        final String fileName = PaymentProofValidator.sanitizeUploadedBaseName(originalFilename);
+        return submitPaymentProofInAccountWithBytes(
+                bookingId, requesterId, fileName, contentType, fileData, guestReply);
+    }
+
+    private PaymentProofSubmissionOutcome submitPaymentProofInAccountWithBytes(
+            final int bookingId,
+            final int requesterId,
             final String fileName,
             final String contentType,
             final byte[] fileData,
@@ -360,6 +386,21 @@ public class BookingRequestServiceImpl implements BookingRequestService {
                     exception);
             return PaymentProofSubmissionOutcome.ERROR;
         }
+    }
+
+    private static byte[] readPaymentProofUploadBytesCapped(final InputStream in) throws IOException {
+        final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        final byte[] chunk = new byte[8192];
+        long total = 0;
+        int read;
+        while ((read = in.read(chunk)) != -1) {
+            total += read;
+            if (total > PaymentProofValidator.MAX_FILE_SIZE_BYTES) {
+                throw new IOException("Payment proof exceeds maximum size");
+            }
+            buffer.write(chunk, 0, read);
+        }
+        return buffer.toByteArray();
     }
 
     @Override

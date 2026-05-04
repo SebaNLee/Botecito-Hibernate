@@ -11,6 +11,7 @@ import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.SelfBookingNotAllowedException;
 import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.controller.support.ItemImageUtils;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import ar.edu.itba.paw.webapp.util.AvailabilityPickerBuilder;
 import ar.edu.itba.paw.webapp.util.AvailabilityPickerSupport;

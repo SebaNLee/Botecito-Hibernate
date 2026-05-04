@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface ItemService {
@@ -48,6 +49,10 @@ public interface ItemService {
             byte[] primaryImageData);
 
     boolean hasBlockingBookingsForEdition(int itemId);
+
+    Map<Integer, Boolean> publicationDeleteDeactivatesByItemId(List<Item> ownedItems);
+
+    Map<Integer, Boolean> publicationDeleteDisabledByItemId(List<Item> ownedItems);
 
     boolean deleteItemByIdForOwner(int itemId, int ownerId);
 
@@ -149,9 +154,12 @@ public interface ItemService {
 
     void resolveEditConflict(int itemId, BookingDecisionBatch decisions);
 
-    Integer uploadGalleryImage(int itemId, int ownerId, GalleryImageUpload image);
+    GalleryOwnerUploadResult uploadGalleryImage(int itemId, int ownerId, GalleryImageUpload image);
 
     boolean reorderGalleryForOwner(int itemId, int ownerId, List<Integer> imageIdsInOrder);
+
+    /** Comma-separated image ids; returns an empty list if the input is blank or any token is not a valid id. */
+    List<Integer> parseGalleryImageOrderCsv(String csv);
 
     RatingSummary getItemRatingSummary(int itemId);
 

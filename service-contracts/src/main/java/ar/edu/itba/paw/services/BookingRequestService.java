@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.ItemBooking;
+import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -46,7 +47,12 @@ public interface BookingRequestService {
     }
 
     PaymentProofSubmissionOutcome submitPaymentProofInAccount(
-            int bookingId, int requesterId, String fileName, String contentType, byte[] fileData, String guestReply);
+            int bookingId,
+            int requesterId,
+            InputStream fileContent,
+            String originalFilename,
+            String contentType,
+            String guestReply);
 
     Optional<BookingRequest> confirmPaymentReceived(int bookingId, int ownerId);
 

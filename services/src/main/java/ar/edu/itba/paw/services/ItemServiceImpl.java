@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +45,9 @@ public final class ItemServiceImpl implements ItemService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ItemServiceImpl.class);
     private static final int MAX_IMAGES_PER_ITEM = 10;
+    private static final long MAX_GALLERY_UPLOAD_BYTES_PER_FILE = 5_242_880L;
+    private static final List<String> ALLOWED_GALLERY_UPLOAD_CONTENT_TYPES =
+            List.of("image/jpeg", "image/png", "image/webp", "image/gif");
     private static final int TIME_STEP_MINUTES = 30;
 
     private final ItemDao itemDao;
@@ -584,6 +588,57 @@ public final class ItemServiceImpl implements ItemService {
         return searchItems(criteria, page, pageSize);
     }
 
+    @Override
+    public Map<Integer, Boolean> publicationDeleteDeactivatesByItemId(final List<Item> ownedItems) {
+        final Map<Integer, Boolean> map = new LinkedHashMap<>();
+        if (ownedItems == null) {
+            return map;
+        }
+        for (final Item item : ownedItems) {
+            if (item == null || item.getId() == null) {
+                continue;
+            }
+            final boolean hasBlocking =
+                    listBookingsByItemId(item.getId()).stream().anyMatch(b -> isExternalBlockingBooking(item, b));
+            map.put(item.getId(), Boolean.TRUE.equals(item.getActive()) && hasBlocking);
+        }
+        return map;
+    }
+
+    @Override
+    public Map<Integer, Boolean> publicationDeleteDisabledByItemId(final List<Item> ownedItems) {
+        final Map<Integer, Boolean> map = new LinkedHashMap<>();
+        if (ownedItems == null) {
+            return map;
+        }
+        final OffsetDateTime now = OffsetDateTime.now();
+        for (final Item item : ownedItems) {
+            if (item == null || item.getId() == null) {
+                continue;
+            }
+            final boolean hasFutureBlocking = listBookingsByItemId(item.getId()).stream()
+                    .anyMatch(b -> isExternalBlockingBooking(item, b)
+                            && b.getEndTime() != null
+                            && b.getEndTime().isAfter(now));
+            map.put(item.getId(), !Boolean.TRUE.equals(item.getActive()) && hasFutureBlocking);
+        }
+        return map;
+    }
+
+    private static boolean isExternalBlockingBooking(final Item item, final ItemBooking booking) {
+        if (booking == null || booking.getState() == null) {
+            return false;
+        }
+        if (booking.getState() == BookingState.BOOKING_REJECTED
+                || booking.getState() == BookingState.BOOKING_CANCELLED) {
+            return false;
+        }
+        if (item == null || item.getOwnerId() == null) {
+            return booking.getGuestId() != null;
+        }
+        return booking.getGuestId() != null && !booking.getGuestId().equals(item.getOwnerId());
+    }
+
     public Map<String, String> validatePublicationDraft(final PublicationDraft draft) {
         final Map<String, String> errors = new LinkedHashMap<>();
         if (draft == null) {
@@ -720,28 +775,67 @@ public final class ItemServiceImpl implements ItemService {
         }
     }
 
+    @Override
     @Transactional
-    public Integer uploadGalleryImage(final int itemId, final int ownerId, final GalleryImageUpload image) {
+    public GalleryOwnerUploadResult uploadGalleryImage(
+            final int itemId, final int ownerId, final GalleryImageUpload image) {
         if (itemDao.findItemByIdForOwner(itemId, ownerId).isEmpty()) {
-            return null;
+            return GalleryOwnerUploadResult.failure(GalleryOwnerUploadStatus.NOT_OWNER);
         }
         if (image == null || image.getFileData() == null || image.getFileData().length == 0) {
-            return null;
+            return GalleryOwnerUploadResult.failure(GalleryOwnerUploadStatus.EMPTY_FILE);
+        }
+        if (image.getFileData().length > MAX_GALLERY_UPLOAD_BYTES_PER_FILE) {
+            return GalleryOwnerUploadResult.failure(GalleryOwnerUploadStatus.FILE_TOO_LARGE);
         }
         final String contentType = image.getContentType();
-        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
-            return null;
+        if (contentType == null
+                || !ALLOWED_GALLERY_UPLOAD_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
+            return GalleryOwnerUploadResult.failure(GalleryOwnerUploadStatus.INVALID_CONTENT_TYPE);
         }
-        return appendImage(itemId, image.getFileData());
+        final int existing = itemMediaDao.countImagesByItemId(itemId);
+        if (existing >= MAX_IMAGES_PER_ITEM) {
+            return GalleryOwnerUploadResult.failure(GalleryOwnerUploadStatus.GALLERY_FULL);
+        }
+        final Integer newId = itemMediaDao.insertImage(itemId, image.getFileData(), existing);
+        if (newId == null) {
+            return GalleryOwnerUploadResult.failure(GalleryOwnerUploadStatus.EMPTY_FILE);
+        }
+        return GalleryOwnerUploadResult.success(newId);
     }
 
+    @Override
+    public List<Integer> parseGalleryImageOrderCsv(final String csv) {
+        if (!StringUtils.hasText(csv)) {
+            return List.of();
+        }
+        final List<Integer> result = new ArrayList<>();
+        for (final String token : csv.split(",")) {
+            final String trimmed = token.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            try {
+                result.add(Integer.parseInt(trimmed));
+            } catch (final NumberFormatException ex) {
+                return List.of();
+            }
+        }
+        return result;
+    }
+
+    @Override
     @Transactional
     public boolean reorderGalleryForOwner(final int itemId, final int ownerId, final List<Integer> imageIdsInOrder) {
         if (itemDao.findItemByIdForOwner(itemId, ownerId).isEmpty()) {
             return false;
         }
-        reorderImagesForItem(itemId, imageIdsInOrder);
-        return true;
+        try {
+            reorderImagesForItem(itemId, imageIdsInOrder);
+            return true;
+        } catch (final IllegalArgumentException ex) {
+            return false;
+        }
     }
 
     private static Integer parseInt(final String value) {

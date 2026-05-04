@@ -226,7 +226,8 @@
                         </c:if>
                         <c:set var="guestPendingReview" value="${pendingGuestItemReviewsByBookingId[sentRequest.id]}" />
                         <c:if test="${not empty guestPendingReview}">
-                          <form action="/reviews/booking/${sentRequest.id}" method="post" class="space-y-3 border-t border-outline-variant/20 pt-3">
+                          <c:url var="createGuestItemReviewUrl" value="/reviews/booking/${sentRequest.id}" />
+                          <form action="${createGuestItemReviewUrl}" method="post" class="space-y-3 border-t border-outline-variant/20 pt-3">
                             <input type="hidden" name="returnTo" value="dashboardBookings" />
                             <div class="flex items-start justify-between gap-2">
                               <p class="m-0 min-w-0 truncate text-xs text-on-surface-variant"><c:out value="${guestPendingReview.targetName}" /> · <c:out value="${guestPendingReview.targetEmail}" /></p>

@@ -26,6 +26,9 @@ public class ItemJdbcDaoTest {
     private @NonNull ItemDao itemDao;
 
     @Autowired
+    private @NonNull ItemBookingDao itemBookingDao;
+
+    @Autowired
     private @NonNull DataSource dataSource;
 
     @Test
@@ -41,17 +44,18 @@ public class ItemJdbcDaoTest {
                         0);
 
         final OffsetDateTime start = OffsetDateTime.parse("2026-01-01T10:00:00Z");
-        final ItemBooking booking =
-                itemDao.createBookingRequest(itemId, guestId, start, start.plusHours(1), "message", "snapshot-token");
+        final ItemBooking booking = itemBookingDao.createBookingRequest(
+                itemId, guestId, start, start.plusHours(1), "message", "snapshot-token");
 
         Assertions.assertTrue(itemDao.snapshotBookingsForPublicationEdit(itemId));
         Assertions.assertTrue(itemDao.snapshotBookingsForPublicationEdit(itemId));
 
-        final ItemSnapshot snapshot = itemDao.findSnapshotByBookingIdForGuest(booking.getId(), guestId)
+        final ItemSnapshot snapshot = itemBookingDao
+                .findSnapshotByBookingIdForGuest(booking.getId(), guestId)
                 .orElseThrow();
         Assertions.assertEquals("snapshot-title", snapshot.getTitle());
         Assertions.assertEquals(
-                1, itemDao.listSnapshotsByItemIdForOwner(itemId, ownerId).size());
+                1, itemBookingDao.listSnapshotsByItemIdForOwner(itemId, ownerId).size());
     }
 
     @Test
@@ -69,7 +73,8 @@ public class ItemJdbcDaoTest {
         final int guestId = insertUser("guest-delete-future@a.com");
         final int itemId = insertItem(ownerId, "delete-future-booking");
         final OffsetDateTime start = OffsetDateTime.now().plusDays(1);
-        itemDao.createBookingRequest(itemId, guestId, start, start.plusHours(1), "message", "delete-future-token");
+        itemBookingDao.createBookingRequest(
+                itemId, guestId, start, start.plusHours(1), "message", "delete-future-token");
 
         Assertions.assertTrue(itemDao.deleteItemById(itemId));
         Assertions.assertFalse(itemDao.deleteItemById(itemId));
@@ -82,19 +87,25 @@ public class ItemJdbcDaoTest {
         final int itemId = insertItem(ownerId, "expire-bookings");
         final OffsetDateTime threshold = OffsetDateTime.parse("2026-01-10T10:00:00Z");
 
-        final ItemBooking pastBooking = itemDao.createBookingRequest(
+        final ItemBooking pastBooking = itemBookingDao.createBookingRequest(
                 itemId, guestId, threshold.minusHours(2), threshold.minusHours(1), "message", "expire-past-token");
-        final ItemBooking futureBooking = itemDao.createBookingRequest(
+        final ItemBooking futureBooking = itemBookingDao.createBookingRequest(
                 itemId, guestId, threshold.plusHours(1), threshold.plusHours(2), "message", "expire-future-token");
 
-        itemDao.expireAllDueBookings(threshold);
+        itemBookingDao.expireAllDueBookings(threshold);
 
         Assertions.assertEquals(
                 BookingState.BOOKING_CANCELLED,
-                itemDao.findBookingById(pastBooking.getId()).orElseThrow().getState());
+                itemBookingDao
+                        .findBookingById(pastBooking.getId())
+                        .orElseThrow()
+                        .getState());
         Assertions.assertEquals(
                 BookingState.BOOKING_PENDING,
-                itemDao.findBookingById(futureBooking.getId()).orElseThrow().getState());
+                itemBookingDao
+                        .findBookingById(futureBooking.getId())
+                        .orElseThrow()
+                        .getState());
     }
 
     private int insertUser(final String email) {

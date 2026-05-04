@@ -7,7 +7,11 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.persistence.ItemBookingDao;
 import ar.edu.itba.paw.persistence.ItemDao;
+import ar.edu.itba.paw.persistence.ItemMediaDao;
+import ar.edu.itba.paw.persistence.ReviewDao;
+import ar.edu.itba.paw.persistence.UserDao;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +31,18 @@ public class BookingRequestServiceImplTest {
 
     @Mock
     private ItemDao itemDao;
+
+    @Mock
+    private ItemBookingDao itemBookingDao;
+
+    @Mock
+    private ReviewDao reviewDao;
+
+    @Mock
+    private ItemMediaDao itemMediaDao;
+
+    @Mock
+    private UserDao userDao;
 
     @Mock
     private MailService mailService;
@@ -69,9 +85,9 @@ public class BookingRequestServiceImplTest {
         owner.setId(99);
         owner.setEmail("owner@a.com");
         Mockito.when(itemDao.findAnyItemById(15)).thenReturn(Optional.of(item));
-        Mockito.when(itemDao.findUserById(99)).thenReturn(Optional.of(owner));
-        Mockito.when(itemDao.findUserByEmail("a@a.com")).thenReturn(Optional.of(existingUser));
-        Mockito.when(itemDao.createBookingRequest(
+        Mockito.when(userDao.findById(99)).thenReturn(Optional.of(owner));
+        Mockito.when(userDao.findByEmail("a@a.com")).thenReturn(Optional.of(existingUser));
+        Mockito.when(itemBookingDao.createBookingRequest(
                         Mockito.eq(15),
                         Mockito.eq(7),
                         Mockito.eq(start),
@@ -97,8 +113,8 @@ public class BookingRequestServiceImplTest {
         booking.setGuestId(99);
         booking.setHostDecisionToken("t");
 
-        Mockito.when(itemDao.findBookingByHostDecisionToken("t")).thenReturn(Optional.of(booking));
-        Mockito.when(itemDao.findUserById(99)).thenReturn(Optional.empty());
+        Mockito.when(itemBookingDao.findBookingByHostDecisionToken("t")).thenReturn(Optional.of(booking));
+        Mockito.when(userDao.findById(99)).thenReturn(Optional.empty());
 
         final Optional<BookingRequest> result = bookingRequestService.findByToken("t");
 
@@ -107,7 +123,7 @@ public class BookingRequestServiceImplTest {
 
     @Test
     public void testResolveBookingBadToken() {
-        Mockito.when(itemDao.resolveBookingByHostDecisionToken(
+        Mockito.when(itemBookingDao.resolveBookingByHostDecisionToken(
                         Mockito.eq("t"), Mockito.eq(BookingState.BOOKING_REJECTED), Mockito.any()))
                 .thenReturn(false);
 
@@ -136,11 +152,11 @@ public class BookingRequestServiceImplTest {
         user.setEmail("a@a.com");
         user.setPreferredLanguage(PreferredLanguage.ES);
 
-        Mockito.when(itemDao.resolveBookingByHostDecisionToken(
+        Mockito.when(itemBookingDao.resolveBookingByHostDecisionToken(
                         Mockito.eq("t"), Mockito.eq(BookingState.BOOKING_CONFIRMED), Mockito.any()))
                 .thenReturn(true);
-        Mockito.when(itemDao.findBookingByHostDecisionToken("t")).thenReturn(Optional.of(booking));
-        Mockito.when(itemDao.findUserById(5)).thenReturn(Optional.of(user));
+        Mockito.when(itemBookingDao.findBookingByHostDecisionToken("t")).thenReturn(Optional.of(booking));
+        Mockito.when(userDao.findById(5)).thenReturn(Optional.of(user));
 
         final Optional<BookingRequest> result =
                 bookingRequestService.resolveBookingRequest("t", BookingState.BOOKING_CONFIRMED);
@@ -186,13 +202,13 @@ public class BookingRequestServiceImplTest {
         final BookingPaymentProof proof = new BookingPaymentProof();
         proof.setBookingId(30);
 
-        Mockito.when(itemDao.findBookingById(30))
+        Mockito.when(itemBookingDao.findBookingById(30))
                 .thenReturn(Optional.of(submittedBooking))
                 .thenReturn(Optional.of(paidBooking));
-        Mockito.when(itemDao.findPaymentProofByBookingId(30)).thenReturn(Optional.of(proof));
+        Mockito.when(itemBookingDao.findPaymentProofByBookingId(30)).thenReturn(Optional.of(proof));
         Mockito.when(itemDao.findAnyItemById(20)).thenReturn(Optional.of(inactiveItem));
-        Mockito.when(itemDao.markBookingPaid(30, 9)).thenReturn(true);
-        Mockito.when(itemDao.findUserById(5)).thenReturn(Optional.of(requester));
+        Mockito.when(itemBookingDao.markBookingPaid(30, 9)).thenReturn(true);
+        Mockito.when(userDao.findById(5)).thenReturn(Optional.of(requester));
 
         final Optional<BookingRequest> result = bookingRequestService.confirmPaymentReceived(30, 9);
 
@@ -213,7 +229,7 @@ public class BookingRequestServiceImplTest {
         item.setId(15);
         item.setOwnerId(7);
 
-        Mockito.when(itemDao.findUserByEmail("o@o.com")).thenReturn(Optional.of(ownerUser));
+        Mockito.when(userDao.findByEmail("o@o.com")).thenReturn(Optional.of(ownerUser));
         Mockito.when(itemDao.findAnyItemById(15)).thenReturn(Optional.of(item));
 
         final OffsetDateTime start = OffsetDateTime.now().plusDays(1);
@@ -240,8 +256,8 @@ public class BookingRequestServiceImplTest {
         inserted.setState(BookingState.BOOKING_CONFIRMED);
 
         Mockito.when(itemDao.findItemByIdForOwner(10, 3)).thenReturn(Optional.of(item));
-        Mockito.when(itemDao.listBookingsByItemId(10)).thenReturn(List.of());
-        Mockito.when(itemDao.insertOwnerPersonalBlock(
+        Mockito.when(itemBookingDao.listBookingsByItemId(10)).thenReturn(List.of());
+        Mockito.when(itemBookingDao.insertOwnerPersonalBlock(
                         Mockito.eq(10),
                         Mockito.eq(3),
                         Mockito.eq(start),
@@ -267,7 +283,7 @@ public class BookingRequestServiceImplTest {
         guestBooking.setEndTime(OffsetDateTime.parse("2030-01-15T11:00:00+00:00"));
 
         Mockito.when(itemDao.findItemByIdForOwner(10, 3)).thenReturn(Optional.of(item));
-        Mockito.when(itemDao.listBookingsByItemId(10)).thenReturn(List.of(guestBooking));
+        Mockito.when(itemBookingDao.listBookingsByItemId(10)).thenReturn(List.of(guestBooking));
 
         final OffsetDateTime start = OffsetDateTime.parse("2030-01-15T10:30:00+00:00");
         final OffsetDateTime end = OffsetDateTime.parse("2030-01-15T12:00:00+00:00");
@@ -289,9 +305,9 @@ public class BookingRequestServiceImplTest {
         item.setId(10);
         item.setOwnerId(3);
 
-        Mockito.when(itemDao.findBookingById(55)).thenReturn(Optional.of(block));
+        Mockito.when(itemBookingDao.findBookingById(55)).thenReturn(Optional.of(block));
         Mockito.when(itemDao.findAnyItemById(10)).thenReturn(Optional.of(item));
-        Mockito.when(itemDao.markBookingCancelled(55)).thenReturn(true);
+        Mockito.when(itemBookingDao.markBookingCancelled(55)).thenReturn(true);
 
         Assertions.assertTrue(bookingRequestService.removeOwnerSelfBlock(55, 3));
     }
@@ -304,7 +320,7 @@ public class BookingRequestServiceImplTest {
         block.setGuestId(99);
         block.setState(BookingState.BOOKING_CONFIRMED);
 
-        Mockito.when(itemDao.findBookingById(55)).thenReturn(Optional.of(block));
+        Mockito.when(itemBookingDao.findBookingById(55)).thenReturn(Optional.of(block));
 
         Assertions.assertFalse(bookingRequestService.removeOwnerSelfBlock(55, 3));
     }

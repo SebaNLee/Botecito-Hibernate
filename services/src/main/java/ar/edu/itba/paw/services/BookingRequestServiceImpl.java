@@ -6,8 +6,13 @@ import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.persistence.ItemBookingDao;
 import ar.edu.itba.paw.persistence.ItemDao;
+import ar.edu.itba.paw.persistence.ItemMediaDao;
+import ar.edu.itba.paw.persistence.ReviewDao;
+import ar.edu.itba.paw.persistence.UserDao;
 import ar.edu.itba.paw.services.utils.PaymentProofValidator;
+import ar.edu.itba.paw.services.utils.UserNameRules;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -39,6 +44,10 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     private static final int MIN_ANTICIPATION_MINUTES = 120;
     private static final DateTimeFormatter TIME_LABEL_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private final ItemDao itemDao;
+    private final ItemBookingDao itemBookingDao;
+    private final ReviewDao reviewDao;
+    private final ItemMediaDao itemMediaDao;
+    private final UserDao userDao;
     private final MailService mailService;
 
     @Override
@@ -61,8 +70,8 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             throw new SelfBookingNotAllowedException();
         }
         final String token = UUID.randomUUID().toString();
-        final ItemBooking booking =
-                itemDao.createBookingRequest(itemId, requesterUser.getId(), startTime, endTime, description, token);
+        final ItemBooking booking = itemBookingDao.createBookingRequest(
+                itemId, requesterUser.getId(), startTime, endTime, description, token);
         LOGGER.info(
                 "Booking request created for item {} by user {} done at {} for startTime: {} and endTime: {}",
                 itemId,
@@ -90,7 +99,8 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     }
 
     private void validateAnticipationByToken(final String hostDecisionToken) {
-        itemDao.findBookingByHostDecisionToken(hostDecisionToken)
+        itemBookingDao
+                .findBookingByHostDecisionToken(hostDecisionToken)
                 .map(ItemBooking::getStartTime)
                 .ifPresent(BookingRequestServiceImpl::validateAnticipation);
     }
@@ -104,21 +114,21 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         if (!startTime.isBefore(endTime)) {
             throw new IllegalArgumentException("Personal block start must be before end");
         }
-        for (final ItemBooking booking : itemDao.listBookingsByItemId(item.getId())) {
+        for (final ItemBooking booking : itemBookingDao.listBookingsByItemId(item.getId())) {
             if (isBlockingBooking(booking)
                     && rangesOverlap(startTime, endTime, booking.getStartTime(), booking.getEndTime())) {
                 throw new OverlappingActiveBookingException();
             }
         }
         final OffsetDateTime recordedAt = OffsetDateTime.now();
-        return itemDao.insertOwnerPersonalBlock(
+        return itemBookingDao.insertOwnerPersonalBlock(
                 itemId, ownerId, startTime, endTime, UUID.randomUUID().toString(), recordedAt);
     }
 
     @Override
     @Transactional
     public boolean removeOwnerSelfBlock(final int bookingId, final int ownerId) {
-        final Optional<ItemBooking> bookingOpt = itemDao.findBookingById(bookingId);
+        final Optional<ItemBooking> bookingOpt = itemBookingDao.findBookingById(bookingId);
         if (bookingOpt.isEmpty()) {
             return false;
         }
@@ -136,12 +146,12 @@ public class BookingRequestServiceImpl implements BookingRequestService {
                 || !Objects.equals(item.getOwnerId(), booking.getGuestId())) {
             return false;
         }
-        return itemDao.markBookingCancelled(bookingId);
+        return itemBookingDao.markBookingCancelled(bookingId);
     }
 
     @Override
     public Optional<BookingRequest> findByToken(final String token) {
-        return itemDao.findBookingByHostDecisionToken(token).flatMap(this::toBookingRequest);
+        return itemBookingDao.findBookingByHostDecisionToken(token).flatMap(this::toBookingRequest);
     }
 
     @Override
@@ -151,7 +161,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         if (newStatus == BookingState.BOOKING_CONFIRMED) {
             validateAnticipationByToken(token);
         }
-        if (!itemDao.resolveBookingByHostDecisionToken(token, newStatus, currentDateTime())) {
+        if (!itemBookingDao.resolveBookingByHostDecisionToken(token, newStatus, currentDateTime())) {
             return Optional.empty();
         }
         final Optional<BookingRequest> resolved = findByToken(token);
@@ -162,7 +172,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     @Override
     @Transactional
     public void expireAllDue(final OffsetDateTime currentDateTime) {
-        itemDao.expireAllDueBookings(currentDateTime.plusMinutes(MIN_ANTICIPATION_MINUTES));
+        itemBookingDao.expireAllDueBookings(currentDateTime.plusMinutes(MIN_ANTICIPATION_MINUTES));
     }
 
     @Scheduled(cron = "0 * * * * *")
@@ -186,7 +196,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             return List.of();
         }
 
-        final List<ItemBooking> candidateBookings = itemDao.findBookingsByHostDecisionTokens(normalizedTokens);
+        final List<ItemBooking> candidateBookings = itemBookingDao.findBookingsByHostDecisionTokens(normalizedTokens);
         if (candidateBookings.isEmpty()) {
             return List.of();
         }
@@ -205,10 +215,10 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         }
 
         final OffsetDateTime resolvedAt = OffsetDateTime.now();
-        itemDao.resolveBookingsByHostDecisionTokens(pendingTokens, newStatus, resolvedAt);
+        itemBookingDao.resolveBookingsByHostDecisionTokens(pendingTokens, newStatus, resolvedAt);
         LOGGER.info("Resolved {} booking requests to status {}", pendingTokens.size(), newStatus);
 
-        final List<ItemBooking> updatedBookings = itemDao.findBookingsByHostDecisionTokens(pendingTokens);
+        final List<ItemBooking> updatedBookings = itemBookingDao.findBookingsByHostDecisionTokens(pendingTokens);
         if (updatedBookings.isEmpty()) {
             return List.of();
         }
@@ -220,7 +230,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             }
         }
         final Map<Integer, User> usersById = new LinkedHashMap<>();
-        for (final User user : itemDao.findUsersByIds(guestIds)) {
+        for (final User user : userDao.findUsersByIds(guestIds)) {
             usersById.put(user.getId(), user);
         }
 
@@ -253,7 +263,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             return Optional.empty();
         }
         expireAllDue(currentDateTime());
-        final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
+        final Optional<ItemBooking> booking = itemBookingDao.findBookingById(bookingId);
         if (booking.isEmpty()
                 || booking.get().getGuestId() == null
                 || booking.get().getGuestId() != requesterId
@@ -267,17 +277,17 @@ public class BookingRequestServiceImpl implements BookingRequestService {
 
         final BookingState state = booking.get().getState();
         if (state == BookingState.BOOKING_CONFIRMED) {
-            if (itemDao.findPaymentProofByBookingId(bookingId).isPresent()) {
+            if (itemBookingDao.findPaymentProofByBookingId(bookingId).isPresent()) {
                 LOGGER.warn("Payment proof already exists for booking {}", bookingId);
                 return Optional.empty();
             }
-            if (!itemDao.markBookingPaymentSubmitted(bookingId, requesterId)) {
+            if (!itemBookingDao.markBookingPaymentSubmitted(bookingId, requesterId)) {
                 LOGGER.error("Failed to mark booking {} as payment submitted", bookingId);
                 return Optional.empty();
             }
         } else if (state == BookingState.BOOKING_PAYMENT_REFUSED) {
-            itemDao.deletePaymentProofByBookingId(bookingId);
-            if (!itemDao.markBookingPaymentResubmitted(bookingId, requesterId)) {
+            itemBookingDao.deletePaymentProofByBookingId(bookingId);
+            if (!itemBookingDao.markBookingPaymentResubmitted(bookingId, requesterId)) {
                 LOGGER.error("Failed to mark booking {} as payment resubmitted", bookingId);
                 return Optional.empty();
             }
@@ -288,7 +298,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
 
         LOGGER.info("Submitting payment proof for booking {}", bookingId);
 
-        final BookingPaymentProof proof = itemDao.createPaymentProof(
+        final BookingPaymentProof proof = itemBookingDao.createPaymentProof(
                 bookingId, requesterId, fileName, contentType, fileData, normalizeReply(guestReply));
         sendPaymentProofSubmittedEmail(booking.get(), requesterId, proof);
         return Optional.of(proof);
@@ -297,14 +307,14 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     @Override
     public Optional<BookingRequest> refusePaymentProof(final int bookingId, final int ownerId, final String reason) {
         expireAllDue(currentDateTime());
-        final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
+        final Optional<ItemBooking> booking = itemBookingDao.findBookingById(bookingId);
 
         LOGGER.debug("Refusing payment proof for booking {} by owner {}", bookingId, ownerId);
 
         if (booking.isEmpty()
                 || booking.get().getItemId() == null
                 || booking.get().getState() != BookingState.BOOKING_PAYMENT_SUBMITTED
-                || itemDao.findPaymentProofByBookingId(bookingId).isEmpty()) {
+                || itemBookingDao.findPaymentProofByBookingId(bookingId).isEmpty()) {
             return Optional.empty();
         }
 
@@ -322,11 +332,11 @@ public class BookingRequestServiceImpl implements BookingRequestService {
 
         validateAnticipation(booking.get().getStartTime());
 
-        if (!itemDao.markBookingPaymentRefused(bookingId, ownerId, trimmed)) {
+        if (!itemBookingDao.markBookingPaymentRefused(bookingId, ownerId, trimmed)) {
             return Optional.empty();
         }
         final Optional<BookingRequest> refused =
-                itemDao.findBookingById(bookingId).flatMap(this::toBookingRequest);
+                itemBookingDao.findBookingById(bookingId).flatMap(this::toBookingRequest);
         refused.ifPresent(request -> sendPaymentProofRefusedEmail(request, ownerId, trimmed));
         return refused;
     }
@@ -334,7 +344,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
     @Override
     public Optional<BookingRequest> confirmPaymentReceived(final int bookingId, final int ownerId) {
         expireAllDue(currentDateTime());
-        final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
+        final Optional<ItemBooking> booking = itemBookingDao.findBookingById(bookingId);
 
         LOGGER.debug("Confirming payment for booking {} by owner {}", bookingId, ownerId);
 
@@ -342,7 +352,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
                 || booking.get().getItemId() == null
                 || booking.get().getHostDecisionToken() == null
                 || booking.get().getState() != BookingState.BOOKING_PAYMENT_SUBMITTED
-                || itemDao.findPaymentProofByBookingId(bookingId).isEmpty()) {
+                || itemBookingDao.findPaymentProofByBookingId(bookingId).isEmpty()) {
             return Optional.empty();
         }
 
@@ -353,17 +363,18 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             return Optional.empty();
         }
 
-        if (!itemDao.markBookingPaid(bookingId, ownerId)) {
+        if (!itemBookingDao.markBookingPaid(bookingId, ownerId)) {
             return Optional.empty();
         }
-        final Optional<BookingRequest> paid = itemDao.findBookingById(bookingId).flatMap(this::toBookingRequest);
+        final Optional<BookingRequest> paid =
+                itemBookingDao.findBookingById(bookingId).flatMap(this::toBookingRequest);
         paid.ifPresent(this::sendPaymentReceivedEmail);
         return paid;
     }
 
     @Override
     public Optional<BookingPaymentProof> findPaymentProofByBookingId(final int bookingId) {
-        return itemDao.findPaymentProofByBookingId(bookingId);
+        return itemBookingDao.findPaymentProofByBookingId(bookingId);
     }
 
     private User resolveOrCreateRequesterUser(
@@ -371,26 +382,26 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             final String requesterLastName,
             final String requesterEmail,
             final String requesterPreferredLanguage) {
-        ar.edu.itba.paw.services.utils.UserNameRules.requireBothLegalNames(requesterGivenName, requesterLastName);
+        UserNameRules.requireBothLegalNames(requesterGivenName, requesterLastName);
         final String givenName = normalizeNamePart(requesterGivenName, "Guest");
         final String lastName = normalizeNamePart(requesterLastName, "");
         final String preferredLanguage = normalizePreferredLanguage(requesterPreferredLanguage);
 
-        final Optional<User> existingUser = itemDao.findUserByEmail(requesterEmail);
+        final Optional<User> existingUser = userDao.findByEmail(requesterEmail);
         if (existingUser.isPresent()) {
             final User user = existingUser.get();
-            itemDao.updateUserProfile(user.getId(), givenName, lastName, preferredLanguage);
+            userDao.updateBasicProfileNamesAndLanguage(user.getId(), givenName, lastName, preferredLanguage);
             user.setGivenName(givenName);
             user.setLastName(lastName);
             user.setPreferredLanguage(ar.edu.itba.paw.models.PreferredLanguage.fromPersistence(preferredLanguage));
             return user;
         }
 
-        return itemDao.createUser(givenName, lastName, requesterEmail, preferredLanguage);
+        return userDao.createUserWithoutCredentials(givenName, lastName, requesterEmail, preferredLanguage);
     }
 
     private Optional<BookingRequest> toBookingRequest(final ItemBooking booking) {
-        return itemDao.findUserById(booking.getGuestId()).map(user -> toBookingRequest(booking, user));
+        return userDao.findById(booking.getGuestId()).map(user -> toBookingRequest(booking, user));
     }
 
     private BookingRequest toBookingRequest(final ItemBooking booking, final User requesterUser) {
@@ -428,9 +439,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         try {
             final String ownerEmail = item.getOwnerId() == null
                     ? null
-                    : itemDao.findUserById(item.getOwnerId())
-                            .map(User::getEmail)
-                            .orElse(null);
+                    : userDao.findById(item.getOwnerId()).map(User::getEmail).orElse(null);
             mailService.sendBookingReviewEmail(
                     bookingRequest,
                     ownerEmail,
@@ -463,12 +472,12 @@ public class BookingRequestServiceImpl implements BookingRequestService {
             if (item.isEmpty() || item.get().getOwnerId() == null) {
                 return;
             }
-            final Optional<User> owner = itemDao.findUserById(item.get().getOwnerId());
+            final Optional<User> owner = userDao.findById(item.get().getOwnerId());
             if (owner.isEmpty()) {
                 return;
             }
             final String requesterName =
-                    itemDao.findUserById(requesterId).map(User::getName).orElse("");
+                    userDao.findById(requesterId).map(User::getName).orElse("");
             mailService.sendPaymentProofSubmittedEmail(
                     owner.get().getEmail(),
                     requesterName,
@@ -487,7 +496,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
                     ? Optional.empty()
                     : itemDao.findAnyItemById(bookingRequest.getItemId());
             final String ownerName =
-                    itemDao.findUserById(ownerId).map(User::getName).orElse("");
+                    userDao.findById(ownerId).map(User::getName).orElse("");
             mailService.sendPaymentProofRefusedEmail(
                     bookingRequest.getRequesterEmail(),
                     bookingRequest.getRequesterLocaleTag(),
@@ -563,7 +572,7 @@ public class BookingRequestServiceImpl implements BookingRequestService {
 
     @Override
     public boolean canAccessPaymentProof(final int bookingId, final int viewerUserId) {
-        final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
+        final Optional<ItemBooking> booking = itemBookingDao.findBookingById(bookingId);
         if (booking.isEmpty()) {
             return false;
         }

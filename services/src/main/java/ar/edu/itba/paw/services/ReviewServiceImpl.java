@@ -6,7 +6,9 @@ import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.RatingSummary;
 import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.ReviewTargetType;
+import ar.edu.itba.paw.persistence.ItemBookingDao;
 import ar.edu.itba.paw.persistence.ItemDao;
+import ar.edu.itba.paw.persistence.ReviewDao;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -22,6 +24,8 @@ import org.springframework.stereotype.Service;
 public class ReviewServiceImpl implements ReviewService {
 
     private final ItemDao itemDao;
+    private final ItemBookingDao itemBookingDao;
+    private final ReviewDao reviewDao;
 
     @Override
     public Optional<Review> createReviewForBooking(
@@ -30,7 +34,7 @@ public class ReviewServiceImpl implements ReviewService {
             return Optional.empty();
         }
 
-        final Optional<ItemBooking> booking = itemDao.findBookingById(bookingId);
+        final Optional<ItemBooking> booking = itemBookingDao.findBookingById(bookingId);
         if (booking.isEmpty()
                 || booking.get().getItemId() == null
                 || booking.get().getGuestId() == null) {
@@ -50,7 +54,7 @@ public class ReviewServiceImpl implements ReviewService {
             return Optional.empty();
         }
 
-        return itemDao.createReview(
+        return reviewDao.createReview(
                 bookingId,
                 reviewerUserId,
                 descriptor.revieweeUserId,
@@ -62,17 +66,17 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public boolean deleteReview(final int reviewId, final int reviewerUserId) {
-        return itemDao.deleteReview(reviewId, reviewerUserId);
+        return reviewDao.deleteReview(reviewId, reviewerUserId);
     }
 
     @Override
     public List<Review> listLatestItemReviews(final int itemId, final int limit) {
-        return itemDao.listLatestReviewsByTarget(ReviewTargetType.ITEM, itemId, limit);
+        return reviewDao.listLatestReviewsByTarget(ReviewTargetType.ITEM, itemId, limit);
     }
 
     @Override
     public RatingSummary getItemRatingSummary(final int itemId) {
-        return itemDao.ratingSummaryByTarget(ReviewTargetType.ITEM, itemId);
+        return reviewDao.ratingSummaryByTarget(ReviewTargetType.ITEM, itemId);
     }
 
     @Override
@@ -96,13 +100,13 @@ public class ReviewServiceImpl implements ReviewService {
     public List<PendingReviewAction> listPendingReviewActions(final int userId) {
         final List<PendingReviewAction> actions = new ArrayList<>();
 
-        for (final ItemBooking booking : itemDao.listBookingsByGuestId(userId)) {
+        for (final ItemBooking booking : itemBookingDao.listBookingsByGuestId(userId)) {
             final PendingReviewAction action = buildGuestPendingReviewAction(userId, booking);
             if (action != null) {
                 actions.add(action);
             }
         }
-        for (final ItemBooking booking : itemDao.listBookingsByOwnerId(userId)) {
+        for (final ItemBooking booking : itemBookingDao.listBookingsByOwnerId(userId)) {
             final PendingReviewAction action = buildOwnerPendingReviewAction(userId, booking);
             if (action != null) {
                 actions.add(action);
@@ -114,7 +118,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public Optional<PendingReviewAction> findPendingItemReviewAction(final int userId, final int itemId) {
-        for (final ItemBooking booking : itemDao.listBookingsByGuestId(userId)) {
+        for (final ItemBooking booking : itemBookingDao.listBookingsByGuestId(userId)) {
             if (booking.getItemId() == null || booking.getItemId() != itemId) {
                 continue;
             }
@@ -129,12 +133,12 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public List<Review> listAuthoredReviews(final int reviewerUserId) {
-        return itemDao.listReviewsByReviewer(reviewerUserId);
+        return reviewDao.listReviewsByReviewer(reviewerUserId);
     }
 
     @Override
     public List<Review> listReceivedReviews(final int revieweeUserId) {
-        return itemDao.listReviewsByReviewee(revieweeUserId);
+        return reviewDao.listReviewsByReviewee(revieweeUserId);
     }
 
     private PendingReviewAction buildGuestPendingReviewAction(final int userId, final ItemBooking booking) {
@@ -151,7 +155,8 @@ public class ReviewServiceImpl implements ReviewService {
         }
 
         if (booking.getId() == null
-                || itemDao.findReviewByBookingReviewerAndTargetType(booking.getId(), userId, ReviewTargetType.ITEM)
+                || reviewDao
+                        .findReviewByBookingReviewerAndTargetType(booking.getId(), userId, ReviewTargetType.ITEM)
                         .isPresent()) {
             return null;
         }
@@ -181,7 +186,8 @@ public class ReviewServiceImpl implements ReviewService {
             return null;
         }
 
-        if (itemDao.findReviewByBookingReviewerAndTargetType(booking.getId(), userId, ReviewTargetType.USER)
+        if (reviewDao
+                .findReviewByBookingReviewerAndTargetType(booking.getId(), userId, ReviewTargetType.USER)
                 .isPresent()) {
             return null;
         }

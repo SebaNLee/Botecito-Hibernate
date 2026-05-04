@@ -6,7 +6,12 @@ import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.persistence.ItemAvailabilityDao;
+import ar.edu.itba.paw.persistence.ItemBookingDao;
 import ar.edu.itba.paw.persistence.ItemDao;
+import ar.edu.itba.paw.persistence.ItemMediaDao;
+import ar.edu.itba.paw.persistence.ReviewDao;
+import ar.edu.itba.paw.persistence.UserDao;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -28,6 +33,21 @@ public class ItemServiceImplTest {
 
     @Mock
     private ItemDao itemDao;
+
+    @Mock
+    private ItemAvailabilityDao itemAvailabilityDao;
+
+    @Mock
+    private ItemBookingDao itemBookingDao;
+
+    @Mock
+    private ReviewDao reviewDao;
+
+    @Mock
+    private ItemMediaDao itemMediaDao;
+
+    @Mock
+    private UserDao userDao;
 
     @Mock
     private MailService mailService;
@@ -56,8 +76,8 @@ public class ItemServiceImplTest {
 
         Mockito.when(itemDao.findItemTypeById(1)).thenReturn(Optional.of(itemType));
         Mockito.when(itemDao.listLocationOptions()).thenReturn(List.of(locationOption));
-        Mockito.when(itemDao.findUserByEmail("a@a.com")).thenReturn(Optional.empty());
-        Mockito.when(itemDao.createUser(
+        Mockito.when(userDao.findByEmail("a@a.com")).thenReturn(Optional.empty());
+        Mockito.when(userDao.createUserWithoutCredentials(
                         Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
                 .thenAnswer(invocation -> {
                     final User createdUser = new User();
@@ -87,6 +107,9 @@ public class ItemServiceImplTest {
                     createdItem.setPricePerHour(invocation.getArgument(4));
                     return createdItem;
                 });
+        Mockito.when(itemAvailabilityDao.createItemAvailability(
+                        Mockito.eq(99), Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
+                .thenReturn(new ItemAvailability());
         final Item result = itemService.createPublication(
                 "A",
                 "A",
@@ -151,7 +174,7 @@ public class ItemServiceImplTest {
         Mockito.when(itemDao.snapshotBookingsForPublicationEdit(10)).thenReturn(true);
         Mockito.when(itemDao.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1))
                 .thenReturn(true);
-        Mockito.when(itemDao.replacePrimaryImageForOwner(10, 99, imageData)).thenReturn(7);
+        Mockito.when(itemMediaDao.replacePrimaryImage(10, imageData)).thenReturn(7);
 
         final boolean updated =
                 itemService.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1, imageData);

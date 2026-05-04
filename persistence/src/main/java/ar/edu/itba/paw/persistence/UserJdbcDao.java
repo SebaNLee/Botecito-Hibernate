@@ -6,6 +6,9 @@ import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.sql.DataSource;
@@ -37,7 +40,7 @@ public class UserJdbcDao implements UserDao {
     private final JdbcTemplate jdbcTemplate;
 
     @Autowired
-    public UserJdbcDao(final DataSource dataSource) {
+    public UserJdbcDao(final @NonNull DataSource dataSource) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
@@ -75,10 +78,8 @@ public class UserJdbcDao implements UserDao {
 
         final Integer id =
                 jdbcTemplate.queryForObject("SELECT id FROM users WHERE lower(email) = lower(?)", Integer.class, email);
-        if (id == null) {
-            throw new IllegalStateException("Could not read inserted user id for email " + email);
-        }
-        return findById(id.intValue())
+        return findById(Objects.requireNonNull(id, "Could not read inserted user id for email " + email)
+                        .intValue())
                 .orElseThrow(() -> new IllegalStateException("Could not read inserted user " + id));
     }
 
@@ -129,6 +130,43 @@ public class UserJdbcDao implements UserDao {
             return Optional.empty();
         }
         return findById(userId);
+    }
+
+    @Override
+    public User createUserWithoutCredentials(
+            final String givenName, final String lastName, final String email, final String preferredLanguage) {
+        final int id = Objects.requireNonNull(
+                jdbcTemplate.queryForObject(
+                        "INSERT INTO users (given_name, last_name, email, preferred_language) VALUES (?, ?, ?, ?) RETURNING id",
+                        Integer.class,
+                        givenName,
+                        lastName,
+                        email,
+                        preferredLanguage),
+                "Could not create user for email " + email);
+        return findById(id).orElseThrow(() -> new IllegalStateException("Could not read inserted user " + id));
+    }
+
+    @Override
+    public boolean updateBasicProfileNamesAndLanguage(
+            final int userId, final String givenName, final String lastName, final String preferredLanguage) {
+        return jdbcTemplate.update(
+                        "UPDATE users SET given_name = ?, last_name = ?, preferred_language = ? WHERE id = ?",
+                        givenName,
+                        lastName,
+                        preferredLanguage,
+                        userId)
+                > 0;
+    }
+
+    @Override
+    public List<User> findUsersByIds(final Collection<Integer> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return List.of();
+        }
+        final String placeholders = String.join(", ", Collections.nCopies(userIds.size(), "?"));
+        return jdbcTemplate.query(
+                "SELECT * FROM users WHERE id IN (" + placeholders + ")", USER_ROW_MAPPER, userIds.toArray());
     }
 
     @Override

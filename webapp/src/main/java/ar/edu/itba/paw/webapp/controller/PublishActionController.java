@@ -12,6 +12,7 @@ import ar.edu.itba.paw.webapp.form.EditPublicationForm;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -135,8 +136,9 @@ public class PublishActionController {
 
         final byte[] primaryImageData;
         if (hasNewPrimaryImage) {
+            final MultipartFile uploadedFile = Objects.requireNonNull(file, "file");
             try {
-                primaryImageData = file.getBytes();
+                primaryImageData = uploadedFile.getBytes();
             } catch (final IOException e) {
                 errors.rejectValue("file", "editPublication.validation.image.read");
                 return editPublicationModelAndView(item.get(), request);

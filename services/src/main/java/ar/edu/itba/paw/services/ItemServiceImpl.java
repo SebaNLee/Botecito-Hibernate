@@ -14,7 +14,12 @@ import ar.edu.itba.paw.models.RatingSummary;
 import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.ReviewTargetType;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.persistence.ItemAvailabilityDao;
+import ar.edu.itba.paw.persistence.ItemBookingDao;
 import ar.edu.itba.paw.persistence.ItemDao;
+import ar.edu.itba.paw.persistence.ItemMediaDao;
+import ar.edu.itba.paw.persistence.ReviewDao;
+import ar.edu.itba.paw.persistence.UserDao;
 import ar.edu.itba.paw.services.dto.AuthoredItemReviewSummaryView;
 import ar.edu.itba.paw.services.dto.AvailabilityPickerData;
 import ar.edu.itba.paw.services.dto.BookingDecisionBatch;
@@ -60,6 +65,11 @@ public final class ItemServiceImpl implements ItemService {
     private static final int TIME_STEP_MINUTES = 30;
 
     private final ItemDao itemDao;
+    private final ItemAvailabilityDao itemAvailabilityDao;
+    private final ItemBookingDao itemBookingDao;
+    private final ReviewDao reviewDao;
+    private final ItemMediaDao itemMediaDao;
+    private final UserDao userDao;
     private final MailService mailService;
     private final ReviewService reviewService;
 
@@ -110,12 +120,12 @@ public final class ItemServiceImpl implements ItemService {
 
     @Override
     public Optional<User> findUserById(final int id) {
-        return itemDao.findUserById(id);
+        return userDao.findById(id);
     }
 
     @Override
     public Optional<User> findUserByEmail(final String email) {
-        return itemDao.findUserByEmail(email);
+        return userDao.findByEmail(email);
     }
 
     @Override
@@ -148,7 +158,7 @@ public final class ItemServiceImpl implements ItemService {
             throw new IllegalStateException("Could not update item " + itemId);
         }
         if (primaryImageData != null && primaryImageData.length > 0) {
-            if (itemDao.replacePrimaryImageForOwner(itemId, ownerId, primaryImageData) == null) {
+            if (itemMediaDao.replacePrimaryImage(itemId, primaryImageData) == null) {
                 LOGGER.error("Could not replace primary image for item {}", itemId);
                 throw new IllegalStateException("Could not replace primary image for item " + itemId);
             }
@@ -214,7 +224,7 @@ public final class ItemServiceImpl implements ItemService {
                 ownerDeleteToken);
 
         for (final ItemAvailability availability : availabilities) {
-            itemDao.createItemAvailability(
+            itemAvailabilityDao.createItemAvailability(
                     item.getId(),
                     availability.getWeekday().name(),
                     availability.getStartTime().toString(),
@@ -233,104 +243,104 @@ public final class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemAvailability> listAvailabilities() {
-        return itemDao.listAvailabilities();
+        return itemAvailabilityDao.listAvailabilities();
     }
 
     @Override
     public List<ItemAvailability> listAvailabilitiesByItemId(final int itemId) {
-        return itemDao.listAvailabilitiesByItemId(itemId);
+        return itemAvailabilityDao.listAvailabilitiesByItemId(itemId);
     }
 
     @Override
     public List<ItemBooking> listBookings() {
-        return itemDao.listBookings();
+        return itemBookingDao.listBookings();
     }
 
     @Override
     public List<ItemBooking> listBookingsByItemId(final int itemId) {
-        return itemDao.listBookingsByItemId(itemId);
+        return itemBookingDao.listBookingsByItemId(itemId);
     }
 
     @Override
     public List<ItemBooking> listBookingsByGuestId(final int guestId) {
-        return itemDao.listBookingsByGuestId(guestId);
+        return itemBookingDao.listBookingsByGuestId(guestId);
     }
 
     @Override
     public List<ItemBooking> listBookingsByOwnerId(final int ownerId) {
-        return itemDao.listBookingsByOwnerId(ownerId);
+        return itemBookingDao.listBookingsByOwnerId(ownerId);
     }
 
     @Override
     public List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId) {
-        return itemDao.listPendingBookingsByOwnerId(ownerId);
+        return itemBookingDao.listPendingBookingsByOwnerId(ownerId);
     }
 
     @Override
     public List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId) {
-        return itemDao.listPaymentSubmittedBookingsByOwnerId(ownerId);
+        return itemBookingDao.listPaymentSubmittedBookingsByOwnerId(ownerId);
     }
 
     @Override
     public List<ItemBooking> listActiveBookingsByItemId(final int itemId) {
-        return itemDao.listActiveBookingsByItemId(itemId);
+        return itemBookingDao.listActiveBookingsByItemId(itemId);
     }
 
     @Override
     public Optional<ItemSnapshot> findSnapshotByBookingIdForGuest(final int bookingId, final int guestId) {
-        return itemDao.findSnapshotByBookingIdForGuest(bookingId, guestId);
+        return itemBookingDao.findSnapshotByBookingIdForGuest(bookingId, guestId);
     }
 
     @Override
     public Optional<ItemSnapshot> findSnapshotByBookingIdForOwner(final int bookingId, final int ownerId) {
-        return itemDao.findSnapshotByBookingIdForOwner(bookingId, ownerId);
+        return itemBookingDao.findSnapshotByBookingIdForOwner(bookingId, ownerId);
     }
 
     @Override
     public Optional<ItemSnapshot> findSnapshotVersionByIdForGuest(
             final int versionId, final int itemId, final int guestId) {
-        return itemDao.findSnapshotVersionByIdForGuest(versionId, itemId, guestId);
+        return itemBookingDao.findSnapshotVersionByIdForGuest(versionId, itemId, guestId);
     }
 
     @Override
     public Optional<ItemSnapshot> findSnapshotVersionByIdForOwner(
             final int versionId, final int itemId, final int ownerId) {
-        return itemDao.findSnapshotVersionByIdForOwner(versionId, itemId, ownerId);
+        return itemBookingDao.findSnapshotVersionByIdForOwner(versionId, itemId, ownerId);
     }
 
     @Override
     public List<ItemSnapshot> listSnapshotsByItemIdForGuest(final int itemId, final int guestId) {
-        return itemDao.listSnapshotsByItemIdForGuest(itemId, guestId);
+        return itemBookingDao.listSnapshotsByItemIdForGuest(itemId, guestId);
     }
 
     @Override
     public List<ItemSnapshot> listSnapshotsByItemIdForOwner(final int itemId, final int ownerId) {
-        return itemDao.listSnapshotsByItemIdForOwner(itemId, ownerId);
+        return itemBookingDao.listSnapshotsByItemIdForOwner(itemId, ownerId);
     }
 
     @Override
     public Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId) {
-        return itemDao.findNextAvailabilityByItemId(itemId);
+        return itemAvailabilityDao.findNextAvailabilityByItemId(itemId);
     }
 
     @Override
     public Optional<byte[]> findImageById(final int id) {
-        return itemDao.findImageById(id);
+        return itemMediaDao.findImageById(id);
     }
 
     @Override
     public List<Integer> listImageIdsByItemIdOrdered(final int itemId) {
-        return itemDao.listImageIdsByItemIdOrdered(itemId);
+        return itemMediaDao.listImageIdsByItemIdOrdered(itemId);
     }
 
     @Override
     public Optional<Integer> findCoverImageIdByItemId(final int itemId) {
-        return itemDao.findCoverImageIdByItemId(itemId);
+        return itemMediaDao.findCoverImageIdByItemId(itemId);
     }
 
     @Override
     public int countImagesByItemId(final int itemId) {
-        return itemDao.countImagesByItemId(itemId);
+        return itemMediaDao.countImagesByItemId(itemId);
     }
 
     @Override
@@ -341,7 +351,7 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     public Integer insertAvailability(
             final int itemId, final DayOfWeek weekday, final LocalTime startTime, final LocalTime endTime) {
-        return itemDao.insertAvailability(itemId, weekday, startTime, endTime);
+        return itemAvailabilityDao.insertAvailability(itemId, weekday, startTime, endTime);
     }
 
     @Override
@@ -350,11 +360,11 @@ public final class ItemServiceImpl implements ItemService {
         if (imageData == null || imageData.length == 0) {
             throw new IllegalArgumentException("Image data is empty");
         }
-        final int existing = itemDao.countImagesByItemId(itemId);
+        final int existing = itemMediaDao.countImagesByItemId(itemId);
         if (existing >= MAX_IMAGES_PER_ITEM) {
             throw new IllegalArgumentException("Image gallery is full (max " + MAX_IMAGES_PER_ITEM + ")");
         }
-        return itemDao.insertImage(itemId, imageData, existing);
+        return itemMediaDao.insertImage(itemId, imageData, existing);
     }
 
     @Override
@@ -366,15 +376,15 @@ public final class ItemServiceImpl implements ItemService {
         if (orderedImages.size() > MAX_IMAGES_PER_ITEM) {
             throw new IllegalArgumentException("Gallery exceeds max " + MAX_IMAGES_PER_ITEM);
         }
-        for (final Integer existingId : itemDao.listImageIdsByItemIdOrdered(itemId)) {
-            itemDao.deleteImage(itemId, existingId);
+        for (final Integer existingId : itemMediaDao.listImageIdsByItemIdOrdered(itemId)) {
+            itemMediaDao.deleteImage(itemId, existingId);
         }
         int position = 0;
         for (final byte[] data : orderedImages) {
             if (data == null || data.length == 0) {
                 continue;
             }
-            itemDao.insertImage(itemId, data, position);
+            itemMediaDao.insertImage(itemId, data, position);
             position++;
         }
     }
@@ -382,7 +392,7 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public boolean deleteImageFromItem(final int itemId, final int imageId) {
-        return itemDao.deleteImage(itemId, imageId);
+        return itemMediaDao.deleteImage(itemId, imageId);
     }
 
     @Override
@@ -391,12 +401,12 @@ public final class ItemServiceImpl implements ItemService {
         if (imageIdsInOrder == null || imageIdsInOrder.isEmpty()) {
             return;
         }
-        final List<Integer> currentIds = itemDao.listImageIdsByItemIdOrdered(itemId);
+        final List<Integer> currentIds = itemMediaDao.listImageIdsByItemIdOrdered(itemId);
         if (currentIds.size() != imageIdsInOrder.size()
                 || !new java.util.HashSet<>(currentIds).equals(new java.util.HashSet<>(imageIdsInOrder))) {
             throw new IllegalArgumentException("Reorder list does not match current gallery contents");
         }
-        itemDao.reorderImages(itemId, imageIdsInOrder);
+        itemMediaDao.reorderImages(itemId, imageIdsInOrder);
     }
 
     private User resolveOrCreateOwner(
@@ -406,16 +416,16 @@ public final class ItemServiceImpl implements ItemService {
             final String ownerPreferredLanguage) {
         ar.edu.itba.paw.services.utils.UserNameRules.requireBothLegalNames(ownerGivenName, ownerLastName);
         final String preferredLanguage = "en".equalsIgnoreCase(ownerPreferredLanguage) ? "en" : "es";
-        final Optional<User> existingOwner = itemDao.findUserByEmail(ownerEmail);
+        final Optional<User> existingOwner = userDao.findByEmail(ownerEmail);
         if (existingOwner.isPresent()) {
             final User user = existingOwner.get();
-            itemDao.updateUserProfile(user.getId(), ownerGivenName, ownerLastName, preferredLanguage);
+            userDao.updateBasicProfileNamesAndLanguage(user.getId(), ownerGivenName, ownerLastName, preferredLanguage);
             user.setGivenName(ownerGivenName);
             user.setLastName(ownerLastName);
             user.setPreferredLanguage(ar.edu.itba.paw.models.PreferredLanguage.fromPersistence(preferredLanguage));
             return user;
         }
-        return itemDao.createUser(ownerGivenName, ownerLastName, ownerEmail, preferredLanguage);
+        return userDao.createUserWithoutCredentials(ownerGivenName, ownerLastName, ownerEmail, preferredLanguage);
     }
 
     private int validateItemTypeId(final Integer typeId) {
@@ -481,8 +491,8 @@ public final class ItemServiceImpl implements ItemService {
 
         final List<Item> candidates = itemDao.listItems(criteria, candidateCount, 0);
         final Map<Integer, List<ItemAvailability>> availabilitiesByItemId =
-                groupAvailabilitiesByItemId(itemDao.listAvailabilities());
-        final Map<Integer, List<ItemBooking>> bookingsByItemId = groupBookingsByItemId(itemDao.listBookings());
+                groupAvailabilitiesByItemId(itemAvailabilityDao.listAvailabilities());
+        final Map<Integer, List<ItemBooking>> bookingsByItemId = groupBookingsByItemId(itemBookingDao.listBookings());
         final List<Item> filteredItems = new ArrayList<>();
         for (final Item item : candidates) {
             if (MarketplaceAvailabilityMatcher.matches(
@@ -531,10 +541,6 @@ public final class ItemServiceImpl implements ItemService {
         return (page - 1) * pageSize;
     }
 
-    private static boolean isBlank(final String value) {
-        return value == null || value.isBlank();
-    }
-
     private static boolean needsAvailabilityPostFilter(final ItemSearchCriteria criteria) {
         if (criteria.getDate() != null) {
             return true;
@@ -565,7 +571,8 @@ public final class ItemServiceImpl implements ItemService {
             if (item == null || item.getId() == null) {
                 continue;
             }
-            itemDao.findCoverImageIdByItemId(item.getId())
+            itemMediaDao
+                    .findCoverImageIdByItemId(item.getId())
                     .ifPresent(imageId -> coverImageIdsByItemId.put(item.getId(), imageId));
         }
 
@@ -596,18 +603,19 @@ public final class ItemServiceImpl implements ItemService {
             if (item.getId() == null) {
                 continue;
             }
-            final List<ItemBooking> itemBookings = itemDao.listBookingsByItemId(item.getId());
+            final List<ItemBooking> itemBookings = itemBookingDao.listBookingsByItemId(item.getId());
             deactivates.put(
                     item.getId(),
                     Boolean.TRUE.equals(item.getActive())
                             && itemBookings.stream()
-                                    .anyMatch(
-                                            b -> BookingDisplayFormatter.shouldRetainBookingForDeletion(b.getState())));
+                                    .anyMatch(b -> !Objects.equals(b.getGuestId(), item.getOwnerId())
+                                            && BookingDisplayFormatter.shouldRetainBookingForDeletion(b.getState())));
             disabled.put(
                     item.getId(),
                     !Boolean.TRUE.equals(item.getActive())
                             && itemBookings.stream()
-                                    .anyMatch(b -> BookingDisplayFormatter.shouldRetainBookingForDeletion(b.getState())
+                                    .anyMatch(b -> !Objects.equals(b.getGuestId(), item.getOwnerId())
+                                            && BookingDisplayFormatter.shouldRetainBookingForDeletion(b.getState())
                                             && b.getEndTime() != null
                                             && b.getEndTime().isAfter(now)));
         }
@@ -669,7 +677,7 @@ public final class ItemServiceImpl implements ItemService {
         final boolean hideListingLiveVersionNavigation = selectedSnapshot.isPresent() && !isActive && !isOwner;
         final User owner = item.get().getOwnerId() == null
                 ? null
-                : itemDao.findUserById(item.get().getOwnerId()).orElse(null);
+                : userDao.findById(item.get().getOwnerId()).orElse(null);
         final ItemType itemType =
                 itemDao.findItemTypeById(item.get().getTypeId()).orElse(null);
         final RatingSummary ratingSummary = reviewService.getItemRatingSummary(itemId);
@@ -681,7 +689,7 @@ public final class ItemServiceImpl implements ItemService {
             }
             reviewAuthorNames.put(
                     review.getReviewerUserId(),
-                    itemDao.findUserById(review.getReviewerUserId())
+                    userDao.findById(review.getReviewerUserId())
                             .map(User::getName)
                             .orElse(""));
         }
@@ -690,13 +698,14 @@ public final class ItemServiceImpl implements ItemService {
                 selectedSnapshot.<Item>map(snapshot -> snapshot).orElse(item.get());
         final boolean useSnapshotCover =
                 selectedSnapshot.isPresent() && selectedSnapshot.get().getCoverImageData() != null;
-        final Integer coverImageId = itemDao.findCoverImageIdByItemId(itemId).orElse(null);
+        final Integer coverImageId =
+                itemMediaDao.findCoverImageIdByItemId(itemId).orElse(null);
         final List<Integer> galleryImageIds =
-                useSnapshotCover ? List.of() : itemDao.listImageIdsByItemIdOrdered(itemId);
+                useSnapshotCover ? List.of() : itemMediaDao.listImageIdsByItemIdOrdered(itemId);
         final List<ItemSnapshot> guestSnapshots =
-                viewerUserId == null ? List.of() : itemDao.listSnapshotsByItemIdForGuest(itemId, viewerUserId);
+                viewerUserId == null ? List.of() : itemBookingDao.listSnapshotsByItemIdForGuest(itemId, viewerUserId);
         final List<ItemSnapshot> hostSnapshots = isOwner && viewerUserId != null
-                ? itemDao.listSnapshotsByItemIdForOwner(itemId, viewerUserId)
+                ? itemBookingDao.listSnapshotsByItemIdForOwner(itemId, viewerUserId)
                 : List.of();
         final ReviewService.PendingReviewAction pendingItemReviewAction = viewerUserId == null
                 ? null
@@ -705,7 +714,7 @@ public final class ItemServiceImpl implements ItemService {
                         .orElse(null);
 
         final AvailabilityPickerData availability = AvailabilityPickerBuilder.build(
-                itemDao.listAvailabilitiesByItemId(itemId), itemDao.listBookingsByItemId(itemId));
+                itemAvailabilityDao.listAvailabilitiesByItemId(itemId), itemBookingDao.listBookingsByItemId(itemId));
         final List<String> offeredDates = availability.getOfferedDates();
         final Map<String, List<String>> offeredTimesByDate = availability.getOfferedTimesByDate();
         final String resolvedDate = AvailabilityPickerBuilder.resolveSelectedDate(requestedDate, offeredDates, "");
@@ -785,8 +794,8 @@ public final class ItemServiceImpl implements ItemService {
     public OwnerAvailabilityView buildOwnerAvailabilityView(
             final int itemId, final String requestedDate, final int ownerId) {
         return OwnerAvailabilityViewBuilder.build(
-                itemDao.listAvailabilitiesByItemId(itemId),
-                itemDao.listBookingsByItemId(itemId),
+                itemAvailabilityDao.listAvailabilitiesByItemId(itemId),
+                itemBookingDao.listBookingsByItemId(itemId),
                 requestedDate,
                 ownerId);
     }
@@ -794,12 +803,12 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     public AvailabilityPickerData buildAvailabilityPicker(final int itemId) {
         return AvailabilityPickerBuilder.build(
-                itemDao.listAvailabilitiesByItemId(itemId), itemDao.listBookingsByItemId(itemId));
+                itemAvailabilityDao.listAvailabilitiesByItemId(itemId), itemBookingDao.listBookingsByItemId(itemId));
     }
 
     @Override
     public AvailabilityPickerData buildGlobalAvailabilityPicker() {
-        return AvailabilityPickerBuilder.build(itemDao.listAvailabilities(), itemDao.listBookings());
+        return AvailabilityPickerBuilder.build(itemAvailabilityDao.listAvailabilities(), itemBookingDao.listBookings());
     }
 
     @Override
@@ -958,11 +967,11 @@ public final class ItemServiceImpl implements ItemService {
             }
         }
         if (!tokensToAccept.isEmpty()) {
-            itemDao.resolveBookingsByHostDecisionTokens(
+            itemBookingDao.resolveBookingsByHostDecisionTokens(
                     tokensToAccept, BookingState.BOOKING_CONFIRMED, OffsetDateTime.now());
         }
         if (!tokensToDecline.isEmpty()) {
-            itemDao.resolveBookingsByHostDecisionTokens(
+            itemBookingDao.resolveBookingsByHostDecisionTokens(
                     tokensToDecline, BookingState.BOOKING_REJECTED, OffsetDateTime.now());
         }
     }
@@ -987,7 +996,7 @@ public final class ItemServiceImpl implements ItemService {
                     id,
                     booking.getGuestId() == null
                             ? ""
-                            : itemDao.findUserById(booking.getGuestId())
+                            : userDao.findById(booking.getGuestId())
                                     .map(User::getName)
                                     .orElse(""));
             startLabels.put(id, BookingDisplayFormatter.formatStartLabel(booking.getStartTime()));
@@ -1037,23 +1046,24 @@ public final class ItemServiceImpl implements ItemService {
     List<ReceivedBookingView> buildReceivedBookings(final int ownerId) {
         final List<ReceivedBookingView> result = new ArrayList<>();
         final Map<Integer, RatingSummary> requesterRatingByUserId = new LinkedHashMap<>();
-        for (final ItemBooking booking : itemDao.listBookingsByOwnerId(ownerId)) {
+        for (final ItemBooking booking : itemBookingDao.listBookingsByOwnerId(ownerId)) {
             if (booking.getItemId() == null || booking.getId() == null || booking.getGuestId() == null) {
                 continue;
             }
             if (booking.getGuestId().equals(ownerId)) {
                 continue;
             }
-            final Item item = itemDao.findSnapshotByBookingIdForOwner(booking.getId(), ownerId)
+            final Item item = itemBookingDao
+                    .findSnapshotByBookingIdForOwner(booking.getId(), ownerId)
                     .<Item>map(snapshot -> snapshot)
                     .orElseGet(
                             () -> itemDao.findAnyItemById(booking.getItemId()).orElse(null));
             if (item == null) {
                 continue;
             }
-            final User requester = itemDao.findUserById(booking.getGuestId()).orElse(null);
+            final User requester = userDao.findById(booking.getGuestId()).orElse(null);
             final RatingSummary rating = requesterRatingByUserId.computeIfAbsent(booking.getGuestId(), guestId -> {
-                final List<Review> received = itemDao.listReviewsByReviewee(guestId).stream()
+                final List<Review> received = reviewDao.listReviewsByReviewee(guestId).stream()
                         .filter(r -> r.getTargetType() == ReviewTargetType.USER)
                         .toList();
                 if (received.isEmpty()) {
@@ -1067,11 +1077,11 @@ public final class ItemServiceImpl implements ItemService {
                         .orElse(0.0);
                 return new RatingSummary(avg, received.size());
             });
-            final Optional<BookingPaymentProof> proof = itemDao.findPaymentProofByBookingId(booking.getId());
+            final Optional<BookingPaymentProof> proof = itemBookingDao.findPaymentProofByBookingId(booking.getId());
             result.add(new ReceivedBookingView(
                     booking.getId(),
                     booking.getItemId(),
-                    itemDao.findCoverImageIdByItemId(booking.getItemId()).orElse(null),
+                    itemMediaDao.findCoverImageIdByItemId(booking.getItemId()).orElse(null),
                     item.getTitle(),
                     requester == null ? "" : requester.getName(),
                     requester == null ? "" : requester.getEmail(),
@@ -1098,7 +1108,7 @@ public final class ItemServiceImpl implements ItemService {
         final List<PendingReviewView> result = new ArrayList<>();
         for (final ReviewService.PendingReviewAction action : reviewService.listPendingReviewActions(userId)) {
             final Item item = itemDao.findAnyItemById(action.getItemId()).orElse(null);
-            final User target = itemDao.findUserById(action.getTargetUserId()).orElse(null);
+            final User target = userDao.findById(action.getTargetUserId()).orElse(null);
             if (item == null || target == null) {
                 continue;
             }
@@ -1134,11 +1144,11 @@ public final class ItemServiceImpl implements ItemService {
     private Optional<ItemSnapshot> resolveAuthorizedSnapshotVersion(
             final int versionId, final int itemId, final int viewerUserId) {
         final Optional<ItemSnapshot> guestSnapshot =
-                itemDao.findSnapshotVersionByIdForGuest(versionId, itemId, viewerUserId);
+                itemBookingDao.findSnapshotVersionByIdForGuest(versionId, itemId, viewerUserId);
         if (guestSnapshot.isPresent()) {
             return guestSnapshot;
         }
-        return itemDao.findSnapshotVersionByIdForOwner(versionId, itemId, viewerUserId);
+        return itemBookingDao.findSnapshotVersionByIdForOwner(versionId, itemId, viewerUserId);
     }
 
     private static String buildOwnerInitial(final User user) {

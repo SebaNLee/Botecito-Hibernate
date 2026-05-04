@@ -2,6 +2,7 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.util.BookingDisplayFormatter;
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -128,10 +130,14 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
             final Item item = booking.getItemId() == null
                     ? null
                     : itemService.findItemById(booking.getItemId()).orElse(null);
+            final Optional<ItemSnapshot> bookedPublication =
+                    itemService.findSnapshotByBookingIdForGuest(bookingId, guestId);
             final User owner = item != null && item.getOwnerId() != null
                     ? itemService.findUserById(item.getOwnerId()).orElse(null)
                     : null;
-            final Integer pricePerHour = item == null ? null : item.getPricePerHour();
+            final Integer pricePerHour = bookedPublication
+                    .map(ItemSnapshot::getPricePerHour)
+                    .orElse(item == null ? null : item.getPricePerHour());
             final var paymentProof =
                     bookingRequestService.findPaymentProofByBookingId(bookingId).orElse(null);
             final String contentType = paymentProof == null ? null : paymentProof.getContentType();
@@ -148,7 +154,9 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
                     bookingId,
                     BookingDisplayFormatter.formatTotalPriceLabel(
                             booking.getStartTime(), booking.getEndTime(), pricePerHour));
-            sentItemTitleByBookingId.put(bookingId, item == null ? "" : item.getTitle());
+            sentItemTitleByBookingId.put(
+                    bookingId,
+                    bookedPublication.map(ItemSnapshot::getTitle).orElse(item == null ? "" : item.getTitle()));
             sentOwnerNameByBookingId.put(bookingId, owner == null ? "" : owner.getName());
             sentOwnerEmailByBookingId.put(bookingId, owner == null ? "" : owner.getEmail());
             sentPaymentAliasByBookingId.put(
@@ -156,7 +164,8 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
             sentPaymentRefusalReasonByBookingId.put(bookingId, refusalReason);
             sentHasPaymentRefusalReasonByBookingId.put(bookingId, refusalReason != null && !refusalReason.isBlank());
             sentPaymentProofPdfByBookingId.put(bookingId, "application/pdf".equalsIgnoreCase(contentType));
-            sentBookedSnapshotVersionIdByBookingId.put(bookingId, null);
+            sentBookedSnapshotVersionIdByBookingId.put(
+                    bookingId, bookedPublication.map(ItemSnapshot::getVersionId).orElse(null));
         }
 
         return new GuestTripsDashboardData(

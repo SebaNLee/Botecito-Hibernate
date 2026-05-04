@@ -41,6 +41,7 @@
   <c:url var="previousPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.previousPage}" />
     <c:param name="sort" value="${sort}" />
+    <c:param name="pageSize" value="${pageSize}" />
     <c:if test="${not empty param.searchQuery}">
       <c:param name="searchQuery" value="${param.searchQuery}" />
     </c:if>
@@ -74,6 +75,7 @@
   <c:url var="nextPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.nextPage}" />
     <c:param name="sort" value="${sort}" />
+    <c:param name="pageSize" value="${pageSize}" />
     <c:if test="${not empty param.searchQuery}">
       <c:param name="searchQuery" value="${param.searchQuery}" />
     </c:if>
@@ -116,6 +118,7 @@
         <jsp:attribute name="title"><spring:message code="marketplace.filters.title" /></jsp:attribute>
         <jsp:body>
           <form id="marketplace-filters-form" action="${marketplaceUrl}" method="get" class="space-y-6" data-filter-form="marketplace">
+            <input type="hidden" name="pageSize" value="${pageSize}" />
             <paw:locationPicker
                 id="marketplace-location"
                 name="locationOptionId"
@@ -237,7 +240,7 @@
         <p class="text-on-surface-variant mt-2 m-0"><spring:message code="marketplace.results.count" arguments="${itemsCount}" /></p>
       </div>
 
-      <form action="${marketplaceUrl}" method="get" class="flex flex-wrap items-center gap-3 text-sm font-medium text-on-surface-variant">
+      <form action="${marketplaceUrl}" method="get" class="flex items-center gap-3 text-sm font-medium text-on-surface-variant">
         <input type="hidden" name="searchQuery" value="${param.searchQuery}" data-applied-filter-mirror />
         <input type="hidden" name="locationOptionId" value="${param.locationOptionId}" data-applied-filter-mirror />
         <input type="hidden" name="date" value="${param.date}" data-applied-filter-mirror />
@@ -253,6 +256,12 @@
           <option value="oldest" ${sort == 'oldest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.oldest" /></option>
           <option value="priceAsc" ${sort == 'priceAsc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceAsc" /></option>
           <option value="priceDesc" ${sort == 'priceDesc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceDesc" /></option>
+        </select>
+        <label for="marketplace-page-size" class="shrink-0 ml-2">Páginas:</label>
+        <select id="marketplace-page-size" name="pageSize" class="select select-sm w-20 font-bold text-primary" onchange="this.form.submit()">
+            <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+            <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+            <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
         </select>
       </form>
     </div>
@@ -277,6 +286,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <c:forEach items="${items}" var="item">
         <c:url var="itemUrl" value="/item/${item.id}">
+          <c:param name="pageSize" value="${pageSize}" />
           <c:if test="${not empty param.date}">
             <c:param name="date" value="${param.date}" />
           </c:if>

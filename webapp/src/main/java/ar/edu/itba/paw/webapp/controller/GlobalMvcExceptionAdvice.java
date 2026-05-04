@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.services.SelfBookingNotAllowedException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
@@ -51,6 +52,11 @@ public class GlobalMvcExceptionAdvice {
     @ExceptionHandler(AccessDeniedException.class)
     public ModelAndView handleAccessDenied() {
         return new ModelAndView("redirect:/403");
+    }
+
+    @ExceptionHandler(SelfBookingNotAllowedException.class)
+    public ModelAndView handleSelfBookingNotAllowed(final HttpServletRequest request) {
+        return new ModelAndView("redirect:" + request.getRequestURI() + "?error=selfBooking");
     }
 
     @ExceptionHandler(Exception.class)

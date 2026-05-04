@@ -9,7 +9,6 @@ import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.ReviewService;
-import ar.edu.itba.paw.services.SelfBookingNotAllowedException;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import ar.edu.itba.paw.webapp.util.AvailabilityPickerBuilder;
@@ -45,7 +44,7 @@ import org.springframework.web.servlet.ModelAndView;
 @Controller
 @RequiredArgsConstructor
 public class MarketplaceController {
-    private static final int MARKETPLACE_PAGE_SIZE = 10;
+    private static final int DEFAULT_MARKETPLACE_PAGE_SIZE = 12;
 
     private final ItemService itemService;
     private final BookingRequestService bookingRequestService;
@@ -72,7 +71,8 @@ public class MarketplaceController {
             @RequestParam(value = "difficultyLevel", required = false) final String difficultyLevel,
             @RequestParam(value = "minRating", required = false) final String minRating,
             @RequestParam(value = "sort", required = false) final String sort,
-            @RequestParam(value = "page", required = false) final String page) {
+            @RequestParam(value = "page", required = false) final String page,
+            @RequestParam(value = "pageSize", required = false) final String pageSize) {
         final ItemSearchCriteria criteria = itemService.parseAndValidateSearchCriteria(
                 searchQuery,
                 locationOptionId,
@@ -84,12 +84,15 @@ public class MarketplaceController {
                 difficultyLevel,
                 minRating,
                 sort);
-        final Page<Item> itemPage = itemService.searchMarketplace(criteria, parsePage(page), MARKETPLACE_PAGE_SIZE);
+        final int parsedPage = parsePage(page);
+        final int parsedPageSize = parsePageSize(pageSize);
+        final Page<Item> itemPage = itemService.searchMarketplace(criteria, parsedPage, parsedPageSize);
         final ModelAndView mav = new ModelAndView("marketplace");
         mav.addObject("items", itemPage.getContent());
         mav.addObject("itemImages", buildItemImagesMap(itemPage.getContent(), request.getContextPath()));
         mav.addObject("itemsCount", itemPage.getTotalItems());
         mav.addObject("itemPage", itemPage);
+        mav.addObject("pageSize", parsedPageSize);
         mav.addObject(
                 "sort",
                 criteria.getSort() == null ? "newest" : criteria.getSort().getRequestValue());
@@ -195,33 +198,24 @@ public class MarketplaceController {
             return rebuildMarketplaceItemView(itemId, currentUser, form, request.getContextPath());
         }
 
-        try {
-            final String trimmedMessage = isBlank(form.getRequestMessage())
-                    ? null
-                    : form.getRequestMessage().trim();
-            bookingRequestService.createBookingRequest(
-                    itemId,
-                    currentUser.getGivenName(),
-                    currentUser.getLastName(),
-                    currentUser.getEmail(),
-                    currentUser.getPreferredLanguage() == null
-                            ? null
-                            : currentUser.getPreferredLanguage().getPersistenceCode(),
-                    toOffsetDateTime(form.getDate(), form.getStartTime()),
-                    toOffsetDateTime(form.getDate(), form.getEndTime()),
-                    trimmedMessage);
-            final ModelAndView mav = rebuildMarketplaceItemView(itemId, currentUser, form, request.getContextPath());
-            mav.addObject("mailSuccessCode", "reservation.request.success");
-            mav.addObject("mailSuccessHostName", owner.map(User::getName).orElse(""));
-            return mav;
-        } catch (final SelfBookingNotAllowedException e) {
-            errors.reject("reservation.selfBooking");
-            return rebuildMarketplaceItemView(itemId, currentUser, form, request.getContextPath());
-        } catch (final Exception e) {
-            final ModelAndView mav = rebuildMarketplaceItemView(itemId, currentUser, form, request.getContextPath());
-            mav.addObject("mailErrorCode", "reservation.request.error");
-            return mav;
-        }
+        final String trimmedMessage = isBlank(form.getRequestMessage())
+                ? null
+                : form.getRequestMessage().trim();
+        bookingRequestService.createBookingRequest(
+                itemId,
+                currentUser.getGivenName(),
+                currentUser.getLastName(),
+                currentUser.getEmail(),
+                currentUser.getPreferredLanguage() == null
+                        ? null
+                        : currentUser.getPreferredLanguage().getPersistenceCode(),
+                toOffsetDateTime(form.getDate(), form.getStartTime()),
+                toOffsetDateTime(form.getDate(), form.getEndTime()),
+                trimmedMessage);
+        final ModelAndView mav = rebuildMarketplaceItemView(itemId, currentUser, form, request.getContextPath());
+        mav.addObject("mailSuccessCode", "reservation.request.success");
+        mav.addObject("mailSuccessHostName", owner.map(User::getName).orElse(""));
+        return mav;
     }
 
     private ModelAndView rebuildMarketplaceItemView(
@@ -323,6 +317,21 @@ public class MarketplaceController {
             return parsed < 1 ? 1 : parsed;
         } catch (final NumberFormatException ex) {
             return 1;
+        }
+    }
+
+    private static int parsePageSize(final String pageSize) {
+        if (pageSize == null || pageSize.isBlank()) {
+            return DEFAULT_MARKETPLACE_PAGE_SIZE;
+        }
+        try {
+            final int parsed = Integer.parseInt(pageSize.trim());
+            if (parsed == 6 || parsed == 12 || parsed == 18) {
+                return parsed;
+            }
+            return DEFAULT_MARKETPLACE_PAGE_SIZE;
+        } catch (final NumberFormatException ex) {
+            return DEFAULT_MARKETPLACE_PAGE_SIZE;
         }
     }
 

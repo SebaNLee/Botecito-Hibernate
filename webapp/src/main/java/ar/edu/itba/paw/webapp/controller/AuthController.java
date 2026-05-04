@@ -1,11 +1,12 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.Item;
+import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.UserService;
-import ar.edu.itba.paw.services.dto.GuestTripsView;
-import ar.edu.itba.paw.services.dto.OwnerDashboardView;
 import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.PasswordResetForm;
@@ -316,22 +317,38 @@ public class AuthController {
             final String query,
             final int page,
             final String contextPath) {
-        final OwnerDashboardView dashboard =
-                itemService.buildOwnerDashboard(user.getId(), statuses, query, page, DASHBOARD_PAGE_SIZE);
+        final List<Item> ownedItems = itemService.listItemsByOwnerId(user.getId());
+        final Map<Integer, Integer> coverImageIdsByItemId = new LinkedHashMap<>();
+        final Set<Integer> imageItemIds = new java.util.LinkedHashSet<>();
+        for (final Item item : ownedItems) {
+            if (item == null || item.getId() == null) {
+                continue;
+            }
+            imageItemIds.add(item.getId());
+            itemService
+                    .findCoverImageIdByItemId(item.getId())
+                    .ifPresent(imageId -> coverImageIdsByItemId.put(item.getId(), imageId));
+        }
+        final Page<ItemBooking> receivedBookingPage =
+                paginate(itemService.listBookingsByOwnerId(user.getId()), page, DASHBOARD_PAGE_SIZE);
+        for (final ItemBooking booking : receivedBookingPage.getContent()) {
+            if (booking != null && booking.getItemId() != null) {
+                imageItemIds.add(booking.getItemId());
+            }
+        }
 
-        mav.addObject("ownedItems", dashboard.getOwnedItems());
-        mav.addObject("publicationCoverImageIdsByItemId", dashboard.getCoverImageIdsByItemId());
-        mav.addObject("imageUrlsByItemId", buildImageUrlsByItemId(dashboard.getItemIdsForImageUrls(), contextPath));
-        mav.addObject("publicationDeleteDeactivatesByItemId", dashboard.getDeleteDeactivatesByItemId());
-        mav.addObject("publicationDeleteDisabledByItemId", dashboard.getDeleteDisabledByItemId());
-        mav.addObject(
-                "receivedBookingRequests", dashboard.getReceivedBookingPage().getContent());
-        mav.addObject("receivedBookingPage", dashboard.getReceivedBookingPage());
+        mav.addObject("ownedItems", ownedItems);
+        mav.addObject("publicationCoverImageIdsByItemId", coverImageIdsByItemId);
+        mav.addObject("imageUrlsByItemId", buildImageUrlsByItemId(imageItemIds, contextPath));
+        mav.addObject("publicationDeleteDeactivatesByItemId", buildDeleteDeactivatesByItemId(ownedItems));
+        mav.addObject("publicationDeleteDisabledByItemId", buildDeleteDisabledByItemId(ownedItems));
+        mav.addObject("receivedBookingRequests", receivedBookingPage.getContent());
+        mav.addObject("receivedBookingPage", receivedBookingPage);
         mav.addObject("selectedBookingStatusFilters", statuses);
         mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statuses));
         mav.addObject("boatSearchQuery", query);
-        mav.addObject("pendingOwnerUserReviewsByBookingId", dashboard.getPendingOwnerUserReviewsByBookingId());
-        mav.addObject("authoredUserReviewsByBookingId", dashboard.getAuthoredUserReviewsByBookingId());
+        mav.addObject("pendingOwnerUserReviewsByBookingId", Map.of());
+        mav.addObject("authoredUserReviewsByBookingId", Map.of());
     }
 
     private void addMyTripsData(
@@ -341,17 +358,22 @@ public class AuthController {
             final String query,
             final int page,
             final String contextPath) {
-        final GuestTripsView trips =
-                bookingRequestService.buildGuestTrips(user.getId(), statuses, query, page, DASHBOARD_PAGE_SIZE);
-
-        mav.addObject("sentBookingRequests", trips.getSentBookingPage().getContent());
-        mav.addObject("sentBookingPage", trips.getSentBookingPage());
-        mav.addObject("imageUrlsByItemId", buildImageUrlsByItemId(trips.getItemIdsForImageUrls(), contextPath));
+        final Page<ItemBooking> sentBookingPage =
+                paginate(itemService.listBookingsByGuestId(user.getId()), page, DASHBOARD_PAGE_SIZE);
+        final Set<Integer> imageItemIds = new java.util.LinkedHashSet<>();
+        for (final ItemBooking booking : sentBookingPage.getContent()) {
+            if (booking != null && booking.getItemId() != null) {
+                imageItemIds.add(booking.getItemId());
+            }
+        }
+        mav.addObject("sentBookingRequests", sentBookingPage.getContent());
+        mav.addObject("sentBookingPage", sentBookingPage);
+        mav.addObject("imageUrlsByItemId", buildImageUrlsByItemId(imageItemIds, contextPath));
         mav.addObject("selectedBookingStatusFilters", statuses);
         mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statuses));
         mav.addObject("boatSearchQuery", query);
-        mav.addObject("pendingGuestItemReviewsByBookingId", trips.getPendingGuestItemReviewsByBookingId());
-        mav.addObject("authoredItemReviewsByBookingId", trips.getAuthoredItemReviewsByBookingId());
+        mav.addObject("pendingGuestItemReviewsByBookingId", Map.of());
+        mav.addObject("authoredItemReviewsByBookingId", Map.of());
     }
 
     private static void populateProfileForm(final ProfileForm form, final User user) {
@@ -404,6 +426,43 @@ public class AuthController {
                 || "completed".equals(status)
                 || "rejected".equals(status)
                 || "cancelled".equals(status);
+    }
+
+    private Map<Integer, Boolean> buildDeleteDeactivatesByItemId(final List<ar.edu.itba.paw.models.Item> ownedItems) {
+        final Map<Integer, Boolean> map = new java.util.LinkedHashMap<>();
+        if (ownedItems == null) {
+            return map;
+        }
+        for (final ar.edu.itba.paw.models.Item item : ownedItems) {
+            if (item == null || item.getId() == null) {
+                continue;
+            }
+            final boolean hasBlocking = itemService.listBookingsByItemId(item.getId()).stream()
+                    .anyMatch(b -> b.getState() != ar.edu.itba.paw.models.BookingState.BOOKING_REJECTED
+                            && b.getState() != ar.edu.itba.paw.models.BookingState.BOOKING_CANCELLED);
+            map.put(item.getId(), Boolean.TRUE.equals(item.getActive()) && hasBlocking);
+        }
+        return map;
+    }
+
+    private Map<Integer, Boolean> buildDeleteDisabledByItemId(final List<ar.edu.itba.paw.models.Item> ownedItems) {
+        final Map<Integer, Boolean> map = new java.util.LinkedHashMap<>();
+        if (ownedItems == null) {
+            return map;
+        }
+        final java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+        for (final ar.edu.itba.paw.models.Item item : ownedItems) {
+            if (item == null || item.getId() == null) {
+                continue;
+            }
+            final boolean hasFutureBlocking = itemService.listBookingsByItemId(item.getId()).stream()
+                    .anyMatch(b -> b.getState() != ar.edu.itba.paw.models.BookingState.BOOKING_REJECTED
+                            && b.getState() != ar.edu.itba.paw.models.BookingState.BOOKING_CANCELLED
+                            && b.getEndTime() != null
+                            && b.getEndTime().isAfter(now));
+            map.put(item.getId(), !Boolean.TRUE.equals(item.getActive()) && hasFutureBlocking);
+        }
+        return map;
     }
 
     private static Map<String, Boolean> buildSelectedStatusFilterMap(final List<String> statuses) {
@@ -468,5 +527,14 @@ public class AuthController {
             return "";
         }
         return dateTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    private static <T> Page<T> paginate(final List<T> items, final int page, final int pageSize) {
+        final int totalItems = items == null ? 0 : items.size();
+        final int totalPages = pageSize <= 0 ? 0 : (int) Math.ceil((double) totalItems / pageSize);
+        final int resolvedPage = totalPages == 0 ? 1 : Math.min(Math.max(1, page), totalPages);
+        final int from = totalItems == 0 ? 0 : Math.min((resolvedPage - 1) * pageSize, totalItems);
+        final int to = totalItems == 0 ? 0 : Math.min(from + pageSize, totalItems);
+        return new Page<>(items == null ? List.of() : items.subList(from, to), resolvedPage, pageSize, totalItems);
     }
 }

@@ -11,8 +11,9 @@ import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.SelfBookingNotAllowedException;
 import ar.edu.itba.paw.services.UserService;
-import ar.edu.itba.paw.services.dto.MarketplaceItemView;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
+import ar.edu.itba.paw.webapp.util.AvailabilityPickerBuilder;
+import ar.edu.itba.paw.webapp.util.AvailabilityPickerSupport;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -96,7 +97,10 @@ public class MarketplaceController {
                 "itemRatingSummaries",
                 reviewService.getItemRatingSummaries(
                         itemPage.getContent().stream().map(Item::getId).toList()));
-        AvailabilityPickerSupport.addAvailabilityPickerData(mav, "search", itemService.buildGlobalAvailabilityPicker());
+        AvailabilityPickerSupport.addAvailabilityPickerData(
+                mav,
+                "search",
+                AvailabilityPickerBuilder.build(itemService.listAvailabilities(), itemService.listBookings()));
         return mav;
     }
 
@@ -132,17 +136,10 @@ public class MarketplaceController {
         if (snapshotVersionId != null && currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
-        final Optional<MarketplaceItemView> view = itemService.findMarketplaceItemView(
-                itemId,
-                currentUser == null ? null : currentUser.getId(),
-                snapshotVersionId,
-                form.getDate(),
-                form.getStartTime(),
-                form.getEndTime());
+        final Optional<ItemPageData> view = buildMarketplaceItemData(itemId, currentUser, snapshotVersionId);
         if (view.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
         }
-        form.setDate(view.get().getResolvedDate());
         return populateMarketplaceItemView(view.get(), request.getContextPath(), form);
     }
 
@@ -191,8 +188,7 @@ public class MarketplaceController {
         if (!errors.hasFieldErrors("date")
                 && !errors.hasFieldErrors("startTime")
                 && !errors.hasFieldErrors("endTime")
-                && !itemService.isRequestedRangeAvailable(
-                        itemId, form.getDate(), form.getStartTime(), form.getEndTime())) {
+                && !isRequestedRangeAvailable(itemId, form.getDate(), form.getStartTime(), form.getEndTime())) {
             errors.rejectValue("startTime", "reservation.unavailable");
         }
         if (errors.hasErrors()) {
@@ -230,13 +226,7 @@ public class MarketplaceController {
 
     private ModelAndView rebuildMarketplaceItemView(
             final int itemId, final User currentUser, final ReservationRequestForm form, final String contextPath) {
-        final Optional<MarketplaceItemView> view = itemService.findMarketplaceItemView(
-                itemId,
-                currentUser == null ? null : currentUser.getId(),
-                null,
-                form.getDate(),
-                form.getStartTime(),
-                form.getEndTime());
+        final Optional<ItemPageData> view = buildMarketplaceItemData(itemId, currentUser, null);
         if (view.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
         }
@@ -244,28 +234,33 @@ public class MarketplaceController {
     }
 
     private ModelAndView populateMarketplaceItemView(
-            final MarketplaceItemView view, final String contextPath, final ReservationRequestForm form) {
+            final ItemPageData view, final String contextPath, final ReservationRequestForm form) {
         final ModelAndView mav = new ModelAndView("marketplace-item");
-        mav.addObject("item", view.getItem());
-        mav.addObject("isOwner", view.isOwner());
-        mav.addObject("displayItem", view.getDisplayItem());
-        mav.addObject("selectedSnapshot", view.getSelectedSnapshot());
-        mav.addObject("hideListingLiveVersionNavigation", view.isHideListingLiveVersionNavigation());
-        mav.addObject("listingInactiveNotice", view.isListingInactiveNotice());
-        mav.addObject("guestSnapshots", view.getGuestSnapshots());
-        mav.addObject("hostSnapshots", view.getHostSnapshots());
-        mav.addObject("itemOwner", view.getItemOwner());
-        mav.addObject("itemType", view.getItemType());
-        mav.addObject("itemRatingSummary", view.getItemRatingSummary());
-        mav.addObject("itemReviews", view.getItemReviews());
-        mav.addObject("reviewAuthorNames", view.getReviewAuthorNames());
+        mav.addObject("item", view.item());
+        final User currentUser = currentAuthenticatedUser();
+        final boolean isOwner = currentUser != null
+                && view.item().getOwnerId() != null
+                && view.item().getOwnerId().equals(currentUser.getId());
+        mav.addObject("isOwner", isOwner);
+        mav.addObject("displayItem", view.displayItem());
+        mav.addObject("selectedSnapshot", view.selectedSnapshot());
+        final boolean isActive = Boolean.TRUE.equals(view.item().getActive());
+        mav.addObject("hideListingLiveVersionNavigation", view.selectedSnapshot() != null && !isActive && !isOwner);
+        mav.addObject("listingInactiveNotice", !isActive);
+        mav.addObject("guestSnapshots", view.guestSnapshots());
+        mav.addObject("hostSnapshots", view.hostSnapshots());
+        mav.addObject("itemOwner", view.itemOwner());
+        mav.addObject("itemType", view.itemType());
+        mav.addObject("itemRatingSummary", view.itemRatingSummary());
+        mav.addObject("itemReviews", view.itemReviews());
+        mav.addObject("reviewAuthorNames", view.reviewAuthorNames());
 
-        final int itemId = view.getItem().getId();
+        final int itemId = view.item().getId();
         final String displayImageUrl;
         final List<String> displayImageUrls;
-        if (view.isUseSnapshotCoverImage()) {
+        if (view.selectedSnapshot() != null && view.selectedSnapshot().getCoverImageData() != null) {
             displayImageUrl = contextPath + "/item/" + itemId + "/snapshot/"
-                    + view.getSelectedSnapshot().getVersionId() + "/cover";
+                    + view.selectedSnapshot().getVersionId() + "/cover";
             displayImageUrls = List.of(displayImageUrl);
         } else {
             displayImageUrl = ItemImageUtils.resolveImageUrl(itemService, itemId, contextPath);
@@ -274,12 +269,40 @@ public class MarketplaceController {
         mav.addObject("itemImageUrl", displayImageUrl);
         mav.addObject("itemImageUrls", displayImageUrls);
 
-        mav.addObject("ownerInitial", view.getOwnerInitial());
-        mav.addObject("pendingItemReviewAction", view.getPendingItemReviewAction());
-        AvailabilityPickerSupport.addAvailabilityPickerData(mav, "reservation", view.getAvailability());
-        mav.addObject("reservationDate", view.getResolvedDate());
-        mav.addObject("reservationStartTime", view.getResolvedStartTime());
-        mav.addObject("reservationEndTime", view.getResolvedEndTime());
+        final String ownerName =
+                view.itemOwner() == null ? null : view.itemOwner().getName();
+        mav.addObject(
+                "ownerInitial",
+                ownerName == null || ownerName.isEmpty()
+                        ? "I"
+                        : ownerName.substring(0, 1).toUpperCase());
+        mav.addObject("pendingItemReviewAction", view.pendingItemReviewAction());
+        AvailabilityPickerSupport.addAvailabilityPickerData(mav, "reservation", view.availability());
+        final String requestedDate = form.getDate();
+        final String requestedStart = form.getStartTime();
+        final String requestedEnd = form.getEndTime();
+        final String resolvedDate = AvailabilityPickerBuilder.resolveSelectedDate(
+                requestedDate, view.availability().offeredDates(), "");
+        final List<String> reservationSlots =
+                view.availability().offeredTimesByDate().getOrDefault(resolvedDate, List.of());
+        final boolean validRequestedRange = resolvedDate.equals(requestedDate)
+                && requestedStart != null
+                && !requestedStart.isBlank()
+                && requestedEnd != null
+                && !requestedEnd.isBlank()
+                && AvailabilityPickerBuilder.hasContinuousAvailability(reservationSlots, requestedStart, requestedEnd);
+        final String resolvedStart = validRequestedRange
+                ? requestedStart
+                : AvailabilityPickerBuilder.resolveSelectedTime(requestedStart, reservationSlots, "");
+        final String resolvedEnd = validRequestedRange
+                ? requestedEnd
+                : AvailabilityPickerBuilder.resolveSelectedTime(requestedEnd, reservationSlots, "");
+        form.setDate(resolvedDate);
+        form.setStartTime(resolvedStart);
+        form.setEndTime(resolvedEnd);
+        mav.addObject("reservationDate", resolvedDate);
+        mav.addObject("reservationStartTime", resolvedStart);
+        mav.addObject("reservationEndTime", resolvedEnd);
         return mav;
     }
 
@@ -324,6 +347,123 @@ public class MarketplaceController {
         }
         return itemService.findSnapshotVersionByIdForOwner(versionId, itemId, currentUser.getId());
     }
+
+    private Optional<ItemPageData> buildMarketplaceItemData(
+            final int itemId, final User currentUser, final Integer requestedSnapshotVersionId) {
+        final Integer viewerUserId = currentUser == null ? null : currentUser.getId();
+        final Optional<ItemSnapshot> selectedSnapshot = requestedSnapshotVersionId == null || viewerUserId == null
+                ? Optional.empty()
+                : resolveAuthorizedSnapshotVersion(requestedSnapshotVersionId, itemId, currentUser);
+        if (requestedSnapshotVersionId != null && selectedSnapshot.isEmpty()) {
+            return Optional.empty();
+        }
+        Optional<Item> item = itemService.findItemById(itemId);
+        if (item.isEmpty() && viewerUserId != null) {
+            item = itemService.findItemByIdForOwner(itemId, viewerUserId);
+        }
+        if (item.isEmpty() && selectedSnapshot.isPresent()) {
+            item = itemService.findAnyItemById(itemId);
+        }
+        if (item.isEmpty()) {
+            return Optional.empty();
+        }
+        final boolean isOwner = viewerUserId != null
+                && item.get().getOwnerId() != null
+                && item.get().getOwnerId().equals(viewerUserId);
+        final boolean isActive = Boolean.TRUE.equals(item.get().getActive());
+        if (!isActive && !isOwner && selectedSnapshot.isEmpty()) {
+            return Optional.empty();
+        }
+
+        final User owner = item.get().getOwnerId() == null
+                ? null
+                : itemService.findUserById(item.get().getOwnerId()).orElse(null);
+        final var itemType =
+                itemService.findItemTypeById(item.get().getTypeId()).orElse(null);
+        final var ratingSummary = itemService.getItemRatingSummary(itemId);
+        final List<ar.edu.itba.paw.models.Review> reviews = itemService.listLatestReviews(itemId, 12);
+        final Map<Integer, String> reviewAuthorNames = new LinkedHashMap<>();
+        for (final var review : reviews) {
+            if (review.getReviewerUserId() == null || reviewAuthorNames.containsKey(review.getReviewerUserId())) {
+                continue;
+            }
+            reviewAuthorNames.put(
+                    review.getReviewerUserId(),
+                    itemService
+                            .findUserById(review.getReviewerUserId())
+                            .map(User::getName)
+                            .orElse(""));
+        }
+
+        final Item displayItem =
+                selectedSnapshot.<Item>map(snapshot -> snapshot).orElse(item.get());
+        final boolean useSnapshotCover =
+                selectedSnapshot.isPresent() && selectedSnapshot.get().getCoverImageData() != null;
+        final Integer coverImageId =
+                itemService.findCoverImageIdByItemId(itemId).orElse(null);
+        final List<Integer> galleryImageIds =
+                useSnapshotCover ? List.of() : itemService.listImageIdsByItemIdOrdered(itemId);
+        final List<ItemSnapshot> guestSnapshots =
+                viewerUserId == null ? List.of() : itemService.listSnapshotsByItemIdForGuest(itemId, viewerUserId);
+        final List<ItemSnapshot> hostSnapshots = isOwner && viewerUserId != null
+                ? itemService.listSnapshotsByItemIdForOwner(itemId, viewerUserId)
+                : List.of();
+        final var pendingItemReviewAction = viewerUserId == null
+                ? null
+                : itemService.findPendingReviewAction(viewerUserId, itemId).orElse(null);
+        final AvailabilityPickerBuilder.Data availability = AvailabilityPickerBuilder.build(
+                itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
+        return Optional.of(new ItemPageData(
+                item.get(),
+                displayItem,
+                selectedSnapshot.orElse(null),
+                guestSnapshots,
+                hostSnapshots,
+                owner,
+                itemType,
+                ratingSummary,
+                reviews,
+                reviewAuthorNames,
+                coverImageId,
+                galleryImageIds,
+                pendingItemReviewAction,
+                availability));
+    }
+
+    private boolean isRequestedRangeAvailable(
+            final int itemId, final String date, final String startTime, final String endTime) {
+        if (date == null || date.isBlank()) {
+            return true;
+        }
+        final AvailabilityPickerBuilder.Data data = AvailabilityPickerBuilder.build(
+                itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
+        final List<String> times = data.offeredTimesByDate().get(date);
+        if (times == null || times.isEmpty()) {
+            return false;
+        }
+        final boolean blankStart = startTime == null || startTime.isBlank();
+        final boolean blankEnd = endTime == null || endTime.isBlank();
+        if (blankStart || blankEnd) {
+            return false;
+        }
+        return AvailabilityPickerBuilder.hasContinuousAvailability(times, startTime, endTime);
+    }
+
+    private record ItemPageData(
+            Item item,
+            Item displayItem,
+            ItemSnapshot selectedSnapshot,
+            List<ItemSnapshot> guestSnapshots,
+            List<ItemSnapshot> hostSnapshots,
+            User itemOwner,
+            Object itemType,
+            Object itemRatingSummary,
+            List<ar.edu.itba.paw.models.Review> itemReviews,
+            Map<Integer, String> reviewAuthorNames,
+            Integer coverImageId,
+            List<Integer> galleryImageIds,
+            Object pendingItemReviewAction,
+            AvailabilityPickerBuilder.Data availability) {}
 
     private User currentAuthenticatedUser() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

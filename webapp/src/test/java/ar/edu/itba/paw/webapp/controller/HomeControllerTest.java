@@ -1,9 +1,7 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.dto.AvailabilityPickerData;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,8 +19,8 @@ public class HomeControllerTest {
     @Test
     public void testLandingReturnsIndexView() {
 
-        Mockito.when(itemService.buildGlobalAvailabilityPicker())
-                .thenReturn(new AvailabilityPickerData(List.of(), List.of(), Map.of(), Map.of()));
+        Mockito.when(itemService.listAvailabilities()).thenReturn(List.of());
+        Mockito.when(itemService.listBookings()).thenReturn(List.of());
 
         final HomeController controller = new HomeController(itemService);
         final ModelAndView mav = controller.landing();

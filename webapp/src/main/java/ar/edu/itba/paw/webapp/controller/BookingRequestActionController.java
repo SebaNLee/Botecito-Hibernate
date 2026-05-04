@@ -6,7 +6,6 @@ import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
-import ar.edu.itba.paw.services.dto.PaymentProofUpload;
 import ar.edu.itba.paw.webapp.form.PaymentProofForm;
 import ar.edu.itba.paw.webapp.form.RefusePaymentForm;
 import java.io.IOException;
@@ -79,16 +78,16 @@ public class BookingRequestActionController {
             return new ModelAndView(DASHBOARD_BOOKINGS_REDIRECT);
         }
 
-        final PaymentProofUpload upload = new PaymentProofUpload(
-                cleanFileName(file == null ? null : file.getOriginalFilename()),
-                file == null ? null : file.getContentType(),
-                fileBytes,
-                form.getGuestReply());
-
         final var existingProof = bookingRequestService.findPaymentProofByBookingId(bookingId);
 
         try {
-            final var proof = bookingRequestService.submitPaymentProof(bookingId, currentUser.getId(), upload);
+            final var proof = bookingRequestService.submitPaymentProof(
+                    bookingId,
+                    currentUser.getId(),
+                    cleanFileName(file == null ? null : file.getOriginalFilename()),
+                    file == null ? null : file.getContentType(),
+                    fileBytes,
+                    form.getGuestReply());
             if (proof.isEmpty()) {
                 ToastSupport.error(redirectAttributes, "profile.payment.invalidFile");
                 return new ModelAndView(DASHBOARD_BOOKINGS_REDIRECT);

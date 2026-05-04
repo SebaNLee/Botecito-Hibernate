@@ -4,11 +4,11 @@ import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.services.BookingDecisionBatch;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
-import ar.edu.itba.paw.services.dto.BookingDecisionBatch;
-import ar.edu.itba.paw.services.dto.EditConflictView;
 import ar.edu.itba.paw.webapp.form.EditPublicationForm;
+import ar.edu.itba.paw.webapp.util.BookingDisplayFormatter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -250,15 +250,52 @@ public class PublishActionController {
 
     private ModelAndView editPublicationModelAndView(final Item item, final HttpServletRequest request) {
         final ModelAndView mav = new ModelAndView("edit-publication");
-        final EditConflictView conflictView = itemService.buildEditConflictView(item.getId());
+        final List<ItemBooking> activeBookings = itemService.listActiveBookingsByItemId(item.getId());
+        final java.util.Map<Integer, String> guestNames = new java.util.LinkedHashMap<>();
+        for (final ItemBooking booking : activeBookings) {
+            if (booking == null || booking.getId() == null) {
+                continue;
+            }
+            guestNames.put(
+                    booking.getId(),
+                    booking.getGuestId() == null
+                            ? ""
+                            : itemService
+                                    .findUserById(booking.getGuestId())
+                                    .map(User::getName)
+                                    .orElse(""));
+        }
+        final java.util.Map<Integer, String> startLabels = new java.util.LinkedHashMap<>();
+        final java.util.Map<Integer, String> friendlyDates = new java.util.LinkedHashMap<>();
+        final java.util.Map<Integer, String> friendlyTimeRanges = new java.util.LinkedHashMap<>();
+        final java.util.Map<Integer, String> friendlyPrices = new java.util.LinkedHashMap<>();
+        final java.util.Map<Integer, String> statusCodes = new java.util.LinkedHashMap<>();
+        final Integer pricePerHour = item.getPricePerHour();
+        for (final ItemBooking booking : activeBookings) {
+            if (booking == null || booking.getId() == null) {
+                continue;
+            }
+            final int id = booking.getId();
+            startLabels.put(id, BookingDisplayFormatter.formatStartLabel(booking.getStartTime()));
+            friendlyDates.put(id, BookingDisplayFormatter.formatFriendlyDate(booking.getStartTime()));
+            friendlyTimeRanges.put(
+                    id, BookingDisplayFormatter.formatFriendlyTimeRange(booking.getStartTime(), booking.getEndTime()));
+            friendlyPrices.put(
+                    id,
+                    BookingDisplayFormatter.formatFriendlyTotalPrice(
+                            booking.getStartTime(), booking.getEndTime(), pricePerHour));
+            statusCodes.put(
+                    id,
+                    booking.getState() == null ? "" : BookingDisplayFormatter.statusMessageCode(booking.getState()));
+        }
         mav.addObject("item", item);
-        mav.addObject("activeEditBookings", conflictView.getActiveBookings());
-        mav.addObject("editBookingGuests", conflictView.getGuestNames());
-        mav.addObject("editBookingStartLabels", conflictView.getStartLabels());
-        mav.addObject("editBookingFriendlyDates", conflictView.getFriendlyDates());
-        mav.addObject("editBookingFriendlyTimeRanges", conflictView.getFriendlyTimeRanges());
-        mav.addObject("editBookingFriendlyPrices", conflictView.getFriendlyPrices());
-        mav.addObject("editBookingStatusCodes", conflictView.getStatusCodes());
+        mav.addObject("activeEditBookings", activeBookings);
+        mav.addObject("editBookingGuests", guestNames);
+        mav.addObject("editBookingStartLabels", startLabels);
+        mav.addObject("editBookingFriendlyDates", friendlyDates);
+        mav.addObject("editBookingFriendlyTimeRanges", friendlyTimeRanges);
+        mav.addObject("editBookingFriendlyPrices", friendlyPrices);
+        mav.addObject("editBookingStatusCodes", statusCodes);
         mav.addObject(
                 "itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId(), request.getContextPath()));
         return mav;

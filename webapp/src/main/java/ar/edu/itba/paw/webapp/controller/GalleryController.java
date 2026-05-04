@@ -2,9 +2,9 @@ package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.services.GalleryImageUpload;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
-import ar.edu.itba.paw.services.dto.GalleryImageUpload;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

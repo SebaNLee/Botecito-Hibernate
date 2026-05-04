@@ -304,7 +304,8 @@
                             <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.bookings.requester.label" /></p>
                             <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${receivedRequest.requesterName}" /></p>
                             <p class="m-0 text-xs text-on-surface-variant break-all"><c:out value="${receivedRequest.requesterEmail}" /></p>
-                            <p class="m-0 flex items-center gap-1 text-xs text-on-surface-variant">
+                            <p class="m-0 mt-2 text-[10px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.bookings.requester.reputation.hint" /></p>
+                            <p class="m-0 flex flex-wrap items-center gap-1 text-xs text-on-surface-variant">
                               <span class="material-symbols-outlined text-sm leading-none text-warning">star</span>
                               <c:choose>
                                 <c:when test="${receivedRequest.requesterHasReviews}">
@@ -324,17 +325,26 @@
                             </c:if>
                           </div>
                         </div>
+                        <c:if test="${not empty authoredUserReview}">
+                          <div class="rounded-lg bg-base-100 p-3 space-y-2 border border-outline-variant/20">
+                            <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${authoredReviewSummaryLabel}" /></p>
+                            <div class="flex items-center gap-2">
+                              <div class="flex items-center gap-0.5" aria-label="${authoredUserReview.rating} of 5">
+                                <c:forEach var="starIndex" begin="1" end="5">
+                                  <span class="material-symbols-outlined text-sm leading-none ${starIndex <= authoredUserReview.rating ? 'text-warning opacity-100' : 'text-outline opacity-[0.35]'}">star</span>
+                                </c:forEach>
+                              </div>
+                            </div>
+                            <c:if test="${not empty authoredUserReview.comment}">
+                              <p class="m-0 break-words text-xs text-on-surface-variant"><c:out value="${authoredUserReview.comment}" /></p>
+                            </c:if>
+                          </div>
+                        </c:if>
                         <c:if test="${receivedRequest.hasRequestMessage}">
                           <div class="rounded-lg bg-base-100 p-3 border-l-4 border-primary">
                             <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="booking.requestMessage" /></p>
                             <p class="m-0 mt-1 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${receivedRequest.requestMessage}" /></p>
                           </div>
-                        </c:if>
-                        <c:if test="${not empty authoredUserReview}">
-                          <p class="m-0 flex items-center gap-1 text-xs font-bold text-success">
-                            <span class="material-symbols-outlined text-sm leading-none">check_circle</span>
-                            <spring:message code="profile.reviews.authoredSummary.done" />
-                          </p>
                         </c:if>
                         <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.pending'}">
                           <div class="flex flex-wrap gap-2 border-t border-outline-variant/20 pt-3">

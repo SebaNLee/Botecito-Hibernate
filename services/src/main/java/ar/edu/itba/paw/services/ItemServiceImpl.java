@@ -17,26 +17,35 @@ import ar.edu.itba.paw.persistence.ItemBookingDao;
 import ar.edu.itba.paw.persistence.ItemDao;
 import ar.edu.itba.paw.persistence.ItemMediaDao;
 import ar.edu.itba.paw.persistence.UserDao;
+import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
 import ar.edu.itba.paw.services.utils.UserNameRules;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -44,6 +53,9 @@ public final class ItemServiceImpl implements ItemService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ItemServiceImpl.class);
     private static final int MAX_IMAGES_PER_ITEM = 10;
+    private static final long MAX_GALLERY_UPLOAD_BYTES_PER_FILE = 5_242_880L;
+    private static final List<String> ALLOWED_GALLERY_UPLOAD_CONTENT_TYPES =
+            List.of("image/jpeg", "image/png", "image/webp", "image/gif");
     private static final int TIME_STEP_MINUTES = 30;
 
     private final ItemDao itemDao;
@@ -129,23 +141,32 @@ public final class ItemServiceImpl implements ItemService {
             LOGGER.warn("Attempt to update non-existent item {} or unauthorized access by owner {}", itemId, ownerId);
             return false;
         }
-        if (!itemDao.snapshotBookingsForPublicationEdit(itemId)) {
-            LOGGER.error("Could not snapshot bookings for item {}", itemId);
-            throw new IllegalStateException("Could not snapshot bookings for item " + itemId);
-        }
-        if (!itemDao.updatePublicationForOwner(
-                itemId, ownerId, title, description, pricePerHour, difficultyLevel, locationOptionId)) {
-            LOGGER.error("Could not update item {}", itemId);
-            throw new IllegalStateException("Could not update item " + itemId);
-        }
-        if (primaryImageData != null && primaryImageData.length > 0) {
-            if (itemMediaDao.replacePrimaryImage(itemId, primaryImageData) == null) {
-                LOGGER.error("Could not replace primary image for item {}", itemId);
-                throw new IllegalStateException("Could not replace primary image for item " + itemId);
+        try {
+            if (!itemDao.snapshotBookingsForPublicationEdit(itemId)) {
+                LOGGER.error("Could not snapshot bookings for item {}", itemId);
+                TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                return false;
             }
+            if (!itemDao.updatePublicationForOwner(
+                    itemId, ownerId, title, description, pricePerHour, difficultyLevel, locationOptionId)) {
+                LOGGER.error("Could not update item {}", itemId);
+                TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                return false;
+            }
+            if (primaryImageData != null && primaryImageData.length > 0) {
+                if (itemMediaDao.replacePrimaryImage(itemId, primaryImageData) == null) {
+                    LOGGER.error("Could not replace primary image for item {}", itemId);
+                    TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                    return false;
+                }
+            }
+            LOGGER.info("Item {} updated successfully by owner {}", itemId, ownerId);
+            return true;
+        } catch (final DataAccessException e) {
+            LOGGER.error("Database error while updating publication for item {}", itemId, e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            return false;
         }
-        LOGGER.info("Item {} updated successfully by owner {}", itemId, ownerId);
-        return true;
     }
 
     @Override
@@ -156,13 +177,19 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public boolean deleteItemByIdForOwner(final int itemId, final int ownerId) {
-        boolean deleted = itemDao.deleteItemByIdForOwner(itemId, ownerId);
-        if (deleted) {
-            LOGGER.info("Item {} deleted by owner {}", itemId, ownerId);
-        } else {
-            LOGGER.warn("Failed to delete item {} by owner {}", itemId, ownerId);
+        try {
+            final boolean deleted = itemDao.deleteItemByIdForOwner(itemId, ownerId);
+            if (deleted) {
+                LOGGER.info("Item {} deleted by owner {}", itemId, ownerId);
+            } else {
+                LOGGER.warn("Failed to delete item {} by owner {}", itemId, ownerId);
+            }
+            return deleted;
+        } catch (final DataAccessException e) {
+            LOGGER.error("Database error while deleting item {} for owner {}", itemId, ownerId, e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            return false;
         }
-        return deleted;
     }
 
     @Override
@@ -584,6 +611,57 @@ public final class ItemServiceImpl implements ItemService {
         return searchItems(criteria, page, pageSize);
     }
 
+    @Override
+    public Map<Integer, Boolean> publicationDeleteDeactivatesByItemId(final List<Item> ownedItems) {
+        final Map<Integer, Boolean> map = new LinkedHashMap<>();
+        if (ownedItems == null) {
+            return map;
+        }
+        for (final Item item : ownedItems) {
+            if (item == null || item.getId() == null) {
+                continue;
+            }
+            final boolean hasBlocking =
+                    listBookingsByItemId(item.getId()).stream().anyMatch(b -> isExternalBlockingBooking(item, b));
+            map.put(item.getId(), Boolean.TRUE.equals(item.getActive()) && hasBlocking);
+        }
+        return map;
+    }
+
+    @Override
+    public Map<Integer, Boolean> publicationDeleteDisabledByItemId(final List<Item> ownedItems) {
+        final Map<Integer, Boolean> map = new LinkedHashMap<>();
+        if (ownedItems == null) {
+            return map;
+        }
+        final OffsetDateTime now = OffsetDateTime.now();
+        for (final Item item : ownedItems) {
+            if (item == null || item.getId() == null) {
+                continue;
+            }
+            final boolean hasFutureBlocking = listBookingsByItemId(item.getId()).stream()
+                    .anyMatch(b -> isExternalBlockingBooking(item, b)
+                            && b.getEndTime() != null
+                            && b.getEndTime().isAfter(now));
+            map.put(item.getId(), !Boolean.TRUE.equals(item.getActive()) && hasFutureBlocking);
+        }
+        return map;
+    }
+
+    private static boolean isExternalBlockingBooking(final Item item, final ItemBooking booking) {
+        if (booking == null || booking.getState() == null) {
+            return false;
+        }
+        if (booking.getState() == BookingState.BOOKING_REJECTED
+                || booking.getState() == BookingState.BOOKING_CANCELLED) {
+            return false;
+        }
+        if (item == null || item.getOwnerId() == null) {
+            return booking.getGuestId() != null;
+        }
+        return booking.getGuestId() != null && !booking.getGuestId().equals(item.getOwnerId());
+    }
+
     public Map<String, String> validatePublicationDraft(final PublicationDraft draft) {
         final Map<String, String> errors = new LinkedHashMap<>();
         if (draft == null) {
@@ -637,29 +715,35 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Transactional
-    public Item createPublicationFromDraft(final PublicationDraft draft) {
-        final Item created = createPublication(
-                draft.getOwnerGivenName(),
-                draft.getOwnerLastName(),
-                draft.getOwnerEmail(),
-                draft.getOwnerPreferredLanguage(),
-                draft.getTypeId(),
-                draft.getTitle(),
-                draft.getDescription(),
-                draft.getPricePerHour(),
-                draft.getCapacityPeople(),
-                draft.getMaxWeightKg(),
-                draft.getDifficultyLevel(),
-                draft.getLocationOptionId(),
-                draft.getAvailabilities());
-        if (!draft.getImages().isEmpty()) {
-            final List<byte[]> bytes = new ArrayList<>();
-            for (final GalleryImageUpload image : draft.getImages()) {
-                bytes.add(image.getFileData());
+    public Optional<Item> createPublicationFromDraft(final PublicationDraft draft) {
+        try {
+            final Item created = createPublication(
+                    draft.getOwnerGivenName(),
+                    draft.getOwnerLastName(),
+                    draft.getOwnerEmail(),
+                    draft.getOwnerPreferredLanguage(),
+                    draft.getTypeId(),
+                    draft.getTitle(),
+                    draft.getDescription(),
+                    draft.getPricePerHour(),
+                    draft.getCapacityPeople(),
+                    draft.getMaxWeightKg(),
+                    draft.getDifficultyLevel(),
+                    draft.getLocationOptionId(),
+                    draft.getAvailabilities());
+            if (!draft.getImages().isEmpty()) {
+                final List<byte[]> bytes = new ArrayList<>();
+                for (final GalleryImageUpload image : draft.getImages()) {
+                    bytes.add(image.getFileData());
+                }
+                replaceGallery(created.getId(), bytes);
             }
-            replaceGallery(created.getId(), bytes);
+            return Optional.of(created);
+        } catch (final RuntimeException e) {
+            LOGGER.error("Failed to create publication from draft", e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            return Optional.empty();
         }
-        return created;
     }
 
     public boolean hasPublicationChanges(
@@ -720,28 +804,204 @@ public final class ItemServiceImpl implements ItemService {
         }
     }
 
+    @Override
     @Transactional
-    public Integer uploadGalleryImage(final int itemId, final int ownerId, final GalleryImageUpload image) {
+    public GalleryOwnerUploadResult uploadGalleryImage(
+            final int itemId, final int ownerId, final GalleryImageUpload image) {
         if (itemDao.findItemByIdForOwner(itemId, ownerId).isEmpty()) {
-            return null;
+            return GalleryOwnerUploadResult.failure(GalleryOwnerUploadStatus.NOT_OWNER);
         }
         if (image == null || image.getFileData() == null || image.getFileData().length == 0) {
-            return null;
+            return GalleryOwnerUploadResult.failure(GalleryOwnerUploadStatus.EMPTY_FILE);
+        }
+        if (image.getFileData().length > MAX_GALLERY_UPLOAD_BYTES_PER_FILE) {
+            return GalleryOwnerUploadResult.failure(GalleryOwnerUploadStatus.FILE_TOO_LARGE);
         }
         final String contentType = image.getContentType();
-        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
-            return null;
+        if (contentType == null
+                || !ALLOWED_GALLERY_UPLOAD_CONTENT_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
+            return GalleryOwnerUploadResult.failure(GalleryOwnerUploadStatus.INVALID_CONTENT_TYPE);
         }
-        return appendImage(itemId, image.getFileData());
+        final int existing = itemMediaDao.countImagesByItemId(itemId);
+        if (existing >= MAX_IMAGES_PER_ITEM) {
+            return GalleryOwnerUploadResult.failure(GalleryOwnerUploadStatus.GALLERY_FULL);
+        }
+        final Integer newId = itemMediaDao.insertImage(itemId, image.getFileData(), existing);
+        if (newId == null) {
+            return GalleryOwnerUploadResult.failure(GalleryOwnerUploadStatus.EMPTY_FILE);
+        }
+        return GalleryOwnerUploadResult.success(newId);
     }
 
+    @Override
+    public List<Integer> parseGalleryImageOrderCsv(final String csv) {
+        if (!StringUtils.hasText(csv)) {
+            return List.of();
+        }
+        final List<Integer> result = new ArrayList<>();
+        for (final String token : csv.split(",")) {
+            final String trimmed = token.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            try {
+                result.add(Integer.parseInt(trimmed));
+            } catch (final NumberFormatException ex) {
+                return List.of();
+            }
+        }
+        return result;
+    }
+
+    @Override
     @Transactional
     public boolean reorderGalleryForOwner(final int itemId, final int ownerId, final List<Integer> imageIdsInOrder) {
         if (itemDao.findItemByIdForOwner(itemId, ownerId).isEmpty()) {
             return false;
         }
-        reorderImagesForItem(itemId, imageIdsInOrder);
-        return true;
+        try {
+            reorderImagesForItem(itemId, imageIdsInOrder);
+            return true;
+        } catch (final IllegalArgumentException ex) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isGuestRequestedBookingRangeAvailable(
+            final int itemId, final String date, final String startTime, final String endTime) {
+        if (date == null || date.isBlank()) {
+            return true;
+        }
+        final AvailabilityPickerBuilder.Data data = AvailabilityPickerBuilder.build(
+                itemAvailabilityDao.listAvailabilitiesByItemId(itemId), itemBookingDao.listBookingsByItemId(itemId));
+        final List<String> times = data.offeredTimesByDate().get(date);
+        if (times == null || times.isEmpty()) {
+            return false;
+        }
+        final boolean blankStart = startTime == null || startTime.isBlank();
+        final boolean blankEnd = endTime == null || endTime.isBlank();
+        if (blankStart || blankEnd) {
+            return false;
+        }
+        return AvailabilityPickerBuilder.hasContinuousAvailability(times, startTime, endTime);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ManageAvailabilityPageModel> loadManageAvailabilityPageModel(
+            final int itemId, final int ownerId, final String requestedDate) {
+        final Optional<Item> itemOpt = findItemById(itemId);
+        if (itemOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        final Item item = itemOpt.get();
+        if (item.getOwnerId() == null || !item.getOwnerId().equals(ownerId)) {
+            return Optional.empty();
+        }
+        final List<ItemAvailability> availabilities = listAvailabilitiesByItemId(item.getId());
+        final List<ItemBooking> bookings = listBookingsByItemId(item.getId());
+        final AvailabilityPickerBuilder.Data availabilityData =
+                AvailabilityPickerBuilder.build(availabilities, bookings);
+        final List<String> offeredDates = availabilityData.offeredDates();
+        final String selectedDate =
+                requestedDate != null && !requestedDate.isBlank() && offeredDates.contains(requestedDate)
+                        ? requestedDate
+                        : (offeredDates.isEmpty() ? null : offeredDates.get(0));
+
+        final List<ItemBooking> personalBlocks = bookings.stream()
+                .filter(b -> b.getGuestId() != null && b.getGuestId().equals(ownerId))
+                .filter(b -> b.getState() == BookingState.BOOKING_CONFIRMED)
+                .toList();
+
+        final List<ManageAvailabilityPersonalBlockRow> personalBlockRows = personalBlocks.stream()
+                .filter(block -> block.getId() != null && block.getStartTime() != null && block.getEndTime() != null)
+                .sorted(Comparator.comparing(ItemBooking::getStartTime))
+                .map(block -> new ManageAvailabilityPersonalBlockRow(
+                        block.getId(),
+                        block.getStartTime().toLocalDate().toString(),
+                        block.getStartTime().toLocalTime().toString().substring(0, 5),
+                        block.getEndTime().toLocalTime().toString().substring(0, 5)))
+                .toList();
+
+        final List<String> blockedDates = new ArrayList<>();
+        for (final ItemBooking block : personalBlocks) {
+            if (block.getStartTime() != null) {
+                blockedDates.add(block.getStartTime().toLocalDate().toString());
+            }
+        }
+
+        final List<ManageAvailabilitySlotRow> slots =
+                buildOwnerAvailabilitySlots(selectedDate, availabilities, bookings, ownerId);
+
+        return Optional.of(new ManageAvailabilityPageModel(
+                item, offeredDates, blockedDates, selectedDate, slots, personalBlockRows));
+    }
+
+    private static List<ManageAvailabilitySlotRow> buildOwnerAvailabilitySlots(
+            final String selectedDate,
+            final List<ItemAvailability> availabilities,
+            final List<ItemBooking> bookings,
+            final int ownerId) {
+        if (selectedDate == null || selectedDate.isBlank()) {
+            return List.of();
+        }
+        final LocalDate day = parseLocalDate(selectedDate);
+        if (day == null) {
+            return List.of();
+        }
+        final TreeSet<String> scheduled = new TreeSet<>();
+        for (final ItemAvailability availability : availabilities) {
+            if (availability.getWeekday() != day.getDayOfWeek()) {
+                continue;
+            }
+            final int startMinute = availability.getStartTime().toSecondOfDay() / 60;
+            final int endMinute = availability.getEndTime().toSecondOfDay() / 60;
+            for (int minute = startMinute; minute < endMinute; minute += 30) {
+                scheduled.add(
+                        LocalTime.ofSecondOfDay((long) minute * 60).toString().substring(0, 5));
+            }
+        }
+        final Set<String> guestBooked = new HashSet<>();
+        final Map<String, Integer> ownerBlocks = new HashMap<>();
+        for (final ItemBooking booking : bookings) {
+            if (booking.getState() == null || !isBlockingStateForOwnerSlotGrid(booking.getState())) {
+                continue;
+            }
+            if (booking.getStartTime() == null || booking.getEndTime() == null) {
+                continue;
+            }
+            OffsetDateTime cursor = booking.getStartTime();
+            while (cursor.isBefore(booking.getEndTime())) {
+                if (day.equals(cursor.toLocalDate())) {
+                    final String key = cursor.toLocalTime().toString().substring(0, 5);
+                    if (booking.getGuestId() != null
+                            && booking.getGuestId().equals(ownerId)
+                            && booking.getId() != null) {
+                        ownerBlocks.put(key, booking.getId());
+                    } else {
+                        guestBooked.add(key);
+                    }
+                }
+                cursor = cursor.plusMinutes(30);
+            }
+        }
+        final List<ManageAvailabilitySlotRow> slots = new ArrayList<>();
+        for (final String time : scheduled) {
+            final LocalTime start = LocalTime.parse(time);
+            final String end = start.plusMinutes(30).toString().substring(0, 5);
+            final Integer blockId = ownerBlocks.get(time);
+            final String state = blockId != null ? "BLOCKED" : (guestBooked.contains(time) ? "BOOKED" : "AVAILABLE");
+            slots.add(new ManageAvailabilitySlotRow(time, end, state, blockId, time.replace(":", "")));
+        }
+        return slots;
+    }
+
+    private static boolean isBlockingStateForOwnerSlotGrid(final BookingState state) {
+        return state == BookingState.BOOKING_PENDING
+                || state == BookingState.BOOKING_CONFIRMED
+                || state == BookingState.BOOKING_PAYMENT_SUBMITTED
+                || state == BookingState.BOOKING_PAID;
     }
 
     private static Integer parseInt(final String value) {

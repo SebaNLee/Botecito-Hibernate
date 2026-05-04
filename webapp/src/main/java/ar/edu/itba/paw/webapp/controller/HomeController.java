@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.webapp.util.AvailabilityPickerBuilder;
+import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
 import ar.edu.itba.paw.webapp.util.AvailabilityPickerSupport;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;

@@ -1,6 +1,5 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.PasswordRecoveryRequestForm;
@@ -71,21 +70,13 @@ public class AuthController {
             return new ModelAndView("register");
         }
 
-        final User existingUser =
-                userService.findByEmail(form.getEmail().trim()).orElse(null);
-        if (existingUser != null && existingUser.getPasswordHash() != null) {
-            errors.rejectValue("email", "register.validation.email.duplicate");
-            return new ModelAndView("register");
-        }
-
-        try {
-            userService.register(
-                    form.getGivenName().trim(),
-                    form.getLastName().trim(),
-                    form.getEmail().trim(),
-                    form.getPassword(),
-                    form.getPaymentAlias());
-        } catch (final IllegalArgumentException exception) {
+        if (userService.register(
+                        form.getGivenName().trim(),
+                        form.getLastName().trim(),
+                        form.getEmail().trim(),
+                        form.getPassword(),
+                        form.getPaymentAlias())
+                != UserService.RegistrationResult.SUCCESS) {
             errors.rejectValue("email", "register.validation.email.duplicate");
             return new ModelAndView("register");
         }

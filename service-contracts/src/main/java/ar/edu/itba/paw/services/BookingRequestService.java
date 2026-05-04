@@ -23,6 +23,14 @@ public interface BookingRequestService {
 
     Optional<BookingRequest> resolveBookingRequest(String token, BookingState newStatus);
 
+    enum BookingResolutionOutcome {
+        ACCEPTED,
+        REJECTED,
+        ERROR
+    }
+
+    BookingResolutionOutcome resolveBookingRequestInAccount(int bookingId, int ownerId, BookingState newStatus);
+
     void expireAllDue(OffsetDateTime currentDateTime);
 
     List<BookingRequest> resolveBookingRequests(List<String> tokens, BookingState newStatus);
@@ -30,9 +38,33 @@ public interface BookingRequestService {
     Optional<BookingPaymentProof> submitPaymentProof(
             int bookingId, int requesterId, String fileName, String contentType, byte[] fileData, String guestReply);
 
+    enum PaymentProofSubmissionOutcome {
+        SUBMITTED,
+        RESUBMITTED,
+        INVALID_FILE,
+        ERROR
+    }
+
+    PaymentProofSubmissionOutcome submitPaymentProofInAccount(
+            int bookingId, int requesterId, String fileName, String contentType, byte[] fileData, String guestReply);
+
     Optional<BookingRequest> confirmPaymentReceived(int bookingId, int ownerId);
 
+    enum PaymentConfirmationOutcome {
+        CONFIRMED,
+        ERROR
+    }
+
+    PaymentConfirmationOutcome confirmPaymentReceivedInAccount(int bookingId, int ownerId);
+
     Optional<BookingRequest> refusePaymentProof(int bookingId, int ownerId, String reason);
+
+    enum PaymentRefusalOutcome {
+        REFUSED,
+        ERROR
+    }
+
+    PaymentRefusalOutcome refusePaymentProofInAccount(int bookingId, int ownerId, String reason);
 
     Optional<BookingPaymentProof> findPaymentProofByBookingId(int bookingId);
 

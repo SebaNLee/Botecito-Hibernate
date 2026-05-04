@@ -330,8 +330,7 @@ public class BookingController {
                 continue;
             }
             final boolean hasBlocking = itemService.listBookingsByItemId(item.getId()).stream()
-                    .anyMatch(b -> b.getState() != BookingState.BOOKING_REJECTED
-                            && b.getState() != BookingState.BOOKING_CANCELLED);
+                    .anyMatch(b -> isExternalBlockingBooking(item, b));
             map.put(item.getId(), Boolean.TRUE.equals(item.getActive()) && hasBlocking);
         }
         return map;
@@ -348,13 +347,26 @@ public class BookingController {
                 continue;
             }
             final boolean hasFutureBlocking = itemService.listBookingsByItemId(item.getId()).stream()
-                    .anyMatch(b -> b.getState() != BookingState.BOOKING_REJECTED
-                            && b.getState() != BookingState.BOOKING_CANCELLED
+                    .anyMatch(b -> isExternalBlockingBooking(item, b)
                             && b.getEndTime() != null
                             && b.getEndTime().isAfter(now));
             map.put(item.getId(), !Boolean.TRUE.equals(item.getActive()) && hasFutureBlocking);
         }
         return map;
+    }
+
+    private static boolean isExternalBlockingBooking(final Item item, final ItemBooking booking) {
+        if (booking == null || booking.getState() == null) {
+            return false;
+        }
+        if (booking.getState() == BookingState.BOOKING_REJECTED
+                || booking.getState() == BookingState.BOOKING_CANCELLED) {
+            return false;
+        }
+        if (item == null || item.getOwnerId() == null) {
+            return booking.getGuestId() != null;
+        }
+        return booking.getGuestId() != null && !booking.getGuestId().equals(item.getOwnerId());
     }
 
     private static Map<String, Boolean> buildSelectedStatusFilterMap(final List<String> statuses) {

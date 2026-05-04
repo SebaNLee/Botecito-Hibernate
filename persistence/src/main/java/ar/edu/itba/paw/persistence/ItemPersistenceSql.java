@@ -21,7 +21,15 @@ final class ItemPersistenceSql {
             + " FROM item_booking b"
             + " JOIN item i ON i.id = b.item_id"
             + " JOIN item_publication_version v ON v.id = i.version_id"
-            + " WHERE v.owner_id = ?";
+            + " WHERE v.owner_id = ?"
+            + " AND b.guest_id <> v.owner_id";
+
+    static final String BOOKING_BY_GUEST_BASE = "SELECT b.*"
+            + " FROM item_booking b"
+            + " JOIN item i ON i.id = b.item_id"
+            + " JOIN item_publication_version v ON v.id = i.version_id"
+            + " WHERE b.guest_id = ?"
+            + " AND b.guest_id <> v.owner_id";
 
     static final String BOOKING_UPDATE_BY_OWNER_SUBMITTED = "UPDATE item_booking b"
             + " SET state = ?::booking_state, updated_at = CURRENT_TIMESTAMP"

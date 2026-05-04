@@ -20,6 +20,21 @@ public interface BookingRequestService {
             OffsetDateTime endTime,
             String description);
 
+    /**
+     * Creates a marketplace booking request for a guest, parsing {@code date} and time strings in the system default
+     * zone. Never throws for self-booking or recoverable failures; inspect {@link GuestMarketplaceReservationResult}.
+     */
+    GuestMarketplaceReservationResult placeGuestMarketplaceReservation(
+            int itemId,
+            String requesterGivenName,
+            String requesterLastName,
+            String requesterEmail,
+            String requesterPreferredLanguage,
+            String date,
+            String startTime,
+            String endTime,
+            String requestMessage);
+
     Optional<BookingRequest> findByToken(String token);
 
     Optional<BookingRequest> resolveBookingRequest(String token, BookingState newStatus);

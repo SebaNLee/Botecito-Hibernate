@@ -141,7 +141,11 @@ public interface ItemService {
 
     java.util.Map<String, String> validatePublicationDraft(PublicationDraft draft);
 
-    Item createPublicationFromDraft(PublicationDraft draft);
+    /**
+     * Persists a new publication from a wizard draft. Returns empty when creation fails (for example persistence or
+     * validation errors surfaced as runtime exceptions); the operation is transactional and rolls back on failure.
+     */
+    Optional<Item> createPublicationFromDraft(PublicationDraft draft);
 
     boolean hasPublicationChanges(
             int itemId,
@@ -166,4 +170,17 @@ public interface ItemService {
     List<Review> listLatestReviews(int itemId, int limit);
 
     Optional<ReviewService.PendingReviewAction> findPendingReviewAction(int userId, int itemId);
+
+    /**
+     * Whether the requested calendar range lies in continuously offered availability for the item (same rules as the
+     * marketplace picker). A blank {@code date} is treated as unconstrained ({@code true}).
+     */
+    boolean isGuestRequestedBookingRangeAvailable(int itemId, String date, String startTime, String endTime);
+
+    /**
+     * Loads calendar, slot grid, and self-block list for the manage-availability page when {@code ownerId} owns the
+     * item. Empty when the item is missing or not owned by {@code ownerId}.
+     */
+    Optional<ManageAvailabilityPageModel> loadManageAvailabilityPageModel(
+            int itemId, int ownerId, String requestedDate);
 }

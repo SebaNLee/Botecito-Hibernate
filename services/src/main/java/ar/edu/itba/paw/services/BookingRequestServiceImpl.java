@@ -83,6 +83,51 @@ public class BookingRequestServiceImpl implements BookingRequestService {
         return bookingRequest;
     }
 
+    @Override
+    @Transactional
+    public GuestMarketplaceReservationResult placeGuestMarketplaceReservation(
+            final int itemId,
+            final String requesterGivenName,
+            final String requesterLastName,
+            final String requesterEmail,
+            final String requesterPreferredLanguage,
+            final String date,
+            final String startTime,
+            final String endTime,
+            final String requestMessage) {
+        try {
+            final OffsetDateTime start = toOffsetDateTime(date, startTime);
+            final OffsetDateTime end = toOffsetDateTime(date, endTime);
+            createBookingRequest(
+                    itemId,
+                    requesterGivenName,
+                    requesterLastName,
+                    requesterEmail,
+                    requesterPreferredLanguage,
+                    start,
+                    end,
+                    requestMessage == null || requestMessage.isBlank() ? null : requestMessage.trim());
+            final Item item = itemDao.findAnyItemById(itemId).orElse(null);
+            final String ownerDisplayName = item == null || item.getOwnerId() == null
+                    ? ""
+                    : userDao.findById(item.getOwnerId()).map(User::getName).orElse("");
+            return GuestMarketplaceReservationResult.success(ownerDisplayName);
+        } catch (final SelfBookingNotAllowedException e) {
+            return GuestMarketplaceReservationResult.selfBooking();
+        } catch (final RuntimeException e) {
+            LOGGER.error("Guest marketplace reservation failed for item {}", itemId, e);
+            return GuestMarketplaceReservationResult.error();
+        }
+    }
+
+    private static OffsetDateTime toOffsetDateTime(final String date, final String time) {
+        final LocalDate localDate = LocalDate.parse(date);
+        final LocalTime localTime = LocalTime.parse(time);
+        return LocalDateTime.of(localDate, localTime)
+                .atZone(ZoneId.systemDefault())
+                .toOffsetDateTime();
+    }
+
     private static OffsetDateTime currentDateTime() {
         return OffsetDateTime.now();
     }

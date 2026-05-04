@@ -1,6 +1,5 @@
-package ar.edu.itba.paw.services.internal;
+package ar.edu.itba.paw.services.utils;
 
-import ar.edu.itba.paw.services.dto.PaymentProofUpload;
 import java.util.Locale;
 import java.util.Set;
 
@@ -11,15 +10,10 @@ public final class PaymentProofValidator {
 
     private PaymentProofValidator() {}
 
-    public static boolean isValid(final PaymentProofUpload upload) {
-        if (upload == null) {
-            return false;
-        }
-        final byte[] data = upload.getFileData();
+    public static boolean isValid(final String fileName, final String contentType, final byte[] data) {
         if (data == null || data.length == 0 || data.length > MAX_FILE_SIZE) {
             return false;
         }
-        final String contentType = upload.getContentType();
         if (contentType == null) {
             return false;
         }

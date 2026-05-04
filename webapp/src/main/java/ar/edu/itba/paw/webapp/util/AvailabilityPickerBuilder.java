@@ -1,9 +1,8 @@
-package ar.edu.itba.paw.services.internal;
+package ar.edu.itba.paw.webapp.util;
 
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
-import ar.edu.itba.paw.services.dto.AvailabilityPickerData;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -29,8 +28,7 @@ public final class AvailabilityPickerBuilder {
 
     private AvailabilityPickerBuilder() {}
 
-    public static AvailabilityPickerData build(
-            final List<ItemAvailability> availabilities, final List<ItemBooking> bookings) {
+    public static Data build(final List<ItemAvailability> availabilities, final List<ItemBooking> bookings) {
         final Set<Integer> itemIds = new LinkedHashSet<>();
         final Map<Integer, List<ItemAvailability>> availabilitiesByItemId = new LinkedHashMap<>();
         final Map<Integer, List<ItemBooking>> bookingsByItemId = new LinkedHashMap<>();
@@ -77,11 +75,45 @@ public final class AvailabilityPickerBuilder {
             }
         }
 
-        return new AvailabilityPickerData(
-                offeredDates,
-                occupiedDates,
+        return new Data(
+                List.copyOf(offeredDates),
+                List.copyOf(occupiedDates),
                 toImmutableTimesByDate(availableTimesByDate),
                 toImmutableTimesByDate(occupiedTimesByDate));
+    }
+
+    public static final class Data {
+        private final List<String> offeredDates;
+        private final List<String> occupiedDates;
+        private final Map<String, List<String>> offeredTimesByDate;
+        private final Map<String, List<String>> occupiedTimesByDate;
+
+        public Data(
+                final List<String> offeredDates,
+                final List<String> occupiedDates,
+                final Map<String, List<String>> offeredTimesByDate,
+                final Map<String, List<String>> occupiedTimesByDate) {
+            this.offeredDates = List.copyOf(offeredDates);
+            this.occupiedDates = List.copyOf(occupiedDates);
+            this.offeredTimesByDate = copyTimesByDate(offeredTimesByDate);
+            this.occupiedTimesByDate = copyTimesByDate(occupiedTimesByDate);
+        }
+
+        public List<String> offeredDates() {
+            return List.copyOf(offeredDates);
+        }
+
+        public List<String> occupiedDates() {
+            return List.copyOf(occupiedDates);
+        }
+
+        public Map<String, List<String>> offeredTimesByDate() {
+            return copyTimesByDate(offeredTimesByDate);
+        }
+
+        public Map<String, List<String>> occupiedTimesByDate() {
+            return copyTimesByDate(occupiedTimesByDate);
+        }
     }
 
     public static String resolveSelectedDate(
@@ -230,6 +262,14 @@ public final class AvailabilityPickerBuilder {
             immutableTimesByDate.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         return immutableTimesByDate;
+    }
+
+    private static Map<String, List<String>> copyTimesByDate(final Map<String, List<String>> timesByDate) {
+        final Map<String, List<String>> copiedTimesByDate = new LinkedHashMap<>();
+        for (final Map.Entry<String, List<String>> entry : timesByDate.entrySet()) {
+            copiedTimesByDate.put(entry.getKey(), List.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(copiedTimesByDate);
     }
 
     private static LocalDate availabilityStartDate() {

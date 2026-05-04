@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.services.internal;
+package ar.edu.itba.paw.webapp.util;
 
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.User;
@@ -12,7 +12,6 @@ import java.util.Locale;
 import org.springframework.context.i18n.LocaleContextHolder;
 
 public final class BookingDisplayFormatter {
-
     private BookingDisplayFormatter() {}
 
     private static final DateTimeFormatter START_LABEL_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -121,45 +120,5 @@ public final class BookingDisplayFormatter {
 
     public static boolean shouldExposePaymentAliasToGuest(final BookingState state) {
         return state == BookingState.BOOKING_CONFIRMED || state == BookingState.BOOKING_PAYMENT_REFUSED;
-    }
-
-    public static boolean shouldRetainBookingForDeletion(final BookingState state) {
-        return state != BookingState.BOOKING_REJECTED && state != BookingState.BOOKING_CANCELLED;
-    }
-
-    public static boolean matchesAnyStatusFilter(final String statusMessageCode, final java.util.List<String> filters) {
-        if (filters == null || filters.isEmpty()) {
-            return true;
-        }
-        for (final String filter : filters) {
-            if (matchesExactStatusFilter(statusMessageCode, filter)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean matchesExactStatusFilter(final String statusMessageCode, final String filter) {
-        return switch (filter) {
-            case "pending" -> "profile.sentBookings.status.pending".equals(statusMessageCode);
-            case "confirmed" -> "profile.sentBookings.status.confirmed".equals(statusMessageCode);
-            case "paymentSubmitted" -> "profile.sentBookings.status.paymentSubmitted".equals(statusMessageCode);
-            case "paid" -> "profile.sentBookings.status.paid".equals(statusMessageCode);
-            case "paymentRefused" -> "profile.sentBookings.status.paymentRefused".equals(statusMessageCode);
-            case "completed" -> "profile.sentBookings.status.completed".equals(statusMessageCode);
-            case "rejected" -> "profile.sentBookings.status.rejected".equals(statusMessageCode);
-            case "cancelled" -> "profile.sentBookings.status.cancelled".equals(statusMessageCode);
-            default -> false;
-        };
-    }
-
-    public static boolean matchesBoatNameSearch(final String itemTitle, final String query) {
-        if (query == null || query.isBlank()) {
-            return true;
-        }
-        if (itemTitle == null) {
-            return false;
-        }
-        return itemTitle.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT));
     }
 }

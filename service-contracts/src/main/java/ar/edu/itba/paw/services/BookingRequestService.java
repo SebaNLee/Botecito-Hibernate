@@ -4,8 +4,6 @@ import ar.edu.itba.paw.models.BookingPaymentProof;
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.ItemBooking;
-import ar.edu.itba.paw.services.dto.GuestTripsView;
-import ar.edu.itba.paw.services.dto.PaymentProofUpload;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -42,19 +40,6 @@ public interface BookingRequestService {
 
     boolean removeOwnerSelfBlock(int bookingId, int ownerId);
 
-    // ---- View / orchestration extensions ----------------------------------------------------
-
-    GuestTripsView buildGuestTrips(
-            int guestUserId, List<String> statusFilters, String boatNameQuery, int page, int pageSize);
-
-    /**
-     * Stores a payment proof after running file-type validation (size + magic-byte sniff).
-     * Returns empty when the booking does not exist, the requester is not the booking guest,
-     * or the file fails validation.
-     */
-    Optional<BookingPaymentProof> submitPaymentProof(int bookingId, int requesterId, PaymentProofUpload upload);
-
-    /** Domain rule: only the booking's guest or the item's owner may view the proof. */
     boolean canAccessPaymentProof(int bookingId, int viewerUserId);
 
     enum BlockSlotOutcome {
@@ -64,9 +49,5 @@ public interface BookingRequestService {
         INVALID
     }
 
-    /**
-     * Parses raw date/time strings, validates them, and creates an owner self-block.
-     * Returns the outcome — controller maps it to the appropriate HTTP redirect query parameter.
-     */
     BlockSlotOutcome blockSlotForOwner(int itemId, int ownerId, String date, String startTime, String endTime);
 }

@@ -1,13 +1,12 @@
-package ar.edu.itba.paw.services.dto;
+package ar.edu.itba.paw.services;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public final class PaymentProofUpload {
+public final class GalleryImageUpload {
     private final String fileName;
     private final String contentType;
     private final byte[] fileData;
-    private final String guestReply;
 }

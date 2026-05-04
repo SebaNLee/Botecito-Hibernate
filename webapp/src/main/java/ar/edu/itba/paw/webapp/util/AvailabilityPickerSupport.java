@@ -1,26 +1,24 @@
-package ar.edu.itba.paw.webapp.controller;
+package ar.edu.itba.paw.webapp.util;
 
-import ar.edu.itba.paw.services.dto.AvailabilityPickerData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.web.servlet.ModelAndView;
 
 /**
- * Webapp-layer helper that publishes an {@link AvailabilityPickerData} into the model as
- * JSON-serialized strings consumed by the JSP picker. Pure presentation concern;
- * the slot-conflict computation lives in the services module.
+ * Webapp-layer helper that publishes availability payload into the model as
+ * JSON-serialized strings consumed by the JSP picker.
  */
-final class AvailabilityPickerSupport {
+public final class AvailabilityPickerSupport {
 
     private AvailabilityPickerSupport() {}
 
-    static void addAvailabilityPickerData(
-            final ModelAndView mav, final String prefix, final AvailabilityPickerData data) {
-        mav.addObject(prefix + "OfferedDatesJson", toJsonArray(data.getOfferedDates()));
-        mav.addObject(prefix + "OccupiedDatesJson", toJsonArray(data.getOccupiedDates()));
-        mav.addObject(prefix + "OfferedTimesJson", toJsonMap(data.getOfferedTimesByDate()));
-        mav.addObject(prefix + "OccupiedTimesJson", toJsonMap(data.getOccupiedTimesByDate()));
+    public static void addAvailabilityPickerData(
+            final ModelAndView mav, final String prefix, final AvailabilityPickerBuilder.Data data) {
+        mav.addObject(prefix + "OfferedDatesJson", toJsonArray(data.offeredDates()));
+        mav.addObject(prefix + "OccupiedDatesJson", toJsonArray(data.occupiedDates()));
+        mav.addObject(prefix + "OfferedTimesJson", toJsonMap(data.offeredTimesByDate()));
+        mav.addObject(prefix + "OccupiedTimesJson", toJsonMap(data.occupiedTimesByDate()));
     }
 
     private static String toJsonArray(final List<String> values) {

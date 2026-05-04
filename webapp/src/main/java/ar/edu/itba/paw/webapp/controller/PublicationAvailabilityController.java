@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
@@ -13,6 +14,17 @@ import ar.edu.itba.paw.webapp.util.AvailabilityPickerBuilder;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -122,21 +134,20 @@ public class PublicationAvailabilityController {
 
     private ModelAndView buildManageAvailabilityView(
             final Item item, final String requestedDate, final int ownerId, final String sanitizedReturnPath) {
-        final java.util.List<ItemAvailability> availabilities = itemService.listAvailabilitiesByItemId(item.getId());
-        final java.util.List<ItemBooking> bookings = itemService.listBookingsByItemId(item.getId());
+        final List<ItemAvailability> availabilities = itemService.listAvailabilitiesByItemId(item.getId());
+        final List<ItemBooking> bookings = itemService.listBookingsByItemId(item.getId());
         final AvailabilityPickerBuilder.Data availabilityData =
                 AvailabilityPickerBuilder.build(availabilities, bookings);
-        final java.util.List<String> offeredDates = availabilityData.offeredDates();
+        final List<String> offeredDates = availabilityData.offeredDates();
         final String selectedDate = requestedDate != null && offeredDates.contains(requestedDate)
                 ? requestedDate
                 : (offeredDates.isEmpty() ? null : offeredDates.get(0));
-        final java.util.List<ItemBooking> personalBlocks = bookings.stream()
+        final List<ItemBooking> personalBlocks = bookings.stream()
                 .filter(b -> b.getGuestId() != null && b.getGuestId() == ownerId)
-                .filter(b -> b.getState() == ar.edu.itba.paw.models.BookingState.BOOKING_CONFIRMED)
+                .filter(b -> b.getState() == BookingState.BOOKING_CONFIRMED)
                 .toList();
-        final java.util.List<java.util.Map<String, Object>> slots =
-                buildSlots(selectedDate, availabilities, bookings, ownerId);
-        final java.util.List<String> blockedDates = new java.util.ArrayList<>();
+        final List<Map<String, Object>> slots = buildSlots(selectedDate, availabilities, bookings, ownerId);
+        final List<String> blockedDates = new ArrayList<>();
         for (final ItemBooking block : personalBlocks) {
             if (block.getStartTime() != null) {
                 blockedDates.add(block.getStartTime().toLocalDate().toString());
@@ -151,7 +162,7 @@ public class PublicationAvailabilityController {
         mav.addObject("slots", slots);
         mav.addObject("slotsStateJson", slotsToJson(slots));
         mav.addObject("personalBlocks", personalBlocks);
-        mav.addObject("personalBlockRows", java.util.List.of());
+        mav.addObject("personalBlockRows", List.of());
         mav.addObject("manageAvailabilityReturnPath", sanitizedReturnPath);
         mav.addObject(
                 "manageAvailabilityBackPath",
@@ -210,7 +221,7 @@ public class PublicationAvailabilityController {
         return redirectModelViewUrl + sep + "return=" + URLEncoder.encode(sanitizedReturnPath, StandardCharsets.UTF_8);
     }
 
-    private static String toJsonArray(final java.util.List<String> values) {
+    private static String toJsonArray(final List<String> values) {
         final StringBuilder json = new StringBuilder("[");
         for (int i = 0; i < values.size(); i++) {
             if (i > 0) {
@@ -221,13 +232,13 @@ public class PublicationAvailabilityController {
         return json.append(']').toString();
     }
 
-    private static String slotsToJson(final java.util.List<java.util.Map<String, Object>> slots) {
+    private static String slotsToJson(final List<Map<String, Object>> slots) {
         final StringBuilder json = new StringBuilder("[");
         for (int i = 0; i < slots.size(); i++) {
             if (i > 0) {
                 json.append(',');
             }
-            final java.util.Map<String, Object> slot = slots.get(i);
+            final Map<String, Object> slot = slots.get(i);
             json.append("{\"start\":\"")
                     .append(slot.get("startTime"))
                     .append("\",\"end\":\"")
@@ -239,21 +250,21 @@ public class PublicationAvailabilityController {
         return json.append(']').toString();
     }
 
-    private static java.util.List<java.util.Map<String, Object>> buildSlots(
+    private static List<Map<String, Object>> buildSlots(
             final String selectedDate,
-            final java.util.List<ItemAvailability> availabilities,
-            final java.util.List<ItemBooking> bookings,
+            final List<ItemAvailability> availabilities,
+            final List<ItemBooking> bookings,
             final int ownerId) {
         if (selectedDate == null || selectedDate.isBlank()) {
-            return java.util.List.of();
+            return List.of();
         }
-        final java.time.LocalDate day;
+        final LocalDate day;
         try {
-            day = java.time.LocalDate.parse(selectedDate);
+            day = LocalDate.parse(selectedDate);
         } catch (final RuntimeException e) {
-            return java.util.List.of();
+            return List.of();
         }
-        final java.util.TreeSet<String> scheduled = new java.util.TreeSet<>();
+        final TreeSet<String> scheduled = new TreeSet<>();
         for (final ItemAvailability availability : availabilities) {
             if (availability.getWeekday() != day.getDayOfWeek()) {
                 continue;
@@ -261,18 +272,17 @@ public class PublicationAvailabilityController {
             final int startMinute = availability.getStartTime().toSecondOfDay() / 60;
             final int endMinute = availability.getEndTime().toSecondOfDay() / 60;
             for (int minute = startMinute; minute < endMinute; minute += 30) {
-                scheduled.add(java.time.LocalTime.ofSecondOfDay((long) minute * 60)
-                        .toString()
-                        .substring(0, 5));
+                scheduled.add(
+                        LocalTime.ofSecondOfDay((long) minute * 60).toString().substring(0, 5));
             }
         }
-        final java.util.Set<String> guestBooked = new java.util.HashSet<>();
-        final java.util.Map<String, Integer> ownerBlocks = new java.util.HashMap<>();
+        final Set<String> guestBooked = new HashSet<>();
+        final Map<String, Integer> ownerBlocks = new HashMap<>();
         for (final ItemBooking booking : bookings) {
             if (booking.getStartTime() == null || booking.getEndTime() == null) {
                 continue;
             }
-            java.time.OffsetDateTime cursor = booking.getStartTime();
+            OffsetDateTime cursor = booking.getStartTime();
             while (cursor.isBefore(booking.getEndTime())) {
                 if (day.equals(cursor.toLocalDate())) {
                     final String key = cursor.toLocalTime().toString().substring(0, 5);
@@ -285,13 +295,13 @@ public class PublicationAvailabilityController {
                 cursor = cursor.plusMinutes(30);
             }
         }
-        final java.util.List<java.util.Map<String, Object>> slots = new java.util.ArrayList<>();
+        final List<Map<String, Object>> slots = new ArrayList<>();
         for (final String time : scheduled) {
-            final java.time.LocalTime start = java.time.LocalTime.parse(time);
+            final LocalTime start = LocalTime.parse(time);
             final String end = start.plusMinutes(30).toString().substring(0, 5);
             final Integer blockId = ownerBlocks.get(time);
             final String state = blockId != null ? "BLOCKED" : (guestBooked.contains(time) ? "BOOKED" : "AVAILABLE");
-            final java.util.Map<String, Object> slot = new java.util.LinkedHashMap<>();
+            final Map<String, Object> slot = new LinkedHashMap<>();
             slot.put("startTime", time);
             slot.put("endTime", end);
             slot.put("state", state);

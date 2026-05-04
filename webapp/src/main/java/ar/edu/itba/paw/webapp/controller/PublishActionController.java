@@ -11,7 +11,9 @@ import ar.edu.itba.paw.webapp.form.EditPublicationForm;
 import ar.edu.itba.paw.webapp.util.BookingDisplayFormatter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
@@ -253,7 +255,7 @@ public class PublishActionController {
     private ModelAndView editPublicationModelAndView(final Item item, final HttpServletRequest request) {
         final ModelAndView mav = new ModelAndView("edit-publication");
         final List<ItemBooking> activeBookings = itemService.listActiveBookingsByItemId(item.getId());
-        final java.util.Map<Integer, String> guestNames = new java.util.LinkedHashMap<>();
+        final Map<Integer, String> guestNames = new LinkedHashMap<>();
         for (final ItemBooking booking : activeBookings) {
             if (booking == null || booking.getId() == null) {
                 continue;
@@ -267,11 +269,11 @@ public class PublishActionController {
                                     .map(User::getName)
                                     .orElse(""));
         }
-        final java.util.Map<Integer, String> startLabels = new java.util.LinkedHashMap<>();
-        final java.util.Map<Integer, String> friendlyDates = new java.util.LinkedHashMap<>();
-        final java.util.Map<Integer, String> friendlyTimeRanges = new java.util.LinkedHashMap<>();
-        final java.util.Map<Integer, String> friendlyPrices = new java.util.LinkedHashMap<>();
-        final java.util.Map<Integer, String> statusCodes = new java.util.LinkedHashMap<>();
+        final Map<Integer, String> startLabels = new LinkedHashMap<>();
+        final Map<Integer, String> friendlyDates = new LinkedHashMap<>();
+        final Map<Integer, String> friendlyTimeRanges = new LinkedHashMap<>();
+        final Map<Integer, String> friendlyPrices = new LinkedHashMap<>();
+        final Map<Integer, String> statusCodes = new LinkedHashMap<>();
         final Integer pricePerHour = item.getPricePerHour();
         for (final ItemBooking booking : activeBookings) {
             if (booking == null || booking.getId() == null) {

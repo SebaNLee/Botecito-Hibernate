@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
@@ -17,6 +18,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -320,7 +322,7 @@ public class AuthController {
             final String contextPath) {
         final List<Item> ownedItems = itemService.listItemsByOwnerId(user.getId());
         final Map<Integer, Integer> coverImageIdsByItemId = new LinkedHashMap<>();
-        final Set<Integer> imageItemIds = new java.util.LinkedHashSet<>();
+        final Set<Integer> imageItemIds = new LinkedHashSet<>();
         for (final Item item : ownedItems) {
             if (item == null || item.getId() == null) {
                 continue;
@@ -414,7 +416,7 @@ public class AuthController {
             final String contextPath) {
         final Page<ItemBooking> sentBookingPage =
                 paginate(itemService.listBookingsByGuestId(user.getId()), page, DASHBOARD_PAGE_SIZE);
-        final Set<Integer> imageItemIds = new java.util.LinkedHashSet<>();
+        final Set<Integer> imageItemIds = new LinkedHashSet<>();
         final Map<Integer, String> sentStatusMessageCodeByBookingId = new LinkedHashMap<>();
         final Map<Integer, String> sentDateLabelByBookingId = new LinkedHashMap<>();
         final Map<Integer, String> sentTimeRangeLabelByBookingId = new LinkedHashMap<>();
@@ -544,36 +546,36 @@ public class AuthController {
                 || "cancelled".equals(status);
     }
 
-    private Map<Integer, Boolean> buildDeleteDeactivatesByItemId(final List<ar.edu.itba.paw.models.Item> ownedItems) {
-        final Map<Integer, Boolean> map = new java.util.LinkedHashMap<>();
+    private Map<Integer, Boolean> buildDeleteDeactivatesByItemId(final List<Item> ownedItems) {
+        final Map<Integer, Boolean> map = new LinkedHashMap<>();
         if (ownedItems == null) {
             return map;
         }
-        for (final ar.edu.itba.paw.models.Item item : ownedItems) {
+        for (final Item item : ownedItems) {
             if (item == null || item.getId() == null) {
                 continue;
             }
             final boolean hasBlocking = itemService.listBookingsByItemId(item.getId()).stream()
-                    .anyMatch(b -> b.getState() != ar.edu.itba.paw.models.BookingState.BOOKING_REJECTED
-                            && b.getState() != ar.edu.itba.paw.models.BookingState.BOOKING_CANCELLED);
+                    .anyMatch(b -> b.getState() != BookingState.BOOKING_REJECTED
+                            && b.getState() != BookingState.BOOKING_CANCELLED);
             map.put(item.getId(), Boolean.TRUE.equals(item.getActive()) && hasBlocking);
         }
         return map;
     }
 
-    private Map<Integer, Boolean> buildDeleteDisabledByItemId(final List<ar.edu.itba.paw.models.Item> ownedItems) {
-        final Map<Integer, Boolean> map = new java.util.LinkedHashMap<>();
+    private Map<Integer, Boolean> buildDeleteDisabledByItemId(final List<Item> ownedItems) {
+        final Map<Integer, Boolean> map = new LinkedHashMap<>();
         if (ownedItems == null) {
             return map;
         }
-        final java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
-        for (final ar.edu.itba.paw.models.Item item : ownedItems) {
+        final OffsetDateTime now = OffsetDateTime.now();
+        for (final Item item : ownedItems) {
             if (item == null || item.getId() == null) {
                 continue;
             }
             final boolean hasFutureBlocking = itemService.listBookingsByItemId(item.getId()).stream()
-                    .anyMatch(b -> b.getState() != ar.edu.itba.paw.models.BookingState.BOOKING_REJECTED
-                            && b.getState() != ar.edu.itba.paw.models.BookingState.BOOKING_CANCELLED
+                    .anyMatch(b -> b.getState() != BookingState.BOOKING_REJECTED
+                            && b.getState() != BookingState.BOOKING_CANCELLED
                             && b.getEndTime() != null
                             && b.getEndTime().isAfter(now));
             map.put(item.getId(), !Boolean.TRUE.equals(item.getActive()) && hasFutureBlocking);

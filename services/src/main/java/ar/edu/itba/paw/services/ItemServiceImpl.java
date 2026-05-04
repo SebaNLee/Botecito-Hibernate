@@ -601,13 +601,14 @@ public final class ItemServiceImpl implements ItemService {
                     item.getId(),
                     Boolean.TRUE.equals(item.getActive())
                             && itemBookings.stream()
-                                    .anyMatch(
-                                            b -> BookingDisplayFormatter.shouldRetainBookingForDeletion(b.getState())));
+                                    .anyMatch(b -> !Objects.equals(b.getGuestId(), item.getOwnerId())
+                                            && BookingDisplayFormatter.shouldRetainBookingForDeletion(b.getState())));
             disabled.put(
                     item.getId(),
                     !Boolean.TRUE.equals(item.getActive())
                             && itemBookings.stream()
-                                    .anyMatch(b -> BookingDisplayFormatter.shouldRetainBookingForDeletion(b.getState())
+                                    .anyMatch(b -> !Objects.equals(b.getGuestId(), item.getOwnerId())
+                                            && BookingDisplayFormatter.shouldRetainBookingForDeletion(b.getState())
                                             && b.getEndTime() != null
                                             && b.getEndTime().isAfter(now)));
         }

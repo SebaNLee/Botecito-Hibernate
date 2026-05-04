@@ -352,6 +352,11 @@ public class ItemJdbcDao implements ItemDao {
         }
         if (hasBookings(itemId)) {
             if (Boolean.TRUE.equals(item.get().getActive())) {
+                if (!hasGuestBookingsExcludingOwner(itemId)) {
+                    clearCurrentVersionOwnerDeleteToken(itemId);
+                    final int deletedRows = jdbcTemplate.update("DELETE FROM item WHERE id = ?", itemId);
+                    return deletedRows > 0;
+                }
                 snapshotBookingsForPublicationEdit(itemId);
                 final int updatedRows = updateCurrentVersionActive(itemId, null, false);
                 return updatedRows > 0;
@@ -376,6 +381,11 @@ public class ItemJdbcDao implements ItemDao {
         }
         if (hasBookings(itemId)) {
             if (Boolean.TRUE.equals(item.get().getActive())) {
+                if (!hasGuestBookingsExcludingOwner(itemId)) {
+                    clearCurrentVersionOwnerDeleteToken(itemId);
+                    final int deletedRows = jdbcTemplate.update("DELETE FROM item WHERE id = ?", itemId);
+                    return deletedRows > 0;
+                }
                 snapshotBookingsForPublicationEdit(itemId);
                 final int updatedRows = updateCurrentVersionActive(itemId, ownerId, false);
                 return updatedRows > 0;
@@ -1599,13 +1609,32 @@ public class ItemJdbcDao implements ItemDao {
         return bookingCount != null && bookingCount > 0;
     }
 
+    /**
+     * Bookings where the guest is not the publication owner (excludes owner personal time blocks).
+     */
+    private boolean hasGuestBookingsExcludingOwner(final int itemId) {
+        final Integer bookingCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*)"
+                        + " FROM item_booking b"
+                        + " JOIN item i ON i.id = b.item_id"
+                        + " JOIN item_publication_version v ON v.id = i.version_id"
+                        + " WHERE b.item_id = ?"
+                        + " AND b.guest_id <> v.owner_id",
+                Integer.class,
+                itemId);
+        return bookingCount != null && bookingCount > 0;
+    }
+
     private boolean hasFutureRetainedBookings(final int itemId) {
         final Integer bookingCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*)"
-                        + " FROM item_booking"
-                        + " WHERE item_id = ?"
-                        + " AND state NOT IN ('BOOKING_REJECTED', 'BOOKING_CANCELLED')"
-                        + " AND end_time > CURRENT_TIMESTAMP",
+                        + " FROM item_booking b"
+                        + " JOIN item i ON i.id = b.item_id"
+                        + " JOIN item_publication_version v ON v.id = i.version_id"
+                        + " WHERE b.item_id = ?"
+                        + " AND b.state NOT IN ('BOOKING_REJECTED', 'BOOKING_CANCELLED')"
+                        + " AND b.end_time > CURRENT_TIMESTAMP"
+                        + " AND b.guest_id <> v.owner_id",
                 Integer.class,
                 itemId);
         return bookingCount != null && bookingCount > 0;

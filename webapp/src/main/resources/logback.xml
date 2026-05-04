@@ -19,7 +19,7 @@
       <pattern>${defaultPattern:-}</pattern>
     </encoder>
   </appender>
-  <root level="WARN">
+  <root level="INFO">
     <appender-ref ref="root-appender" />
   </root>
   <logger name="ar.edu.itba" level="DEBUG" additivity="false">

@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.BookingState;
-import ar.edu.itba.paw.models.DisabledTimeSlot;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
@@ -10,7 +9,6 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -24,31 +22,34 @@ final class MarketplaceAvailabilityMatcher {
     static boolean matches(
             final ItemSearchCriteria criteria,
             final List<ItemAvailability> availabilities,
-            final List<ItemBooking> bookings,
-            final List<DisabledTimeSlot> disabledSlots) {
-        if (isBlank(criteria.getDate())) {
+            final List<ItemBooking> bookings) {
+        if (criteria.getDate() == null) {
             return matchesWithoutCalendarDate(criteria, availabilities);
         }
 
-        final TreeSet<String> availableTimes =
-                availableTimesForDate(criteria.getDate(), availabilities, bookings, disabledSlots);
+        final TreeSet<String> availableTimes = availableTimesForDate(criteria.getDate(), availabilities, bookings);
         if (availableTimes.isEmpty()) {
             return false;
         }
 
-        if (isBlank(criteria.getStartTime()) && isBlank(criteria.getEndTime())) {
+        if (criteria.getStartTime() == null && criteria.getEndTime() == null) {
             return hasAnyContinuousTwoHourWindow(List.copyOf(availableTimes));
         }
 
-        if (!isBlank(criteria.getStartTime()) && isBlank(criteria.getEndTime())) {
-            return hasContinuousTwoHourWindowStartingAt(List.copyOf(availableTimes), criteria.getStartTime());
+        if (criteria.getStartTime() != null && criteria.getEndTime() == null) {
+            return hasContinuousTwoHourWindowStartingAt(
+                    List.copyOf(availableTimes), criteria.getStartTime().toString());
         }
 
-        if (isBlank(criteria.getStartTime())) {
-            return hasContinuousTwoHourWindowEndingAt(List.copyOf(availableTimes), criteria.getEndTime());
+        if (criteria.getStartTime() == null) {
+            return hasContinuousTwoHourWindowEndingAt(
+                    List.copyOf(availableTimes), criteria.getEndTime().toString());
         }
 
-        return hasContinuousAvailability(List.copyOf(availableTimes), criteria.getStartTime(), criteria.getEndTime());
+        return hasContinuousAvailability(
+                List.copyOf(availableTimes),
+                criteria.getStartTime().toString(),
+                criteria.getEndTime().toString());
     }
 
     /**
@@ -57,19 +58,20 @@ final class MarketplaceAvailabilityMatcher {
      */
     private static boolean matchesWithoutCalendarDate(
             final ItemSearchCriteria criteria, final List<ItemAvailability> availabilities) {
-        if (isBlank(criteria.getStartTime()) && isBlank(criteria.getEndTime())) {
+        if (criteria.getStartTime() == null && criteria.getEndTime() == null) {
             return true;
         }
 
-        if (!isBlank(criteria.getStartTime()) && isBlank(criteria.getEndTime())) {
-            return matchesStartTimeAnyWeekday(criteria.getStartTime(), availabilities);
+        if (criteria.getStartTime() != null && criteria.getEndTime() == null) {
+            return matchesStartTimeAnyWeekday(criteria.getStartTime().toString(), availabilities);
         }
 
-        if (isBlank(criteria.getStartTime())) {
-            return matchesEndTimeAnyWeekday(criteria.getEndTime(), availabilities);
+        if (criteria.getStartTime() == null) {
+            return matchesEndTimeAnyWeekday(criteria.getEndTime().toString(), availabilities);
         }
 
-        return matchesRangeAnyWeekday(criteria.getStartTime(), criteria.getEndTime(), availabilities);
+        return matchesRangeAnyWeekday(
+                criteria.getStartTime().toString(), criteria.getEndTime().toString(), availabilities);
     }
 
     private static boolean matchesStartTimeAnyWeekday(
@@ -119,42 +121,28 @@ final class MarketplaceAvailabilityMatcher {
     }
 
     private static TreeSet<String> availableTimesForDate(
-            final String requestedDate,
-            final List<ItemAvailability> availabilities,
-            final List<ItemBooking> bookings,
-            final List<DisabledTimeSlot> disabledSlots) {
-        try {
-            final LocalDate date = LocalDate.parse(requestedDate);
-            final TreeSet<String> scheduledTimes = new TreeSet<>();
-            final TreeSet<String> bookedTimes = new TreeSet<>();
-            final TreeSet<String> disabledTimes = new TreeSet<>();
-            for (final ItemAvailability availability : availabilities) {
-                if (availability.getWeekday() == date.getDayOfWeek()) {
-                    addTimeRange(scheduledTimes, availability.getStartTime(), availability.getEndTime());
-                }
-            }
-            for (final ItemBooking booking : bookings) {
-                addBookedTimesForDate(bookedTimes, date, booking);
-            }
-            if (disabledSlots != null) {
-                for (final DisabledTimeSlot disabled : disabledSlots) {
-                    if (date.equals(disabled.getSlotDate())) {
-                        addTimeRange(disabledTimes, disabled.getStartTime(), disabled.getEndTime());
-                    }
-                }
-            }
-            scheduledTimes.removeAll(bookedTimes);
-            scheduledTimes.removeAll(disabledTimes);
-            return scheduledTimes;
-        } catch (final DateTimeParseException exception) {
+            final LocalDate date, final List<ItemAvailability> availabilities, final List<ItemBooking> bookings) {
+        if (date == null) {
             return new TreeSet<>();
         }
+        final TreeSet<String> scheduledTimes = new TreeSet<>();
+        final TreeSet<String> bookedTimes = new TreeSet<>();
+        for (final ItemAvailability availability : availabilities) {
+            if (availability.getWeekday() == date.getDayOfWeek()) {
+                addTimeRange(scheduledTimes, availability.getStartTime(), availability.getEndTime());
+            }
+        }
+        for (final ItemBooking booking : bookings) {
+            addBookedTimesForDate(bookedTimes, date, booking);
+        }
+        scheduledTimes.removeAll(bookedTimes);
+        return scheduledTimes;
     }
 
     private static void addTimeRange(final TreeSet<String> times, final LocalTime startTime, final LocalTime endTime) {
         final int startMinute = startTime.toSecondOfDay() / 60;
         final int endMinute = endTime.toSecondOfDay() / 60;
-        for (int minute = startMinute; minute <= endMinute; minute += TIME_SLOT_STEP_MINUTES) {
+        for (int minute = startMinute; minute < endMinute; minute += TIME_SLOT_STEP_MINUTES) {
             times.add(LocalTime.ofSecondOfDay((long) minute * 60).toString());
         }
     }
@@ -209,9 +197,6 @@ final class MarketplaceAvailabilityMatcher {
 
     private static boolean hasContinuousTwoHourWindowEndingAt(
             final List<String> availableTimes, final String requestedEndTime) {
-        if (!availableTimes.contains(requestedEndTime)) {
-            return false;
-        }
         for (final String possibleStartTime : availableTimes) {
             if (hasContinuousAvailability(availableTimes, possibleStartTime, requestedEndTime)) {
                 return true;
@@ -231,7 +216,7 @@ final class MarketplaceAvailabilityMatcher {
                 return false;
             }
             for (int minute = startTime.toSecondOfDay() / 60;
-                    minute <= endTime.toSecondOfDay() / 60;
+                    minute < endTime.toSecondOfDay() / 60;
                     minute += TIME_SLOT_STEP_MINUTES) {
                 if (!availableTimeSet.contains(
                         LocalTime.ofSecondOfDay((long) minute * 60).toString())) {
@@ -242,9 +227,5 @@ final class MarketplaceAvailabilityMatcher {
         } catch (final RuntimeException exception) {
             return false;
         }
-    }
-
-    private static boolean isBlank(final String value) {
-        return value == null || value.isBlank();
     }
 }

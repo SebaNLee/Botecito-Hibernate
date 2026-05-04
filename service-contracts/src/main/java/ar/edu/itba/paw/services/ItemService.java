@@ -4,8 +4,11 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
+import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
+import ar.edu.itba.paw.models.RatingSummary;
+import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.User;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -16,33 +19,37 @@ import java.util.Optional;
 public interface ItemService {
     List<Item> listItems();
 
-    Page<Item> searchItems(final ItemSearchCriteria criteria, final int page, final int pageSize);
+    Page<Item> searchItems(ItemSearchCriteria criteria, int page, int pageSize);
 
     List<Item> listItemsByOwnerId(int ownerId);
 
     List<LocationOption> listLocationOptions();
 
-    Optional<Item> findItemById(final int id);
+    Optional<Item> findItemById(int id);
 
-    Optional<Item> findAnyItemById(final int id);
+    Optional<Item> findItemByIdForOwner(int id, int ownerId);
 
-    Optional<User> findUserById(final int id);
+    Optional<Item> findAnyItemById(int id);
 
-    Optional<User> findUserByEmail(final String email);
+    Optional<User> findUserById(int id);
 
-    Optional<ItemType> findItemTypeById(final int id);
+    Optional<User> findUserByEmail(String email);
 
-    boolean updatePublication(
+    Optional<ItemType> findItemTypeById(int id);
+
+    boolean updatePublicationForOwner(
             int itemId,
+            int ownerId,
             String title,
             String description,
             int pricePerHour,
             Integer difficultyLevel,
-            int locationOptionId);
+            int locationOptionId,
+            byte[] primaryImageData);
 
     boolean hasBlockingBookingsForEdition(int itemId);
 
-    boolean deleteItemById(int itemId);
+    boolean deleteItemByIdForOwner(int itemId, int ownerId);
 
     Item createPublication(
             String ownerGivenName,
@@ -59,34 +66,96 @@ public interface ItemService {
             Integer locationOptionId,
             List<ItemAvailability> availabilities);
 
-    boolean setItemActive(final int itemId, final boolean active);
+    boolean setItemActiveForOwner(int itemId, int ownerId, boolean active);
 
     List<ItemAvailability> listAvailabilities();
 
-    List<ItemAvailability> listAvailabilitiesByItemId(final int itemId);
+    List<ItemAvailability> listAvailabilitiesByItemId(int itemId);
 
     List<ItemBooking> listBookings();
 
-    List<ItemBooking> listBookingsByItemId(final int itemId);
+    List<ItemBooking> listBookingsByItemId(int itemId);
 
-    List<ItemBooking> listBookingsByGuestId(final int guestId);
+    List<ItemBooking> listBookingsByGuestId(int guestId);
 
-    List<ItemBooking> listBookingsByOwnerId(final int ownerId);
+    List<ItemBooking> listBookingsByOwnerId(int ownerId);
 
-    List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId);
+    List<ItemBooking> listPendingBookingsByOwnerId(int ownerId);
 
-    List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId);
+    List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(int ownerId);
 
-    Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId);
+    List<ItemBooking> listActiveBookingsByItemId(int itemId);
 
-    Optional<byte[]> findImageById(final int id);
+    Optional<ItemSnapshot> findSnapshotByBookingIdForGuest(int bookingId, int guestId);
 
-    List<Integer> listImageIdsByItemId(final int itemId);
+    Optional<ItemSnapshot> findSnapshotByBookingIdForOwner(int bookingId, int ownerId);
 
-    Integer insertAvailability(
-            final int itemId, final DayOfWeek weekday, final LocalTime startTime, final LocalTime endTime);
+    Optional<ItemSnapshot> findSnapshotVersionByIdForGuest(int versionId, int itemId, int guestId);
 
-    Integer insertImage(final int itemId, final byte[] imageData);
+    Optional<ItemSnapshot> findSnapshotVersionByIdForOwner(int versionId, int itemId, int ownerId);
 
-    Integer replacePrimaryImage(final int itemId, final byte[] imageData);
+    List<ItemSnapshot> listSnapshotsByItemIdForGuest(int itemId, int guestId);
+
+    List<ItemSnapshot> listSnapshotsByItemIdForOwner(int itemId, int ownerId);
+
+    Optional<ItemAvailability> findNextAvailabilityByItemId(int itemId);
+
+    Optional<byte[]> findImageById(int id);
+
+    List<Integer> listImageIdsByItemIdOrdered(int itemId);
+
+    Optional<Integer> findCoverImageIdByItemId(int itemId);
+
+    int countImagesByItemId(int itemId);
+
+    int maxImagesPerItem();
+
+    Integer insertAvailability(int itemId, DayOfWeek weekday, LocalTime startTime, LocalTime endTime);
+
+    Integer appendImage(int itemId, byte[] imageData);
+
+    void replaceGallery(int itemId, List<byte[]> orderedImages);
+
+    boolean deleteImageFromItem(int itemId, int imageId);
+
+    void reorderImagesForItem(int itemId, List<Integer> imageIdsInOrder);
+
+    ItemSearchCriteria parseAndValidateSearchCriteria(
+            String searchQuery,
+            String locationOptionId,
+            String date,
+            String startTime,
+            String endTime,
+            String capacity,
+            String maxWeight,
+            String difficulty,
+            String minRating,
+            String sort);
+
+    Page<Item> searchMarketplace(ItemSearchCriteria criteria, int page, int pageSize);
+
+    java.util.Map<String, String> validatePublicationDraft(PublicationDraft draft);
+
+    Item createPublicationFromDraft(PublicationDraft draft);
+
+    boolean hasPublicationChanges(
+            int itemId,
+            String title,
+            String description,
+            int pricePerHour,
+            Integer difficultyLevel,
+            int locationOptionId,
+            byte[] primaryImageData);
+
+    void resolveEditConflict(int itemId, BookingDecisionBatch decisions);
+
+    Integer uploadGalleryImage(int itemId, int ownerId, GalleryImageUpload image);
+
+    boolean reorderGalleryForOwner(int itemId, int ownerId, List<Integer> imageIdsInOrder);
+
+    RatingSummary getItemRatingSummary(int itemId);
+
+    List<Review> listLatestReviews(int itemId, int limit);
+
+    Optional<ReviewService.PendingReviewAction> findPendingReviewAction(int userId, int itemId);
 }

@@ -1,11 +1,15 @@
 package ar.edu.itba.paw.webapp.form;
 
 import ar.edu.itba.paw.services.utils.TimeRangeList;
-import ar.edu.itba.paw.webapp.form.validation.FileSize;
+import ar.edu.itba.paw.webapp.form.validation.ImageGalleryUpload;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.io.Serializable;
 import java.time.DayOfWeek;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.validation.constraints.Max;
@@ -14,8 +18,12 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.web.multipart.MultipartFile;
 
+@Getter
+@Setter
 public class PublishBoatForm {
 
     public interface Step1 {}
@@ -52,105 +60,73 @@ public class PublishBoatForm {
     @Pattern(regexp = "^$|\\d+(\\.\\d{1,2})?", groups = Step1.class, message = "{publish.validation.maxWeight.numeric}")
     private String maxWeight;
 
-    @FileSize(max = 5242880, groups = Step1.class)
-    private MultipartFile file;
+    @ImageGalleryUpload(groups = Step1.class)
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Spring multipart binding")
+    private List<MultipartFile> files = new ArrayList<>();
 
-    private byte[] uploadedImageData = new byte[0];
-    private String uploadedImageContentType;
+    private final List<UploadedImage> uploadedImages = new ArrayList<>();
 
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Required for Spring indexed property binding")
     private final Map<DayOfWeek, TimeRangeList> availabilityByWeekday = new EnumMap<>(DayOfWeek.class);
 
-    public String getTitle() {
-        return title;
+    public void setFiles(final List<MultipartFile> files) {
+        this.files = files == null ? new ArrayList<>() : files;
     }
 
-    public void setTitle(final String title) {
-        this.title = title;
+    public List<UploadedImage> getUploadedImages() {
+        return Collections.unmodifiableList(uploadedImages);
     }
 
-    public String getDescription() {
-        return description;
+    public int getUploadedImageCount() {
+        return uploadedImages.size();
     }
 
-    public void setDescription(final String description) {
-        this.description = description;
+    public boolean hasUploadedImages() {
+        return !uploadedImages.isEmpty();
     }
 
-    public String getLocationOptionId() {
-        return locationOptionId;
+    public void appendUploadedImage(final byte[] data, final String contentType) {
+        if (data == null || data.length == 0) {
+            return;
+        }
+        uploadedImages.add(new UploadedImage(data, contentType));
     }
 
-    public void setLocationOptionId(final String locationOptionId) {
-        this.locationOptionId = locationOptionId;
+    public void removeUploadedImageAt(final int index) {
+        if (index < 0 || index >= uploadedImages.size()) {
+            return;
+        }
+        uploadedImages.remove(index);
     }
 
-    public String getCapacity() {
-        return capacity;
+    public void reorderUploadedImages(final List<Integer> newOrder) {
+        if (newOrder == null || newOrder.size() != uploadedImages.size()) {
+            return;
+        }
+        final List<UploadedImage> reordered = new ArrayList<>(uploadedImages.size());
+        for (final Integer originalIndex : newOrder) {
+            if (originalIndex == null || originalIndex < 0 || originalIndex >= uploadedImages.size()) {
+                return;
+            }
+            reordered.add(uploadedImages.get(originalIndex));
+        }
+        uploadedImages.clear();
+        uploadedImages.addAll(reordered);
     }
 
-    public void setCapacity(final String capacity) {
-        this.capacity = capacity;
+    public UploadedImage getUploadedImageAt(final int index) {
+        if (index < 0 || index >= uploadedImages.size()) {
+            return null;
+        }
+        return uploadedImages.get(index);
     }
 
-    public String getItemTypeId() {
-        return itemTypeId;
-    }
-
-    public void setItemTypeId(final String itemTypeId) {
-        this.itemTypeId = itemTypeId;
-    }
-
-    public String getPricePerHour() {
-        return pricePerHour;
-    }
-
-    public void setPricePerHour(final String pricePerHour) {
-        this.pricePerHour = pricePerHour;
-    }
-
-    public Integer getDifficultyLevel() {
-        return difficultyLevel;
-    }
-
-    public void setDifficultyLevel(final Integer difficultyLevel) {
-        this.difficultyLevel = difficultyLevel;
-    }
-
-    public String getMaxWeight() {
-        return maxWeight;
-    }
-
-    public void setMaxWeight(final String maxWeight) {
-        this.maxWeight = maxWeight;
-    }
-
-    public MultipartFile getFile() {
-        return file;
-    }
-
-    public void setFile(final MultipartFile file) {
-        this.file = file;
-    }
-
-    public byte[] getUploadedImageData() {
-        return Arrays.copyOf(uploadedImageData, uploadedImageData.length);
-    }
-
-    public void setUploadedImageData(final byte[] uploadedImageData) {
-        this.uploadedImageData =
-                uploadedImageData == null ? new byte[0] : Arrays.copyOf(uploadedImageData, uploadedImageData.length);
-    }
-
-    public String getUploadedImageContentType() {
-        return uploadedImageContentType;
-    }
-
-    public void setUploadedImageContentType(final String uploadedImageContentType) {
-        this.uploadedImageContentType = uploadedImageContentType;
-    }
-
-    public boolean hasUploadedImage() {
-        return uploadedImageData.length > 0;
+    public List<byte[]> orderedImageBytes() {
+        final List<byte[]> result = new ArrayList<>(uploadedImages.size());
+        for (final UploadedImage image : uploadedImages) {
+            result.add(image.getData());
+        }
+        return result;
     }
 
     public boolean isDayEnabled(final DayOfWeek weekday) {
@@ -182,12 +158,6 @@ public class PublishBoatForm {
         availabilityByWeekday.put(safeWeekday, copy);
     }
 
-    // Spring binds map properties through this getter, so it must return the backing map.
-    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Required for Spring indexed property binding")
-    public Map<DayOfWeek, TimeRangeList> getAvailabilityByWeekday() {
-        return availabilityByWeekday;
-    }
-
     public void setAvailabilityByWeekday(final Map<DayOfWeek, TimeRangeList> availabilityByWeekday) {
         this.availabilityByWeekday.clear();
         if (availabilityByWeekday == null) {
@@ -196,6 +166,27 @@ public class PublishBoatForm {
 
         for (final Map.Entry<DayOfWeek, TimeRangeList> dayEntry : availabilityByWeekday.entrySet()) {
             setAvailabilityFor(dayEntry.getKey(), dayEntry.getValue());
+        }
+    }
+
+    @Getter
+    public static final class UploadedImage implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private final byte[] data;
+        private final String contentType;
+
+        public UploadedImage(final byte[] data, final String contentType) {
+            this.data = data == null ? new byte[0] : Arrays.copyOf(data, data.length);
+            this.contentType = contentType;
+        }
+
+        public byte[] getData() {
+            return Arrays.copyOf(data, data.length);
+        }
+
+        public int getSize() {
+            return data.length;
         }
     }
 }

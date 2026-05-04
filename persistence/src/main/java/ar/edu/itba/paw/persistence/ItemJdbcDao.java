@@ -1,140 +1,52 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.BookingPaymentProof;
-import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
-import ar.edu.itba.paw.models.ItemAvailability;
-import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
+import ar.edu.itba.paw.models.ItemSearchSort;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
-import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.models.ReviewTargetType;
 import java.math.BigDecimal;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.DayOfWeek;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.IntFunction;
 import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class ItemJdbcDao implements ItemDao {
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
-    private static final String ITEM_SELECT = "SELECT i.id, i.owner_id, i.type_id, i.title, i.description,"
-            + " i.price_per_hour, i.capacity_people, i.max_weight_kg, i.difficulty_level,"
-            + " i.location_option_id, lo.name AS location,"
-            + " i.active, i.owner_delete_token, i.owner_delete_used_at, i.created_at"
+
+    private static final String ITEM_SELECT = "SELECT i.id, v.owner_id, v.type_id, v.title, v.description,"
+            + " v.price_per_hour, v.capacity_people, v.max_weight_kg, v.difficulty_level,"
+            + " v.location_option_id, lo.name AS location,"
+            + " v.active, v.owner_delete_token, v.item_created_at AS created_at"
             + " FROM item i"
-            + " JOIN location_option lo ON lo.id = i.location_option_id";
-
-    private static final @NonNull RowMapper<Item> ITEM_ROW_MAPPER = (ResultSet rs, int rowNum) -> {
-        final Item item = new Item();
-        item.setId(rs.getInt("id"));
-        item.setOwnerId(rs.getInt("owner_id"));
-        item.setTypeId(rs.getInt("type_id"));
-        item.setTitle(rs.getString("title"));
-        item.setDescription(rs.getString("description"));
-        item.setPricePerHour(rs.getInt("price_per_hour"));
-        item.setCapacityPeople(rs.getInt("capacity_people"));
-        item.setMaxWeightKg(rs.getBigDecimal("max_weight_kg"));
-        item.setDifficultyLevel((Integer) rs.getObject("difficulty_level"));
-        item.setLocationOptionId((Integer) rs.getObject("location_option_id"));
-        item.setLocation(rs.getString("location"));
-        item.setActive(rs.getBoolean("active"));
-        item.setOwnerDeleteToken(rs.getString("owner_delete_token"));
-        item.setOwnerDeleteUsedAt(formatDateTime(readOffsetDateTime(rs, "owner_delete_used_at")));
-        item.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
-        return item;
-    };
-
-    private static final @NonNull RowMapper<User> USER_ROW_MAPPER = (ResultSet rs, int rowNum) -> {
-        final User user = new User();
-        user.setId(rs.getInt("id"));
-        user.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
-        user.setGivenName(rs.getString("given_name"));
-        user.setLastName(rs.getString("last_name"));
-        user.setEmail(rs.getString("email"));
-        user.setPhone(rs.getString("phone"));
-        user.setPaymentAlias(rs.getString("payment_alias"));
-        user.setPreferredLanguage(rs.getString("preferred_language"));
-        return user;
-    };
-
-    private static final @NonNull RowMapper<ItemType> ITEM_TYPE_ROW_MAPPER = (ResultSet rs, int rowNum) -> {
-        final ItemType itemType = new ItemType();
-        itemType.setId(rs.getInt("id"));
-        itemType.setName(rs.getString("name"));
-        return itemType;
-    };
-
-    private static final @NonNull RowMapper<ItemAvailability> ITEM_AVAILABILITY_ROW_MAPPER =
-            (ResultSet rs, int rowNum) -> {
-                final ItemAvailability availability = new ItemAvailability();
-                availability.setId(rs.getInt("id"));
-                availability.setItemId(rs.getInt("item_id"));
-                availability.setWeekday(rs.getString("weekday"));
-                availability.setStartTime(rs.getTime("start_time").toLocalTime().format(TIME_FORMAT));
-                availability.setEndTime(rs.getTime("end_time").toLocalTime().format(TIME_FORMAT));
-                return availability;
-            };
-
-    private static final @NonNull RowMapper<ItemBooking> ITEM_BOOKING_ROW_MAPPER = (ResultSet rs, int rowNum) -> {
-        final ItemBooking booking = new ItemBooking();
-        booking.setId(rs.getInt("id"));
-        booking.setItemId(rs.getInt("item_id"));
-        booking.setGuestId(rs.getInt("guest_id"));
-        booking.setStartTime(formatDateTime(readOffsetDateTime(rs, "start_time")));
-        booking.setEndTime(formatDateTime(readOffsetDateTime(rs, "end_time")));
-        booking.setState(rs.getString("state"));
-        booking.setRequestMessage(rs.getString("request_message"));
-        booking.setHostDecisionToken(rs.getString("host_decision_token"));
-        booking.setHostDecisionUsedAt(formatDateTime(readOffsetDateTime(rs, "host_decision_used_at")));
-        booking.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
-        booking.setUpdatedAt(formatDateTime(readOffsetDateTime(rs, "updated_at")));
-        return booking;
-    };
-
-    private static final @NonNull RowMapper<BookingPaymentProof> BOOKING_PAYMENT_PROOF_ROW_MAPPER =
-            (ResultSet rs, int rowNum) -> {
-                final BookingPaymentProof proof = new BookingPaymentProof();
-                proof.setId(rs.getInt("id"));
-                proof.setBookingId(rs.getInt("booking_id"));
-                proof.setUploaderId(rs.getInt("uploader_id"));
-                proof.setFileName(rs.getString("file_name"));
-                proof.setContentType(rs.getString("content_type"));
-                proof.setFileData(rs.getBytes("file_data"));
-                proof.setCreatedAt(formatDateTime(readOffsetDateTime(rs, "created_at")));
-                return proof;
-            };
+            + " JOIN item_publication_version v ON v.id = i.version_id"
+            + " JOIN location_option lo ON lo.id = v.location_option_id";
 
     private final @NonNull JdbcTemplate jdbcTemplate;
+    private final boolean postgresDialect;
 
     @Autowired
-    public ItemJdbcDao(final @NonNull DataSource dataSource) {
+    public ItemJdbcDao(final @NonNull DataSource dataSource, final @NonNull JdbcDialect jdbcDialect) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
+        this.postgresDialect = jdbcDialect.isPostgres();
     }
 
     @Override
     public List<Item> listItems() {
-        return jdbcTemplate.query(ITEM_SELECT + " WHERE i.active = TRUE ORDER BY i.id", ITEM_ROW_MAPPER);
+        return jdbcTemplate.query(
+                ITEM_SELECT + " WHERE v.active = TRUE ORDER BY i.id", ItemJdbcRowMappers.ITEM_ROW_MAPPER);
     }
 
     @Override
@@ -146,7 +58,7 @@ public class ItemJdbcDao implements ItemDao {
                 + " LIMIT ? OFFSET ?";
         args.add(limit);
         args.add(offset);
-        return jdbcTemplate.query(sql, ITEM_ROW_MAPPER, args.toArray());
+        return jdbcTemplate.query(sql, ItemJdbcRowMappers.ITEM_ROW_MAPPER, args.toArray());
     }
 
     @Override
@@ -155,15 +67,18 @@ public class ItemJdbcDao implements ItemDao {
         final Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*)"
                         + " FROM item i"
-                        + " JOIN location_option lo ON lo.id = i.location_option_id"
+                        + " JOIN item_publication_version v ON v.id = i.version_id"
+                        + " JOIN location_option lo ON lo.id = v.location_option_id"
                         + marketplaceWhereClause(criteria, args),
                 Integer.class,
                 args.toArray());
         return count == null ? 0 : count;
     }
 
+    @Override
     public List<Item> listItemsByOwnerId(final int ownerId) {
-        return jdbcTemplate.query(ITEM_SELECT + " WHERE i.owner_id = ? ORDER BY i.id DESC", ITEM_ROW_MAPPER, ownerId);
+        return jdbcTemplate.query(
+                ITEM_SELECT + " WHERE v.owner_id = ? ORDER BY i.id DESC", ItemJdbcRowMappers.ITEM_ROW_MAPPER, ownerId);
     }
 
     @Override
@@ -178,59 +93,35 @@ public class ItemJdbcDao implements ItemDao {
 
     @Override
     public Optional<Item> findItemById(final int id) {
-        return jdbcTemplate.query(ITEM_SELECT + " WHERE i.id = ? AND i.active = TRUE", ITEM_ROW_MAPPER, id).stream()
+        return jdbcTemplate
+                .query(ITEM_SELECT + " WHERE i.id = ? AND v.active = TRUE", ItemJdbcRowMappers.ITEM_ROW_MAPPER, id)
+                .stream()
+                .findAny();
+    }
+
+    @Override
+    public Optional<Item> findItemByIdForOwner(final int id, final int ownerId) {
+        return jdbcTemplate
+                .query(
+                        ITEM_SELECT + " WHERE i.id = ? AND v.owner_id = ?",
+                        ItemJdbcRowMappers.ITEM_ROW_MAPPER,
+                        id,
+                        ownerId)
+                .stream()
                 .findAny();
     }
 
     @Override
     public Optional<Item> findAnyItemById(final int id) {
-        return jdbcTemplate.query(ITEM_SELECT + " WHERE i.id = ?", ITEM_ROW_MAPPER, id).stream()
+        return jdbcTemplate.query(ITEM_SELECT + " WHERE i.id = ?", ItemJdbcRowMappers.ITEM_ROW_MAPPER, id).stream()
                 .findAny();
-    }
-
-    @Override
-    public Optional<User> findUserById(final int id) {
-        return jdbcTemplate.query("SELECT * FROM users WHERE id = ?", USER_ROW_MAPPER, id).stream()
-                .findAny();
-    }
-
-    @Override
-    public Optional<User> findUserByEmail(final String email) {
-        return jdbcTemplate.query("SELECT * FROM users WHERE lower(email) = lower(?)", USER_ROW_MAPPER, email).stream()
-                .findAny();
-    }
-
-    @Override
-    public User createUser(
-            final String givenName, final String lastName, final String email, final String preferredLanguage) {
-        final int id = Objects.requireNonNull(
-                jdbcTemplate.queryForObject(
-                        "INSERT INTO users (given_name, last_name, email, preferred_language) VALUES (?, ?, ?, ?) RETURNING id",
-                        Integer.class,
-                        givenName,
-                        lastName,
-                        email,
-                        preferredLanguage),
-                "Could not create user for email " + email);
-
-        return findUserById(id).orElseThrow(() -> new IllegalStateException("Could not read inserted user " + id));
-    }
-
-    @Override
-    public boolean updateUserProfile(
-            final int userId, final String givenName, final String lastName, final String preferredLanguage) {
-        final int updatedRows = jdbcTemplate.update(
-                "UPDATE users SET given_name = ?, last_name = ?, preferred_language = ? WHERE id = ?",
-                givenName,
-                lastName,
-                preferredLanguage,
-                userId);
-        return updatedRows > 0;
     }
 
     @Override
     public Optional<ItemType> findItemTypeById(final int id) {
-        return jdbcTemplate.query("SELECT * FROM item_type WHERE id = ?", ITEM_TYPE_ROW_MAPPER, id).stream()
+        return jdbcTemplate
+                .query("SELECT * FROM item_type WHERE id = ?", ItemJdbcRowMappers.ITEM_TYPE_ROW_MAPPER, id)
+                .stream()
                 .findAny();
     }
 
@@ -242,27 +133,31 @@ public class ItemJdbcDao implements ItemDao {
             final int pricePerHour,
             final Integer difficultyLevel,
             final int locationOptionId) {
-        final int updatedRows = jdbcTemplate.update(
-                "UPDATE item"
-                        + " SET title = ?, description = ?, price_per_hour = ?, difficulty_level = ?, location_option_id = ?"
-                        + " WHERE id = ?",
-                title,
-                description,
-                pricePerHour,
-                difficultyLevel,
-                locationOptionId,
-                itemId);
-        return updatedRows > 0;
+        return updatePublicationVersion(
+                itemId, null, title, description, pricePerHour, difficultyLevel, locationOptionId);
+    }
+
+    @Override
+    public boolean updatePublicationForOwner(
+            final int itemId,
+            final int ownerId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final Integer difficultyLevel,
+            final int locationOptionId) {
+        return updatePublicationVersion(
+                itemId, ownerId, title, description, pricePerHour, difficultyLevel, locationOptionId);
     }
 
     @Override
     public boolean hasBlockingBookingsForEdition(final int itemId) {
         final Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*)"
-                        + " FROM item_booking"
-                        + " WHERE item_id = ?"
-                        + " AND state IN ('BOOKING_PENDING', 'BOOKING_CONFIRMED', 'BOOKING_PAYMENT_SUBMITTED',"
-                        + " 'BOOKING_PAID')",
+                        + ItemPersistenceSql.ITEM_BOOKING_VERSION_JOIN
+                        + " AND b.item_version_id IS NULL"
+                        + " AND b.state IN (" + ItemPersistenceSql.EDIT_CONFLICT_BOOKING_STATES + ")"
+                        + " AND (b.guest_id IS NULL OR b.guest_id <> v.owner_id)",
                 Integer.class,
                 itemId);
         return count != null && count > 0;
@@ -270,8 +165,29 @@ public class ItemJdbcDao implements ItemDao {
 
     @Override
     public boolean deleteItemById(final int itemId) {
-        final int deletedRows = jdbcTemplate.update("DELETE FROM item WHERE id = ?", itemId);
-        return deletedRows > 0;
+        return deleteItemWithOwnershipScope(itemId, null, this::findAnyItemById);
+    }
+
+    @Override
+    public boolean deleteItemByIdForOwner(final int itemId, final int ownerId) {
+        return deleteItemWithOwnershipScope(itemId, ownerId, id -> findItemByIdForOwner(id, ownerId));
+    }
+
+    private boolean deleteItemWithOwnershipScope(
+            final int itemId, final Integer ownerId, final IntFunction<Optional<Item>> findItem) {
+        final Optional<Item> item = findItem.apply(itemId);
+        if (item.isEmpty()) {
+            return false;
+        }
+        if (hasBookingsBlockingHardDelete(itemId)) {
+            if (Boolean.TRUE.equals(item.get().getActive())) {
+                snapshotBookingsForPublicationEdit(itemId);
+                return updateCurrentVersionActive(itemId, ownerId, false) > 0;
+            }
+            return false;
+        }
+        clearCurrentVersionOwnerDeleteToken(itemId);
+        return jdbcTemplate.update("DELETE FROM item WHERE id = ?", itemId) > 0;
     }
 
     @Override
@@ -286,338 +202,72 @@ public class ItemJdbcDao implements ItemDao {
             final Integer difficultyLevel,
             final int locationOptionId,
             final String ownerDeleteToken) {
-        final int id = Objects.requireNonNull(
-                jdbcTemplate.queryForObject(
-                        "INSERT INTO item"
-                                + " (owner_id, type_id, title, description, price_per_hour, capacity_people, max_weight_kg, difficulty_level, location_option_id, active, owner_delete_token)"
-                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-                                + " RETURNING id",
-                        Integer.class,
-                        ownerId,
-                        typeId,
-                        title,
-                        description,
-                        pricePerHour,
-                        capacityPeople,
-                        maxWeightKg,
-                        difficultyLevel,
-                        locationOptionId,
-                        Boolean.TRUE,
-                        ownerDeleteToken),
-                "Could not create item for owner " + ownerId);
-        return jdbcTemplate.query(ITEM_SELECT + " WHERE i.id = ?", ITEM_ROW_MAPPER, id).stream()
-                .findAny()
-                .orElseThrow(() -> new IllegalStateException("Could not read inserted item " + id));
+        final Timestamp now = Timestamp.from(Instant.now());
+        final Map<String, Object> versionData = buildPublicationVersionData(
+                ownerId,
+                typeId,
+                title,
+                description,
+                pricePerHour,
+                capacityPeople,
+                maxWeightKg,
+                difficultyLevel,
+                locationOptionId,
+                Boolean.TRUE,
+                ownerDeleteToken,
+                now,
+                now,
+                null);
+        final int versionId = insertPublicationVersion(versionData);
+        try {
+            final int id = insertItemRow(versionId, "Could not create item for owner " + ownerId);
+            return findAnyItemById(id)
+                    .orElseThrow(() -> new IllegalStateException("Could not read inserted item " + id));
+        } catch (final RuntimeException exception) {
+            jdbcTemplate.update("DELETE FROM item_publication_version WHERE id = ?", versionId);
+            throw exception;
+        }
     }
 
     @Override
-    public ItemAvailability createItemAvailability(
-            final int itemId, final String weekday, final String startTime, final String endTime) {
-        final int id = Objects.requireNonNull(
-                jdbcTemplate.queryForObject(
-                        "INSERT INTO item_availability (item_id, weekday, start_time, end_time)"
-                                + " VALUES (?, ?::availability_weekday, ?, ?)"
-                                + " RETURNING id",
-                        Integer.class,
-                        itemId,
-                        weekday,
-                        Time.valueOf(LocalTime.parse(startTime)),
-                        Time.valueOf(LocalTime.parse(endTime))),
-                "Could not create availability for item " + itemId);
-        return jdbcTemplate
-                .query("SELECT * FROM item_availability WHERE id = ?", ITEM_AVAILABILITY_ROW_MAPPER, id)
-                .stream()
-                .findAny()
-                .orElseThrow(() -> new IllegalStateException("Could not read inserted availability " + id));
-    }
-
-    @Override
-    public List<ItemAvailability> listAvailabilities() {
-        return jdbcTemplate.query("SELECT * FROM item_availability ORDER BY id", ITEM_AVAILABILITY_ROW_MAPPER);
-    }
-
-    @Override
-    public List<ItemAvailability> listAvailabilitiesByItemId(final int itemId) {
-        return jdbcTemplate.query(
-                "SELECT * FROM item_availability WHERE item_id = ? ORDER BY id", ITEM_AVAILABILITY_ROW_MAPPER, itemId);
-    }
-
-    @Override
-    public List<ItemBooking> listBookings() {
-        return jdbcTemplate.query("SELECT * FROM item_booking ORDER BY id", ITEM_BOOKING_ROW_MAPPER);
-    }
-
-    @Override
-    public List<ItemBooking> listBookingsByItemId(final int itemId) {
-        return jdbcTemplate.query(
-                "SELECT * FROM item_booking WHERE item_id = ? ORDER BY id", ITEM_BOOKING_ROW_MAPPER, itemId);
-    }
-
-    @Override
-    public List<ItemBooking> listBookingsByGuestId(final int guestId) {
-        return jdbcTemplate.query(
-                "SELECT * FROM item_booking WHERE guest_id = ? ORDER BY created_at DESC, id DESC",
-                ITEM_BOOKING_ROW_MAPPER,
-                guestId);
-    }
-
-    @Override
-    public List<ItemBooking> listBookingsByOwnerId(final int ownerId) {
-        return jdbcTemplate.query(
-                "SELECT b.*"
-                        + " FROM item_booking b"
-                        + " JOIN item i ON i.id = b.item_id"
-                        + " WHERE i.owner_id = ?"
-                        + " ORDER BY b.created_at DESC, b.id DESC",
-                ITEM_BOOKING_ROW_MAPPER,
-                ownerId);
-    }
-
-    @Override
-    public List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId) {
-        return jdbcTemplate.query(
-                "SELECT b.*"
-                        + " FROM item_booking b"
-                        + " JOIN item i ON i.id = b.item_id"
-                        + " WHERE i.owner_id = ? AND b.state = 'BOOKING_PENDING'"
-                        + " ORDER BY b.created_at DESC, b.id DESC",
-                ITEM_BOOKING_ROW_MAPPER,
-                ownerId);
-    }
-
-    @Override
-    public List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId) {
-        return jdbcTemplate.query(
-                "SELECT b.*"
-                        + " FROM item_booking b"
-                        + " JOIN item i ON i.id = b.item_id"
-                        + " WHERE i.owner_id = ? AND b.state = 'BOOKING_PAYMENT_SUBMITTED'"
-                        + " ORDER BY b.created_at DESC, b.id DESC",
-                ITEM_BOOKING_ROW_MAPPER,
-                ownerId);
-    }
-
-    @Override
-    public Optional<ItemBooking> findBookingByHostDecisionToken(final String hostDecisionToken) {
-        return jdbcTemplate
-                .query(
-                        "SELECT * FROM item_booking WHERE host_decision_token = ?",
-                        ITEM_BOOKING_ROW_MAPPER,
-                        hostDecisionToken)
-                .stream()
-                .findAny();
-    }
-
-    @Override
-    public Optional<ItemBooking> findBookingById(final int bookingId) {
-        return jdbcTemplate
-                .query("SELECT * FROM item_booking WHERE id = ?", ITEM_BOOKING_ROW_MAPPER, bookingId)
-                .stream()
-                .findAny();
-    }
-
-    @Override
-    public ItemBooking createBookingRequest(
-            final int itemId,
-            final int guestId,
-            final OffsetDateTime startTime,
-            final OffsetDateTime endTime,
-            final String requestMessage,
-            final String hostDecisionToken) {
-        final int id = Objects.requireNonNull(
-                jdbcTemplate.queryForObject(
-                        "INSERT INTO item_booking"
-                                + " (item_id, guest_id, start_time, end_time, state, request_message, host_decision_token)"
-                                + " VALUES (?, ?, ?, ?, ?::booking_state, ?, ?)"
-                                + " RETURNING id",
-                        Integer.class,
-                        itemId,
-                        guestId,
-                        Timestamp.from(startTime.toInstant()),
-                        Timestamp.from(endTime.toInstant()),
-                        BookingState.BOOKING_PENDING.name(),
-                        requestMessage,
-                        hostDecisionToken),
-                "Could not create booking for item " + itemId);
-        return findBookingById(id)
-                .orElseThrow(() -> new IllegalStateException("Could not read inserted booking " + id));
-    }
-
-    @Override
-    public boolean resolveBookingByHostDecisionToken(
-            final String hostDecisionToken, final BookingState newState, final OffsetDateTime hostDecisionUsedAt) {
+    public boolean snapshotBookingsForPublicationEdit(final int itemId) {
+        final Integer bookingsWithoutVersion = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*)"
+                        + " FROM item_booking"
+                        + " WHERE item_id = ?"
+                        + " AND item_version_id IS NULL"
+                        + " AND state IN (" + ItemPersistenceSql.PUBLICATION_EDIT_SNAPSHOT_STATES + ")",
+                Integer.class,
+                itemId);
+        if (bookingsWithoutVersion == null || bookingsWithoutVersion == 0) {
+            return true;
+        }
+        final Integer versionId = findCurrentVersionIdByItemId(itemId);
+        if (versionId == null) {
+            throw new IllegalStateException("Could not find current publication version for item " + itemId);
+        }
         final int updatedRows = jdbcTemplate.update(
                 "UPDATE item_booking"
-                        + " SET state = ?::booking_state, host_decision_used_at = ?, updated_at = CURRENT_TIMESTAMP"
-                        + " WHERE host_decision_token = ?"
-                        + " AND state = 'BOOKING_PENDING'"
-                        + " AND host_decision_used_at IS NULL",
-                newState.name(),
-                Timestamp.from(hostDecisionUsedAt.toInstant()),
-                hostDecisionToken);
-        return updatedRows > 0;
-    }
-
-    @Override
-    public BookingPaymentProof createPaymentProof(
-            final int bookingId,
-            final int uploaderId,
-            final String fileName,
-            final String contentType,
-            final byte[] fileData) {
-        final int id = Objects.requireNonNull(
-                jdbcTemplate.queryForObject(
-                        "INSERT INTO booking_payment_proof"
-                                + " (booking_id, uploader_id, file_name, content_type, file_data)"
-                                + " VALUES (?, ?, ?, ?, ?)"
-                                + " RETURNING id",
-                        Integer.class,
-                        bookingId,
-                        uploaderId,
-                        fileName,
-                        contentType,
-                        fileData),
-                "Could not create payment proof for booking " + bookingId);
-        return findPaymentProofById(id)
-                .orElseThrow(() -> new IllegalStateException("Could not read inserted payment proof " + id));
-    }
-
-    @Override
-    public Optional<BookingPaymentProof> findPaymentProofByBookingId(final int bookingId) {
-        return jdbcTemplate
-                .query(
-                        "SELECT * FROM booking_payment_proof WHERE booking_id = ? ORDER BY id DESC LIMIT 1",
-                        BOOKING_PAYMENT_PROOF_ROW_MAPPER,
-                        bookingId)
-                .stream()
-                .findAny();
-    }
-
-    @Override
-    public Optional<BookingPaymentProof> findPaymentProofById(final int proofId) {
-        return jdbcTemplate
-                .query("SELECT * FROM booking_payment_proof WHERE id = ?", BOOKING_PAYMENT_PROOF_ROW_MAPPER, proofId)
-                .stream()
-                .findAny();
-    }
-
-    @Override
-    public boolean markBookingPaymentSubmitted(final int bookingId, final int guestId) {
-        final int updatedRows = jdbcTemplate.update(
-                "UPDATE item_booking"
-                        + " SET state = 'BOOKING_PAYMENT_SUBMITTED', updated_at = CURRENT_TIMESTAMP"
-                        + " WHERE id = ? AND guest_id = ? AND state = 'BOOKING_CONFIRMED'",
-                bookingId,
-                guestId);
-        return updatedRows > 0;
-    }
-
-    @Override
-    public boolean markBookingPaid(final int bookingId, final int ownerId) {
-        final int updatedRows = jdbcTemplate.update(
-                "UPDATE item_booking b"
-                        + " SET state = 'BOOKING_PAID', updated_at = CURRENT_TIMESTAMP"
-                        + " FROM item i"
-                        + " WHERE b.item_id = i.id"
-                        + " AND b.id = ?"
-                        + " AND i.owner_id = ?"
-                        + " AND b.state = 'BOOKING_PAYMENT_SUBMITTED'",
-                bookingId,
-                ownerId);
-        return updatedRows > 0;
-    }
-
-    @Override
-    public Optional<ItemAvailability> findNextAvailabilityByItemId(final int itemId) {
-        return jdbcTemplate
-                .query(
-                        "SELECT * FROM item_availability WHERE item_id = ? ORDER BY start_time ASC LIMIT 1",
-                        ITEM_AVAILABILITY_ROW_MAPPER,
-                        itemId)
-                .stream()
-                .findAny();
+                        + " SET item_version_id = ?, updated_at = CURRENT_TIMESTAMP"
+                        + " WHERE item_id = ?"
+                        + " AND item_version_id IS NULL"
+                        + " AND state IN (" + ItemPersistenceSql.PUBLICATION_EDIT_SNAPSHOT_STATES + ")",
+                versionId,
+                itemId);
+        if (updatedRows != bookingsWithoutVersion) {
+            throw new IllegalStateException("Could not attach all active bookings to publication version " + versionId);
+        }
+        return true;
     }
 
     @Override
     public boolean setItemActive(final int itemId, final boolean active) {
-        final int updatedRows = jdbcTemplate.update("UPDATE item SET active = ? WHERE id = ?", active, itemId);
-        return updatedRows > 0;
+        return updateCurrentVersionActive(itemId, null, active) > 0;
     }
 
     @Override
-    public Optional<byte[]> findImageById(final int id) {
-        if (!hasTable("item_media")) {
-            return Optional.empty();
-        }
-        return jdbcTemplate.query(
-                "SELECT image_data FROM item_media WHERE id = ?",
-                rs -> {
-                    if (rs.next()) {
-                        return Optional.ofNullable(rs.getBytes("image_data"));
-                    }
-                    return Optional.<byte[]>empty();
-                },
-                id);
-    }
-
-    @Override
-    public List<Integer> listImageIdsByItemId(final int itemId) {
-        if (!hasTable("item_media")) {
-            return Collections.emptyList();
-        }
-        return jdbcTemplate.queryForList("SELECT id FROM item_media WHERE item_id = ?", Integer.class, itemId);
-    }
-
-    private static String marketplaceWhereClause(final ItemSearchCriteria criteria, final List<Object> args) {
-        final StringBuilder sql = new StringBuilder(" WHERE i.active = TRUE");
-        if (criteria == null) {
-            return sql.toString();
-        }
-        if (criteria.getLocationOptionId() != null) {
-            sql.append(" AND i.location_option_id = ?");
-            args.add(criteria.getLocationOptionId());
-        }
-        if (criteria.getCapacity() != null) {
-            sql.append(" AND i.capacity_people >= ?");
-            args.add(criteria.getCapacity());
-        }
-        if (criteria.getMaxWeightKg() != null) {
-            sql.append(" AND i.max_weight_kg >= ?");
-            args.add(criteria.getMaxWeightKg());
-        }
-        if (criteria.getSearchQuery() != null) {
-            sql.append(" AND i.title ILIKE ? ESCAPE '!'");
-            args.add(setupSearchQuery(criteria.getSearchQuery()));
-        }
-        if (criteria.getDifficultyLevel() != null) {
-            sql.append(" AND i.difficulty_level = ?");
-            args.add(criteria.getDifficultyLevel());
-        }
-        return sql.toString();
-    }
-
-    private static String setupSearchQuery(final String searchQuery) {
-        String queryWithWildcards = searchQuery
-                .trim()
-                .replace("!", "!!") // Escape the escape character
-                .replace("%", "!%")
-                .replace("_", "!_") // Escape special characters
-                .replaceAll("\\s+", "%"); // Replace whitespaces with wildcards
-
-        return "%" + queryWithWildcards + "%";
-    }
-
-    private static String marketplaceOrderBy(final ItemSearchCriteria criteria) {
-        final String sort = criteria == null ? null : criteria.getSort();
-        if (sort == null) {
-            return " ORDER BY i.price_per_hour ASC, i.id ASC";
-        }
-        return switch (sort) {
-            case "titleAsc" -> " ORDER BY LOWER(i.title) ASC, i.id ASC";
-            case "titleDesc" -> " ORDER BY LOWER(i.title) DESC, i.id ASC";
-            case "priceDesc" -> " ORDER BY i.price_per_hour DESC, i.id ASC";
-            default -> " ORDER BY i.price_per_hour ASC, i.id ASC";
-        };
+    public boolean setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
+        return updateCurrentVersionActive(itemId, ownerId, active) > 0;
     }
 
     @Override
@@ -631,85 +281,328 @@ public class ItemJdbcDao implements ItemDao {
             final BigDecimal maxWeightKg,
             final Integer difficultyLevel,
             final int locationOptionId) {
+        final Timestamp now = Timestamp.from(Instant.now());
+        final int versionId = insertPublicationVersion(buildPublicationVersionData(
+                ownerId,
+                typeId,
+                title,
+                description,
+                pricePerHour,
+                capacityPeople,
+                maxWeightKg,
+                difficultyLevel,
+                locationOptionId,
+                Boolean.TRUE,
+                null,
+                now,
+                now,
+                null));
+        try {
+            return insertItemRow(versionId, "Could not insert item for owner " + ownerId);
+        } catch (final RuntimeException exception) {
+            jdbcTemplate.update("DELETE FROM item_publication_version WHERE id = ?", versionId);
+            throw exception;
+        }
+    }
+
+    private static String marketplaceWhereClause(final ItemSearchCriteria criteria, final List<Object> args) {
+        final StringBuilder sql = new StringBuilder(" WHERE v.active = TRUE");
+        if (criteria == null) {
+            return sql.toString();
+        }
+        if (criteria.getLocationOptionId() != null) {
+            sql.append(" AND v.location_option_id = ?");
+            args.add(criteria.getLocationOptionId());
+        }
+        if (criteria.getCapacity() != null) {
+            sql.append(" AND v.capacity_people >= ?");
+            args.add(criteria.getCapacity());
+        }
+        if (criteria.getMaxWeightKg() != null) {
+            sql.append(" AND v.max_weight_kg >= ?");
+            args.add(criteria.getMaxWeightKg());
+        }
+        if (criteria.getSearchQuery() != null) {
+            sql.append(" AND v.title ILIKE ? ESCAPE '!'");
+            args.add(setupSearchQuery(criteria.getSearchQuery()));
+        }
+        if (criteria.getDifficultyLevel() != null) {
+            sql.append(" AND v.difficulty_level = ?");
+            args.add(criteria.getDifficultyLevel());
+        }
+        if (criteria.getMinAverageRating() != null) {
+            sql.append(" AND COALESCE((SELECT AVG(r.rating)"
+                    + " FROM review r"
+                    + " WHERE "
+                    + ItemPersistenceSql.REVIEW_R_TARGET_TYPE_EQUALS
+                    + " AND r.target_id = i.id), 0) >= ?");
+            args.add(ReviewTargetType.ITEM.name());
+            args.add(criteria.getMinAverageRating());
+        }
+        return sql.toString();
+    }
+
+    private static String setupSearchQuery(final String searchQuery) {
+        String queryWithWildcards = searchQuery
+                .trim()
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_")
+                .replaceAll("\\s+", "%");
+
+        return "%" + queryWithWildcards + "%";
+    }
+
+    private static String marketplaceOrderBy(final ItemSearchCriteria criteria) {
+        final ItemSearchSort sort = criteria == null ? null : criteria.getSort();
+        if (sort == null) {
+            return " ORDER BY v.item_created_at DESC, i.id DESC";
+        }
+        return switch (sort) {
+            case OLDEST -> " ORDER BY v.item_created_at ASC, i.id ASC";
+            case PRICE_ASC -> " ORDER BY v.price_per_hour ASC, i.id ASC";
+            case PRICE_DESC -> " ORDER BY v.price_per_hour DESC, i.id ASC";
+            case NEWEST -> " ORDER BY v.item_created_at DESC, i.id DESC";
+        };
+    }
+
+    private int insertPublicationVersion(final @NonNull Map<String, Object> itemData) {
+        final SimpleJdbcInsert insert = new SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("item_publication_version")
+                .usingColumns(
+                        "owner_id",
+                        "type_id",
+                        "title",
+                        "description",
+                        "price_per_hour",
+                        "capacity_people",
+                        "max_weight_kg",
+                        "difficulty_level",
+                        "location_option_id",
+                        "location_name",
+                        "cover_image_data",
+                        "active",
+                        "owner_delete_token",
+                        "item_created_at",
+                        "created_at")
+                .usingGeneratedKeyColumns("id");
+        return insert.executeAndReturnKey(itemData).intValue();
+    }
+
+    private int insertItemRow(final int versionId, final String failureMessage) {
+        if (postgresDialect) {
+            return Objects.requireNonNull(
+                    jdbcTemplate.queryForObject(
+                            "INSERT INTO item (version_id) VALUES (?) RETURNING id", Integer.class, versionId),
+                    failureMessage);
+        }
         final SimpleJdbcInsert insert =
                 new SimpleJdbcInsert(jdbcTemplate).withTableName("item").usingGeneratedKeyColumns("id");
-        final Map<String, Object> args = new HashMap<>();
-        args.put("owner_id", ownerId);
-        args.put("type_id", typeId);
-        args.put("title", title);
-        args.put("description", description);
-        args.put("price_per_hour", pricePerHour);
-        args.put("capacity_people", capacityPeople);
-        args.put("max_weight_kg", maxWeightKg);
-        args.put("difficulty_level", difficultyLevel);
-        args.put("location_option_id", locationOptionId);
-        return insert.executeAndReturnKey(args).intValue();
+        final Map<String, Object> itemData = new HashMap<>();
+        itemData.put("version_id", versionId);
+        return insert.executeAndReturnKey(itemData).intValue();
     }
 
-    @Override
-    public Integer insertAvailability(
-            final int itemId, final DayOfWeek weekday, final LocalTime startTime, final LocalTime endTime) {
-        return jdbcTemplate.queryForObject(
-                "INSERT INTO item_availability (item_id, weekday, start_time, end_time) VALUES (?, ?::availability_weekday, ?, ?) RETURNING id",
-                Integer.class,
+    private @NonNull Map<String, Object> buildPublicationVersionData(
+            final int ownerId,
+            final int typeId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final int capacityPeople,
+            final BigDecimal maxWeightKg,
+            final Integer difficultyLevel,
+            final int locationOptionId,
+            final boolean active,
+            final String ownerDeleteToken,
+            final Timestamp itemCreatedAt,
+            final Timestamp versionCreatedAt,
+            final byte[] coverImageData) {
+        final Map<String, Object> itemData = new HashMap<>();
+        itemData.put("owner_id", ownerId);
+        itemData.put("type_id", typeId);
+        itemData.put("title", title);
+        itemData.put("description", description);
+        itemData.put("price_per_hour", pricePerHour);
+        itemData.put("capacity_people", capacityPeople);
+        itemData.put("max_weight_kg", maxWeightKg);
+        itemData.put("difficulty_level", difficultyLevel);
+        itemData.put("location_option_id", locationOptionId);
+        itemData.put("location_name", findLocationNameById(locationOptionId));
+        itemData.put("cover_image_data", coverImageData);
+        itemData.put("active", active);
+        itemData.put("owner_delete_token", ownerDeleteToken);
+        itemData.put("item_created_at", itemCreatedAt);
+        itemData.put("created_at", versionCreatedAt);
+        return itemData;
+    }
+
+    private boolean updatePublicationVersion(
+            final int itemId,
+            final Integer ownerId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final Integer difficultyLevel,
+            final int locationOptionId) {
+        final Optional<Map<String, Object>> currentVersionData = findCurrentPublicationVersionData(itemId, ownerId);
+        if (currentVersionData.isEmpty()) {
+            return false;
+        }
+        final Map<String, Object> data = currentVersionData.get();
+        final int currentVersionId =
+                readRequiredNumber(data, "current_version_id").intValue();
+        if (!currentVersionHasBookingReferences(currentVersionId)) {
+            return updateCurrentPublicationVersion(
+                    currentVersionId,
+                    ownerId,
+                    title,
+                    description,
+                    pricePerHour,
+                    difficultyLevel,
+                    locationOptionId,
+                    itemId);
+        }
+
+        final String ownerDeleteToken = (String) data.get("owner_delete_token");
+        final int newVersionId = insertPublicationVersion(buildPublicationVersionData(
+                readRequiredNumber(data, "owner_id").intValue(),
+                readRequiredNumber(data, "type_id").intValue(),
+                title,
+                description,
+                pricePerHour,
+                readRequiredNumber(data, "capacity_people").intValue(),
+                (BigDecimal) data.get("max_weight_kg"),
+                difficultyLevel,
+                locationOptionId,
+                Boolean.TRUE.equals(data.get("active")),
+                null,
+                ItemJdbcRowMappers.toTimestamp(data.get("item_created_at")),
+                Timestamp.from(Instant.now()),
+                ItemPublicationCoverJdbcSupport.findCurrentCoverImageData(jdbcTemplate, itemId)));
+        jdbcTemplate.update(
+                "UPDATE item_publication_version SET owner_delete_token = NULL WHERE id = ?", currentVersionId);
+        final int updatedRows = jdbcTemplate.update(
+                "UPDATE item SET version_id = ? WHERE id = ? AND version_id = ?",
+                newVersionId,
                 itemId,
-                weekday.name(),
-                Time.valueOf(startTime),
-                Time.valueOf(endTime));
+                currentVersionId);
+        if (updatedRows == 0) {
+            throw new IllegalStateException("Could not switch current publication version for item " + itemId);
+        }
+        if (ownerDeleteToken != null) {
+            jdbcTemplate.update(
+                    "UPDATE item_publication_version SET owner_delete_token = ? WHERE id = ?",
+                    ownerDeleteToken,
+                    newVersionId);
+        }
+        return true;
     }
 
-    @Override
-    public Integer insertImage(final int itemId, final byte[] imageData) {
-        final SimpleJdbcInsert insert =
-                new SimpleJdbcInsert(jdbcTemplate).withTableName("item_media").usingGeneratedKeyColumns("id");
-        final Map<String, Object> args = new HashMap<>();
-        args.put("item_id", itemId);
-        args.put("image_data", imageData);
-        return insert.executeAndReturnKey(args).intValue();
+    private boolean updateCurrentPublicationVersion(
+            final int currentVersionId,
+            final Integer ownerId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final Integer difficultyLevel,
+            final int locationOptionId,
+            final int itemId) {
+        final List<Object> args = new ArrayList<>();
+        final StringBuilder sql = new StringBuilder("UPDATE item_publication_version"
+                + " SET title = ?, description = ?, price_per_hour = ?, difficulty_level = ?,"
+                + " location_option_id = ?,"
+                + " location_name = (SELECT name FROM location_option WHERE id = ?),"
+                + " cover_image_data = ?, created_at = CURRENT_TIMESTAMP"
+                + " WHERE id = ?");
+        args.add(title);
+        args.add(description);
+        args.add(pricePerHour);
+        args.add(difficultyLevel);
+        args.add(locationOptionId);
+        args.add(locationOptionId);
+        args.add(ItemPublicationCoverJdbcSupport.findCurrentCoverImageData(jdbcTemplate, itemId));
+        args.add(currentVersionId);
+        if (ownerId != null) {
+            sql.append(" AND owner_id = ?");
+            args.add(ownerId);
+        }
+        final String updateSql = Objects.requireNonNull(sql.toString());
+        return jdbcTemplate.update(updateSql, args.toArray()) > 0;
     }
 
-    @Override
-    public Integer replacePrimaryImage(final int itemId, final byte[] imageData) {
-        if (!hasTable("item_media")) {
-            return null;
+    private Optional<Map<String, Object>> findCurrentPublicationVersionData(final int itemId, final Integer ownerId) {
+        final List<Object> args = new ArrayList<>();
+        final StringBuilder sql =
+                new StringBuilder("SELECT i.version_id AS current_version_id, v.owner_id, v.type_id, v.capacity_people,"
+                        + " v.max_weight_kg, v.active, v.owner_delete_token, v.item_created_at"
+                        + " FROM item i"
+                        + " JOIN item_publication_version v ON v.id = i.version_id"
+                        + " WHERE i.id = ?");
+        args.add(itemId);
+        if (ownerId != null) {
+            sql.append(" AND v.owner_id = ?");
+            args.add(ownerId);
         }
-        final Integer existingImageId = jdbcTemplate
-                .queryForList("SELECT id FROM item_media WHERE item_id = ? ORDER BY id ASC", Integer.class, itemId)
-                .stream()
-                .findFirst()
-                .orElse(null);
-        if (existingImageId == null) {
-            return insertImage(itemId, imageData);
-        }
-        final int updatedRows =
-                jdbcTemplate.update("UPDATE item_media SET image_data = ? WHERE id = ?", imageData, existingImageId);
-        return updatedRows > 0 ? existingImageId : null;
+        final String selectSql = Objects.requireNonNull(sql.toString());
+        return jdbcTemplate.queryForList(selectSql, args.toArray()).stream().findFirst();
     }
 
-    private boolean hasTable(final String tableName) {
-        final Boolean hasTable = jdbcTemplate.execute((ConnectionCallback<Boolean>) connection -> {
-            try (ResultSet tables = connection.getMetaData().getTables(null, null, tableName, new String[] {"TABLE"})) {
-                return tables.next();
-            }
-        });
-        return Boolean.TRUE.equals(hasTable);
+    private boolean currentVersionHasBookingReferences(final int currentVersionId) {
+        final Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM item_booking WHERE item_version_id = ?", Integer.class, currentVersionId);
+        return count != null && count > 0;
     }
 
-    private static OffsetDateTime readOffsetDateTime(final ResultSet rs, final String column) throws SQLException {
-        final Object value = rs.getObject(column);
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof OffsetDateTime offsetDateTime) {
-            return offsetDateTime;
-        }
-        if (value instanceof Timestamp timestamp) {
-            return timestamp.toInstant().atZone(ZoneId.systemDefault()).toOffsetDateTime();
-        }
-        return OffsetDateTime.parse(value.toString());
+    private Integer findCurrentVersionIdByItemId(final int itemId) {
+        return jdbcTemplate.queryForObject("SELECT version_id FROM item WHERE id = ?", Integer.class, itemId);
     }
 
-    private static String formatDateTime(final OffsetDateTime dateTime) {
-        return dateTime == null ? null : dateTime.toString();
+    private int updateCurrentVersionActive(final int itemId, final Integer ownerId, final boolean active) {
+        final List<Object> args = new ArrayList<>();
+        final StringBuilder sql = new StringBuilder("UPDATE item_publication_version"
+                + " SET active = ?"
+                + " WHERE id = (SELECT version_id FROM item WHERE id = ?)");
+        args.add(active);
+        args.add(itemId);
+        if (ownerId != null) {
+            sql.append(" AND owner_id = ?");
+            args.add(ownerId);
+        }
+        final String updateActiveSql = Objects.requireNonNull(sql.toString());
+        return jdbcTemplate.update(updateActiveSql, args.toArray());
+    }
+
+    private void clearCurrentVersionOwnerDeleteToken(final int itemId) {
+        jdbcTemplate.update(
+                "UPDATE item_publication_version SET owner_delete_token = NULL WHERE id = (SELECT version_id FROM item WHERE id = ?)",
+                itemId);
+    }
+
+    private String findLocationNameById(final int locationOptionId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT name FROM location_option WHERE id = ?", String.class, locationOptionId);
+    }
+
+    /**
+     * True when the item still has guest (non-owner) bookings that are not cancelled/rejected and have not ended yet,
+     * so it cannot be removed from the database; an active listing is only deactivated instead.
+     */
+    private boolean hasBookingsBlockingHardDelete(final int itemId) {
+        final Integer bookingCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*)"
+                        + ItemPersistenceSql.ITEM_BOOKING_VERSION_JOIN
+                        + ItemPersistenceSql.ITEM_BOOKING_HARD_DELETE_BLOCKERS,
+                Integer.class,
+                itemId);
+        return bookingCount != null && bookingCount > 0;
+    }
+
+    private static Number readRequiredNumber(final Map<String, Object> row, final String column) {
+        final Object value = row.get(column);
+        if (!(value instanceof Number number)) {
+            throw new IllegalStateException("Expected numeric column: " + column);
+        }
+        return number;
     }
 }

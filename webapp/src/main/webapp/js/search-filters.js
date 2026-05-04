@@ -240,24 +240,32 @@
         form.querySelector("[data-weight-value-input]")?.value ||
         form.querySelector('[name="maxWeight"]')?.value ||
         "",
-      difficultyLevel: form.querySelector('[name="difficultyLevel"]')?.value || "",
+      difficultyLevel:
+        form.querySelector('[name="difficultyLevel"]')?.value || "",
     });
   }
 
   function reflectAppliedState(state) {
     const normalized = normalizeState(state);
 
-    document.querySelectorAll("[data-applied-filter-mirror]").forEach((input) => {
-      input.value = normalized[input.name] || "";
-    });
+    document
+      .querySelectorAll("[data-applied-filter-mirror]")
+      .forEach((input) => {
+        input.value = normalized[input.name] || "";
+      });
 
-    document.querySelectorAll("[data-marketplace-item-link]").forEach((link) => {
-      if (!link.dataset.baseHref) {
-        link.dataset.baseHref = link.getAttribute("href") || "";
-      }
+    document
+      .querySelectorAll("[data-marketplace-item-link]")
+      .forEach((link) => {
+        if (!link.dataset.baseHref) {
+          link.dataset.baseHref = link.getAttribute("href") || "";
+        }
 
-      link.setAttribute("href", buildUrlWithFilters(link.dataset.baseHref, normalized));
-    });
+        link.setAttribute(
+          "href",
+          buildUrlWithFilters(link.dataset.baseHref, normalized),
+        );
+      });
   }
 
   function formatMismatchReasons(reasons, conjunction) {
@@ -396,13 +404,13 @@
     }
 
     loadOptions() {
-      fetchLocationOptions(this.root.dataset.optionsUrl || "/location-options").then(
-        (options) => {
-          this.options = options;
-          this.setSelectedValue(this.hiddenInput.value);
-          this.render();
-        },
-      );
+      fetchLocationOptions(
+        this.root.dataset.optionsUrl || "/location-options",
+      ).then((options) => {
+        this.options = options;
+        this.setSelectedValue(this.hiddenInput.value);
+        this.render();
+      });
     }
 
     getFilteredOptions() {
@@ -445,7 +453,9 @@
     prepareForSubmit() {
       const exactMatch = this.findExact(this.queryInput.value);
       this.hiddenInput.value = exactMatch ? exactMatch.id : "";
-      this.queryInput.value = exactMatch ? exactMatch.name : this.queryInput.value || "";
+      this.queryInput.value = exactMatch
+        ? exactMatch.name
+        : this.queryInput.value || "";
     }
 
     open() {
@@ -485,8 +495,7 @@
 
       filteredOptions.forEach((option) => {
         const button = document.createElement("button");
-        const isSelected =
-          String(option.id) === String(this.hiddenInput.value);
+        const isSelected = String(option.id) === String(this.hiddenInput.value);
         button.type = "button";
         button.className =
           "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-on-surface transition-all hover:bg-primary/10 hover:text-primary active:bg-primary/14";
@@ -655,7 +664,9 @@
       ["input", "change"].forEach((eventName) => {
         this.input.addEventListener(eventName, () => {
           this.hiddenInput.value = this.input.value;
-          this.hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
+          this.hiddenInput.dispatchEvent(
+            new Event("change", { bubbles: true }),
+          );
           this.syncDisplay();
         });
       });
@@ -722,7 +733,7 @@
 
     form
       .querySelectorAll(
-        "[data-location-value], [data-people-input], [data-weight-input], [name=\"difficultyLevel\"]",
+        '[data-location-value], [data-people-input], [data-weight-input], [name="difficultyLevel"]',
       )
       .forEach((input) => {
         input.addEventListener("change", persistDraft);
@@ -740,7 +751,9 @@
     control.addEventListener("click", (event) => {
       event.preventDefault();
       clearStoredStates();
-      window.location.assign(control.href || buildUrlWithFilters(window.location.href, {}));
+      window.location.assign(
+        control.href || buildUrlWithFilters(window.location.href, {}),
+      );
     });
   }
 
@@ -768,7 +781,9 @@
     if (!form) {
       return;
     }
-    const resetControl = document.querySelector("[data-clear-marketplace-filters]");
+    const resetControls = document.querySelectorAll(
+      "[data-clear-marketplace-filters]",
+    );
 
     const pageState = readFilterStateFromForm(form);
     const draftState = readStoredState(DRAFT_FILTERS_KEY);
@@ -787,7 +802,7 @@
     }
 
     bindDraftPersistence(form);
-    bindMarketplaceReset(resetControl);
+    resetControls.forEach(bindMarketplaceReset);
     form.addEventListener("submit", () => {
       const nextState = readFilterStateFromForm(form);
       writeStoredState(DRAFT_FILTERS_KEY, nextState);
@@ -806,8 +821,12 @@
       ...readStoredState(APPLIED_FILTERS_KEY),
       ...readUrlState(),
     });
-    const messageNode = alertRoot.querySelector("[data-item-unavailable-message]");
-    const clearButton = alertRoot.querySelector("[data-item-unavailable-clear]");
+    const messageNode = alertRoot.querySelector(
+      "[data-item-unavailable-message]",
+    );
+    const clearButton = alertRoot.querySelector(
+      "[data-item-unavailable-clear]",
+    );
     const marketplaceButton = alertRoot.querySelector(
       "[data-item-unavailable-marketplace]",
     );
@@ -822,8 +841,7 @@
       alertRoot.dataset.mismatchSuffix ||
       "You can keep viewing it without those filters or return to marketplace to choose another.";
     const mismatchJoin = alertRoot.dataset.mismatchJoin || "and";
-    const mismatchLocation =
-      alertRoot.dataset.mismatchLocation || "location";
+    const mismatchLocation = alertRoot.dataset.mismatchLocation || "location";
     const mismatchCapacity =
       alertRoot.dataset.mismatchCapacity || "people capacity";
     const mismatchWeight =
@@ -845,11 +863,19 @@
       mismatchReasons.push(mismatchLocation);
     }
 
-    if (requestedCapacity != null && itemCapacity != null && itemCapacity < requestedCapacity) {
+    if (
+      requestedCapacity != null &&
+      itemCapacity != null &&
+      itemCapacity < requestedCapacity
+    ) {
       mismatchReasons.push(mismatchCapacity);
     }
 
-    if (requestedWeight != null && itemMaxWeight != null && itemMaxWeight < requestedWeight) {
+    if (
+      requestedWeight != null &&
+      itemMaxWeight != null &&
+      itemMaxWeight < requestedWeight
+    ) {
       mismatchReasons.push(mismatchWeight);
     }
 

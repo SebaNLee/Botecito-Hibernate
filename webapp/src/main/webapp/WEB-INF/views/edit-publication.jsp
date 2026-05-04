@@ -4,7 +4,7 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<c:url var="profileUrl" value="/profile" />
+<c:url var="profileUrl" value="/my-boats" />
 <c:url var="editActionUrl" value="/profile/item/${item.id}/edit" />
 <c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
 <spring:message code="publish.form.title.label" var="publishTitleLabel" />
@@ -24,6 +24,8 @@
 <spring:message code="publish.form.location.placeholder" var="publishLocationPlaceholder" />
 <spring:message code="editPublication.actions.save" var="saveLabel" />
 <spring:message code="editPublication.actions.cancel" var="cancelLabel" />
+<spring:message code="editPublication.conflict.confirmChanges" var="confirmChangesLabel" />
+<spring:message code="editPublication.conflict.discard" var="discardEditLabel" />
 
 <paw:layout
     title="Botecito"
@@ -32,7 +34,7 @@
     headerCtaHref="/marketplace"
     headerCtaVariant="rent">
   <div class="mb-8">
-    <a href="${profileUrl}" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
+    <a href="${profileUrl}" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
       <span class="material-symbols-outlined">arrow_back</span>
       <span><spring:message code="common.back" /></span>
     </a>
@@ -66,7 +68,7 @@
       </c:if>
     </spring:hasBindErrors>
 
-    <paw:sectionCard icon="edit">
+    <paw:sectionCard icon="edit" hostAccent="true">
       <jsp:attribute name="title"><spring:message code="editPublication.title" /></jsp:attribute>
       <jsp:body>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -99,13 +101,14 @@
                 value="${editForm.marina}"
                 placeholder="${publishLocationPlaceholder}"
                 icon="location_on"
-                errorPath="marina" />
+                errorPath="marina"
+                hostAccent="true" />
           </div>
         </div>
       </jsp:body>
     </paw:sectionCard>
 
-    <paw:sectionCard icon="add_a_photo">
+    <paw:sectionCard icon="add_a_photo" hostAccent="true">
       <jsp:attribute name="title"><spring:message code="publish.step1.section.photo" /></jsp:attribute>
       <jsp:body>
         <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-base-200">
@@ -126,10 +129,10 @@
               data-image-preview-target-id="edit-file-preview"
               data-image-preview-filename-id="edit-file-name-display"
               data-image-preview-placeholder="${not empty itemImageUrl ? itemImageUrl : placeholderImageUrl}" />
-          <div class="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+          <div class="w-16 h-16 bg-secondary/10 text-secondary rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <span class="material-symbols-outlined text-3xl">upload_file</span>
           </div>
-          <span class="font-bold text-lg text-primary"><spring:message code="publish.image.upload" /></span>
+          <span class="font-bold text-lg text-secondary"><spring:message code="publish.image.upload" /></span>
           <span id="edit-file-name-display" class="text-sm text-outline mt-1"><spring:message code="publish.image.helper" /></span>
           <form:errors path="file" cssClass="text-error text-xs mt-2" element="p" />
         </label>
@@ -142,7 +145,201 @@
 
     <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
       <paw:button href="${profileUrl}" color="ghost" size="lg" cssClass="w-full sm:w-auto" text="${cancelLabel}" />
-      <paw:button type="submit" color="primary" size="lg" cssClass="w-full sm:w-auto" text="${saveLabel}" />
+      <c:choose>
+        <c:when test="${not empty activeEditBookings}">
+          <button type="button" class="btn btn-secondary btn-lg w-full sm:w-auto" data-edit-conflict-open>
+            <c:out value="${saveLabel}" />
+          </button>
+        </c:when>
+        <c:otherwise>
+          <paw:button type="submit" color="secondary" size="lg" cssClass="w-full sm:w-auto" text="${saveLabel}" />
+        </c:otherwise>
+      </c:choose>
     </div>
+
+    <c:if test="${not empty activeEditBookings}">
+      <dialog class="modal" data-edit-conflict-modal ${showEditConflictModal ? 'open="open"' : ''}>
+        <div class="modal-box max-w-3xl p-0 bg-transparent shadow-none">
+          <div class="card bg-base-100 shadow-xl">
+            <div class="card-body p-8 gap-5">
+              <div class="flex items-start gap-4">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
+                  <span class="material-symbols-outlined">warning</span>
+                </div>
+                <div class="space-y-2">
+                  <h2 class="card-title m-0 text-2xl font-extrabold tracking-tight">
+                    <spring:message code="editPublication.conflict.title" />
+                  </h2>
+                  <p class="m-0 leading-relaxed text-on-surface-variant">
+                    <spring:message code="editPublication.conflict.message" />
+                  </p>
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <button type="button" class="btn btn-ghost btn-sm btn-square" data-edit-conflict-prev aria-label="Previous booking">
+                      <span class="material-symbols-outlined">chevron_left</span>
+                    </button>
+                    <span class="text-sm font-bold min-w-14 text-center" data-edit-conflict-counter>1/1</span>
+                    <button type="button" class="btn btn-ghost btn-sm btn-square" data-edit-conflict-next aria-label="Next booking">
+                      <span class="material-symbols-outlined">chevron_right</span>
+                    </button>
+                  </div>
+                </div>
+
+                <c:forEach items="${activeEditBookings}" var="booking" varStatus="bookingStatus">
+                  <div class="card border border-outline-variant/30 bg-base-100 shadow-md ${bookingStatus.first ? '' : 'hidden'}" data-edit-booking-card data-edit-booking-index="${bookingStatus.index}">
+                    <div class="card-body gap-4 p-4 sm:p-5">
+                      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                          <div class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary/15 text-secondary">
+                            <span class="material-symbols-outlined text-base">event</span>
+                          </div>
+                          <div class="min-w-0 grid grid-cols-1 gap-1.5">
+                            <p class="m-0 text-sm font-semibold text-on-surface break-words">
+                              <c:out value="${editBookingGuests[booking.id]}" />
+                            </p>
+                            <p class="m-0 text-xs text-on-surface-variant break-words">
+                              <c:out value="${editBookingFriendlyDates[booking.id]}" />
+                            </p>
+                            <p class="m-0 text-xs text-on-surface-variant">
+                              from <c:out value="${editBookingFriendlyTimeRanges[booking.id]}" />
+                            </p>
+                            <p class="m-0 text-sm font-bold text-success">
+                              $<c:out value="${editBookingFriendlyPrices[booking.id]}" />
+                            </p>
+                          </div>
+                        </div>
+                        <div class="sm:pl-2">
+                          <span class="badge badge-outline font-semibold">
+                            <spring:message code="${editBookingStatusCodes[booking.id]}" />
+                          </span>
+                        </div>
+                      </div>
+
+                      <c:if test="${booking.state == 'BOOKING_PENDING'}">
+                        <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                          <label class="label cursor-pointer justify-start gap-3 rounded-xl border border-success/25 bg-success/10 px-3 py-2.5">
+                            <input type="radio" class="radio radio-success radio-sm" name="bookingDecision_${booking.id}" value="accept" />
+                            <span class="label-text font-semibold text-on-surface"><spring:message code="editPublication.conflict.pending.accept" /></span>
+                          </label>
+                          <label class="label cursor-pointer justify-start gap-3 rounded-xl border border-error/25 bg-error/10 px-3 py-2.5">
+                            <input type="radio" class="radio radio-error radio-sm" name="bookingDecision_${booking.id}" value="decline" />
+                            <span class="label-text font-semibold text-on-surface"><spring:message code="editPublication.conflict.pending.decline" /></span>
+                          </label>
+                        </div>
+                      </c:if>
+                    </div>
+                  </div>
+                </c:forEach>
+              </div>
+
+              <div class="rounded-xl bg-info/10 p-4 text-sm text-on-surface-variant">
+                <spring:message code="editPublication.conflict.snapshotNotice" />
+              </div>
+
+              <div class="card-actions mt-2 flex flex-col gap-3 sm:flex-row">
+                <a href="${profileUrl}" class="btn btn-outline flex-1 no-underline">
+                  <c:out value="${discardEditLabel}" />
+                </a>
+                <button type="submit" name="confirmEditWithSnapshots" value="true" class="btn btn-secondary flex-1">
+                  <c:out value="${confirmChangesLabel}" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="modal-backdrop" aria-label="${discardEditLabel}" data-edit-conflict-close>close</button>
+      </dialog>
+    </c:if>
   </form:form>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const openButton = document.querySelector("[data-edit-conflict-open]");
+      const modal = document.querySelector("[data-edit-conflict-modal]");
+      const bookingCards = Array.from(document.querySelectorAll("[data-edit-booking-card]"));
+      const counter = document.querySelector("[data-edit-conflict-counter]");
+      const prevButton = document.querySelector("[data-edit-conflict-prev]");
+      const nextButton = document.querySelector("[data-edit-conflict-next]");
+      let activeIndex = 0;
+
+      function renderBookingCarousel() {
+        if (!bookingCards.length) {
+          if (prevButton) {
+            prevButton.disabled = true;
+          }
+          if (nextButton) {
+            nextButton.disabled = true;
+          }
+          return;
+        }
+        bookingCards.forEach(function (card, index) {
+          card.classList.toggle("hidden", index !== activeIndex);
+        });
+        if (counter) {
+          counter.textContent = (activeIndex + 1) + "/" + bookingCards.length;
+        }
+        if (prevButton) {
+          prevButton.disabled = activeIndex <= 0;
+        }
+        if (nextButton) {
+          nextButton.disabled = activeIndex >= bookingCards.length - 1;
+        }
+      }
+
+      function moveBooking(step) {
+        if (!bookingCards.length) {
+          return;
+        }
+        const nextIndex = activeIndex + step;
+        if (nextIndex < 0 || nextIndex >= bookingCards.length) {
+          return;
+        }
+        activeIndex = nextIndex;
+        renderBookingCarousel();
+      }
+
+      renderBookingCarousel();
+      if (openButton && modal) {
+        openButton.addEventListener("click", function () {
+          if (typeof modal.showModal === "function") {
+            modal.showModal();
+          } else {
+            modal.setAttribute("open", "open");
+          }
+        });
+      }
+      if (prevButton) {
+        prevButton.addEventListener("click", function () {
+          moveBooking(-1);
+        });
+      }
+      if (nextButton) {
+        nextButton.addEventListener("click", function () {
+          moveBooking(1);
+        });
+      }
+      document.querySelectorAll("[data-edit-conflict-close]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          if (modal && typeof modal.close === "function") {
+            modal.close();
+          } else if (modal) {
+            modal.removeAttribute("open");
+          }
+        });
+      });
+      document.addEventListener("keydown", function (event) {
+        if (!modal || !modal.hasAttribute("open")) {
+          return;
+        }
+        if (event.key === "ArrowLeft") {
+          moveBooking(-1);
+        } else if (event.key === "ArrowRight") {
+          moveBooking(1);
+        }
+      });
+    });
+  </script>
 </paw:layout>

@@ -1,14 +1,15 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
+<fmt:setLocale value="es_AR" />
 <c:url var="stepTwoUrl" value="/publish/availability" />
 <c:url var="stepThreeUrl" value="/publish/contact" />
 <c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
-<c:url var="publishPreviewImageUrl" value="/publish/preview-image" />
 <spring:message code="publish.actions.saveDraft" var="publishSaveDraftLabel" />
 <spring:message code="publish.actions.submit" var="publishSubmitLabel" />
 
@@ -19,7 +20,7 @@
   headerCtaHref="/marketplace"
   headerCtaVariant="rent">
   <div class="mb-8">
-    <a href="${stepTwoUrl}" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
+    <a href="${stepTwoUrl}" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
       <span class="material-symbols-outlined">arrow_back</span>
       <span><spring:message code="common.back" /></span>
     </a>
@@ -30,7 +31,7 @@
       <span><spring:message code="publish.step3.progress" /></span>
       <span><spring:message code="publish.step3.badge" /></span>
     </div>
-    <progress class="progress progress-primary mt-3 w-full" value="100" max="100"></progress>
+    <progress class="progress progress-secondary mt-3 w-full" value="66" max="100"></progress>
     <h1 class="mt-6 text-4xl font-extrabold tracking-tight text-on-background m-0"><spring:message code="publish.step3.title" /></h1>
     <p class="text-on-surface-variant mt-2 text-lg m-0"><spring:message code="publish.step3.subtitle" /></p>
   </div>
@@ -51,13 +52,13 @@
       data-submit-loading-form="true">
 
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-      <paw:sectionCard element="aside" cssClass="lg:col-span-2" icon="inventory_2">
+      <paw:sectionCard element="aside" cssClass="lg:col-span-2" icon="inventory_2" hostAccent="true">
         <jsp:attribute name="title"><spring:message code="publish.step3.summary.title" /></jsp:attribute>
         <jsp:body>
           <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-base-200">
             <c:choose>
-              <c:when test="${not empty uploadedImagePreviewUrl}">
-                <img src="${publishPreviewImageUrl}" alt="<spring:message code='publish.image.previewAlt' />" class="w-full aspect-[16/10] object-cover" />
+              <c:when test="${not empty uploadedImagePreviewUrls}">
+                <img src="${uploadedImagePreviewUrls[0]}" alt="<spring:message code='publish.image.previewAlt' />" class="w-full aspect-[16/10] object-cover" />
               </c:when>
               <c:otherwise>
                 <img src="${placeholderImageUrl}" alt="<spring:message code='publish.image.defaultAlt' />" class="w-full aspect-[16/10] object-cover" />
@@ -92,7 +93,7 @@
             </div>
             <div class="rounded-xl bg-base-200 p-3">
               <p class="text-[11px] uppercase tracking-wider font-bold text-outline m-0"><spring:message code="publish.form.price.short" /></p>
-              <p class="text-sm font-bold text-on-surface mt-1 mb-0">$ <c:out value="${publishForm.pricePerHour}" /></p>
+              <p class="text-sm font-bold text-on-surface mt-1 mb-0">$ <fmt:formatNumber value="${publishForm.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0" /></p>
             </div>
             <div class="rounded-xl bg-base-200 p-3">
               <p class="text-[11px] uppercase tracking-wider font-bold text-outline m-0"><spring:message code="publish.form.location.label" /></p>
@@ -102,7 +103,7 @@
               <p class="text-[11px] uppercase tracking-wider font-bold text-outline m-0"><spring:message code="publish.form.maxWeight.label" /></p>
               <p class="text-sm font-bold text-on-surface mt-1 mb-0">
                 <c:choose>
-                  <c:when test="${not empty publishForm.maxWeight}"><c:out value="${publishForm.maxWeight}" /> kg</c:when>
+                  <c:when test="${not empty publishForm.maxWeight}"><fmt:formatNumber value="${publishForm.maxWeight}" type="number" groupingUsed="true" maxFractionDigits="0" /> kg</c:when>
                   <c:otherwise><spring:message code="publish.form.maxWeight.unspecified" /></c:otherwise>
                 </c:choose>
               </p>
@@ -130,7 +131,7 @@
         </jsp:body>
       </paw:sectionCard>
 
-      <paw:sectionCard cssClass="lg:col-span-3" icon="person">
+      <paw:sectionCard cssClass="lg:col-span-3" icon="person" hostAccent="true">
         <jsp:attribute name="title"><spring:message code="publish.step3.account.title" /></jsp:attribute>
         <jsp:body>
           <div class="rounded-xl bg-base-200 p-4 text-sm text-on-surface-variant leading-relaxed">
@@ -141,7 +142,7 @@
             <paw:button href="${marketplaceUrl}" color="ghost" size="lg" cssClass="w-full sm:w-auto" text="${publishSaveDraftLabel}" />
             <button
               type="submit"
-              class="btn btn-primary btn-lg w-full sm:w-auto"
+              class="btn btn-secondary btn-lg w-full sm:w-auto"
               data-submit-loading-button>
               <span class="flex items-center justify-center gap-2" data-submit-loading-content>
                 <spring:message code="publish.actions.submit" />

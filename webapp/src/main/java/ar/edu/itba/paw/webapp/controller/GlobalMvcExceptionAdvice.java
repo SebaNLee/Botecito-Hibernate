@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.controller;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
@@ -28,8 +29,14 @@ public class GlobalMvcExceptionAdvice {
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     public ModelAndView handleMethodNotAllowed(
-            final HttpRequestMethodNotSupportedException exception, final HttpServletResponse response) {
+            final HttpRequestMethodNotSupportedException exception,
+            final HttpServletResponse response,
+            final HttpServletRequest request) {
         response.setStatus(HttpStatus.METHOD_NOT_ALLOWED.value());
+        final String requestUri = request == null ? null : request.getRequestURI();
+        if (requestUri != null && requestUri.contains("/publish")) {
+            return new ModelAndView("redirect:/publish/availability?availabilityAction=invalidMethod");
+        }
         return ErrorPageModel.build(HttpStatus.METHOD_NOT_ALLOWED.value(), null);
     }
 

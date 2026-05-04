@@ -10,8 +10,10 @@
 <%@ attribute name="variant" required="false" %>
 <%@ attribute name="placeholder" required="false" %>
 <%@ attribute name="allowEmpty" required="false" %>
+<%@ attribute name="required" required="false" %>
 <%@ attribute name="containerClass" required="false" %>
 <%@ attribute name="errorPath" required="false" %>
+<%@ attribute name="hostAccent" required="false" type="java.lang.Boolean" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
@@ -34,11 +36,12 @@
 <c:set var="resolvedAllowEmpty" value="${empty allowEmpty ? false : allowEmpty}" />
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
 <c:set var="peopleClearInitiallyHidden" value="${empty resolvedValue}" />
+<c:set var="pcText" value="${hostAccent ne null and hostAccent ? 'text-secondary' : 'text-primary'}" />
 
 <c:choose>
   <c:when test="${resolvedVariant == 'inline'}">
-    <div
-        class="w-full ${resolvedContainerClass}"
+    <fieldset
+        class="fieldset w-full ${resolvedContainerClass}"
         data-people-count
         data-min="${resolvedMin}"
         data-max="${resolvedMax}"
@@ -46,21 +49,23 @@
         data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
         data-allow-empty="${resolvedAllowEmpty}">
       <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-people-input />
+      <legend class="fieldset-legend block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+        <c:out value="${resolvedLabel}" />
+        <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
+      </legend>
       <div class="min-w-0 flex flex-col gap-2">
-        <span class="fieldset-legend block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-          <c:out value="${resolvedLabel}" />
-        </span>
-        <div class="join w-full">
+        <div class="input input-bordered input-sm flex h-10 min-h-10 max-h-10 w-full min-w-0 items-center gap-1 overflow-hidden px-2 py-0">
+          <span class="material-symbols-outlined shrink-0 ${pcText} text-xl"><c:out value="${resolvedIcon}" /></span>
           <button
               type="button"
-              class="join-item btn btn-outline btn-primary btn-sm btn-square"
+              class="btn btn-ghost btn-xs btn-circle shrink-0 ${pcText}"
               aria-label="${fn:escapeXml(peopleDecrementLabel)}"
               data-people-decrement>
             <span class="material-symbols-outlined text-base">remove</span>
           </button>
-          <div class="join-item input input-sm flex-1 items-center justify-center gap-1 border-primary/25">
+          <div class="flex min-w-0 flex-1 items-center justify-center gap-1">
             <input
-                class="w-full appearance-none bg-transparent border-none p-0 text-center text-[0.95rem] font-bold tabular-nums text-on-surface placeholder:text-on-surface/60 outline-none focus:outline-none focus:ring-0 shadow-none"
+                class="w-full min-w-0 appearance-none bg-transparent border-none p-0 text-center text-[0.95rem] font-bold tabular-nums text-on-surface placeholder:text-on-surface/60 outline-none focus:outline-none focus:ring-0 shadow-none"
                 type="text"
                 inputmode="numeric"
                 autocomplete="off"
@@ -70,7 +75,7 @@
                 data-people-field />
             <button
                 type="button"
-                class="btn btn-ghost btn-xs btn-circle text-primary ${peopleClearInitiallyHidden ? 'hidden' : ''}"
+                class="btn btn-ghost btn-xs btn-circle ${pcText} ${peopleClearInitiallyHidden ? 'hidden' : ''}"
                 aria-label="${fn:escapeXml(peopleClearLabel)}"
                 data-people-clear>
               <span class="material-symbols-outlined text-base">close</span>
@@ -78,14 +83,14 @@
           </div>
           <button
               type="button"
-              class="join-item btn btn-outline btn-primary btn-sm btn-square"
+              class="btn btn-ghost btn-xs btn-circle shrink-0 ${pcText}"
               aria-label="${fn:escapeXml(peopleIncrementLabel)}"
               data-people-increment>
             <span class="material-symbols-outlined text-base">add</span>
           </button>
         </div>
       </div>
-    </div>
+    </fieldset>
   </c:when>
   <c:otherwise>
     <fieldset
@@ -99,18 +104,20 @@
       <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-people-input />
       <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
+        <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
       </legend>
-      <div class="join w-full">
+      <div class="input input-bordered input-sm flex h-10 min-h-10 max-h-10 w-full min-w-0 items-center gap-1 overflow-hidden px-2 py-0">
+        <span class="material-symbols-outlined shrink-0 ${pcText} text-xl"><c:out value="${resolvedIcon}" /></span>
         <button
             type="button"
-            class="join-item btn btn-outline btn-square"
+            class="btn btn-ghost btn-xs btn-circle shrink-0 ${pcText}"
             aria-label="${fn:escapeXml(peopleDecrementLabel)}"
             data-people-decrement>
-          <span class="material-symbols-outlined">remove</span>
+          <span class="material-symbols-outlined text-base">remove</span>
         </button>
-        <div class="join-item input flex-1 flex items-center justify-center gap-1">
+        <div class="flex min-w-0 flex-1 items-center justify-center gap-1">
           <input
-              class="w-full appearance-none bg-transparent border-none p-0 text-center text-base font-bold tabular-nums text-on-surface placeholder:text-on-surface/60 outline-none focus:outline-none focus:ring-0 shadow-none"
+              class="w-full min-w-0 appearance-none bg-transparent border-none p-0 text-center text-base font-bold tabular-nums text-on-surface placeholder:text-on-surface/60 outline-none focus:outline-none focus:ring-0 shadow-none"
               type="text"
               inputmode="numeric"
               autocomplete="off"
@@ -120,7 +127,7 @@
               data-people-field />
           <button
               type="button"
-              class="btn btn-ghost btn-xs btn-circle ${peopleClearInitiallyHidden ? 'hidden' : ''}"
+              class="btn btn-ghost btn-xs btn-circle ${pcText} ${peopleClearInitiallyHidden ? 'hidden' : ''}"
               aria-label="${fn:escapeXml(peopleClearLabel)}"
               data-people-clear>
             <span class="material-symbols-outlined text-base">close</span>
@@ -128,10 +135,10 @@
         </div>
         <button
             type="button"
-            class="join-item btn btn-outline btn-square"
+            class="btn btn-ghost btn-xs btn-circle shrink-0 ${pcText}"
             aria-label="${fn:escapeXml(peopleIncrementLabel)}"
             data-people-increment>
-          <span class="material-symbols-outlined">add</span>
+          <span class="material-symbols-outlined text-base">add</span>
         </button>
       </div>
 

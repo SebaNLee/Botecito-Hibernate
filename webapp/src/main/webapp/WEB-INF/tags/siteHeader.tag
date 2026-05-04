@@ -17,22 +17,41 @@
       Botecito
     </a>
     <div class="flex items-center gap-2">
+      <a href="<c:url value='/marketplace' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+        <spring:message code="nav.marketplace" />
+      </a>
       <sec:authorize access="isAnonymous()">
         <a href="<c:url value='/login' />" class="btn btn-ghost btn-sm no-underline">
           <spring:message code="nav.login" />
         </a>
-        <a href="<c:url value='/register' />" class="btn btn-primary btn-sm no-underline">
-          <spring:message code="nav.register" />
-        </a>
       </sec:authorize>
       <sec:authorize access="isAuthenticated()">
-        <a href="<c:url value='/profile' />" class="btn btn-ghost btn-circle btn-sm no-underline" title="<sec:authentication property='name' />" aria-label="Profile">
+        <a href="<c:url value='/my-boats' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+          <spring:message code="account.nav.myBoats" />
+        </a>
+        <a href="<c:url value='/bookings' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+          <spring:message code="account.nav.bookings" />
+        </a>
+        <a href="<c:url value='/profile' />" class="btn btn-outline btn-circle btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200" title="<sec:authentication property='name' />" aria-label="Profile">
           <span class="material-symbols-outlined text-xl">account_circle</span>
         </a>
       </sec:authorize>
-      <a href="<c:url value='${resolvedCtaHref}' />" class="${resolvedCtaClass}">
-        <spring:message code="${resolvedCtaMessageCode}" />
-      </a>
+      <c:choose>
+        <c:when test="${resolvedCtaVariant == 'publish'}">
+          <sec:authorize access="isAnonymous()">
+            <a href="<c:url value='${resolvedCtaHref}' />" class="${resolvedCtaClass}">
+              <spring:message code="${resolvedCtaMessageCode}" />
+            </a>
+          </sec:authorize>
+        </c:when>
+        <c:when test="${resolvedCtaVariant == 'rent'}">
+        </c:when>
+        <c:otherwise>
+          <a href="<c:url value='${resolvedCtaHref}' />" class="${resolvedCtaClass}">
+            <spring:message code="${resolvedCtaMessageCode}" />
+          </a>
+        </c:otherwise>
+      </c:choose>
     </div>
   </div>
 </header>

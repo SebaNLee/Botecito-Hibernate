@@ -3,8 +3,12 @@ package ar.edu.itba.paw.webapp.form;
 import java.time.LocalDateTime;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
 
+@Getter
+@Setter
 public class ItemBookingForm {
     @NotNull
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
@@ -16,28 +20,4 @@ public class ItemBookingForm {
 
     @Size(max = 1000, message = "{reservation.validation.requestMessage.max}")
     private String requestMessage;
-
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
-
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
-    }
-
-    public String getRequestMessage() {
-        return requestMessage;
-    }
-
-    public void setRequestMessage(String requestMessage) {
-        this.requestMessage = requestMessage;
-    }
 }

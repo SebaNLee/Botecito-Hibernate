@@ -21,20 +21,25 @@
     <link rel="stylesheet" href="<c:url value='/css/tailwind.css' />" />
     <link rel="stylesheet" href="<c:url value='/css/main.css' />" />
   </head>
-  <body class="bg-background text-on-background font-body antialiased min-h-screen">
+  <body class="bg-background text-on-background font-body antialiased min-h-screen flex flex-col">
     <paw:siteHeader
       ctaMessageCode="${headerCtaMessageCode}"
       ctaHref="${headerCtaHref}"
       ctaVariant="${headerCtaVariant}" />
-    <main class="${resolvedMainClass}">
+    <main class="${resolvedMainClass} flex-1">
       <jsp:doBody />
     </main>
     <paw:siteFooter />
+    <script src="<c:url value='/js/dismissible-alerts.js' />"></script>
+    <script src="<c:url value='/js/toast.js' />"></script>
     <script type="module" src="<c:url value='/js/cally-loader.js' />"></script>
     <script src="<c:url value='/js/date-time-picker.js' />"></script>
     <script src="<c:url value='/js/search-filters.js' />"></script>
     <script src="<c:url value='/js/form-submit-state.js' />"></script>
-    <script src="<c:url value='/js/weekly-availability.js' />"></script>
+    <script src="<c:url value='/js/weekly-availability.js?v=2' />"></script>
     <script src="<c:url value='/js/image-upload-preview.js' />"></script>
+    <script src="<c:url value='/js/image-gallery.js' />"></script>
+    <script src="<c:url value='/js/image-carousel.js' />"></script>
+    <script src="<c:url value='/js/rating-stars.js' />"></script>
   </body>
 </html>

@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.lang.NonNull;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.ViewResolver;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
@@ -21,6 +22,7 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 @EnableWebMvc
 @EnableAsync
+@EnableScheduling
 @Import(MailConfig.class)
 @ComponentScan({
     "ar.edu.itba.paw.webapp.controller",
@@ -146,11 +148,15 @@ public class WebConfig implements WebMvcConfigurer {
     private record CredentialsSelection(String credentialsFile, String fallbackCredentialsFile) {}
 
     @Bean(initMethod = "migrate")
-    public Flyway flyway(final DataSource dataSource) {
+    public Flyway flyway(final DataSource dataSource, final Properties credentialsProperties) {
+        final boolean outOfOrder =
+                Boolean.parseBoolean(credentialsProperties.getProperty("flyway.outOfOrder", "false"));
+
         return Flyway.configure()
                 .dataSource(dataSource)
                 .locations("classpath:db/migration")
                 .baselineOnMigrate(true)
+                .outOfOrder(outOfOrder)
                 .load();
     }
 
@@ -176,33 +182,4 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/js/**").addResourceLocations("/js/");
         registry.addResourceHandler("/img/**").addResourceLocations("/img/");
     }
-
-    // ====================================
-    // TODO reference, demo code from class
-    // start
-    // ====================================
-
-    // Note: the fragment below was replaced by Flyway
-    // (also migrated src/main/resources/schema.sql to
-    // src/main/resources/db/migration/V1_init.sql)
-
-    // @Bean
-    // public DataSourceInitializer dataSourceInitializer(final DataSource
-    // dataSource) {
-    // final DataSourceInitializer initializer = new DataSourceInitializer();
-    // initializer.setDataSource(dataSource);
-    // initializer.setDatabasePopulator(databasePopulator());
-    // return initializer;
-    // }
-
-    // private DatabasePopulator databasePopulator() {
-    // final ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
-    // populator.addScript(new ClassPathResource("schema.sql"));
-    // return populator;
-    // }
-
-    // ====================================
-    // TODO reference, demo code from class
-    // start
-    // ====================================
 }

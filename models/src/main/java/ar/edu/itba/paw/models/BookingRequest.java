@@ -2,7 +2,14 @@ package ar.edu.itba.paw.models;
 
 import java.time.Instant;
 import java.util.Locale;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.ToString;
 
+@ToString
+@Getter
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class BookingRequest {
 
     private final String token;
@@ -24,54 +31,11 @@ public class BookingRequest {
             final String description,
             final BookingState status,
             final Instant createdAt) {
-        this.token = token;
-        this.itemId = itemId;
-        this.requesterName = requesterName;
-        this.requesterEmail = requesterEmail;
-        this.requesterLocaleTag = requesterLocaleTag;
-        this.description = description;
-        this.status = status;
-        this.createdAt = createdAt;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public Integer getItemId() {
-        return itemId;
-    }
-
-    public String getRequesterName() {
-        return requesterName;
-    }
-
-    public String getRequesterEmail() {
-        return requesterEmail;
-    }
-
-    public String getRequesterLocaleTag() {
-        return requesterLocaleTag;
+        this(token, itemId, requesterName, requesterEmail, requesterLocaleTag, description, status, createdAt, null);
     }
 
     public Locale getRequesterLocale() {
         return Locale.forLanguageTag(requesterLocaleTag);
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public BookingState getStatus() {
-        return status;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public Instant getResolvedAt() {
-        return resolvedAt;
     }
 
     public void resolve(final BookingState newStatus, final Instant resolutionTime) {

@@ -4,8 +4,14 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
+import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.persistence.ItemAvailabilityDao;
+import ar.edu.itba.paw.persistence.ItemBookingDao;
 import ar.edu.itba.paw.persistence.ItemDao;
+import ar.edu.itba.paw.persistence.ItemMediaDao;
+import ar.edu.itba.paw.persistence.ReviewDao;
+import ar.edu.itba.paw.persistence.UserDao;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -28,8 +34,26 @@ public class ItemServiceImplTest {
     @Mock
     private ItemDao itemDao;
 
+    @Mock
+    private ItemAvailabilityDao itemAvailabilityDao;
+
+    @Mock
+    private ItemBookingDao itemBookingDao;
+
+    @Mock
+    private ReviewDao reviewDao;
+
+    @Mock
+    private ItemMediaDao itemMediaDao;
+
+    @Mock
+    private UserDao userDao;
+
+    @Mock
+    private MailService mailService;
+
     @Test
-    public void testFindItemByIdWhenItemExists() {
+    public void testFindItemById() {
         final Item item = new Item();
         item.setId(10);
         Mockito.when(itemDao.findItemById(10)).thenReturn(Optional.of(item));
@@ -39,16 +63,7 @@ public class ItemServiceImplTest {
     }
 
     @Test
-    public void testCreatePublicationWhenOwnerDoesNotExist() {
-        final User createdUser = new User();
-        createdUser.setId(1);
-        createdUser.setGivenName("A");
-        createdUser.setLastName("A");
-        createdUser.setEmail("a@a.com");
-
-        final Item createdItem = new Item();
-        createdItem.setId(99);
-
+    public void testCreatePublicationNoOwner() {
         final ItemType itemType = new ItemType();
         itemType.setId(1);
         final LocationOption locationOption = new LocationOption();
@@ -61,8 +76,18 @@ public class ItemServiceImplTest {
 
         Mockito.when(itemDao.findItemTypeById(1)).thenReturn(Optional.of(itemType));
         Mockito.when(itemDao.listLocationOptions()).thenReturn(List.of(locationOption));
-        Mockito.when(itemDao.findUserByEmail("a@a.com")).thenReturn(Optional.empty());
-        Mockito.when(itemDao.createUser("A", "A", "a@a.com", "es")).thenReturn(createdUser);
+        Mockito.when(userDao.findByEmail("a@a.com")).thenReturn(Optional.empty());
+        Mockito.when(userDao.createUserWithoutCredentials(
+                        Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
+                .thenAnswer(invocation -> {
+                    final User createdUser = new User();
+                    createdUser.setId(1);
+                    createdUser.setGivenName(invocation.getArgument(0));
+                    createdUser.setLastName(invocation.getArgument(1));
+                    createdUser.setEmail(invocation.getArgument(2));
+                    createdUser.setPreferredLanguage(PreferredLanguage.fromInput(invocation.getArgument(3)));
+                    return createdUser;
+                });
         Mockito.when(itemDao.createItem(
                         Mockito.eq(1),
                         Mockito.eq(1),
@@ -74,7 +99,17 @@ public class ItemServiceImplTest {
                         Mockito.eq(1),
                         Mockito.eq(1),
                         Mockito.anyString()))
-                .thenReturn(createdItem);
+                .thenAnswer(invocation -> {
+                    final Item createdItem = new Item();
+                    createdItem.setId(99);
+                    createdItem.setOwnerId(invocation.getArgument(0));
+                    createdItem.setTitle(invocation.getArgument(2));
+                    createdItem.setPricePerHour(invocation.getArgument(4));
+                    return createdItem;
+                });
+        Mockito.when(itemAvailabilityDao.createItemAvailability(
+                        Mockito.eq(99), Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
+                .thenReturn(new ItemAvailability());
         final Item result = itemService.createPublication(
                 "A",
                 "A",
@@ -90,8 +125,60 @@ public class ItemServiceImplTest {
                 1,
                 List.of(availability));
         Assertions.assertNotNull(result);
-        Assertions.assertEquals(99, result.getId());
-        Mockito.verify(itemDao).createUser("A", "A", "a@a.com", "es");
-        Mockito.verify(itemDao).createItemAvailability(99, "MONDAY", "10:00", "12:00");
+        Assertions.assertEquals(1, result.getOwnerId());
+        Assertions.assertEquals("item-a", result.getTitle());
+        Assertions.assertEquals(2000, result.getPricePerHour());
+    }
+
+    @Test
+    public void testCreatePublicationThrowsWhenOwnerLastNameIsBlank() {
+        final ItemAvailability availability = new ItemAvailability();
+        availability.setWeekday(DayOfWeek.MONDAY);
+        availability.setStartTime(LocalTime.of(10, 0));
+        availability.setEndTime(LocalTime.of(12, 0));
+
+        Assertions.assertThrows(
+                MissingUserNamesException.class,
+                () -> itemService.createPublication(
+                        "A",
+                        " ",
+                        "a@a.com",
+                        "es",
+                        1,
+                        "item-a",
+                        "a",
+                        2000,
+                        2,
+                        BigDecimal.valueOf(100),
+                        1,
+                        1,
+                        List.of(availability)));
+    }
+
+    @Test
+    public void testUpdateOtherUsersPublication() {
+        Mockito.when(itemDao.findItemByIdForOwner(10, 99)).thenReturn(Optional.empty());
+
+        final boolean updated = itemService.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1, null);
+
+        Assertions.assertFalse(updated);
+    }
+
+    @Test
+    public void testUpdateImage() {
+        final Item item = new Item();
+        item.setId(10);
+        item.setOwnerId(99);
+        final byte[] imageData = new byte[] {1, 2, 3};
+        Mockito.when(itemDao.findItemByIdForOwner(10, 99)).thenReturn(Optional.of(item));
+        Mockito.when(itemDao.snapshotBookingsForPublicationEdit(10)).thenReturn(true);
+        Mockito.when(itemDao.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1))
+                .thenReturn(true);
+        Mockito.when(itemMediaDao.replacePrimaryImage(10, imageData)).thenReturn(7);
+
+        final boolean updated =
+                itemService.updatePublicationForOwner(10, 99, "title", "description", 2000, 1, 1, imageData);
+
+        Assertions.assertTrue(updated);
     }
 }

@@ -7,4 +7,13 @@
     <Bug pattern="EI_EXPOSE_REP2"/>
     <Class name="~ar\.edu\.itba\.paw\.(services|webapp\.controller)\..+"/>
   </Match>
+  <!--
+    DTOs in services.dto are immutable carriers that hold references to domain
+    entities and byte buffers. Returning them by reference is intentional;
+    callers do not mutate them.
+  -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    <Class name="~ar\.edu\.itba\.paw\.services\.dto\..+"/>
+  </Match>
 </FindBugsFilter>

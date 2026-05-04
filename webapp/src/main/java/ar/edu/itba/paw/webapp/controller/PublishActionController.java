@@ -1,14 +1,24 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.Item;
+import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.services.BookingDecisionBatch;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.EditPublicationForm;
+import ar.edu.itba.paw.webapp.util.BookingDisplayFormatter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,20 +31,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
+@RequiredArgsConstructor
 public class PublishActionController {
 
     private final ItemService itemService;
     private final UserService userService;
 
-    public PublishActionController(final ItemService itemService, final UserService userService) {
-        this.itemService = itemService;
-        this.userService = userService;
-    }
-
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/edit", method = RequestMethod.GET)
-    public ModelAndView editPublicationForm(@PathVariable("id") final int itemId, final HttpServletRequest request) {
+    public ModelAndView editPublicationForm(
+            @PathVariable("id") final int itemId,
+            final HttpServletRequest request,
+            final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
@@ -42,7 +52,8 @@ public class PublishActionController {
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
         if (item.isEmpty()) {
-            return new ModelAndView("redirect:/profile?publishAction=forbidden");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats");
         }
 
         final EditPublicationForm form = new EditPublicationForm();
@@ -66,7 +77,8 @@ public class PublishActionController {
             @PathVariable("id") final int itemId,
             @Valid @ModelAttribute("editForm") final EditPublicationForm form,
             final BindingResult errors,
-            final HttpServletRequest request) {
+            final HttpServletRequest request,
+            final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
@@ -74,7 +86,8 @@ public class PublishActionController {
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
         if (item.isEmpty()) {
-            return new ModelAndView("redirect:/profile?publishAction=forbidden");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats");
         }
 
         validateUploadedImage(form.getFile(), errors);
@@ -91,80 +104,111 @@ public class PublishActionController {
         if (errors.hasErrors()) {
             return editPublicationModelAndView(item.get(), request);
         }
-
-        if (itemService.hasBlockingBookingsForEdition(itemId)) {
-            errors.reject("editPublication.validation.blockedByBookings");
-            return editPublicationModelAndView(item.get(), request);
-        }
-
-        final boolean updated = itemService.updatePublication(
-                itemId,
-                form.getTitle().trim(),
-                form.getDescription() == null ? "" : form.getDescription().trim(),
-                parsedPrice,
-                form.getDifficultyLevel(),
-                parsedLocationOptionId);
-        if (!updated) {
+        if (parsedPrice == null || parsedLocationOptionId == null) {
             errors.reject("publish.submit.persistenceError");
             return editPublicationModelAndView(item.get(), request);
         }
-
+        final int publicationPrice = parsedPrice;
+        final int publicationLocationOptionId = parsedLocationOptionId;
         final MultipartFile file = form.getFile();
-        if (file != null && !file.isEmpty()) {
+        final boolean hasNewPrimaryImage = file != null && !file.isEmpty();
+        final byte[] primaryImageDataForChangeDetection = hasNewPrimaryImage ? new byte[] {0} : null;
+
+        if (!itemService.hasPublicationChanges(
+                itemId,
+                form.getTitle() == null ? "" : form.getTitle().trim(),
+                form.getDescription() == null ? "" : form.getDescription().trim(),
+                publicationPrice,
+                form.getDifficultyLevel(),
+                publicationLocationOptionId,
+                primaryImageDataForChangeDetection)) {
+            ToastSupport.success(redirectAttributes, "profile.publications.updated");
+            return new ModelAndView("redirect:/my-boats#my-publications");
+        }
+
+        final List<ItemBooking> activeBookings = itemService.listActiveBookingsByItemId(itemId);
+        if (!activeBookings.isEmpty() && !isConfirmedSnapshotEdit(request)) {
+            return editPublicationModelAndView(item.get(), request).addObject("showEditConflictModal", true);
+        }
+        if (!allPendingBookingsHaveDecisions(activeBookings, request)) {
+            errors.reject("editPublication.conflict.pending.required");
+            return editPublicationModelAndView(item.get(), request).addObject("showEditConflictModal", true);
+        }
+        itemService.resolveEditConflict(itemId, buildDecisionBatch(activeBookings, request));
+
+        final byte[] primaryImageData;
+        if (hasNewPrimaryImage) {
+            final MultipartFile uploadedFile = Objects.requireNonNull(file, "file");
             try {
-                if (itemService.replacePrimaryImage(itemId, file.getBytes()) == null) {
-                    errors.reject("publish.submit.persistenceError");
-                    return editPublicationModelAndView(item.get(), request);
-                }
+                primaryImageData = uploadedFile.getBytes();
             } catch (final IOException e) {
                 errors.rejectValue("file", "editPublication.validation.image.read");
                 return editPublicationModelAndView(item.get(), request);
             }
+        } else {
+            primaryImageData = null;
+        }
+        try {
+            if (!itemService.updatePublicationForOwner(
+                    itemId,
+                    currentUser.getId(),
+                    form.getTitle().trim(),
+                    form.getDescription() == null ? "" : form.getDescription().trim(),
+                    publicationPrice,
+                    form.getDifficultyLevel(),
+                    publicationLocationOptionId,
+                    primaryImageData)) {
+                errors.reject("publish.submit.persistenceError");
+                return editPublicationModelAndView(item.get(), request);
+            }
+        } catch (final DataAccessException | IllegalStateException e) {
+            errors.reject("publish.submit.persistenceError");
+            return editPublicationModelAndView(item.get(), request);
         }
 
-        return new ModelAndView("redirect:/profile?publishAction=updated#my-publications");
+        ToastSupport.success(redirectAttributes, "profile.publications.updated");
+        return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/disable", method = RequestMethod.POST)
-    public ModelAndView disablePublication(@PathVariable("id") final int itemId) {
+    public ModelAndView disablePublication(
+            @PathVariable("id") final int itemId, final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
-        if (item.isEmpty()) {
-            return new ModelAndView("redirect:/profile?publishAction=forbidden#my-publications");
+        if (item.isEmpty() || !itemService.setItemActiveForOwner(itemId, currentUser.getId(), false)) {
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats#my-publications");
         }
 
-        if (!itemService.setItemActive(itemId, false)) {
-            return new ModelAndView("redirect:/profile?publishAction=forbidden#my-publications");
-        }
-
-        return new ModelAndView("redirect:/profile?publishAction=disabled#my-publications");
+        ToastSupport.success(redirectAttributes, "profile.publications.disabled");
+        return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/enable", method = RequestMethod.POST)
-    public ModelAndView enablePublication(@PathVariable("id") final int itemId) {
+    public ModelAndView enablePublication(
+            @PathVariable("id") final int itemId, final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
-        if (item.isEmpty()) {
-            return new ModelAndView("redirect:/profile?publishAction=forbidden#my-publications");
+        if (item.isEmpty() || !itemService.setItemActiveForOwner(itemId, currentUser.getId(), true)) {
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats#my-publications");
         }
 
-        if (!itemService.setItemActive(itemId, true)) {
-            return new ModelAndView("redirect:/profile?publishAction=forbidden#my-publications");
-        }
-
-        return new ModelAndView("redirect:/profile?publishAction=enabled#my-publications");
+        ToastSupport.success(redirectAttributes, "profile.publications.enabled");
+        return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/delete", method = RequestMethod.POST)
-    public ModelAndView hardDeletePublication(@PathVariable("id") final int itemId) {
+    public ModelAndView hardDeletePublication(
+            @PathVariable("id") final int itemId, final RedirectAttributes redirectAttributes) {
         final User currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
@@ -172,22 +216,26 @@ public class PublishActionController {
 
         final Optional<Item> item = resolveOwnedItem(currentUser, itemId);
         if (item.isEmpty()) {
-            return new ModelAndView("redirect:/profile?publishAction=forbidden#my-publications");
-        }
-
-        if (itemService.hasBlockingBookingsForEdition(itemId)) {
-            return new ModelAndView("redirect:/profile?publishAction=deleteBlockedByBookings#my-publications");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats#my-publications");
         }
 
         try {
-            if (!itemService.deleteItemById(itemId)) {
-                return new ModelAndView("redirect:/profile?publishAction=error#my-publications");
+            if (!itemService.deleteItemByIdForOwner(itemId, currentUser.getId())) {
+                if (!Boolean.TRUE.equals(item.get().getActive())) {
+                    ToastSupport.error(redirectAttributes, "profile.publications.deleteBlockedByBookings");
+                    return new ModelAndView("redirect:/my-boats#my-publications");
+                }
+                ToastSupport.error(redirectAttributes, "profile.publications.error");
+                return new ModelAndView("redirect:/my-boats#my-publications");
             }
         } catch (final DataAccessException e) {
-            return new ModelAndView("redirect:/profile?publishAction=error#my-publications");
+            ToastSupport.error(redirectAttributes, "profile.publications.error");
+            return new ModelAndView("redirect:/my-boats#my-publications");
         }
 
-        return new ModelAndView("redirect:/profile?publishAction=deleted#my-publications");
+        ToastSupport.success(redirectAttributes, "profile.publications.deleted");
+        return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
     private User currentAuthenticatedUser() {
@@ -201,17 +249,99 @@ public class PublishActionController {
     }
 
     private Optional<Item> resolveOwnedItem(final User currentUser, final int itemId) {
-        return itemService.listItemsByOwnerId(currentUser.getId()).stream()
-                .filter(item -> item.getId() == itemId)
-                .findFirst();
+        return itemService.findItemByIdForOwner(itemId, currentUser.getId());
     }
 
     private ModelAndView editPublicationModelAndView(final Item item, final HttpServletRequest request) {
         final ModelAndView mav = new ModelAndView("edit-publication");
+        final List<ItemBooking> activeBookings = itemService.listActiveBookingsByItemId(item.getId());
+        final Map<Integer, String> guestNames = new LinkedHashMap<>();
+        for (final ItemBooking booking : activeBookings) {
+            if (booking == null || booking.getId() == null) {
+                continue;
+            }
+            guestNames.put(
+                    booking.getId(),
+                    booking.getGuestId() == null
+                            ? ""
+                            : itemService
+                                    .findUserById(booking.getGuestId())
+                                    .map(User::getName)
+                                    .orElse(""));
+        }
+        final Map<Integer, String> startLabels = new LinkedHashMap<>();
+        final Map<Integer, String> friendlyDates = new LinkedHashMap<>();
+        final Map<Integer, String> friendlyTimeRanges = new LinkedHashMap<>();
+        final Map<Integer, String> friendlyPrices = new LinkedHashMap<>();
+        final Map<Integer, String> statusCodes = new LinkedHashMap<>();
+        final Integer pricePerHour = item.getPricePerHour();
+        for (final ItemBooking booking : activeBookings) {
+            if (booking == null || booking.getId() == null) {
+                continue;
+            }
+            final int id = booking.getId();
+            startLabels.put(id, BookingDisplayFormatter.formatStartLabel(booking.getStartTime()));
+            friendlyDates.put(id, BookingDisplayFormatter.formatFriendlyDate(booking.getStartTime()));
+            friendlyTimeRanges.put(
+                    id, BookingDisplayFormatter.formatFriendlyTimeRange(booking.getStartTime(), booking.getEndTime()));
+            friendlyPrices.put(
+                    id,
+                    BookingDisplayFormatter.formatFriendlyTotalPrice(
+                            booking.getStartTime(), booking.getEndTime(), pricePerHour));
+            statusCodes.put(
+                    id,
+                    booking.getState() == null ? "" : BookingDisplayFormatter.statusMessageCode(booking.getState()));
+        }
         mav.addObject("item", item);
+        mav.addObject("activeEditBookings", activeBookings);
+        mav.addObject("editBookingGuests", guestNames);
+        mav.addObject("editBookingStartLabels", startLabels);
+        mav.addObject("editBookingFriendlyDates", friendlyDates);
+        mav.addObject("editBookingFriendlyTimeRanges", friendlyTimeRanges);
+        mav.addObject("editBookingFriendlyPrices", friendlyPrices);
+        mav.addObject("editBookingStatusCodes", statusCodes);
         mav.addObject(
                 "itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId(), request.getContextPath()));
         return mav;
+    }
+
+    private static BookingDecisionBatch buildDecisionBatch(
+            final List<ItemBooking> activeBookings, final HttpServletRequest request) {
+        final List<BookingDecisionBatch.Decision> decisions = new ArrayList<>();
+        for (final ItemBooking booking : activeBookings) {
+            if (booking == null
+                    || booking.getState() != BookingState.BOOKING_PENDING
+                    || booking.getHostDecisionToken() == null) {
+                continue;
+            }
+            final String decision = request.getParameter("bookingDecision_" + booking.getId());
+            if ("accept".equals(decision)) {
+                decisions.add(new BookingDecisionBatch.Decision(
+                        booking.getHostDecisionToken(), BookingState.BOOKING_CONFIRMED));
+            } else if ("decline".equals(decision)) {
+                decisions.add(new BookingDecisionBatch.Decision(
+                        booking.getHostDecisionToken(), BookingState.BOOKING_REJECTED));
+            }
+        }
+        return new BookingDecisionBatch(decisions);
+    }
+
+    private static boolean allPendingBookingsHaveDecisions(
+            final List<ItemBooking> activeBookings, final HttpServletRequest request) {
+        for (final ItemBooking booking : activeBookings) {
+            if (booking == null || booking.getState() != BookingState.BOOKING_PENDING) {
+                continue;
+            }
+            final String decision = request.getParameter("bookingDecision_" + booking.getId());
+            if (!"accept".equals(decision) && !"decline".equals(decision)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean isConfirmedSnapshotEdit(final HttpServletRequest request) {
+        return "true".equals(request.getParameter("confirmEditWithSnapshots"));
     }
 
     private static Integer parseIntegerField(

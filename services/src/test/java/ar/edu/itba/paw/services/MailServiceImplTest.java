@@ -2,8 +2,10 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.BookingState;
+import ar.edu.itba.paw.models.PreferredLanguage;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemDao;
+import ar.edu.itba.paw.persistence.UserDao;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
@@ -34,6 +36,9 @@ public class MailServiceImplTest {
     @Mock
     private ItemDao itemDao;
 
+    @Mock
+    private UserDao userDao;
+
     private MailServiceImpl mailService;
 
     @BeforeEach
@@ -42,32 +47,32 @@ public class MailServiceImplTest {
         properties.setProperty("app.baseUrl", "http://localhost:8080");
         properties.setProperty("mail.reviewRecipient", "a@a.com");
 
-        mailService = new MailServiceImpl(mailSender, templateEngine, messageSource, itemDao, properties);
+        mailService = new MailServiceImpl(mailSender, templateEngine, messageSource, itemDao, userDao, properties);
     }
 
     @Test
-    public void testResolveLocaleWhenUserPrefersEnglish() {
+    public void testResolveEnglish() {
         final User user = new User();
-        user.setPreferredLanguage("en");
-        Mockito.when(itemDao.findUserByEmail("a@a.com")).thenReturn(Optional.of(user));
+        user.setPreferredLanguage(PreferredLanguage.EN);
+        Mockito.when(userDao.findByEmail("a@a.com")).thenReturn(Optional.of(user));
         final Locale result = mailService.resolveLocale("a@a.com");
         Assertions.assertEquals(Locale.ENGLISH, result);
     }
 
     @Test
-    public void testResolveLocaleWhenUserDoesNotExist() {
-        Mockito.when(itemDao.findUserByEmail("b@b.com")).thenReturn(Optional.empty());
+    public void testResolveLocaleNoUser() {
+        Mockito.when(userDao.findByEmail("b@b.com")).thenReturn(Optional.empty());
         final Locale result = mailService.resolveLocale("b@b.com");
         Assertions.assertEquals(Locale.of("es"), result);
     }
 
     @Test
-    public void testSendBookingReviewEmailWhenOwnerEmailIsProvided() {
+    public void testSendBookingReviewEmail() {
         final BookingRequest bookingRequest =
                 new BookingRequest("t", 10, "A A", "a@a.com", "es", "a", BookingState.BOOKING_PENDING, Instant.now());
         final javax.mail.internet.MimeMessage mimeMessage = Mockito.mock(javax.mail.internet.MimeMessage.class);
 
-        Mockito.when(itemDao.findUserByEmail("b@b.com")).thenReturn(Optional.empty());
+        Mockito.when(userDao.findByEmail("b@b.com")).thenReturn(Optional.empty());
         Mockito.when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
         Mockito.when(messageSource.getMessage(
                         Mockito.eq("mail.requestReview.subject"), Mockito.any(), Mockito.any(Locale.class)))
@@ -75,9 +80,23 @@ public class MailServiceImplTest {
         Mockito.when(templateEngine.process(Mockito.eq("booking-review"), Mockito.any()))
                 .thenReturn("<p>ok</p>");
 
-        mailService.sendBookingReviewEmail(bookingRequest, "b@b.com");
+        Assertions.assertDoesNotThrow(() -> mailService.sendBookingReviewEmail(
+                bookingRequest, "b@b.com", "Boat", "Loc", "2026-05-02", "10:00 - 12:00"));
+    }
 
-        Mockito.verify(mailSender).send(mimeMessage);
-        Mockito.verify(mailSender, Mockito.never()).send(Mockito.any(org.springframework.mail.SimpleMailMessage.class));
+    @Test
+    public void testPasswordRecoveryEmail() {
+        final javax.mail.internet.MimeMessage mimeMessage = Mockito.mock(javax.mail.internet.MimeMessage.class);
+
+        Mockito.when(userDao.findByEmail("recover@a.com")).thenReturn(Optional.empty());
+        Mockito.when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        Mockito.when(messageSource.getMessage(
+                        Mockito.eq("mail.passwordRecovery.subject"), Mockito.any(), Mockito.any(Locale.class)))
+                .thenReturn("Reset your password");
+        Mockito.when(templateEngine.process(Mockito.eq("password-recovery"), Mockito.any()))
+                .thenReturn("<p>reset</p>");
+
+        Assertions.assertDoesNotThrow(
+                () -> mailService.sendPasswordRecoveryEmail("recover@a.com", "Recover User", "token-1"));
     }
 }

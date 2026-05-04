@@ -1,133 +1,49 @@
 package ar.edu.itba.paw.models;
 
 import java.time.OffsetDateTime;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
+@Getter
+@Setter
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = {"passwordHash", "passwordRecoveryToken"})
 public class User {
     private Integer id;
+
     private OffsetDateTime createdAt;
+
     private String givenName;
     private String lastName;
+
     private String email;
+
     private String phone;
     private String paymentAlias;
-    private String preferredLanguage;
+    private PreferredLanguage preferredLanguage = PreferredLanguage.ES;
     private String passwordHash;
+    private String passwordRecoveryToken;
+    private OffsetDateTime passwordRecoveryUsedAt;
 
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(final Integer id) {
-        this.id = id;
-    }
-
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(final OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public void setCreatedAt(final String createdAt) {
-        this.createdAt = createdAt == null ? null : OffsetDateTime.parse(createdAt);
-    }
-
-    public String getGivenName() {
-        return givenName;
-    }
-
-    public void setGivenName(final String givenName) {
-        this.givenName = givenName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(final String lastName) {
-        this.lastName = lastName;
-    }
-
+    /**
+     * Display label joining {@link #givenName} and {@link #lastName} (for mail, UI, etc.). Not a form input: the web
+     * layer binds those fields separately. Never {@code null}; treats {@code null} or empty string as absent (no
+     * trimming).
+     */
     public String getName() {
-        if (isBlank(givenName) && isBlank(lastName)) {
+        final boolean noGiven = givenName == null || givenName.isEmpty();
+        final boolean noLast = lastName == null || lastName.isEmpty();
+        if (noGiven && noLast) {
             return "";
         }
-        if (isBlank(givenName)) {
-            return lastName.trim();
+        if (noGiven) {
+            return lastName;
         }
-        if (isBlank(lastName)) {
-            return givenName.trim();
+        if (noLast) {
+            return givenName;
         }
-        return givenName.trim() + " " + lastName.trim();
-    }
-
-    public void setName(final String name) {
-        if (name == null) {
-            this.givenName = null;
-            this.lastName = null;
-            return;
-        }
-
-        final String trimmedName = name.trim();
-        if (trimmedName.isEmpty()) {
-            this.givenName = "";
-            this.lastName = "";
-            return;
-        }
-
-        final int separatorIndex = trimmedName.indexOf(' ');
-        if (separatorIndex < 0) {
-            this.givenName = trimmedName;
-            this.lastName = "";
-            return;
-        }
-
-        this.givenName = trimmedName.substring(0, separatorIndex);
-        this.lastName = trimmedName.substring(separatorIndex + 1).trim();
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(final String email) {
-        this.email = email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(final String phone) {
-        this.phone = phone;
-    }
-
-    public String getPaymentAlias() {
-        return paymentAlias;
-    }
-
-    public void setPaymentAlias(final String paymentAlias) {
-        this.paymentAlias = paymentAlias;
-    }
-
-    public String getPreferredLanguage() {
-        return preferredLanguage;
-    }
-
-    public void setPreferredLanguage(final String preferredLanguage) {
-        this.preferredLanguage = preferredLanguage;
-    }
-
-    public String getPasswordHash() {
-        return passwordHash;
-    }
-
-    public void setPasswordHash(final String passwordHash) {
-        this.passwordHash = passwordHash;
-    }
-
-    private static boolean isBlank(final String value) {
-        return value == null || value.isBlank();
+        return givenName + " " + lastName;
     }
 }

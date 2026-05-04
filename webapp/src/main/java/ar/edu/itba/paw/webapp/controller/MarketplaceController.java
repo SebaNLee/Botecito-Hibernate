@@ -1,19 +1,19 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.BookingRequest;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
-import ar.edu.itba.paw.models.ItemType;
+import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingRequestService;
-import ar.edu.itba.paw.services.DisabledTimeSlotService;
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.Page;
+import ar.edu.itba.paw.services.ReviewService;
+import ar.edu.itba.paw.services.SelfBookingNotAllowedException;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
-import java.math.BigDecimal;
+import ar.edu.itba.paw.webapp.util.AvailabilityPickerBuilder;
+import ar.edu.itba.paw.webapp.util.AvailabilityPickerSupport;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -25,8 +25,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -42,29 +43,14 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
+@RequiredArgsConstructor
 public class MarketplaceController {
-    private static final String DEFAULT_SORT = "priceAsc";
     private static final int MARKETPLACE_PAGE_SIZE = 10;
 
     private final ItemService itemService;
-    private final MailService mailService;
     private final BookingRequestService bookingRequestService;
     private final UserService userService;
-    private final DisabledTimeSlotService disabledTimeSlotService;
-
-    @Autowired
-    public MarketplaceController(
-            final ItemService itemService,
-            final MailService mailService,
-            final BookingRequestService bookingRequestService,
-            final UserService userService,
-            final DisabledTimeSlotService disabledTimeSlotService) {
-        this.itemService = itemService;
-        this.mailService = mailService;
-        this.bookingRequestService = bookingRequestService;
-        this.userService = userService;
-        this.disabledTimeSlotService = disabledTimeSlotService;
-    }
+    private final ReviewService reviewService;
 
     @ModelAttribute("reservationRequestForm")
     public ReservationRequestForm reservationRequestForm(final Locale locale) {
@@ -76,42 +62,45 @@ public class MarketplaceController {
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
     public ModelAndView marketplace(
             final HttpServletRequest request,
-            @RequestParam(value = "searchQuery", required = false) final String requestedSearchQuery,
-            @RequestParam(value = "locationOptionId", required = false) final String requestedLocationOptionId,
-            @RequestParam(value = "date", required = false) final String requestedDate,
-            @RequestParam(value = "startTime", required = false) final String requestedStartTime,
-            @RequestParam(value = "endTime", required = false) final String requestedEndTime,
-            @RequestParam(value = "capacity", required = false) final String requestedCapacity,
-            @RequestParam(value = "maxWeight", required = false) final String requestedMaxWeight,
-            @RequestParam(value = "difficultyLevel", required = false) final String requestedDifficultyLevel,
-            @RequestParam(value = "sort", required = false, defaultValue = DEFAULT_SORT) final String sort,
-            @RequestParam(value = "page", required = false) final String requestedPage) {
-        final String resolvedSort = resolveSort(sort);
-        final ItemSearchCriteria criteria = buildItemSearchCriteria(
-                requestedSearchQuery,
-                requestedLocationOptionId,
-                requestedDate,
-                requestedStartTime,
-                requestedEndTime,
-                requestedCapacity,
-                requestedMaxWeight,
-                parseDifficultyLevel(requestedDifficultyLevel),
-                resolvedSort);
-        final Page<Item> itemPage =
-                itemService.searchItems(criteria, resolvePage(requestedPage), MARKETPLACE_PAGE_SIZE);
+            @RequestParam(value = "searchQuery", required = false) final String searchQuery,
+            @RequestParam(value = "locationOptionId", required = false) final String locationOptionId,
+            @RequestParam(value = "date", required = false) final String date,
+            @RequestParam(value = "startTime", required = false) final String startTime,
+            @RequestParam(value = "endTime", required = false) final String endTime,
+            @RequestParam(value = "capacity", required = false) final String capacity,
+            @RequestParam(value = "maxWeight", required = false) final String maxWeight,
+            @RequestParam(value = "difficultyLevel", required = false) final String difficultyLevel,
+            @RequestParam(value = "minRating", required = false) final String minRating,
+            @RequestParam(value = "sort", required = false) final String sort,
+            @RequestParam(value = "page", required = false) final String page) {
+        final ItemSearchCriteria criteria = itemService.parseAndValidateSearchCriteria(
+                searchQuery,
+                locationOptionId,
+                date,
+                startTime,
+                endTime,
+                capacity,
+                maxWeight,
+                difficultyLevel,
+                minRating,
+                sort);
+        final Page<Item> itemPage = itemService.searchMarketplace(criteria, parsePage(page), MARKETPLACE_PAGE_SIZE);
         final ModelAndView mav = new ModelAndView("marketplace");
         mav.addObject("items", itemPage.getContent());
         mav.addObject("itemImages", buildItemImagesMap(itemPage.getContent(), request.getContextPath()));
         mav.addObject("itemsCount", itemPage.getTotalItems());
         mav.addObject("itemPage", itemPage);
-        mav.addObject("sort", resolvedSort);
+        mav.addObject(
+                "sort",
+                criteria.getSort() == null ? "newest" : criteria.getSort().getRequestValue());
+        mav.addObject(
+                "itemRatingSummaries",
+                reviewService.getItemRatingSummaries(
+                        itemPage.getContent().stream().map(Item::getId).toList()));
         AvailabilityPickerSupport.addAvailabilityPickerData(
                 mav,
                 "search",
-                AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilities(),
-                        itemService.listBookings(),
-                        disabledTimeSlotService.listAll()));
+                AvailabilityPickerBuilder.build(itemService.listAvailabilities(), itemService.listBookings()));
         return mav;
     }
 
@@ -131,6 +120,7 @@ public class MarketplaceController {
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "startTime", required = false) final String requestedStartTime,
             @RequestParam(value = "endTime", required = false) final String requestedEndTime,
+            @RequestParam(value = "snapshotVersionId", required = false) final Integer snapshotVersionId,
             @ModelAttribute("reservationRequestForm") final ReservationRequestForm form) {
         if (isBlank(form.getDate())) {
             form.setDate(requestedDate);
@@ -141,7 +131,38 @@ public class MarketplaceController {
         if (isBlank(form.getEndTime())) {
             form.setEndTime(requestedEndTime);
         }
-        return buildMarketplaceItemView(request.getContextPath(), itemId, form);
+
+        final User currentUser = currentAuthenticatedUser();
+        if (snapshotVersionId != null && currentUser == null) {
+            return new ModelAndView("redirect:/login");
+        }
+        final Optional<ItemPageData> view = buildMarketplaceItemData(itemId, currentUser, snapshotVersionId);
+        if (view.isEmpty()) {
+            return new ModelAndView("redirect:/marketplace");
+        }
+        return populateMarketplaceItemView(view.get(), request.getContextPath(), form);
+    }
+
+    @RequestMapping(value = "/item/{itemId:[0-9]+}/snapshot/{versionId:[0-9]+}/cover", method = RequestMethod.GET)
+    public void snapshotCoverImage(
+            @PathVariable("itemId") final int itemId,
+            @PathVariable("versionId") final int versionId,
+            final HttpServletResponse response)
+            throws java.io.IOException {
+        final User currentUser = currentAuthenticatedUser();
+        if (currentUser == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+        final ItemSnapshot snapshot =
+                resolveAuthorizedSnapshotVersion(versionId, itemId, currentUser).orElse(null);
+        if (snapshot == null || snapshot.getCoverImageData() == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        response.setContentType("image/jpeg");
+        response.setContentLength(snapshot.getCoverImageData().length);
+        response.getOutputStream().write(snapshot.getCoverImageData());
     }
 
     @RequestMapping(value = "/item/{id:[0-9]+}", method = RequestMethod.POST)
@@ -159,156 +180,130 @@ public class MarketplaceController {
         if (item.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
         }
-
         final Optional<User> owner = itemService.findUserById(item.get().getOwnerId());
+        if (item.get().getOwnerId() != null && item.get().getOwnerId().equals(currentUser.getId())) {
+            errors.reject("reservation.selfBooking");
+            return rebuildMarketplaceItemView(itemId, currentUser, form, request.getContextPath());
+        }
         if (!errors.hasFieldErrors("date")
                 && !errors.hasFieldErrors("startTime")
                 && !errors.hasFieldErrors("endTime")
-                && !matchesMarketplaceAvailability(itemId, form.getDate(), form.getStartTime(), form.getEndTime())) {
+                && !isRequestedRangeAvailable(itemId, form.getDate(), form.getStartTime(), form.getEndTime())) {
             errors.rejectValue("startTime", "reservation.unavailable");
         }
-
         if (errors.hasErrors()) {
-            return buildMarketplaceItemView(request.getContextPath(), itemId, form);
+            return rebuildMarketplaceItemView(itemId, currentUser, form, request.getContextPath());
         }
 
         try {
-            final BookingRequest bookingRequest = bookingRequestService.createBookingRequest(
+            final String trimmedMessage = isBlank(form.getRequestMessage())
+                    ? null
+                    : form.getRequestMessage().trim();
+            bookingRequestService.createBookingRequest(
                     itemId,
                     currentUser.getGivenName(),
                     currentUser.getLastName(),
                     currentUser.getEmail(),
-                    currentUser.getPreferredLanguage(),
+                    currentUser.getPreferredLanguage() == null
+                            ? null
+                            : currentUser.getPreferredLanguage().getPersistenceCode(),
                     toOffsetDateTime(form.getDate(), form.getStartTime()),
                     toOffsetDateTime(form.getDate(), form.getEndTime()),
-                    buildReservationRequestDescription(item.get(), owner.orElse(null), form));
-            mailService.sendBookingReviewEmail(
-                    bookingRequest, owner.map(User::getEmail).orElse(null));
-            final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, form);
+                    trimmedMessage);
+            final ModelAndView mav = rebuildMarketplaceItemView(itemId, currentUser, form, request.getContextPath());
             mav.addObject("mailSuccessCode", "reservation.request.success");
+            mav.addObject("mailSuccessHostName", owner.map(User::getName).orElse(""));
             return mav;
-        } catch (final IllegalArgumentException e) {
-            final ModelAndView mav = buildMarketplaceItemView(request.getContextPath(), itemId, form);
+        } catch (final SelfBookingNotAllowedException e) {
+            errors.reject("reservation.selfBooking");
+            return rebuildMarketplaceItemView(itemId, currentUser, form, request.getContextPath());
+        } catch (final Exception e) {
+            final ModelAndView mav = rebuildMarketplaceItemView(itemId, currentUser, form, request.getContextPath());
             mav.addObject("mailErrorCode", "reservation.request.error");
             return mav;
         }
     }
 
-    private ModelAndView buildMarketplaceItemView(
-            final String servletContextPath, final int itemId, final ReservationRequestForm form) {
-        final Optional<Item> item = itemService.findItemById(itemId);
-        if (item.isEmpty()) {
+    private ModelAndView rebuildMarketplaceItemView(
+            final int itemId, final User currentUser, final ReservationRequestForm form, final String contextPath) {
+        final Optional<ItemPageData> view = buildMarketplaceItemData(itemId, currentUser, null);
+        if (view.isEmpty()) {
             return new ModelAndView("redirect:/marketplace");
         }
+        return populateMarketplaceItemView(view.get(), contextPath, form);
+    }
 
-        final Optional<User> owner = itemService.findUserById(item.get().getOwnerId());
-        final Optional<ItemType> itemType =
-                itemService.findItemTypeById(item.get().getTypeId());
-        final AvailabilityPickerSupport.AvailabilityPickerData reservationAvailability =
-                AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilitiesByItemId(itemId),
-                        itemService.listBookingsByItemId(itemId),
-                        disabledTimeSlotService.listByItem(itemId));
-        final List<String> offeredDates = reservationAvailability.getOfferedDates();
-        final Map<String, List<String>> offeredTimesByDate = reservationAvailability.getOfferedTimesByDate();
+    private ModelAndView populateMarketplaceItemView(
+            final ItemPageData view, final String contextPath, final ReservationRequestForm form) {
         final ModelAndView mav = new ModelAndView("marketplace-item");
-        mav.addObject("item", item.get());
-        mav.addObject("itemOwner", owner.orElse(null));
-        mav.addObject("itemType", itemType.orElse(null));
-        mav.addObject("itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, itemId, servletContextPath));
+        mav.addObject("item", view.item());
+        final User currentUser = currentAuthenticatedUser();
+        final boolean isOwner = currentUser != null
+                && view.item().getOwnerId() != null
+                && view.item().getOwnerId().equals(currentUser.getId());
+        mav.addObject("isOwner", isOwner);
+        mav.addObject("displayItem", view.displayItem());
+        mav.addObject("selectedSnapshot", view.selectedSnapshot());
+        final boolean isActive = Boolean.TRUE.equals(view.item().getActive());
+        mav.addObject("hideListingLiveVersionNavigation", view.selectedSnapshot() != null && !isActive && !isOwner);
+        mav.addObject("listingInactiveNotice", !isActive);
+        mav.addObject("guestSnapshots", view.guestSnapshots());
+        mav.addObject("hostSnapshots", view.hostSnapshots());
+        mav.addObject("itemOwner", view.itemOwner());
+        mav.addObject("itemType", view.itemType());
+        mav.addObject("itemRatingSummary", view.itemRatingSummary());
+        mav.addObject("itemReviews", view.itemReviews());
+        mav.addObject("reviewAuthorNames", view.reviewAuthorNames());
+
+        final int itemId = view.item().getId();
+        final String displayImageUrl;
+        final List<String> displayImageUrls;
+        if (view.selectedSnapshot() != null && view.selectedSnapshot().getCoverImageData() != null) {
+            displayImageUrl = contextPath + "/item/" + itemId + "/snapshot/"
+                    + view.selectedSnapshot().getVersionId() + "/cover";
+            displayImageUrls = List.of(displayImageUrl);
+        } else {
+            displayImageUrl = ItemImageUtils.resolveImageUrl(itemService, itemId, contextPath);
+            displayImageUrls = ItemImageUtils.resolveImageUrls(itemService, itemId, contextPath);
+        }
+        mav.addObject("itemImageUrl", displayImageUrl);
+        mav.addObject("itemImageUrls", displayImageUrls);
+
+        final String ownerName =
+                view.itemOwner() == null ? null : view.itemOwner().getName();
         mav.addObject(
                 "ownerInitial",
-                owner.map(MarketplaceController::buildOwnerInitial).orElse("I"));
-        AvailabilityPickerSupport.addAvailabilityPickerData(mav, "reservation", reservationAvailability);
-        final String defaultDate = offeredDates.isEmpty() ? "" : offeredDates.getFirst();
-        final String reservationDate =
-                AvailabilityPickerSupport.resolveSelectedDate(form.getDate(), offeredDates, defaultDate);
-        final List<String> reservationSlots = offeredTimesByDate.getOrDefault(reservationDate, List.of());
-        final String defaultStartTime = reservationSlots.isEmpty() ? "" : reservationSlots.getFirst();
-        final String defaultEndTime = reservationSlots.size() > 1 ? reservationSlots.getLast() : defaultStartTime;
-        final boolean hasValidRequestedRange = reservationDate.equals(form.getDate())
-                && !isBlank(form.getStartTime())
-                && !isBlank(form.getEndTime())
-                && AvailabilityPickerSupport.hasContinuousAvailability(
-                        reservationSlots, form.getStartTime(), form.getEndTime());
-        form.setDate(reservationDate);
-        mav.addObject("reservationDate", reservationDate);
-        mav.addObject(
-                "reservationStartTime",
-                hasValidRequestedRange
-                        ? form.getStartTime()
-                        : AvailabilityPickerSupport.resolveSelectedTime(
-                                form.getStartTime(), reservationSlots, defaultStartTime));
-        mav.addObject(
-                "reservationEndTime",
-                hasValidRequestedRange
-                        ? form.getEndTime()
-                        : AvailabilityPickerSupport.resolveSelectedTime(
-                                form.getEndTime(), reservationSlots, defaultEndTime));
+                ownerName == null || ownerName.isEmpty()
+                        ? "I"
+                        : ownerName.substring(0, 1).toUpperCase());
+        mav.addObject("pendingItemReviewAction", view.pendingItemReviewAction());
+        AvailabilityPickerSupport.addAvailabilityPickerData(mav, "reservation", view.availability());
+        final String requestedDate = form.getDate();
+        final String requestedStart = form.getStartTime();
+        final String requestedEnd = form.getEndTime();
+        final String resolvedDate = AvailabilityPickerBuilder.resolveSelectedDate(
+                requestedDate, view.availability().offeredDates(), "");
+        final List<String> reservationSlots =
+                view.availability().offeredTimesByDate().getOrDefault(resolvedDate, List.of());
+        final boolean validRequestedRange = resolvedDate.equals(requestedDate)
+                && requestedStart != null
+                && !requestedStart.isBlank()
+                && requestedEnd != null
+                && !requestedEnd.isBlank()
+                && AvailabilityPickerBuilder.hasContinuousAvailability(reservationSlots, requestedStart, requestedEnd);
+        final String resolvedStart = validRequestedRange
+                ? requestedStart
+                : AvailabilityPickerBuilder.resolveSelectedTime(requestedStart, reservationSlots, "");
+        final String resolvedEnd = validRequestedRange
+                ? requestedEnd
+                : AvailabilityPickerBuilder.resolveSelectedTime(requestedEnd, reservationSlots, "");
+        form.setDate(resolvedDate);
+        form.setStartTime(resolvedStart);
+        form.setEndTime(resolvedEnd);
+        mav.addObject("reservationDate", resolvedDate);
+        mav.addObject("reservationStartTime", resolvedStart);
+        mav.addObject("reservationEndTime", resolvedEnd);
         return mav;
-    }
-
-    private static Integer parseInteger(final String value) {
-        if (isBlank(value)) {
-            return null;
-        }
-
-        try {
-            return Integer.parseInt(value.trim());
-        } catch (final NumberFormatException exception) {
-            return null;
-        }
-    }
-
-    private static int resolvePage(final String page) {
-        final Integer parsedPage = parseInteger(page);
-        if (parsedPage == null || parsedPage < 1) {
-            return 1;
-        }
-        return parsedPage;
-    }
-
-    private static ItemSearchCriteria buildItemSearchCriteria(
-            final String searchQuery,
-            final String requestedLocationOptionId,
-            final String requestedDate,
-            final String requestedStartTime,
-            final String requestedEndTime,
-            final String requestedCapacity,
-            final String requestedMaxWeight,
-            final Integer difficultyLevel,
-            final String sort) {
-        final ItemSearchCriteria criteria = new ItemSearchCriteria();
-        criteria.setLocationOptionId(parseInteger(requestedLocationOptionId));
-        criteria.setDate(requestedDate);
-        criteria.setStartTime(requestedStartTime);
-        criteria.setEndTime(requestedEndTime);
-        criteria.setCapacity(parseInteger(requestedCapacity));
-        final Integer maxWeight = parseInteger(requestedMaxWeight);
-        criteria.setMaxWeightKg(maxWeight == null ? null : BigDecimal.valueOf(maxWeight.longValue()));
-        criteria.setDifficultyLevel(difficultyLevel);
-        criteria.setSort(sort);
-        criteria.setSearchQuery(searchQuery);
-        return criteria;
-    }
-
-    private static Integer parseDifficultyLevel(final String value) {
-        final Integer parsed = parseInteger(value);
-        if (parsed == null || parsed < 1 || parsed > 5) {
-            return null;
-        }
-        return parsed;
-    }
-
-    private static String resolveSort(final String sort) {
-        if (sort == null) {
-            return DEFAULT_SORT;
-        }
-
-        return switch (sort) {
-            case "titleAsc", "titleDesc", "priceAsc", "priceDesc" -> sort;
-            default -> DEFAULT_SORT;
-        };
     }
 
     private Map<Integer, String> buildItemImagesMap(final List<Item> items, final String servletContextPath) {
@@ -319,126 +314,20 @@ public class MarketplaceController {
         return itemImages;
     }
 
-    private static String buildReservationRequestDescription(
-            final Item item, final User owner, final ReservationRequestForm form) {
-        final StringBuilder description = new StringBuilder();
-        description
-                .append("Item: ")
-                .append(item.getTitle())
-                .append(" (#")
-                .append(item.getId())
-                .append(")\n");
-        description.append("Location: ").append(item.getLocation()).append('\n');
-        if (owner != null) {
-            description
-                    .append("Owner: ")
-                    .append(owner.getName())
-                    .append(" <")
-                    .append(owner.getEmail())
-                    .append(">\n");
+    private static int parsePage(final String page) {
+        if (page == null || page.isBlank()) {
+            return 1;
         }
-        description.append("Requested date: ").append(form.getDate()).append('\n');
-        description
-                .append("Requested time: ")
-                .append(form.getStartTime())
-                .append(" - ")
-                .append(form.getEndTime());
-
-        if (!isBlank(form.getRequestMessage())) {
-            description.append("\n\nMessage:\n").append(form.getRequestMessage().trim());
+        try {
+            final int parsed = Integer.parseInt(page.trim());
+            return parsed < 1 ? 1 : parsed;
+        } catch (final NumberFormatException ex) {
+            return 1;
         }
-
-        return description.toString();
-    }
-
-    private boolean matchesMarketplaceAvailability(
-            final int itemId,
-            final String requestedDate,
-            final String requestedStartTime,
-            final String requestedEndTime) {
-        if (isBlank(requestedDate)) {
-            return true;
-        }
-
-        final AvailabilityPickerSupport.AvailabilityPickerData availabilityData =
-                AvailabilityPickerSupport.buildAvailabilityPickerData(
-                        itemService.listAvailabilitiesByItemId(itemId),
-                        itemService.listBookingsByItemId(itemId),
-                        disabledTimeSlotService.listByItem(itemId));
-        final List<String> availableTimes =
-                availabilityData.getOfferedTimesByDate().get(requestedDate);
-
-        if (availableTimes == null || availableTimes.isEmpty()) {
-            return false;
-        }
-
-        if (isBlank(requestedStartTime) && isBlank(requestedEndTime)) {
-            return hasAnyContinuousTwoHourWindow(availableTimes);
-        }
-
-        if (!isBlank(requestedStartTime) && isBlank(requestedEndTime)) {
-            return hasContinuousTwoHourWindowStartingAt(availableTimes, requestedStartTime);
-        }
-
-        if (isBlank(requestedStartTime)) {
-            return hasContinuousTwoHourWindowEndingAt(availableTimes, requestedEndTime);
-        }
-
-        return AvailabilityPickerSupport.hasContinuousAvailability(
-                availableTimes, requestedStartTime, requestedEndTime);
-    }
-
-    private static boolean hasAnyContinuousTwoHourWindow(final List<String> availableTimes) {
-        for (int startIndex = 0; startIndex < availableTimes.size(); startIndex++) {
-            for (int endIndex = startIndex + 1; endIndex < availableTimes.size(); endIndex++) {
-                if (AvailabilityPickerSupport.hasContinuousAvailability(
-                        availableTimes, availableTimes.get(startIndex), availableTimes.get(endIndex))) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static boolean hasContinuousTwoHourWindowStartingAt(
-            final List<String> availableTimes, final String requestedStartTime) {
-        if (!availableTimes.contains(requestedStartTime)) {
-            return false;
-        }
-
-        for (final String possibleEndTime : availableTimes) {
-            if (AvailabilityPickerSupport.hasContinuousAvailability(
-                    availableTimes, requestedStartTime, possibleEndTime)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean hasContinuousTwoHourWindowEndingAt(
-            final List<String> availableTimes, final String requestedEndTime) {
-        if (!availableTimes.contains(requestedEndTime)) {
-            return false;
-        }
-
-        for (final String possibleStartTime : availableTimes) {
-            if (AvailabilityPickerSupport.hasContinuousAvailability(
-                    availableTimes, possibleStartTime, requestedEndTime)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private static boolean isBlank(final String value) {
         return value == null || value.isBlank();
-    }
-
-    private static String buildOwnerInitial(final User user) {
-        if (user.getName() == null || user.getName().isEmpty()) {
-            return "I";
-        }
-        return user.getName().substring(0, 1).toUpperCase();
     }
 
     private static OffsetDateTime toOffsetDateTime(final String date, final String time) {
@@ -448,6 +337,133 @@ public class MarketplaceController {
                 .atZone(ZoneId.systemDefault())
                 .toOffsetDateTime();
     }
+
+    private Optional<ItemSnapshot> resolveAuthorizedSnapshotVersion(
+            final int versionId, final int itemId, final User currentUser) {
+        final Optional<ItemSnapshot> guestSnapshot =
+                itemService.findSnapshotVersionByIdForGuest(versionId, itemId, currentUser.getId());
+        if (guestSnapshot.isPresent()) {
+            return guestSnapshot;
+        }
+        return itemService.findSnapshotVersionByIdForOwner(versionId, itemId, currentUser.getId());
+    }
+
+    private Optional<ItemPageData> buildMarketplaceItemData(
+            final int itemId, final User currentUser, final Integer requestedSnapshotVersionId) {
+        final Integer viewerUserId = currentUser == null ? null : currentUser.getId();
+        final Optional<ItemSnapshot> selectedSnapshot = requestedSnapshotVersionId == null || viewerUserId == null
+                ? Optional.empty()
+                : resolveAuthorizedSnapshotVersion(requestedSnapshotVersionId, itemId, currentUser);
+        if (requestedSnapshotVersionId != null && selectedSnapshot.isEmpty()) {
+            return Optional.empty();
+        }
+        Optional<Item> item = itemService.findItemById(itemId);
+        if (item.isEmpty() && viewerUserId != null) {
+            item = itemService.findItemByIdForOwner(itemId, viewerUserId);
+        }
+        if (item.isEmpty() && selectedSnapshot.isPresent()) {
+            item = itemService.findAnyItemById(itemId);
+        }
+        if (item.isEmpty()) {
+            return Optional.empty();
+        }
+        final boolean isOwner = viewerUserId != null
+                && item.get().getOwnerId() != null
+                && item.get().getOwnerId().equals(viewerUserId);
+        final boolean isActive = Boolean.TRUE.equals(item.get().getActive());
+        if (!isActive && !isOwner && selectedSnapshot.isEmpty()) {
+            return Optional.empty();
+        }
+
+        final User owner = item.get().getOwnerId() == null
+                ? null
+                : itemService.findUserById(item.get().getOwnerId()).orElse(null);
+        final var itemType =
+                itemService.findItemTypeById(item.get().getTypeId()).orElse(null);
+        final var ratingSummary = itemService.getItemRatingSummary(itemId);
+        final List<ar.edu.itba.paw.models.Review> reviews = itemService.listLatestReviews(itemId, 12);
+        final Map<Integer, String> reviewAuthorNames = new LinkedHashMap<>();
+        for (final var review : reviews) {
+            if (review.getReviewerUserId() == null || reviewAuthorNames.containsKey(review.getReviewerUserId())) {
+                continue;
+            }
+            reviewAuthorNames.put(
+                    review.getReviewerUserId(),
+                    itemService
+                            .findUserById(review.getReviewerUserId())
+                            .map(User::getName)
+                            .orElse(""));
+        }
+
+        final Item displayItem =
+                selectedSnapshot.<Item>map(snapshot -> snapshot).orElse(item.get());
+        final boolean useSnapshotCover =
+                selectedSnapshot.isPresent() && selectedSnapshot.get().getCoverImageData() != null;
+        final Integer coverImageId =
+                itemService.findCoverImageIdByItemId(itemId).orElse(null);
+        final List<Integer> galleryImageIds =
+                useSnapshotCover ? List.of() : itemService.listImageIdsByItemIdOrdered(itemId);
+        final List<ItemSnapshot> guestSnapshots =
+                viewerUserId == null ? List.of() : itemService.listSnapshotsByItemIdForGuest(itemId, viewerUserId);
+        final List<ItemSnapshot> hostSnapshots = isOwner && viewerUserId != null
+                ? itemService.listSnapshotsByItemIdForOwner(itemId, viewerUserId)
+                : List.of();
+        final var pendingItemReviewAction = viewerUserId == null
+                ? null
+                : itemService.findPendingReviewAction(viewerUserId, itemId).orElse(null);
+        final AvailabilityPickerBuilder.Data availability = AvailabilityPickerBuilder.build(
+                itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
+        return Optional.of(new ItemPageData(
+                item.get(),
+                displayItem,
+                selectedSnapshot.orElse(null),
+                guestSnapshots,
+                hostSnapshots,
+                owner,
+                itemType,
+                ratingSummary,
+                reviews,
+                reviewAuthorNames,
+                coverImageId,
+                galleryImageIds,
+                pendingItemReviewAction,
+                availability));
+    }
+
+    private boolean isRequestedRangeAvailable(
+            final int itemId, final String date, final String startTime, final String endTime) {
+        if (date == null || date.isBlank()) {
+            return true;
+        }
+        final AvailabilityPickerBuilder.Data data = AvailabilityPickerBuilder.build(
+                itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
+        final List<String> times = data.offeredTimesByDate().get(date);
+        if (times == null || times.isEmpty()) {
+            return false;
+        }
+        final boolean blankStart = startTime == null || startTime.isBlank();
+        final boolean blankEnd = endTime == null || endTime.isBlank();
+        if (blankStart || blankEnd) {
+            return false;
+        }
+        return AvailabilityPickerBuilder.hasContinuousAvailability(times, startTime, endTime);
+    }
+
+    private record ItemPageData(
+            Item item,
+            Item displayItem,
+            ItemSnapshot selectedSnapshot,
+            List<ItemSnapshot> guestSnapshots,
+            List<ItemSnapshot> hostSnapshots,
+            User itemOwner,
+            Object itemType,
+            Object itemRatingSummary,
+            List<ar.edu.itba.paw.models.Review> itemReviews,
+            Map<Integer, String> reviewAuthorNames,
+            Integer coverImageId,
+            List<Integer> galleryImageIds,
+            Object pendingItemReviewAction,
+            AvailabilityPickerBuilder.Data availability) {}
 
     private User currentAuthenticatedUser() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

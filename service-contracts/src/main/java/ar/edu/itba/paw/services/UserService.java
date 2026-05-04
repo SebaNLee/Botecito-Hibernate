@@ -15,7 +15,12 @@ public interface UserService {
     }
 
     RegistrationResult register(
-            String givenName, String lastName, String email, String rawPassword, String paymentAlias);
+            String givenName,
+            String lastName,
+            String email,
+            String rawPassword,
+            String paymentAlias,
+            String preferredLanguage);
 
     Optional<User> findByEmail(String email);
 

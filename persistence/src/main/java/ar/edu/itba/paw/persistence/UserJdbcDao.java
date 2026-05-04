@@ -62,14 +62,15 @@ public class UserJdbcDao implements UserDao {
             final String lastName,
             final String email,
             final String passwordHash,
-            final String paymentAlias) {
+            final String paymentAlias,
+            final String preferredLanguage) {
         final int insertedRows = jdbcTemplate.update(
                 "INSERT INTO users (given_name, last_name, email, preferred_language, password_hash, payment_alias)"
                         + " VALUES (?, ?, ?, ?, ?, ?)",
                 givenName,
                 lastName,
                 email,
-                PreferredLanguage.ES.getPersistenceCode(),
+                preferredLanguage,
                 passwordHash,
                 paymentAlias);
         if (insertedRows == 0) {
@@ -89,14 +90,16 @@ public class UserJdbcDao implements UserDao {
             final String lastName,
             final String email,
             final String passwordHash,
-            final String paymentAlias) {
+            final String paymentAlias,
+            final String preferredLanguage) {
         final int updatedRows = jdbcTemplate.update(
                 "UPDATE users"
-                        + " SET given_name = ?, last_name = ?, password_hash = ?, payment_alias = COALESCE(?, payment_alias)"
+                        + " SET given_name = ?, last_name = ?, preferred_language = ?, password_hash = ?, payment_alias = COALESCE(?, payment_alias)"
                         + " WHERE lower(email) = lower(?)"
                         + " AND password_hash IS NULL",
                 givenName,
                 lastName,
+                preferredLanguage,
                 passwordHash,
                 paymentAlias,
                 email);

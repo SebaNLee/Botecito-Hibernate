@@ -182,33 +182,4 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/js/**").addResourceLocations("/js/");
         registry.addResourceHandler("/img/**").addResourceLocations("/img/");
     }
-
-    // ====================================
-    // TODO reference, demo code from class
-    // start
-    // ====================================
-
-    // Note: the fragment below was replaced by Flyway
-    // (also migrated src/main/resources/schema.sql to
-    // src/main/resources/db/migration/V1_init.sql)
-
-    // @Bean
-    // public DataSourceInitializer dataSourceInitializer(final DataSource
-    // dataSource) {
-    // final DataSourceInitializer initializer = new DataSourceInitializer();
-    // initializer.setDataSource(dataSource);
-    // initializer.setDatabasePopulator(databasePopulator());
-    // return initializer;
-    // }
-
-    // private DatabasePopulator databasePopulator() {
-    // final ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
-    // populator.addScript(new ClassPathResource("schema.sql"));
-    // return populator;
-    // }
-
-    // ====================================
-    // TODO reference, demo code from class
-    // start
-    // ====================================
 }

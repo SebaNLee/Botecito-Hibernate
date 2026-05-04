@@ -399,7 +399,8 @@
                         </c:if>
                         <c:set var="ownerPendingReview" value="${pendingOwnerUserReviewsByBookingId[receivedRequest.id]}" />
                         <c:if test="${not empty ownerPendingReview}">
-                          <form action="/reviews/booking/${receivedRequest.id}" method="post" class="space-y-3 border-t border-outline-variant/20 pt-3">
+                          <c:url var="createOwnerUserReviewUrl" value="/reviews/booking/${receivedRequest.id}" />
+                          <form action="${createOwnerUserReviewUrl}" method="post" class="space-y-3 border-t border-outline-variant/20 pt-3">
                             <input type="hidden" name="returnTo" value="dashboardHosting" />
                             <div class="flex items-start justify-between gap-2">
                               <p class="m-0 min-w-0 truncate text-xs text-on-surface-variant"><c:out value="${ownerPendingReview.targetName}" /> · <c:out value="${ownerPendingReview.targetEmail}" /></p>

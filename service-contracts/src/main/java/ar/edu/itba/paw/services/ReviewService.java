@@ -33,7 +33,9 @@ public interface ReviewService {
             int targetUserId,
             ReviewTargetType targetType,
             OffsetDateTime startTime,
-            OffsetDateTime endTime) {
+            OffsetDateTime endTime,
+            String targetName,
+            String targetEmail) {
 
         public int getBookingId() {
             return bookingId;
@@ -57,6 +59,14 @@ public interface ReviewService {
 
         public OffsetDateTime getEndTime() {
             return endTime;
+        }
+
+        public String getTargetName() {
+            return targetName;
+        }
+
+        public String getTargetEmail() {
+            return targetEmail;
         }
     }
 }

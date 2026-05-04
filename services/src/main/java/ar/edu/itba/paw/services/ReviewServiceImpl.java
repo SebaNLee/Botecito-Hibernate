@@ -6,9 +6,11 @@ import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.RatingSummary;
 import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.ReviewTargetType;
+import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemBookingDao;
 import ar.edu.itba.paw.persistence.ItemDao;
 import ar.edu.itba.paw.persistence.ReviewDao;
+import ar.edu.itba.paw.persistence.UserDao;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -26,6 +28,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final ItemDao itemDao;
     private final ItemBookingDao itemBookingDao;
     private final ReviewDao reviewDao;
+    private final UserDao userDao;
 
     @Override
     public Optional<Review> createReviewForBooking(
@@ -161,13 +164,17 @@ public class ReviewServiceImpl implements ReviewService {
             return null;
         }
 
+        final int ownerId = item.get().getOwnerId();
+        final TargetDisplay target = resolveTargetDisplay(ownerId);
         return new PendingReviewAction(
                 booking.getId(),
                 booking.getItemId(),
-                item.get().getOwnerId(),
+                ownerId,
                 ReviewTargetType.ITEM,
                 booking.getStartTime(),
-                booking.getEndTime());
+                booking.getEndTime(),
+                target.name(),
+                target.email());
     }
 
     private PendingReviewAction buildOwnerPendingReviewAction(final int userId, final ItemBooking booking) {
@@ -192,14 +199,30 @@ public class ReviewServiceImpl implements ReviewService {
             return null;
         }
 
+        final int guestId = booking.getGuestId();
+        final TargetDisplay target = resolveTargetDisplay(guestId);
         return new PendingReviewAction(
                 booking.getId(),
                 booking.getItemId(),
-                booking.getGuestId(),
+                guestId,
                 ReviewTargetType.USER,
                 booking.getStartTime(),
-                booking.getEndTime());
+                booking.getEndTime(),
+                target.name(),
+                target.email());
     }
+
+    private TargetDisplay resolveTargetDisplay(final int userId) {
+        final Optional<User> user = userDao.findById(userId);
+        if (user.isEmpty()) {
+            return new TargetDisplay("", "");
+        }
+        final String name = user.get().getName() == null ? "" : user.get().getName();
+        final String email = user.get().getEmail() == null ? "" : user.get().getEmail();
+        return new TargetDisplay(name, email);
+    }
+
+    private record TargetDisplay(String name, String email) {}
 
     private static ReviewDescriptor resolveReviewDescriptor(
             final ItemBooking booking, final Item item, final int reviewerUserId) {
@@ -229,8 +252,18 @@ public class ReviewServiceImpl implements ReviewService {
         if (booking == null || booking.getState() == null || booking.getEndTime() == null) {
             return false;
         }
-        return (booking.getState() == BookingState.BOOKING_PAID || booking.getState() == BookingState.BOOKING_COMPLETED)
+        return isBookingEligibleForPostStayReview(booking.getState())
                 && booking.getEndTime().isBefore(OffsetDateTime.now());
+    }
+
+    /**
+     * Reviews are allowed after the booking end time for stays that were accepted and not cancelled or rejected.
+     */
+    private static boolean isBookingEligibleForPostStayReview(final BookingState state) {
+        return switch (state) {
+            case BOOKING_CONFIRMED, BOOKING_PAYMENT_SUBMITTED, BOOKING_PAID, BOOKING_COMPLETED -> true;
+            default -> false;
+        };
     }
 
     private record ReviewDescriptor(ReviewTargetType targetType, int targetId, int revieweeUserId) {}

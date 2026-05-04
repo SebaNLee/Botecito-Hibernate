@@ -36,7 +36,8 @@ public class UserServiceImplTest {
                         Mockito.anyString(),
                         Mockito.anyString(),
                         Mockito.anyString(),
-                        Mockito.any()))
+                        Mockito.any(),
+                        Mockito.anyString()))
                 .thenAnswer(invocation -> {
                     final User createdUser = new User();
                     createdUser.setGivenName(invocation.getArgument(0));
@@ -47,7 +48,8 @@ public class UserServiceImplTest {
                     return createdUser;
                 });
 
-        final UserService.RegistrationResult result = userService.register("A", "B", " A@A.com ", "password123", "   ");
+        final UserService.RegistrationResult result =
+                userService.register("A", "B", " A@A.com ", "password123", "   ", "en");
 
         Assertions.assertEquals(UserService.RegistrationResult.SUCCESS, result);
     }
@@ -66,7 +68,8 @@ public class UserServiceImplTest {
                         Mockito.anyString(),
                         Mockito.anyString(),
                         Mockito.anyString(),
-                        Mockito.any()))
+                        Mockito.any(),
+                        Mockito.anyString()))
                 .thenAnswer(invocation -> {
                     final User claimedUser = new User();
                     claimedUser.setId(existingUser.getId());
@@ -77,7 +80,7 @@ public class UserServiceImplTest {
                 });
 
         final UserService.RegistrationResult result =
-                userService.register("A", "B", " legacy@a.com ", "password123", " mi.alias ");
+                userService.register("A", "B", " legacy@a.com ", "password123", " mi.alias ", "en");
 
         Assertions.assertEquals(UserService.RegistrationResult.SUCCESS, result);
     }
@@ -85,7 +88,8 @@ public class UserServiceImplTest {
     @Test
     public void testRegisterThrowsWhenGivenNameIsBlank() {
         Assertions.assertThrows(
-                MissingUserNamesException.class, () -> userService.register(" ", "B", "a@a.com", "password123", null));
+                MissingUserNamesException.class,
+                () -> userService.register(" ", "B", "a@a.com", "password123", null, "es"));
     }
 
     @Test
@@ -97,7 +101,8 @@ public class UserServiceImplTest {
         Mockito.when(passwordEncoder.encode("password123")).thenReturn("hashed-password");
         Mockito.when(userDao.findByEmail("a@a.com")).thenReturn(Optional.of(existingUser));
 
-        final UserService.RegistrationResult result = userService.register("A", "B", "a@a.com", "password123", null);
+        final UserService.RegistrationResult result =
+                userService.register("A", "B", "a@a.com", "password123", null, "es");
         Assertions.assertEquals(UserService.RegistrationResult.EMAIL_ALREADY_EXISTS, result);
     }
 

@@ -75,7 +75,8 @@ public class AuthController {
                         form.getLastName().trim(),
                         form.getEmail().trim(),
                         form.getPassword(),
-                        form.getPaymentAlias())
+                        form.getPaymentAlias(),
+                        request.getLocale().getLanguage())
                 != UserService.RegistrationResult.SUCCESS) {
             errors.rejectValue("email", "register.validation.email.duplicate");
             return new ModelAndView("register");

@@ -68,8 +68,9 @@ public class AuthControllerTest {
         final RegisterForm form = validForm();
         final BindingResult errors = new BeanPropertyBindingResult(form, "registerForm");
         final MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addPreferredLocale(java.util.Locale.ENGLISH);
 
-        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null))
+        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null, "en"))
                 .thenReturn(UserService.RegistrationResult.SUCCESS);
 
         final Authentication authenticated = new UsernamePasswordAuthenticationToken(
@@ -88,8 +89,9 @@ public class AuthControllerTest {
         final RegisterForm form = validForm();
         final BindingResult errors = new BeanPropertyBindingResult(form, "registerForm");
         final MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addPreferredLocale(java.util.Locale.ENGLISH);
 
-        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null))
+        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null, "en"))
                 .thenReturn(UserService.RegistrationResult.SUCCESS);
         Mockito.when(authenticationManager.authenticate(Mockito.any(Authentication.class)))
                 .thenThrow(new BadCredentialsException("nope"));
@@ -105,8 +107,9 @@ public class AuthControllerTest {
         final RegisterForm form = validForm();
         final BindingResult errors = new BeanPropertyBindingResult(form, "registerForm");
         final MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addPreferredLocale(java.util.Locale.ENGLISH);
 
-        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null))
+        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null, "en"))
                 .thenReturn(UserService.RegistrationResult.EMAIL_ALREADY_EXISTS);
 
         final ModelAndView mav = controller.registerSubmit(form, errors, request);

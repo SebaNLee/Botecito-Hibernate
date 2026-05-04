@@ -332,10 +332,63 @@ public class AuthController {
         }
         final Page<ItemBooking> receivedBookingPage =
                 paginate(itemService.listBookingsByOwnerId(user.getId()), page, DASHBOARD_PAGE_SIZE);
+        final List<Map<String, Object>> receivedBookingCards = new ArrayList<>();
+        final String ownerPaymentAlias = BookingDisplayFormatter.resolvePaymentAlias(user);
         for (final ItemBooking booking : receivedBookingPage.getContent()) {
             if (booking != null && booking.getItemId() != null) {
                 imageItemIds.add(booking.getItemId());
             }
+            if (booking == null || booking.getId() == null) {
+                continue;
+            }
+
+            final Integer bookingId = booking.getId();
+            final Item item = booking.getItemId() == null
+                    ? null
+                    : itemService.findItemById(booking.getItemId()).orElse(null);
+            final User requester = booking.getGuestId() == null
+                    ? null
+                    : itemService.findUserById(booking.getGuestId()).orElse(null);
+            final Integer pricePerHour = item == null ? null : item.getPricePerHour();
+            final var paymentProof =
+                    bookingRequestService.findPaymentProofByBookingId(bookingId).orElse(null);
+            final String contentType = paymentProof == null ? null : paymentProof.getContentType();
+            final String paymentRefusalReason = paymentProof == null ? null : paymentProof.getRefusalReason();
+            final String paymentGuestReply = paymentProof == null ? null : paymentProof.getGuestReply();
+
+            final Map<String, Object> bookingCard = new LinkedHashMap<>();
+            bookingCard.put("id", bookingId);
+            bookingCard.put("itemId", booking.getItemId());
+            bookingCard.put("itemTitle", item == null ? "" : item.getTitle());
+            bookingCard.put(
+                    "statusMessageCode",
+                    booking.getState() == null ? "" : BookingDisplayFormatter.statusMessageCode(booking.getState()));
+            bookingCard.put("dateLabel", BookingDisplayFormatter.formatDateLabel(booking.getStartTime()));
+            bookingCard.put(
+                    "timeRangeLabel",
+                    BookingDisplayFormatter.formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()));
+            bookingCard.put(
+                    "totalPriceLabel",
+                    BookingDisplayFormatter.formatTotalPriceLabel(
+                            booking.getStartTime(), booking.getEndTime(), pricePerHour));
+            bookingCard.put("paymentAlias", ownerPaymentAlias);
+            bookingCard.put("requestMessage", booking.getRequestMessage());
+            bookingCard.put(
+                    "hasRequestMessage",
+                    booking.getRequestMessage() != null
+                            && !booking.getRequestMessage().isBlank());
+            bookingCard.put("requesterName", requester == null ? "" : requester.getName());
+            bookingCard.put("requesterEmail", requester == null ? "" : requester.getEmail());
+            bookingCard.put("requesterHasReviews", false);
+            bookingCard.put("requesterAverageRating", 0);
+            bookingCard.put("requesterTotalReviews", 0);
+            bookingCard.put("hasPaymentGuestReply", paymentGuestReply != null && !paymentGuestReply.isBlank());
+            bookingCard.put("paymentGuestReply", paymentGuestReply);
+            bookingCard.put("hasPaymentProof", paymentProof != null && paymentProof.getFileData() != null);
+            bookingCard.put("isPaymentProofPdf", "application/pdf".equalsIgnoreCase(contentType));
+            bookingCard.put("paymentRefusalReason", paymentRefusalReason);
+            bookingCard.put("hasPaymentRefusalReason", paymentRefusalReason != null && !paymentRefusalReason.isBlank());
+            receivedBookingCards.add(bookingCard);
         }
 
         mav.addObject("ownedItems", ownedItems);
@@ -343,7 +396,7 @@ public class AuthController {
         mav.addObject("imageUrlsByItemId", buildImageUrlsByItemId(imageItemIds, contextPath));
         mav.addObject("publicationDeleteDeactivatesByItemId", buildDeleteDeactivatesByItemId(ownedItems));
         mav.addObject("publicationDeleteDisabledByItemId", buildDeleteDisabledByItemId(ownedItems));
-        mav.addObject("receivedBookingRequests", receivedBookingPage.getContent());
+        mav.addObject("receivedBookingRequests", receivedBookingCards);
         mav.addObject("receivedBookingPage", receivedBookingPage);
         mav.addObject("selectedBookingStatusFilters", statuses);
         mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statuses));

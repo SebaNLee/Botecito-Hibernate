@@ -113,7 +113,7 @@
                     <c:set var="authoredItemReview" value="${authoredItemReviewsByBookingId[sentRequest.id]}" />
                     <c:set var="sentStatusClass" value="badge-ghost" />
                     <c:if test="${sentStatusMessageCodeByBookingId[sentRequest.id] == 'profile.sentBookings.status.pending'}"><c:set var="sentStatusClass" value="badge-warning" /></c:if>
-                    <c:if test="${sentStatusMessageCodeByBookingId[sentRequest.id] == 'profile.sentBookings.status.confirmed'}"><c:set var="sentStatusClass" value="badge-success" /></c:if>
+                    <c:if test="${sentStatusMessageCodeByBookingId[sentRequest.id] == 'profile.sentBookings.status.confirmed'}"><c:set var="sentStatusClass" value="badge-info" /></c:if>
                     <c:if test="${sentStatusMessageCodeByBookingId[sentRequest.id] == 'profile.sentBookings.status.rejected' || sentStatusMessageCodeByBookingId[sentRequest.id] == 'profile.sentBookings.status.cancelled'}"><c:set var="sentStatusClass" value="badge-error" /></c:if>
                     <c:if test="${sentStatusMessageCodeByBookingId[sentRequest.id] == 'profile.sentBookings.status.paymentSubmitted'}"><c:set var="sentStatusClass" value="badge-info" /></c:if>
                     <c:if test="${sentStatusMessageCodeByBookingId[sentRequest.id] == 'profile.sentBookings.status.paid'}"><c:set var="sentStatusClass" value="badge-success" /></c:if>

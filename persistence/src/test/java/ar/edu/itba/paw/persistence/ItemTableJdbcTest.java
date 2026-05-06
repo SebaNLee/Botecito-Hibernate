@@ -26,113 +26,82 @@ public class ItemTableJdbcTest {
     public void testCreateItemWhenDataIsValid() {
         final JdbcTemplate jdbcTemplate = jdbcTemplate();
         final int ownerId = insertUser("a@a.com");
-        final int versionId = insertPublicationVersion(ownerId, "item-a", 2000, 2, 1, null);
-
-        jdbcTemplate.update("INSERT INTO item (version_id) VALUES (?)", versionId);
+        final int itemId = insertItem(ownerId, "item-a", 2000, 2, 1);
 
         final Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM item i JOIN item_publication_version v ON v.id = i.version_id WHERE v.title = ?",
+                "SELECT COUNT(*) FROM item i JOIN \"version\" v ON v.item_id = i.id WHERE v.title = ? AND i.id = ?",
                 Integer.class,
-                "item-a");
+                "item-a",
+                itemId);
         Assertions.assertEquals(1, count);
     }
 
     @Test
     public void testCreateItemWhenOwnerDoesNotExist() {
-        Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
-                .update(
-                        "INSERT INTO item_publication_version"
-                                + " (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id, location_name, active, item_created_at)"
-                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
-                        999999,
-                        1,
-                        "item-a",
-                        2000,
-                        2,
-                        1,
-                        locationName(1),
-                        Boolean.TRUE));
+        // Owner FK is now on item table.
+        Assertions.assertThrows(DataIntegrityViolationException.class, () -> insertItem(999999, "item-a", 2000, 2, 1));
     }
 
     @Test
     public void testCreateItemWhenPriceIsNegative() {
-        final int ownerId = insertUser("a@a.com");
-
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update(
-                        "INSERT INTO item_publication_version"
-                                + " (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id, location_name, active, item_created_at)"
-                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
-                        ownerId,
+                        "INSERT INTO \"version\""
+                                + " (item_id, type_id, title, description, price, capacity, weight, difficulty, location_id, timezone, created_at)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'UTC', CURRENT_TIMESTAMP)",
+                        insertItem(insertUser("owner-neg@a.com"), "owner-item", 1000, 2, 1),
                         1,
                         "item-a",
-                        -10,
+                        "desc",
+                        -10.0,
                         2,
+                        2000,
                         1,
-                        locationName(1),
-                        Boolean.TRUE));
+                        1));
     }
 
     @Test
     public void testCreateItemWhenDeleteTokenIsDuplicated() {
-        final JdbcTemplate jdbcTemplate = jdbcTemplate();
         final int ownerId = insertUser("a@a.com");
-        final String token = "t";
-        insertPublicationVersion(ownerId, "item-a", 1500, 2, 1, token);
+        final int firstItemId = insertItem(ownerId, "item-a", 1500, 2, 1);
 
-        Assertions.assertThrows(
-                DataIntegrityViolationException.class,
-                () -> jdbcTemplate.update(
-                        "INSERT INTO item_publication_version"
-                                + " (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id, location_name, active, owner_delete_token, item_created_at)"
-                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
-                        ownerId,
-                        1,
-                        "item-b",
-                        1800,
-                        2,
-                        1,
-                        locationName(1),
-                        Boolean.TRUE,
-                        token));
+        Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
+                .update(
+                        "INSERT INTO item (id, host_id, status, created_at) VALUES (?, ?, 'ACTIVE', CURRENT_TIMESTAMP)",
+                        firstItemId,
+                        ownerId));
     }
 
-    private int insertPublicationVersion(
+    private int insertItem(
             final int ownerId,
             final String title,
             final int pricePerHour,
             final int capacityPeople,
-            final int locationOptionId,
-            final String ownerDeleteToken) {
+            final int locationOptionId) {
         final JdbcTemplate jdbcTemplate = jdbcTemplate();
         jdbcTemplate.update(
-                "INSERT INTO item_publication_version"
-                        + " (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id, location_name, active, owner_delete_token, item_created_at)"
-                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
-                ownerId,
+                "INSERT INTO item (host_id, status, created_at) VALUES (?, 'ACTIVE', CURRENT_TIMESTAMP)", ownerId);
+        final int itemId = java.util.Objects.requireNonNull(
+                jdbcTemplate.queryForObject("SELECT MAX(id) FROM item", Integer.class));
+        jdbcTemplate.update(
+                "INSERT INTO \"version\""
+                        + " (item_id, type_id, title, description, price, capacity, weight, difficulty, location_id, timezone, created_at)"
+                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'UTC', CURRENT_TIMESTAMP)",
+                itemId,
                 1,
                 title,
-                pricePerHour,
+                "desc",
+                (double) pricePerHour,
                 capacityPeople,
-                locationOptionId,
-                locationName(locationOptionId),
-                Boolean.TRUE,
-                ownerDeleteToken);
-        return jdbcTemplate.queryForObject(
-                "SELECT id FROM item_publication_version WHERE owner_id = ? AND title = ? ORDER BY id DESC LIMIT 1",
-                Integer.class,
-                ownerId,
-                title);
-    }
-
-    private String locationName(final int locationOptionId) {
-        return jdbcTemplate()
-                .queryForObject("SELECT name FROM location_option WHERE id = ?", String.class, locationOptionId);
+                2000,
+                1,
+                locationOptionId);
+        return itemId;
     }
 
     private int insertUser(final String email) {
-        jdbcTemplate().update("INSERT INTO users (given_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
-        return jdbcTemplate().queryForObject("SELECT id FROM users WHERE email = ?", Integer.class, email);
+        jdbcTemplate().update("INSERT INTO \"user\" (first_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
+        return jdbcTemplate().queryForObject("SELECT id FROM \"user\" WHERE email = ?", Integer.class, email);
     }
 
     private @NonNull JdbcTemplate jdbcTemplate() {

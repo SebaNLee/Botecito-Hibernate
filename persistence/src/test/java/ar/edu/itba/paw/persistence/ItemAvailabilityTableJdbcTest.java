@@ -28,14 +28,17 @@ public class ItemAvailabilityTableJdbcTest {
         final int itemId = insertItem("a@a.com", "item-a");
 
         jdbcTemplate.update(
-                "INSERT INTO item_availability (item_id, weekday, start_time, end_time) VALUES (?, ?, ?, ?)",
+                "INSERT INTO availability (version_id, weekday, start_time, end_time)"
+                        + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?)",
                 itemId,
                 "MONDAY",
                 "09:00:00",
                 "11:00:00");
 
         final Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM item_availability WHERE item_id = ?", Integer.class, itemId);
+                "SELECT COUNT(*) FROM availability WHERE version_id = (SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?)",
+                Integer.class,
+                itemId);
         Assertions.assertEquals(1, count);
     }
 
@@ -45,7 +48,8 @@ public class ItemAvailabilityTableJdbcTest {
 
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update(
-                        "INSERT INTO item_availability (item_id, start_time, end_time) VALUES (?, ?, ?)",
+                        "INSERT INTO availability (version_id, start_time, end_time)"
+                                + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?)",
                         itemId,
                         "09:00:00",
                         "11:00:00"));
@@ -57,7 +61,8 @@ public class ItemAvailabilityTableJdbcTest {
 
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update(
-                        "INSERT INTO item_availability (item_id, weekday, start_time, end_time) VALUES (?, ?, ?, ?)",
+                        "INSERT INTO availability (version_id, weekday, start_time, end_time)"
+                                + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?)",
                         itemId,
                         "MONDAY",
                         "12:00:00",
@@ -66,38 +71,30 @@ public class ItemAvailabilityTableJdbcTest {
 
     private int insertItem(final String ownerEmail, final String itemTitle) {
         final int ownerId = insertUser(ownerEmail);
-        final String locationName =
-                jdbcTemplate().queryForObject("SELECT name FROM location_option WHERE id = ?", String.class, 1);
         jdbcTemplate()
                 .update(
-                        "INSERT INTO item_publication_version"
-                                + " (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id, location_name, active, item_created_at)"
-                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
-                        ownerId,
+                        "INSERT INTO item (host_id, status, created_at) VALUES (?, 'ACTIVE', CURRENT_TIMESTAMP)",
+                        ownerId);
+        final int itemId = jdbcTemplate().queryForObject("SELECT MAX(id) FROM item", Integer.class);
+        jdbcTemplate()
+                .update(
+                        "INSERT INTO \"version\" (item_id, type_id, title, description, price, capacity, weight, difficulty, location_id, timezone, created_at)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'UTC', CURRENT_TIMESTAMP)",
+                        itemId,
                         1,
                         itemTitle,
+                        "desc",
                         1200,
                         2,
+                        2000,
                         1,
-                        locationName,
-                        Boolean.TRUE);
-        final int versionId = jdbcTemplate()
-                .queryForObject(
-                        "SELECT id FROM item_publication_version WHERE owner_id = ? AND title = ? ORDER BY id DESC LIMIT 1",
-                        Integer.class,
-                        ownerId,
-                        itemTitle);
-        jdbcTemplate().update("INSERT INTO item (version_id) VALUES (?)", versionId);
-        return jdbcTemplate()
-                .queryForObject(
-                        "SELECT i.id FROM item i JOIN item_publication_version v ON v.id = i.version_id WHERE v.id = ?",
-                        Integer.class,
-                        versionId);
+                        1);
+        return itemId;
     }
 
     private int insertUser(final String email) {
-        jdbcTemplate().update("INSERT INTO users (given_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
-        return jdbcTemplate().queryForObject("SELECT id FROM users WHERE email = ?", Integer.class, email);
+        jdbcTemplate().update("INSERT INTO \"user\" (first_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
+        return jdbcTemplate().queryForObject("SELECT id FROM \"user\" WHERE email = ?", Integer.class, email);
     }
 
     private @NonNull JdbcTemplate jdbcTemplate() {

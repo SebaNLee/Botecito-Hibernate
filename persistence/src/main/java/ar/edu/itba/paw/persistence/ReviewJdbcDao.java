@@ -38,13 +38,10 @@ public class ReviewJdbcDao implements ReviewDao {
             final String reviewComment) {
         if (postgresDialect) {
             final String insertSql = "INSERT INTO review"
-                    + " (booking_id, reviewer_user_id, reviewee_user_id, target_type, target_id, rating, comment)"
-                    + " VALUES (?, ?, ?, CAST(? AS review_target_type), ?, ?, ?)"
-                    + " ON CONFLICT (booking_id, reviewer_user_id, target_type) DO NOTHING"
+                    + " (booking_id, sender_id, target_type, rating, comment)"
+                    + " VALUES (?, ?, CAST(? AS target_enum), ?, ?)"
                     + " RETURNING id";
-            final Object[] insertArgs = {
-                bookingId, reviewerUserId, revieweeUserId, targetType.name(), targetId, rating, reviewComment
-            };
+            final Object[] insertArgs = {bookingId, reviewerUserId, targetType.name(), rating, reviewComment};
             final Integer insertedId = jdbcTemplate.queryForObject(insertSql, Integer.class, insertArgs);
             return findReviewById(java.util.Objects.requireNonNull(insertedId, "review insert returned no id")
                     .intValue());
@@ -58,10 +55,8 @@ public class ReviewJdbcDao implements ReviewDao {
                 new SimpleJdbcInsert(jdbcTemplate).withTableName("review").usingGeneratedKeyColumns("id");
         final Map<String, Object> args = new HashMap<>();
         args.put("booking_id", bookingId);
-        args.put("reviewer_user_id", reviewerUserId);
-        args.put("reviewee_user_id", revieweeUserId);
+        args.put("sender_id", reviewerUserId);
         args.put("target_type", targetType.name());
-        args.put("target_id", targetId);
         args.put("rating", rating);
         args.put("comment", reviewComment);
         try {
@@ -77,7 +72,10 @@ public class ReviewJdbcDao implements ReviewDao {
             final int bookingId, final int reviewerUserId, final ReviewTargetType targetType) {
         return jdbcTemplate
                 .query(
-                        "SELECT * FROM review WHERE booking_id = ? AND reviewer_user_id = ? AND "
+                        "SELECT r.*, b.guest_id AS reviewee_user_id,"
+                                + " CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END AS target_id"
+                                + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                                + " WHERE r.booking_id = ? AND r.sender_id = ? AND "
                                 + ItemPersistenceSql.REVIEW_TARGET_TYPE_EQUALS,
                         ItemJdbcRowMappers.REVIEW_ROW_MAPPER,
                         bookingId,
@@ -90,8 +88,11 @@ public class ReviewJdbcDao implements ReviewDao {
     @Override
     public List<Review> listReviewsByTarget(final ReviewTargetType targetType, final int targetId) {
         return jdbcTemplate.query(
-                "SELECT * FROM review WHERE " + ItemPersistenceSql.REVIEW_TARGET_TYPE_EQUALS
-                        + " AND target_id = ? ORDER BY created_at DESC, id DESC",
+                "SELECT r.*, b.guest_id AS reviewee_user_id,"
+                        + " CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END AS target_id"
+                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                        + " WHERE " + ItemPersistenceSql.REVIEW_TARGET_TYPE_EQUALS
+                        + " AND (CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END) = ? ORDER BY r.created_at DESC, r.id DESC",
                 ItemJdbcRowMappers.REVIEW_ROW_MAPPER,
                 targetType.name(),
                 targetId);
@@ -102,8 +103,11 @@ public class ReviewJdbcDao implements ReviewDao {
             final ReviewTargetType targetType, final int targetId, final int limit) {
         final int safeLimit = Math.max(1, limit);
         return jdbcTemplate.query(
-                "SELECT * FROM review WHERE " + ItemPersistenceSql.REVIEW_TARGET_TYPE_EQUALS
-                        + " AND target_id = ? ORDER BY created_at DESC, id DESC LIMIT ?",
+                "SELECT r.*, b.guest_id AS reviewee_user_id,"
+                        + " CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END AS target_id"
+                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                        + " WHERE " + ItemPersistenceSql.REVIEW_TARGET_TYPE_EQUALS
+                        + " AND (CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END) = ? ORDER BY r.created_at DESC, r.id DESC LIMIT ?",
                 ItemJdbcRowMappers.REVIEW_ROW_MAPPER,
                 targetType.name(),
                 targetId,
@@ -113,7 +117,10 @@ public class ReviewJdbcDao implements ReviewDao {
     @Override
     public List<Review> listReviewsByReviewer(final int reviewerUserId) {
         return jdbcTemplate.query(
-                "SELECT * FROM review WHERE reviewer_user_id = ? ORDER BY created_at DESC, id DESC",
+                "SELECT r.*, b.guest_id AS reviewee_user_id,"
+                        + " CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END AS target_id"
+                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                        + " WHERE r.sender_id = ? ORDER BY r.created_at DESC, r.id DESC",
                 ItemJdbcRowMappers.REVIEW_ROW_MAPPER,
                 reviewerUserId);
     }
@@ -121,7 +128,10 @@ public class ReviewJdbcDao implements ReviewDao {
     @Override
     public List<Review> listReviewsByReviewee(final int revieweeUserId) {
         return jdbcTemplate.query(
-                "SELECT * FROM review WHERE reviewee_user_id = ? ORDER BY created_at DESC, id DESC",
+                "SELECT r.*, b.guest_id AS reviewee_user_id,"
+                        + " CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END AS target_id"
+                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                        + " WHERE b.guest_id = ? ORDER BY r.created_at DESC, r.id DESC",
                 ItemJdbcRowMappers.REVIEW_ROW_MAPPER,
                 revieweeUserId);
     }
@@ -129,22 +139,29 @@ public class ReviewJdbcDao implements ReviewDao {
     @Override
     public Optional<Review> findReviewById(final int reviewId) {
         return jdbcTemplate
-                .query("SELECT * FROM review WHERE id = ?", ItemJdbcRowMappers.REVIEW_ROW_MAPPER, reviewId)
+                .query(
+                        "SELECT r.*, b.guest_id AS reviewee_user_id,"
+                                + " CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END AS target_id"
+                                + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                                + " WHERE r.id = ?",
+                        ItemJdbcRowMappers.REVIEW_ROW_MAPPER,
+                        reviewId)
                 .stream()
                 .findAny();
     }
 
     @Override
     public boolean deleteReview(final int reviewId, final int reviewerUserId) {
-        return jdbcTemplate.update("DELETE FROM review WHERE id = ? AND reviewer_user_id = ?", reviewId, reviewerUserId)
-                > 0;
+        return jdbcTemplate.update("DELETE FROM review WHERE id = ? AND sender_id = ?", reviewId, reviewerUserId) > 0;
     }
 
     @Override
     public RatingSummary ratingSummaryByTarget(final ReviewTargetType targetType, final int targetId) {
         return jdbcTemplate.query(
-                "SELECT COALESCE(AVG(rating), 0) AS avg_rating, COUNT(*) AS total_reviews" + " FROM review WHERE "
-                        + ItemPersistenceSql.REVIEW_TARGET_TYPE_EQUALS + " AND target_id = ?",
+                "SELECT COALESCE(AVG(r.rating), 0) AS avg_rating, COUNT(*) AS total_reviews"
+                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                        + " WHERE " + ItemPersistenceSql.REVIEW_R_TARGET_TYPE_EQUALS
+                        + " AND (CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END) = ?",
                 rs -> {
                     if (!rs.next()) {
                         return RatingSummary.empty();

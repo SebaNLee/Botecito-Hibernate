@@ -15,7 +15,6 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -56,7 +55,7 @@ public class WebAuthConfig {
                                 antMatcher(HttpMethod.GET, "/bookings/*/accept"),
                                 antMatcher(HttpMethod.GET, "/bookings/*/decline"))
                         .permitAll()
-                        .requestMatchers(new RegexRequestMatcher("^/item/[0-9]+$", "GET"))
+                        .requestMatchers(antMatcher(HttpMethod.GET, "/item/*"))
                         .permitAll()
                         .requestMatchers(antMatcher("/**"))
                         .authenticated())

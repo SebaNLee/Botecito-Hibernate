@@ -32,16 +32,18 @@ public class ItemBookingTableJdbcTest {
         final int itemId = insertItem(ownerId, "item-a");
 
         jdbcTemplate.update(
-                "INSERT INTO item_booking (item_id, guest_id, start_time, end_time, host_decision_token) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO booking"
+                        + " (version_id, guest_id, start, \"end\", status, msg, created_at, updated_at)"
+                        + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?, 'PENDING', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
                 itemId,
                 guestId,
                 Timestamp.from(Instant.parse("2026-01-01T10:00:00Z")),
                 Timestamp.from(Instant.parse("2026-01-01T11:00:00Z")),
                 "t-a");
 
-        final String state = jdbcTemplate.queryForObject(
-                "SELECT state FROM item_booking WHERE host_decision_token = ?", String.class, "t-a");
-        Assertions.assertEquals("BOOKING_PENDING", state);
+        final String state =
+                jdbcTemplate.queryForObject("SELECT status FROM booking WHERE msg = ?", String.class, "t-a");
+        Assertions.assertEquals("PENDING", state);
     }
 
     @Test
@@ -52,7 +54,8 @@ public class ItemBookingTableJdbcTest {
 
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update(
-                        "INSERT INTO item_booking (item_id, guest_id, start_time, end_time) VALUES (?, ?, ?, ?)",
+                        "INSERT INTO booking (version_id, guest_id, start, \"end\")"
+                                + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?)",
                         itemId,
                         guestId,
                         Timestamp.from(Instant.parse("2026-01-01T10:00:00Z")),
@@ -67,7 +70,8 @@ public class ItemBookingTableJdbcTest {
 
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update(
-                        "INSERT INTO item_booking (item_id, guest_id, start_time, end_time, host_decision_token) VALUES (?, ?, ?, ?, ?)",
+                        "INSERT INTO booking (version_id, guest_id, start, \"end\", status, msg, created_at, updated_at)"
+                                + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?, 'PENDING', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
                         itemId,
                         guestId,
                         Timestamp.from(Instant.parse("2026-01-01T12:00:00Z")),
@@ -76,38 +80,30 @@ public class ItemBookingTableJdbcTest {
     }
 
     private int insertUser(final String email) {
-        jdbcTemplate().update("INSERT INTO users (given_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
-        return jdbcTemplate().queryForObject("SELECT id FROM users WHERE email = ?", Integer.class, email);
+        jdbcTemplate().update("INSERT INTO \"user\" (first_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
+        return jdbcTemplate().queryForObject("SELECT id FROM \"user\" WHERE email = ?", Integer.class, email);
     }
 
     private int insertItem(final int ownerId, final String title) {
-        final String locationName =
-                jdbcTemplate().queryForObject("SELECT name FROM location_option WHERE id = ?", String.class, 1);
         jdbcTemplate()
                 .update(
-                        "INSERT INTO item_publication_version"
-                                + " (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id, location_name, active, item_created_at)"
-                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
-                        ownerId,
+                        "INSERT INTO item (host_id, status, created_at) VALUES (?, 'ACTIVE', CURRENT_TIMESTAMP)",
+                        ownerId);
+        final int itemId = jdbcTemplate().queryForObject("SELECT MAX(id) FROM item", Integer.class);
+        jdbcTemplate()
+                .update(
+                        "INSERT INTO \"version\" (item_id, type_id, title, description, price, capacity, weight, difficulty, location_id, timezone, created_at)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'UTC', CURRENT_TIMESTAMP)",
+                        itemId,
                         1,
                         title,
+                        "desc",
                         1500,
                         2,
+                        2000,
                         1,
-                        locationName,
-                        Boolean.TRUE);
-        final int versionId = jdbcTemplate()
-                .queryForObject(
-                        "SELECT id FROM item_publication_version WHERE owner_id = ? AND title = ? ORDER BY id DESC LIMIT 1",
-                        Integer.class,
-                        ownerId,
-                        title);
-        jdbcTemplate().update("INSERT INTO item (version_id) VALUES (?)", versionId);
-        return jdbcTemplate()
-                .queryForObject(
-                        "SELECT i.id FROM item i JOIN item_publication_version v ON v.id = i.version_id WHERE v.id = ?",
-                        Integer.class,
-                        versionId);
+                        1);
+        return itemId;
     }
 
     private @NonNull JdbcTemplate jdbcTemplate() {

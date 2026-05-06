@@ -7,9 +7,7 @@ import ar.edu.itba.paw.models.ItemSnapshot;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,13 +34,15 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
 
     @Override
     public List<ItemBooking> listBookings() {
-        return jdbcTemplate.query("SELECT * FROM item_booking ORDER BY id", ItemJdbcRowMappers.ITEM_BOOKING_ROW_MAPPER);
+        return jdbcTemplate.query(
+                "SELECT b.*, v.item_id AS item_id FROM booking b JOIN \"version\" v ON v.id = b.version_id ORDER BY b.id",
+                ItemJdbcRowMappers.ITEM_BOOKING_ROW_MAPPER);
     }
 
     @Override
     public List<ItemBooking> listBookingsByItemId(final int itemId) {
         return jdbcTemplate.query(
-                "SELECT * FROM item_booking WHERE item_id = ? ORDER BY id",
+                "SELECT b.*, v.item_id AS item_id FROM booking b JOIN \"version\" v ON v.id = b.version_id WHERE v.item_id = ? ORDER BY b.id",
                 ItemJdbcRowMappers.ITEM_BOOKING_ROW_MAPPER,
                 itemId);
     }
@@ -62,12 +62,12 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
 
     @Override
     public List<ItemBooking> listPendingBookingsByOwnerId(final int ownerId) {
-        return listBookingsForOwnerFiltered(ownerId, "b.state = 'BOOKING_PENDING'");
+        return listBookingsForOwnerFiltered(ownerId, "b.status = 'PENDING'");
     }
 
     @Override
     public List<ItemBooking> listPaymentSubmittedBookingsByOwnerId(final int ownerId) {
-        return listBookingsForOwnerFiltered(ownerId, "b.state = 'BOOKING_PAYMENT_SUBMITTED'");
+        return listBookingsForOwnerFiltered(ownerId, "b.status = 'PAID'");
     }
 
     private List<ItemBooking> listBookingsForOwnerFiltered(final int ownerId, final String andClause) {
@@ -80,10 +80,10 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
     @Override
     public List<ItemBooking> listActiveBookingsByItemId(final int itemId) {
         return jdbcTemplate.query(
-                "SELECT b.*"
+                "SELECT b.*, v.item_id AS item_id"
                         + ItemPersistenceSql.ITEM_BOOKING_VERSION_JOIN
-                        + " AND b.state IN (" + ItemPersistenceSql.EDIT_CONFLICT_BOOKING_STATES + ")"
-                        + " AND (b.guest_id IS NULL OR b.guest_id <> v.owner_id)"
+                        + " AND b.status IN (" + ItemPersistenceSql.EDIT_CONFLICT_BOOKING_STATES + ")"
+                        + " AND (b.guest_id IS NULL OR b.guest_id <> i.host_id)"
                         + " ORDER BY b.created_at DESC, b.id DESC",
                 ItemJdbcRowMappers.ITEM_BOOKING_ROW_MAPPER,
                 itemId);
@@ -91,13 +91,8 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
 
     @Override
     public Optional<ItemBooking> findBookingByHostDecisionToken(final String hostDecisionToken) {
-        return jdbcTemplate
-                .query(
-                        "SELECT * FROM item_booking WHERE host_decision_token = ?",
-                        ItemJdbcRowMappers.ITEM_BOOKING_ROW_MAPPER,
-                        hostDecisionToken)
-                .stream()
-                .findAny();
+        // Host-decision tokens were removed from the new schema.
+        return Optional.empty();
     }
 
     @Override
@@ -105,17 +100,16 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
         if (hostDecisionTokens == null || hostDecisionTokens.isEmpty()) {
             return List.of();
         }
-        final String placeholders = String.join(", ", Collections.nCopies(hostDecisionTokens.size(), "?"));
-        return jdbcTemplate.query(
-                "SELECT * FROM item_booking WHERE host_decision_token IN (" + placeholders + ")",
-                ItemJdbcRowMappers.ITEM_BOOKING_ROW_MAPPER,
-                hostDecisionTokens.toArray());
+        return List.of();
     }
 
     @Override
     public Optional<ItemBooking> findBookingById(final int bookingId) {
         return jdbcTemplate
-                .query("SELECT * FROM item_booking WHERE id = ?", ItemJdbcRowMappers.ITEM_BOOKING_ROW_MAPPER, bookingId)
+                .query(
+                        "SELECT b.*, v.item_id AS item_id FROM booking b JOIN \"version\" v ON v.id = b.version_id WHERE b.id = ?",
+                        ItemJdbcRowMappers.ITEM_BOOKING_ROW_MAPPER,
+                        bookingId)
                 .stream()
                 .findAny();
     }
@@ -131,7 +125,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
     @Override
     public Optional<ItemSnapshot> findSnapshotByBookingIdForOwner(final int bookingId, final int ownerId) {
         return querySnapshotOptional(
-                ItemPersistenceSql.SNAPSHOT_SELECT + ItemPersistenceSql.SNAPSHOT_BOOKING_JOIN + "v.owner_id = ?",
+                ItemPersistenceSql.SNAPSHOT_SELECT + ItemPersistenceSql.SNAPSHOT_BOOKING_JOIN + "i.host_id = ?",
                 bookingId,
                 ownerId);
     }
@@ -140,10 +134,14 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
     public Optional<ItemSnapshot> findSnapshotVersionByIdForGuest(
             final int versionId, final int itemId, final int guestId) {
         return querySnapshotOptional(
-                "SELECT v.*, b.item_id"
-                        + " FROM item_publication_version v"
-                        + " JOIN item_booking b ON b.item_version_id = v.id"
-                        + " WHERE v.id = ? AND b.item_id = ? AND b.guest_id = ?"
+                "SELECT v.*, i.id AS item_id, i.host_id AS owner_id, l.name AS location, img.data AS cover_image_data"
+                        + " FROM \"version\" v"
+                        + " JOIN booking b ON b.version_id = v.id"
+                        + " JOIN item i ON i.id = v.item_id"
+                        + " JOIN location l ON l.id = v.location_id"
+                        + " LEFT JOIN media m ON m.version_id = v.id AND m.index = 0"
+                        + " LEFT JOIN image img ON img.id = m.image_id"
+                        + " WHERE v.id = ? AND i.id = ? AND b.guest_id = ?"
                         + " LIMIT 1",
                 versionId,
                 itemId,
@@ -154,10 +152,14 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
     public Optional<ItemSnapshot> findSnapshotVersionByIdForOwner(
             final int versionId, final int itemId, final int ownerId) {
         return querySnapshotOptional(
-                "SELECT DISTINCT v.*, b.item_id"
-                        + " FROM item_publication_version v"
-                        + " JOIN item_booking b ON b.item_version_id = v.id"
-                        + " WHERE v.id = ? AND b.item_id = ? AND v.owner_id = ?"
+                "SELECT DISTINCT v.*, i.id AS item_id, i.host_id AS owner_id, l.name AS location, img.data AS cover_image_data"
+                        + " FROM \"version\" v"
+                        + " JOIN booking b ON b.version_id = v.id"
+                        + " JOIN item i ON i.id = v.item_id"
+                        + " JOIN location l ON l.id = v.location_id"
+                        + " LEFT JOIN media m ON m.version_id = v.id AND m.index = 0"
+                        + " LEFT JOIN image img ON img.id = m.image_id"
+                        + " WHERE v.id = ? AND i.id = ? AND i.host_id = ?"
                         + " LIMIT 1",
                 versionId,
                 itemId,
@@ -175,7 +177,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
     @Override
     public List<ItemSnapshot> listSnapshotsByItemIdForOwner(final int itemId, final int ownerId) {
         return querySnapshotList(
-                ItemPersistenceSql.SNAPSHOT_LIST_BASE + "v.owner_id = ? ORDER BY v.created_at DESC, v.id DESC",
+                ItemPersistenceSql.SNAPSHOT_LIST_BASE + "i.host_id = ? ORDER BY v.created_at DESC, v.id DESC",
                 itemId,
                 ownerId);
     }
@@ -201,28 +203,29 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
         if (postgresDialect) {
             id = Objects.requireNonNull(
                     jdbcTemplate.queryForObject(
-                            "INSERT INTO item_booking"
-                                    + " (item_id, guest_id, start_time, end_time, state, request_message, host_decision_token)"
-                                    + " VALUES (?, ?, ?, ?, ?::booking_state, ?, ?)"
+                            "INSERT INTO booking"
+                                    + " (version_id, guest_id, start, \"end\", status, msg)"
+                                    + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?, ?::booking_status_enum, ?)"
                                     + " RETURNING id",
                             Integer.class,
                             itemId,
                             guestId,
                             Timestamp.from(startTime.toInstant()),
                             Timestamp.from(endTime.toInstant()),
-                            BookingState.BOOKING_PENDING.name(),
-                            requestMessage,
-                            hostDecisionToken),
+                            toDbBookingStatus(BookingState.BOOKING_PENDING),
+                            requestMessage),
                     "Could not create booking for item " + itemId);
         } else {
             final Map<String, Object> args = new HashMap<>();
-            args.put("item_id", itemId);
+            args.put(
+                    "version_id",
+                    jdbcTemplate.queryForObject(
+                            "SELECT MAX(id) FROM \"version\" WHERE item_id = ?", Integer.class, itemId));
             args.put("guest_id", guestId);
-            args.put("start_time", Timestamp.from(startTime.toInstant()));
-            args.put("end_time", Timestamp.from(endTime.toInstant()));
-            args.put("state", BookingState.BOOKING_PENDING.name());
-            args.put("request_message", requestMessage);
-            args.put("host_decision_token", hostDecisionToken);
+            args.put("start", Timestamp.from(startTime.toInstant()));
+            args.put("end", Timestamp.from(endTime.toInstant()));
+            args.put("status", toDbBookingStatus(BookingState.BOOKING_PENDING));
+            args.put("msg", requestMessage);
             id = insertItemBookingReturningIdHsql(args);
         }
         return findBookingById(id)
@@ -241,29 +244,28 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
         if (postgresDialect) {
             id = Objects.requireNonNull(
                     jdbcTemplate.queryForObject(
-                            "INSERT INTO item_booking"
-                                    + " (item_id, guest_id, start_time, end_time, state, request_message, host_decision_token, host_decision_used_at)"
-                                    + " VALUES (?, ?, ?, ?, ?::booking_state, NULL, ?, ?)"
+                            "INSERT INTO booking"
+                                    + " (version_id, guest_id, start, \"end\", status, msg)"
+                                    + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?, ?::booking_status_enum, NULL)"
                                     + " RETURNING id",
                             Integer.class,
                             itemId,
                             ownerId,
                             Timestamp.from(startTime.toInstant()),
                             Timestamp.from(endTime.toInstant()),
-                            BookingState.BOOKING_CONFIRMED.name(),
-                            hostDecisionToken,
-                            Timestamp.from(hostDecisionRecordedAt.toInstant())),
+                            toDbBookingStatus(BookingState.BOOKING_CONFIRMED)),
                     "Could not create owner personal block for item " + itemId);
         } else {
             final Map<String, Object> args = new HashMap<>();
-            args.put("item_id", itemId);
+            args.put(
+                    "version_id",
+                    jdbcTemplate.queryForObject(
+                            "SELECT MAX(id) FROM \"version\" WHERE item_id = ?", Integer.class, itemId));
             args.put("guest_id", ownerId);
-            args.put("start_time", Timestamp.from(startTime.toInstant()));
-            args.put("end_time", Timestamp.from(endTime.toInstant()));
-            args.put("state", BookingState.BOOKING_CONFIRMED.name());
-            args.put("request_message", null);
-            args.put("host_decision_token", hostDecisionToken);
-            args.put("host_decision_used_at", Timestamp.from(hostDecisionRecordedAt.toInstant()));
+            args.put("start", Timestamp.from(startTime.toInstant()));
+            args.put("end", Timestamp.from(endTime.toInstant()));
+            args.put("status", toDbBookingStatus(BookingState.BOOKING_CONFIRMED));
+            args.put("msg", null);
             id = insertItemBookingReturningIdHsql(args);
         }
         return findBookingById(id)
@@ -271,21 +273,32 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
     }
 
     private int insertItemBookingReturningIdHsql(final Map<String, Object> columns) {
-        final SimpleJdbcInsert insert =
-                new SimpleJdbcInsert(jdbcTemplate).withTableName("item_booking").usingGeneratedKeyColumns("id");
         final Timestamp now = Timestamp.from(Instant.now());
         columns.putIfAbsent("created_at", now);
         columns.putIfAbsent("updated_at", now);
-        return insert.executeAndReturnKey(columns).intValue();
+        jdbcTemplate.update(
+                "INSERT INTO booking (version_id, guest_id, start, \"end\", status, msg, created_at, updated_at)"
+                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                columns.get("version_id"),
+                columns.get("guest_id"),
+                columns.get("start"),
+                columns.get("end"),
+                columns.get("status"),
+                columns.get("msg"),
+                columns.get("created_at"),
+                columns.get("updated_at"));
+        return Objects.requireNonNull(
+                jdbcTemplate.queryForObject("CALL IDENTITY()", Integer.class),
+                "Could not read inserted booking id in HSQL");
     }
 
     @Override
     public boolean markBookingCancelled(final int bookingId) {
         return jdbcTemplate.update(
-                        "UPDATE item_booking"
-                                + " SET state = 'BOOKING_CANCELLED', updated_at = CURRENT_TIMESTAMP"
+                        "UPDATE booking"
+                                + " SET status = 'CANCELLED', updated_at = CURRENT_TIMESTAMP"
                                 + " WHERE id = ?"
-                                + " AND state = 'BOOKING_CONFIRMED'",
+                                + " AND status = 'ACCEPTED'",
                         bookingId)
                 > 0;
     }
@@ -293,34 +306,24 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
     @Override
     public boolean deleteOwnerSelfBlock(final int bookingId, final int ownerId) {
         return jdbcTemplate.update(
-                        "DELETE FROM item_booking WHERE id = ? AND guest_id = ? AND state = 'BOOKING_CONFIRMED'",
-                        bookingId,
-                        ownerId)
+                        "DELETE FROM booking WHERE id = ? AND guest_id = ? AND status = 'ACCEPTED'", bookingId, ownerId)
                 > 0;
     }
 
     @Override
     public boolean resolveBookingByHostDecisionToken(
             final String hostDecisionToken, final BookingState newState, final OffsetDateTime hostDecisionUsedAt) {
-        final int updatedRows = jdbcTemplate.update(
-                "UPDATE item_booking"
-                        + " SET state = ?::booking_state, host_decision_used_at = ?, updated_at = CURRENT_TIMESTAMP"
-                        + " WHERE host_decision_token = ?"
-                        + " AND state = 'BOOKING_PENDING'"
-                        + " AND host_decision_used_at IS NULL",
-                newState.name(),
-                Timestamp.from(hostDecisionUsedAt.toInstant()),
-                hostDecisionToken);
-        return updatedRows > 0;
+        // Host-decision tokens were removed from the new schema.
+        return false;
     }
 
     @Override
     public void expireAllDueBookings(final OffsetDateTime startTimeThreshold) {
         jdbcTemplate.update(
-                "UPDATE item_booking"
-                        + " SET state = 'BOOKING_CANCELLED', updated_at = CURRENT_TIMESTAMP"
-                        + " WHERE state NOT IN ('BOOKING_COMPLETED', 'BOOKING_PAID', 'BOOKING_CANCELLED')"
-                        + " AND start_time < ?",
+                "UPDATE booking"
+                        + " SET status = 'CANCELLED', updated_at = CURRENT_TIMESTAMP"
+                        + " WHERE status NOT IN ('FINISHED', 'CONFIRMED', 'CANCELLED')"
+                        + " AND start < ?",
                 Timestamp.from(startTimeThreshold.toInstant()));
     }
 
@@ -332,18 +335,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
         if (hostDecisionTokens == null || hostDecisionTokens.isEmpty()) {
             return 0;
         }
-        final String placeholders = String.join(", ", Collections.nCopies(hostDecisionTokens.size(), "?"));
-        final List<Object> args = new ArrayList<>();
-        args.add(newState.name());
-        args.add(Timestamp.from(hostDecisionUsedAt.toInstant()));
-        args.addAll(hostDecisionTokens);
-        return jdbcTemplate.update(
-                "UPDATE item_booking"
-                        + " SET state = ?::booking_state, host_decision_used_at = ?, updated_at = CURRENT_TIMESTAMP"
-                        + " WHERE host_decision_token IN (" + placeholders + ")"
-                        + " AND state = 'BOOKING_PENDING'"
-                        + " AND host_decision_used_at IS NULL",
-                args.toArray());
+        return 0;
     }
 
     @Override
@@ -354,20 +346,33 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
             final String contentType,
             final byte[] fileData,
             final String guestReply) {
-        final int id = Objects.requireNonNull(
-                jdbcTemplate.queryForObject(
-                        "INSERT INTO booking_payment_proof"
-                                + " (booking_id, uploader_id, file_name, content_type, file_data, guest_reply)"
-                                + " VALUES (?, ?, ?, ?, ?, ?)"
-                                + " RETURNING id",
-                        Integer.class,
-                        bookingId,
-                        uploaderId,
-                        fileName,
-                        contentType,
-                        fileData,
-                        guestReply),
-                "Could not create payment proof for booking " + bookingId);
+        final int id;
+        if (postgresDialect) {
+            id = Objects.requireNonNull(
+                    jdbcTemplate.queryForObject(
+                            "INSERT INTO payment_proof"
+                                    + " (booking_id, filename, content_type, file_data, reply_msg)"
+                                    + " VALUES (?, ?, ?, ?, ?)"
+                                    + " RETURNING id",
+                            Integer.class,
+                            bookingId,
+                            fileName,
+                            contentType,
+                            fileData,
+                            guestReply),
+                    "Could not create payment proof for booking " + bookingId);
+        } else {
+            final SimpleJdbcInsert insert = new SimpleJdbcInsert(jdbcTemplate)
+                    .withTableName("payment_proof")
+                    .usingGeneratedKeyColumns("id");
+            final Map<String, Object> values = new HashMap<>();
+            values.put("booking_id", bookingId);
+            values.put("filename", fileName);
+            values.put("content_type", contentType);
+            values.put("file_data", fileData);
+            values.put("reply_msg", guestReply);
+            id = insert.executeAndReturnKey(values).intValue();
+        }
         return findPaymentProofById(id)
                 .orElseThrow(() -> new IllegalStateException("Could not read inserted payment proof " + id));
     }
@@ -376,7 +381,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
     public Optional<BookingPaymentProof> findPaymentProofByBookingId(final int bookingId) {
         return jdbcTemplate
                 .query(
-                        "SELECT * FROM booking_payment_proof WHERE booking_id = ? ORDER BY id DESC LIMIT 1",
+                        "SELECT id, booking_id, NULL AS uploader_id, filename, content_type, file_data, created_at, refuse_msg, refused_at, reply_msg FROM payment_proof WHERE booking_id = ? ORDER BY id DESC LIMIT 1",
                         ItemJdbcRowMappers.BOOKING_PAYMENT_PROOF_ROW_MAPPER,
                         bookingId)
                 .stream()
@@ -387,7 +392,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
     public Optional<BookingPaymentProof> findPaymentProofById(final int proofId) {
         return jdbcTemplate
                 .query(
-                        "SELECT * FROM booking_payment_proof WHERE id = ?",
+                        "SELECT id, booking_id, NULL AS uploader_id, filename, content_type, file_data, created_at, refuse_msg, refused_at, reply_msg FROM payment_proof WHERE id = ?",
                         ItemJdbcRowMappers.BOOKING_PAYMENT_PROOF_ROW_MAPPER,
                         proofId)
                 .stream()
@@ -396,7 +401,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
 
     @Override
     public boolean deletePaymentProofByBookingId(final int bookingId) {
-        return jdbcTemplate.update("DELETE FROM booking_payment_proof WHERE booking_id = ?", bookingId) > 0;
+        return jdbcTemplate.update("DELETE FROM payment_proof WHERE booking_id = ?", bookingId) > 0;
     }
 
     @Override
@@ -417,8 +422,8 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
             return false;
         }
         jdbcTemplate.update(
-                "UPDATE booking_payment_proof"
-                        + " SET refusal_reason = ?, refused_at = CURRENT_TIMESTAMP"
+                "UPDATE payment_proof"
+                        + " SET refuse_msg = ?, refused_at = CURRENT_TIMESTAMP"
                         + " WHERE booking_id = ?",
                 reason,
                 bookingId);
@@ -432,21 +437,53 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
 
     private boolean updateGuestBookingStateFrom(
             final int bookingId, final int guestId, final BookingState requiredState, final BookingState newState) {
+        final String sql = postgresDialect
+                ? "UPDATE booking"
+                        + " SET status = ?::booking_status_enum, updated_at = CURRENT_TIMESTAMP"
+                        + " WHERE id = ? AND guest_id = ? AND status = ?::booking_status_enum"
+                : "UPDATE booking"
+                        + " SET status = ?, updated_at = CURRENT_TIMESTAMP"
+                        + " WHERE id = ? AND guest_id = ? AND status = ?";
         return jdbcTemplate.update(
-                        "UPDATE item_booking"
-                                + " SET state = ?::booking_state, updated_at = CURRENT_TIMESTAMP"
-                                + " WHERE id = ? AND guest_id = ? AND state = ?::booking_state",
-                        newState.name(),
-                        bookingId,
-                        guestId,
-                        requiredState.name())
+                        sql, toDbBookingStatus(newState), bookingId, guestId, toDbBookingStatus(requiredState))
                 > 0;
     }
 
     private boolean updateOwnerBookingFromPaymentSubmitted(
             final int bookingId, final int ownerId, final BookingState newState) {
+        if (postgresDialect) {
+            return jdbcTemplate.update(
+                            ItemPersistenceSql.BOOKING_UPDATE_BY_OWNER_SUBMITTED,
+                            toDbBookingStatus(newState),
+                            bookingId,
+                            ownerId)
+                    > 0;
+        }
         return jdbcTemplate.update(
-                        ItemPersistenceSql.BOOKING_UPDATE_BY_OWNER_SUBMITTED, newState.name(), bookingId, ownerId)
+                        "UPDATE booking b"
+                                + " SET status = ?, updated_at = CURRENT_TIMESTAMP"
+                                + " WHERE b.id = ?"
+                                + " AND b.status = 'PAID'"
+                                + " AND EXISTS ("
+                                + "   SELECT 1 FROM \"version\" v JOIN item i ON i.id = v.item_id"
+                                + "   WHERE v.id = b.version_id AND i.host_id = ?"
+                                + " )",
+                        toDbBookingStatus(newState),
+                        bookingId,
+                        ownerId)
                 > 0;
+    }
+
+    private static String toDbBookingStatus(final BookingState state) {
+        return switch (state) {
+            case BOOKING_PENDING -> "PENDING";
+            case BOOKING_CONFIRMED -> "ACCEPTED";
+            case BOOKING_REJECTED -> "REJECTED";
+            case BOOKING_CANCELLED -> "CANCELLED";
+            case BOOKING_COMPLETED -> "FINISHED";
+            case BOOKING_PAYMENT_SUBMITTED -> "PAID";
+            case BOOKING_PAID -> "CONFIRMED";
+            case BOOKING_PAYMENT_REFUSED -> "REFUSED";
+        };
     }
 }

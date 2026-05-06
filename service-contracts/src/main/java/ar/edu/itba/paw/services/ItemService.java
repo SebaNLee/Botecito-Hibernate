@@ -125,18 +125,6 @@ public interface ItemService {
 
     void reorderImagesForItem(int itemId, List<Integer> imageIdsInOrder);
 
-    ItemSearchCriteria parseAndValidateSearchCriteria(
-            String searchQuery,
-            String locationOptionId,
-            String date,
-            String startTime,
-            String endTime,
-            String capacity,
-            String maxWeight,
-            String difficulty,
-            String minRating,
-            String sort);
-
     Page<Item> searchMarketplace(ItemSearchCriteria criteria, int page, int pageSize);
 
     java.util.Map<String, String> validatePublicationDraft(PublicationDraft draft);

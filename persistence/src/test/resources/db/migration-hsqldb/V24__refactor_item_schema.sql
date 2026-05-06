@@ -9,6 +9,7 @@ CREATE TABLE "user" (
     password_hash VARCHAR(255),
     mail_token VARCHAR(100),
     mail_token_emitted_at TIMESTAMP,
+    verified BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_user_language CHECK (language IN ('es', 'en'))
 );
@@ -108,9 +109,9 @@ CREATE TABLE new_review (
     CONSTRAINT chk_target_type CHECK (target_type IN ('ITEM', 'USER'))
 );
 
-INSERT INTO "user" (id, first_name, last_name, email, phone, language, alias, password_hash, mail_token, mail_token_emitted_at, created_at)
+INSERT INTO "user" (id, first_name, last_name, email, phone, language, alias, password_hash, mail_token, mail_token_emitted_at, verified, created_at)
 SELECT id, given_name, last_name, LEFT(email, 100), phone, preferred_language, LEFT(payment_alias, 30),
-       password_hash, LEFT(password_recovery_token, 100), password_recovery_used_at, created_at
+       password_hash, LEFT(password_recovery_token, 100), password_recovery_used_at, TRUE, created_at
 FROM users;
 
 INSERT INTO new_item_type (id, name)
@@ -226,7 +227,8 @@ SELECT
     alias AS payment_alias,
     password_hash,
     mail_token AS password_recovery_token,
-    mail_token_emitted_at AS password_recovery_used_at
+    mail_token_emitted_at AS password_recovery_used_at,
+    verified
 FROM "user";
 
 CREATE VIEW location_option AS

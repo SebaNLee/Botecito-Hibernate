@@ -9,6 +9,7 @@ table user {
     password_hash VARCHAR(255),
     mail_token VARCHAR (100),
     mail_token_emitted_at TIMESTAMP,
+    verified boolean NN;
     created_at TIMESTAMP NN
 }
 

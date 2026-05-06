@@ -44,6 +44,7 @@ CREATE TABLE "user" (
     password_hash   VARCHAR(255),
     mail_token      VARCHAR(100),
     mail_token_emitted_at TIMESTAMP,
+    verified        BOOLEAN         NOT NULL DEFAULT FALSE,
     created_at      TIMESTAMP       NOT NULL
 );
 
@@ -150,7 +151,7 @@ CREATE TABLE new_review (
 
 -- user
 INSERT INTO "user" (id, first_name, last_name, email, phone, language, alias,
-                    password_hash, mail_token, mail_token_emitted_at, created_at)
+                    password_hash, mail_token, mail_token_emitted_at, verified, created_at)
 SELECT
     id,
     given_name,
@@ -162,6 +163,7 @@ SELECT
     password_hash,
     LEFT(password_recovery_token, 100),
     password_recovery_used_at,
+    TRUE,
     created_at AT TIME ZONE 'UTC'
 FROM public.users;
 

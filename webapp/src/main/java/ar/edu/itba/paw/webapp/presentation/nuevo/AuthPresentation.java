@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.presentation.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.UserModel;
-import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.services.nuevo.UserService;
 import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordRecoveryRequestForm;
@@ -48,14 +48,7 @@ public class AuthPresentation {
     public ModelAndView registerSubmit(final RegisterForm form, final BindingResult errors) {
         final UserModel user = authModelMapper.fromRegisterForm(form);
         final String rawPassword = form.getPassword();
-        if (userService.register(
-                        user.getGivenName(),
-                        user.getLastName(),
-                        user.getEmail(),
-                        rawPassword,
-                        user.getPaymentAlias(),
-                        user.getPreferredLanguage().getPersistenceCode())
-                != UserService.RegistrationResult.SUCCESS) {
+        if (userService.register(user, rawPassword) != UserService.RegistrationResult.SUCCESS) {
             errors.rejectValue("email", "register.validation.email.duplicate");
             return new ModelAndView(REGISTER_VIEW);
         }
@@ -76,7 +69,7 @@ public class AuthPresentation {
 
     public ModelAndView passwordRecoveryRequestSubmit(final PasswordRecoveryRequestForm form) {
         final UserModel user = authModelMapper.fromPasswordRecoveryRequestForm(form);
-        userService.requestPasswordRecovery(user.getEmail());
+        userService.requestPasswordRecovery(user);
         return new ModelAndView("redirect:/password-recovery?sent=true");
     }
 
@@ -110,8 +103,7 @@ public class AuthPresentation {
                     .addObject("tokenValid", false);
         }
 
-        if (userService.resetPassword(user.getPasswordRecoveryToken(), rawPassword)
-                != UserService.PasswordRecoveryResult.SUCCESS) {
+        if (userService.resetPassword(user, rawPassword) != UserService.PasswordRecoveryResult.SUCCESS) {
             return new ModelAndView("redirect:/password-recovery/" + user.getPasswordRecoveryToken() + "?invalid=true");
         }
 

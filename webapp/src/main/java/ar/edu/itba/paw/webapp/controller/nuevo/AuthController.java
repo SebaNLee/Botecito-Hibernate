@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
-import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.services.nuevo.UserService;
 import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordRecoveryRequestForm;

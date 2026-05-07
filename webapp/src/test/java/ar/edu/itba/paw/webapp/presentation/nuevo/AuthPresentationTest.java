@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.presentation.nuevo;
 
-import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.services.nuevo.UserService;
 import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordRecoveryRequestForm;
@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -63,7 +64,7 @@ public class AuthPresentationTest {
         request.addPreferredLocale(java.util.Locale.ENGLISH);
         form.setPreferredLanguage("en");
         form.setRequest(request);
-        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null, "en"))
+        Mockito.when(userService.register(Mockito.any(UserModel.class), Mockito.eq("password123")))
                 .thenReturn(UserService.RegistrationResult.SUCCESS);
         Mockito.when(postRegistrationAuthenticator.authenticate("ada@example.com", "password123", request))
                 .thenReturn(true);
@@ -71,6 +72,13 @@ public class AuthPresentationTest {
         final ModelAndView mav = authPresentation.registerSubmit(form, errors);
 
         Assertions.assertEquals("redirect:/", mav.getViewName());
+        final ArgumentCaptor<UserModel> userCaptor = ArgumentCaptor.forClass(UserModel.class);
+        Mockito.verify(userService).register(userCaptor.capture(), Mockito.eq("password123"));
+        Assertions.assertEquals("Ada", userCaptor.getValue().getGivenName());
+        Assertions.assertEquals("Lovelace", userCaptor.getValue().getLastName());
+        Assertions.assertEquals("ada@example.com", userCaptor.getValue().getEmail());
+        Assertions.assertEquals(
+                "en", userCaptor.getValue().getPreferredLanguage().getPersistenceCode());
     }
 
     @Test
@@ -81,7 +89,7 @@ public class AuthPresentationTest {
         request.addPreferredLocale(java.util.Locale.ENGLISH);
         form.setPreferredLanguage("en");
         form.setRequest(request);
-        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null, "en"))
+        Mockito.when(userService.register(Mockito.any(UserModel.class), Mockito.eq("password123")))
                 .thenReturn(UserService.RegistrationResult.SUCCESS);
         Mockito.when(postRegistrationAuthenticator.authenticate("ada@example.com", "password123", request))
                 .thenReturn(false);
@@ -99,7 +107,7 @@ public class AuthPresentationTest {
         request.addPreferredLocale(java.util.Locale.ENGLISH);
         form.setPreferredLanguage("en");
         form.setRequest(request);
-        Mockito.when(userService.register("Ada", "Lovelace", "ada@example.com", "password123", null, "en"))
+        Mockito.when(userService.register(Mockito.any(UserModel.class), Mockito.eq("password123")))
                 .thenReturn(UserService.RegistrationResult.EMAIL_ALREADY_EXISTS);
 
         final ModelAndView mav = authPresentation.registerSubmit(form, errors);
@@ -117,7 +125,9 @@ public class AuthPresentationTest {
         final ModelAndView mav = authPresentation.passwordRecoveryRequestSubmit(form);
 
         Assertions.assertEquals("redirect:/password-recovery?sent=true", mav.getViewName());
-        Mockito.verify(userService).requestPasswordRecovery("ada@example.com");
+        final ArgumentCaptor<UserModel> userCaptor = ArgumentCaptor.forClass(UserModel.class);
+        Mockito.verify(userService).requestPasswordRecovery(userCaptor.capture());
+        Assertions.assertEquals("ada@example.com", userCaptor.getValue().getEmail());
     }
 
     @Test
@@ -125,7 +135,7 @@ public class AuthPresentationTest {
         final PasswordResetForm form = new PasswordResetForm();
         form.setToken("token");
         Mockito.when(userService.findByPasswordRecoveryToken("token"))
-                .thenReturn(Optional.of(Mockito.mock(User.class)));
+                .thenReturn(Optional.of(Mockito.mock(UserModel.class)));
 
         final ModelAndView mav = authPresentation.passwordRecoveryResetForm(form);
 
@@ -152,13 +162,16 @@ public class AuthPresentationTest {
         final PasswordResetForm form = validPasswordResetForm();
         form.setToken("token");
         Mockito.when(userService.findByPasswordRecoveryToken("token"))
-                .thenReturn(Optional.of(Mockito.mock(User.class)));
-        Mockito.when(userService.resetPassword("token", "new-password"))
+                .thenReturn(Optional.of(Mockito.mock(UserModel.class)));
+        Mockito.when(userService.resetPassword(Mockito.any(UserModel.class), Mockito.eq("new-password")))
                 .thenReturn(UserService.PasswordRecoveryResult.SUCCESS);
 
         final ModelAndView mav = authPresentation.passwordRecoveryResetSubmit(form);
 
         Assertions.assertEquals("redirect:/login?passwordRecovered=true", mav.getViewName());
+        final ArgumentCaptor<UserModel> userCaptor = ArgumentCaptor.forClass(UserModel.class);
+        Mockito.verify(userService).resetPassword(userCaptor.capture(), Mockito.eq("new-password"));
+        Assertions.assertEquals("token", userCaptor.getValue().getPasswordRecoveryToken());
     }
 
     private static RegisterForm validRegisterForm() {

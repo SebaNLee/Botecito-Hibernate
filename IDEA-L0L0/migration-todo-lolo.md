@@ -62,6 +62,23 @@ Services receive domain models as input, not web forms. The presentation layer
 is responsible for turning forms into models before calling services, and for
 turning returned models into JSP-ready data.
 
+Current staged auth domain inputs use `*Model` names under
+`models/src/main/java/ar/edu/itba/paw/models/nuevo/`. This keeps them visually
+separate from the old `models` classes while the migration is staged.
+
+Current staged auth mapping:
+
+```text
+RegisterForm -> UserModel + rawPassword
+PasswordRecoveryRequestForm -> UserModel(email)
+PasswordResetForm -> UserModel(passwordRecoveryToken) + rawPassword
+```
+
+`UserModel` contains domain/user state such as names, email, phone, payment
+alias, preferred language, password hash, and recovery token state. It does not
+contain raw password, confirm password, request objects, or query/form flags.
+`PreferredLanguageModel` owns the typed `"es"`/`"en"` language value.
+
 ## Work to do
 
 1. Use `/marketplace GET` as the reference example for the new structure.
@@ -264,9 +281,9 @@ Planned files:
 
 - `AuthModelMapper`
   - Converts:
-    - `RegisterForm -> User`
-    - `PasswordRecoveryRequestForm -> User` or recovery input model
-    - `PasswordResetForm + token -> reset input model`
+    - `RegisterForm -> UserModel`
+    - `PasswordRecoveryRequestForm -> UserModel(email)`
+    - `PasswordResetForm + token -> UserModel(passwordRecoveryToken)`
   - Next auth step before service migration: add this mapping so
     `AuthPresentation` no longer passes primitive user fields to `UserService`.
 
@@ -299,11 +316,11 @@ Needed contract changes:
 - Possible target shape:
 
 ```text
-RegistrationResult register(User user, String rawPassword)
-Optional<User> updateProfile(User user)
-Optional<User> requestPasswordRecovery(User user)
-Optional<User> findByPasswordRecoveryToken(String token)
-PasswordRecoveryResult resetPassword(User user, String rawPassword)
+RegistrationResult register(UserModel user, String rawPassword)
+Optional<UserModel> updateProfile(UserModel user)
+Optional<UserModel> requestPasswordRecovery(UserModel user)
+Optional<UserModel> findByPasswordRecoveryToken(String token)
+PasswordRecoveryResult resetPassword(UserModel user, String rawPassword)
 ```
 
 Keep `findByEmail(String)` and `findById(int)` because lookup by identifier is normal and useful.
@@ -312,6 +329,8 @@ Plug-in point:
 
 - `AuthPresentation` and `ProfilePresentation` call the updated `UserService`.
 - `UserAccountDetailsService`, `UserLocaleResolver`, and other existing code may still need `findByEmail`/`findById`.
+- Current staged auth now calls `services.nuevo.UserService`, while old callers
+  keep using the old `UserService`.
 
 ### Services implementation
 
@@ -324,11 +343,12 @@ services/src/main/java/ar/edu/itba/paw/services/nuevo/
 Needed implementation changes:
 
 - `UserServiceImpl`
-  - Receive `User` models for registration/profile update.
+  - Receive `UserModel` models for registration/profile update.
   - Keep password encoding here.
   - Keep duplicate email checks here.
   - Keep password recovery token generation here.
-  - Call `UserDao` through model-based methods.
+  - Current staged bridge still calls the old primitive `UserDao` internally
+    until the staged DAO contract exists.
 
 - `MailServiceImpl`
   - Review whether methods should accept richer models instead of loose strings.
@@ -408,9 +428,23 @@ Add staged files or staged changes under:
 models/src/main/java/ar/edu/itba/paw/models/nuevo/
 ```
 
-Likely changes:
+Current staged auth model files:
 
-- `User`
+- `UserModel`
+  - Standalone staged user/auth domain model.
+  - Includes `id`, `createdAt`, `givenName`, `lastName`, `email`, `phone`,
+    `paymentAlias`, `preferredLanguage`, `passwordHash`,
+    `passwordRecoveryToken`, `passwordRecoveryUsedAt`, and `getName()`.
+  - Does not include form-only values like raw password, confirm password,
+    `HttpServletRequest`, `sent`, or `invalid`.
+- `PreferredLanguageModel`
+  - Staged enum for `ES("es")` and `EN("en")`.
+  - Provides `fromInput`, `fromPersistence`, `toLocale`, and
+    `getPersistenceCode`.
+
+Likely later Hibernate changes:
+
+- `UserModel`
   - Add Hibernate/JPA mapping annotations if the project chooses annotated entities.
   - Map table `users`.
   - Map columns:
@@ -457,8 +491,9 @@ Watch out:
 ## Concrete migration order
 
 1. Finish staged auth presentation and form-to-model mapping.
-2. Create staged service contracts with model-based user inputs.
-3. Adapt staged `UserServiceImpl` to model-based inputs.
+2. Create staged service contracts with `UserModel`-based user inputs.
+3. Adapt staged `UserServiceImpl` to `UserModel`-based inputs, bridging to old
+   `UserDao` internally for now.
 4. Migrate profile to staged presentation using the same pattern.
 5. Add staged `UserHibernateDao`.
 6. Add Hibernate configuration/dependencies.

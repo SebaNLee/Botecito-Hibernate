@@ -219,7 +219,7 @@ then later moved/unpacked after the old implementation is removed.
 Suggested staging folders:
 
 ```text
-webapp/src/main/java/ar/edu/itba/paw/webapp/nuevo/
+webapp/src/main/java/ar/edu/itba/paw/webapp/<area>/nuevo/
 service-contracts/src/main/java/ar/edu/itba/paw/services/nuevo/
 services/src/main/java/ar/edu/itba/paw/services/nuevo/
 persistence-contracts/src/main/java/ar/edu/itba/paw/persistence/nuevo/
@@ -234,7 +234,7 @@ models/src/main/java/ar/edu/itba/paw/models/nuevo/
 Add staged files under:
 
 ```text
-webapp/src/main/java/ar/edu/itba/paw/webapp/nuevo/presentation/
+webapp/src/main/java/ar/edu/itba/paw/webapp/presentation/nuevo/
 ```
 
 Planned files:
@@ -250,6 +250,8 @@ Planned files:
     - `password-recovery-request`
     - `password-recovery-reset`
     - redirects after successful register/reset.
+  - Initial staged version exists, with active controller/form/view files under
+    `controller/nuevo`, `form/nuevo`, and `views/nuevo`.
 
 - `ProfilePresentation`
   - Replacement for `ProfileMvcSupport`.
@@ -265,6 +267,8 @@ Planned files:
     - `RegisterForm -> User`
     - `PasswordRecoveryRequestForm -> User` or recovery input model
     - `PasswordResetForm + token -> reset input model`
+  - Next auth step before service migration: add this mapping so
+    `AuthPresentation` no longer passes primitive user fields to `UserService`.
 
 - `ProfileModelMapper`
   - Converts:
@@ -275,7 +279,9 @@ Controller plug-in points:
 
 - `AuthController` should inject `AuthPresentation`, not `UserService`.
 - `ProfileController` should inject `ProfilePresentation`, not `ProfileMvcSupport`.
-- `WebConfig` currently scans `ar.edu.itba.paw.webapp.controller`; it will need to scan the new presentation package once files are moved to a compiling package.
+- While staged, active controller files can live under `controller/nuevo` so the
+  existing `ar.edu.itba.paw.webapp.controller` scan picks them up without
+  changing `WebConfig`.
 
 ### Service contracts
 
@@ -288,6 +294,8 @@ service-contracts/src/main/java/ar/edu/itba/paw/services/nuevo/
 Needed contract changes:
 
 - Replace primitive-heavy user methods with model-based inputs where possible.
+- Do this as staged `services/nuevo` contracts first; keep old `UserService`
+  untouched until callers are ready to switch.
 - Possible target shape:
 
 ```text
@@ -448,12 +456,11 @@ Watch out:
 
 ## Concrete migration order
 
-1. Create staged presentation classes under `nuevo/` based on `MarketplaceMvcSupport`.
-2. Move auth/profile view preparation and form-to-model mapping out of controllers.
-3. Add form-local validation for password confirmation and cross-field checks.
-4. Change staged service contracts to model-based user inputs.
-5. Adapt staged `UserServiceImpl` to model-based inputs.
-6. Add staged `UserHibernateDao`.
-7. Add Hibernate configuration/dependencies.
-8. Update tests around the new structure.
-9. Once the staged version is accepted, remove old files/classes and unpack from `nuevo/` into the final packages.
+1. Finish staged auth presentation and form-to-model mapping.
+2. Create staged service contracts with model-based user inputs.
+3. Adapt staged `UserServiceImpl` to model-based inputs.
+4. Migrate profile to staged presentation using the same pattern.
+5. Add staged `UserHibernateDao`.
+6. Add Hibernate configuration/dependencies.
+7. Update tests around the new structure.
+8. Once the staged version is accepted, remove old files/classes and unpack from `nuevo/` into the final packages.

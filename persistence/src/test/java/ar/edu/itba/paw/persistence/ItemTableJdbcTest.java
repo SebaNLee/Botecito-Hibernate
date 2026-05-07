@@ -29,7 +29,7 @@ public class ItemTableJdbcTest {
         final int itemId = insertItem(ownerId, "item-a", 2000, 2, 1);
 
         final Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM item i JOIN \"version\" v ON v.item_id = i.id WHERE v.title = ? AND i.id = ?",
+                "SELECT COUNT(*) FROM item i JOIN version v ON v.item_id = i.id WHERE v.title = ? AND i.id = ?",
                 Integer.class,
                 "item-a",
                 itemId);
@@ -46,7 +46,7 @@ public class ItemTableJdbcTest {
     public void testCreateItemWhenPriceIsNegative() {
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update(
-                        "INSERT INTO \"version\""
+                        "INSERT INTO version"
                                 + " (item_id, type_id, title, description, price, capacity, weight, difficulty, location_id, timezone, created_at)"
                                 + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'UTC', CURRENT_TIMESTAMP)",
                         insertItem(insertUser("owner-neg@a.com"), "owner-item", 1000, 2, 1),
@@ -84,7 +84,7 @@ public class ItemTableJdbcTest {
         final int itemId = java.util.Objects.requireNonNull(
                 jdbcTemplate.queryForObject("SELECT MAX(id) FROM item", Integer.class));
         jdbcTemplate.update(
-                "INSERT INTO \"version\""
+                "INSERT INTO version"
                         + " (item_id, type_id, title, description, price, capacity, weight, difficulty, location_id, timezone, created_at)"
                         + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'UTC', CURRENT_TIMESTAMP)",
                 itemId,
@@ -100,8 +100,8 @@ public class ItemTableJdbcTest {
     }
 
     private int insertUser(final String email) {
-        jdbcTemplate().update("INSERT INTO \"user\" (first_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
-        return jdbcTemplate().queryForObject("SELECT id FROM \"user\" WHERE email = ?", Integer.class, email);
+        jdbcTemplate().update("INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
+        return jdbcTemplate().queryForObject("SELECT id FROM users WHERE email = ?", Integer.class, email);
     }
 
     private @NonNull JdbcTemplate jdbcTemplate() {

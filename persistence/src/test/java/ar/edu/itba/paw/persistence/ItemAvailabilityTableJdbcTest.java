@@ -29,14 +29,14 @@ public class ItemAvailabilityTableJdbcTest {
 
         jdbcTemplate.update(
                 "INSERT INTO availability (version_id, weekday, start_time, end_time)"
-                        + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?)",
+                        + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, ?, ?)",
                 itemId,
                 "MONDAY",
                 "09:00:00",
                 "11:00:00");
 
         final Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM availability WHERE version_id = (SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?)",
+                "SELECT COUNT(*) FROM availability WHERE version_id = (SELECT MAX(v.id) FROM version v WHERE v.item_id = ?)",
                 Integer.class,
                 itemId);
         Assertions.assertEquals(1, count);
@@ -49,7 +49,7 @@ public class ItemAvailabilityTableJdbcTest {
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update(
                         "INSERT INTO availability (version_id, start_time, end_time)"
-                                + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?)",
+                                + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, ?)",
                         itemId,
                         "09:00:00",
                         "11:00:00"));
@@ -62,7 +62,7 @@ public class ItemAvailabilityTableJdbcTest {
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update(
                         "INSERT INTO availability (version_id, weekday, start_time, end_time)"
-                                + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?)",
+                                + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, ?, ?)",
                         itemId,
                         "MONDAY",
                         "12:00:00",
@@ -78,7 +78,7 @@ public class ItemAvailabilityTableJdbcTest {
         final int itemId = jdbcTemplate().queryForObject("SELECT MAX(id) FROM item", Integer.class);
         jdbcTemplate()
                 .update(
-                        "INSERT INTO \"version\" (item_id, type_id, title, description, price, capacity, weight, difficulty, location_id, timezone, created_at)"
+                        "INSERT INTO version (item_id, type_id, title, description, price, capacity, weight, difficulty, location_id, timezone, created_at)"
                                 + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'UTC', CURRENT_TIMESTAMP)",
                         itemId,
                         1,
@@ -93,8 +93,8 @@ public class ItemAvailabilityTableJdbcTest {
     }
 
     private int insertUser(final String email) {
-        jdbcTemplate().update("INSERT INTO \"user\" (first_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
-        return jdbcTemplate().queryForObject("SELECT id FROM \"user\" WHERE email = ?", Integer.class, email);
+        jdbcTemplate().update("INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
+        return jdbcTemplate().queryForObject("SELECT id FROM users WHERE email = ?", Integer.class, email);
     }
 
     private @NonNull JdbcTemplate jdbcTemplate() {

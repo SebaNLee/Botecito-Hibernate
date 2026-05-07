@@ -74,7 +74,7 @@ public class ReviewJdbcDao implements ReviewDao {
                 .query(
                         "SELECT r.*, b.guest_id AS reviewee_user_id,"
                                 + " CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END AS target_id"
-                                + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                                + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN version v ON v.id = b.version_id"
                                 + " WHERE r.booking_id = ? AND r.sender_id = ? AND "
                                 + ItemPersistenceSql.REVIEW_TARGET_TYPE_EQUALS,
                         ItemJdbcRowMappers.REVIEW_ROW_MAPPER,
@@ -90,7 +90,7 @@ public class ReviewJdbcDao implements ReviewDao {
         return jdbcTemplate.query(
                 "SELECT r.*, b.guest_id AS reviewee_user_id,"
                         + " CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END AS target_id"
-                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN version v ON v.id = b.version_id"
                         + " WHERE " + ItemPersistenceSql.REVIEW_TARGET_TYPE_EQUALS
                         + " AND (CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END) = ? ORDER BY r.created_at DESC, r.id DESC",
                 ItemJdbcRowMappers.REVIEW_ROW_MAPPER,
@@ -105,7 +105,7 @@ public class ReviewJdbcDao implements ReviewDao {
         return jdbcTemplate.query(
                 "SELECT r.*, b.guest_id AS reviewee_user_id,"
                         + " CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END AS target_id"
-                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN version v ON v.id = b.version_id"
                         + " WHERE " + ItemPersistenceSql.REVIEW_TARGET_TYPE_EQUALS
                         + " AND (CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END) = ? ORDER BY r.created_at DESC, r.id DESC LIMIT ?",
                 ItemJdbcRowMappers.REVIEW_ROW_MAPPER,
@@ -119,7 +119,7 @@ public class ReviewJdbcDao implements ReviewDao {
         return jdbcTemplate.query(
                 "SELECT r.*, b.guest_id AS reviewee_user_id,"
                         + " CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END AS target_id"
-                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN version v ON v.id = b.version_id"
                         + " WHERE r.sender_id = ? ORDER BY r.created_at DESC, r.id DESC",
                 ItemJdbcRowMappers.REVIEW_ROW_MAPPER,
                 reviewerUserId);
@@ -130,7 +130,7 @@ public class ReviewJdbcDao implements ReviewDao {
         return jdbcTemplate.query(
                 "SELECT r.*, b.guest_id AS reviewee_user_id,"
                         + " CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END AS target_id"
-                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN version v ON v.id = b.version_id"
                         + " WHERE b.guest_id = ? ORDER BY r.created_at DESC, r.id DESC",
                 ItemJdbcRowMappers.REVIEW_ROW_MAPPER,
                 revieweeUserId);
@@ -142,7 +142,7 @@ public class ReviewJdbcDao implements ReviewDao {
                 .query(
                         "SELECT r.*, b.guest_id AS reviewee_user_id,"
                                 + " CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END AS target_id"
-                                + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                                + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN version v ON v.id = b.version_id"
                                 + " WHERE r.id = ?",
                         ItemJdbcRowMappers.REVIEW_ROW_MAPPER,
                         reviewId)
@@ -159,7 +159,7 @@ public class ReviewJdbcDao implements ReviewDao {
     public RatingSummary ratingSummaryByTarget(final ReviewTargetType targetType, final int targetId) {
         return jdbcTemplate.query(
                 "SELECT COALESCE(AVG(r.rating), 0) AS avg_rating, COUNT(*) AS total_reviews"
-                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN \"version\" v ON v.id = b.version_id"
+                        + " FROM review r JOIN booking b ON b.id = r.booking_id JOIN version v ON v.id = b.version_id"
                         + " WHERE " + ItemPersistenceSql.REVIEW_R_TARGET_TYPE_EQUALS
                         + " AND (CASE WHEN r.target_type = 'ITEM' THEN v.item_id ELSE b.guest_id END) = ?",
                 rs -> {

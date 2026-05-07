@@ -30,10 +30,10 @@ public class ItemAvailabilityJdbcDao implements ItemAvailabilityDao {
             final int itemId, final String weekday, final String startTime, final String endTime) {
         final String insertSql = postgresDialect
                 ? "INSERT INTO availability (version_id, weekday, start_time, end_time)"
-                        + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?::weekday_enum, ?, ?)"
+                        + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?::weekday_enum, ?, ?)"
                         + " RETURNING id"
                 : "INSERT INTO availability (version_id, weekday, start_time, end_time)"
-                        + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?)";
+                        + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, ?, ?)";
         final Integer idValue = postgresDialect
                 ? jdbcTemplate.queryForObject(
                         insertSql,
@@ -49,7 +49,7 @@ public class ItemAvailabilityJdbcDao implements ItemAvailabilityDao {
                 .query(
                         "SELECT ia.*, i.id AS item_id"
                                 + " FROM availability ia"
-                                + " JOIN \"version\" v ON v.id = ia.version_id"
+                                + " JOIN version v ON v.id = ia.version_id"
                                 + " JOIN item i ON i.id = v.item_id"
                                 + " WHERE ia.id = ?",
                         ItemJdbcRowMappers.ITEM_AVAILABILITY_ROW_MAPPER,
@@ -64,7 +64,7 @@ public class ItemAvailabilityJdbcDao implements ItemAvailabilityDao {
         return jdbcTemplate.query(
                 "SELECT ia.*, i.id AS item_id"
                         + " FROM availability ia"
-                        + " JOIN \"version\" v ON v.id = ia.version_id"
+                        + " JOIN version v ON v.id = ia.version_id"
                         + " JOIN item i ON i.id = v.item_id"
                         + " ORDER BY ia.id",
                 ItemJdbcRowMappers.ITEM_AVAILABILITY_ROW_MAPPER);
@@ -75,7 +75,7 @@ public class ItemAvailabilityJdbcDao implements ItemAvailabilityDao {
         return jdbcTemplate.query(
                 "SELECT ia.*, i.id AS item_id"
                         + " FROM availability ia"
-                        + " JOIN \"version\" v ON v.id = ia.version_id"
+                        + " JOIN version v ON v.id = ia.version_id"
                         + " JOIN item i ON i.id = v.item_id"
                         + " WHERE i.id = ? ORDER BY ia.id",
                 ItemJdbcRowMappers.ITEM_AVAILABILITY_ROW_MAPPER,
@@ -88,7 +88,7 @@ public class ItemAvailabilityJdbcDao implements ItemAvailabilityDao {
                 .query(
                         "SELECT ia.*, i.id AS item_id"
                                 + " FROM availability ia"
-                                + " JOIN \"version\" v ON v.id = ia.version_id"
+                                + " JOIN version v ON v.id = ia.version_id"
                                 + " JOIN item i ON i.id = v.item_id"
                                 + " WHERE i.id = ? ORDER BY ia.start_time ASC LIMIT 1",
                         ItemJdbcRowMappers.ITEM_AVAILABILITY_ROW_MAPPER,
@@ -103,7 +103,7 @@ public class ItemAvailabilityJdbcDao implements ItemAvailabilityDao {
         if (postgresDialect) {
             return jdbcTemplate.queryForObject(
                     "INSERT INTO availability (version_id, weekday, start_time, end_time)"
-                            + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?::weekday_enum, ?, ?)"
+                            + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?::weekday_enum, ?, ?)"
                             + " RETURNING id",
                     Integer.class,
                     itemId,
@@ -113,7 +113,7 @@ public class ItemAvailabilityJdbcDao implements ItemAvailabilityDao {
         }
         jdbcTemplate.update(
                 "INSERT INTO availability (version_id, weekday, start_time, end_time)"
-                        + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?)",
+                        + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, ?, ?)",
                 itemId,
                 weekday.name(),
                 Time.valueOf(startTime),

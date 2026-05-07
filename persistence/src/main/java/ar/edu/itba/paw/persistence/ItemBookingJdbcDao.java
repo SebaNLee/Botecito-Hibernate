@@ -35,14 +35,14 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
     @Override
     public List<ItemBooking> listBookings() {
         return jdbcTemplate.query(
-                "SELECT b.*, v.item_id AS item_id FROM booking b JOIN \"version\" v ON v.id = b.version_id ORDER BY b.id",
+                "SELECT b.*, v.item_id AS item_id FROM booking b JOIN version v ON v.id = b.version_id ORDER BY b.id",
                 ItemJdbcRowMappers.ITEM_BOOKING_ROW_MAPPER);
     }
 
     @Override
     public List<ItemBooking> listBookingsByItemId(final int itemId) {
         return jdbcTemplate.query(
-                "SELECT b.*, v.item_id AS item_id FROM booking b JOIN \"version\" v ON v.id = b.version_id WHERE v.item_id = ? ORDER BY b.id",
+                "SELECT b.*, v.item_id AS item_id FROM booking b JOIN version v ON v.id = b.version_id WHERE v.item_id = ? ORDER BY b.id",
                 ItemJdbcRowMappers.ITEM_BOOKING_ROW_MAPPER,
                 itemId);
     }
@@ -107,7 +107,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
     public Optional<ItemBooking> findBookingById(final int bookingId) {
         return jdbcTemplate
                 .query(
-                        "SELECT b.*, v.item_id AS item_id FROM booking b JOIN \"version\" v ON v.id = b.version_id WHERE b.id = ?",
+                        "SELECT b.*, v.item_id AS item_id FROM booking b JOIN version v ON v.id = b.version_id WHERE b.id = ?",
                         ItemJdbcRowMappers.ITEM_BOOKING_ROW_MAPPER,
                         bookingId)
                 .stream()
@@ -135,7 +135,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
             final int versionId, final int itemId, final int guestId) {
         return querySnapshotOptional(
                 "SELECT v.*, i.id AS item_id, i.host_id AS owner_id, l.name AS location, img.data AS cover_image_data"
-                        + " FROM \"version\" v"
+                        + " FROM version v"
                         + " JOIN booking b ON b.version_id = v.id"
                         + " JOIN item i ON i.id = v.item_id"
                         + " JOIN location l ON l.id = v.location_id"
@@ -153,7 +153,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
             final int versionId, final int itemId, final int ownerId) {
         return querySnapshotOptional(
                 "SELECT DISTINCT v.*, i.id AS item_id, i.host_id AS owner_id, l.name AS location, img.data AS cover_image_data"
-                        + " FROM \"version\" v"
+                        + " FROM version v"
                         + " JOIN booking b ON b.version_id = v.id"
                         + " JOIN item i ON i.id = v.item_id"
                         + " JOIN location l ON l.id = v.location_id"
@@ -205,7 +205,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
                     jdbcTemplate.queryForObject(
                             "INSERT INTO booking"
                                     + " (version_id, guest_id, start, \"end\", status, msg)"
-                                    + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?, ?::booking_status_enum, ?)"
+                                    + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, ?, ?, ?::booking_status_enum, ?)"
                                     + " RETURNING id",
                             Integer.class,
                             itemId,
@@ -220,7 +220,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
             args.put(
                     "version_id",
                     jdbcTemplate.queryForObject(
-                            "SELECT MAX(id) FROM \"version\" WHERE item_id = ?", Integer.class, itemId));
+                            "SELECT MAX(id) FROM version WHERE item_id = ?", Integer.class, itemId));
             args.put("guest_id", guestId);
             args.put("start", Timestamp.from(startTime.toInstant()));
             args.put("end", Timestamp.from(endTime.toInstant()));
@@ -246,7 +246,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
                     jdbcTemplate.queryForObject(
                             "INSERT INTO booking"
                                     + " (version_id, guest_id, start, \"end\", status, msg)"
-                                    + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?, ?::booking_status_enum, NULL)"
+                                    + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, ?, ?, ?::booking_status_enum, NULL)"
                                     + " RETURNING id",
                             Integer.class,
                             itemId,
@@ -260,7 +260,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
             args.put(
                     "version_id",
                     jdbcTemplate.queryForObject(
-                            "SELECT MAX(id) FROM \"version\" WHERE item_id = ?", Integer.class, itemId));
+                            "SELECT MAX(id) FROM version WHERE item_id = ?", Integer.class, itemId));
             args.put("guest_id", ownerId);
             args.put("start", Timestamp.from(startTime.toInstant()));
             args.put("end", Timestamp.from(endTime.toInstant()));
@@ -465,7 +465,7 @@ public class ItemBookingJdbcDao implements ItemBookingDao {
                                 + " WHERE b.id = ?"
                                 + " AND b.status = 'PAID'"
                                 + " AND EXISTS ("
-                                + "   SELECT 1 FROM \"version\" v JOIN item i ON i.id = v.item_id"
+                                + "   SELECT 1 FROM version v JOIN item i ON i.id = v.item_id"
                                 + "   WHERE v.id = b.version_id AND i.host_id = ?"
                                 + " )",
                         toDbBookingStatus(newState),

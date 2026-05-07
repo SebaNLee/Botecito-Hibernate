@@ -32,7 +32,7 @@ public class ItemMediaTableJdbcTest {
 
         jdbcTemplate.update(
                 "INSERT INTO media (version_id, image_id, index)"
-                        + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, 0)",
+                        + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, 0)",
                 itemId,
                 imageId);
 
@@ -41,7 +41,7 @@ public class ItemMediaTableJdbcTest {
                 JdbcTestUtils.countRowsInTableWhere(
                         jdbcTemplate,
                         "media",
-                        "version_id = (SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = " + itemId + ")"));
+                        "version_id = (SELECT MAX(v.id) FROM version v WHERE v.item_id = " + itemId + ")"));
     }
 
     @Test
@@ -59,7 +59,7 @@ public class ItemMediaTableJdbcTest {
         final int imageId = insertItemImage(new byte[] {4, 5, 6});
         jdbcTemplate.update(
                 "INSERT INTO media (version_id, image_id, index)"
-                        + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, 0)",
+                        + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, 0)",
                 itemId,
                 imageId);
 
@@ -76,13 +76,12 @@ public class ItemMediaTableJdbcTest {
         final int imageId = insertItemImage(new byte[] {7, 8, 9});
         jdbcTemplate.update(
                 "INSERT INTO media (version_id, image_id, index)"
-                        + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, 0)",
+                        + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, 0)",
                 itemId,
                 imageId);
 
         jdbcTemplate.update(
-                "DELETE FROM media WHERE version_id = (SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?)",
-                itemId);
+                "DELETE FROM media WHERE version_id = (SELECT MAX(v.id) FROM version v WHERE v.item_id = ?)", itemId);
         jdbcTemplate.update("DELETE FROM item WHERE id = ?", itemId);
 
         Assertions.assertEquals(1, JdbcTestUtils.countRowsInTableWhere(jdbcTemplate, "image", "id = " + imageId));
@@ -98,7 +97,7 @@ public class ItemMediaTableJdbcTest {
                 Objects.requireNonNull(jdbcTemplate().queryForObject("SELECT MAX(id) FROM item", Integer.class));
         jdbcTemplate()
                 .update(
-                        "INSERT INTO \"version\" (item_id, type_id, title, description, price, capacity, weight, difficulty, location_id, timezone, created_at)"
+                        "INSERT INTO version (item_id, type_id, title, description, price, capacity, weight, difficulty, location_id, timezone, created_at)"
                                 + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'UTC', CURRENT_TIMESTAMP)",
                         itemId,
                         1,
@@ -113,8 +112,8 @@ public class ItemMediaTableJdbcTest {
     }
 
     private int insertUser(final String email) {
-        jdbcTemplate().update("INSERT INTO \"user\" (first_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
-        return jdbcTemplate().queryForObject("SELECT id FROM \"user\" WHERE email = ?", Integer.class, email);
+        jdbcTemplate().update("INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
+        return jdbcTemplate().queryForObject("SELECT id FROM users WHERE email = ?", Integer.class, email);
     }
 
     private int insertItemImage(final byte[] data) {

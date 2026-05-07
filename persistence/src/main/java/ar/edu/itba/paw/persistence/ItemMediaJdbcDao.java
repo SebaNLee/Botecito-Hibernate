@@ -188,7 +188,7 @@ public class ItemMediaJdbcDao implements ItemMediaDao {
     }
 
     private Integer findCurrentVersionId(final int itemId) {
-        return jdbcTemplate.queryForObject("SELECT MAX(id) FROM \"version\" WHERE item_id = ?", Integer.class, itemId);
+        return jdbcTemplate.queryForObject("SELECT MAX(id) FROM version WHERE item_id = ?", Integer.class, itemId);
     }
 
     private boolean hasTable(final String tableName) {

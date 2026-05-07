@@ -34,7 +34,7 @@ public class ItemBookingTableJdbcTest {
         jdbcTemplate.update(
                 "INSERT INTO booking"
                         + " (version_id, guest_id, start, \"end\", status, msg, created_at, updated_at)"
-                        + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?, 'PENDING', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                        + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, ?, ?, 'PENDING', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
                 itemId,
                 guestId,
                 Timestamp.from(Instant.parse("2026-01-01T10:00:00Z")),
@@ -55,7 +55,7 @@ public class ItemBookingTableJdbcTest {
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update(
                         "INSERT INTO booking (version_id, guest_id, start, \"end\")"
-                                + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?)",
+                                + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, ?, ?)",
                         itemId,
                         guestId,
                         Timestamp.from(Instant.parse("2026-01-01T10:00:00Z")),
@@ -71,7 +71,7 @@ public class ItemBookingTableJdbcTest {
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update(
                         "INSERT INTO booking (version_id, guest_id, start, \"end\", status, msg, created_at, updated_at)"
-                                + " VALUES ((SELECT MAX(v.id) FROM \"version\" v WHERE v.item_id = ?), ?, ?, ?, 'PENDING', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                                + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, ?, ?, 'PENDING', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
                         itemId,
                         guestId,
                         Timestamp.from(Instant.parse("2026-01-01T12:00:00Z")),
@@ -80,8 +80,8 @@ public class ItemBookingTableJdbcTest {
     }
 
     private int insertUser(final String email) {
-        jdbcTemplate().update("INSERT INTO \"user\" (first_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
-        return jdbcTemplate().queryForObject("SELECT id FROM \"user\" WHERE email = ?", Integer.class, email);
+        jdbcTemplate().update("INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
+        return jdbcTemplate().queryForObject("SELECT id FROM users WHERE email = ?", Integer.class, email);
     }
 
     private int insertItem(final int ownerId, final String title) {
@@ -92,7 +92,7 @@ public class ItemBookingTableJdbcTest {
         final int itemId = jdbcTemplate().queryForObject("SELECT MAX(id) FROM item", Integer.class);
         jdbcTemplate()
                 .update(
-                        "INSERT INTO \"version\" (item_id, type_id, title, description, price, capacity, weight, difficulty, location_id, timezone, created_at)"
+                        "INSERT INTO version (item_id, type_id, title, description, price, capacity, weight, difficulty, location_id, timezone, created_at)"
                                 + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'UTC', CURRENT_TIMESTAMP)",
                         itemId,
                         1,

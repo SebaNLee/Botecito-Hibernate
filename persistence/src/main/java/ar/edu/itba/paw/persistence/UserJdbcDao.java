@@ -46,15 +46,13 @@ public class UserJdbcDao implements UserDao {
 
     @Override
     public Optional<User> findById(final int id) {
-        return jdbcTemplate.query("SELECT * FROM \"user\" WHERE id = ?", USER_ROW_MAPPER, id).stream()
+        return jdbcTemplate.query("SELECT * FROM users WHERE id = ?", USER_ROW_MAPPER, id).stream()
                 .findAny();
     }
 
     @Override
     public Optional<User> findByEmail(final String email) {
-        return jdbcTemplate
-                .query("SELECT * FROM \"user\" WHERE lower(email) = lower(?)", USER_ROW_MAPPER, email)
-                .stream()
+        return jdbcTemplate.query("SELECT * FROM users WHERE lower(email) = lower(?)", USER_ROW_MAPPER, email).stream()
                 .findAny();
     }
 
@@ -67,7 +65,7 @@ public class UserJdbcDao implements UserDao {
             final String paymentAlias,
             final String preferredLanguage) {
         final int insertedRows = jdbcTemplate.update(
-                "INSERT INTO \"user\" (first_name, last_name, email, language, password_hash, alias)"
+                "INSERT INTO users (first_name, last_name, email, language, password_hash, alias)"
                         + " VALUES (?, ?, ?, ?, ?, ?)",
                 givenName,
                 lastName,
@@ -79,8 +77,8 @@ public class UserJdbcDao implements UserDao {
             throw new IllegalStateException("Could not create user for email " + email);
         }
 
-        final Integer id = jdbcTemplate.queryForObject(
-                "SELECT id FROM \"user\" WHERE lower(email) = lower(?)", Integer.class, email);
+        final Integer id =
+                jdbcTemplate.queryForObject("SELECT id FROM users WHERE lower(email) = lower(?)", Integer.class, email);
         return findById(Objects.requireNonNull(id, "Could not read inserted user id for email " + email)
                         .intValue())
                 .orElseThrow(() -> new IllegalStateException("Could not read inserted user " + id));
@@ -95,7 +93,7 @@ public class UserJdbcDao implements UserDao {
             final String paymentAlias,
             final String preferredLanguage) {
         final int updatedRows = jdbcTemplate.update(
-                "UPDATE \"user\""
+                "UPDATE users"
                         + " SET first_name = ?, last_name = ?, language = ?, password_hash = ?, alias = COALESCE(?, alias)"
                         + " WHERE lower(email) = lower(?)"
                         + " AND password_hash IS NULL",
@@ -121,7 +119,7 @@ public class UserJdbcDao implements UserDao {
             final String paymentAlias,
             final String preferredLanguage) {
         final int updatedRows = jdbcTemplate.update(
-                "UPDATE \"user\""
+                "UPDATE users"
                         + " SET first_name = ?, last_name = ?, email = ?, phone = ?, alias = ?, language = ?"
                         + " WHERE id = ?",
                 givenName,
@@ -142,7 +140,7 @@ public class UserJdbcDao implements UserDao {
             final String givenName, final String lastName, final String email, final String preferredLanguage) {
         final int id = Objects.requireNonNull(
                 jdbcTemplate.queryForObject(
-                        "INSERT INTO \"user\" (first_name, last_name, email, language) VALUES (?, ?, ?, ?) RETURNING id",
+                        "INSERT INTO users (first_name, last_name, email, language) VALUES (?, ?, ?, ?) RETURNING id",
                         Integer.class,
                         givenName,
                         lastName,
@@ -156,7 +154,7 @@ public class UserJdbcDao implements UserDao {
     public boolean updateBasicProfileNamesAndLanguage(
             final int userId, final String givenName, final String lastName, final String preferredLanguage) {
         return jdbcTemplate.update(
-                        "UPDATE \"user\" SET first_name = ?, last_name = ?, language = ? WHERE id = ?",
+                        "UPDATE users SET first_name = ?, last_name = ?, language = ? WHERE id = ?",
                         givenName,
                         lastName,
                         preferredLanguage,
@@ -171,13 +169,13 @@ public class UserJdbcDao implements UserDao {
         }
         final String placeholders = String.join(", ", Collections.nCopies(userIds.size(), "?"));
         return jdbcTemplate.query(
-                "SELECT * FROM \"user\" WHERE id IN (" + placeholders + ")", USER_ROW_MAPPER, userIds.toArray());
+                "SELECT * FROM users WHERE id IN (" + placeholders + ")", USER_ROW_MAPPER, userIds.toArray());
     }
 
     @Override
     public Optional<User> updatePasswordRecoveryToken(final int userId, final String token) {
         final int updatedRows = jdbcTemplate.update(
-                "UPDATE \"user\" SET mail_token = ?, mail_token_emitted_at = NULL WHERE id = ?", token, userId);
+                "UPDATE users SET mail_token = ?, mail_token_emitted_at = NULL WHERE id = ?", token, userId);
         if (updatedRows == 0) {
             return Optional.empty();
         }
@@ -189,7 +187,7 @@ public class UserJdbcDao implements UserDao {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
-        return jdbcTemplate.query("SELECT * FROM \"user\" WHERE mail_token = ?", USER_ROW_MAPPER, token).stream()
+        return jdbcTemplate.query("SELECT * FROM users WHERE mail_token = ?", USER_ROW_MAPPER, token).stream()
                 .findAny();
     }
 
@@ -197,7 +195,7 @@ public class UserJdbcDao implements UserDao {
     public boolean resetPasswordByRecoveryToken(
             final String token, final String passwordHash, final OffsetDateTime usedAt) {
         final int updatedRows = jdbcTemplate.update(
-                "UPDATE \"user\""
+                "UPDATE users"
                         + " SET password_hash = ?, mail_token_emitted_at = ?"
                         + " WHERE mail_token = ?"
                         + " AND mail_token_emitted_at IS NULL",

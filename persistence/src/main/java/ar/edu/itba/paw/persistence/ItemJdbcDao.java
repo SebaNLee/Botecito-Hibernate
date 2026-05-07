@@ -31,7 +31,7 @@ public class ItemJdbcDao implements ItemDao {
             + " v.location_id, lo.name AS location,"
             + " i.status, i.created_at"
             + " FROM item i"
-            + " JOIN \"version\" v ON v.id = (SELECT MAX(v2.id) FROM \"version\" v2 WHERE v2.item_id = i.id)"
+            + " JOIN version v ON v.id = (SELECT MAX(v2.id) FROM version v2 WHERE v2.item_id = i.id)"
             + " JOIN location lo ON lo.id = v.location_id";
 
     private final @NonNull JdbcTemplate jdbcTemplate;
@@ -67,7 +67,7 @@ public class ItemJdbcDao implements ItemDao {
         final Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*)"
                         + " FROM item i"
-                        + " JOIN \"version\" v ON v.id = (SELECT MAX(v2.id) FROM \"version\" v2 WHERE v2.item_id = i.id)"
+                        + " JOIN version v ON v.id = (SELECT MAX(v2.id) FROM version v2 WHERE v2.item_id = i.id)"
                         + " JOIN location lo ON lo.id = v.location_id"
                         + marketplaceWhereClause(criteria, args),
                 Integer.class,
@@ -155,7 +155,7 @@ public class ItemJdbcDao implements ItemDao {
         final Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*)"
                         + ItemPersistenceSql.ITEM_BOOKING_VERSION_JOIN
-                        + " AND b.version_id = (SELECT MAX(v2.id) FROM \"version\" v2 WHERE v2.item_id = i.id)"
+                        + " AND b.version_id = (SELECT MAX(v2.id) FROM version v2 WHERE v2.item_id = i.id)"
                         + " AND b.status IN (" + ItemPersistenceSql.EDIT_CONFLICT_BOOKING_STATES + ")"
                         + " AND (b.guest_id IS NULL OR b.guest_id <> i.host_id)",
                 Integer.class,
@@ -300,7 +300,7 @@ public class ItemJdbcDao implements ItemDao {
             sql.append(" AND COALESCE((SELECT AVG(r.rating)"
                     + " FROM review r"
                     + " JOIN booking b ON b.id = r.booking_id"
-                    + " JOIN \"version\" vv ON vv.id = b.version_id"
+                    + " JOIN version vv ON vv.id = b.version_id"
                     + " WHERE "
                     + ItemPersistenceSql.REVIEW_R_TARGET_TYPE_EQUALS
                     + " AND vv.item_id = i.id), 0) >= ?");
@@ -336,7 +336,7 @@ public class ItemJdbcDao implements ItemDao {
 
     private int insertPublicationVersion(final @NonNull Map<String, Object> itemData) {
         final SimpleJdbcInsert insert = new SimpleJdbcInsert(jdbcTemplate)
-                .withTableName("\"version\"")
+                .withTableName("version")
                 .usingColumns(
                         "item_id",
                         "type_id",
@@ -450,7 +450,7 @@ public class ItemJdbcDao implements ItemDao {
             final int locationOptionId,
             final int itemId) {
         final List<Object> args = new ArrayList<>();
-        final StringBuilder sql = new StringBuilder("UPDATE \"version\""
+        final StringBuilder sql = new StringBuilder("UPDATE version"
                 + " SET title = ?, description = ?, price = ?, difficulty = ?,"
                 + " location_id = ?, created_at = CURRENT_TIMESTAMP"
                 + " WHERE id = ?");
@@ -474,7 +474,7 @@ public class ItemJdbcDao implements ItemDao {
                 new StringBuilder("SELECT v.id AS current_version_id, i.host_id, i.created_at AS item_created_at,"
                         + " v.type_id, v.capacity, v.weight, i.status"
                         + " FROM item i"
-                        + " JOIN \"version\" v ON v.id = (SELECT MAX(v2.id) FROM \"version\" v2 WHERE v2.item_id = i.id)"
+                        + " JOIN version v ON v.id = (SELECT MAX(v2.id) FROM version v2 WHERE v2.item_id = i.id)"
                         + " WHERE i.id = ?");
         args.add(itemId);
         if (ownerId != null) {

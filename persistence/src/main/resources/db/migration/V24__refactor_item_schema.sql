@@ -32,8 +32,8 @@ CREATE TYPE target_enum AS ENUM ('ITEM', 'USER');
 -- STEP 2: Create new tables (no FKs yet — data load first)
 -- =============================================================================
 
--- user (was: users)
-CREATE TABLE "user" (
+-- new_users (was: users)
+CREATE TABLE new_users (
     id              SERIAL PRIMARY KEY,
     first_name      VARCHAR(100)    NOT NULL,
     last_name       VARCHAR(100)    NOT NULL,
@@ -149,8 +149,8 @@ CREATE TABLE new_review (
 -- STEP 3: Migrate data
 -- =============================================================================
 
--- user
-INSERT INTO "user" (id, first_name, last_name, email, phone, language, alias,
+-- new_users
+INSERT INTO new_users (id, first_name, last_name, email, phone, language, alias,
                     password_hash, mail_token, mail_token_emitted_at, verified, created_at)
 SELECT
     id,
@@ -377,7 +377,7 @@ FROM public.review;
 -- =============================================================================
 
 ALTER TABLE new_item
-    ADD CONSTRAINT fk_item_host FOREIGN KEY (host_id) REFERENCES "user"(id) ON DELETE SET NULL;
+    ADD CONSTRAINT fk_item_host FOREIGN KEY (host_id) REFERENCES new_users(id) ON DELETE SET NULL;
 
 ALTER TABLE version
     ADD CONSTRAINT fk_version_item     FOREIGN KEY (item_id)     REFERENCES new_item(id) ON DELETE CASCADE,
@@ -393,14 +393,14 @@ ALTER TABLE availability
 
 ALTER TABLE booking
     ADD CONSTRAINT fk_booking_version FOREIGN KEY (version_id) REFERENCES version(id) ON DELETE CASCADE,
-    ADD CONSTRAINT fk_booking_guest   FOREIGN KEY (guest_id)   REFERENCES "user"(id) ON DELETE SET NULL;
+    ADD CONSTRAINT fk_booking_guest   FOREIGN KEY (guest_id)   REFERENCES new_users(id) ON DELETE SET NULL;
 
 ALTER TABLE payment_proof
     ADD CONSTRAINT fk_payment_proof_booking FOREIGN KEY (booking_id) REFERENCES booking(id) ON DELETE CASCADE;
 
 ALTER TABLE new_review
     ADD CONSTRAINT fk_review_booking FOREIGN KEY (booking_id) REFERENCES booking(id)  ON DELETE CASCADE,
-    ADD CONSTRAINT fk_review_sender  FOREIGN KEY (sender_id)  REFERENCES "user"(id) ON DELETE SET NULL;
+    ADD CONSTRAINT fk_review_sender  FOREIGN KEY (sender_id)  REFERENCES new_users(id) ON DELETE SET NULL;
 
 -- =============================================================================
 -- STEP 5: Drop old tables and enums
@@ -428,12 +428,26 @@ DROP TYPE public.review_target_type;
 ALTER TABLE new_item_type RENAME TO item_type;
 ALTER TABLE new_item      RENAME TO item;
 ALTER TABLE new_review    RENAME TO review;
+ALTER TABLE new_users     RENAME TO users;
+
+-- Existing self-bookings must end up in a terminal accepted state:
+-- if already ended, mark FINISHED; otherwise mark CONFIRMED.
+UPDATE booking b
+SET status = CASE
+    WHEN b."end" < CURRENT_TIMESTAMP THEN 'FINISHED'::booking_status_enum
+    ELSE 'CONFIRMED'::booking_status_enum
+END
+FROM version v
+JOIN item i ON i.id = v.item_id
+WHERE b.version_id = v.id
+  AND b.guest_id IS NOT NULL
+  AND b.guest_id = i.host_id;
 
 -- =============================================================================
 -- STEP 7: Sync sequences to max existing id so next insert doesn't collide
 -- =============================================================================
 
-SELECT setval(pg_get_serial_sequence('"user"',       'id'), COALESCE(MAX(id), 1)) FROM "user";
+SELECT setval(pg_get_serial_sequence('users',        'id'), COALESCE(MAX(id), 1)) FROM users;
 SELECT setval(pg_get_serial_sequence('item_type',    'id'), COALESCE(MAX(id), 1)) FROM item_type;
 SELECT setval(pg_get_serial_sequence('location',     'id'), COALESCE(MAX(id), 1)) FROM location;
 SELECT setval(pg_get_serial_sequence('image',        'id'), COALESCE(MAX(id), 1)) FROM image;

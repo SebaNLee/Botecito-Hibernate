@@ -218,6 +218,21 @@
   </aside>
 
   <section class="relative z-0 min-w-0">
+    <spring:hasBindErrors name="marketplaceSearch">
+      <div class="mb-6 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-on-background" role="alert">
+        <p class="m-0 font-semibold"><spring:message code="marketplaceSearch.validation.bannerTitle" /></p>
+        <ul class="mt-2 mb-0 list-disc pl-5 space-y-1">
+          <c:forEach var="error" items="${errors.allErrors}">
+            <li>
+              <spring:message
+                  code="${error.codes[0]}"
+                  arguments="${error.arguments}"
+                  text="${error.defaultMessage}" />
+            </li>
+          </c:forEach>
+        </ul>
+      </div>
+    </spring:hasBindErrors>
     <div class="mx-auto mb-8 w-full max-w-3xl">
       <label class="input input-lg flex items-center gap-3 rounded-full bg-base-100 shadow-sm">
         <span class="material-symbols-outlined text-outline" aria-hidden="true">search</span>

@@ -72,3 +72,5 @@ idea-lolo.txt
 
 # DB Backups
 backups/
+
+.m2/

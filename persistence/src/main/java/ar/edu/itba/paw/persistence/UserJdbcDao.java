@@ -25,15 +25,15 @@ public class UserJdbcDao implements UserDao {
         final User user = new User();
         user.setId(rs.getInt("id"));
         user.setCreatedAt(readOffsetDateTime(rs, "created_at"));
-        user.setGivenName(rs.getString("given_name"));
+        user.setGivenName(rs.getString("first_name"));
         user.setLastName(rs.getString("last_name"));
         user.setEmail(rs.getString("email"));
         user.setPhone(rs.getString("phone"));
-        user.setPaymentAlias(rs.getString("payment_alias"));
-        user.setPreferredLanguage(PreferredLanguage.fromPersistence(rs.getString("preferred_language")));
+        user.setPaymentAlias(rs.getString("alias"));
+        user.setPreferredLanguage(PreferredLanguage.fromPersistence(rs.getString("language")));
         user.setPasswordHash(rs.getString("password_hash"));
-        user.setPasswordRecoveryToken(rs.getString("password_recovery_token"));
-        user.setPasswordRecoveryUsedAt(readOffsetDateTime(rs, "password_recovery_used_at"));
+        user.setPasswordRecoveryToken(rs.getString("mail_token"));
+        user.setPasswordRecoveryUsedAt(readOffsetDateTime(rs, "mail_token_emitted_at"));
         return user;
     };
 
@@ -65,7 +65,7 @@ public class UserJdbcDao implements UserDao {
             final String paymentAlias,
             final String preferredLanguage) {
         final int insertedRows = jdbcTemplate.update(
-                "INSERT INTO users (given_name, last_name, email, preferred_language, password_hash, payment_alias)"
+                "INSERT INTO users (first_name, last_name, email, language, password_hash, alias)"
                         + " VALUES (?, ?, ?, ?, ?, ?)",
                 givenName,
                 lastName,
@@ -94,7 +94,7 @@ public class UserJdbcDao implements UserDao {
             final String preferredLanguage) {
         final int updatedRows = jdbcTemplate.update(
                 "UPDATE users"
-                        + " SET given_name = ?, last_name = ?, preferred_language = ?, password_hash = ?, payment_alias = COALESCE(?, payment_alias)"
+                        + " SET first_name = ?, last_name = ?, language = ?, password_hash = ?, alias = COALESCE(?, alias)"
                         + " WHERE lower(email) = lower(?)"
                         + " AND password_hash IS NULL",
                 givenName,
@@ -120,7 +120,7 @@ public class UserJdbcDao implements UserDao {
             final String preferredLanguage) {
         final int updatedRows = jdbcTemplate.update(
                 "UPDATE users"
-                        + " SET given_name = ?, last_name = ?, email = ?, phone = ?, payment_alias = ?, preferred_language = ?"
+                        + " SET first_name = ?, last_name = ?, email = ?, phone = ?, alias = ?, language = ?"
                         + " WHERE id = ?",
                 givenName,
                 lastName,
@@ -140,7 +140,7 @@ public class UserJdbcDao implements UserDao {
             final String givenName, final String lastName, final String email, final String preferredLanguage) {
         final int id = Objects.requireNonNull(
                 jdbcTemplate.queryForObject(
-                        "INSERT INTO users (given_name, last_name, email, preferred_language) VALUES (?, ?, ?, ?) RETURNING id",
+                        "INSERT INTO users (first_name, last_name, email, language) VALUES (?, ?, ?, ?) RETURNING id",
                         Integer.class,
                         givenName,
                         lastName,
@@ -154,7 +154,7 @@ public class UserJdbcDao implements UserDao {
     public boolean updateBasicProfileNamesAndLanguage(
             final int userId, final String givenName, final String lastName, final String preferredLanguage) {
         return jdbcTemplate.update(
-                        "UPDATE users SET given_name = ?, last_name = ?, preferred_language = ? WHERE id = ?",
+                        "UPDATE users SET first_name = ?, last_name = ?, language = ? WHERE id = ?",
                         givenName,
                         lastName,
                         preferredLanguage,
@@ -175,9 +175,7 @@ public class UserJdbcDao implements UserDao {
     @Override
     public Optional<User> updatePasswordRecoveryToken(final int userId, final String token) {
         final int updatedRows = jdbcTemplate.update(
-                "UPDATE users SET password_recovery_token = ?, password_recovery_used_at = NULL WHERE id = ?",
-                token,
-                userId);
+                "UPDATE users SET mail_token = ?, mail_token_emitted_at = NULL WHERE id = ?", token, userId);
         if (updatedRows == 0) {
             return Optional.empty();
         }
@@ -189,9 +187,7 @@ public class UserJdbcDao implements UserDao {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
-        return jdbcTemplate
-                .query("SELECT * FROM users WHERE password_recovery_token = ?", USER_ROW_MAPPER, token)
-                .stream()
+        return jdbcTemplate.query("SELECT * FROM users WHERE mail_token = ?", USER_ROW_MAPPER, token).stream()
                 .findAny();
     }
 
@@ -200,9 +196,9 @@ public class UserJdbcDao implements UserDao {
             final String token, final String passwordHash, final OffsetDateTime usedAt) {
         final int updatedRows = jdbcTemplate.update(
                 "UPDATE users"
-                        + " SET password_hash = ?, password_recovery_used_at = ?"
-                        + " WHERE password_recovery_token = ?"
-                        + " AND password_recovery_used_at IS NULL",
+                        + " SET password_hash = ?, mail_token_emitted_at = ?"
+                        + " WHERE mail_token = ?"
+                        + " AND mail_token_emitted_at IS NULL",
                 passwordHash,
                 Timestamp.from(Objects.requireNonNull(usedAt).toInstant()),
                 token);

@@ -28,7 +28,7 @@ public class UsersTableJdbcTest {
         final JdbcTemplate jdbcTemplate = jdbcTemplate();
         final String email = "a@a.com";
 
-        jdbcTemplate.update("INSERT INTO users (given_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
+        jdbcTemplate.update("INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
 
         Assertions.assertEquals(1, JdbcTestUtils.countRowsInTableWhere(jdbcTemplate, "users", "email = 'a@a.com'"));
     }
@@ -36,7 +36,7 @@ public class UsersTableJdbcTest {
     @Test
     public void testCreateUserWhenEmailIsMissing() {
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
-                .update("INSERT INTO users (given_name, last_name) VALUES (?, ?)", "A", "A"));
+                .update("INSERT INTO users (first_name, last_name) VALUES (?, ?)", "A", "A"));
     }
 
     @Test
@@ -44,12 +44,12 @@ public class UsersTableJdbcTest {
         final JdbcTemplate jdbcTemplate = jdbcTemplate();
 
         jdbcTemplate.update(
-                "INSERT INTO users (id, given_name, last_name, email) VALUES (?, ?, ?, ?)", 500, "A", "A", "a@a.com");
+                "INSERT INTO users (id, first_name, last_name, email) VALUES (?, ?, ?, ?)", 500, "A", "A", "a@a.com");
 
         Assertions.assertThrows(
                 DataIntegrityViolationException.class,
                 () -> jdbcTemplate.update(
-                        "INSERT INTO users (id, given_name, last_name, email) VALUES (?, ?, ?, ?)",
+                        "INSERT INTO users (id, first_name, last_name, email) VALUES (?, ?, ?, ?)",
                         500,
                         "B",
                         "B",
@@ -60,7 +60,7 @@ public class UsersTableJdbcTest {
     public void testCreateUserWhenPreferredLanguageIsInvalid() {
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
                 .update(
-                        "INSERT INTO users (given_name, last_name, email, preferred_language) VALUES (?, ?, ?, ?)",
+                        "INSERT INTO users (first_name, last_name, email, language) VALUES (?, ?, ?, ?)",
                         "A",
                         "A",
                         "a@a.com",
@@ -71,7 +71,7 @@ public class UsersTableJdbcTest {
     public void testAdminDebugUserWasMigratedToGivenAndLastName() {
         final JdbcTemplate jdbcTemplate = jdbcTemplate();
         final String givenName = jdbcTemplate.queryForObject(
-                "SELECT given_name FROM users WHERE email = 'botecito.dev@gmail.com'", String.class);
+                "SELECT first_name FROM users WHERE email = 'botecito.dev@gmail.com'", String.class);
         final String lastName = jdbcTemplate.queryForObject(
                 "SELECT last_name FROM users WHERE email = 'botecito.dev@gmail.com'", String.class);
 

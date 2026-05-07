@@ -13,8 +13,10 @@ import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
+import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import ar.edu.itba.paw.webapp.util.AvailabilityPickerSupport;
+import ar.edu.itba.paw.webapp.util.MarketplaceSearchCriteriaMapper;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.LinkedHashMap;
@@ -50,39 +52,36 @@ public final class MarketplaceMvcSupport {
         return form;
     }
 
-    public ModelAndView marketplace(
-            final HttpServletRequest request,
-            final String searchQuery,
-            final String locationOptionId,
-            final String date,
-            final String startTime,
-            final String endTime,
-            final String capacity,
-            final String maxWeight,
-            final String difficultyLevel,
-            final String minRating,
-            final String sort,
-            final String page,
-            final String pageSize) {
-        final ItemSearchCriteria criteria = itemService.parseAndValidateSearchCriteria(
-                searchQuery,
-                locationOptionId,
-                date,
-                startTime,
-                endTime,
-                capacity,
-                maxWeight,
-                difficultyLevel,
-                minRating,
-                sort);
-        final int parsedPageSize = parsePageSize(pageSize);
-        final Page<Item> itemPage = itemService.searchMarketplace(criteria, parsePage(page), parsedPageSize);
+    public ModelAndView marketplace(final HttpServletRequest request, final MarketplaceSearchForm search) {
+        final ItemSearchCriteria criteria = MarketplaceSearchCriteriaMapper.fromMarketplaceForm(search);
+        final int parsedPageSize = parsePageSize(search.getPageSize());
+        final int page = parsePage(search.getPage());
+        return buildMarketplaceModelAndView(request, criteria, page, parsedPageSize);
+    }
+
+    /**
+     * When Bean Validation fails on {@link MarketplaceSearchForm}, show the marketplace with a
+     * default unconstrained search while preserving the submitted form and {@link BindingResult}
+     * for the view.
+     */
+    public ModelAndView marketplaceWithSearchBindingErrors(
+            final HttpServletRequest request, final MarketplaceSearchForm search, final BindingResult errors) {
+        final ItemSearchCriteria defaultCriteria = MarketplaceSearchCriteriaMapper.fromMarketplaceForm(null);
+        final ModelAndView mav =
+                buildMarketplaceModelAndView(request, defaultCriteria, 1, DEFAULT_MARKETPLACE_PAGE_SIZE);
+        mav.addAllObjects(errors.getModel());
+        return mav;
+    }
+
+    private ModelAndView buildMarketplaceModelAndView(
+            final HttpServletRequest request, final ItemSearchCriteria criteria, final int page, final int pageSize) {
+        final Page<Item> itemPage = itemService.searchMarketplace(criteria, page, pageSize);
         final ModelAndView mav = new ModelAndView("marketplace");
         mav.addObject("items", itemPage.getContent());
         mav.addObject("itemImages", buildItemImagesMap(itemPage.getContent(), request.getContextPath()));
         mav.addObject("itemsCount", itemPage.getTotalItems());
         mav.addObject("itemPage", itemPage);
-        mav.addObject("pageSize", parsedPageSize);
+        mav.addObject("pageSize", pageSize);
         mav.addObject(
                 "sort",
                 criteria.getSort() == null ? "newest" : criteria.getSort().getRequestValue());

@@ -28,18 +28,18 @@ final class ItemJdbcRowMappers {
     static final @NonNull RowMapper<Item> ITEM_ROW_MAPPER = (ResultSet rs, int rowNum) -> {
         final Item item = new Item();
         item.setId(rs.getInt("id"));
-        item.setOwnerId(rs.getInt("owner_id"));
+        item.setOwnerId(rs.getInt("host_id"));
         item.setTypeId(rs.getInt("type_id"));
         item.setTitle(rs.getString("title"));
         item.setDescription(rs.getString("description"));
-        item.setPricePerHour(rs.getInt("price_per_hour"));
-        item.setCapacityPeople(rs.getInt("capacity_people"));
-        item.setMaxWeightKg(rs.getBigDecimal("max_weight_kg"));
-        item.setDifficultyLevel((Integer) rs.getObject("difficulty_level"));
-        item.setLocationOptionId((Integer) rs.getObject("location_option_id"));
+        item.setPricePerHour(rs.getInt("price"));
+        item.setCapacityPeople(rs.getInt("capacity"));
+        item.setMaxWeightKg(rs.getBigDecimal("weight"));
+        item.setDifficultyLevel((Integer) rs.getObject("difficulty"));
+        item.setLocationOptionId((Integer) rs.getObject("location_id"));
         item.setLocation(rs.getString("location"));
-        item.setActive(rs.getBoolean("active"));
-        item.setOwnerDeleteToken(rs.getString("owner_delete_token"));
+        item.setActive("ACTIVE".equals(rs.getString("status")));
+        item.setOwnerDeleteToken(null);
         item.setCreatedAt(readOffsetDateTime(rs, "created_at"));
         return item;
     };
@@ -48,12 +48,12 @@ final class ItemJdbcRowMappers {
         final User user = new User();
         user.setId(rs.getInt("id"));
         user.setCreatedAt(readOffsetDateTime(rs, "created_at"));
-        user.setGivenName(rs.getString("given_name"));
+        user.setGivenName(rs.getString("first_name"));
         user.setLastName(rs.getString("last_name"));
         user.setEmail(rs.getString("email"));
         user.setPhone(rs.getString("phone"));
-        user.setPaymentAlias(rs.getString("payment_alias"));
-        user.setPreferredLanguage(PreferredLanguage.fromPersistence(rs.getString("preferred_language")));
+        user.setPaymentAlias(rs.getString("alias"));
+        user.setPreferredLanguage(PreferredLanguage.fromPersistence(rs.getString("language")));
         return user;
     };
 
@@ -82,12 +82,12 @@ final class ItemJdbcRowMappers {
         booking.setId(rs.getInt("id"));
         booking.setItemId(rs.getInt("item_id"));
         booking.setGuestId(rs.getInt("guest_id"));
-        booking.setStartTime(readOffsetDateTime(rs, "start_time"));
-        booking.setEndTime(readOffsetDateTime(rs, "end_time"));
-        booking.setState(BookingState.valueOf(rs.getString("state")));
-        booking.setRequestMessage(rs.getString("request_message"));
-        booking.setHostDecisionToken(rs.getString("host_decision_token"));
-        booking.setHostDecisionUsedAt(readOffsetDateTime(rs, "host_decision_used_at"));
+        booking.setStartTime(readOffsetDateTime(rs, "start"));
+        booking.setEndTime(readOffsetDateTime(rs, "end"));
+        booking.setState(toLegacyBookingState(rs.getString("status")));
+        booking.setRequestMessage(rs.getString("msg"));
+        booking.setHostDecisionToken(null);
+        booking.setHostDecisionUsedAt(null);
         booking.setCreatedAt(readOffsetDateTime(rs, "created_at"));
         booking.setUpdatedAt(readOffsetDateTime(rs, "updated_at"));
         return booking;
@@ -101,12 +101,12 @@ final class ItemJdbcRowMappers {
         snapshot.setTypeId(rs.getInt("type_id"));
         snapshot.setTitle(rs.getString("title"));
         snapshot.setDescription(rs.getString("description"));
-        snapshot.setPricePerHour(rs.getInt("price_per_hour"));
-        snapshot.setCapacityPeople(rs.getInt("capacity_people"));
-        snapshot.setMaxWeightKg(rs.getBigDecimal("max_weight_kg"));
-        snapshot.setDifficultyLevel((Integer) rs.getObject("difficulty_level"));
-        snapshot.setLocationOptionId((Integer) rs.getObject("location_option_id"));
-        snapshot.setLocation(rs.getString("location_name"));
+        snapshot.setPricePerHour(rs.getInt("price"));
+        snapshot.setCapacityPeople(rs.getInt("capacity"));
+        snapshot.setMaxWeightKg(rs.getBigDecimal("weight"));
+        snapshot.setDifficultyLevel((Integer) rs.getObject("difficulty"));
+        snapshot.setLocationOptionId((Integer) rs.getObject("location_id"));
+        snapshot.setLocation(rs.getString("location"));
         snapshot.setCoverImageData(rs.getBytes("cover_image_data"));
         snapshot.setSnapshotCreatedAt(readOffsetDateTime(rs, "created_at"));
         return snapshot;
@@ -117,28 +117,42 @@ final class ItemJdbcRowMappers {
                 final BookingPaymentProof proof = new BookingPaymentProof();
                 proof.setId(rs.getInt("id"));
                 proof.setBookingId(rs.getInt("booking_id"));
-                proof.setUploaderId(rs.getInt("uploader_id"));
-                proof.setFileName(rs.getString("file_name"));
+                proof.setUploaderId((Integer) rs.getObject("uploader_id"));
+                proof.setFileName(rs.getString("filename"));
                 proof.setContentType(rs.getString("content_type"));
                 proof.setFileData(rs.getBytes("file_data"));
                 proof.setCreatedAt(readOffsetDateTime(rs, "created_at"));
-                proof.setRefusalReason(rs.getString("refusal_reason"));
+                proof.setRefusalReason(rs.getString("refuse_msg"));
                 proof.setRefusedAt(readOffsetDateTime(rs, "refused_at"));
-                proof.setGuestReply(rs.getString("guest_reply"));
+                proof.setGuestReply(rs.getString("reply_msg"));
                 return proof;
             };
 
     static final @NonNull RowMapper<Review> REVIEW_ROW_MAPPER = (ResultSet rs, int rowNum) -> new Review(
             readRequiredIntColumn(rs, "id"),
             readRequiredIntColumn(rs, "booking_id"),
-            readRequiredIntColumn(rs, "reviewer_user_id"),
+            readRequiredIntColumn(rs, "sender_id"),
             readRequiredIntColumn(rs, "reviewee_user_id"),
             ReviewTargetType.valueOf(rs.getString("target_type")),
             readRequiredIntColumn(rs, "target_id"),
             readRequiredIntColumn(rs, "rating"),
             rs.getString("comment"),
             readOffsetDateTime(rs, "created_at"),
-            readOffsetDateTime(rs, "updated_at"));
+            readOffsetDateTime(rs, "created_at"));
+
+    private static BookingState toLegacyBookingState(final String status) {
+        return switch (status) {
+            case "PENDING" -> BookingState.BOOKING_PENDING;
+            case "ACCEPTED" -> BookingState.BOOKING_CONFIRMED;
+            case "REJECTED" -> BookingState.BOOKING_REJECTED;
+            case "CANCELLED" -> BookingState.BOOKING_CANCELLED;
+            case "FINISHED" -> BookingState.BOOKING_COMPLETED;
+            case "PAID" -> BookingState.BOOKING_PAYMENT_SUBMITTED;
+            case "CONFIRMED" -> BookingState.BOOKING_PAID;
+            case "REFUSED" -> BookingState.BOOKING_PAYMENT_REFUSED;
+            default -> throw new IllegalArgumentException("Unknown booking status: " + status);
+        };
+    }
 
     static Integer readRequiredIntColumn(final ResultSet rs, final String column) throws SQLException {
         final int value = rs.getInt(column);

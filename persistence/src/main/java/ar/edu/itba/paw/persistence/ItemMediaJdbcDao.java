@@ -24,14 +24,14 @@ public class ItemMediaJdbcDao implements ItemMediaDao {
 
     @Override
     public Optional<byte[]> findImageById(final int id) {
-        if (!hasTable("item_media")) {
+        if (!hasTable("image")) {
             return Optional.empty();
         }
         return jdbcTemplate.query(
-                "SELECT image_data FROM item_media WHERE id = ?",
+                "SELECT data FROM image WHERE id = ?",
                 rs -> {
                     if (rs.next()) {
-                        return Optional.ofNullable(rs.getBytes("image_data"));
+                        return Optional.ofNullable(rs.getBytes("data"));
                     }
                     return Optional.<byte[]>empty();
                 },
@@ -40,61 +40,88 @@ public class ItemMediaJdbcDao implements ItemMediaDao {
 
     @Override
     public List<Integer> listImageIdsByItemIdOrdered(final int itemId) {
-        if (!hasTable("item_media")) {
+        if (!hasTable("media")) {
+            return Collections.emptyList();
+        }
+        final Integer currentVersionId = findCurrentVersionId(itemId);
+        if (currentVersionId == null) {
             return Collections.emptyList();
         }
         return jdbcTemplate.queryForList(
-                "SELECT id FROM item_media WHERE item_id = ? ORDER BY display_order ASC", Integer.class, itemId);
+                "SELECT image_id FROM media WHERE version_id = ? ORDER BY index ASC, image_id ASC",
+                Integer.class,
+                currentVersionId);
     }
 
     @Override
     public Optional<Integer> findCoverImageIdByItemId(final int itemId) {
-        if (!hasTable("item_media")) {
+        if (!hasTable("media")) {
+            return Optional.empty();
+        }
+        final Integer currentVersionId = findCurrentVersionId(itemId);
+        if (currentVersionId == null) {
             return Optional.empty();
         }
         return jdbcTemplate
                 .queryForList(
-                        "SELECT id FROM item_media WHERE item_id = ? ORDER BY display_order ASC LIMIT 1",
+                        "SELECT image_id FROM media WHERE version_id = ? ORDER BY index ASC, image_id ASC LIMIT 1",
                         Integer.class,
-                        itemId)
+                        currentVersionId)
                 .stream()
                 .findFirst();
     }
 
     @Override
     public int countImagesByItemId(final int itemId) {
-        if (!hasTable("item_media")) {
+        if (!hasTable("media")) {
             return 0;
         }
-        final Integer count =
-                jdbcTemplate.queryForObject("SELECT COUNT(*) FROM item_media WHERE item_id = ?", Integer.class, itemId);
+        final Integer currentVersionId = findCurrentVersionId(itemId);
+        if (currentVersionId == null) {
+            return 0;
+        }
+        final Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM media WHERE version_id = ?", Integer.class, currentVersionId);
         return count == null ? 0 : count;
     }
 
     @Override
     public Integer insertImage(final int itemId, final byte[] imageData, final int displayOrder) {
-        final SimpleJdbcInsert insert =
-                new SimpleJdbcInsert(jdbcTemplate).withTableName("item_media").usingGeneratedKeyColumns("id");
-        final Map<String, Object> args = new HashMap<>();
-        args.put("item_id", itemId);
-        args.put("image_data", imageData);
-        args.put("display_order", displayOrder);
-        final Integer imageId = insert.executeAndReturnKey(args).intValue();
-        ItemPublicationCoverJdbcSupport.syncCurrentPublicationVersionCoverImage(jdbcTemplate, itemId);
+        final Integer currentVersionId = findCurrentVersionId(itemId);
+        if (currentVersionId == null) {
+            return null;
+        }
+        final SimpleJdbcInsert imageInsert =
+                new SimpleJdbcInsert(jdbcTemplate).withTableName("image").usingGeneratedKeyColumns("id");
+        final Map<String, Object> imageArgs = new HashMap<>();
+        imageArgs.put("data", imageData);
+        final Integer imageId = imageInsert.executeAndReturnKey(imageArgs).intValue();
+
+        final SimpleJdbcInsert mediaInsert = new SimpleJdbcInsert(jdbcTemplate).withTableName("media");
+        final Map<String, Object> mediaArgs = new HashMap<>();
+        mediaArgs.put("version_id", currentVersionId);
+        mediaArgs.put("image_id", imageId);
+        mediaArgs.put("index", displayOrder);
+        mediaInsert.execute(mediaArgs);
         return imageId;
     }
 
     @Override
     public boolean deleteImage(final int itemId, final int imageId) {
+        final Integer currentVersionId = findCurrentVersionId(itemId);
+        if (currentVersionId == null) {
+            return false;
+        }
         final List<Integer> currentOrder = jdbcTemplate.queryForList(
-                "SELECT id FROM item_media WHERE item_id = ? ORDER BY display_order ASC", Integer.class, itemId);
+                "SELECT image_id FROM media WHERE version_id = ? ORDER BY index ASC, image_id ASC",
+                Integer.class,
+                currentVersionId);
         if (!currentOrder.contains(imageId)) {
             return false;
         }
-        jdbcTemplate.update("UPDATE item_media SET display_order = -1 - display_order WHERE item_id = ?", itemId);
-        final int deleted = jdbcTemplate.update("DELETE FROM item_media WHERE id = ? AND item_id = ?", imageId, itemId);
+        final int deleted = jdbcTemplate.update(
+                "DELETE FROM media WHERE version_id = ? AND image_id = ?", currentVersionId, imageId);
         if (deleted == 0) {
-            jdbcTemplate.update("UPDATE item_media SET display_order = -1 - display_order WHERE item_id = ?", itemId);
             return false;
         }
         int newPosition = 0;
@@ -103,13 +130,17 @@ public class ItemMediaJdbcDao implements ItemMediaDao {
                 continue;
             }
             jdbcTemplate.update(
-                    "UPDATE item_media SET display_order = ? WHERE id = ? AND item_id = ?",
+                    "UPDATE media SET index = ? WHERE version_id = ? AND image_id = ?",
                     newPosition,
-                    survivingId,
-                    itemId);
+                    currentVersionId,
+                    survivingId);
             newPosition++;
         }
-        ItemPublicationCoverJdbcSupport.syncCurrentPublicationVersionCoverImage(jdbcTemplate, itemId);
+        jdbcTemplate.update(
+                "DELETE FROM image ii"
+                        + " WHERE ii.id = ?"
+                        + " AND NOT EXISTS (SELECT 1 FROM media im WHERE im.image_id = ii.id)",
+                imageId);
         return true;
     }
 
@@ -118,27 +149,33 @@ public class ItemMediaJdbcDao implements ItemMediaDao {
         if (imageIdsInOrder == null || imageIdsInOrder.isEmpty()) {
             return;
         }
-        jdbcTemplate.update("UPDATE item_media SET display_order = -1 - display_order WHERE item_id = ?", itemId);
+        final Integer currentVersionId = findCurrentVersionId(itemId);
+        if (currentVersionId == null) {
+            return;
+        }
         for (int position = 0; position < imageIdsInOrder.size(); position++) {
             jdbcTemplate.update(
-                    "UPDATE item_media SET display_order = ? WHERE id = ? AND item_id = ?",
+                    "UPDATE media SET index = ? WHERE version_id = ? AND image_id = ?",
                     position,
-                    imageIdsInOrder.get(position),
-                    itemId);
+                    currentVersionId,
+                    imageIdsInOrder.get(position));
         }
-        ItemPublicationCoverJdbcSupport.syncCurrentPublicationVersionCoverImage(jdbcTemplate, itemId);
     }
 
     @Override
     public Integer replacePrimaryImage(final int itemId, final byte[] imageData) {
-        if (!hasTable("item_media")) {
+        if (!hasTable("media")) {
+            return null;
+        }
+        final Integer currentVersionId = findCurrentVersionId(itemId);
+        if (currentVersionId == null) {
             return null;
         }
         final Integer existingImageId = jdbcTemplate
                 .queryForList(
-                        "SELECT id FROM item_media WHERE item_id = ? ORDER BY display_order ASC, id ASC",
+                        "SELECT image_id FROM media WHERE version_id = ? ORDER BY index ASC, image_id ASC",
                         Integer.class,
-                        itemId)
+                        currentVersionId)
                 .stream()
                 .findFirst()
                 .orElse(null);
@@ -146,11 +183,12 @@ public class ItemMediaJdbcDao implements ItemMediaDao {
             return insertImage(itemId, imageData, 0);
         }
         final int updatedRows =
-                jdbcTemplate.update("UPDATE item_media SET image_data = ? WHERE id = ?", imageData, existingImageId);
-        if (updatedRows > 0) {
-            ItemPublicationCoverJdbcSupport.syncCurrentPublicationVersionCoverImage(jdbcTemplate, itemId);
-        }
+                jdbcTemplate.update("UPDATE image SET data = ? WHERE id = ?", imageData, existingImageId);
         return updatedRows > 0 ? existingImageId : null;
+    }
+
+    private Integer findCurrentVersionId(final int itemId) {
+        return jdbcTemplate.queryForObject("SELECT MAX(id) FROM version WHERE item_id = ?", Integer.class, itemId);
     }
 
     private boolean hasTable(final String tableName) {

@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.webapp.controller.support.MarketplaceMvcSupport;
+import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import java.util.List;
 import java.util.Locale;
@@ -34,32 +35,12 @@ public class MarketplaceController {
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
     public ModelAndView marketplace(
             final HttpServletRequest request,
-            @RequestParam(value = "searchQuery", required = false) final String searchQuery,
-            @RequestParam(value = "locationOptionId", required = false) final String locationOptionId,
-            @RequestParam(value = "date", required = false) final String date,
-            @RequestParam(value = "startTime", required = false) final String startTime,
-            @RequestParam(value = "endTime", required = false) final String endTime,
-            @RequestParam(value = "capacity", required = false) final String capacity,
-            @RequestParam(value = "maxWeight", required = false) final String maxWeight,
-            @RequestParam(value = "difficultyLevel", required = false) final String difficultyLevel,
-            @RequestParam(value = "minRating", required = false) final String minRating,
-            @RequestParam(value = "sort", required = false) final String sort,
-            @RequestParam(value = "page", required = false) final String page,
-            @RequestParam(value = "pageSize", required = false) final String pageSize) {
-        return marketplaceMvcSupport.marketplace(
-                request,
-                searchQuery,
-                locationOptionId,
-                date,
-                startTime,
-                endTime,
-                capacity,
-                maxWeight,
-                difficultyLevel,
-                minRating,
-                sort,
-                page,
-                pageSize);
+            @Valid @ModelAttribute("marketplaceSearch") final MarketplaceSearchForm search,
+            final BindingResult searchErrors) {
+        if (searchErrors.hasErrors()) {
+            return marketplaceMvcSupport.marketplaceWithSearchBindingErrors(request, search, searchErrors);
+        }
+        return marketplaceMvcSupport.marketplace(request, search);
     }
 
     @ResponseBody

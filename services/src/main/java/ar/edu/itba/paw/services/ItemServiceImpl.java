@@ -5,7 +5,6 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
-import ar.edu.itba.paw.models.ItemSearchSort;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
@@ -580,33 +579,6 @@ public final class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemSearchCriteria parseAndValidateSearchCriteria(
-            final String searchQuery,
-            final String locationOptionId,
-            final String date,
-            final String startTime,
-            final String endTime,
-            final String capacity,
-            final String maxWeight,
-            final String difficulty,
-            final String minRating,
-            final String sort) {
-        final ItemSearchCriteria criteria = new ItemSearchCriteria();
-        criteria.setSearchQuery(searchQuery);
-        criteria.setLocationOptionId(parseInt(locationOptionId));
-        criteria.setDate(parseLocalDate(date));
-        criteria.setStartTime(parseLocalTime(startTime));
-        criteria.setEndTime(parseLocalTime(endTime));
-        criteria.setCapacity(parseInt(capacity));
-        final Integer maxWeightInt = parseInt(maxWeight);
-        criteria.setMaxWeightKg(maxWeightInt == null ? null : BigDecimal.valueOf(maxWeightInt.longValue()));
-        criteria.setDifficultyLevel(parseRanged(difficulty, 1, 5));
-        criteria.setMinAverageRating(parseRanged(minRating, 1, 5));
-        criteria.setSort(ItemSearchSort.fromRequestParam(sort));
-        return criteria;
-    }
-
-    @Override
     public Page<Item> searchMarketplace(final ItemSearchCriteria criteria, final int page, final int pageSize) {
         return searchItems(criteria, page, pageSize);
     }
@@ -1004,42 +976,12 @@ public final class ItemServiceImpl implements ItemService {
                 || state == BookingState.BOOKING_PAID;
     }
 
-    private static Integer parseInt(final String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return Integer.parseInt(value.trim());
-        } catch (final NumberFormatException ex) {
-            return null;
-        }
-    }
-
-    private static Integer parseRanged(final String value, final int min, final int max) {
-        final Integer parsed = parseInt(value);
-        if (parsed == null || parsed < min || parsed > max) {
-            return null;
-        }
-        return parsed;
-    }
-
     private static java.time.LocalDate parseLocalDate(final String value) {
         if (value == null || value.isBlank()) {
             return null;
         }
         try {
             return java.time.LocalDate.parse(value.trim());
-        } catch (final java.time.format.DateTimeParseException ex) {
-            return null;
-        }
-    }
-
-    private static java.time.LocalTime parseLocalTime(final String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return java.time.LocalTime.parse(value.trim());
         } catch (final java.time.format.DateTimeParseException ex) {
             return null;
         }

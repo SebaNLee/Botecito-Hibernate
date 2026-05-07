@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.BookingState;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -36,12 +37,15 @@ public class ItemJdbcDaoTest {
         final int ownerId = insertUser("owner@a.com");
         final int guestId = insertUser("guest@a.com");
         final int itemId = insertItem(ownerId, "snapshot-title");
+        jdbcTemplate().update("INSERT INTO image (data) VALUES (?)", new byte[] {1, 2, 3});
+        final int imageId =
+                Objects.requireNonNull(jdbcTemplate().queryForObject("SELECT MAX(id) FROM image", Integer.class));
         jdbcTemplate()
                 .update(
-                        "INSERT INTO item_media (item_id, image_data, display_order) VALUES (?, ?, ?)",
+                        "INSERT INTO media (version_id, image_id, index)"
+                                + " VALUES ((SELECT MAX(v.id) FROM version v WHERE v.item_id = ?), ?, 0)",
                         itemId,
-                        new byte[] {1, 2, 3},
-                        0);
+                        imageId);
 
         final OffsetDateTime start = OffsetDateTime.parse("2026-01-01T10:00:00Z");
         final ItemBooking booking = itemBookingDao.createBookingRequest(
@@ -173,38 +177,30 @@ public class ItemJdbcDaoTest {
     }
 
     private int insertUser(final String email) {
-        jdbcTemplate().update("INSERT INTO users (given_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
+        jdbcTemplate().update("INSERT INTO users (first_name, last_name, email) VALUES (?, ?, ?)", "A", "A", email);
         return jdbcTemplate().queryForObject("SELECT id FROM users WHERE email = ?", Integer.class, email);
     }
 
     private int insertItem(final int ownerId, final String title) {
-        final String locationName =
-                jdbcTemplate().queryForObject("SELECT name FROM location_option WHERE id = ?", String.class, 1);
         jdbcTemplate()
                 .update(
-                        "INSERT INTO item_publication_version"
-                                + " (owner_id, type_id, title, price_per_hour, capacity_people, location_option_id, location_name, active, item_created_at)"
-                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
-                        ownerId,
+                        "INSERT INTO item (host_id, status, created_at) VALUES (?, 'ACTIVE', CURRENT_TIMESTAMP)",
+                        ownerId);
+        final int itemId = jdbcTemplate().queryForObject("SELECT MAX(id) FROM item", Integer.class);
+        jdbcTemplate()
+                .update(
+                        "INSERT INTO version (item_id, type_id, title, description, price, capacity, weight, difficulty, location_id, timezone, created_at)"
+                                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'UTC', CURRENT_TIMESTAMP)",
+                        itemId,
                         1,
                         title,
+                        "desc",
                         1500,
                         2,
+                        2000,
                         1,
-                        locationName,
-                        Boolean.TRUE);
-        final int versionId = jdbcTemplate()
-                .queryForObject(
-                        "SELECT id FROM item_publication_version WHERE owner_id = ? AND title = ? ORDER BY id DESC LIMIT 1",
-                        Integer.class,
-                        ownerId,
-                        title);
-        jdbcTemplate().update("INSERT INTO item (version_id) VALUES (?)", versionId);
-        return jdbcTemplate()
-                .queryForObject(
-                        "SELECT i.id FROM item i JOIN item_publication_version v ON v.id = i.version_id WHERE v.id = ?",
-                        Integer.class,
-                        versionId);
+                        1);
+        return itemId;
     }
 
     private @NonNull JdbcTemplate jdbcTemplate() {

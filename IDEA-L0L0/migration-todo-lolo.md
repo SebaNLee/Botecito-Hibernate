@@ -213,23 +213,18 @@ only depends on submitted fields.
 
 ## Staging rule for new files
 
-Anything added for this migration should be staged under a `new/` folder first,
+Anything added for this migration should be staged under a `nuevo/` folder first,
 then later moved/unpacked after the old implementation is removed.
-
-Important Java note: `new` is a Java keyword, so it cannot be part of a Java
-package name. A `new/` folder can be used as a staging directory, but files
-inside it may not compile until they are unpacked into their final package, or
-they must use temporary non-conflicting class names/packages.
 
 Suggested staging folders:
 
 ```text
-webapp/src/main/java/ar/edu/itba/paw/webapp/new/
-service-contracts/src/main/java/ar/edu/itba/paw/services/new/
-services/src/main/java/ar/edu/itba/paw/services/new/
-persistence-contracts/src/main/java/ar/edu/itba/paw/persistence/new/
-persistence/src/main/java/ar/edu/itba/paw/persistence/new/
-models/src/main/java/ar/edu/itba/paw/models/new/
+webapp/src/main/java/ar/edu/itba/paw/webapp/nuevo/
+service-contracts/src/main/java/ar/edu/itba/paw/services/nuevo/
+services/src/main/java/ar/edu/itba/paw/services/nuevo/
+persistence-contracts/src/main/java/ar/edu/itba/paw/persistence/nuevo/
+persistence/src/main/java/ar/edu/itba/paw/persistence/nuevo/
+models/src/main/java/ar/edu/itba/paw/models/nuevo/
 ```
 
 ## Proposed new files and plug-in points
@@ -239,7 +234,7 @@ models/src/main/java/ar/edu/itba/paw/models/new/
 Add staged files under:
 
 ```text
-webapp/src/main/java/ar/edu/itba/paw/webapp/new/presentation/
+webapp/src/main/java/ar/edu/itba/paw/webapp/nuevo/presentation/
 ```
 
 Planned files:
@@ -287,7 +282,7 @@ Controller plug-in points:
 Add staged files or staged changes under:
 
 ```text
-service-contracts/src/main/java/ar/edu/itba/paw/services/new/
+service-contracts/src/main/java/ar/edu/itba/paw/services/nuevo/
 ```
 
 Needed contract changes:
@@ -315,7 +310,7 @@ Plug-in point:
 Add staged files or staged changes under:
 
 ```text
-services/src/main/java/ar/edu/itba/paw/services/new/
+services/src/main/java/ar/edu/itba/paw/services/nuevo/
 ```
 
 Needed implementation changes:
@@ -340,7 +335,7 @@ Plug-in point:
 Add staged files or staged changes under:
 
 ```text
-persistence-contracts/src/main/java/ar/edu/itba/paw/persistence/new/
+persistence-contracts/src/main/java/ar/edu/itba/paw/persistence/nuevo/
 ```
 
 Needed contract changes:
@@ -372,7 +367,7 @@ Plug-in point:
 Add staged files under:
 
 ```text
-persistence/src/main/java/ar/edu/itba/paw/persistence/new/
+persistence/src/main/java/ar/edu/itba/paw/persistence/nuevo/
 ```
 
 Planned files:
@@ -402,7 +397,7 @@ Needed Maven/config work:
 Add staged files or staged changes under:
 
 ```text
-models/src/main/java/ar/edu/itba/paw/models/new/
+models/src/main/java/ar/edu/itba/paw/models/nuevo/
 ```
 
 Likely changes:
@@ -453,7 +448,7 @@ Watch out:
 
 ## Concrete migration order
 
-1. Create staged presentation classes under `new/` based on `MarketplaceMvcSupport`.
+1. Create staged presentation classes under `nuevo/` based on `MarketplaceMvcSupport`.
 2. Move auth/profile view preparation and form-to-model mapping out of controllers.
 3. Add form-local validation for password confirmation and cross-field checks.
 4. Change staged service contracts to model-based user inputs.
@@ -461,4 +456,4 @@ Watch out:
 6. Add staged `UserHibernateDao`.
 7. Add Hibernate configuration/dependencies.
 8. Update tests around the new structure.
-9. Once the staged version is accepted, remove old files/classes and unpack from `new/` into the final packages.
+9. Once the staged version is accepted, remove old files/classes and unpack from `nuevo/` into the final packages.

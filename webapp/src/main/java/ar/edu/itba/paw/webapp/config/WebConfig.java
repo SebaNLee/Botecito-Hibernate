@@ -28,6 +28,7 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 @Import(MailConfig.class)
 @ComponentScan({
     "ar.edu.itba.paw.webapp.controller",
+    "ar.edu.itba.paw.webapp.presentation",
     "ar.edu.itba.paw.webapp.auth",
     "ar.edu.itba.paw.services",
     "ar.edu.itba.paw.persistence"

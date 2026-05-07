@@ -40,7 +40,7 @@ table version {
     item_id INT FK-ref-item NN ON-DELETE-CASCADE,
     type_id INT FK-ref-item_type NN,
     title VARCHAR (1000) NN,
-    desc VARCHAR (100),
+    description VARCHAR (100),
     price NUMERIC(12,2) NN,
     capacity INT NN,
     weight INT NN,

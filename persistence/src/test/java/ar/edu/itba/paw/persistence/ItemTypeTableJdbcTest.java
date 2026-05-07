@@ -26,7 +26,7 @@ public class ItemTypeTableJdbcTest {
     public void testCreateItemTypeWhenNameIsValid() {
         final JdbcTemplate jdbcTemplate = jdbcTemplate();
 
-        jdbcTemplate.update("INSERT INTO item_type (name) VALUES (?)", "x");
+        jdbcTemplate.update("INSERT INTO item_type (name, slug) VALUES (?, ?)", "x", "x");
 
         final Integer count =
                 jdbcTemplate.queryForObject("SELECT COUNT(*) FROM item_type WHERE name = ?", Integer.class, "x");
@@ -36,13 +36,13 @@ public class ItemTypeTableJdbcTest {
     @Test
     public void testCreateItemTypeWhenNameIsDuplicated() {
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
-                .update("INSERT INTO item_type (name) VALUES (?)", "Kayak"));
+                .update("INSERT INTO item_type (name, slug) VALUES (?, ?)", "Kayak", "kayak-dup"));
     }
 
     @Test
     public void testCreateItemTypeWhenNameIsMissing() {
         Assertions.assertThrows(DataIntegrityViolationException.class, () -> jdbcTemplate()
-                .update("INSERT INTO item_type (name) VALUES (?)", new Object[] {null}));
+                .update("INSERT INTO item_type (name, slug) VALUES (?, ?)", new Object[] {null, "orphan-slug"}));
     }
 
     private @NonNull JdbcTemplate jdbcTemplate() {

@@ -6,6 +6,7 @@ import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordResetForm;
 import ar.edu.itba.paw.webapp.form.nuevo.RegisterForm;
+import ar.edu.itba.paw.webapp.presentation.nuevo.AuthModelMapper;
 import ar.edu.itba.paw.webapp.presentation.nuevo.AuthPresentation;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -24,7 +25,7 @@ public class AuthController {
 
     public AuthController(
             final UserService userService, final PostRegistrationAuthenticator postRegistrationAuthenticator) {
-        this.authPresentation = new AuthPresentation(userService, postRegistrationAuthenticator);
+        this.authPresentation = new AuthPresentation(userService, postRegistrationAuthenticator, new AuthModelMapper());
     }
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)

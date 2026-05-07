@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.presentation.nuevo;
 
+import ar.edu.itba.paw.models.nuevo.UserModel;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
@@ -18,6 +19,7 @@ public class AuthPresentation {
 
     private final UserService userService;
     private final PostRegistrationAuthenticator postRegistrationAuthenticator;
+    private final AuthModelMapper authModelMapper;
 
     public ModelAndView login(final LoginForm form) {
         final ModelAndView mav = new ModelAndView("login");
@@ -44,20 +46,21 @@ public class AuthPresentation {
     }
 
     public ModelAndView registerSubmit(final RegisterForm form, final BindingResult errors) {
+        final UserModel user = authModelMapper.fromRegisterForm(form);
+        final String rawPassword = form.getPassword();
         if (userService.register(
-                        form.getGivenName().trim(),
-                        form.getLastName().trim(),
-                        form.getEmail().trim(),
-                        form.getPassword(),
-                        form.getPaymentAlias(),
-                        form.getPreferredLanguage())
+                        user.getGivenName(),
+                        user.getLastName(),
+                        user.getEmail(),
+                        rawPassword,
+                        user.getPaymentAlias(),
+                        user.getPreferredLanguage().getPersistenceCode())
                 != UserService.RegistrationResult.SUCCESS) {
             errors.rejectValue("email", "register.validation.email.duplicate");
             return new ModelAndView(REGISTER_VIEW);
         }
 
-        if (!postRegistrationAuthenticator.authenticate(
-                form.getEmail().trim(), form.getPassword(), form.getRequest())) {
+        if (!postRegistrationAuthenticator.authenticate(user.getEmail(), rawPassword, form.getRequest())) {
             return new ModelAndView("redirect:/login?registered=true");
         }
         return new ModelAndView("redirect:/");
@@ -72,7 +75,8 @@ public class AuthPresentation {
     }
 
     public ModelAndView passwordRecoveryRequestSubmit(final PasswordRecoveryRequestForm form) {
-        userService.requestPasswordRecovery(form.getEmail().trim());
+        final UserModel user = authModelMapper.fromPasswordRecoveryRequestForm(form);
+        userService.requestPasswordRecovery(user.getEmail());
         return new ModelAndView("redirect:/password-recovery?sent=true");
     }
 
@@ -95,17 +99,20 @@ public class AuthPresentation {
     }
 
     public ModelAndView passwordRecoveryResetSubmit(final PasswordResetForm form) {
-        final boolean tokenValid =
-                userService.findByPasswordRecoveryToken(form.getToken()).isPresent();
+        final UserModel user = authModelMapper.fromPasswordResetForm(form);
+        final String rawPassword = form.getPassword();
+        final boolean tokenValid = userService
+                .findByPasswordRecoveryToken(user.getPasswordRecoveryToken())
+                .isPresent();
         if (!tokenValid) {
             return new ModelAndView(PASSWORD_RECOVERY_RESET_VIEW)
-                    .addObject("token", form.getToken())
+                    .addObject("token", user.getPasswordRecoveryToken())
                     .addObject("tokenValid", false);
         }
 
-        if (userService.resetPassword(form.getToken(), form.getPassword())
+        if (userService.resetPassword(user.getPasswordRecoveryToken(), rawPassword)
                 != UserService.PasswordRecoveryResult.SUCCESS) {
-            return new ModelAndView("redirect:/password-recovery/" + form.getToken() + "?invalid=true");
+            return new ModelAndView("redirect:/password-recovery/" + user.getPasswordRecoveryToken() + "?invalid=true");
         }
 
         return new ModelAndView("redirect:/login?passwordRecovered=true");

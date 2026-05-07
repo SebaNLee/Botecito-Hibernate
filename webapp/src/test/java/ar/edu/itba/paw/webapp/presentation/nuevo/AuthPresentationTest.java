@@ -33,7 +33,7 @@ public class AuthPresentationTest {
 
     @BeforeEach
     public void setUp() {
-        authPresentation = new AuthPresentation(userService, postRegistrationAuthenticator);
+        authPresentation = new AuthPresentation(userService, postRegistrationAuthenticator, new AuthModelMapper());
     }
 
     @Test

@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.persistence.orm.daos.MarketplaceHQL;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -9,6 +10,7 @@ import org.hsqldb.jdbc.JDBCDriver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -21,7 +23,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @EnableTransactionManagement
-@ComponentScan({"ar.edu.itba.paw.persistence"})
+@ComponentScan(
+        value = {"ar.edu.itba.paw.persistence"},
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = MarketplaceHQL.class))
 @Configuration
 public class TestConfiguration {
 

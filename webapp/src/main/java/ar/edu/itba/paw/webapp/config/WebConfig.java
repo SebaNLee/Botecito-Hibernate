@@ -98,7 +98,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Bean
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(final DataSource dataSource) {
         final LocalContainerEntityManagerFactoryBean factoryBean = new LocalContainerEntityManagerFactoryBean();
-        factoryBean.setPackagesToScan("ar.edu.itba.paw.models");
+        factoryBean.setPackagesToScan("ar.edu.itba.paw.models", "ar.edu.itba.paw.persistence.orm.entities");
         factoryBean.setDataSource(dataSource);
 
         final JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();

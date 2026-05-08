@@ -14,6 +14,7 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
 
 @Getter
 @Setter
@@ -31,7 +32,8 @@ public class ItemOrm {
     private UsersOrm host;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Type(type = "pgsql_enum")
+    @Column(name = "status", nullable = false, columnDefinition = "item_status_enum")
     private ItemStatusEnumOrm status;
 
     @Column(name = "created_at", nullable = false)

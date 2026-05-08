@@ -13,9 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.lang.NonNull;
-import org.springframework.stereotype.Repository;
+// import org.springframework.stereotype.Repository;
 
-@Repository
+// @Repository
 public final class MarketplaceJdbc implements MarketplaceDao {
 
     private static final int DEFAULT_PAGE = 1;
@@ -29,8 +29,10 @@ public final class MarketplaceJdbc implements MarketplaceDao {
             + " )";
 
     /**
-     * Total matches over the filtered set (before LIMIT). {@code COUNT(*) OVER ()} is used because PostgreSQL
-     * does not support {@code COUNT(DISTINCT i.id) OVER ()}; this query’s joins yield at most one row per item.
+     * Total matches over the filtered set (before LIMIT). {@code COUNT(*) OVER ()}
+     * is used because PostgreSQL
+     * does not support {@code COUNT(DISTINCT i.id) OVER ()}; this query’s joins
+     * yield at most one row per item.
      */
     private static final String ITEM_SELECT = "SELECT i.id, i.host_id, i.status,"
             + " v.title, v.description, v.price, v.capacity, v.weight, v.difficulty, v.location_id,"

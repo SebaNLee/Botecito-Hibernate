@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.persistence.orm;
+package ar.edu.itba.paw.persistence.orm.entities;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,11 +33,11 @@ public class ReviewOrm {
 
     @ManyToOne
     @JoinColumn(name = "sender_id")
-    private UserOrm sender;
+    private UsersOrm sender;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "target_type", nullable = false)
-    private TargetEnumOrm targetEnum;
+    private TargetEnumOrm targetType;
 
     @Column(name = "rating", nullable = false, precision = 2, scale = 1)
     private BigDecimal rating;

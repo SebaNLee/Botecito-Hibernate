@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.persistence.orm;
+package ar.edu.itba.paw.persistence.orm.entities;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;

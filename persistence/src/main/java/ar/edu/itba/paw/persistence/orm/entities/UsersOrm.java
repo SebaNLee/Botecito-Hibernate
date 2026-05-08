@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.persistence.orm;
+package ar.edu.itba.paw.persistence.orm.entities;
 
 import java.time.LocalDateTime;
 import javax.persistence.Column;
@@ -15,7 +15,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "users")
-public class UserOrm {
+public class UsersOrm {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "new_users_id_seq")
@@ -56,5 +56,5 @@ public class UserOrm {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    public UserOrm() {}
+    public UsersOrm() {}
 }

@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.persistence.orm;
+package ar.edu.itba.paw.persistence.orm.entities;
 
 import java.time.LocalDateTime;
 import javax.persistence.Column;
@@ -32,7 +32,7 @@ public class BookingOrm {
 
     @ManyToOne
     @JoinColumn(name = "guest_id")
-    private UserOrm guest;
+    private UsersOrm guest;
 
     @Column(name = "start", nullable = false)
     private LocalDateTime start;

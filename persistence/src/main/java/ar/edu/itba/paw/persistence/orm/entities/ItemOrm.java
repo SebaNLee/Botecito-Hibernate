@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.persistence.orm;
+package ar.edu.itba.paw.persistence.orm.entities;
 
 import java.time.LocalDateTime;
 import javax.persistence.Column;
@@ -28,7 +28,7 @@ public class ItemOrm {
 
     @ManyToOne
     @JoinColumn(name = "host_id")
-    private UserOrm host;
+    private UsersOrm host;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

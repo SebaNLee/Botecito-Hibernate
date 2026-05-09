@@ -194,11 +194,13 @@ start_bg() {
   local pidfile="$3"
   shift 3
   : >"$logfile"
-  (
-    cd "$WEBAPP_DIR" || exit 1
-    exec >>"$logfile" 2>&1
+  setsid bash -c '
+    cd "$1" || exit 1
+    shift
+    exec >>"$1" 2>&1
+    shift
     exec "$@"
-  ) &
+  ' _ "$WEBAPP_DIR" "$logfile" "$@" </dev/null &
   local pid=$!
   echo "$pid" >"$pidfile"
   disown "$pid" 2>/dev/null || true

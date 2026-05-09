@@ -32,6 +32,9 @@
 <spring:message code="marketplace.filters.apply" var="filtersApplyLabel" />
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
 <spring:message code="reviews.empty.short" var="reviewsEmptyShortLabel" />
+<c:set
+    var="pageSize"
+    value="${marketplaceSearch != null && marketplaceSearch.pageSize != null ? marketplaceSearch.pageSize : 12}" />
 <c:url var="clearMarketplaceFiltersUrl" value="/marketplace">
   <c:if test="${sort != 'newest'}">
     <c:param name="sort" value="${sort}" />
@@ -107,6 +110,7 @@
 </c:if>
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-[18rem_minmax(0,1fr)] lg:grid-cols-[20rem_minmax(0,1fr)] gap-8 items-start">
+  <paw:toastNotifier />
   <aside class="relative z-40 w-full md:min-w-0">
     <div class="space-y-6">
       <a href="${homeUrl}" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
@@ -218,21 +222,6 @@
   </aside>
 
   <section class="relative z-0 min-w-0">
-    <spring:hasBindErrors name="marketplaceSearch">
-      <div class="mb-6 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-on-background" role="alert">
-        <p class="m-0 font-semibold"><spring:message code="marketplaceSearch.validation.bannerTitle" /></p>
-        <ul class="mt-2 mb-0 list-disc pl-5 space-y-1">
-          <c:forEach var="error" items="${errors.allErrors}">
-            <li>
-              <spring:message
-                  code="${error.codes[0]}"
-                  arguments="${error.arguments}"
-                  text="${error.defaultMessage}" />
-            </li>
-          </c:forEach>
-        </ul>
-      </div>
-    </spring:hasBindErrors>
     <div class="mx-auto mb-8 w-full max-w-3xl">
       <label class="input input-lg flex items-center gap-3 rounded-full bg-base-100 shadow-sm">
         <span class="material-symbols-outlined text-outline" aria-hidden="true">search</span>
@@ -256,6 +245,7 @@
       </div>
 
       <form action="${marketplaceUrl}" method="get" class="flex items-center gap-3 text-sm font-medium text-on-surface-variant">
+        <input type="hidden" name="page" value="${marketplaceSearch.page}" />
         <input type="hidden" name="searchQuery" value="${param.searchQuery}" data-applied-filter-mirror />
         <input type="hidden" name="locationOptionId" value="${param.locationOptionId}" data-applied-filter-mirror />
         <input type="hidden" name="date" value="${param.date}" data-applied-filter-mirror />
@@ -266,11 +256,11 @@
         <input type="hidden" name="difficultyLevel" value="${param.difficultyLevel}" data-applied-filter-mirror />
         <input type="hidden" name="minRating" value="${param.minRating}" data-applied-filter-mirror />
         <label for="marketplace-sort" class="shrink-0"><spring:message code="marketplace.sort.label" /></label>
-        <select id="marketplace-sort" name="sort" class="select select-sm font-bold text-primary" onchange="this.form.submit()">
-          <option value="newest" ${sort == 'newest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.newest" /></option>
-          <option value="oldest" ${sort == 'oldest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.oldest" /></option>
-          <option value="priceAsc" ${sort == 'priceAsc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceAsc" /></option>
-          <option value="priceDesc" ${sort == 'priceDesc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceDesc" /></option>
+        <select id="marketplace-sort" name="sortBy" class="select select-sm font-bold text-primary" onchange="this.form.submit()">
+          <option value="newest" ${empty marketplaceSearch.sortBy || marketplaceSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.newest" /></option>
+          <option value="oldest" ${marketplaceSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.oldest" /></option>
+          <option value="price_asc" ${marketplaceSearch.sortBy == 'price_asc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceAsc" /></option>
+          <option value="price_desc" ${marketplaceSearch.sortBy == 'price_desc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceDesc" /></option>
         </select>
         <label for="marketplace-page-size" class="shrink-0 ml-2">Páginas:</label>
         <select id="marketplace-page-size" name="pageSize" class="select select-sm w-20 font-bold text-primary" onchange="this.form.submit()">
@@ -317,23 +307,23 @@
         </c:url>
         <a href="${itemUrl}" data-marketplace-item-link class="group card min-w-0 bg-base-100 shadow-sm overflow-hidden no-underline text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <figure class="aspect-[4/3] overflow-hidden">
-            <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${item.title}" src="${itemImages[item.id]}"/>
+            <c:url var="itemCoverSrc" value="${item.images[0]}" />
+            <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${item.title}" src="${itemCoverSrc}"/>
           </figure>
           <div class="card-body min-w-0 p-4 gap-3">
             <div class="flex justify-between items-start gap-3">
               <h3 class="card-title min-w-0 text-lg font-bold text-on-background leading-tight m-0 line-clamp-2 break-words"><c:out value="${item.title}" /></h3>
               <div class="shrink-0 text-right">
-                <span class="block text-xl font-black text-primary">$<fmt:formatNumber value="${item.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0" /></span>
+                <span class="block text-xl font-black text-primary">$<fmt:formatNumber value="${item.price}" type="number" groupingUsed="true" maxFractionDigits="0" /></span>
                 <span class="text-[10px] font-bold uppercase tracking-tighter text-outline"><spring:message code="marketplace.card.perHour" /></span>
               </div>
             </div>
-            <c:set var="itemRating" value="${itemRatingSummaries[item.id]}" />
             <div class="flex items-center gap-1 text-sm font-semibold text-on-surface-variant">
               <span class="material-symbols-outlined text-base text-warning">star</span>
               <c:choose>
-                <c:when test="${itemRating != null && itemRating.hasReviews()}">
-                  <fmt:formatNumber value="${itemRating.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
-                  <span class="text-outline">(<c:out value="${itemRating.totalReviews}" />)</span>
+                <c:when test="${item.totalReviews > 0}">
+                  <fmt:formatNumber value="${item.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
+                  <span class="text-outline">(<c:out value="${item.totalReviews}" />)</span>
                 </c:when>
                 <c:otherwise><c:out value="${reviewsEmptyShortLabel}" /></c:otherwise>
               </c:choose>
@@ -346,14 +336,14 @@
               <div class="flex flex-wrap items-center gap-3">
                 <div class="flex items-center gap-1.5">
                   <span class="material-symbols-outlined text-outline text-lg">groups</span>
-                  <span class="text-sm font-semibold"><spring:message code="marketplace.card.people" arguments="${item.capacityPeople}" /></span>
+                  <span class="text-sm font-semibold"><spring:message code="marketplace.card.people" arguments="${item.capacity}" /></span>
                 </div>
                 <div class="flex items-center gap-1.5">
                   <span class="material-symbols-outlined text-outline text-lg">weight</span>
                   <span class="text-sm font-semibold">
                     <c:choose>
-                      <c:when test="${item.maxWeightKg != null}">
-                        <spring:message code="marketplace.card.weight" arguments="${item.maxWeightKg}" />
+                      <c:when test="${item.weight != null}">
+                        <spring:message code="marketplace.card.weight" arguments="${item.weight}" />
                       </c:when>
                       <c:otherwise><c:out value="${notAvailableLabel}" /></c:otherwise>
                     </c:choose>

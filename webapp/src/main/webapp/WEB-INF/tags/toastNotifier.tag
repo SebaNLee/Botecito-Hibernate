@@ -26,7 +26,16 @@
       </c:choose>
       <div role="status" data-paw-toast data-paw-toast-type="${toast.type}" class="alert ${toastVariantClass} shadow-lg rounded-xl items-start gap-3 pr-11 max-w-sm">
         <span class="material-symbols-outlined text-lg shrink-0"><c:out value="${toastIcon}" /></span>
-        <span class="min-w-0 flex-1 text-sm"><spring:message code="${toast.code}" /></span>
+        <span class="min-w-0 flex-1 text-sm">
+          <c:choose>
+            <c:when test="${not empty toast.text}">
+              <c:out value="${toast.text}" />
+            </c:when>
+            <c:otherwise>
+              <spring:message code="${toast.code}" />
+            </c:otherwise>
+          </c:choose>
+        </span>
         <button type="button" class="btn btn-ghost btn-sm btn-square absolute top-1.5 right-1.5 shrink-0 h-7 w-7 min-h-0 p-0" data-paw-toast-dismiss aria-label="${toastDismissLabel}">
           <span class="material-symbols-outlined text-base leading-none" aria-hidden="true">close</span>
         </button>

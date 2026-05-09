@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.webapp.config;
 
 import java.util.Properties;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -10,7 +11,7 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 public class MailConfig {
 
     @Bean
-    public JavaMailSender javaMailSender(final Properties credentialsProperties) {
+    public JavaMailSender javaMailSender(@Qualifier("credentialsProperties") final Properties credentialsProperties) {
         final JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
 
         mailSender.setHost(requireProperty(credentialsProperties, "mail.host"));

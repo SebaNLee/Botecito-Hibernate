@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @Transactional(readOnly = true)
-public class MarketplaceHQL implements MarketplaceDao {
+public class MarketplaceHibernateDao implements MarketplaceDao {
 
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_PAGE_SIZE = 12;

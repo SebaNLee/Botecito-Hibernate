@@ -39,7 +39,8 @@ public class MarketplacePresentation {
     }
 
     public ModelAndView marketplaceErrors(final MarketplaceSearchForm search, final BindingResult errors) {
-        // Do not run search: invalid params often leave fields at @ModelAttribute defaults (e.g. page=1),
+        // Do not run search: invalid params often leave fields at @ModelAttribute
+        // defaults (e.g. page=1),
         // which would still return results while BindingResult reports errors.
         final List<ItemModel> items = List.of();
         final ModelAndView mav = new ModelAndView("marketplace", "marketplaceSearch", search);
@@ -58,6 +59,17 @@ public class MarketplacePresentation {
         mav.addObject("itemPage", new Page<>(items, page, pageSize, totalItems));
         mav.addObject("itemsCount", totalItems);
         mav.addObject("sort", sortRequestValue(search.getSortBy()));
+    }
+
+    private static Double parseminAvgRating(final String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return Double.valueOf(raw.trim());
+        } catch (final NumberFormatException ignored) {
+            return null;
+        }
     }
 
     private static String sortRequestValue(final String sortBy) {
@@ -80,7 +92,9 @@ public class MarketplacePresentation {
         model.setCapacity(form.getCapacity());
         model.setWeight(form.getWeight());
         model.setDifficulty(form.getDifficultyLevel());
-        model.setLocationSlug(form.getLocationSlug());
+        model.setMinAvgRating(parseminAvgRating(form.getMinAvgRating()));
+        model.setLocation(form.getLocation());
+        model.setItemType(form.getItemType());
         model.setPage(form.getPage());
         model.setPageSize(form.getPageSize());
         model.setSortBy(form.getSortBy());

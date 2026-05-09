@@ -45,6 +45,7 @@ public class WebAuthConfig {
                                 antMatcher(HttpMethod.GET, "/"),
                                 antMatcher(HttpMethod.GET, "/marketplace"),
                                 antMatcher(HttpMethod.GET, "/location-options"),
+                                antMatcher(HttpMethod.GET, "/item-type-options"),
                                 antMatcher(HttpMethod.GET, "/errors"),
                                 antMatcher(HttpMethod.GET, "/403"))
                         .permitAll()

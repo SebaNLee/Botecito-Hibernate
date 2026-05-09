@@ -27,7 +27,7 @@ public class ItemModel {
     // Media
     private List<String> images; // URLs or base64 encoded strings
 
-    // Ratings (ITEM-target reviews; same semantics as ReviewDao.ratingSummaryByTarget)
+    // Ratings
     private double averageRating;
     private int totalReviews;
 

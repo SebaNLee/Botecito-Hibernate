@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @Transactional(readOnly = true)
-public class MarketplaceHQL implements MarketplaceDao {
+public class MarketplaceHibernateDao implements MarketplaceDao {
 
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_PAGE_SIZE = 12;
@@ -149,6 +149,10 @@ public class MarketplaceHQL implements MarketplaceDao {
             sql.append(" AND v.location.slug = :locationSlug");
             params.put("locationSlug", query.getLocationSlug().trim());
         }
+        if (hasText(query.getItemTypeSlug())) {
+            sql.append(" AND v.type.slug = :itemTypeSlug");
+            params.put("itemTypeSlug", query.getItemTypeSlug().trim());
+        }
         if (query.getCapacity() != null) {
             sql.append(" AND v.capacity >= :capacity");
             params.put("capacity", query.getCapacity());
@@ -160,6 +164,13 @@ public class MarketplaceHQL implements MarketplaceDao {
         if (query.getDifficulty() != null) {
             sql.append(" AND v.difficulty = :difficulty");
             params.put("difficulty", query.getDifficulty());
+        }
+        if (query.getMinAvgRating() != null) {
+            sql.append(
+                    " AND (SELECT COALESCE(AVG(rm.rating), 0) FROM ReviewOrm rm WHERE rm.targetType = :itemTargetType"
+                            + " AND rm.booking.version.item = i) >= :minAvgRating");
+            params.put(ITEM_TARGET_PARAM, TargetEnumOrm.ITEM);
+            params.put("minAvgRating", query.getMinAvgRating());
         }
         appendAvailabilityFilter(query, sql, params);
         return sql.toString();

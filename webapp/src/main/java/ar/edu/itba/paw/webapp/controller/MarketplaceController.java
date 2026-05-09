@@ -45,12 +45,13 @@ public class MarketplaceController {
 
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
     public ModelAndView marketplace(
+            final HttpServletRequest request,
             @Valid @ModelAttribute("marketplaceSearch") final MarketplaceSearchForm search,
             final BindingResult errors) {
         if (errors.hasErrors()) {
-            return marketplacePresentation.marketplaceErrors(search, errors);
+            return marketplacePresentation.marketplaceErrors(request, search, errors);
         }
-        return marketplacePresentation.marketplaceGet(search);
+        return marketplacePresentation.marketplaceGet(request, search);
     }
 
     @RequestMapping(value = "/item/{id:[0-9]+}", method = RequestMethod.GET)

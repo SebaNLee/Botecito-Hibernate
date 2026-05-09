@@ -2,7 +2,7 @@ package ar.edu.itba.paw.webapp.controller.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.ItemTypeModel;
 import ar.edu.itba.paw.models.nuevo.Location;
-import ar.edu.itba.paw.webapp.presentation.nuevo.SelectorsPresentation;
+import ar.edu.itba.paw.webapp.presentation.SelectorsPresentation;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;

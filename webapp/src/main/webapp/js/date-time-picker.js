@@ -419,9 +419,34 @@
     return Boolean(state && state.date && state.startTime && state.endTime);
   }
 
+  /** Marketplace slug params must not be legacy numeric-only ids. */
+  function sanitizeMarketplaceLocationParam(value) {
+    const s = (value == null ? "" : String(value)).trim();
+    if (!s || /^\d+$/.test(s)) {
+      return "";
+    }
+    return s;
+  }
+
   function readStoredFilters() {
     try {
-      return parseJson(sessionStorage.getItem(FILTER_STORAGE_KEY), {}) || {};
+      const raw =
+        parseJson(sessionStorage.getItem(FILTER_STORAGE_KEY), {}) || {};
+      if (raw.locationSlug && !raw.location) {
+        raw.location = raw.locationSlug;
+      }
+      raw.location = sanitizeMarketplaceLocationParam(raw.location);
+      if (!raw.location) {
+        delete raw.location;
+      }
+      if (raw.itemTypeSlug && !raw.itemType) {
+        raw.itemType = raw.itemTypeSlug;
+      }
+      raw.itemType = sanitizeMarketplaceLocationParam(raw.itemType);
+      if (!raw.itemType) {
+        delete raw.itemType;
+      }
+      return raw;
     } catch (error) {
       return {};
     }
@@ -429,14 +454,30 @@
 
   function writeStoredFilters(state) {
     try {
-      sessionStorage.setItem(
-        FILTER_STORAGE_KEY,
-        JSON.stringify({
-          date: state.date || "",
-          startTime: state.startTime || "",
-          endTime: state.endTime || "",
-        }),
-      );
+      const previous = readStoredFilters() || {};
+      const merged = {
+        ...previous,
+        date: state.date || "",
+        startTime: state.startTime || "",
+        endTime: state.endTime || "",
+      };
+      merged.location = sanitizeMarketplaceLocationParam(merged.location);
+      if (!merged.location) {
+        delete merged.location;
+      }
+      merged.itemType = sanitizeMarketplaceLocationParam(merged.itemType);
+      if (!merged.itemType) {
+        delete merged.itemType;
+      }
+      const stillHasFilters = Object.keys(merged).some((key) => {
+        const value = merged[key];
+        return value != null && String(value).trim() !== "";
+      });
+      if (stillHasFilters) {
+        sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(merged));
+      } else {
+        sessionStorage.removeItem(FILTER_STORAGE_KEY);
+      }
     } catch (error) {
       // Ignore session storage failures.
     }
@@ -452,6 +493,29 @@
 
   function buildUrlWithFilters(baseUrl, state) {
     const url = new URL(baseUrl, window.location.origin);
+    const stored = readStoredFilters() || {};
+    const preservedKeys = [
+      "searchQuery",
+      "location",
+      "itemType",
+      "capacity",
+      "maxWeight",
+      "difficultyLevel",
+      "minAvgRating",
+      "sortBy",
+      "pageSize",
+    ];
+    preservedKeys.forEach((key) => {
+      let value = stored[key];
+      if (key === "location" || key === "itemType") {
+        value = sanitizeMarketplaceLocationParam(value);
+      }
+      if (value != null && String(value).trim() !== "") {
+        url.searchParams.set(key, String(value));
+      } else if (key === "location" || key === "itemType") {
+        url.searchParams.delete(key);
+      }
+    });
 
     ["date", "startTime", "endTime"].forEach((key) => {
       if (state && state[key]) {
@@ -1385,7 +1449,9 @@
     updateTriggerLabel() {
       if (this.startInput.value && this.endInput.value) {
         this.valueNode.textContent =
-          displayTime(this.startInput.value) + " - " + displayTime(this.endInput.value);
+          displayTime(this.startInput.value) +
+          " - " +
+          displayTime(this.endInput.value);
       } else if (this.startInput.value) {
         this.valueNode.textContent =
           this.fromLabel + " " + displayTime(this.startInput.value);
@@ -1396,10 +1462,7 @@
       const hasSelection = Boolean(
         this.startInput.value || this.endInput.value,
       );
-      syncTriggerClearButtonCollapsed(
-        this.triggerClearButton,
-        !hasSelection,
-      );
+      syncTriggerClearButtonCollapsed(this.triggerClearButton, !hasSelection);
     }
   }
 

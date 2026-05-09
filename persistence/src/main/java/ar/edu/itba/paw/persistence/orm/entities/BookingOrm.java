@@ -14,6 +14,7 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
 
 @Getter
 @Setter
@@ -41,7 +42,8 @@ public class BookingOrm {
     private LocalDateTime end;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @Type(type = "pgsql_enum")
+    @Column(name = "status", nullable = false, columnDefinition = "booking_status_enum")
     private BookingStatusEnumOrm status;
 
     @Column(name = "msg", length = 255)

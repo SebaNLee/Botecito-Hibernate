@@ -1,17 +1,14 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.webapp.controller.support.MarketplaceMvcSupport;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
 import ar.edu.itba.paw.webapp.form.nuevo.MarketplaceSearchForm;
 import ar.edu.itba.paw.webapp.presentation.MarketplacePresentation;
-import java.util.List;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -19,7 +16,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
@@ -35,7 +31,8 @@ public class MarketplaceController {
     }
 
     /**
-     * Defaults for GET /marketplace before request binding; omitted query params stay at these values.
+     * Defaults for GET /marketplace before request binding; omitted query params
+     * stay at these values.
      */
     @ModelAttribute("marketplaceSearch")
     public MarketplaceSearchForm defaultMarketplaceSearch() {
@@ -54,28 +51,6 @@ public class MarketplaceController {
             return marketplacePresentation.marketplaceErrors(search, errors);
         }
         return marketplacePresentation.marketplaceGet(search);
-    }
-
-    // @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
-    // public ModelAndView marketplace(
-    // final HttpServletRequest request,
-    // @Valid @ModelAttribute("marketplaceSearch") final MarketplaceSearchForm
-    // search,
-    // final BindingResult searchErrors) {
-    // if (searchErrors.hasErrors()) {
-    // return marketplaceMvcSupport.marketplaceWithSearchBindingErrors(request,
-    // search, searchErrors);
-    // }
-    // return marketplaceMvcSupport.marketplace(request, search);
-    // }
-
-    @ResponseBody
-    @RequestMapping(
-            value = "/location-options",
-            method = RequestMethod.GET,
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<LocationOption> locationOptions() {
-        return marketplaceMvcSupport.locationOptions();
     }
 
     @RequestMapping(value = "/item/{id:[0-9]+}", method = RequestMethod.GET)

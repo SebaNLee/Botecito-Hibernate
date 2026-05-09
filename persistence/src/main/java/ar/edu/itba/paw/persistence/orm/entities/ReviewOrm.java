@@ -15,6 +15,7 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
 
 @Getter
 @Setter
@@ -36,7 +37,8 @@ public class ReviewOrm {
     private UsersOrm sender;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "target_type", nullable = false)
+    @Type(type = "pgsql_enum")
+    @Column(name = "target_type", nullable = false, columnDefinition = "target_enum")
     private TargetEnumOrm targetType;
 
     @Column(name = "rating", nullable = false, precision = 2, scale = 1)

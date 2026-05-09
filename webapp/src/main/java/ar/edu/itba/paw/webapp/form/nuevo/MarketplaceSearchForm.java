@@ -36,8 +36,16 @@ public class MarketplaceSearchForm {
     @Max(value = 5, message = "{marketplaceSearch.validation.difficulty.max}")
     private Integer difficultyLevel;
 
-    @Pattern(regexp = "^$|^[a-z0-9-]+$", message = "{marketplaceSearch.validation.locationSlug.pattern}")
-    private String locationSlug;
+    @Pattern(
+            regexp = "^$|^(0\\.5|[1-4](\\.5)?|5(\\.0)?)$",
+            message = "{marketplaceSearch.validation.minAvgRating.pattern}")
+    private String minAvgRating;
+
+    @Pattern(regexp = "^$|^[a-z][a-z0-9-]*$", message = "{marketplaceSearch.validation.location.pattern}")
+    private String location;
+
+    @Pattern(regexp = "^$|^[a-z][a-z0-9-]*$", message = "{marketplaceSearch.validation.itemType.pattern}")
+    private String itemType;
 
     @Pattern(
             regexp = "^$|^(newest|oldest|price_asc|price_desc)$",

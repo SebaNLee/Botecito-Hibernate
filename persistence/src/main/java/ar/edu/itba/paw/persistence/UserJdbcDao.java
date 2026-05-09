@@ -65,8 +65,8 @@ public class UserJdbcDao implements UserDao {
             final String paymentAlias,
             final String preferredLanguage) {
         final int insertedRows = jdbcTemplate.update(
-                "INSERT INTO users (first_name, last_name, email, language, password_hash, alias)"
-                        + " VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO users (first_name, last_name, email, language, password_hash, alias, created_at)"
+                        + " VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
                 givenName,
                 lastName,
                 email,
@@ -140,7 +140,8 @@ public class UserJdbcDao implements UserDao {
             final String givenName, final String lastName, final String email, final String preferredLanguage) {
         final int id = Objects.requireNonNull(
                 jdbcTemplate.queryForObject(
-                        "INSERT INTO users (first_name, last_name, email, language) VALUES (?, ?, ?, ?) RETURNING id",
+                        "INSERT INTO users (first_name, last_name, email, language, created_at)"
+                                + " VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP) RETURNING id",
                         Integer.class,
                         givenName,
                         lastName,

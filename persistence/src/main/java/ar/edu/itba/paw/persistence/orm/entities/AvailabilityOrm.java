@@ -14,6 +14,7 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
 
 @Getter
 @Setter
@@ -31,7 +32,8 @@ public class AvailabilityOrm {
     private VersionOrm version;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "weekday", nullable = false)
+    @Type(type = "pgsql_enum")
+    @Column(name = "weekday", nullable = false, columnDefinition = "weekday_enum")
     private WeekdayEnumOrm weekday;
 
     @Column(name = "start_time", nullable = false)

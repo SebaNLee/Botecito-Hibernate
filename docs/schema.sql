@@ -1,4 +1,4 @@
-table user {
+table users {
     id INT PK NN,
     first_name VARCHAR(100) NN,
     last_name VARCHAR (100) NN,
@@ -30,7 +30,7 @@ table image {
 
 table item {
     id INT PK NN,
-    host_id INT FK-ref-user ON-DELETE-SET-NULL,
+    host_id INT FK-ref-users ON-DELETE-SET-NULL,
     status item_status_enum NN,
     created_at TIMESTAMP NN
 }
@@ -40,7 +40,7 @@ table version {
     item_id INT FK-ref-item NN ON-DELETE-CASCADE,
     type_id INT FK-ref-item_type NN,
     title VARCHAR (1000) NN,
-    desc VARCHAR (100),
+    description VARCHAR (100),
     price NUMERIC(12,2) NN,
     capacity INT NN,
     weight INT NN,
@@ -81,7 +81,7 @@ table payment_proof {
 table booking {
     id INT PK NN,
     version_id INT FK-ref-version NN ON-DELETE-CASCADE,
-    guest_id INT FK-ref-user ON-DELETE-SET-NULL,
+    guest_id INT FK-ref-users ON-DELETE-SET-NULL,
     start TIMESTAMP NN,
     end TIMESTAMP NN,
     status booking_status_enum NN,
@@ -93,7 +93,7 @@ table booking {
 table review {
     id INT PK NN,
     booking_id INT FK-ref-booking NN ON-DELETE-CASCADE,
-    sender_id INT FK-ref-user ON-DELETE-SET-NULL,
+    sender_id INT FK-ref-users ON-DELETE-SET-NULL,
     target_type target_enum NN,
     rating NUMERIC(2,1) NN,
     comment VARCHAR(255),

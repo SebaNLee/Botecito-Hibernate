@@ -2,8 +2,9 @@ package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.webapp.controller.support.MarketplaceMvcSupport;
-import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
+import ar.edu.itba.paw.webapp.form.nuevo.MarketplaceSearchForm;
+import ar.edu.itba.paw.webapp.presentation.MarketplacePresentation;
 import java.util.List;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
@@ -26,22 +27,47 @@ import org.springframework.web.servlet.ModelAndView;
 public class MarketplaceController {
 
     private final MarketplaceMvcSupport marketplaceMvcSupport;
+    private final MarketplacePresentation marketplacePresentation;
 
     @ModelAttribute("reservationRequestForm")
     public ReservationRequestForm reservationRequestForm(final Locale locale) {
         return MarketplaceMvcSupport.newReservationRequestForm(locale);
     }
 
+    /**
+     * Defaults for GET /marketplace before request binding; omitted query params stay at these values.
+     */
+    @ModelAttribute("marketplaceSearch")
+    public MarketplaceSearchForm defaultMarketplaceSearch() {
+        final MarketplaceSearchForm form = new MarketplaceSearchForm();
+        form.setPage(1);
+        form.setPageSize(12);
+        form.setSortBy("newest");
+        return form;
+    }
+
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
     public ModelAndView marketplace(
-            final HttpServletRequest request,
             @Valid @ModelAttribute("marketplaceSearch") final MarketplaceSearchForm search,
-            final BindingResult searchErrors) {
-        if (searchErrors.hasErrors()) {
-            return marketplaceMvcSupport.marketplaceWithSearchBindingErrors(request, search, searchErrors);
+            final BindingResult errors) {
+        if (errors.hasErrors()) {
+            return marketplacePresentation.marketplaceErrors(search, errors);
         }
-        return marketplaceMvcSupport.marketplace(request, search);
+        return marketplacePresentation.marketplaceGet(search);
     }
+
+    // @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
+    // public ModelAndView marketplace(
+    // final HttpServletRequest request,
+    // @Valid @ModelAttribute("marketplaceSearch") final MarketplaceSearchForm
+    // search,
+    // final BindingResult searchErrors) {
+    // if (searchErrors.hasErrors()) {
+    // return marketplaceMvcSupport.marketplaceWithSearchBindingErrors(request,
+    // search, searchErrors);
+    // }
+    // return marketplaceMvcSupport.marketplace(request, search);
+    // }
 
     @ResponseBody
     @RequestMapping(

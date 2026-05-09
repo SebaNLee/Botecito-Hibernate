@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
 import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.services.nuevo.ReviewInterface;
 import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
-import ar.edu.itba.paw.webapp.form.ReviewForm;
+import ar.edu.itba.paw.webapp.form.nuevo.ReviewForm;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -24,7 +24,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class ReviewController {
 
-    private final ReviewService reviewService;
+    private final ReviewInterface reviewService;
     private final UserService userService;
 
     @RequestMapping(value = "/reviews/booking/{bookingId:[0-9]+}", method = RequestMethod.POST)

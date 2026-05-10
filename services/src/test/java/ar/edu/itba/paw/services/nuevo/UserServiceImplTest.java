@@ -2,8 +2,8 @@ package ar.edu.itba.paw.services.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.PreferredLanguageModel;
 import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.models.nuevo.mail.PasswordRecoveryMailModel;
 import ar.edu.itba.paw.persistence.nuevo.UserDao;
-import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.MissingUserNamesException;
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -125,9 +125,15 @@ public class UserServiceImplTest {
         Assertions.assertTrue(result.isPresent());
         Assertions.assertNotNull(result.get().getPasswordRecoveryToken());
         Assertions.assertFalse(result.get().getPasswordRecoveryToken().isBlank());
-        Mockito.verify(mailService)
-                .sendPasswordRecoveryEmail(
-                        Mockito.eq("recover@a.com"), Mockito.eq("Ada Lovelace"), Mockito.anyString());
+        final ArgumentCaptor<PasswordRecoveryMailModel> mailCaptor =
+                ArgumentCaptor.forClass(PasswordRecoveryMailModel.class);
+        Mockito.verify(mailService).sendPasswordRecoveryEmail(mailCaptor.capture());
+        Assertions.assertEquals(
+                "recover@a.com", mailCaptor.getValue().getRecipient().getEmail());
+        Assertions.assertEquals(
+                "Ada Lovelace", mailCaptor.getValue().getRecipient().getDisplayName());
+        Assertions.assertNotNull(mailCaptor.getValue().getRecoveryToken());
+        Assertions.assertFalse(mailCaptor.getValue().getRecoveryToken().isBlank());
     }
 
     @Test

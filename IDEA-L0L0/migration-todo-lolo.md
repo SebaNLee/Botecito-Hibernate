@@ -87,8 +87,13 @@ webapp/controller/nuevo
 - Added staged `persistence.nuevo.UserDao`.
 - Added `persistence.orm.daos.UserHibernateDao`.
 - Switched staged `UserServiceImpl` to use `persistence.nuevo.UserDao`.
+- Added staged model-based `services.nuevo.MailService` and
+  `services.nuevo.MailServiceImpl`.
+- Added staged mail input models under `models.nuevo.mail`.
+- Switched staged `UserServiceImpl` password recovery mail to the staged mail
+  service.
 - Added tests for staged auth/profile presentation, staged profile controller,
-  staged user service, and staged user Hibernate DAO.
+  staged user service, staged mail service, and staged user Hibernate DAO.
 
 Preserved old files include:
 
@@ -104,41 +109,21 @@ Preserved old files include:
 
 ## Work to do
 
-Next: migrate auth/user mail in the same staged style.
+Next: keep old booking/payment/publication/review flows on the old mail service
+until those service areas are migrated to staged models.
 
-Implementation details:
+Remaining implementation details:
 
-1. Add `service-contracts/src/main/java/ar/edu/itba/paw/services/nuevo/MailService.java`.
-2. Add `services/src/main/java/ar/edu/itba/paw/services/nuevo/MailServiceImpl.java`.
-3. Keep old `MailService` and `MailServiceImpl` untouched.
-4. For this pass, migrate only auth/user mail:
-   - password recovery email
-   - locale resolution needed by auth/user mail
-5. Do not migrate booking/payment/publication mail yet; those still belong to
-   old service flows until those areas are staged.
-6. Make staged `services.nuevo.UserServiceImpl` depend on
-   `services.nuevo.MailService` for password recovery mail.
-7. Prefer model-based mail inputs:
-
-```text
-void sendPasswordRecoveryEmail(UserModel user)
-Locale resolveLocale(UserModel user)
-Locale resolveLocale(String recipientIdentifier) // temporary bridge only
-```
-
-8. `services.nuevo.MailServiceImpl` should use the `UserModel` it receives for
-   email, display name, preferred language, and recovery token. It should not
-   re-query the user for password recovery mail.
-9. Keep the staged mail implementation dependencies limited to:
-   - `JavaMailSender`
-   - `TemplateEngine`
-   - `MessageSource`
-   - `credentialsProperties`
-   - a temporary user lookup dependency only if needed for
-     `resolveLocale(String recipientIdentifier)`
-10. Add staged mail tests under
-    `services/src/test/java/ar/edu/itba/paw/services/nuevo/`.
-11. Run:
+1. When booking is staged, build `BookingReviewMailModel` and
+   `BookingResolutionMailModel`, then call `services.nuevo.MailService`.
+2. When payment is staged, build `PaymentProofSubmittedMailModel`,
+   `PaymentReceivedMailModel`, and `PaymentProofRefusedMailModel`, then call
+   `services.nuevo.MailService`.
+3. When publication is staged, build `PublishConfirmationMailModel`, then call
+   `services.nuevo.MailService`.
+4. Keep `services.nuevo.MailServiceImpl` DAO-free; staged callers must resolve
+   user/item/booking/payment data before calling mail.
+5. Re-run:
 
 ```text
 mvn -pl service-contracts,services,webapp,persistence -am test

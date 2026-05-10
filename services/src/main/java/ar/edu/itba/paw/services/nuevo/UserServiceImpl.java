@@ -2,8 +2,9 @@ package ar.edu.itba.paw.services.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.PreferredLanguageModel;
 import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.models.nuevo.mail.MailRecipientModel;
+import ar.edu.itba.paw.models.nuevo.mail.PasswordRecoveryMailModel;
 import ar.edu.itba.paw.persistence.nuevo.UserDao;
-import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.utils.UserNameRules;
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -182,10 +183,10 @@ public class UserServiceImpl implements UserService {
 
     private void sendPasswordRecoveryEmail(final UserModel user) {
         try {
-            mailService.sendPasswordRecoveryEmail(
-                    user.getEmail(),
-                    user.getName().isBlank() ? user.getEmail() : user.getName(),
-                    user.getPasswordRecoveryToken());
+            final PasswordRecoveryMailModel mail = new PasswordRecoveryMailModel();
+            mail.setRecipient(MailRecipientModel.fromUser(user));
+            mail.setRecoveryToken(user.getPasswordRecoveryToken());
+            mailService.sendPasswordRecoveryEmail(mail);
         } catch (final RuntimeException e) {
             LOGGER.error("Could not trigger password recovery email for user {}.", user.getId(), e);
         }

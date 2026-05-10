@@ -2,7 +2,7 @@ package ar.edu.itba.paw.services.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.PreferredLanguageModel;
 import ar.edu.itba.paw.models.nuevo.UserModel;
-import ar.edu.itba.paw.persistence.UserDao;
+import ar.edu.itba.paw.persistence.nuevo.UserDao;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.utils.UserNameRules;
 import java.time.OffsetDateTime;
@@ -32,28 +32,30 @@ public class UserServiceImpl implements UserService {
         final String normalizedPaymentAlias = normalizePaymentAlias(user.getPaymentAlias());
         final String normalizedPreferredLanguage = user.getPreferredLanguage().getPersistenceCode();
 
-        final Optional<ar.edu.itba.paw.models.User> existingUser = userDao.findByEmail(normalizedEmail);
+        final Optional<UserModel> existingUser = userDao.findByEmail(normalizedEmail);
         if (existingUser.isEmpty()) {
             LOGGER.info("Registering new user with email {}", normalizedEmail);
-            userDao.createUser(
-                    user.getGivenName(),
-                    user.getLastName(),
-                    normalizedEmail,
-                    passwordHash,
-                    normalizedPaymentAlias,
-                    normalizedPreferredLanguage);
+            final UserModel userToCreate = new UserModel();
+            userToCreate.setGivenName(user.getGivenName());
+            userToCreate.setLastName(user.getLastName());
+            userToCreate.setEmail(normalizedEmail);
+            userToCreate.setPasswordHash(passwordHash);
+            userToCreate.setPaymentAlias(normalizedPaymentAlias);
+            userToCreate.setPreferredLanguage(PreferredLanguageModel.fromPersistence(normalizedPreferredLanguage));
+            userDao.createUser(userToCreate);
             return RegistrationResult.SUCCESS;
         }
 
         if (existingUser.get().getPasswordHash() == null) {
             LOGGER.info("Claiming account for user with email {}", normalizedEmail);
-            userDao.claimUser(
-                            user.getGivenName(),
-                            user.getLastName(),
-                            normalizedEmail,
-                            passwordHash,
-                            normalizedPaymentAlias,
-                            normalizedPreferredLanguage)
+            final UserModel userToClaim = new UserModel();
+            userToClaim.setGivenName(user.getGivenName());
+            userToClaim.setLastName(user.getLastName());
+            userToClaim.setEmail(normalizedEmail);
+            userToClaim.setPasswordHash(passwordHash);
+            userToClaim.setPaymentAlias(normalizedPaymentAlias);
+            userToClaim.setPreferredLanguage(PreferredLanguageModel.fromPersistence(normalizedPreferredLanguage));
+            userDao.claimUser(userToClaim)
                     .orElseThrow(() -> new IllegalStateException("Could not claim account for " + normalizedEmail));
             return RegistrationResult.SUCCESS;
         }
@@ -67,12 +69,12 @@ public class UserServiceImpl implements UserService {
         if (email == null || email.isBlank()) {
             return Optional.empty();
         }
-        return userDao.findByEmail(email.trim().toLowerCase()).map(UserServiceImpl::toUserModel);
+        return userDao.findByEmail(email.trim().toLowerCase());
     }
 
     @Override
     public Optional<UserModel> findById(final int id) {
-        return userDao.findById(id).map(UserServiceImpl::toUserModel);
+        return userDao.findById(id);
     }
 
     @Override
@@ -83,7 +85,7 @@ public class UserServiceImpl implements UserService {
 
         final String normalizedEmail =
                 user.getEmail() == null ? "" : user.getEmail().trim().toLowerCase();
-        final Optional<ar.edu.itba.paw.models.User> emailOwner = userDao.findByEmail(normalizedEmail);
+        final Optional<UserModel> emailOwner = userDao.findByEmail(normalizedEmail);
         if (normalizedEmail.isBlank()
                 || emailOwner
                         .filter(owner -> owner.getId() == null || !owner.getId().equals(user.getId()))
@@ -98,15 +100,15 @@ public class UserServiceImpl implements UserService {
         UserNameRules.requireBothLegalNames(user.getGivenName(), user.getLastName());
 
         LOGGER.info("Updating profile for user {}", user.getId());
-        return userDao.updateProfile(
-                        user.getId(),
-                        user.getGivenName().trim(),
-                        user.getLastName().trim(),
-                        normalizedEmail,
-                        normalizeNullable(user.getPhone()),
-                        normalizePaymentAlias(user.getPaymentAlias()),
-                        user.getPreferredLanguage().getPersistenceCode())
-                .map(UserServiceImpl::toUserModel);
+        final UserModel profileUpdate = new UserModel();
+        profileUpdate.setId(user.getId());
+        profileUpdate.setGivenName(user.getGivenName().trim());
+        profileUpdate.setLastName(user.getLastName().trim());
+        profileUpdate.setEmail(normalizedEmail);
+        profileUpdate.setPhone(normalizeNullable(user.getPhone()));
+        profileUpdate.setPaymentAlias(normalizePaymentAlias(user.getPaymentAlias()));
+        profileUpdate.setPreferredLanguage(user.getPreferredLanguage());
+        return userDao.updateProfile(profileUpdate);
     }
 
     @Override
@@ -115,7 +117,7 @@ public class UserServiceImpl implements UserService {
             return Optional.empty();
         }
 
-        final Optional<ar.edu.itba.paw.models.User> existingUser =
+        final Optional<UserModel> existingUser =
                 userDao.findByEmail(user.getEmail().trim().toLowerCase());
         if (existingUser.isEmpty() || existingUser.get().getPasswordHash() == null) {
             LOGGER.warn("Password recovery requested for non-existent or unclaimable user: {}", user.getEmail());
@@ -124,10 +126,12 @@ public class UserServiceImpl implements UserService {
 
         LOGGER.info(
                 "Password recovery requested for user {}", existingUser.get().getId());
-        final Optional<ar.edu.itba.paw.models.User> updatedUser = userDao.updatePasswordRecoveryToken(
-                existingUser.get().getId(), UUID.randomUUID().toString());
+        final UserModel recoveryUpdate = new UserModel();
+        recoveryUpdate.setId(existingUser.get().getId());
+        recoveryUpdate.setPasswordRecoveryToken(UUID.randomUUID().toString());
+        final Optional<UserModel> updatedUser = userDao.updatePasswordRecoveryToken(recoveryUpdate);
         updatedUser.ifPresent(this::sendPasswordRecoveryEmail);
-        return updatedUser.map(UserServiceImpl::toUserModel);
+        return updatedUser;
     }
 
     @Override
@@ -136,11 +140,11 @@ public class UserServiceImpl implements UserService {
             return Optional.empty();
         }
 
-        final Optional<ar.edu.itba.paw.models.User> user = userDao.findByPasswordRecoveryToken(token.trim());
+        final Optional<UserModel> user = userDao.findByPasswordRecoveryToken(token.trim());
         if (user.isEmpty() || user.get().getPasswordRecoveryUsedAt() != null) {
             return Optional.empty();
         }
-        return user.map(UserServiceImpl::toUserModel);
+        return user;
     }
 
     @Override
@@ -150,8 +154,11 @@ public class UserServiceImpl implements UserService {
             return PasswordRecoveryResult.INVALID_TOKEN;
         }
 
-        final String passwordHash = passwordEncoder.encode(rawPassword);
-        final boolean updated = userDao.resetPasswordByRecoveryToken(token.trim(), passwordHash, OffsetDateTime.now());
+        final UserModel passwordUpdate = new UserModel();
+        passwordUpdate.setPasswordRecoveryToken(token.trim());
+        passwordUpdate.setPasswordHash(passwordEncoder.encode(rawPassword));
+        passwordUpdate.setPasswordRecoveryUsedAt(OffsetDateTime.now());
+        final boolean updated = userDao.resetPasswordByRecoveryToken(passwordUpdate);
         if (!updated) {
             LOGGER.warn("Failed password reset attempt with invalid token");
             return PasswordRecoveryResult.INVALID_TOKEN;
@@ -159,25 +166,6 @@ public class UserServiceImpl implements UserService {
 
         LOGGER.info("Password successfully reset using recovery token");
         return PasswordRecoveryResult.SUCCESS;
-    }
-
-    private static UserModel toUserModel(final ar.edu.itba.paw.models.User user) {
-        final UserModel userModel = new UserModel();
-        userModel.setId(user.getId());
-        userModel.setCreatedAt(user.getCreatedAt());
-        userModel.setGivenName(user.getGivenName());
-        userModel.setLastName(user.getLastName());
-        userModel.setEmail(user.getEmail());
-        userModel.setPhone(user.getPhone());
-        userModel.setPaymentAlias(user.getPaymentAlias());
-        if (user.getPreferredLanguage() != null) {
-            userModel.setPreferredLanguage(PreferredLanguageModel.fromPersistence(
-                    user.getPreferredLanguage().getPersistenceCode()));
-        }
-        userModel.setPasswordHash(user.getPasswordHash());
-        userModel.setPasswordRecoveryToken(user.getPasswordRecoveryToken());
-        userModel.setPasswordRecoveryUsedAt(user.getPasswordRecoveryUsedAt());
-        return userModel;
     }
 
     private static String normalizePaymentAlias(final String paymentAlias) {
@@ -192,7 +180,7 @@ public class UserServiceImpl implements UserService {
         return trimmedValue.isEmpty() ? null : trimmedValue;
     }
 
-    private void sendPasswordRecoveryEmail(final ar.edu.itba.paw.models.User user) {
+    private void sendPasswordRecoveryEmail(final UserModel user) {
         try {
             mailService.sendPasswordRecoveryEmail(
                     user.getEmail(),

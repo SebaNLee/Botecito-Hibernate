@@ -1,10 +1,8 @@
 package ar.edu.itba.paw.services.nuevo;
 
-import ar.edu.itba.paw.models.PreferredLanguage;
-import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.models.nuevo.PreferredLanguageModel;
 import ar.edu.itba.paw.models.nuevo.UserModel;
-import ar.edu.itba.paw.persistence.UserDao;
+import ar.edu.itba.paw.persistence.nuevo.UserDao;
 import ar.edu.itba.paw.services.MailService;
 import ar.edu.itba.paw.services.MissingUserNamesException;
 import java.time.OffsetDateTime;
@@ -43,20 +41,26 @@ public class UserServiceImplTest {
                 registerUser("A", "B", " A@A.com ", "   ", PreferredLanguageModel.EN), "password123");
 
         Assertions.assertEquals(UserService.RegistrationResult.SUCCESS, result);
-        Mockito.verify(userDao).createUser("A", "B", "a@a.com", "hashed-password", null, "en");
+        final ArgumentCaptor<UserModel> userCaptor = ArgumentCaptor.forClass(UserModel.class);
+        Mockito.verify(userDao).createUser(userCaptor.capture());
+        Assertions.assertEquals("A", userCaptor.getValue().getGivenName());
+        Assertions.assertEquals("B", userCaptor.getValue().getLastName());
+        Assertions.assertEquals("a@a.com", userCaptor.getValue().getEmail());
+        Assertions.assertEquals("hashed-password", userCaptor.getValue().getPasswordHash());
+        Assertions.assertNull(userCaptor.getValue().getPaymentAlias());
+        Assertions.assertEquals(PreferredLanguageModel.EN, userCaptor.getValue().getPreferredLanguage());
     }
 
     @Test
     public void testRegisterClaimsLegacyUser() {
-        final User existingUser = new User();
+        final UserModel existingUser = new UserModel();
         existingUser.setId(3);
         existingUser.setEmail("legacy@a.com");
         existingUser.setPasswordHash(null);
 
         Mockito.when(passwordEncoder.encode("password123")).thenReturn("hashed-password");
         Mockito.when(userDao.findByEmail("legacy@a.com")).thenReturn(Optional.of(existingUser));
-        Mockito.when(userDao.claimUser("A", "B", "legacy@a.com", "hashed-password", "mi.alias", "en"))
-                .thenReturn(Optional.of(existingUser));
+        Mockito.when(userDao.claimUser(Mockito.any(UserModel.class))).thenReturn(Optional.of(existingUser));
 
         final UserService.RegistrationResult result = userService.register(
                 registerUser("A", "B", " legacy@a.com ", " mi.alias ", PreferredLanguageModel.EN), "password123");
@@ -66,7 +70,7 @@ public class UserServiceImplTest {
 
     @Test
     public void testRegisterRejectsDuplicateEmail() {
-        final User existingUser = new User();
+        final UserModel existingUser = new UserModel();
         existingUser.setEmail("a@a.com");
         existingUser.setPasswordHash("already-hashed");
 
@@ -77,14 +81,7 @@ public class UserServiceImplTest {
                 userService.register(registerUser("A", "B", "a@a.com", null, PreferredLanguageModel.ES), "password123");
 
         Assertions.assertEquals(UserService.RegistrationResult.EMAIL_ALREADY_EXISTS, result);
-        Mockito.verify(userDao, Mockito.never())
-                .createUser(
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.any(),
-                        Mockito.anyString());
+        Mockito.verify(userDao, Mockito.never()).createUser(Mockito.any(UserModel.class));
     }
 
     @Test
@@ -97,8 +94,8 @@ public class UserServiceImplTest {
 
     @Test
     public void testFindByEmailNormalizesAndMapsResult() {
-        final User oldUser = oldUser(5, "Ada", "Lovelace", "ada@example.com");
-        oldUser.setPreferredLanguage(PreferredLanguage.EN);
+        final UserModel oldUser = oldUser(5, "Ada", "Lovelace", "ada@example.com");
+        oldUser.setPreferredLanguage(PreferredLanguageModel.EN);
         Mockito.when(userDao.findByEmail("ada@example.com")).thenReturn(Optional.of(oldUser));
 
         final Optional<UserModel> result = userService.findByEmail(" Ada@Example.COM ");
@@ -111,14 +108,15 @@ public class UserServiceImplTest {
 
     @Test
     public void testRequestPasswordRecoveryGeneratesTokenAndSendsEmail() {
-        final User existingUser = oldUser(5, "Ada", "Lovelace", "recover@a.com");
+        final UserModel existingUser = oldUser(5, "Ada", "Lovelace", "recover@a.com");
         existingUser.setPasswordHash("stored-hash");
         Mockito.when(userDao.findByEmail("recover@a.com")).thenReturn(Optional.of(existingUser));
-        Mockito.when(userDao.updatePasswordRecoveryToken(Mockito.eq(5), Mockito.anyString()))
+        Mockito.when(userDao.updatePasswordRecoveryToken(Mockito.any(UserModel.class)))
                 .thenAnswer(invocation -> {
-                    final User updatedUser = oldUser(5, "Ada", "Lovelace", "recover@a.com");
+                    final UserModel updatedUser = oldUser(5, "Ada", "Lovelace", "recover@a.com");
                     updatedUser.setPasswordHash("stored-hash");
-                    updatedUser.setPasswordRecoveryToken(invocation.getArgument(1));
+                    updatedUser.setPasswordRecoveryToken(
+                            invocation.<UserModel>getArgument(0).getPasswordRecoveryToken());
                     return Optional.of(updatedUser);
                 });
 
@@ -134,7 +132,7 @@ public class UserServiceImplTest {
 
     @Test
     public void testPasswordRecoveryIgnoresLegacyUserWithoutCredentials() {
-        final User existingUser = oldUser(5, "Legacy", "User", "legacy@a.com");
+        final UserModel existingUser = oldUser(5, "Legacy", "User", "legacy@a.com");
         existingUser.setPasswordHash(null);
         Mockito.when(userDao.findByEmail("legacy@a.com")).thenReturn(Optional.of(existingUser));
 
@@ -147,8 +145,7 @@ public class UserServiceImplTest {
     @Test
     public void testResetPasswordConsumesToken() {
         Mockito.when(passwordEncoder.encode("new-password")).thenReturn("new-password-hash");
-        Mockito.when(userDao.resetPasswordByRecoveryToken(
-                        Mockito.eq("token-1"), Mockito.eq("new-password-hash"), Mockito.any()))
+        Mockito.when(userDao.resetPasswordByRecoveryToken(Mockito.any(UserModel.class)))
                 .thenReturn(true);
 
         final UserService.PasswordRecoveryResult result =
@@ -159,7 +156,7 @@ public class UserServiceImplTest {
 
     @Test
     public void testFindUsedRecoveryTokenReturnsEmpty() {
-        final User user = oldUser(5, "Ada", "Lovelace", "ada@example.com");
+        final UserModel user = oldUser(5, "Ada", "Lovelace", "ada@example.com");
         user.setPasswordRecoveryToken("token-2");
         user.setPasswordRecoveryUsedAt(OffsetDateTime.now());
         Mockito.when(userDao.findByPasswordRecoveryToken("token-2")).thenReturn(Optional.of(user));
@@ -171,15 +168,14 @@ public class UserServiceImplTest {
 
     @Test
     public void testUpdateProfileNormalizesOptionalFieldsAndPreferredLanguage() {
-        final User currentOwner = oldUser(5, "Ada", "Lovelace", "new@example.com");
-        final User updatedUser = oldUser(5, "Ada", "Lovelace", "new@example.com");
+        final UserModel currentOwner = oldUser(5, "Ada", "Lovelace", "new@example.com");
+        final UserModel updatedUser = oldUser(5, "Ada", "Lovelace", "new@example.com");
         updatedUser.setPhone(null);
         updatedUser.setPaymentAlias("pay.alias");
-        updatedUser.setPreferredLanguage(PreferredLanguage.ES);
+        updatedUser.setPreferredLanguage(PreferredLanguageModel.ES);
 
         Mockito.when(userDao.findByEmail("new@example.com")).thenReturn(Optional.of(currentOwner));
-        Mockito.when(userDao.updateProfile(5, "Ada", "Lovelace", "new@example.com", null, "pay.alias", "es"))
-                .thenReturn(Optional.of(updatedUser));
+        Mockito.when(userDao.updateProfile(Mockito.any(UserModel.class))).thenReturn(Optional.of(updatedUser));
 
         final Optional<UserModel> result = userService.updateProfile(profileUser(
                 5, " Ada ", " Lovelace ", " New@Example.COM ", "   ", " pay.alias ", PreferredLanguageModel.ES));
@@ -193,22 +189,14 @@ public class UserServiceImplTest {
 
     @Test
     public void testUpdateProfileReturnsEmptyWhenEmailBelongsToAnotherUser() {
-        final User otherUser = oldUser(9, "Other", "User", "taken@example.com");
+        final UserModel otherUser = oldUser(9, "Other", "User", "taken@example.com");
         Mockito.when(userDao.findByEmail("taken@example.com")).thenReturn(Optional.of(otherUser));
 
         final Optional<UserModel> result = userService.updateProfile(
                 profileUser(5, "Ada", "Lovelace", "taken@example.com", null, null, PreferredLanguageModel.EN));
 
         Assertions.assertTrue(result.isEmpty());
-        Mockito.verify(userDao, Mockito.never())
-                .updateProfile(
-                        Mockito.anyInt(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.anyString(),
-                        Mockito.any(),
-                        Mockito.any(),
-                        Mockito.anyString());
+        Mockito.verify(userDao, Mockito.never()).updateProfile(Mockito.any(UserModel.class));
     }
 
     @Test
@@ -221,15 +209,15 @@ public class UserServiceImplTest {
     @Test
     public void testResetPasswordPassesTrimmedToken() {
         Mockito.when(passwordEncoder.encode("new-password")).thenReturn("new-password-hash");
-        Mockito.when(userDao.resetPasswordByRecoveryToken(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
+        Mockito.when(userDao.resetPasswordByRecoveryToken(Mockito.any(UserModel.class)))
                 .thenReturn(true);
 
         userService.resetPassword(resetUser(" token-3 "), "new-password");
 
-        final ArgumentCaptor<String> tokenCaptor = ArgumentCaptor.forClass(String.class);
-        Mockito.verify(userDao)
-                .resetPasswordByRecoveryToken(tokenCaptor.capture(), Mockito.eq("new-password-hash"), Mockito.any());
-        Assertions.assertEquals("token-3", tokenCaptor.getValue());
+        final ArgumentCaptor<UserModel> userCaptor = ArgumentCaptor.forClass(UserModel.class);
+        Mockito.verify(userDao).resetPasswordByRecoveryToken(userCaptor.capture());
+        Assertions.assertEquals("token-3", userCaptor.getValue().getPasswordRecoveryToken());
+        Assertions.assertEquals("new-password-hash", userCaptor.getValue().getPasswordHash());
     }
 
     private static UserModel registerUser(
@@ -273,8 +261,9 @@ public class UserServiceImplTest {
         return user;
     }
 
-    private static User oldUser(final Integer id, final String givenName, final String lastName, final String email) {
-        final User user = new User();
+    private static UserModel oldUser(
+            final Integer id, final String givenName, final String lastName, final String email) {
+        final UserModel user = new UserModel();
         user.setId(id);
         user.setGivenName(givenName);
         user.setLastName(lastName);

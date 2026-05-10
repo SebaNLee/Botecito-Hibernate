@@ -29,7 +29,9 @@ public final class MarketplaceImpl implements MarketplaceInterface {
         query.setCapacity(search.getCapacity());
         query.setWeight(search.getWeight());
         query.setDifficulty(search.getDifficulty());
-        query.setLocationSlug(search.getLocationSlug());
+        query.setMinAvgRating(search.getMinAvgRating());
+        query.setLocationSlug(search.getLocation());
+        query.setItemTypeSlug(search.getItemType());
         query.setPage(search.getPage());
         query.setPageSize(search.getPageSize());
         query.setSortBy(search.getSortBy());

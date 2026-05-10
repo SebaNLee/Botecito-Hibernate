@@ -23,6 +23,7 @@ public final class MarketplaceJdbc implements MarketplaceDao {
 
     private static final String ITEM_FROM = " FROM item i"
             + " JOIN version v ON v.id = (SELECT MAX(v2.id) FROM version v2 WHERE v2.item_id = i.id)"
+            + " JOIN item_type it ON it.id = v.type_id"
             + " JOIN location lo ON lo.id = v.location_id"
             + " LEFT JOIN availability a ON a.id = ("
             + "     SELECT MIN(a2.id) FROM availability a2 WHERE a2.version_id = v.id"
@@ -106,6 +107,10 @@ public final class MarketplaceJdbc implements MarketplaceDao {
             sql.append(" AND lo.slug = ?");
             args.add(query.getLocationSlug().trim());
         }
+        if (hasText(query.getItemTypeSlug())) {
+            sql.append(" AND it.slug = ?");
+            args.add(query.getItemTypeSlug().trim());
+        }
         if (query.getCapacity() != null) {
             sql.append(" AND v.capacity >= ?");
             args.add(query.getCapacity());
@@ -117,6 +122,12 @@ public final class MarketplaceJdbc implements MarketplaceDao {
         if (query.getDifficulty() != null) {
             sql.append(" AND v.difficulty = ?");
             args.add(query.getDifficulty());
+        }
+        if (query.getMinAvgRating() != null) {
+            sql.append(" AND (SELECT COALESCE(AVG(r.rating), 0) FROM review r JOIN booking b ON b.id = r.booking_id"
+                    + " JOIN version vr ON vr.id = b.version_id WHERE CAST(r.target_type AS VARCHAR(16)) = 'ITEM'"
+                    + " AND vr.item_id = i.id) >= ?");
+            args.add(query.getMinAvgRating());
         }
         appendAvailabilityFilter(query, sql, args);
         return sql.toString();

@@ -5,11 +5,11 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Lob;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
 
 @Getter
 @Setter
@@ -22,7 +22,7 @@ public class ImageOrm {
     @SequenceGenerator(name = "image_id_seq", sequenceName = "image_id_seq", allocationSize = 1)
     private Integer id;
 
-    @Lob
+    @Type(type = "org.hibernate.type.BinaryType")
     @Column(name = "data", nullable = false)
     private byte[] data;
 

@@ -9,9 +9,11 @@
 <%@ attribute name="containerClass" required="false" %>
 <%@ attribute name="errorPath" required="false" %>
 <%@ attribute name="optionsUrl" required="false" %>
-<%@ attribute name="locationRequiredMessage" required="false" %>
+<%@ attribute name="requiredMessage" required="false" %>
 <%@ attribute name="required" required="false" %>
 <%@ attribute name="hostAccent" required="false" type="java.lang.Boolean" %>
+<%@ attribute name="panelCaption" required="false" %>
+<%@ attribute name="emptyCaption" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
@@ -19,9 +21,9 @@
 
 <spring:message code="filters.location" var="defaultLocationLabel" />
 <spring:message code="filters.location.placeholder" var="defaultLocationPlaceholder" />
-<spring:message code="locationPicker.clear" var="clearLocationLabel" />
-<spring:message code="locationPicker.availableLocations" var="availableLocationsLabel" />
-<spring:message code="locationPicker.noMatches" var="noLocationsLabel" />
+<spring:message code="optionsPicker.clear" var="defaultClearLabel" />
+<spring:message code="optionsPicker.availableOptions" var="availableOptionsLabel" />
+<spring:message code="optionsPicker.noMatches" var="noOptionsLabel" />
 <c:set var="resolvedLabel" value="${not empty label ? label : defaultLocationLabel}" />
 <c:set var="resolvedValue" value="${not empty value ? value : ''}" />
 <c:set var="resolvedPlaceholder" value="${not empty placeholder ? placeholder : defaultLocationPlaceholder}" />
@@ -29,18 +31,20 @@
 <c:set var="resolvedVariant" value="${not empty variant ? variant : 'default'}" />
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
 <c:set var="resolvedOptionsUrl" value="${not empty optionsUrl ? optionsUrl : '/location-options'}" />
-<c:set var="resolvedLocationRequiredMsg" value="${not empty locationRequiredMessage ? locationRequiredMessage : ''}" />
+<c:set var="resolvedRequiredMsg" value="${not empty requiredMessage ? requiredMessage : ''}" />
+<c:set var="resolvedPanelCaption" value="${not empty panelCaption ? panelCaption : availableOptionsLabel}" />
+<c:set var="resolvedEmptyCaption" value="${not empty emptyCaption ? emptyCaption : noOptionsLabel}" />
 <c:set var="lpText" value="${hostAccent ne null and hostAccent ? 'text-secondary' : 'text-primary'}" />
 
 <c:choose>
   <c:when test="${resolvedVariant == 'inline'}">
     <fieldset
         class="fieldset w-full ${resolvedContainerClass}"
-        data-location-picker
+        data-options-picker
         data-options-url="<c:url value='${resolvedOptionsUrl}' />"
         data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
-        data-location-required-message="${fn:escapeXml(resolvedLocationRequiredMsg)}">
-      <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-location-value />
+        data-required-message="${fn:escapeXml(resolvedRequiredMsg)}">
+      <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-option-value />
       <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
         <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
@@ -48,7 +52,7 @@
       <div class="relative">
         <label
             class="input input-bordered flex h-10 min-h-10 max-h-10 w-full min-w-0 items-center gap-1 overflow-hidden px-2 py-0 cursor-text"
-            data-location-trigger>
+            data-option-trigger>
           <span class="material-symbols-outlined shrink-0 ${lpText} text-xl"><c:out value="${resolvedIcon}" /></span>
           <input
               id="${id}-query"
@@ -58,27 +62,27 @@
               placeholder="${fn:escapeXml(resolvedPlaceholder)}"
               autocomplete="off"
               spellcheck="false"
-              data-location-query />
+              data-option-query />
         <button
             type="button"
             class="btn btn-ghost btn-xs btn-circle ${lpText} opacity-0 pointer-events-none"
-            aria-label="${fn:escapeXml(clearLocationLabel)}"
-            data-location-clear>
+            aria-label="${fn:escapeXml(defaultClearLabel)}"
+            data-option-clear>
           <span class="material-symbols-outlined text-base">close</span>
         </button>
-          <span class="material-symbols-outlined shrink-0 ${lpText} text-base transition-transform duration-150" data-location-chevron>expand_more</span>
+          <span class="material-symbols-outlined shrink-0 ${lpText} text-base transition-transform duration-150" data-option-chevron>expand_more</span>
         </label>
 
         <div
             class="card bg-base-100 absolute left-0 right-0 top-full z-[10020] mt-2 hidden overflow-hidden shadow-xl"
-            data-location-panel
+            data-option-panel
             hidden>
           <div class="border-b border-outline-variant/20 px-4 py-3">
-            <p class="m-0 text-[10px] font-bold uppercase tracking-[0.16em] text-outline"><c:out value="${availableLocationsLabel}" /></p>
+            <p class="m-0 text-[10px] font-bold uppercase tracking-[0.16em] text-outline"><c:out value="${resolvedPanelCaption}" /></p>
           </div>
-          <div class="h-64 overflow-y-auto p-2" data-location-options></div>
-          <p class="hidden px-4 py-4 text-sm text-on-surface-variant" data-location-empty>
-            <c:out value="${noLocationsLabel}" />
+          <div class="h-64 overflow-y-auto p-2" data-option-options></div>
+          <p class="hidden px-4 py-4 text-sm text-on-surface-variant" data-option-empty>
+            <c:out value="${resolvedEmptyCaption}" />
           </p>
         </div>
       </div>
@@ -87,11 +91,11 @@
   <c:otherwise>
     <fieldset
         class="fieldset w-full ${resolvedContainerClass}"
-        data-location-picker
+        data-options-picker
         data-options-url="<c:url value='${resolvedOptionsUrl}' />"
         data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
-        data-location-required-message="${fn:escapeXml(resolvedLocationRequiredMsg)}">
-      <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-location-value />
+        data-required-message="${fn:escapeXml(resolvedRequiredMsg)}">
+      <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-option-value />
       <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
         <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
@@ -99,7 +103,7 @@
       <div class="relative">
         <label
             class="input input-bordered flex h-10 min-h-10 max-h-10 w-full min-w-0 items-center gap-1 overflow-hidden px-2 py-0 cursor-text"
-            data-location-trigger>
+            data-option-trigger>
           <span class="material-symbols-outlined shrink-0 ${lpText} text-xl"><c:out value="${resolvedIcon}" /></span>
           <input
               id="${id}-query"
@@ -109,27 +113,27 @@
               placeholder="${fn:escapeXml(resolvedPlaceholder)}"
               autocomplete="off"
               spellcheck="false"
-              data-location-query />
+              data-option-query />
           <button
               type="button"
               class="btn btn-ghost btn-xs btn-circle ${lpText} opacity-0 pointer-events-none"
-              aria-label="${fn:escapeXml(clearLocationLabel)}"
-              data-location-clear>
+              aria-label="${fn:escapeXml(defaultClearLabel)}"
+              data-option-clear>
             <span class="material-symbols-outlined text-base">close</span>
           </button>
-          <span class="material-symbols-outlined shrink-0 ${lpText} text-base transition-transform duration-150" data-location-chevron>expand_more</span>
+          <span class="material-symbols-outlined shrink-0 ${lpText} text-base transition-transform duration-150" data-option-chevron>expand_more</span>
         </label>
 
         <div
             class="card bg-base-100 absolute left-0 right-0 top-full z-[10020] mt-2 hidden overflow-hidden shadow-xl"
-            data-location-panel
+            data-option-panel
             hidden>
           <div class="border-b border-outline-variant/20 px-4 py-3">
-            <p class="m-0 text-[10px] font-bold uppercase tracking-[0.16em] text-outline"><c:out value="${availableLocationsLabel}" /></p>
+            <p class="m-0 text-[10px] font-bold uppercase tracking-[0.16em] text-outline"><c:out value="${resolvedPanelCaption}" /></p>
           </div>
-          <div class="h-64 overflow-y-auto p-2" data-location-options></div>
-          <p class="hidden px-4 py-4 text-sm text-on-surface-variant" data-location-empty>
-            <c:out value="${noLocationsLabel}" />
+          <div class="h-64 overflow-y-auto p-2" data-option-options></div>
+          <p class="hidden px-4 py-4 text-sm text-on-surface-variant" data-option-empty>
+            <c:out value="${resolvedEmptyCaption}" />
           </p>
         </div>
       </div>

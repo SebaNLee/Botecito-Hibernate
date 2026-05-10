@@ -185,7 +185,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
               required="true"
             />
             <div class="md:col-span-2">
-              <paw:locationPicker
+              <paw:optionsPicker
                 id="locationOptionId"
                 name="locationOptionId"
                 label="${publishLocationLabel}"
@@ -193,7 +193,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                 placeholder="${publishLocationPlaceholder}"
                 icon="location_on"
                 errorPath="locationOptionId"
-                locationRequiredMessage="${publishLocationRequiredMsg}"
+                requiredMessage="${publishLocationRequiredMsg}"
                 required="true"
                 hostAccent="true"
               />

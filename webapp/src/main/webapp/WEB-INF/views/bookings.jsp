@@ -105,11 +105,14 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
                   <c:forEach var="sentRequest" items="${sentBookingRequests}">
                     <c:url var="sentPaymentProofUrl" value="/bookings/${sentRequest.id}/payment-proof" />
-                    <c:url var="sentRequestItemUrl" value="/item/${sentRequest.itemId}">
-                      <c:if test="${not empty sentBookedSnapshotVersionIdByBookingId[sentRequest.id]}">
-                        <c:param name="snapshotVersionId" value="${sentBookedSnapshotVersionIdByBookingId[sentRequest.id]}" />
-                      </c:if>
-                    </c:url>
+                    <c:choose>
+                      <c:when test="${not empty sentBookedSnapshotVersionIdByBookingId[sentRequest.id]}">
+                        <c:url var="sentRequestItemUrl" value="/item/${sentRequest.itemId}/snapshot/${sentBookedSnapshotVersionIdByBookingId[sentRequest.id]}" />
+                      </c:when>
+                      <c:otherwise>
+                        <c:url var="sentRequestItemUrl" value="/item/${sentRequest.itemId}" />
+                      </c:otherwise>
+                    </c:choose>
                     <c:set var="authoredItemReview" value="${authoredItemReviewsByBookingId[sentRequest.id]}" />
                     <c:set var="sentStatusClass" value="badge-ghost" />
                     <c:if test="${sentStatusMessageCodeByBookingId[sentRequest.id] == 'profile.sentBookings.status.pending'}"><c:set var="sentStatusClass" value="badge-warning" /></c:if>

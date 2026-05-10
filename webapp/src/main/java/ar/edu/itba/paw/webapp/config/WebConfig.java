@@ -7,9 +7,11 @@ import java.util.Properties;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.lang.NonNull;
@@ -86,7 +88,7 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public DataSource dataSource(final Properties credentialsProperties) {
+    public DataSource dataSource(@Qualifier("credentialsProperties") final Properties credentialsProperties) {
         final SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
         dataSource.setDriverClass(org.postgresql.Driver.class);
         dataSource.setUrl(credentialsProperties.getProperty("jdbc.url"));
@@ -96,6 +98,7 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Bean
+    @DependsOn("flyway")
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(final DataSource dataSource) {
         final LocalContainerEntityManagerFactoryBean factoryBean = new LocalContainerEntityManagerFactoryBean();
         factoryBean.setPackagesToScan("ar.edu.itba.paw.models", "ar.edu.itba.paw.persistence.orm.entities");
@@ -105,7 +108,7 @@ public class WebConfig implements WebMvcConfigurer {
         factoryBean.setJpaVendorAdapter(vendorAdapter);
 
         final Properties properties = new Properties();
-        properties.setProperty("hibernate.hbm2ddl.auto", "update");
+        properties.setProperty("hibernate.hbm2ddl.auto", "validate");
         properties.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQL92Dialect");
         properties.setProperty("hibernate.show_sql", "true");
         properties.setProperty("hibernate.format_sql", "true");
@@ -188,7 +191,8 @@ public class WebConfig implements WebMvcConfigurer {
     private record CredentialsSelection(String credentialsFile, String fallbackCredentialsFile) {}
 
     @Bean(initMethod = "migrate")
-    public Flyway flyway(final DataSource dataSource, final Properties credentialsProperties) {
+    public Flyway flyway(
+            final DataSource dataSource, @Qualifier("credentialsProperties") final Properties credentialsProperties) {
         final boolean outOfOrder =
                 Boolean.parseBoolean(credentialsProperties.getProperty("flyway.outOfOrder", "false"));
 

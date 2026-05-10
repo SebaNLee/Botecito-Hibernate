@@ -1,7 +1,9 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.persistence.orm.daos.DetailHibernateDao;
 import ar.edu.itba.paw.persistence.orm.daos.MarketplaceHibernateDao;
 import ar.edu.itba.paw.persistence.orm.daos.ReviewHibernateDao;
+import ar.edu.itba.paw.persistence.orm.daos.SelectorsHibernateDao;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -29,7 +31,12 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
         excludeFilters =
                 @ComponentScan.Filter(
                         type = FilterType.ASSIGNABLE_TYPE,
-                        classes = {MarketplaceHibernateDao.class, ReviewHibernateDao.class}))
+                        classes = {
+                            DetailHibernateDao.class,
+                            MarketplaceHibernateDao.class,
+                            ReviewHibernateDao.class,
+                            SelectorsHibernateDao.class
+                        }))
 @Configuration
 public class TestConfiguration {
 

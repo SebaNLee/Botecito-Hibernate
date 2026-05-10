@@ -10,7 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ItemModel {
-    private Integer id;
+    private int id;
     private String hostId;
     private ItemStatus status;
 
@@ -18,16 +18,17 @@ public class ItemModel {
     private String title;
     private String description;
     private BigDecimal price;
-    private Integer capacity;
-    private Integer weight;
-    private Integer difficulty;
-    private Integer locationId;
+    private int capacity;
+    private int weight;
+    private int difficulty;
+    private int locationId;
     private String location;
+    private String itemTypeName;
 
     // Media
     private List<String> images; // URLs or base64 encoded strings
 
-    // Ratings (ITEM-target reviews; same semantics as ReviewDao.ratingSummaryByTarget)
+    // Ratings
     private double averageRating;
     private int totalReviews;
 

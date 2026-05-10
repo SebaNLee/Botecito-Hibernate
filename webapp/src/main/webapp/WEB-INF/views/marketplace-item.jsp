@@ -284,7 +284,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                   <c:forEach items="${itemReviews}" var="review">
                     <div class="rounded-xl bg-base-200 p-4 space-y-2">
                       <div class="flex items-center justify-between gap-3">
-                        <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${reviewAuthorNames[review.reviewerUserId]}" /></p>
+                        <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${reviewAuthorNames[review.senderId]}" /></p>
                         <div class="flex items-center gap-0.5 shrink-0" aria-label="${review.rating} of 5">
                           <c:forEach var="starIndex" begin="1" end="5">
                             <c:choose>

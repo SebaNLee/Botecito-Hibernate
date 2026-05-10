@@ -1,11 +1,12 @@
 package ar.edu.itba.paw.webapp.controller.support.nuevo;
 
-import ar.edu.itba.paw.models.RatingSummary;
-import ar.edu.itba.paw.models.Review;
-import ar.edu.itba.paw.models.ReviewTargetType;
 import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.services.ReviewService;
+import ar.edu.itba.paw.models.nuevo.PendingReviewActionModel;
+import ar.edu.itba.paw.models.nuevo.RatingSummaryModel;
+import ar.edu.itba.paw.models.nuevo.ReviewModel;
+import ar.edu.itba.paw.models.nuevo.ReviewTargetType;
 import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.services.nuevo.ReviewInterface;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.LinkedHashMap;
@@ -21,28 +22,28 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class ReviewViewHelper {
 
-    private final ReviewService reviewService;
+    private final ReviewInterface reviewInterface;
     private final UserService userService;
 
     public void addMarketplaceItemReviewData(final ModelAndView mav, final int itemId, final Integer viewerUserId) {
-        final RatingSummary ratingSummary = reviewService.getItemRatingSummary(itemId);
-        final List<Review> reviews = reviewService.listLatestItemReviews(itemId, 12);
+        final RatingSummaryModel ratingSummary = reviewInterface.getItemRatingSummary(itemId);
+        final List<ReviewModel> reviews = reviewInterface.listLatestItemReviews(itemId, 12);
         final Map<Integer, String> reviewAuthorNames = new LinkedHashMap<>();
-        for (final Review review : reviews) {
-            if (review.getReviewerUserId() == null || reviewAuthorNames.containsKey(review.getReviewerUserId())) {
+        for (final ReviewModel review : reviews) {
+            if (review.getSenderId() == null || reviewAuthorNames.containsKey(review.getSenderId())) {
                 continue;
             }
             reviewAuthorNames.put(
-                    review.getReviewerUserId(),
+                    review.getSenderId(),
                     userService
-                            .findById(review.getReviewerUserId())
+                            .findById(review.getSenderId())
                             .map(User::getName)
                             .orElse(""));
         }
         final Map<Integer, String> reviewCreatedAtLabels = buildReviewCreatedAtLabels(reviews);
-        final Object pendingItemReviewAction = viewerUserId == null
+        final PendingReviewActionModel pendingItemReviewAction = viewerUserId == null
                 ? null
-                : reviewService
+                : reviewInterface
                         .findPendingItemReviewAction(viewerUserId, itemId)
                         .orElse(null);
 
@@ -54,9 +55,9 @@ public class ReviewViewHelper {
     }
 
     public void addDashboardReviewData(final ModelAndView mav, final int userId) {
-        final Map<Integer, ReviewService.PendingReviewAction> pendingItemReviewsByBookingId = new LinkedHashMap<>();
-        final Map<Integer, ReviewService.PendingReviewAction> pendingUserReviewsByBookingId = new LinkedHashMap<>();
-        for (final ReviewService.PendingReviewAction action : reviewService.listPendingReviewActions(userId)) {
+        final Map<Integer, PendingReviewActionModel> pendingItemReviewsByBookingId = new LinkedHashMap<>();
+        final Map<Integer, PendingReviewActionModel> pendingUserReviewsByBookingId = new LinkedHashMap<>();
+        for (final PendingReviewActionModel action : reviewInterface.listPendingReviewActions(userId)) {
             if (action.getTargetType() == ReviewTargetType.ITEM) {
                 pendingItemReviewsByBookingId.put(action.getBookingId(), action);
             } else if (action.getTargetType() == ReviewTargetType.USER) {
@@ -64,9 +65,9 @@ public class ReviewViewHelper {
             }
         }
 
-        final Map<Integer, Review> authoredItemReviewsByBookingId = new LinkedHashMap<>();
-        final Map<Integer, Review> authoredUserReviewsByBookingId = new LinkedHashMap<>();
-        for (final Review review : reviewService.listAuthoredReviews(userId)) {
+        final Map<Integer, ReviewModel> authoredItemReviewsByBookingId = new LinkedHashMap<>();
+        final Map<Integer, ReviewModel> authoredUserReviewsByBookingId = new LinkedHashMap<>();
+        for (final ReviewModel review : reviewInterface.listAuthoredReviews(userId)) {
             if (review.getBookingId() == null) {
                 continue;
             }
@@ -83,12 +84,12 @@ public class ReviewViewHelper {
         mav.addObject("authoredUserReviewsByBookingId", authoredUserReviewsByBookingId);
     }
 
-    private static Map<Integer, String> buildReviewCreatedAtLabels(final List<Review> reviews) {
+    private static Map<Integer, String> buildReviewCreatedAtLabels(final List<ReviewModel> reviews) {
         final Locale locale = LocaleContextHolder.getLocale();
         final DateTimeFormatter formatter =
                 DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale);
         final Map<Integer, String> labels = new LinkedHashMap<>();
-        for (final Review review : reviews) {
+        for (final ReviewModel review : reviews) {
             if (review.getId() == null || review.getCreatedAt() == null) {
                 continue;
             }

@@ -8,12 +8,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@Component
+// Old support helper for the legacy ReviewController (now disabled). Kept on disk for the cut-over PR; not a Spring
+// bean.
 @RequiredArgsConstructor
 public final class ReviewMvcSupport {
 

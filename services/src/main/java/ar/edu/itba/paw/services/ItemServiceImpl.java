@@ -8,8 +8,6 @@ import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
-import ar.edu.itba.paw.models.RatingSummary;
-import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.persistence.ItemAvailabilityDao;
 import ar.edu.itba.paw.persistence.ItemBookingDao;
@@ -63,7 +61,6 @@ public final class ItemServiceImpl implements ItemService {
     private final ItemMediaDao itemMediaDao;
     private final UserDao userDao;
     private final MailService mailService;
-    private final ReviewService reviewService;
 
     @Override
     public List<Item> listItems() {
@@ -291,21 +288,6 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemBooking> listActiveBookingsByItemId(final int itemId) {
         return itemBookingDao.listActiveBookingsByItemId(itemId);
-    }
-
-    @Override
-    public RatingSummary getItemRatingSummary(final int itemId) {
-        return reviewService.getItemRatingSummary(itemId);
-    }
-
-    @Override
-    public List<Review> listLatestReviews(final int itemId, final int limit) {
-        return reviewService.listLatestItemReviews(itemId, limit);
-    }
-
-    @Override
-    public Optional<ReviewService.PendingReviewAction> findPendingReviewAction(final int userId, final int itemId) {
-        return reviewService.findPendingItemReviewAction(userId, itemId);
     }
 
     @Override

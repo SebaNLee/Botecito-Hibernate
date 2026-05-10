@@ -149,14 +149,14 @@
               <div class="flex items-center gap-2 text-lg font-black text-on-surface">
                 <span class="material-symbols-outlined text-warning">star</span>
                 <c:choose>
-                  <c:when test="${item.totalReviews > 0}">
-                    <fmt:formatNumber value="${item.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
+                  <c:when test="${itemRatingSummary != null && itemRatingSummary.hasReviews()}">
+                    <fmt:formatNumber value="${itemRatingSummary.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
                   </c:when>
                   <c:otherwise><c:out value="${reviewsEmptyShortLabel}" /></c:otherwise>
                 </c:choose>
               </div>
               <p class="m-0 text-xs text-on-surface-variant">
-                <spring:message code="itemDetail.reviews.count" arguments="${item.totalReviews}" />
+                <spring:message code="itemDetail.reviews.count" arguments="${itemRatingSummary != null ? itemRatingSummary.totalReviews : 0}" />
               </p>
             </div>
 
@@ -191,7 +191,7 @@
                   <c:forEach items="${itemReviews}" var="review">
                     <div class="rounded-xl bg-base-200 p-4 space-y-2">
                       <div class="flex items-center justify-between gap-3">
-                        <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${reviewAuthorNames[review.reviewerUserId]}" /></p>
+                        <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${reviewAuthorNames[review.senderId]}" /></p>
                         <div class="flex items-center gap-0.5 shrink-0" aria-label="${review.rating} of 5">
                           <c:forEach var="starIndex" begin="1" end="5">
                             <c:choose>

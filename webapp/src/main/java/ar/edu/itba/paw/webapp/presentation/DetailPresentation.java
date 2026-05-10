@@ -1,6 +1,5 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.models.nuevo.ItemDetail;
 import ar.edu.itba.paw.models.nuevo.ItemModel;
@@ -8,17 +7,12 @@ import ar.edu.itba.paw.models.nuevo.ItemStatus;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.services.nuevo.DetailInterface;
+import ar.edu.itba.paw.webapp.controller.support.nuevo.ReviewViewHelper;
 import ar.edu.itba.paw.webapp.util.MarketplaceReturnUrl;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,6 +28,7 @@ public class DetailPresentation {
     private final ItemService itemService;
     private final UserService userService;
     private final ToastPresentation toastPresentation;
+    private final ReviewViewHelper reviewViewHelper;
 
     /**
      * @return {@link ModelAndView} for the detail page, or a {@link RedirectView} for canonical snapshot / auth
@@ -149,20 +144,6 @@ public class DetailPresentation {
         final User itemOwner =
                 ownerId == null ? null : itemService.findUserById(ownerId).orElse(null);
 
-        final List<Review> reviews = itemService.listLatestReviews(itemId, 12);
-        final Map<Integer, String> reviewAuthorNames = new LinkedHashMap<>();
-        for (final Review review : reviews) {
-            if (review.getReviewerUserId() == null || reviewAuthorNames.containsKey(review.getReviewerUserId())) {
-                continue;
-            }
-            reviewAuthorNames.put(
-                    review.getReviewerUserId(),
-                    itemService
-                            .findUserById(review.getReviewerUserId())
-                            .map(User::getName)
-                            .orElse(""));
-        }
-
         final boolean isActive = item.getStatus() == ItemStatus.ACTIVE;
 
         final ModelAndView mav = new ModelAndView("nuevo/item-detail");
@@ -176,9 +157,7 @@ public class DetailPresentation {
         mav.addObject("hideListingLiveVersionNavigation", viewingNonCurrentVersion && !isActive && !isOwner);
         mav.addObject("listingInactiveNotice", !isActive);
         mav.addObject("itemOwner", itemOwner);
-        mav.addObject("itemReviews", reviews);
-        mav.addObject("reviewAuthorNames", reviewAuthorNames);
-        mav.addObject("reviewCreatedAtLabels", buildReviewCreatedAtLabels(reviews));
+        reviewViewHelper.addMarketplaceItemReviewData(mav, itemId, viewer == null ? null : viewer.getId());
         mav.addObject("itemImageUrl", primaryImageUrl(item, contextPath));
         mav.addObject("itemImageUrls", prefixImagePaths(item.getImages(), contextPath));
         final String ownerName = itemOwner == null ? null : itemOwner.getName();
@@ -187,13 +166,6 @@ public class DetailPresentation {
                 ownerName == null || ownerName.isEmpty()
                         ? "I"
                         : ownerName.substring(0, 1).toUpperCase());
-        mav.addObject(
-                "pendingItemReviewAction",
-                viewer == null
-                        ? null
-                        : itemService
-                                .findPendingReviewAction(viewer.getId(), itemId)
-                                .orElse(null));
 
         mav.addObject("itemLocationSlug", "");
         mav.addObject("marketplaceBackHref", marketplaceBackHref);
@@ -233,20 +205,6 @@ public class DetailPresentation {
             return path;
         }
         return path.startsWith("/") ? contextPath + path : contextPath + "/" + path;
-    }
-
-    private static Map<Integer, String> buildReviewCreatedAtLabels(final List<Review> reviews) {
-        final Locale locale = LocaleContextHolder.getLocale();
-        final DateTimeFormatter formatter =
-                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale);
-        final Map<Integer, String> labels = new LinkedHashMap<>();
-        for (final Review review : reviews) {
-            if (review.getId() == null || review.getCreatedAt() == null) {
-                continue;
-            }
-            labels.put(review.getId(), formatter.format(review.getCreatedAt()));
-        }
-        return labels;
     }
 
     private User currentAuthenticatedUserOrNull() {

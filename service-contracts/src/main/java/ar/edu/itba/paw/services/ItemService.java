@@ -7,8 +7,6 @@ import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
-import ar.edu.itba.paw.models.RatingSummary;
-import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.User;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -152,12 +150,6 @@ public interface ItemService {
 
     /** Comma-separated image ids; returns an empty list if the input is blank or any token is not a valid id. */
     List<Integer> parseGalleryImageOrderCsv(String csv);
-
-    RatingSummary getItemRatingSummary(int itemId);
-
-    List<Review> listLatestReviews(int itemId, int limit);
-
-    Optional<ReviewService.PendingReviewAction> findPendingReviewAction(int userId, int itemId);
 
     /**
      * Whether the requested calendar range lies in continuously offered availability for the item (same rules as the

@@ -26,7 +26,6 @@
 <spring:message code="filters.difficulty.any" var="difficultyAnyLabel" />
 <spring:message code="filters.minAvgRating" var="minAvgRatingFilterLabel" />
 <spring:message code="filters.minAvgRating.any" var="minAvgRatingAnyLabel" />
-<spring:message code="itemDetail.value.notAvailable" var="notAvailableLabel" />
 <spring:message code="landing.hero.search" var="searchLabel" />
 <spring:message code="marketplace.filters.apply" var="filtersApplyLabel" />
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
@@ -304,33 +303,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <c:forEach items="${items}" var="item">
-        <c:url var="itemUrl" value="/item/${item.id}">
-          <c:param name="pageSize" value="${pageSize}" />
-          <c:if test="${not empty param.location}">
-            <c:param name="location" value="${param.location}" />
-          </c:if>
-          <c:if test="${not empty param.itemType}">
-            <c:param name="itemType" value="${param.itemType}" />
-          </c:if>
-          <c:if test="${not empty param.date}">
-            <c:param name="date" value="${param.date}" />
-          </c:if>
-          <c:if test="${not empty param.startTime}">
-            <c:param name="startTime" value="${param.startTime}" />
-          </c:if>
-          <c:if test="${not empty param.endTime}">
-            <c:param name="endTime" value="${param.endTime}" />
-          </c:if>
-          <c:if test="${not empty param.difficultyLevel}">
-            <c:param name="difficultyLevel" value="${param.difficultyLevel}" />
-          </c:if>
-          <c:if test="${not empty param.maxWeight}">
-            <c:param name="maxWeight" value="${param.maxWeight}" />
-          </c:if>
-          <c:if test="${not empty param.minAvgRating}">
-            <c:param name="minAvgRating" value="${param.minAvgRating}" />
-          </c:if>
-        </c:url>
+        <c:url var="itemUrl" value="/item/${item.id}" />
         <a href="${itemUrl}" data-marketplace-item-link class="group card min-w-0 bg-base-100 shadow-sm overflow-hidden no-underline text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <figure class="aspect-[4/3] overflow-hidden">
             <c:url var="itemCoverSrc" value="${item.images[0]}" />
@@ -367,12 +340,7 @@
                 <div class="flex items-center gap-1.5">
                   <span class="material-symbols-outlined text-outline text-lg">weight</span>
                   <span class="text-sm font-semibold">
-                    <c:choose>
-                      <c:when test="${item.weight != null}">
-                        <spring:message code="marketplace.card.weight" arguments="${item.weight}" />
-                      </c:when>
-                      <c:otherwise><c:out value="${notAvailableLabel}" /></c:otherwise>
-                    </c:choose>
+                    <spring:message code="marketplace.card.weight" arguments="${item.weight}" />
                   </span>
                 </div>
               </div>

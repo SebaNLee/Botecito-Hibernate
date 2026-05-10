@@ -30,7 +30,7 @@ public final class MarketplaceRowMapper {
         item.setCapacity(rs.getInt("capacity"));
         item.setWeight(rs.getInt("weight"));
         item.setDifficulty(rs.getInt("difficulty"));
-        item.setLocationId((Integer) rs.getObject("location_id"));
+        item.setLocationId(rs.getInt("location_id"));
         item.setLocation(rs.getString("location_name"));
         final Integer coverImageId = (Integer) rs.getObject("cover_image_id");
         if (coverImageId != null) {

@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
 import ar.edu.itba.paw.webapp.form.nuevo.ProfileForm;
-import ar.edu.itba.paw.webapp.presentation.nuevo.ProfilePresentation;
+import ar.edu.itba.paw.webapp.presentation.ProfilePresentation;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;

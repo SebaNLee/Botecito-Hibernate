@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
 import ar.edu.itba.paw.webapp.form.nuevo.ProfileForm;
-import ar.edu.itba.paw.webapp.presentation.nuevo.ProfilePresentation;
+import ar.edu.itba.paw.webapp.presentation.ProfilePresentation;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

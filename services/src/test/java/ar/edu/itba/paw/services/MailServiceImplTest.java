@@ -14,12 +14,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 @ExtendWith(MockitoExtension.class)
 public class MailServiceImplTest {
@@ -82,6 +84,12 @@ public class MailServiceImplTest {
 
         Assertions.assertDoesNotThrow(() -> mailService.sendBookingReviewEmail(
                 bookingRequest, "b@b.com", "Boat", "Loc", "2026-05-02", "10:00 - 12:00"));
+
+        final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
+        Mockito.verify(templateEngine).process(Mockito.eq("booking-review"), contextCaptor.capture());
+        Assertions.assertEquals(
+                "http://localhost:8080/my-boats#received-booking-requests",
+                contextCaptor.getValue().getVariable("profileUrl"));
     }
 
     @Test
@@ -98,5 +106,68 @@ public class MailServiceImplTest {
 
         Assertions.assertDoesNotThrow(
                 () -> mailService.sendPasswordRecoveryEmail("recover@a.com", "Recover User", "token-1"));
+    }
+
+    @Test
+    public void testBookingResolutionEmailLinksToBookings() {
+        final BookingRequest bookingRequest =
+                new BookingRequest("t", 10, "A A", "a@a.com", "es", "a", BookingState.BOOKING_CONFIRMED, Instant.now());
+        final javax.mail.internet.MimeMessage mimeMessage = Mockito.mock(javax.mail.internet.MimeMessage.class);
+
+        Mockito.when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        Mockito.when(messageSource.getMessage(Mockito.anyString(), Mockito.any(), Mockito.any(Locale.class)))
+                .thenReturn("a");
+        Mockito.when(templateEngine.process(Mockito.eq("booking-resolution"), Mockito.any()))
+                .thenReturn("<p>ok</p>");
+
+        Assertions.assertDoesNotThrow(() -> mailService.sendBookingResolutionEmail(bookingRequest));
+
+        final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
+        Mockito.verify(templateEngine).process(Mockito.eq("booking-resolution"), contextCaptor.capture());
+        Assertions.assertEquals(
+                "http://localhost:8080/bookings#sent-booking-requests",
+                contextCaptor.getValue().getVariable("bookingUrl"));
+    }
+
+    @Test
+    public void testPaymentProofSubmittedEmailLinksToMyBoats() {
+        final javax.mail.internet.MimeMessage mimeMessage = Mockito.mock(javax.mail.internet.MimeMessage.class);
+
+        Mockito.when(userDao.findByEmail("owner@a.com")).thenReturn(Optional.empty());
+        Mockito.when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        Mockito.when(messageSource.getMessage(
+                        Mockito.eq("mail.paymentProofSubmitted.subject"), Mockito.any(), Mockito.any(Locale.class)))
+                .thenReturn("Payment proof");
+        Mockito.when(templateEngine.process(Mockito.eq("payment-proof-submitted"), Mockito.any()))
+                .thenReturn("<p>ok</p>");
+
+        Assertions.assertDoesNotThrow(
+                () -> mailService.sendPaymentProofSubmittedEmail("owner@a.com", "Requester", "Boat", null, null));
+
+        final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
+        Mockito.verify(templateEngine).process(Mockito.eq("payment-proof-submitted"), contextCaptor.capture());
+        Assertions.assertEquals(
+                "http://localhost:8080/my-boats#received-booking-requests",
+                contextCaptor.getValue().getVariable("profileUrl"));
+    }
+
+    @Test
+    public void testPaymentReceivedEmailLinksToBookings() {
+        final javax.mail.internet.MimeMessage mimeMessage = Mockito.mock(javax.mail.internet.MimeMessage.class);
+
+        Mockito.when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        Mockito.when(messageSource.getMessage(
+                        Mockito.eq("mail.paymentReceived.subject"), Mockito.any(), Mockito.any(Locale.class)))
+                .thenReturn("Payment received");
+        Mockito.when(templateEngine.process(Mockito.eq("payment-received"), Mockito.any()))
+                .thenReturn("<p>ok</p>");
+
+        Assertions.assertDoesNotThrow(() -> mailService.sendPaymentReceivedEmail("requester@a.com", "en", "Boat"));
+
+        final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
+        Mockito.verify(templateEngine).process(Mockito.eq("payment-received"), contextCaptor.capture());
+        Assertions.assertEquals(
+                "http://localhost:8080/bookings#sent-booking-requests",
+                contextCaptor.getValue().getVariable("profileUrl"));
     }
 }

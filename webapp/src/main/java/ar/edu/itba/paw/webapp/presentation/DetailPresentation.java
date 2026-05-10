@@ -2,14 +2,12 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.models.nuevo.ItemDetail;
 import ar.edu.itba.paw.models.nuevo.ItemModel;
 import ar.edu.itba.paw.models.nuevo.ItemStatus;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.services.nuevo.DetailInterface;
-import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
-import ar.edu.itba.paw.webapp.form.ReservationRequestForm;
-import ar.edu.itba.paw.webapp.util.AvailabilityPickerSupport;
 import ar.edu.itba.paw.webapp.util.MarketplaceReturnUrl;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
@@ -26,6 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.view.RedirectView;
 
 @Component
 @RequiredArgsConstructor
@@ -36,39 +35,116 @@ public class DetailPresentation {
     private final UserService userService;
     private final ToastPresentation toastPresentation;
 
-    public ModelAndView detailGet(
-            final int itemId,
-            final HttpServletRequest request,
-            final ReservationRequestForm form,
-            final String returnTo) {
-        final String marketplaceBackHref = MarketplaceReturnUrl.marketplaceBackHref(request, returnTo);
-        final String listingReturnTo = MarketplaceReturnUrl.listingReturnToForParam(returnTo);
-        final Optional<ItemModel> nuevoItem = detailInterface.getItemById(itemId);
-        if (nuevoItem.isEmpty()) {
+    /**
+     * @return {@link ModelAndView} for the detail page, or a {@link RedirectView} for canonical snapshot / auth
+     *     redirects.
+     */
+    public Object detailPage(
+            final int itemId, final HttpServletRequest request, final Optional<Long> pathSnapshotVersionId) {
+        final String marketplaceBackHref = MarketplaceReturnUrl.marketplaceBackHref(request, null);
+        final User viewer = currentAuthenticatedUserOrNull();
+        final Optional<Integer> viewerId = viewer == null ? Optional.empty() : Optional.of(viewer.getId());
+
+        if (pathSnapshotVersionId.isPresent()) {
+            final Optional<ItemDetail> viewerHead = detailInterface.getItemDetail(itemId, viewerId, Optional.empty());
+            if (viewerHead.isEmpty()
+                    || viewerHead.get().getVersions() == null
+                    || viewerHead.get().getVersions().isEmpty()) {
+                return contextRelativeRedirect("/marketplace");
+            }
+            final long pathVid = pathSnapshotVersionId.get();
+            final long effectiveCurrentVersionId = resolvePublishedOrViewerCurrentVersionId(itemId, viewerHead.get());
+            if (pathVid == effectiveCurrentVersionId) {
+                return snapshotRedirectToCanonicalItem(itemId);
+            }
+            if (viewer == null) {
+                return contextRelativeRedirect("/login");
+            }
+        }
+
+        final Optional<ItemDetail> nuevoDetail = detailInterface.getItemDetail(itemId, viewerId, pathSnapshotVersionId);
+        if (nuevoDetail.isEmpty()
+                || nuevoDetail.get().getVersions() == null
+                || nuevoDetail.get().getVersions().isEmpty()) {
+            if (pathSnapshotVersionId.isPresent()) {
+                return contextRelativeRedirect("/marketplace");
+            }
             final ModelAndView mav = new ModelAndView("detail");
             mav.addObject("itemId", itemId);
             mav.addObject("resolvedItem", null);
             mav.addObject("showsCurrentPublishedVersion", false);
             mav.addObject("marketplaceBackHref", marketplaceBackHref);
-            mav.addObject("listingReturnTo", listingReturnTo);
             mav.addObject("toasts", toastPresentation.errorCodeToasts("detail.item.notFound"));
             return mav;
         }
-        return buildNuevoItemDetailView(itemId, nuevoItem.get(), request, form, marketplaceBackHref, listingReturnTo);
+        final ItemDetail itemDetail = nuevoDetail.get();
+        final long currentVersionId = itemDetail.getVersions().get(0).getVersionId();
+        final ItemDetail.ItemModelVersion displayPair;
+        if (pathSnapshotVersionId.isEmpty()) {
+            displayPair = itemDetail.getVersions().get(0);
+        } else {
+            final long requestedId = pathSnapshotVersionId.get();
+            final Optional<ItemDetail.ItemModelVersion> match = itemDetail.getVersions().stream()
+                    .filter(v -> v.getVersionId() == requestedId)
+                    .findFirst();
+            if (match.isEmpty()) {
+                return contextRelativeRedirect("/marketplace");
+            }
+            displayPair = match.get();
+        }
+        final boolean viewingNonCurrentVersion = displayPair.getVersionId() != currentVersionId;
+        return buildNuevoItemDetailView(
+                itemId,
+                itemDetail,
+                displayPair,
+                currentVersionId,
+                viewingNonCurrentVersion,
+                viewer,
+                request,
+                marketplaceBackHref);
+    }
+
+    /**
+     * Published "live" version id (same as anonymous detail) when the item is visible publicly; otherwise the first
+     * version in the viewer-specific list (e.g. host-only draft).
+     */
+    private long resolvePublishedOrViewerCurrentVersionId(final int itemId, final ItemDetail viewerHead) {
+        final Optional<ItemDetail> publicHead =
+                detailInterface.getItemDetail(itemId, Optional.empty(), Optional.empty());
+        if (publicHead.isPresent()
+                && publicHead.get().getVersions() != null
+                && !publicHead.get().getVersions().isEmpty()) {
+            return publicHead.get().getVersions().get(0).getVersionId();
+        }
+        return viewerHead.getVersions().get(0).getVersionId();
+    }
+
+    private static RedirectView snapshotRedirectToCanonicalItem(final int itemId) {
+        final RedirectView view = new RedirectView("/item/" + itemId);
+        view.setContextRelative(true);
+        return view;
+    }
+
+    private static RedirectView contextRelativeRedirect(final String path) {
+        final RedirectView view = new RedirectView(path);
+        view.setContextRelative(true);
+        return view;
     }
 
     private ModelAndView buildNuevoItemDetailView(
             final int itemId,
-            final ItemModel item,
+            final ItemDetail itemDetail,
+            final ItemDetail.ItemModelVersion displayPair,
+            final long currentVersionId,
+            final boolean viewingNonCurrentVersion,
+            final User viewer,
             final HttpServletRequest request,
-            final ReservationRequestForm form,
-            final String marketplaceBackHref,
-            final String listingReturnTo) {
+            final String marketplaceBackHref) {
+        final ItemModel item = displayPair.getItemModel();
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
 
         final Integer ownerId = parseHostId(item.getHostId());
-        final User currentUser = currentAuthenticatedUserOrNull();
-        final boolean isOwner = currentUser != null && ownerId != null && ownerId.equals(currentUser.getId());
+        final boolean isOwner = viewer != null && ownerId != null && ownerId.equals(viewer.getId());
 
         final User itemOwner =
                 ownerId == null ? null : itemService.findUserById(ownerId).orElse(null);
@@ -88,17 +164,17 @@ public class DetailPresentation {
         }
 
         final boolean isActive = item.getStatus() == ItemStatus.ACTIVE;
-        final AvailabilityPickerBuilder.Data availability = AvailabilityPickerBuilder.build(
-                itemService.listAvailabilitiesByItemId(itemId), itemService.listBookingsByItemId(itemId));
 
         final ModelAndView mav = new ModelAndView("nuevo/item-detail");
+        mav.addObject("itemDetail", itemDetail);
         mav.addObject("item", item);
+        mav.addObject("currentVersionId", currentVersionId);
+        mav.addObject("selectedVersionId", displayPair.getVersionId());
+        mav.addObject("viewingNonCurrentVersion", viewingNonCurrentVersion);
+        mav.addObject("showVersionSelector", itemDetail.getVersions().size() > 1);
         mav.addObject("isOwner", isOwner);
-        mav.addObject("selectedSnapshot", null);
-        mav.addObject("hideListingLiveVersionNavigation", false);
+        mav.addObject("hideListingLiveVersionNavigation", viewingNonCurrentVersion && !isActive && !isOwner);
         mav.addObject("listingInactiveNotice", !isActive);
-        mav.addObject("guestSnapshots", List.of());
-        mav.addObject("hostSnapshots", List.of());
         mav.addObject("itemOwner", itemOwner);
         mav.addObject("itemReviews", reviews);
         mav.addObject("reviewAuthorNames", reviewAuthorNames);
@@ -113,40 +189,14 @@ public class DetailPresentation {
                         : ownerName.substring(0, 1).toUpperCase());
         mav.addObject(
                 "pendingItemReviewAction",
-                currentUser == null
+                viewer == null
                         ? null
                         : itemService
-                                .findPendingReviewAction(currentUser.getId(), itemId)
+                                .findPendingReviewAction(viewer.getId(), itemId)
                                 .orElse(null));
 
-        AvailabilityPickerSupport.addAvailabilityPickerData(mav, "reservation", availability);
-        final String requestedDate = form.getDate();
-        final String requestedStart = form.getStartTime();
-        final String requestedEnd = form.getEndTime();
-        final String resolvedDate =
-                AvailabilityPickerBuilder.resolveSelectedDate(requestedDate, availability.offeredDates(), "");
-        final List<String> reservationSlots = availability.offeredTimesByDate().getOrDefault(resolvedDate, List.of());
-        final boolean validRequestedRange = resolvedDate.equals(requestedDate)
-                && requestedStart != null
-                && !requestedStart.isBlank()
-                && requestedEnd != null
-                && !requestedEnd.isBlank()
-                && AvailabilityPickerBuilder.hasContinuousAvailability(reservationSlots, requestedStart, requestedEnd);
-        final String resolvedStart = validRequestedRange
-                ? requestedStart
-                : AvailabilityPickerBuilder.resolveSelectedTime(requestedStart, reservationSlots, "");
-        final String resolvedEnd = validRequestedRange
-                ? requestedEnd
-                : AvailabilityPickerBuilder.resolveSelectedTime(requestedEnd, reservationSlots, "");
-        form.setDate(resolvedDate);
-        form.setStartTime(resolvedStart);
-        form.setEndTime(resolvedEnd);
-        mav.addObject("reservationDate", resolvedDate);
-        mav.addObject("reservationStartTime", resolvedStart);
-        mav.addObject("reservationEndTime", resolvedEnd);
         mav.addObject("itemLocationSlug", "");
         mav.addObject("marketplaceBackHref", marketplaceBackHref);
-        mav.addObject("listingReturnTo", listingReturnTo);
         return mav;
     }
 

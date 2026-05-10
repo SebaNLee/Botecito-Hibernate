@@ -303,11 +303,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <c:forEach items="${items}" var="item">
-        <c:url var="itemUrl" value="/nuevo/item/${item.id}">
-          <c:if test="${not empty marketplaceItemReturnTo}">
-            <c:param name="returnTo" value="${marketplaceItemReturnTo}" />
-          </c:if>
-        </c:url>
+        <c:url var="itemUrl" value="/item/${item.id}" />
         <a href="${itemUrl}" data-marketplace-item-link class="group card min-w-0 bg-base-100 shadow-sm overflow-hidden no-underline text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <figure class="aspect-[4/3] overflow-hidden">
             <c:url var="itemCoverSrc" value="${item.images[0]}" />

@@ -6,7 +6,6 @@ import ar.edu.itba.paw.models.nuevo.MarketplaceSearchResult;
 import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.nuevo.MarketplaceInterface;
 import ar.edu.itba.paw.webapp.form.nuevo.MarketplaceSearchForm;
-import ar.edu.itba.paw.webapp.util.MarketplaceReturnUrl;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -25,11 +24,11 @@ public class MarketplacePresentation {
 
     public ModelAndView marketplaceGet(final HttpServletRequest request, final MarketplaceSearchForm search) {
         final MarketplaceSearchModel model = toModel(search);
+        // Persistence joins MAX(version.id) per item; each ItemModel is the latest version only.
         final MarketplaceSearchResult result = marketplaceInterface.searchMarketplace(model);
         final List<ItemModel> items = result.getItems();
         final ModelAndView mav = new ModelAndView("marketplace", "marketplaceSearch", search);
         mav.addObject("items", items);
-        mav.addObject("marketplaceItemReturnTo", MarketplaceReturnUrl.returnToFromMarketplaceRequest(request));
         addListingModelObjects(mav, search, items, result.getTotalCount());
         return mav;
     }
@@ -43,7 +42,6 @@ public class MarketplacePresentation {
         final ModelAndView mav = new ModelAndView("marketplace", "marketplaceSearch", search);
         mav.addAllObjects(errors.getModel());
         mav.addObject("items", items);
-        mav.addObject("marketplaceItemReturnTo", MarketplaceReturnUrl.returnToFromMarketplaceRequest(request));
         addListingModelObjects(mav, search, items, 0L);
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
         return mav;

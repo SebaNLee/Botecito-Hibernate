@@ -35,6 +35,8 @@ public class ItemListingRowOrm {
     private final Integer coverImageId;
     private final Double averageRating;
     private final Long totalReviews;
+    /** Version id for this row; set for all listing/detail queries that join {@code VersionOrm v}. */
+    private final Integer versionId;
 
     public ItemModel toItemModel() {
         final ItemModel item = new ItemModel();

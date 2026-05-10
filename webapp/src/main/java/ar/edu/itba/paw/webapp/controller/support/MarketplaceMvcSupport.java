@@ -25,7 +25,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -129,24 +128,6 @@ public final class MarketplaceMvcSupport {
         return populateMarketplaceItemView(view.get(), request.getContextPath(), form);
     }
 
-    public void snapshotCoverImage(final HttpServletResponse response, final int itemId, final int versionId)
-            throws java.io.IOException {
-        final User currentUser = currentAuthenticatedUserOrNull();
-        if (currentUser == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
-        }
-        final ItemSnapshot snapshot =
-                resolveAuthorizedSnapshotVersion(versionId, itemId, currentUser).orElse(null);
-        if (snapshot == null || snapshot.getCoverImageData() == null) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return;
-        }
-        response.setContentType("image/jpeg");
-        response.setContentLength(snapshot.getCoverImageData().length);
-        response.getOutputStream().write(snapshot.getCoverImageData());
-    }
-
     public ModelAndView submitMarketplaceItemRequest(
             final HttpServletRequest request,
             final int itemId,
@@ -236,16 +217,8 @@ public final class MarketplaceMvcSupport {
         mav.addObject("reviewCreatedAtLabels", buildReviewCreatedAtLabels(view.itemReviews()));
 
         final int resolvedItemId = view.item().getId();
-        final String displayImageUrl;
-        final List<String> displayImageUrls;
-        if (view.selectedSnapshot() != null && view.selectedSnapshot().getCoverImageData() != null) {
-            displayImageUrl = contextPath + "/item/" + resolvedItemId + "/snapshot/"
-                    + view.selectedSnapshot().getVersionId() + "/cover";
-            displayImageUrls = List.of(displayImageUrl);
-        } else {
-            displayImageUrl = ItemImageUtils.resolveImageUrl(itemService, resolvedItemId, contextPath);
-            displayImageUrls = ItemImageUtils.resolveImageUrls(itemService, resolvedItemId, contextPath);
-        }
+        final String displayImageUrl = ItemImageUtils.resolveImageUrl(itemService, resolvedItemId, contextPath);
+        final List<String> displayImageUrls = ItemImageUtils.resolveImageUrls(itemService, resolvedItemId, contextPath);
         mav.addObject("itemImageUrl", displayImageUrl);
         mav.addObject("itemImageUrls", displayImageUrls);
 

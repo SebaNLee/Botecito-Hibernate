@@ -6,7 +6,6 @@ import ar.edu.itba.paw.webapp.form.nuevo.MarketplaceSearchForm;
 import ar.edu.itba.paw.webapp.presentation.MarketplacePresentation;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -15,15 +14,14 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 @RequiredArgsConstructor
 public class MarketplaceController {
 
-    private final MarketplaceMvcSupport marketplaceMvcSupport;
     private final MarketplacePresentation marketplacePresentation;
+    private final MarketplaceMvcSupport marketplaceMvcSupport;
 
     @ModelAttribute("reservationRequestForm")
     public ReservationRequestForm reservationRequestForm(final Locale locale) {
@@ -54,29 +52,7 @@ public class MarketplaceController {
         return marketplacePresentation.marketplaceGet(request, search);
     }
 
-    @RequestMapping(value = "/item/{id:[0-9]+}", method = RequestMethod.GET)
-    public ModelAndView marketplaceItem(
-            final HttpServletRequest request,
-            @PathVariable("id") final int itemId,
-            @RequestParam(value = "date", required = false) final String requestedDate,
-            @RequestParam(value = "startTime", required = false) final String requestedStartTime,
-            @RequestParam(value = "endTime", required = false) final String requestedEndTime,
-            @RequestParam(value = "snapshotVersionId", required = false) final Integer snapshotVersionId,
-            @ModelAttribute("reservationRequestForm") final ReservationRequestForm form) {
-        return marketplaceMvcSupport.marketplaceItem(
-                request, itemId, requestedDate, requestedStartTime, requestedEndTime, snapshotVersionId, form);
-    }
-
-    @RequestMapping(value = "/item/{itemId:[0-9]+}/snapshot/{versionId:[0-9]+}/cover", method = RequestMethod.GET)
-    public void snapshotCoverImage(
-            @PathVariable("itemId") final int itemId,
-            @PathVariable("versionId") final int versionId,
-            final HttpServletResponse response)
-            throws java.io.IOException {
-        marketplaceMvcSupport.snapshotCoverImage(response, itemId, versionId);
-    }
-
-    @RequestMapping(value = "/item/{id:[0-9]+}", method = RequestMethod.POST)
+    @RequestMapping(value = "/item/{id:[1-9]\\d*}", method = RequestMethod.POST)
     public ModelAndView submitMarketplaceItemRequest(
             final HttpServletRequest request,
             @PathVariable("id") final int itemId,

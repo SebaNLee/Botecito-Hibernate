@@ -15,6 +15,19 @@
     day: "numeric",
     month: "long",
   });
+  /** Same fields as above but calendar day in UTC (pairs with isoToUtcCivilDate). */
+  const DATE_FORMATTER_UTC = new Intl.DateTimeFormat(UI_LOCALE, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+  const DATE_TRIGGER_SHORT_WEEKDAY_UTC = new Intl.DateTimeFormat(UI_LOCALE, {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
   const FILTER_STORAGE_KEY = "paw.marketplaceFilters";
   const ALL_TIMES = buildAllTimes();
   const MONTH_SECTION_CLASS = "picker-month";
@@ -142,6 +155,16 @@
     return new Date(isoDate + "T00:00:00");
   }
 
+  /** Civil calendar Y-M-D at UTC midnight (no browser local offset shift). */
+  function isoToUtcCivilDate(isoDate) {
+    const parts = isoDateParts(isoDate).map(Number);
+    if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) {
+      return isoToDate(isoDate);
+    }
+
+    return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+  }
+
   function formatLongDate(isoDate) {
     if (!isoDate) {
       return "";
@@ -151,15 +174,19 @@
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }
 
-  function formatDatePickerTriggerLabel(isoDate) {
+  function formatDatePickerTriggerLabel(isoDate, civilCalendar) {
     if (!isoDate) {
       return "";
     }
 
-    const date = isoToDate(isoDate);
-    let formatted = DATE_FORMATTER.format(date);
+    const date = civilCalendar ? isoToUtcCivilDate(isoDate) : isoToDate(isoDate);
+    const longFmt = civilCalendar ? DATE_FORMATTER_UTC : DATE_FORMATTER;
+    const shortFmt = civilCalendar
+      ? DATE_TRIGGER_SHORT_WEEKDAY_UTC
+      : DATE_TRIGGER_SHORT_WEEKDAY;
+    let formatted = longFmt.format(date);
     if (formatted.length > 32) {
-      formatted = DATE_TRIGGER_SHORT_WEEKDAY.format(date);
+      formatted = shortFmt.format(date);
     }
 
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
@@ -717,8 +744,12 @@
         root.dataset.restrictToAvailability,
         true,
       );
-      this.today = todayIsoDate();
-      this.maxDate = visibleRangeEndIsoDate();
+      const anchorToday = (root.dataset.anchorTodayIso || "").trim();
+      const anchorMax = (root.dataset.anchorMaxDateIso || "").trim();
+      this.civilCalendar = parseBoolean(root.dataset.civilCalendar, false);
+      this.useAnchorRange = Boolean(anchorToday && anchorMax);
+      this.today = this.useAnchorRange ? anchorToday : todayIsoDate();
+      this.maxDate = this.useAnchorRange ? anchorMax : visibleRangeEndIsoDate();
       this.root.__datePicker = this;
       mountFloatingPanel(this.panel);
 
@@ -877,7 +908,7 @@
 
     updateValueLabel() {
       this.valueNode.textContent = this.input.value
-        ? formatDatePickerTriggerLabel(this.input.value)
+        ? formatDatePickerTriggerLabel(this.input.value, this.civilCalendar)
         : this.placeholder;
 
       const hasValue = Boolean(this.input.value);

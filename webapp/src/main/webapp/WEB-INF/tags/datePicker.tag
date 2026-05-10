@@ -1,6 +1,6 @@
 <%@ tag language="java" pageEncoding="UTF-8" body-content="scriptless" %>
 <%@ attribute name="id" required="true" %>
-<%@ attribute name="name" required="true" %>
+<%@ attribute name="dateFieldName" required="true" %>
 <%@ attribute name="offeredDatesJson" required="true" %>
 <%@ attribute name="occupiedDatesJson" required="true" %>
 <%@ attribute name="label" required="false" %>
@@ -9,6 +9,9 @@
 <%@ attribute name="icon" required="false" %>
 <%@ attribute name="containerClass" required="false" %>
 <%@ attribute name="restrictToAvailability" required="false" %>
+<%@ attribute name="anchorTodayIso" required="false" %>
+<%@ attribute name="anchorMaxDateIso" required="false" %>
+<%@ attribute name="civilCalendar" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
@@ -30,10 +33,16 @@
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
 <c:set var="resolvedRestrictToAvailability" value="${empty restrictToAvailability ? true : restrictToAvailability}" />
 <c:set var="resolvedLocale" value="${not empty pageContext.response.locale.language ? pageContext.response.locale.language : 'es'}" />
+<c:set var="resolvedAnchorTodayIso" value="${not empty anchorTodayIso ? anchorTodayIso : ''}" />
+<c:set var="resolvedAnchorMaxDateIso" value="${not empty anchorMaxDateIso ? anchorMaxDateIso : ''}" />
+<c:set var="resolvedCivilCalendar" value="${empty civilCalendar ? 'false' : civilCalendar}" />
 
 <fieldset
     class="fieldset min-w-0 max-w-full w-full ${resolvedContainerClass}"
     data-date-picker
+    data-anchor-today-iso="${fn:escapeXml(resolvedAnchorTodayIso)}"
+    data-anchor-max-date-iso="${fn:escapeXml(resolvedAnchorMaxDateIso)}"
+    data-civil-calendar="${fn:escapeXml(resolvedCivilCalendar)}"
     data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
     data-restrict-to-availability="${resolvedRestrictToAvailability}"
     data-offered-dates='${fn:escapeXml(offeredDatesJson)}'
@@ -42,7 +51,7 @@
     data-select-date-label="${fn:escapeXml(datePickerSelectDate)}"
     data-available-label="${fn:escapeXml(datePickerAvailable)}"
     data-occupied-label="${fn:escapeXml(datePickerOccupied)}">
-  <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-picker-input />
+  <input id="${id}" name="${dateFieldName}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-picker-input />
 
   <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
     <c:out value="${resolvedLabel}" />

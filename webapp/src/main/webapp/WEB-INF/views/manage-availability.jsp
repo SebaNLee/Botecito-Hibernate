@@ -90,7 +90,7 @@
       <form method="get" action="${pageUrl}" data-manage-availability-date-form class="mb-6">
         <paw:datePicker
             id="manageAvailabilityDate"
-            name="date"
+            dateFieldName="date"
             offeredDatesJson="${offeredDatesJson}"
             occupiedDatesJson="${blockedDatesJson}"
             label="${datePickerLabel}"

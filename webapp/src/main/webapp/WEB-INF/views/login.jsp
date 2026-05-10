@@ -12,6 +12,7 @@
 <spring:message code="login.password.label" var="passwordLabel" />
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen">
+  <paw:toastNotifier />
   <div class="w-full max-w-md px-6">
     <div class="card bg-base-100 shadow-sm border border-outline-variant/20">
       <div class="card-body p-8 gap-6">

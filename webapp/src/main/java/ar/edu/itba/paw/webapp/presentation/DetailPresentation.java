@@ -1,16 +1,26 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.models.nuevo.AvailabilityWindow;
 import ar.edu.itba.paw.models.nuevo.ItemDetail;
 import ar.edu.itba.paw.models.nuevo.ItemModel;
-import ar.edu.itba.paw.models.nuevo.ItemStatus;
+import ar.edu.itba.paw.models.nuevo.PreBookingReq;
+import ar.edu.itba.paw.models.nuevo.ReviewModel;
+import ar.edu.itba.paw.models.nuevo.enums.ItemStatus;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.services.nuevo.BookingInterface;
 import ar.edu.itba.paw.services.nuevo.DetailInterface;
+import ar.edu.itba.paw.services.nuevo.PreBookingCreateResult;
+import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
+import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
+import ar.edu.itba.paw.webapp.form.nuevo.PreBookingForm;
+import ar.edu.itba.paw.webapp.util.AvailabilityPickerSupport;
 import ar.edu.itba.paw.webapp.util.MarketplaceReturnUrl;
+import ar.edu.itba.paw.webapp.util.NuevoDetailAvailabilityPicker;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -23,7 +33,9 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
 
 @Component
@@ -31,13 +43,15 @@ import org.springframework.web.servlet.view.RedirectView;
 public class DetailPresentation {
 
     private final DetailInterface detailInterface;
+    private final BookingInterface bookingInterface;
     private final ItemService itemService;
     private final UserService userService;
     private final ToastPresentation toastPresentation;
 
     /**
-     * @return {@link ModelAndView} for the detail page, or a {@link RedirectView} for canonical snapshot / auth
-     *     redirects.
+     * @return {@link ModelAndView} for the detail page, or a {@link RedirectView}
+     *         for canonical snapshot / auth
+     *         redirects.
      */
     public Object detailPage(
             final int itemId, final HttpServletRequest request, final Optional<Long> pathSnapshotVersionId) {
@@ -69,13 +83,7 @@ public class DetailPresentation {
             if (pathSnapshotVersionId.isPresent()) {
                 return contextRelativeRedirect("/marketplace");
             }
-            final ModelAndView mav = new ModelAndView("detail");
-            mav.addObject("itemId", itemId);
-            mav.addObject("resolvedItem", null);
-            mav.addObject("showsCurrentPublishedVersion", false);
-            mav.addObject("marketplaceBackHref", marketplaceBackHref);
-            mav.addObject("toasts", toastPresentation.errorCodeToasts("detail.item.notFound"));
-            return mav;
+            return buildNuevoItemListingMissingView(itemId, marketplaceBackHref);
         }
         final ItemDetail itemDetail = nuevoDetail.get();
         final long currentVersionId = itemDetail.getVersions().get(0).getVersionId();
@@ -105,7 +113,99 @@ public class DetailPresentation {
     }
 
     /**
-     * Published "live" version id (same as anonymous detail) when the item is visible publicly; otherwise the first
+     * Same as {@link #detailPage(int, HttpServletRequest, Optional)} for canonical item URL, plus
+     * validation error toasts for the pre-booking form.
+     */
+    public Object detailPageWithPreBookingValidationErrors(
+            final int itemId, final HttpServletRequest request, final BindingResult errors) {
+        final Object page = detailPage(itemId, request, Optional.empty());
+        if (!(page instanceof ModelAndView)) {
+            return page;
+        }
+        final ModelAndView mav = (ModelAndView) page;
+        if (!"nuevo/item-detail".equals(mav.getViewName())) {
+            return page;
+        }
+        mergeValidationToasts(mav, errors);
+        return mav;
+    }
+
+    public Object submitPreBooking(
+            final HttpServletRequest request,
+            final int itemId,
+            final PreBookingForm form,
+            final RedirectAttributes redirectAttributes) {
+        final User viewer = currentAuthenticatedUserOrNull();
+        if (viewer == null) {
+            ToastSupport.error(redirectAttributes, "detail.preBooking.loginRequired");
+            return contextRelativeRedirect("/login");
+        }
+        if (form.getVersionId() == null
+                || !isVersionVisibleForViewer(
+                        itemId, viewer.getId(), form.getVersionId().intValue())) {
+            ToastSupport.error(redirectAttributes, "detail.preBooking.invalidVersion");
+            return redirectToItem(itemId);
+        }
+
+        final PreBookingReq req = new PreBookingReq();
+        req.setVersionId(form.getVersionId().intValue());
+        req.setDate(form.getDate());
+        req.setStartTime(form.getStartTime());
+        req.setEndTime(form.getEndTime());
+        req.setMessage(form.getMessage());
+        req.setGuestId(viewer.getId());
+
+        final PreBookingCreateResult outcome = bookingInterface.createBooking(req);
+        if (outcome instanceof PreBookingCreateResult.Created) {
+            ToastSupport.success(redirectAttributes, "detail.preBooking.success");
+            return redirectToItem(itemId);
+        }
+        if (outcome == PreBookingCreateResult.OutsideAvailability.INSTANCE) {
+            ToastSupport.error(redirectAttributes, "detail.preBooking.outsideAvailability");
+            return redirectToItem(itemId);
+        }
+        if (outcome == PreBookingCreateResult.Collision.INSTANCE) {
+            ToastSupport.error(redirectAttributes, "detail.preBooking.collision");
+            return redirectToItem(itemId);
+        }
+        ToastSupport.error(redirectAttributes, "detail.preBooking.unexpected");
+        return redirectToItem(itemId);
+    }
+
+    private boolean isVersionVisibleForViewer(final int itemId, final int viewerUserId, final int versionId) {
+        final Optional<ItemDetail> detail =
+                detailInterface.getItemDetail(itemId, Optional.of(viewerUserId), Optional.empty());
+        if (detail.isEmpty()
+                || detail.get().getVersions() == null
+                || detail.get().getVersions().isEmpty()) {
+            return false;
+        }
+        return detail.get().getVersions().stream().anyMatch(v -> v.getVersionId() == versionId);
+    }
+
+    private void mergeValidationToasts(final ModelAndView mav, final BindingResult errors) {
+        final List<Map<String, String>> validationToasts = toastPresentation.validationToasts(errors, "detail");
+        @SuppressWarnings("unchecked")
+        final List<Map<String, String>> existing =
+                (List<Map<String, String>>) mav.getModel().get("toasts");
+        if (existing != null && !existing.isEmpty()) {
+            final List<Map<String, String>> merged = new ArrayList<>(existing);
+            merged.addAll(validationToasts);
+            mav.addObject("toasts", merged);
+        } else {
+            mav.addObject("toasts", validationToasts);
+        }
+    }
+
+    private static RedirectView redirectToItem(final int itemId) {
+        final RedirectView view = new RedirectView("/item/" + itemId);
+        view.setContextRelative(true);
+        return view;
+    }
+
+    /**
+     * Published "live" version id (same as anonymous detail) when the item is
+     * visible publicly; otherwise the first
      * version in the viewer-specific list (e.g. host-only draft).
      */
     private long resolvePublishedOrViewerCurrentVersionId(final int itemId, final ItemDetail viewerHead) {
@@ -117,6 +217,15 @@ public class DetailPresentation {
             return publicHead.get().getVersions().get(0).getVersionId();
         }
         return viewerHead.getVersions().get(0).getVersionId();
+    }
+
+    private ModelAndView buildNuevoItemListingMissingView(final int itemId, final String marketplaceBackHref) {
+        final ModelAndView mav = new ModelAndView("nuevo/item-detail");
+        mav.addObject("itemListingMissing", true);
+        mav.addObject("itemId", itemId);
+        mav.addObject("marketplaceBackHref", marketplaceBackHref);
+        mav.addObject("toasts", toastPresentation.errorCodeToasts("detail.item.notFound"));
+        return mav;
     }
 
     private static RedirectView snapshotRedirectToCanonicalItem(final int itemId) {
@@ -149,23 +258,23 @@ public class DetailPresentation {
         final User itemOwner =
                 ownerId == null ? null : itemService.findUserById(ownerId).orElse(null);
 
-        final List<Review> reviews = itemService.listLatestReviews(itemId, 12);
+        final List<ReviewModel> versionReviews =
+                displayPair.getReviews() == null ? List.of() : displayPair.getReviews();
         final Map<Integer, String> reviewAuthorNames = new LinkedHashMap<>();
-        for (final Review review : reviews) {
-            if (review.getReviewerUserId() == null || reviewAuthorNames.containsKey(review.getReviewerUserId())) {
+        for (final ReviewModel review : versionReviews) {
+            final int senderId = review.getSenderId();
+            if (senderId <= 0 || reviewAuthorNames.containsKey(senderId)) {
                 continue;
             }
             reviewAuthorNames.put(
-                    review.getReviewerUserId(),
-                    itemService
-                            .findUserById(review.getReviewerUserId())
-                            .map(User::getName)
-                            .orElse(""));
+                    senderId,
+                    itemService.findUserById(senderId).map(User::getName).orElse(""));
         }
 
         final boolean isActive = item.getStatus() == ItemStatus.ACTIVE;
 
         final ModelAndView mav = new ModelAndView("nuevo/item-detail");
+        mav.addObject("itemListingMissing", false);
         mav.addObject("itemDetail", itemDetail);
         mav.addObject("item", item);
         mav.addObject("currentVersionId", currentVersionId);
@@ -173,12 +282,14 @@ public class DetailPresentation {
         mav.addObject("viewingNonCurrentVersion", viewingNonCurrentVersion);
         mav.addObject("showVersionSelector", itemDetail.getVersions().size() > 1);
         mav.addObject("isOwner", isOwner);
+        mav.addObject("viewer", viewer);
         mav.addObject("hideListingLiveVersionNavigation", viewingNonCurrentVersion && !isActive && !isOwner);
         mav.addObject("listingInactiveNotice", !isActive);
         mav.addObject("itemOwner", itemOwner);
-        mav.addObject("itemReviews", reviews);
+        mav.addObject("versionReviews", versionReviews);
         mav.addObject("reviewAuthorNames", reviewAuthorNames);
-        mav.addObject("reviewCreatedAtLabels", buildReviewCreatedAtLabels(reviews));
+        mav.addObject("reviewCreatedAtLabels", buildVersionReviewCreatedAtLabels(versionReviews));
+        mav.addObject("reviewFullStars", buildReviewFullStars(versionReviews));
         mav.addObject("itemImageUrl", primaryImageUrl(item, contextPath));
         mav.addObject("itemImageUrls", prefixImagePaths(item.getImages(), contextPath));
         final String ownerName = itemOwner == null ? null : itemOwner.getName();
@@ -197,7 +308,40 @@ public class DetailPresentation {
 
         mav.addObject("itemLocationSlug", "");
         mav.addObject("marketplaceBackHref", marketplaceBackHref);
+
+        final PreBookingForm preBookingForm = new PreBookingForm();
+        preBookingForm.setVersionId((int) displayPair.getVersionId());
+        mav.addObject("preBookingForm", preBookingForm);
+
+        final List<AvailabilityWindow> availabilityWindows =
+                displayPair.getAvailabilityWindows() == null ? List.of() : displayPair.getAvailabilityWindows();
+        final AvailabilityPickerBuilder.Data detailPickerData = NuevoDetailAvailabilityPicker.build(
+                availabilityWindows, displayPair.getBookings(), displayPair.getVersionTimezone());
+        AvailabilityPickerSupport.addAvailabilityPickerData(mav, "detail", detailPickerData);
+        final String listingTz = displayPair.getVersionTimezone();
+        mav.addObject("detailListingTimezoneId", listingTz == null || listingTz.isBlank() ? "" : listingTz.trim());
+        mav.addObject(
+                "detailListingTodayIso",
+                NuevoDetailAvailabilityPicker.listingCalendarToday(listingTz).format(DateTimeFormatter.ISO_LOCAL_DATE));
+        mav.addObject(
+                "detailListingMaxDateIso",
+                NuevoDetailAvailabilityPicker.listingCalendarMaxInclusive(listingTz)
+                        .format(DateTimeFormatter.ISO_LOCAL_DATE));
+
+        final boolean showPreBookingPanel = isActive
+                && !isOwner
+                && !viewingNonCurrentVersion
+                && availabilityWindows.stream().anyMatch(this::isCompleteAvailabilityWindow);
+        mav.addObject("showPreBookingPanel", showPreBookingPanel);
+
         return mav;
+    }
+
+    private boolean isCompleteAvailabilityWindow(final AvailabilityWindow w) {
+        return w.getWeekday() != null
+                && w.getStartTime() != null
+                && w.getEndTime() != null
+                && w.getEndTime().isAfter(w.getStartTime());
     }
 
     private static Integer parseHostId(final String hostId) {
@@ -235,18 +379,26 @@ public class DetailPresentation {
         return path.startsWith("/") ? contextPath + path : contextPath + "/" + path;
     }
 
-    private static Map<Integer, String> buildReviewCreatedAtLabels(final List<Review> reviews) {
+    private static Map<Integer, String> buildVersionReviewCreatedAtLabels(final List<ReviewModel> reviews) {
         final Locale locale = LocaleContextHolder.getLocale();
         final DateTimeFormatter formatter =
                 DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale);
         final Map<Integer, String> labels = new LinkedHashMap<>();
-        for (final Review review : reviews) {
-            if (review.getId() == null || review.getCreatedAt() == null) {
+        for (final ReviewModel review : reviews) {
+            if (review.getCreatedAt() == null) {
                 continue;
             }
             labels.put(review.getId(), formatter.format(review.getCreatedAt()));
         }
         return labels;
+    }
+
+    private static Map<Integer, Integer> buildReviewFullStars(final List<ReviewModel> reviews) {
+        final Map<Integer, Integer> stars = new LinkedHashMap<>();
+        for (final ReviewModel review : reviews) {
+            stars.put(review.getId(), (int) Math.floor(review.getRating()));
+        }
+        return stars;
     }
 
     private User currentAuthenticatedUserOrNull() {

@@ -5,6 +5,7 @@ import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.PasswordResetForm;
 import ar.edu.itba.paw.webapp.form.RegisterForm;
+import ar.edu.itba.paw.webapp.util.PostLoginRedirectSupport;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,11 +27,21 @@ public class AuthController {
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ModelAndView login(
+            final HttpServletRequest request,
             @RequestParam(value = "error", required = false) final String error,
             @RequestParam(value = "logout", required = false) final String logout,
             @RequestParam(value = "registered", required = false) final String registered,
             @RequestParam(value = "legacyToken", required = false) final String legacyToken,
-            @RequestParam(value = "passwordRecovered", required = false) final String passwordRecovered) {
+            @RequestParam(value = "passwordRecovered", required = false) final String passwordRecovered,
+            @RequestParam(value = "next", required = false) final String next) {
+
+        if (next != null) {
+            if (PostLoginRedirectSupport.isSafeInternalRedirect(next)) {
+                request.getSession().setAttribute(PostLoginRedirectSupport.SESSION_ATTR, next.trim());
+            } else {
+                request.getSession().removeAttribute(PostLoginRedirectSupport.SESSION_ATTR);
+            }
+        }
 
         final ModelAndView mav = new ModelAndView("login");
         if (error != null) {

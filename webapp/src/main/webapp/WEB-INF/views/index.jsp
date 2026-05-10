@@ -64,7 +64,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
         <div class="w-full min-w-0 px-3 py-3 md:flex-[0.8]">
           <paw:datePicker
             id="landing-date"
-            name="date"
+            dateFieldName="date"
             label="${dateLabel}"
             placeholder="${datePlaceholder}"
             restrictToAvailability="false"
@@ -78,8 +78,8 @@ charset=UTF-8" pageEncoding="UTF-8" %>
           <paw:timeRangePicker
             id="landing-time-range"
             dateInputId="landing-date"
-            startName="startTime"
-            endName="endTime"
+            startTimeFieldName="startTime"
+            endTimeFieldName="endTime"
             label="${timeLabel}"
             placeholder="${timePlaceholder}"
             restrictToAvailability="false"

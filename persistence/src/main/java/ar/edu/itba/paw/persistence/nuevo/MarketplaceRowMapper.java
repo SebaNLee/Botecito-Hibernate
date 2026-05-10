@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.ItemModel;
-import ar.edu.itba.paw.models.nuevo.ItemStatus;
+import ar.edu.itba.paw.models.nuevo.enums.ItemStatus;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;

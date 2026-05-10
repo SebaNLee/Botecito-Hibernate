@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.models.nuevo;
 
+import ar.edu.itba.paw.models.nuevo.enums.ItemStatus;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;

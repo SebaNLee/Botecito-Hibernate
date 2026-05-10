@@ -277,12 +277,18 @@
   }
 
   function readMarketplacePersistSnapshot() {
-    const filterForm = document.querySelector('[data-filter-form="marketplace"]');
-    const toolbarForm = document.querySelector("[data-marketplace-toolbar-form]");
+    const filterForm = document.querySelector(
+      '[data-filter-form="marketplace"]',
+    );
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
     if (!filterForm && !toolbarForm) {
       return normalizeState({});
     }
-    const filters = filterForm ? readFilterStateFromForm(filterForm) : normalizeState({});
+    const filters = filterForm
+      ? readFilterStateFromForm(filterForm)
+      : normalizeState({});
     const params = new URLSearchParams(window.location.search);
     const sortBy =
       toolbarForm?.querySelector('[name="sortBy"]')?.value?.trim() ||
@@ -290,7 +296,9 @@
     const pageSize =
       toolbarForm?.querySelector('[name="pageSize"]')?.value?.trim() ||
       filterForm?.querySelector('[name="pageSize"]')?.value?.trim() ||
-      (params.has("pageSize") ? String(params.get("pageSize") || "").trim() : "");
+      (params.has("pageSize")
+        ? String(params.get("pageSize") || "").trim()
+        : "");
     const extra = {};
     if (sortBy) {
       extra.sortBy = sortBy;
@@ -329,7 +337,10 @@
     writeStoredState(APPLIED_FILTERS_KEY, snapshot);
     reflectAppliedState(snapshot);
     const action = toolbarForm.getAttribute("action") || "/marketplace";
-    const merged = new URL(buildUrlWithFilters(action, snapshot), window.location.origin);
+    const merged = new URL(
+      buildUrlWithFilters(action, snapshot),
+      window.location.origin,
+    );
     merged.searchParams.set("page", "1");
     window.location.assign(merged.toString());
   }
@@ -344,15 +355,17 @@
       navigateMarketplaceToolbar(toolbarForm);
     });
 
-    toolbarForm.querySelectorAll('[name="sortBy"], [name="pageSize"]').forEach((el) => {
-      el.addEventListener("change", () => {
-        if (typeof toolbarForm.requestSubmit === "function") {
-          toolbarForm.requestSubmit();
-        } else {
-          navigateMarketplaceToolbar(toolbarForm);
-        }
+    toolbarForm
+      .querySelectorAll('[name="sortBy"], [name="pageSize"]')
+      .forEach((el) => {
+        el.addEventListener("change", () => {
+          if (typeof toolbarForm.requestSubmit === "function") {
+            toolbarForm.requestSubmit();
+          } else {
+            navigateMarketplaceToolbar(toolbarForm);
+          }
+        });
       });
-    });
   }
 
   function readFilterStateFromForm(form) {
@@ -428,7 +441,9 @@
         );
       });
 
-    const toolbarForm = document.querySelector("[data-marketplace-toolbar-form]");
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
     hydrateMarketplaceToolbar(toolbarForm, normalized);
   }
 
@@ -1096,7 +1111,9 @@
 
     setDateTimeState(form, normalized);
 
-    const toolbarForm = document.querySelector("[data-marketplace-toolbar-form]");
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
     hydrateMarketplaceToolbar(toolbarForm, normalized);
   }
 
@@ -1132,11 +1149,15 @@
 
     bindDateTimeDraftPersistence(form, persistDraft);
 
-    const toolbarForm = document.querySelector("[data-marketplace-toolbar-form]");
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
     if (toolbarForm) {
-      toolbarForm.querySelectorAll('[name="sortBy"], [name="pageSize"]').forEach((el) => {
-        el.addEventListener("change", persistDraft);
-      });
+      toolbarForm
+        .querySelectorAll('[name="sortBy"], [name="pageSize"]')
+        .forEach((el) => {
+          el.addEventListener("change", persistDraft);
+        });
     }
   }
 
@@ -1196,7 +1217,9 @@
   }
 
   function initializeMarketplaceFilters() {
-    const toolbarForm = document.querySelector("[data-marketplace-toolbar-form]");
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
     bindMarketplaceToolbarForm(toolbarForm);
 
     const form = document.querySelector('[data-filter-form="marketplace"]');
@@ -1247,7 +1270,10 @@
       writeStoredState(APPLIED_FILTERS_KEY, nextState);
       reflectAppliedState(nextState);
       const action = form.getAttribute("action") || "/marketplace";
-      const merged = new URL(buildUrlWithFilters(action, nextState), window.location.origin);
+      const merged = new URL(
+        buildUrlWithFilters(action, nextState),
+        window.location.origin,
+      );
       merged.searchParams.set("page", "1");
       window.location.assign(merged.toString());
     });

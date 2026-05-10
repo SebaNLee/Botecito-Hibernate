@@ -1,14 +1,15 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<%-- Nuevo item detail: same layout as marketplace-item.jsp; model attribute "item" is ar.edu.itba.paw.models.nuevo.ItemModel --%>
+<%-- Nuevo item detail: model includes item when loaded; when itemListingMissing is true, only itemId and marketplaceBackHref are required. --%>
 
 <fmt:setLocale value="es_AR" />
 <c:url var="publishUrl" value="/publish" />
-<c:url var="currentVersionUrl" value="/item/${item.id}" />
 <spring:message code="itemDetail.unavailable.mismatchPrefix" var="unavailableMismatchPrefix" />
 <spring:message code="itemDetail.unavailable.mismatchSuffix" var="unavailableMismatchSuffix" />
 <spring:message code="common.and" var="andLabel" />
@@ -30,15 +31,50 @@
 <spring:message code="itemDetail.description.empty" var="itemDescriptionEmptyLabel" />
 <spring:message code="itemDetail.owner.ownPublicationNotice" var="ownerPublicationNotice" />
 <spring:message code="itemDetail.owner.blockButton" var="ownerBlockButtonLabel" />
+<spring:message code="detail.preBooking.subtitle" var="detailPreBookingSubtitle" />
+<c:url var="prebookLoginUrl" value="/login" />
+<spring:message code="itemDetail.form.loginToBook" var="itemDetailLoginToBookLabel" />
+<spring:message code="itemDetail.form.requestBooking" var="itemDetailRequestBookingLabel" />
+<spring:message code="filters.date" var="itemDetailDateLabel" />
+<spring:message code="filters.date.placeholder" var="itemDetailDatePlaceholder" />
+<spring:message code="filters.time" var="itemDetailTimeLabel" />
+<spring:message code="filters.time.placeholder" var="itemDetailTimePlaceholder" />
+<spring:message code="itemDetail.form.submit" var="itemDetailFormSubmitLabel" />
+<spring:message code="itemDetail.form.message" var="itemDetailRequestMessageLabel" />
+<spring:message code="itemDetail.form.addMessage" var="itemDetailAddMessageLabel" />
+<spring:message code="itemDetail.form.message.placeholder" var="itemDetailRequestMessagePlaceholder" />
+<spring:message code="itemDetail.price.total" var="itemDetailPriceTotalLabel" />
+<spring:message code="itemDetail.price.pending" var="itemDetailPricePendingLabel" />
+<spring:message code="itemDetail.price.pendingHelp" var="itemDetailPricePendingHelpLabel" />
+<spring:message code="itemDetail.price.pickEnd" var="itemDetailPricePickEndLabel" />
+<spring:message code="itemDetail.price.for" var="itemDetailPriceForLabel" />
+<spring:message code="itemDetail.price.hour" var="itemDetailPriceHourLabel" />
+<spring:message code="itemDetail.price.hours" var="itemDetailPriceHoursLabel" />
+<spring:message code="detail.reviews.anonymous" var="detailReviewAnonymousLabel" />
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8">
   <paw:toastNotifier />
-  <div class="w-full">
-    <a href="<c:out value="${marketplaceBackHref}" />" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
-      <span class="material-symbols-outlined">arrow_back</span>
-      <span><spring:message code="common.back" /></span>
-    </a>
-  </div>
+  <c:choose>
+    <c:when test="${itemListingMissing}">
+      <c:url var="marketplaceUrlFallback" value="/marketplace" />
+      <div class="w-full">
+        <a href="<c:choose><c:when test="${not empty marketplaceBackHref}"><c:out value="${marketplaceBackHref}" /></c:when><c:otherwise>${marketplaceUrlFallback}</c:otherwise></c:choose>" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
+          <span class="material-symbols-outlined">arrow_back</span>
+          <span><spring:message code="common.back" /></span>
+        </a>
+      </div>
+      <div class="w-full max-w-2xl">
+        <paw:alertMessage type="warning"><spring:message code="detail.item.missingBody" /></paw:alertMessage>
+      </div>
+    </c:when>
+    <c:otherwise>
+      <c:url var="currentVersionUrl" value="/item/${item.id}" />
+      <div class="w-full">
+        <a href="<c:out value="${marketplaceBackHref}" />" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
+          <span class="material-symbols-outlined">arrow_back</span>
+          <span><spring:message code="common.back" /></span>
+        </a>
+      </div>
 
   <c:if test="${listingInactiveNotice}">
     <paw:alertMessage type="warning"><spring:message code="itemDetail.listingInactive.notice" /></paw:alertMessage>
@@ -186,23 +222,34 @@
             </c:if>
 
             <c:choose>
-              <c:when test="${not empty itemReviews}">
+              <c:when test="${not empty versionReviews}">
                 <div class="space-y-3">
-                  <c:forEach items="${itemReviews}" var="review">
+                  <c:forEach items="${versionReviews}" var="review">
+                    <c:set var="fullStars" value="${reviewFullStars[review.id]}" />
                     <div class="rounded-xl bg-base-200 p-4 space-y-2">
                       <div class="flex items-center justify-between gap-3">
-                        <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${reviewAuthorNames[review.reviewerUserId]}" /></p>
-                        <div class="flex items-center gap-0.5 shrink-0" aria-label="${review.rating} of 5">
-                          <c:forEach var="starIndex" begin="1" end="5">
-                            <c:choose>
-                              <c:when test="${starIndex <= review.rating}">
-                                <span class="material-symbols-outlined text-sm leading-none text-warning">star</span>
-                              </c:when>
-                              <c:otherwise>
-                                <span class="material-symbols-outlined text-sm leading-none text-outline opacity-[0.35]">star</span>
-                              </c:otherwise>
-                            </c:choose>
-                          </c:forEach>
+                        <p class="m-0 text-sm font-bold text-on-surface">
+                          <c:choose>
+                            <c:when test="${review.senderId > 0 and not empty reviewAuthorNames[review.senderId]}"><c:out value="${reviewAuthorNames[review.senderId]}" /></c:when>
+                            <c:otherwise><c:out value="${detailReviewAnonymousLabel}" /></c:otherwise>
+                          </c:choose>
+                        </p>
+                        <div class="flex flex-col items-end gap-0.5 shrink-0">
+                          <div class="flex items-center gap-0.5" aria-label="${review.rating} of 5">
+                            <c:forEach var="starIndex" begin="1" end="5">
+                              <c:choose>
+                                <c:when test="${starIndex <= fullStars}">
+                                  <span class="material-symbols-outlined text-sm leading-none text-warning">star</span>
+                                </c:when>
+                                <c:otherwise>
+                                  <span class="material-symbols-outlined text-sm leading-none text-outline opacity-[0.35]">star</span>
+                                </c:otherwise>
+                              </c:choose>
+                            </c:forEach>
+                          </div>
+                          <span class="text-[10px] font-bold text-on-surface-variant tabular-nums">
+                            <fmt:formatNumber value="${review.rating}" minFractionDigits="1" maxFractionDigits="1" />
+                          </span>
                         </div>
                       </div>
                       <p class="m-0 text-xs text-on-surface-variant">
@@ -301,10 +348,126 @@
                 <c:out value="${ownerBlockButtonLabel}" />
                 <span class="material-symbols-outlined text-sm align-middle">event_busy</span>
               </a>
+              <div hidden data-prebook-draft-clear-host data-item-id="${item.id}"></div>
             </c:when>
-            <c:otherwise>
-              <%-- Guest reservation POST is handled outside this GET-only flow. --%>
-            </c:otherwise>
+            <c:when test="${showPreBookingPanel}">
+              <div
+                  data-prebook-draft-root
+                  data-item-id="${item.id}"
+                  data-viewer-logged-in="${viewer != null ? 'true' : 'false'}"
+                  data-login-url="<c:out value="${prebookLoginUrl}" />">
+                <div
+                    class="hidden rounded-2xl bg-base-200 px-4 py-4"
+                    data-reservation-price-summary
+                    data-price-per-hour="${item.price}"
+                    data-currency-symbol="$"
+                    data-price-pending="${fn:escapeXml(itemDetailPricePendingLabel)}"
+                    data-price-pending-help="${fn:escapeXml(itemDetailPricePendingHelpLabel)}"
+                    data-price-pick-end="${fn:escapeXml(itemDetailPricePickEndLabel)}"
+                    data-price-for-label="${fn:escapeXml(itemDetailPriceForLabel)}"
+                    data-price-hour-label="${fn:escapeXml(itemDetailPriceHourLabel)}"
+                    data-price-hours-label="${fn:escapeXml(itemDetailPriceHoursLabel)}">
+                  <div class="flex items-baseline justify-between gap-3">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-outline"><c:out value="${itemDetailPriceTotalLabel}" /></span>
+                    <span class="text-2xl font-black text-primary" data-price-total><c:out value="${itemDetailPricePendingLabel}" /></span>
+                  </div>
+                  <p class="mb-0 mt-2 text-xs text-on-surface-variant" data-price-duration><c:out value="${itemDetailPricePendingHelpLabel}" /></p>
+                </div>
+                <c:url var="preBookingPostUrl" value="/item/${item.id}" />
+                <form:form
+                    id="detail-prebook-form"
+                    modelAttribute="preBookingForm"
+                    action="${preBookingPostUrl}"
+                    method="post"
+                    cssClass="space-y-4"
+                    data-submit-loading-form="true">
+                  <spring:hasBindErrors name="preBookingForm">
+                    <c:if test="${errors.hasGlobalErrors()}">
+                      <c:forEach items="${errors.globalErrors}" var="globalErr">
+                        <paw:alertMessage type="error"><spring:message code="${globalErr.code}" /></paw:alertMessage>
+                      </c:forEach>
+                    </c:if>
+                  </spring:hasBindErrors>
+                  <p class="m-0 text-sm text-on-surface-variant"><c:out value="${detailPreBookingSubtitle}" /></p>
+                  <c:if test="${not empty detailListingTimezoneId}">
+                    <p class="m-0 text-xs font-semibold text-on-surface rounded-xl border border-outline-variant/30 bg-base-200/50 px-3 py-2">
+                      <spring:message code="detail.preBooking.timezoneNotice" arguments="${detailListingTimezoneId}" />
+                    </p>
+                  </c:if>
+                  <form:hidden path="versionId" />
+                  <paw:datePicker
+                      id="detail-prebook-date"
+                      dateFieldName="date"
+                      label="${itemDetailDateLabel}"
+                      value="${preBookingForm.date}"
+                      placeholder="${itemDetailDatePlaceholder}"
+                      restrictToAvailability="true"
+                      offeredDatesJson="${detailOfferedDatesJson}"
+                      occupiedDatesJson="${detailOccupiedDatesJson}"
+                      anchorTodayIso="${detailListingTodayIso}"
+                      anchorMaxDateIso="${detailListingMaxDateIso}"
+                      civilCalendar="true" />
+                  <form:errors path="date" element="p" cssClass="text-error text-xs mt-1" />
+                  <paw:timeRangePicker
+                      id="detail-prebook-time"
+                      dateInputId="detail-prebook-date"
+                      startTimeFieldName="startTime"
+                      endTimeFieldName="endTime"
+                      label="${itemDetailTimeLabel}"
+                      startValue="${preBookingForm.startTime}"
+                      endValue="${preBookingForm.endTime}"
+                      placeholder="${itemDetailTimePlaceholder}"
+                      restrictToAvailability="true"
+                      offeredTimesJson="${detailOfferedTimesJson}"
+                      occupiedTimesJson="${detailOccupiedTimesJson}" />
+                  <form:errors path="startTime" element="p" cssClass="text-error text-xs mt-1" />
+                  <form:errors path="endTime" element="p" cssClass="text-error text-xs mt-1" />
+
+                  <label class="label cursor-pointer justify-start gap-3 rounded-xl bg-base-200 px-4 py-3">
+                    <input
+                        type="checkbox"
+                        class="checkbox checkbox-primary checkbox-sm"
+                        data-optional-toggle="detail-prebook-message-panel"
+                        ${not empty preBookingForm.message ? 'checked="checked"' : ''} />
+                    <span class="label-text font-bold text-on-surface"><c:out value="${itemDetailAddMessageLabel}" /></span>
+                  </label>
+                  <div id="detail-prebook-message-panel" class="${empty preBookingForm.message ? 'hidden' : ''}" data-optional-panel>
+                    <paw:textareaField
+                        path="message"
+                        label="${itemDetailRequestMessageLabel}"
+                        placeholder="${itemDetailRequestMessagePlaceholder}"
+                        rows="4"
+                        maxlength="255" />
+                  </div>
+
+                  <c:choose>
+                    <c:when test="${viewer == null}">
+                      <paw:button
+                          type="button"
+                          color="primary"
+                          text="${itemDetailLoginToBookLabel}"
+                          fullWidth="true"
+                          size="lg"
+                          iconTrailing="true"
+                          icon="chevron_right"
+                          cssClass="mt-2 js-prebook-login" />
+                    </c:when>
+                    <c:otherwise>
+                      <paw:button
+                          type="submit"
+                          color="primary"
+                          text="${itemDetailRequestBookingLabel}"
+                          submitLoading="true"
+                          fullWidth="true"
+                          size="lg"
+                          iconTrailing="true"
+                          icon="chevron_right"
+                          cssClass="mt-2" />
+                    </c:otherwise>
+                  </c:choose>
+                </form:form>
+              </div>
+            </c:when>
           </c:choose>
         </div>
       </div>
@@ -361,4 +524,6 @@
       <button aria-label="${unavailableBackLabel}">close</button>
     </form>
   </dialog>
+    </c:otherwise>
+  </c:choose>
 </paw:layout>

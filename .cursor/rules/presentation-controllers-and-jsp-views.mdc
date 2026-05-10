@@ -53,10 +53,10 @@ public ModelAndView landing() {
     return new ModelAndView("index");
 }
 
-@RequestMapping(value = "/marketplace/{item_id}", method = RequestMethod.GET)
-public ModelAndView marketplaceItem(@PathVariable("item_id") final String itemId) {
-    final ModelAndView mav = new ModelAndView("marketplace-item");
-    mav.addObject("itemId", itemId);
+@RequestMapping(value = "/item/{id:[1-9]\\d*}", method = RequestMethod.GET)
+public ModelAndView itemDetail(@PathVariable("id") final int itemId) {
+    final ModelAndView mav = new ModelAndView("nuevo/item-detail");
+    // … populate model (see DetailPresentation / DetailController in this repo)
     return mav;
 }
 

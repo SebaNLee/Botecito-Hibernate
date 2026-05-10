@@ -21,7 +21,7 @@ webapp/src/main/webapp/WEB-INF/
 |- views/
 |  |- index.jsp
 |  |- marketplace.jsp
-|  |- marketplace-item.jsp
+|  |- nuevo/item-detail.jsp
 |  `- helloworld/index.jsp
 `- tags/
    |- button.tag

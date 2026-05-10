@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.persistence.orm.daos.BookingHibernateDao;
 import ar.edu.itba.paw.persistence.orm.daos.DetailHibernateDao;
 import ar.edu.itba.paw.persistence.orm.daos.MarketplaceHibernateDao;
 import ar.edu.itba.paw.persistence.orm.daos.SelectorsHibernateDao;
@@ -30,7 +31,11 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
         excludeFilters =
                 @ComponentScan.Filter(
                         type = FilterType.ASSIGNABLE_TYPE,
-                        classes = {DetailHibernateDao.class, MarketplaceHibernateDao.class, SelectorsHibernateDao.class
+                        classes = {
+                            BookingHibernateDao.class,
+                            DetailHibernateDao.class,
+                            MarketplaceHibernateDao.class,
+                            SelectorsHibernateDao.class
                         }))
 @Configuration
 public class TestConfiguration {

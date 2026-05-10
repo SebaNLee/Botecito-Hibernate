@@ -10,6 +10,10 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+/**
+ * Resolves item detail visibility for guests and hosts. {@link ItemDetail#getVersions()} entries include per-version
+ * availability windows, bookings, and reviews supplied by {@link DetailDao} implementations.
+ */
 @Service
 @RequiredArgsConstructor
 public final class DetailImpl implements DetailInterface {

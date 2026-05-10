@@ -553,6 +553,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
     data-item-unavailable-alert
     data-marketplace-url="${marketplaceUrl}"
     data-item-location-option-id="${viewItem.locationOptionId}"
+    data-item-location-slug="${itemLocationSlug}"
     data-item-capacity="${viewItem.capacityPeople}"
     data-item-max-weight="${viewItem.maxWeightKg}"
     data-item-difficulty-level="${viewItem.difficultyLevel}"

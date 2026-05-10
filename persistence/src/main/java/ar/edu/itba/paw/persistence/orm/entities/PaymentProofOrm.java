@@ -7,12 +7,12 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.Lob;
 import javax.persistence.OneToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Type;
 
 @Getter
 @Setter
@@ -35,7 +35,7 @@ public class PaymentProofOrm {
     @Column(name = "content_type", nullable = false, length = 100)
     private String contentType;
 
-    @Lob
+    @Type(type = "org.hibernate.type.BinaryType")
     @Column(name = "file_data", nullable = false)
     private byte[] fileData;
 

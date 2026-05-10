@@ -16,18 +16,16 @@
 <spring:message code="filters.time.placeholder" var="timePlaceholder" />
 <spring:message code="filters.people" var="peopleLabel" />
 <spring:message code="filters.people.any" var="peopleAnyPlaceholder" />
+<spring:message code="filters.itemType" var="itemTypeLabel" />
+<spring:message code="filters.itemType.placeholder" var="itemTypePlaceholder" />
+<spring:message code="filters.itemType.panel" var="itemTypePanelCaption" />
+<spring:message code="filters.itemType.noMatch" var="itemTypeNoMatchCaption" />
 <spring:message code="filters.maxWeight" var="maxWeightLabel" />
 <spring:message code="filters.maxWeight.helper" var="maxWeightHelper" />
 <spring:message code="filters.difficulty" var="difficultyFilterLabel" />
 <spring:message code="filters.difficulty.any" var="difficultyAnyLabel" />
-<spring:message code="filters.minRating" var="minRatingFilterLabel" />
-<spring:message code="filters.minRating.any" var="minRatingAnyLabel" />
-<spring:message code="filters.minRating.1plus" var="minRating1PlusLabel" />
-<spring:message code="filters.minRating.2plus" var="minRating2PlusLabel" />
-<spring:message code="filters.minRating.3plus" var="minRating3PlusLabel" />
-<spring:message code="filters.minRating.4plus" var="minRating4PlusLabel" />
-<spring:message code="filters.minRating.5plus" var="minRating5PlusLabel" />
-<spring:message code="itemDetail.value.notAvailable" var="notAvailableLabel" />
+<spring:message code="filters.minAvgRating" var="minAvgRatingFilterLabel" />
+<spring:message code="filters.minAvgRating.any" var="minAvgRatingAnyLabel" />
 <spring:message code="landing.hero.search" var="searchLabel" />
 <spring:message code="marketplace.filters.apply" var="filtersApplyLabel" />
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
@@ -48,8 +46,11 @@
     <c:if test="${not empty param.searchQuery}">
       <c:param name="searchQuery" value="${param.searchQuery}" />
     </c:if>
-    <c:if test="${not empty param.locationOptionId}">
-      <c:param name="locationOptionId" value="${param.locationOptionId}" />
+    <c:if test="${not empty param.location}">
+      <c:param name="location" value="${param.location}" />
+    </c:if>
+    <c:if test="${not empty param.itemType}">
+      <c:param name="itemType" value="${param.itemType}" />
     </c:if>
     <c:if test="${not empty param.date}">
       <c:param name="date" value="${param.date}" />
@@ -69,8 +70,8 @@
     <c:if test="${not empty param.difficultyLevel}">
       <c:param name="difficultyLevel" value="${param.difficultyLevel}" />
     </c:if>
-    <c:if test="${not empty param.minRating}">
-      <c:param name="minRating" value="${param.minRating}" />
+    <c:if test="${not empty param.minAvgRating}">
+      <c:param name="minAvgRating" value="${param.minAvgRating}" />
     </c:if>
   </c:url>
 </c:if>
@@ -82,8 +83,11 @@
     <c:if test="${not empty param.searchQuery}">
       <c:param name="searchQuery" value="${param.searchQuery}" />
     </c:if>
-    <c:if test="${not empty param.locationOptionId}">
-      <c:param name="locationOptionId" value="${param.locationOptionId}" />
+    <c:if test="${not empty param.location}">
+      <c:param name="location" value="${param.location}" />
+    </c:if>
+    <c:if test="${not empty param.itemType}">
+      <c:param name="itemType" value="${param.itemType}" />
     </c:if>
     <c:if test="${not empty param.date}">
       <c:param name="date" value="${param.date}" />
@@ -103,8 +107,8 @@
     <c:if test="${not empty param.difficultyLevel}">
       <c:param name="difficultyLevel" value="${param.difficultyLevel}" />
     </c:if>
-    <c:if test="${not empty param.minRating}">
-      <c:param name="minRating" value="${param.minRating}" />
+    <c:if test="${not empty param.minAvgRating}">
+      <c:param name="minAvgRating" value="${param.minAvgRating}" />
     </c:if>
   </c:url>
 </c:if>
@@ -123,11 +127,11 @@
         <jsp:body>
           <form id="marketplace-filters-form" action="${marketplaceUrl}" method="get" class="space-y-6" data-filter-form="marketplace">
             <input type="hidden" name="pageSize" value="${pageSize}" />
-            <paw:locationPicker
+            <paw:optionsPicker
                 id="marketplace-location"
-                name="locationOptionId"
+                name="location"
                 label="${locationLabel}"
-                value="${param.locationOptionId}"
+                value="${marketplaceSearch.location}"
                 placeholder="${locationPlaceholder}"
                 icon="location_on"
                 variant="inline" />
@@ -156,6 +160,28 @@
                   occupiedTimesJson="{}" />
             </div>
 
+            <paw:peopleCount
+                id="marketplace-capacity"
+                name="capacity"
+                label="${peopleLabel}"
+                value="${param.capacity}"
+                allowEmpty="true"
+                placeholder="${peopleAnyPlaceholder}"
+                min="1"
+                max="20" />
+
+            <paw:optionsPicker
+                id="marketplace-item-type"
+                name="itemType"
+                label="${itemTypeLabel}"
+                value="${marketplaceSearch.itemType}"
+                placeholder="${itemTypePlaceholder}"
+                icon="category"
+                variant="inline"
+                optionsUrl="/item-type-options"
+                panelCaption="${itemTypePanelCaption}"
+                emptyCaption="${itemTypeNoMatchCaption}" />
+
             <div class="form-control w-full">
               <label for="marketplace-difficulty" class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 block">
                 <c:out value="${difficultyFilterLabel}" />
@@ -170,31 +196,7 @@
               </select>
             </div>
 
-            <div class="form-control w-full">
-              <label for="marketplace-min-rating" class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 block">
-                <c:out value="${minRatingFilterLabel}" />
-              </label>
-              <select id="marketplace-min-rating" name="minRating" class="select select-bordered w-full font-semibold text-on-surface">
-                <option value="" ${empty param.minRating ? 'selected="selected"' : ''}><c:out value="${minRatingAnyLabel}" /></option>
-                <option value="1" ${param.minRating == '1' ? 'selected="selected"' : ''}>★☆☆☆☆ <c:out value="${minRating1PlusLabel}" /></option>
-                <option value="2" ${param.minRating == '2' ? 'selected="selected"' : ''}>★★☆☆☆ <c:out value="${minRating2PlusLabel}" /></option>
-                <option value="3" ${param.minRating == '3' ? 'selected="selected"' : ''}>★★★☆☆ <c:out value="${minRating3PlusLabel}" /></option>
-                <option value="4" ${param.minRating == '4' ? 'selected="selected"' : ''}>★★★★☆ <c:out value="${minRating4PlusLabel}" /></option>
-                <option value="5" ${param.minRating == '5' ? 'selected="selected"' : ''}>★★★★★ <c:out value="${minRating5PlusLabel}" /></option>
-              </select>
-            </div>
-
-            <paw:peopleCount
-                id="marketplace-capacity"
-                name="capacity"
-                label="${peopleLabel}"
-                value="${param.capacity}"
-                allowEmpty="true"
-                placeholder="${peopleAnyPlaceholder}"
-                min="1"
-                max="20" />
-
-            <div class="pt-4 border-t border-outline-variant/15">
+            <div class="pt-4 border-t border-outline-variant/15 space-y-6">
               <paw:weightCapacitySlider
                   id="marketplace-max-weight"
                   name="maxWeight"
@@ -204,6 +206,12 @@
                   max="2000"
                   step="50"
                   helper="${maxWeightHelper}" />
+              <paw:minAvgRatingStarPicker
+                  id="marketplace-min-rating"
+                  name="minAvgRating"
+                  label="${minAvgRatingFilterLabel}"
+                  value="${marketplaceSearch.minAvgRating}"
+                  clearLabel="${minAvgRatingAnyLabel}" />
             </div>
 
             <div class="flex flex-col gap-3">
@@ -244,26 +252,31 @@
         <p class="text-on-surface-variant mt-2 m-0"><spring:message code="marketplace.results.count" arguments="${itemsCount}" /></p>
       </div>
 
-      <form action="${marketplaceUrl}" method="get" class="flex items-center gap-3 text-sm font-medium text-on-surface-variant">
+      <form
+          action="${marketplaceUrl}"
+          method="get"
+          class="flex items-center gap-3 text-sm font-medium text-on-surface-variant"
+          data-marketplace-toolbar-form>
         <input type="hidden" name="page" value="${marketplaceSearch.page}" />
         <input type="hidden" name="searchQuery" value="${param.searchQuery}" data-applied-filter-mirror />
-        <input type="hidden" name="locationOptionId" value="${param.locationOptionId}" data-applied-filter-mirror />
+        <input type="hidden" name="location" value="${marketplaceSearch.location}" data-applied-filter-mirror />
+        <input type="hidden" name="itemType" value="${marketplaceSearch.itemType}" data-applied-filter-mirror />
         <input type="hidden" name="date" value="${param.date}" data-applied-filter-mirror />
         <input type="hidden" name="startTime" value="${param.startTime}" data-applied-filter-mirror />
         <input type="hidden" name="endTime" value="${param.endTime}" data-applied-filter-mirror />
         <input type="hidden" name="capacity" value="${param.capacity}" data-applied-filter-mirror />
         <input type="hidden" name="maxWeight" value="${param.maxWeight}" data-applied-filter-mirror />
         <input type="hidden" name="difficultyLevel" value="${param.difficultyLevel}" data-applied-filter-mirror />
-        <input type="hidden" name="minRating" value="${param.minRating}" data-applied-filter-mirror />
+        <input type="hidden" name="minAvgRating" value="${marketplaceSearch.minAvgRating}" data-applied-filter-mirror />
         <label for="marketplace-sort" class="shrink-0"><spring:message code="marketplace.sort.label" /></label>
-        <select id="marketplace-sort" name="sortBy" class="select select-sm font-bold text-primary" onchange="this.form.submit()">
+        <select id="marketplace-sort" name="sortBy" class="select select-sm font-bold text-primary">
           <option value="newest" ${empty marketplaceSearch.sortBy || marketplaceSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.newest" /></option>
           <option value="oldest" ${marketplaceSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.oldest" /></option>
           <option value="price_asc" ${marketplaceSearch.sortBy == 'price_asc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceAsc" /></option>
           <option value="price_desc" ${marketplaceSearch.sortBy == 'price_desc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceDesc" /></option>
         </select>
         <label for="marketplace-page-size" class="shrink-0 ml-2">Páginas:</label>
-        <select id="marketplace-page-size" name="pageSize" class="select select-sm w-20 font-bold text-primary" onchange="this.form.submit()">
+        <select id="marketplace-page-size" name="pageSize" class="select select-sm w-20 font-bold text-primary">
             <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
             <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
             <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
@@ -290,21 +303,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <c:forEach items="${items}" var="item">
-        <c:url var="itemUrl" value="/item/${item.id}">
-          <c:param name="pageSize" value="${pageSize}" />
-          <c:if test="${not empty param.date}">
-            <c:param name="date" value="${param.date}" />
-          </c:if>
-          <c:if test="${not empty param.startTime}">
-            <c:param name="startTime" value="${param.startTime}" />
-          </c:if>
-          <c:if test="${not empty param.endTime}">
-            <c:param name="endTime" value="${param.endTime}" />
-          </c:if>
-          <c:if test="${not empty param.difficultyLevel}">
-            <c:param name="difficultyLevel" value="${param.difficultyLevel}" />
-          </c:if>
-        </c:url>
+        <c:url var="itemUrl" value="/item/${item.id}" />
         <a href="${itemUrl}" data-marketplace-item-link class="group card min-w-0 bg-base-100 shadow-sm overflow-hidden no-underline text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <figure class="aspect-[4/3] overflow-hidden">
             <c:url var="itemCoverSrc" value="${item.images[0]}" />
@@ -341,12 +340,7 @@
                 <div class="flex items-center gap-1.5">
                   <span class="material-symbols-outlined text-outline text-lg">weight</span>
                   <span class="text-sm font-semibold">
-                    <c:choose>
-                      <c:when test="${item.weight != null}">
-                        <spring:message code="marketplace.card.weight" arguments="${item.weight}" />
-                      </c:when>
-                      <c:otherwise><c:out value="${notAvailableLabel}" /></c:otherwise>
-                    </c:choose>
+                    <spring:message code="marketplace.card.weight" arguments="${item.weight}" />
                   </span>
                 </div>
               </div>

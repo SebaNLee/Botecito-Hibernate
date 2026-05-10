@@ -15,7 +15,9 @@ public class MarketplaceSearchModel {
     private Integer capacity;
     private Integer weight;
     private Integer difficulty;
-    private String locationSlug;
+    private Double minAvgRating;
+    private String location;
+    private String itemType;
     private Integer page;
     private Integer pageSize;
     private String sortBy;

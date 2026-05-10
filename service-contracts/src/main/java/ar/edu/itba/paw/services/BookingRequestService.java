@@ -49,6 +49,8 @@ public interface BookingRequestService {
 
     void expireAllDue(OffsetDateTime currentDateTime);
 
+    void expireDueBookingsSchedule();
+
     List<BookingRequest> resolveBookingRequests(List<String> tokens, BookingState newStatus);
 
     Optional<BookingPaymentProof> submitPaymentProof(

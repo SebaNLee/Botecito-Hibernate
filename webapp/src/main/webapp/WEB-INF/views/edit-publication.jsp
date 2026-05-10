@@ -94,7 +94,7 @@
             <form:errors path="difficultyLevel" cssClass="text-error text-xs mt-1" element="p" />
           </fieldset>
           <div class="md:col-span-2">
-            <paw:locationPicker
+            <paw:optionsPicker
                 id="marina"
                 name="marina"
                 label="${publishLocationLabel}"

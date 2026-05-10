@@ -15,6 +15,7 @@ import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -48,7 +49,7 @@ public class MailServiceImpl implements MailService {
             final MessageSource messageSource,
             final ItemDao itemDao,
             final UserDao userDao,
-            final Properties credentialsProperties) {
+            @Qualifier("credentialsProperties") final Properties credentialsProperties) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
         this.messageSource = messageSource;

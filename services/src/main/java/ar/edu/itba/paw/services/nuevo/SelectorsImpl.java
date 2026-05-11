@@ -54,5 +54,4 @@ public final class SelectorsImpl implements SelectorsInterface {
         options.put("5", "5 - Experto");
         return options;
     }
-
 }

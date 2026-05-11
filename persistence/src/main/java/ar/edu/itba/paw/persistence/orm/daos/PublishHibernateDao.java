@@ -37,17 +37,16 @@ public class PublishHibernateDao implements PublishDao {
 
     private static final String HQL_FIND_BY_ID =
             "SELECT i.id, i.host.id, v.type.id, v.title, v.description, v.price, v.capacity, v.weight, v.difficulty, v.location.name,"
-            + " (SELECT m.image.id FROM MediaOrm m WHERE m.version = v AND m.id.index = 0)"
-            + " FROM ItemOrm i"
-            + " JOIN VersionOrm v ON v.item = i"
-            + " AND v.id = (SELECT MAX(v2.id) FROM VersionOrm v2 WHERE v2.item = i)"
-            + " WHERE i.id = :itemId";
+                    + " (SELECT m.image.id FROM MediaOrm m WHERE m.version = v AND m.id.index = 0)"
+                    + " FROM ItemOrm i"
+                    + " JOIN VersionOrm v ON v.item = i"
+                    + " AND v.id = (SELECT MAX(v2.id) FROM VersionOrm v2 WHERE v2.item = i)"
+                    + " WHERE i.id = :itemId";
 
     private static final String HQL_AVAILABILITIES =
             "SELECT a FROM AvailabilityOrm a WHERE a.version.id = :versionId ORDER BY a.weekday, a.startTime, a.id";
 
-    private static final String HQL_LATEST_VERSION_ID =
-            "SELECT MAX(v.id) FROM VersionOrm v WHERE v.item.id = :itemId";
+    private static final String HQL_LATEST_VERSION_ID = "SELECT MAX(v.id) FROM VersionOrm v WHERE v.item.id = :itemId";
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -91,7 +90,10 @@ public class PublishHibernateDao implements PublishDao {
 
         if (availabilities != null) {
             for (final AvailabilityWindow window : availabilities) {
-                if (window == null || window.getWeekday() == null || window.getStartTime() == null || window.getEndTime() == null) {
+                if (window == null
+                        || window.getWeekday() == null
+                        || window.getStartTime() == null
+                        || window.getEndTime() == null) {
                     continue;
                 }
                 final AvailabilityOrm a = new AvailabilityOrm();
@@ -191,7 +193,10 @@ public class PublishHibernateDao implements PublishDao {
 
     private static AvailabilityWindow toAvailabilityWindow(final AvailabilityOrm orm) {
         final AvailabilityWindow w = new AvailabilityWindow();
-        w.setWeekday(orm.getWeekday() == null ? null : DayOfWeek.valueOf(orm.getWeekday().name()));
+        w.setWeekday(
+                orm.getWeekday() == null
+                        ? null
+                        : DayOfWeek.valueOf(orm.getWeekday().name()));
         w.setStartTime(orm.getStartTime());
         w.setEndTime(orm.getEndTime());
         return w;

@@ -106,8 +106,7 @@ public class PublishController {
             @ModelAttribute("publishForm") final PublishBoatForm form, final Locale locale) {
         final ModelAndView mav = publishPresentation.publishStepThree(form, locale);
         if ("publish-contact".equals(mav.getViewName())) {
-            mav.addObject("uploadedImagePreviewUrls",
-                    publishImagePresentation.buildUploadedImagePreviewUrls(form));
+            mav.addObject("uploadedImagePreviewUrls", publishImagePresentation.buildUploadedImagePreviewUrls(form));
         }
         return mav;
     }
@@ -126,8 +125,7 @@ public class PublishController {
             final SessionStatus sessionStatus) {
         final ModelAndView mav = publishPresentation.publishStepThreeSubmit(form, errors, locale, sessionStatus);
         if ("publish-contact".equals(mav.getViewName())) {
-            mav.addObject("uploadedImagePreviewUrls",
-                    publishImagePresentation.buildUploadedImagePreviewUrls(form));
+            mav.addObject("uploadedImagePreviewUrls", publishImagePresentation.buildUploadedImagePreviewUrls(form));
         }
         return mav;
     }

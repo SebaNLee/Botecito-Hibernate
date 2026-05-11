@@ -16,10 +16,11 @@ public class PublishActionController {
     private final MyBoatsActionsPresentation myBoatsActionsPresentation;
 
     // TODO edit after bookings, redirects now. Not implemented
-    @RequestMapping(value = "/profile/item/{id:[0-9]+}/edit", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(
+            value = "/profile/item/{id:[0-9]+}/edit",
+            method = {RequestMethod.GET, RequestMethod.POST})
     public ModelAndView editNotAvailable(
-            @PathVariable("id") final int itemId,
-            final RedirectAttributes redirectAttributes) {
+            @PathVariable("id") final int itemId, final RedirectAttributes redirectAttributes) {
         return new ModelAndView("redirect:/my-boats");
     }
 

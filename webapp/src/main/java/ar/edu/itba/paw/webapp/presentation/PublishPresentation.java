@@ -131,7 +131,8 @@ public class PublishPresentation {
         }
 
         sessionStatus.setComplete();
-        return new ModelAndView("redirect:/publish/success?itemId=" + createdItem.get().getId());
+        return new ModelAndView(
+                "redirect:/publish/success?itemId=" + createdItem.get().getId());
     }
 
     public ModelAndView publishSuccess(final HttpServletRequest request, final Integer itemId) {
@@ -151,7 +152,8 @@ public class PublishPresentation {
         final ModelAndView mav = new ModelAndView("publish-success");
         mav.addObject("item", item.get());
         mav.addObject("itemImageUrl", resolveImageUrl(item.get(), request.getContextPath()));
-        mav.addObject("availabilities", publishService.listAvailabilities(item.get().getId()));
+        mav.addObject(
+                "availabilities", publishService.listAvailabilities(item.get().getId()));
         return mav;
     }
 

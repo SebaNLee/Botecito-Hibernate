@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.models.nuevo;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-@Setter
+@AllArgsConstructor
 public class MyBoatsItem {
     private Integer id;
     private String title;

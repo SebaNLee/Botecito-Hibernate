@@ -4,6 +4,8 @@ import ar.edu.itba.paw.services.nuevo.UserService;
 import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
 import ar.edu.itba.paw.webapp.form.nuevo.RegisterForm;
+import ar.edu.itba.paw.webapp.presentation.AuthModelMapper;
+import ar.edu.itba.paw.webapp.presentation.AuthPresentation;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +31,9 @@ public class AuthControllerTest {
 
     @BeforeEach
     public void setUp() {
-        controller = new AuthController(userService, postRegistrationAuthenticator);
+        final AuthPresentation authPresentation =
+                new AuthPresentation(userService, postRegistrationAuthenticator, new AuthModelMapper());
+        controller = new AuthController(authPresentation);
     }
 
     @Test

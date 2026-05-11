@@ -19,7 +19,7 @@ import org.springframework.web.servlet.ModelAndView;
 public class ProfilePresentation {
 
     private final UserService userService;
-    private final ProfileModelMapper profileModelMapper = new ProfileModelMapper();
+    private final ProfileModelMapper profileModelMapper;
 
     public ModelAndView profilePasswordRecoveryRequest() {
         final UserModel user = currentAuthenticatedUser();

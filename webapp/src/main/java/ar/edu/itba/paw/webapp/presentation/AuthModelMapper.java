@@ -5,7 +5,9 @@ import ar.edu.itba.paw.models.nuevo.UserModel;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordResetForm;
 import ar.edu.itba.paw.webapp.form.nuevo.RegisterForm;
+import org.springframework.stereotype.Component;
 
+@Component
 public class AuthModelMapper {
 
     public UserModel fromRegisterForm(final RegisterForm form) {

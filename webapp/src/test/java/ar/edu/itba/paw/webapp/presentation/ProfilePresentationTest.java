@@ -32,7 +32,7 @@ public class ProfilePresentationTest {
 
     @BeforeEach
     public void setUp() {
-        profilePresentation = new ProfilePresentation(userService);
+        profilePresentation = new ProfilePresentation(userService, new ProfileModelMapper());
     }
 
     @AfterEach

@@ -3,7 +3,9 @@ package ar.edu.itba.paw.webapp.presentation;
 import ar.edu.itba.paw.models.nuevo.PreferredLanguageModel;
 import ar.edu.itba.paw.models.nuevo.UserModel;
 import ar.edu.itba.paw.webapp.form.nuevo.ProfileForm;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ProfileModelMapper {
 
     public UserModel fromProfileForm(final ProfileForm form, final Integer currentUserId) {

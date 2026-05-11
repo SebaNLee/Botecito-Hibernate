@@ -40,4 +40,16 @@ public class ItemController {
         // booking logic goes here
         return new ModelAndView("redirect:/");
     }
+
+    // TODO move to /controller/nuevo
+    @RequestMapping(value = "/create", method = RequestMethod.GET)
+    public ModelAndView createForm() {
+        return new ModelAndView("redirect:/publish");
+    }
+
+    // TODO move to /controller/nuevo
+    @RequestMapping(value = "/create", method = RequestMethod.POST)
+    public ModelAndView create() {
+        return new ModelAndView("redirect:/publish");
+    }
 }

@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @Primary
 @Transactional
-public final class ItemHibernateDao implements ItemDao {
+public class ItemHibernateDao implements ItemDao {
 
     private static final int DEFAULT_WEIGHT = 2000;
     private static final int DEFAULT_DIFFICULTY = 1;

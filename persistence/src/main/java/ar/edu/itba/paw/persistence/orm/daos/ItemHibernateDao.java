@@ -30,7 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @Primary
 @Transactional
-public class ItemHibernateDao implements ItemDao, ar.edu.itba.paw.persistence.nuevo.ItemDao {
+public class ItemHibernateDao
+        implements ItemDao, ar.edu.itba.paw.persistence.nuevo.ItemDao { // TODO delete deprecated fn
 
     private static final int DEFAULT_WEIGHT = 2000;
     private static final int DEFAULT_DIFFICULTY = 1;

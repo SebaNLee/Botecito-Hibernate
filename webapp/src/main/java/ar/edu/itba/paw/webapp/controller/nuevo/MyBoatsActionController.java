@@ -11,7 +11,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequiredArgsConstructor
-public class PublishActionController {
+public class MyBoatsActionController {
 
     private final MyBoatsActionsPresentation myBoatsActionsPresentation;
 

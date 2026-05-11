@@ -34,17 +34,12 @@ public class PublishController {
 
     @ModelAttribute("itemTypeOptions")
     public Map<String, String> itemTypeOptions() {
-        return PublishPresentation.buildItemTypeOptions();
-    }
-
-    @ModelAttribute("capacityOptions")
-    public Map<String, String> capacityOptions() {
-        return PublishPresentation.buildCapacityOptions();
+        return publishPresentation.buildItemTypeOptions();
     }
 
     @ModelAttribute("difficultyOptions")
     public Map<String, String> difficultyOptions() {
-        return PublishPresentation.buildDifficultyOptions();
+        return publishPresentation.buildDifficultyOptions();
     }
 
     @ModelAttribute("uploadedImagePreviewUrls")

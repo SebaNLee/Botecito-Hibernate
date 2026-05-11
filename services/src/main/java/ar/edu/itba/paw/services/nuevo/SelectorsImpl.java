@@ -6,8 +6,10 @@ import ar.edu.itba.paw.models.nuevo.Location;
 import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
 import ar.edu.itba.paw.persistence.nuevo.SelectorsDao;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -41,4 +43,16 @@ public final class SelectorsImpl implements SelectorsInterface {
                 })
                 .toList();
     }
+
+    @Override
+    public Map<String, String> getDifficultyOptions() {
+        final Map<String, String> options = new LinkedHashMap<>();
+        options.put("1", "1 - Principiante");
+        options.put("2", "2 - Basico");
+        options.put("3", "3 - Intermedio");
+        options.put("4", "4 - Avanzado");
+        options.put("5", "5 - Experto");
+        return options;
+    }
+
 }

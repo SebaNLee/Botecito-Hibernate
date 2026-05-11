@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.nuevo.BookingStatusOptionModel;
 import ar.edu.itba.paw.models.nuevo.ItemTypeModel;
 import ar.edu.itba.paw.models.nuevo.Location;
 import java.util.List;
+import java.util.Map;
 
 public interface SelectorsInterface {
     List<Location> getLocationOptions();
@@ -11,4 +12,6 @@ public interface SelectorsInterface {
     List<ItemTypeModel> getItemTypeOptions();
 
     List<BookingStatusOptionModel> getBookingStatusOptions();
+
+    Map<String, String> getDifficultyOptions();
 }

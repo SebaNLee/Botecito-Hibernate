@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import ar.edu.itba.paw.webapp.presentation.PublishImagePresentation;
 import ar.edu.itba.paw.webapp.presentation.PublishPresentation;
 import java.util.List;
 import java.util.Locale;
@@ -26,6 +27,7 @@ import org.springframework.web.servlet.ModelAndView;
 public class PublishController {
 
     private final PublishPresentation publishPresentation;
+    private final PublishImagePresentation publishImagePresentation;
 
     @ModelAttribute("publishForm")
     public PublishBoatForm publishForm() {
@@ -44,12 +46,12 @@ public class PublishController {
 
     @ModelAttribute("uploadedImagePreviewUrls")
     public List<String> uploadedImagePreviewUrls(@ModelAttribute("publishForm") final PublishBoatForm form) {
-        return PublishPresentation.buildUploadedImagePreviewUrls(form);
+        return publishImagePresentation.buildUploadedImagePreviewUrls(form);
     }
 
     @ModelAttribute("maxGalleryImages")
     public int maxGalleryImages() {
-        return PublishPresentation.MAX_GALLERY_IMAGES;
+        return PublishImagePresentation.MAX_GALLERY_IMAGES;
     }
 
     @RequestMapping(value = "/publish", method = RequestMethod.GET)
@@ -61,26 +63,27 @@ public class PublishController {
     public ModelAndView publishStepOneSubmit(
             @Validated(PublishBoatForm.Step1.class) @ModelAttribute("publishForm") final PublishBoatForm form,
             final BindingResult errors) {
+        publishImagePresentation.appendAndClear(form, errors);
         return publishPresentation.publishStepOneSubmit(form, errors);
     }
 
     @RequestMapping(value = "/publish/images/upload", method = RequestMethod.POST)
     public ModelAndView publishImagesUpload(
             @ModelAttribute("publishForm") final PublishBoatForm form, final BindingResult errors) {
-        return publishPresentation.publishImagesUpload(form, errors);
+        return publishImagePresentation.publishImagesUpload(form, errors);
     }
 
     @RequestMapping(value = "/publish/images/remove", method = RequestMethod.POST)
     public ModelAndView publishImagesRemove(
             @ModelAttribute("publishForm") final PublishBoatForm form, @RequestParam("index") final int index) {
-        return publishPresentation.publishImagesRemove(form, index);
+        return publishImagePresentation.publishImagesRemove(form, index);
     }
 
     @RequestMapping(value = "/publish/images/reorder", method = RequestMethod.POST)
     public ModelAndView publishImagesReorder(
             @ModelAttribute("publishForm") final PublishBoatForm form,
             @RequestParam(value = "order", required = false) final String order) {
-        return publishPresentation.publishImagesReorder(form, order);
+        return publishImagePresentation.publishImagesReorder(form, order);
     }
 
     @RequestMapping(value = "/publish/availability", method = RequestMethod.GET)
@@ -101,13 +104,18 @@ public class PublishController {
     @RequestMapping(value = "/publish/contact", method = RequestMethod.GET)
     public ModelAndView publishStepThree(
             @ModelAttribute("publishForm") final PublishBoatForm form, final Locale locale) {
-        return publishPresentation.publishStepThree(form, locale);
+        final ModelAndView mav = publishPresentation.publishStepThree(form, locale);
+        if ("publish-contact".equals(mav.getViewName())) {
+            mav.addObject("uploadedImagePreviewUrls",
+                    publishImagePresentation.buildUploadedImagePreviewUrls(form));
+        }
+        return mav;
     }
 
     @RequestMapping(value = "/publish/preview-image/{index}", method = RequestMethod.GET)
     public ResponseEntity<byte[]> publishPreviewImage(
             @ModelAttribute("publishForm") final PublishBoatForm form, @PathVariable("index") final int index) {
-        return publishPresentation.publishPreviewImage(form, index);
+        return publishImagePresentation.publishPreviewImage(form, index);
     }
 
     @RequestMapping(value = "/publish/contact", method = RequestMethod.POST)
@@ -116,7 +124,12 @@ public class PublishController {
             final BindingResult errors,
             final Locale locale,
             final SessionStatus sessionStatus) {
-        return publishPresentation.publishStepThreeSubmit(form, errors, locale, sessionStatus);
+        final ModelAndView mav = publishPresentation.publishStepThreeSubmit(form, errors, locale, sessionStatus);
+        if ("publish-contact".equals(mav.getViewName())) {
+            mav.addObject("uploadedImagePreviewUrls",
+                    publishImagePresentation.buildUploadedImagePreviewUrls(form));
+        }
+        return mav;
     }
 
     @RequestMapping(value = "/publish/success", method = RequestMethod.GET)

@@ -5,11 +5,13 @@ import ar.edu.itba.paw.models.nuevo.BookingSearchModel;
 import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
 import ar.edu.itba.paw.models.nuevo.IncomingSearch;
 import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
+import ar.edu.itba.paw.models.nuevo.PaymentProof;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
 import ar.edu.itba.paw.persistence.nuevo.BookingDao;
 import ar.edu.itba.paw.persistence.orm.entities.BookingOrm;
 import ar.edu.itba.paw.persistence.orm.entities.BookingStatusEnumOrm;
+import ar.edu.itba.paw.persistence.orm.entities.PaymentProofOrm;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -211,11 +213,34 @@ public class BookingHibernateDao implements BookingDao {
 
     @Override
     public void updateStatus(int id, BookingStatus status) {
+        if (status == null) return;
         entityManager
                 .createQuery("UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id = :bookingId")
                 .setParameter("newStatus", status)
                 .setParameter("bookingId", id)
                 .executeUpdate();
+    }
+
+    @Override
+    public void uploadPayment(PaymentProof p) {
+        if (p == null) return;
+
+        final BookingOrm booking = entityManager.getReference(BookingOrm.class, p.getBookingId());
+
+        final PaymentProofOrm payment = PaymentProofOrm.builder()
+                .booking(booking)
+                .filename(p.getFileName())
+                .contentType(p.getContentType())
+                .fileData(p.getFileData())
+                .createdAt(LocalDateTime.now())
+                .refuseMsg(p.getRefuseMsg())
+                .refusedAt(p.getRefusedAt())
+                .replyMsg(p.getReplyMsg())
+                .repliedAt(p.getRepliedAt())
+                .build();
+
+        entityManager.merge(payment);
+        updateStatus(booking.getId(), BookingStatus.PAID);
     }
 
     private long countMatchingOutcoming(final int guestId, final BookingSearchModel criteria) {

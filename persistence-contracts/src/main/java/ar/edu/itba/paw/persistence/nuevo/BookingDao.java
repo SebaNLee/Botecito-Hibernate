@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.nuevo.Booking;
 import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
 import ar.edu.itba.paw.models.nuevo.IncomingSearch;
 import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
+import ar.edu.itba.paw.models.nuevo.PaymentProof;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
 import java.util.List;
@@ -47,4 +48,6 @@ public interface BookingDao {
     BookingSearchResult searchIncomingBookings(IncomingSearch search);
 
     void updateStatus(int id, BookingStatus status);
+
+    void uploadPayment(PaymentProof paymentProof);
 }

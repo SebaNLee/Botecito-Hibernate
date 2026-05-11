@@ -10,12 +10,14 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
 
 @Getter
 @Setter
+@Builder
 @Entity
 @Table(name = "payment_proof")
 public class PaymentProofOrm {
@@ -53,6 +55,4 @@ public class PaymentProofOrm {
 
     @Column(name = "replied_at")
     private LocalDateTime repliedAt;
-
-    public PaymentProofOrm() {}
 }

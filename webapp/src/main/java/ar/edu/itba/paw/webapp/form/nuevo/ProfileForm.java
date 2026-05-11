@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.webapp.form;
+package ar.edu.itba.paw.webapp.form.nuevo;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;

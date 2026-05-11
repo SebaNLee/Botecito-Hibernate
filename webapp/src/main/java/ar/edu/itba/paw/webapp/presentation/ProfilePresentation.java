@@ -1,8 +1,8 @@
-package ar.edu.itba.paw.webapp.controller.support;
+package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.services.UserService;
-import ar.edu.itba.paw.webapp.form.ProfileForm;
+import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.services.nuevo.UserService;
+import ar.edu.itba.paw.webapp.form.nuevo.ProfileForm;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
@@ -16,37 +16,33 @@ import org.springframework.web.servlet.ModelAndView;
 
 @Component
 @RequiredArgsConstructor
-public final class ProfileMvcSupport {
+public class ProfilePresentation {
 
     private final UserService userService;
+    private final ProfileModelMapper profileModelMapper;
 
     public ModelAndView profilePasswordRecoveryRequest() {
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            return new ModelAndView("redirect:/login");
-        }
-
-        userService
-                .findByEmail(authentication.getName())
-                .ifPresent(user -> userService.requestPasswordRecovery(user.getEmail()));
-
-        return new ModelAndView("redirect:/profile?passwordRecovery=sent");
-    }
-
-    public ModelAndView profile(final boolean edit, final ProfileForm form) {
-        final User user = currentAuthenticatedUser();
+        final UserModel user = currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        populateProfileForm(form, user);
+        userService.requestPasswordRecovery(user);
+        return new ModelAndView("redirect:/profile?passwordRecovery=sent");
+    }
+
+    public ModelAndView profile(final boolean edit, final ProfileForm form) {
+        final UserModel user = currentAuthenticatedUser();
+        if (user == null) {
+            return new ModelAndView("redirect:/login");
+        }
+
+        profileModelMapper.populateProfileForm(form, user);
         return buildProfileView(user, edit);
     }
 
     public ModelAndView profileSubmit(final ProfileForm form, final BindingResult errors) {
-        final User currentUser = currentAuthenticatedUser();
+        final UserModel currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -55,16 +51,8 @@ public final class ProfileMvcSupport {
             return buildProfileView(currentUser, true);
         }
 
-        final User updatedUser = userService
-                .updateProfile(
-                        currentUser.getId(),
-                        form.getGivenName(),
-                        form.getLastName(),
-                        form.getEmail(),
-                        form.getPhone(),
-                        form.getPaymentAlias(),
-                        form.getPreferredLanguage())
-                .orElse(null);
+        final UserModel profileUpdate = profileModelMapper.fromProfileForm(form, currentUser.getId());
+        final UserModel updatedUser = userService.updateProfile(profileUpdate).orElse(null);
         if (updatedUser == null) {
             errors.rejectValue("email", "profile.validation.email.duplicate");
             return buildProfileView(currentUser, true);
@@ -74,7 +62,7 @@ public final class ProfileMvcSupport {
         return new ModelAndView("redirect:/profile?profileAction=updated");
     }
 
-    private ModelAndView buildProfileView(final User user, final boolean profileEdit) {
+    private ModelAndView buildProfileView(final UserModel user, final boolean profileEdit) {
         final ModelAndView mav = new ModelAndView("profile");
         mav.addObject("user", user);
         mav.addObject("memberSinceDisplay", formatMemberSince(user.getCreatedAt()));
@@ -82,23 +70,7 @@ public final class ProfileMvcSupport {
         return mav;
     }
 
-    private static void populateProfileForm(final ProfileForm form, final User user) {
-        if (form == null || user == null || form.getEmail() != null) {
-            return;
-        }
-
-        form.setGivenName(user.getGivenName());
-        form.setLastName(user.getLastName());
-        form.setEmail(user.getEmail());
-        form.setPhone(user.getPhone());
-        form.setPaymentAlias(user.getPaymentAlias());
-        form.setPreferredLanguage(
-                user.getPreferredLanguage() == null
-                        ? null
-                        : user.getPreferredLanguage().getPersistenceCode());
-    }
-
-    private User currentAuthenticatedUser() {
+    private UserModel currentAuthenticatedUser() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()
@@ -108,7 +80,7 @@ public final class ProfileMvcSupport {
         return userService.findByEmail(authentication.getName()).orElse(null);
     }
 
-    private static void refreshAuthenticatedPrincipal(final User user) {
+    private static void refreshAuthenticatedPrincipal(final UserModel user) {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || user == null || user.getEmail() == null) {
             return;

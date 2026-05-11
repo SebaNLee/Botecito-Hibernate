@@ -50,6 +50,7 @@
           <paw:formField path="paymentAlias" label="${paymentAliasLabel}" placeholder="${paymentAliasPlaceholder}" />
           <paw:formField path="password" type="password" label="${passwordLabel}" placeholder="${passwordPlaceholder}" />
           <paw:formField path="confirmPassword" type="password" label="${confirmPasswordLabel}" placeholder="${confirmPasswordPlaceholder}" />
+          <form:errors path="passwordConfirmationValid" cssClass="text-error text-xs mt-1" element="p" />
           <paw:button type="submit" fullWidth="true" color="primary" text="${registerSubmitLabel}" />
         </form:form>
 

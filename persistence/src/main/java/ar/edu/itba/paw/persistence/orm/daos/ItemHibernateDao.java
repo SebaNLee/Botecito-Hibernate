@@ -35,15 +35,27 @@ public class ItemHibernateDao implements ItemDao {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId) {
+    public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId, final int page, final int pageSize) {
         final String hql = baseMyBoatsQuery() + " WHERE i.host.id = :ownerId ORDER BY i.createdAt DESC, i.id DESC";
         final List<Object[]> rows = entityManager
                 .createQuery(hql, Object[].class)
                 .setParameter("ownerId", ownerId)
                 .setParameter("rejectedStatus", BookingStatusEnumOrm.REJECTED)
                 .setParameter("cancelledStatus", BookingStatusEnumOrm.CANCELLED)
+                .setFirstResult((page - 1) * pageSize)
+                .setMaxResults(pageSize)
                 .getResultList();
         return mapMyBoatsRows(rows);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int countMyBoatsItemsByOwnerId(final int ownerId) {
+        final Number count = (Number) entityManager
+                .createQuery("SELECT COUNT(i) FROM ItemOrm i WHERE i.host.id = :ownerId")
+                .setParameter("ownerId", ownerId)
+                .getSingleResult();
+        return count == null ? 0 : count.intValue();
     }
 
     @Override

@@ -6,6 +6,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <fmt:setLocale value="es_AR" />
+<c:url var="myBoatsUrl" value="/my-boats" />
 <c:url var="publishUrl" value="/publish" />
 <spring:message code="nav.publishCta" var="publishCtaLabel" />
 <spring:message code="profile.publications.edit" var="editLabel" />
@@ -26,23 +27,32 @@
 <paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6">
   <paw:toastNotifier />
   <section class="min-w-0 space-y-6">
-      <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div class="min-w-0">
-          <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="myBoats.title" /></h1>
-          <p class="text-on-surface-variant mt-2 m-0"><spring:message code="myBoats.subtitle" /></p>
+      <div class="flex flex-col">
+        <div class="flex items-end justify-between mb-4">
+          <div class="min-w-0">
+            <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="myBoats.title" /></h1>
+            <p class="text-on-surface-variant mt-2 m-0"><spring:message code="myBoats.subtitle" /></p>
+          </div>
+          <a href="${publishUrl}" class="btn btn-secondary shrink-0 no-underline">
+            <span class="material-symbols-outlined text-base">add</span>
+            <c:out value="${publishCtaLabel}" />
+          </a>
         </div>
-        <a href="${publishUrl}" class="btn btn-secondary w-[70%] self-center no-underline sm:w-auto sm:self-auto sm:shrink-0">
-          <span class="material-symbols-outlined text-base">add</span>
-          <c:out value="${publishCtaLabel}" />
-        </a>
+        <form action="${myBoatsUrl}" method="get" class="flex items-center justify-end gap-3 text-sm font-medium text-on-surface-variant">
+          <input type="hidden" name="page" value="1" />
+          <label for="my-boats-page-size" class="shrink-0">Páginas:</label>
+          <select id="my-boats-page-size" name="pageSize" class="select select-sm w-20 font-bold text-primary" onchange="this.form.submit()">
+            <option value="6" ${param.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+            <option value="12" ${empty param.pageSize || param.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+            <option value="18" ${param.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+          </select>
+        </form>
       </div>
 
-      <div class="space-y-8">
-          <div id="my-publications" class="scroll-mt-24 space-y-4">
-            <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.publications.title" /></h2>
-            <c:choose>
+      <div id="my-publications" class="scroll-mt-24 space-y-4">
+        <c:choose>
               <c:when test="${not empty ownedItems}">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 px-1 sm:px-3 md:gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
                   <c:forEach var="item" items="${ownedItems}">
                     <c:url var="itemDetailUrl" value="/item/${item.id}" />
                     <c:url var="editItemUrl" value="/profile/item/${item.id}/edit" />
@@ -173,6 +183,49 @@
                 </div>
               </c:otherwise>
             </c:choose>
-      </div>
+
+      <c:if test="${itemPage.totalPages > 1}">
+        <c:url var="previousPageUrl" value="/my-boats">
+          <c:param name="page" value="${itemPage.previousPage}" />
+          <c:param name="pageSize" value="${itemPage.pageSize}" />
+        </c:url>
+        <c:url var="nextPageUrl" value="/my-boats">
+          <c:param name="page" value="${itemPage.nextPage}" />
+          <c:param name="pageSize" value="${itemPage.pageSize}" />
+        </c:url>
+        <nav class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
+          <c:choose>
+            <c:when test="${itemPage.hasPrevious}">
+              <a href="${previousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
+                <span class="material-symbols-outlined text-sm">arrow_back</span>
+                <spring:message code="marketplace.pagination.previous" />
+              </a>
+            </c:when>
+            <c:otherwise>
+              <span class="btn btn-outline btn-sm btn-disabled gap-2">
+                <span class="material-symbols-outlined text-sm">arrow_back</span>
+                <spring:message code="marketplace.pagination.previous" />
+              </span>
+            </c:otherwise>
+          </c:choose>
+          <span>
+            <spring:message code="marketplace.pagination.page" arguments="${itemPage.page},${itemPage.totalPages}" />
+          </span>
+          <c:choose>
+            <c:when test="${itemPage.hasNext}">
+              <a href="${nextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
+                <spring:message code="marketplace.pagination.next" />
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+              </a>
+            </c:when>
+            <c:otherwise>
+              <span class="btn btn-outline btn-sm btn-disabled gap-2">
+                <spring:message code="marketplace.pagination.next" />
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+              </span>
+            </c:otherwise>
+          </c:choose>
+        </nav>
+      </c:if>
   </section>
 </paw:layout>

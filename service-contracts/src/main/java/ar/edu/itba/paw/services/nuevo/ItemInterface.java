@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ItemInterface {
-    List<MyBoatsItem> listMyBoatsItemsByOwnerId(int ownerId);
+    List<MyBoatsItem> listMyBoatsItemsByOwnerId(int ownerId, int page, int pageSize);
+
+    int countMyBoatsItemsByOwnerId(int ownerId);
 
     Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(int itemId, int ownerId);
 

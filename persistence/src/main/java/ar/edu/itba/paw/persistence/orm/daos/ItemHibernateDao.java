@@ -101,21 +101,22 @@ public class ItemHibernateDao implements ItemDao {
             return false;
         }
         final VersionOrm latest = versions.get(0);
-        final VersionOrm version = new VersionOrm();
-        version.setItem(latest.getItem());
-        version.setType(latest.getType());
-        version.setTitle(updateModel.getTitle());
-        version.setDescription(updateModel.getDescription());
-        version.setPrice(BigDecimal.valueOf(updateModel.getPricePerHour()));
-        version.setCapacity(latest.getCapacity());
-        version.setWeight(latest.getWeight());
-        version.setDifficulty(
-                updateModel.getDifficultyLevel() == null
-                        ? Integer.valueOf(DEFAULT_DIFFICULTY)
-                        : updateModel.getDifficultyLevel());
-        version.setLocation(entityManager.getReference(LocationOrm.class, updateModel.getLocationOptionId()));
-        version.setTimezone(latest.getTimezone());
-        version.setCreatedAt(LocalDateTime.now());
+        final VersionOrm version = VersionOrm.builder()
+                .item(latest.getItem())
+                .type(latest.getType())
+                .title(updateModel.getTitle())
+                .description(updateModel.getDescription())
+                .price(BigDecimal.valueOf(updateModel.getPricePerHour()))
+                .capacity(latest.getCapacity())
+                .weight(latest.getWeight())
+                .difficulty(
+                        updateModel.getDifficultyLevel() == null
+                                ? Integer.valueOf(DEFAULT_DIFFICULTY)
+                                : updateModel.getDifficultyLevel())
+                .location(entityManager.getReference(LocationOrm.class, updateModel.getLocationOptionId()))
+                .timezone(latest.getTimezone())
+                .createdAt(LocalDateTime.now())
+                .build();
         entityManager.persist(version);
         entityManager.flush();
         return true;
@@ -166,25 +167,26 @@ public class ItemHibernateDao implements ItemDao {
             final int locationOptionId) {
         final LocalDateTime now = LocalDateTime.now();
 
-        final ItemOrm item = new ItemOrm();
-        item.setHost(entityManager.getReference(UsersOrm.class, ownerId));
-        item.setStatus(ItemStatusEnumOrm.ACTIVE);
-        item.setCreatedAt(now);
+        final ItemOrm item = ItemOrm.builder()
+                .host(entityManager.getReference(UsersOrm.class, ownerId))
+                .status(ItemStatusEnumOrm.ACTIVE)
+                .createdAt(now)
+                .build();
         entityManager.persist(item);
 
-        final VersionOrm version = new VersionOrm();
-        version.setItem(item);
-        version.setType(entityManager.getReference(ItemTypeOrm.class, typeId));
-        version.setTitle(title);
-        version.setDescription(description);
-        version.setPrice(BigDecimal.valueOf(pricePerHour));
-        version.setCapacity(capacityPeople);
-        version.setWeight(maxWeightKg == null ? DEFAULT_WEIGHT : maxWeightKg.intValue());
-        final int difficulty = difficultyLevel == null ? DEFAULT_DIFFICULTY : difficultyLevel.intValue();
-        version.setDifficulty(difficulty);
-        version.setLocation(entityManager.getReference(LocationOrm.class, locationOptionId));
-        version.setTimezone("America/Argentina/Buenos_Aires");
-        version.setCreatedAt(now);
+        final VersionOrm version = VersionOrm.builder()
+                .item(item)
+                .type(entityManager.getReference(ItemTypeOrm.class, typeId))
+                .title(title)
+                .description(description)
+                .price(BigDecimal.valueOf(pricePerHour))
+                .capacity(capacityPeople)
+                .weight(maxWeightKg == null ? DEFAULT_WEIGHT : maxWeightKg.intValue())
+                .difficulty(difficultyLevel == null ? Integer.valueOf(DEFAULT_DIFFICULTY) : difficultyLevel)
+                .location(entityManager.getReference(LocationOrm.class, locationOptionId))
+                .timezone("America/Argentina/Buenos_Aires")
+                .createdAt(now)
+                .build();
         entityManager.persist(version);
         entityManager.flush();
 

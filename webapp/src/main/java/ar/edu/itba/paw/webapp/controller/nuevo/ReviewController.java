@@ -1,10 +1,7 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
-import ar.edu.itba.paw.models.nuevo.UserModel;
-import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
+import ar.edu.itba.paw.webapp.controller.support.nuevo.ReviewMvcSupport;
 import ar.edu.itba.paw.webapp.form.nuevo.ReviewForm;
-import ar.edu.itba.paw.webapp.presentation.AuthenticatedUserResolver;
-import ar.edu.itba.paw.webapp.presentation.ReviewPresentation;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -21,8 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class ReviewController {
 
-    private final ReviewPresentation reviewPresentation;
-    private final AuthenticatedUserResolver authenticatedUserResolver;
+    private final ReviewMvcSupport reviewMvcSupport;
 
     @RequestMapping(value = "/reviews/booking/{bookingId:[0-9]+}", method = RequestMethod.POST)
     public ModelAndView createReview(
@@ -32,22 +28,7 @@ public class ReviewController {
             @RequestParam(value = "returnTo", required = false, defaultValue = "dashboard") final String returnTo,
             @RequestParam(value = "itemId", required = false) final Integer itemId,
             final RedirectAttributes redirectAttributes) {
-        final UserModel currentUser = authenticatedUserResolver.currentAuthenticatedUser();
-        if (currentUser == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        if (errors.hasErrors()) {
-            ToastSupport.error(redirectAttributes, "profile.reviews.validationError");
-            return ReviewPresentation.reviewRedirect(returnTo, itemId);
-        }
-        return reviewPresentation.createReview(
-                bookingId,
-                currentUser.getId(),
-                form.getRating(),
-                form.getComment(),
-                returnTo,
-                itemId,
-                redirectAttributes);
+        return reviewMvcSupport.createReview(bookingId, form, errors, returnTo, itemId, redirectAttributes);
     }
 
     @RequestMapping(value = "/reviews/{reviewId:[0-9]+}/delete", method = RequestMethod.POST)
@@ -56,10 +37,6 @@ public class ReviewController {
             @RequestParam(value = "returnTo", required = false, defaultValue = "dashboard") final String returnTo,
             @RequestParam(value = "itemId", required = false) final Integer itemId,
             final RedirectAttributes redirectAttributes) {
-        final UserModel currentUser = authenticatedUserResolver.currentAuthenticatedUser();
-        if (currentUser == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        return reviewPresentation.deleteReview(reviewId, currentUser.getId(), returnTo, itemId, redirectAttributes);
+        return reviewMvcSupport.deleteReview(reviewId, returnTo, itemId, redirectAttributes);
     }
 }

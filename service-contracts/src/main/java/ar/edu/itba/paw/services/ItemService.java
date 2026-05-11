@@ -22,8 +22,6 @@ public interface ItemService {
 
     Page<Item> searchItems(ItemSearchCriteria criteria, int page, int pageSize);
 
-    List<Item> listItemsByOwnerId(int ownerId);
-
     List<LocationOption> listLocationOptions();
 
     Optional<Item> findItemById(int id);
@@ -49,10 +47,6 @@ public interface ItemService {
             byte[] primaryImageData);
 
     boolean hasBlockingBookingsForEdition(int itemId);
-
-    Map<Integer, Boolean> publicationDeleteDeactivatesByItemId(List<Item> ownedItems);
-
-    Map<Integer, Boolean> publicationDeleteDisabledByItemId(List<Item> ownedItems);
 
     boolean deleteItemByIdForOwner(int itemId, int ownerId);
 

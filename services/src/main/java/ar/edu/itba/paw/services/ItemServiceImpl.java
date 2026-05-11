@@ -86,10 +86,6 @@ public final class ItemServiceImpl implements ItemService {
         return new Page<>(items, resolvedPage, safePageSize, totalItems);
     }
 
-    public List<Item> listItemsByOwnerId(final int ownerId) {
-        return itemDao.listItemsByOwnerId(ownerId);
-    }
-
     @Override
     public List<LocationOption> listLocationOptions() {
         return itemDao.listLocationOptions();
@@ -581,57 +577,6 @@ public final class ItemServiceImpl implements ItemService {
     @Override
     public Page<Item> searchMarketplace(final ItemSearchCriteria criteria, final int page, final int pageSize) {
         return searchItems(criteria, page, pageSize);
-    }
-
-    @Override
-    public Map<Integer, Boolean> publicationDeleteDeactivatesByItemId(final List<Item> ownedItems) {
-        final Map<Integer, Boolean> map = new LinkedHashMap<>();
-        if (ownedItems == null) {
-            return map;
-        }
-        for (final Item item : ownedItems) {
-            if (item == null || item.getId() == null) {
-                continue;
-            }
-            final boolean hasBlocking =
-                    listBookingsByItemId(item.getId()).stream().anyMatch(b -> isExternalBlockingBooking(item, b));
-            map.put(item.getId(), Boolean.TRUE.equals(item.getActive()) && hasBlocking);
-        }
-        return map;
-    }
-
-    @Override
-    public Map<Integer, Boolean> publicationDeleteDisabledByItemId(final List<Item> ownedItems) {
-        final Map<Integer, Boolean> map = new LinkedHashMap<>();
-        if (ownedItems == null) {
-            return map;
-        }
-        final OffsetDateTime now = OffsetDateTime.now();
-        for (final Item item : ownedItems) {
-            if (item == null || item.getId() == null) {
-                continue;
-            }
-            final boolean hasFutureBlocking = listBookingsByItemId(item.getId()).stream()
-                    .anyMatch(b -> isExternalBlockingBooking(item, b)
-                            && b.getEndTime() != null
-                            && b.getEndTime().isAfter(now));
-            map.put(item.getId(), !Boolean.TRUE.equals(item.getActive()) && hasFutureBlocking);
-        }
-        return map;
-    }
-
-    private static boolean isExternalBlockingBooking(final Item item, final ItemBooking booking) {
-        if (booking == null || booking.getState() == null) {
-            return false;
-        }
-        if (booking.getState() == BookingState.BOOKING_REJECTED
-                || booking.getState() == BookingState.BOOKING_CANCELLED) {
-            return false;
-        }
-        if (item == null || item.getOwnerId() == null) {
-            return booking.getGuestId() != null;
-        }
-        return booking.getGuestId() != null && !booking.getGuestId().equals(item.getOwnerId());
     }
 
     public Map<String, String> validatePublicationDraft(final PublicationDraft draft) {

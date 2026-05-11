@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.webapp.form;
+package ar.edu.itba.paw.webapp.form.nuevo;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
@@ -14,4 +14,6 @@ public class PasswordRecoveryRequestForm {
     @Email(message = "{passwordRecovery.request.validation.email.invalid}")
     @Size(max = 150, message = "{passwordRecovery.request.validation.email.max}")
     private String email;
+
+    private String sent;
 }

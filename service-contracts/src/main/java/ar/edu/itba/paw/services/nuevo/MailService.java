@@ -2,6 +2,7 @@ package ar.edu.itba.paw.services.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.mail.BookingResolutionMailModel;
 import ar.edu.itba.paw.models.nuevo.mail.BookingReviewMailModel;
+import ar.edu.itba.paw.models.nuevo.mail.EmailVerificationMailModel;
 import ar.edu.itba.paw.models.nuevo.mail.MailRecipientModel;
 import ar.edu.itba.paw.models.nuevo.mail.PasswordRecoveryMailModel;
 import ar.edu.itba.paw.models.nuevo.mail.PaymentProofRefusedMailModel;
@@ -27,6 +28,8 @@ public interface MailService {
     void sendPaymentProofRefusedEmail(PaymentProofRefusedMailModel mail);
 
     void sendPasswordRecoveryEmail(PasswordRecoveryMailModel mail);
+
+    void sendEmailVerificationEmail(EmailVerificationMailModel mail);
 
     Locale resolveLocale(MailRecipientModel recipient);
 }

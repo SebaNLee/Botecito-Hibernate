@@ -2,6 +2,7 @@ package ar.edu.itba.paw.services.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.PreferredLanguageModel;
 import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.models.nuevo.mail.EmailVerificationMailModel;
 import ar.edu.itba.paw.models.nuevo.mail.MailRecipientModel;
 import ar.edu.itba.paw.models.nuevo.mail.PasswordRecoveryMailModel;
 import ar.edu.itba.paw.persistence.nuevo.UserDao;
@@ -32,6 +33,7 @@ public class UserServiceImpl implements UserService {
         final String passwordHash = passwordEncoder.encode(rawPassword);
         final String normalizedPaymentAlias = normalizePaymentAlias(user.getPaymentAlias());
         final String normalizedPreferredLanguage = user.getPreferredLanguage().getPersistenceCode();
+        final String verificationToken = UUID.randomUUID().toString();
 
         final Optional<UserModel> existingUser = userDao.findByEmail(normalizedEmail);
         if (existingUser.isEmpty()) {
@@ -43,7 +45,9 @@ public class UserServiceImpl implements UserService {
             userToCreate.setPasswordHash(passwordHash);
             userToCreate.setPaymentAlias(normalizedPaymentAlias);
             userToCreate.setPreferredLanguage(PreferredLanguageModel.fromPersistence(normalizedPreferredLanguage));
-            userDao.createUser(userToCreate);
+            userToCreate.setVerified(false);
+            userToCreate.setPasswordRecoveryToken(verificationToken);
+            sendEmailVerificationEmail(userDao.createUser(userToCreate));
             return RegistrationResult.SUCCESS;
         }
 
@@ -56,8 +60,10 @@ public class UserServiceImpl implements UserService {
             userToClaim.setPasswordHash(passwordHash);
             userToClaim.setPaymentAlias(normalizedPaymentAlias);
             userToClaim.setPreferredLanguage(PreferredLanguageModel.fromPersistence(normalizedPreferredLanguage));
-            userDao.claimUser(userToClaim)
-                    .orElseThrow(() -> new IllegalStateException("Could not claim account for " + normalizedEmail));
+            userToClaim.setVerified(false);
+            userToClaim.setPasswordRecoveryToken(verificationToken);
+            sendEmailVerificationEmail(userDao.claimUser(userToClaim)
+                    .orElseThrow(() -> new IllegalStateException("Could not claim account for " + normalizedEmail)));
             return RegistrationResult.SUCCESS;
         }
 
@@ -84,6 +90,11 @@ public class UserServiceImpl implements UserService {
             return Optional.empty();
         }
 
+        final Optional<UserModel> currentUser = userDao.findById(user.getId());
+        if (currentUser.isEmpty()) {
+            return Optional.empty();
+        }
+
         final String normalizedEmail =
                 user.getEmail() == null ? "" : user.getEmail().trim().toLowerCase();
         final Optional<UserModel> emailOwner = userDao.findByEmail(normalizedEmail);
@@ -99,6 +110,8 @@ public class UserServiceImpl implements UserService {
         }
 
         UserNameRules.requireBothLegalNames(user.getGivenName(), user.getLastName());
+        final boolean emailChanged =
+                !normalizedEmail.equalsIgnoreCase(currentUser.get().getEmail());
 
         LOGGER.info("Updating profile for user {}", user.getId());
         final UserModel profileUpdate = new UserModel();
@@ -109,7 +122,20 @@ public class UserServiceImpl implements UserService {
         profileUpdate.setPhone(normalizeNullable(user.getPhone()));
         profileUpdate.setPaymentAlias(normalizePaymentAlias(user.getPaymentAlias()));
         profileUpdate.setPreferredLanguage(user.getPreferredLanguage());
-        return userDao.updateProfile(profileUpdate);
+        if (emailChanged) {
+            profileUpdate.setVerified(false);
+            profileUpdate.setPasswordRecoveryToken(UUID.randomUUID().toString());
+            profileUpdate.setPasswordRecoveryUsedAt(null);
+        } else {
+            profileUpdate.setVerified(currentUser.get().isVerified());
+            profileUpdate.setPasswordRecoveryToken(currentUser.get().getPasswordRecoveryToken());
+            profileUpdate.setPasswordRecoveryUsedAt(currentUser.get().getPasswordRecoveryUsedAt());
+        }
+        final Optional<UserModel> updatedUser = userDao.updateProfile(profileUpdate);
+        if (emailChanged) {
+            updatedUser.ifPresent(this::sendEmailVerificationEmail);
+        }
+        return updatedUser;
     }
 
     @Override
@@ -120,7 +146,9 @@ public class UserServiceImpl implements UserService {
 
         final Optional<UserModel> existingUser =
                 userDao.findByEmail(user.getEmail().trim().toLowerCase());
-        if (existingUser.isEmpty() || existingUser.get().getPasswordHash() == null) {
+        if (existingUser.isEmpty()
+                || existingUser.get().getPasswordHash() == null
+                || !existingUser.get().isVerified()) {
             LOGGER.warn("Password recovery requested for non-existent or unclaimable user: {}", user.getEmail());
             return Optional.empty();
         }
@@ -169,6 +197,18 @@ public class UserServiceImpl implements UserService {
         return PasswordRecoveryResult.SUCCESS;
     }
 
+    @Override
+    public Optional<UserModel> verifyEmail(final String token) {
+        if (token == null || token.isBlank()) {
+            return Optional.empty();
+        }
+        final String normalizedToken = token.trim();
+        if (userDao.findByEmailVerificationToken(normalizedToken).isEmpty()) {
+            return Optional.empty();
+        }
+        return userDao.verifyEmailByToken(normalizedToken);
+    }
+
     private static String normalizePaymentAlias(final String paymentAlias) {
         return normalizeNullable(paymentAlias);
     }
@@ -189,6 +229,17 @@ public class UserServiceImpl implements UserService {
             mailService.sendPasswordRecoveryEmail(mail);
         } catch (final RuntimeException e) {
             LOGGER.error("Could not trigger password recovery email for user {}.", user.getId(), e);
+        }
+    }
+
+    private void sendEmailVerificationEmail(final UserModel user) {
+        try {
+            final EmailVerificationMailModel mail = new EmailVerificationMailModel();
+            mail.setRecipient(MailRecipientModel.fromUser(user));
+            mail.setVerificationToken(user.getPasswordRecoveryToken());
+            mailService.sendEmailVerificationEmail(mail);
+        } catch (final RuntimeException e) {
+            LOGGER.error("Could not trigger email verification for user {}.", user.getId(), e);
         }
     }
 }

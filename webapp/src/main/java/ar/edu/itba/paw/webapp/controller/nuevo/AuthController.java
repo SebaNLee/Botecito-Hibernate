@@ -91,6 +91,11 @@ public class AuthController {
         return authPresentation.passwordRecoveryResetSubmit(form);
     }
 
+    @RequestMapping(value = "/verify-email/{token}", method = RequestMethod.GET)
+    public ModelAndView verifyEmail(@PathVariable("token") final String token) {
+        return authPresentation.verifyEmail(token);
+    }
+
     @RequestMapping("/403")
     public ModelAndView forbidden() {
         return authPresentation.forbidden();

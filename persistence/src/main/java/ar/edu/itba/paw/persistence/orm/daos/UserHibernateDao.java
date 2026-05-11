@@ -50,9 +50,11 @@ public class UserHibernateDao implements UserDao {
         orm.setEmail(user.getEmail());
         orm.setLanguage(persistenceLanguage(user));
         orm.setPasswordHash(user.getPasswordHash());
+        orm.setMailToken(user.getPasswordRecoveryToken());
+        orm.setMailTokenEmittedAt(toLocalDateTime(user.getPasswordRecoveryUsedAt()));
         orm.setAlias(user.getPaymentAlias());
         orm.setPhone(user.getPhone());
-        orm.setVerified(false);
+        orm.setVerified(user.isVerified());
         orm.setCreatedAt(LocalDateTime.now());
         entityManager.persist(orm);
         entityManager.flush();
@@ -68,6 +70,9 @@ public class UserHibernateDao implements UserDao {
                     existing.setLastName(user.getLastName());
                     existing.setLanguage(persistenceLanguage(user));
                     existing.setPasswordHash(user.getPasswordHash());
+                    existing.setMailToken(user.getPasswordRecoveryToken());
+                    existing.setMailTokenEmittedAt(toLocalDateTime(user.getPasswordRecoveryUsedAt()));
+                    existing.setVerified(user.isVerified());
                     if (user.getPaymentAlias() != null) {
                         existing.setAlias(user.getPaymentAlias());
                     }
@@ -91,6 +96,9 @@ public class UserHibernateDao implements UserDao {
         existing.setPhone(user.getPhone());
         existing.setAlias(user.getPaymentAlias());
         existing.setLanguage(persistenceLanguage(user));
+        existing.setVerified(user.isVerified());
+        existing.setMailToken(user.getPasswordRecoveryToken());
+        existing.setMailTokenEmittedAt(toLocalDateTime(user.getPasswordRecoveryUsedAt()));
         entityManager.flush();
         return Optional.of(toUserModel(existing));
     }
@@ -102,6 +110,9 @@ public class UserHibernateDao implements UserDao {
         }
         final UsersOrm existing = entityManager.find(UsersOrm.class, user.getId());
         if (existing == null) {
+            return Optional.empty();
+        }
+        if (!Boolean.TRUE.equals(existing.getVerified())) {
             return Optional.empty();
         }
         existing.setMailToken(user.getPasswordRecoveryToken());
@@ -117,7 +128,7 @@ public class UserHibernateDao implements UserDao {
             return Optional.empty();
         }
         return entityManager
-                .createQuery("FROM UsersOrm u WHERE u.mailToken = :token", UsersOrm.class)
+                .createQuery("FROM UsersOrm u WHERE u.mailToken = :token AND u.verified = true", UsersOrm.class)
                 .setParameter("token", token.trim())
                 .getResultStream()
                 .findFirst()
@@ -129,12 +140,47 @@ public class UserHibernateDao implements UserDao {
         final int updatedRows = entityManager
                 .createQuery("UPDATE UsersOrm u"
                         + " SET u.passwordHash = :passwordHash, u.mailTokenEmittedAt = :usedAt"
-                        + " WHERE u.mailToken = :token AND u.mailTokenEmittedAt IS NULL")
+                        + " WHERE u.mailToken = :token AND u.mailTokenEmittedAt IS NULL AND u.verified = true")
                 .setParameter("passwordHash", user.getPasswordHash())
                 .setParameter("usedAt", toLocalDateTime(user.getPasswordRecoveryUsedAt()))
                 .setParameter("token", user.getPasswordRecoveryToken())
                 .executeUpdate();
         return updatedRows > 0;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<UserModel> findByEmailVerificationToken(final String token) {
+        if (token == null || token.isBlank()) {
+            return Optional.empty();
+        }
+        return entityManager
+                .createQuery("FROM UsersOrm u WHERE u.mailToken = :token AND u.verified = false", UsersOrm.class)
+                .setParameter("token", token.trim())
+                .getResultStream()
+                .findFirst()
+                .map(UserHibernateDao::toUserModel);
+    }
+
+    @Override
+    public Optional<UserModel> verifyEmailByToken(final String token) {
+        if (token == null || token.isBlank()) {
+            return Optional.empty();
+        }
+        final Optional<UsersOrm> user = entityManager
+                .createQuery("FROM UsersOrm u WHERE u.mailToken = :token AND u.verified = false", UsersOrm.class)
+                .setParameter("token", token.trim())
+                .getResultStream()
+                .findFirst();
+        if (user.isEmpty()) {
+            return Optional.empty();
+        }
+        final UsersOrm existing = user.get();
+        existing.setVerified(true);
+        existing.setMailToken(null);
+        existing.setMailTokenEmittedAt(null);
+        entityManager.flush();
+        return Optional.of(toUserModel(existing));
     }
 
     @Override
@@ -175,6 +221,7 @@ public class UserHibernateDao implements UserDao {
         user.setPasswordHash(orm.getPasswordHash());
         user.setPasswordRecoveryToken(orm.getMailToken());
         user.setPasswordRecoveryUsedAt(toOffsetDateTime(orm.getMailTokenEmittedAt()));
+        user.setVerified(Boolean.TRUE.equals(orm.getVerified()));
         return user;
     }
 

@@ -2,7 +2,6 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.nuevo.UserModel;
 import ar.edu.itba.paw.services.nuevo.UserService;
-import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordResetForm;
@@ -27,14 +26,11 @@ public class AuthPresentationTest {
     @Mock
     private UserService userService;
 
-    @Mock
-    private PostRegistrationAuthenticator postRegistrationAuthenticator;
-
     private AuthPresentation authPresentation;
 
     @BeforeEach
     public void setUp() {
-        authPresentation = new AuthPresentation(userService, postRegistrationAuthenticator, new AuthModelMapper());
+        authPresentation = new AuthPresentation(userService, new AuthModelMapper());
     }
 
     @Test
@@ -43,6 +39,10 @@ public class AuthPresentationTest {
         form.setError("true");
         form.setLogout("true");
         form.setRegistered("true");
+        form.setVerificationSent("true");
+        form.setVerified("true");
+        form.setVerificationInvalid("true");
+        form.setUnverified("true");
         form.setLegacyToken("true");
         form.setPasswordRecovered("true");
 
@@ -52,12 +52,16 @@ public class AuthPresentationTest {
         Assertions.assertEquals(true, mav.getModel().get("loginError"));
         Assertions.assertEquals(true, mav.getModel().get("logoutSuccess"));
         Assertions.assertEquals(true, mav.getModel().get("registeredSuccess"));
+        Assertions.assertEquals(true, mav.getModel().get("verificationSentSuccess"));
+        Assertions.assertEquals(true, mav.getModel().get("emailVerifiedSuccess"));
+        Assertions.assertEquals(true, mav.getModel().get("verificationInvalidError"));
+        Assertions.assertEquals(true, mav.getModel().get("unverifiedError"));
         Assertions.assertEquals(true, mav.getModel().get("legacyTokenError"));
         Assertions.assertEquals(true, mav.getModel().get("passwordRecoveredSuccess"));
     }
 
     @Test
-    public void testRegisterSubmitAuthenticatesOnSuccess() {
+    public void testRegisterSubmitRedirectsToLoginWithVerificationSent() {
         final RegisterForm form = validRegisterForm();
         final BindingResult errors = new BeanPropertyBindingResult(form, "registerForm");
         final MockHttpServletRequest request = new MockHttpServletRequest();
@@ -66,12 +70,10 @@ public class AuthPresentationTest {
         form.setRequest(request);
         Mockito.when(userService.register(Mockito.any(UserModel.class), Mockito.eq("password123")))
                 .thenReturn(UserService.RegistrationResult.SUCCESS);
-        Mockito.when(postRegistrationAuthenticator.authenticate("ada@example.com", "password123", request))
-                .thenReturn(true);
 
         final ModelAndView mav = authPresentation.registerSubmit(form, errors);
 
-        Assertions.assertEquals("redirect:/", mav.getViewName());
+        Assertions.assertEquals("redirect:/login?verificationSent=true", mav.getViewName());
         final ArgumentCaptor<UserModel> userCaptor = ArgumentCaptor.forClass(UserModel.class);
         Mockito.verify(userService).register(userCaptor.capture(), Mockito.eq("password123"));
         Assertions.assertEquals("Ada", userCaptor.getValue().getGivenName());
@@ -79,24 +81,6 @@ public class AuthPresentationTest {
         Assertions.assertEquals("ada@example.com", userCaptor.getValue().getEmail());
         Assertions.assertEquals(
                 "en", userCaptor.getValue().getPreferredLanguage().getPersistenceCode());
-    }
-
-    @Test
-    public void testRegisterSubmitFallsBackToLoginWhenAuthenticationFails() {
-        final RegisterForm form = validRegisterForm();
-        final BindingResult errors = new BeanPropertyBindingResult(form, "registerForm");
-        final MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addPreferredLocale(java.util.Locale.ENGLISH);
-        form.setPreferredLanguage("en");
-        form.setRequest(request);
-        Mockito.when(userService.register(Mockito.any(UserModel.class), Mockito.eq("password123")))
-                .thenReturn(UserService.RegistrationResult.SUCCESS);
-        Mockito.when(postRegistrationAuthenticator.authenticate("ada@example.com", "password123", request))
-                .thenReturn(false);
-
-        final ModelAndView mav = authPresentation.registerSubmit(form, errors);
-
-        Assertions.assertEquals("redirect:/login?registered=true", mav.getViewName());
     }
 
     @Test
@@ -114,7 +98,6 @@ public class AuthPresentationTest {
 
         Assertions.assertEquals("nuevo/register", mav.getViewName());
         Assertions.assertTrue(errors.hasFieldErrors("email"));
-        Mockito.verifyNoInteractions(postRegistrationAuthenticator);
     }
 
     @Test
@@ -172,6 +155,24 @@ public class AuthPresentationTest {
         final ArgumentCaptor<UserModel> userCaptor = ArgumentCaptor.forClass(UserModel.class);
         Mockito.verify(userService).resetPassword(userCaptor.capture(), Mockito.eq("new-password"));
         Assertions.assertEquals("token", userCaptor.getValue().getPasswordRecoveryToken());
+    }
+
+    @Test
+    public void testVerifyEmailRedirectsAfterSuccess() {
+        Mockito.when(userService.verifyEmail("token")).thenReturn(Optional.of(Mockito.mock(UserModel.class)));
+
+        final ModelAndView mav = authPresentation.verifyEmail("token");
+
+        Assertions.assertEquals("redirect:/login?verified=true", mav.getViewName());
+    }
+
+    @Test
+    public void testVerifyEmailRedirectsAfterInvalidToken() {
+        Mockito.when(userService.verifyEmail("missing")).thenReturn(Optional.empty());
+
+        final ModelAndView mav = authPresentation.verifyEmail("missing");
+
+        Assertions.assertEquals("redirect:/login?verificationInvalid=true", mav.getViewName());
     }
 
     private static RegisterForm validRegisterForm() {

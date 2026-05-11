@@ -2,7 +2,6 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.nuevo.UserModel;
 import ar.edu.itba.paw.services.nuevo.UserService;
-import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordResetForm;
@@ -20,7 +19,6 @@ public class AuthPresentation {
     private static final String PASSWORD_RECOVERY_RESET_VIEW = "nuevo/password-recovery-reset";
 
     private final UserService userService;
-    private final PostRegistrationAuthenticator postRegistrationAuthenticator;
     private final AuthModelMapper authModelMapper;
 
     public ModelAndView login(final LoginForm form) {
@@ -33,6 +31,18 @@ public class AuthPresentation {
         }
         if (form.getRegistered() != null) {
             mav.addObject("registeredSuccess", true);
+        }
+        if (form.getVerificationSent() != null) {
+            mav.addObject("verificationSentSuccess", true);
+        }
+        if (form.getVerified() != null) {
+            mav.addObject("emailVerifiedSuccess", true);
+        }
+        if (form.getVerificationInvalid() != null) {
+            mav.addObject("verificationInvalidError", true);
+        }
+        if (form.getUnverified() != null) {
+            mav.addObject("unverifiedError", true);
         }
         if (form.getLegacyToken() != null) {
             mav.addObject("legacyTokenError", true);
@@ -55,10 +65,7 @@ public class AuthPresentation {
             return new ModelAndView(REGISTER_VIEW);
         }
 
-        if (!postRegistrationAuthenticator.authenticate(user.getEmail(), rawPassword, form.getRequest())) {
-            return new ModelAndView("redirect:/login?registered=true");
-        }
-        return new ModelAndView("redirect:/");
+        return new ModelAndView("redirect:/login?verificationSent=true");
     }
 
     public ModelAndView passwordRecoveryRequestForm(final PasswordRecoveryRequestForm form) {
@@ -110,6 +117,13 @@ public class AuthPresentation {
         }
 
         return new ModelAndView("redirect:/login?passwordRecovered=true");
+    }
+
+    public ModelAndView verifyEmail(final String token) {
+        if (userService.verifyEmail(token).isPresent()) {
+            return new ModelAndView("redirect:/login?verified=true");
+        }
+        return new ModelAndView("redirect:/login?verificationInvalid=true");
     }
 
     public ModelAndView forbidden() {

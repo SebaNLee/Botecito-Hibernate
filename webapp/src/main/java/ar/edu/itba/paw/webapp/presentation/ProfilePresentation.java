@@ -59,6 +59,9 @@ public class ProfilePresentation {
         }
 
         refreshAuthenticatedPrincipal(updatedUser);
+        if (!updatedUser.isVerified()) {
+            return new ModelAndView("redirect:/profile?profileAction=verificationSent");
+        }
         return new ModelAndView("redirect:/profile?profileAction=updated");
     }
 

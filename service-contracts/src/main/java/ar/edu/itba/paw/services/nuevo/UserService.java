@@ -27,4 +27,6 @@ public interface UserService {
     Optional<UserModel> findByPasswordRecoveryToken(String token);
 
     PasswordRecoveryResult resetPassword(UserModel user, String rawPassword);
+
+    Optional<UserModel> verifyEmail(String token);
 }

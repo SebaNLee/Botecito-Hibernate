@@ -23,6 +23,7 @@ public class UserModel {
     private String passwordHash;
     private String passwordRecoveryToken;
     private OffsetDateTime passwordRecoveryUsedAt;
+    private boolean verified;
 
     public String getName() {
         final boolean noGiven = givenName == null || givenName.isEmpty();

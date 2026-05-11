@@ -1,12 +1,12 @@
 package ar.edu.itba.paw.webapp.controller.support.nuevo;
 
-import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.models.nuevo.PendingReviewActionModel;
 import ar.edu.itba.paw.models.nuevo.RatingSummaryModel;
 import ar.edu.itba.paw.models.nuevo.ReviewModel;
-import ar.edu.itba.paw.models.nuevo.ReviewTargetType;
-import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.models.nuevo.enums.TargetType;
 import ar.edu.itba.paw.services.nuevo.ReviewInterface;
+import ar.edu.itba.paw.services.nuevo.UserService;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.LinkedHashMap;
@@ -30,15 +30,13 @@ public class ReviewViewHelper {
         final List<ReviewModel> reviews = reviewInterface.listLatestItemReviews(itemId, 12);
         final Map<Integer, String> reviewAuthorNames = new LinkedHashMap<>();
         for (final ReviewModel review : reviews) {
-            if (review.getSenderId() == null || reviewAuthorNames.containsKey(review.getSenderId())) {
+            final int senderId = review.getSenderId();
+            if (senderId <= 0 || reviewAuthorNames.containsKey(senderId)) {
                 continue;
             }
             reviewAuthorNames.put(
-                    review.getSenderId(),
-                    userService
-                            .findById(review.getSenderId())
-                            .map(User::getName)
-                            .orElse(""));
+                    senderId,
+                    userService.findById(senderId).map(UserModel::getName).orElse(""));
         }
         final Map<Integer, String> reviewCreatedAtLabels = buildReviewCreatedAtLabels(reviews);
         final PendingReviewActionModel pendingItemReviewAction = viewerUserId == null
@@ -58,9 +56,9 @@ public class ReviewViewHelper {
         final Map<Integer, PendingReviewActionModel> pendingItemReviewsByBookingId = new LinkedHashMap<>();
         final Map<Integer, PendingReviewActionModel> pendingUserReviewsByBookingId = new LinkedHashMap<>();
         for (final PendingReviewActionModel action : reviewInterface.listPendingReviewActions(userId)) {
-            if (action.getTargetType() == ReviewTargetType.ITEM) {
+            if (action.getTargetType() == TargetType.ITEM) {
                 pendingItemReviewsByBookingId.put(action.getBookingId(), action);
-            } else if (action.getTargetType() == ReviewTargetType.USER) {
+            } else if (action.getTargetType() == TargetType.USER) {
                 pendingUserReviewsByBookingId.put(action.getBookingId(), action);
             }
         }
@@ -68,12 +66,12 @@ public class ReviewViewHelper {
         final Map<Integer, ReviewModel> authoredItemReviewsByBookingId = new LinkedHashMap<>();
         final Map<Integer, ReviewModel> authoredUserReviewsByBookingId = new LinkedHashMap<>();
         for (final ReviewModel review : reviewInterface.listAuthoredReviews(userId)) {
-            if (review.getBookingId() == null) {
+            if (review.getBookingId() <= 0) {
                 continue;
             }
-            if (review.getTargetType() == ReviewTargetType.ITEM) {
+            if (review.getTargetType() == TargetType.ITEM) {
                 authoredItemReviewsByBookingId.putIfAbsent(review.getBookingId(), review);
-            } else if (review.getTargetType() == ReviewTargetType.USER) {
+            } else if (review.getTargetType() == TargetType.USER) {
                 authoredUserReviewsByBookingId.putIfAbsent(review.getBookingId(), review);
             }
         }
@@ -90,7 +88,7 @@ public class ReviewViewHelper {
                 DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale);
         final Map<Integer, String> labels = new LinkedHashMap<>();
         for (final ReviewModel review : reviews) {
-            if (review.getId() == null || review.getCreatedAt() == null) {
+            if (review.getCreatedAt() == null) {
                 continue;
             }
             labels.put(review.getId(), formatter.format(review.getCreatedAt()));

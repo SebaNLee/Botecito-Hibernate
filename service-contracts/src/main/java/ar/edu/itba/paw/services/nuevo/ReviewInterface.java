@@ -4,7 +4,6 @@ import ar.edu.itba.paw.models.nuevo.PendingReviewActionModel;
 import ar.edu.itba.paw.models.nuevo.RatingSummaryModel;
 import ar.edu.itba.paw.models.nuevo.ReviewModel;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public interface ReviewInterface {
@@ -16,8 +15,6 @@ public interface ReviewInterface {
     List<ReviewModel> listLatestItemReviews(int itemId, int limit);
 
     RatingSummaryModel getItemRatingSummary(int itemId);
-
-    Map<Integer, RatingSummaryModel> getItemRatingSummaries(List<Integer> itemIds);
 
     List<PendingReviewActionModel> listPendingReviewActions(int userId);
 

@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
-import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.models.nuevo.UserModel;
 import ar.edu.itba.paw.services.nuevo.ReviewInterface;
+import ar.edu.itba.paw.services.nuevo.UserService;
 import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
 import ar.edu.itba.paw.webapp.form.nuevo.ReviewForm;
 import javax.validation.Valid;
@@ -35,7 +35,7 @@ public class ReviewController {
             @RequestParam(value = "returnTo", required = false, defaultValue = "dashboard") final String returnTo,
             @RequestParam(value = "itemId", required = false) final Integer itemId,
             final RedirectAttributes redirectAttributes) {
-        final User currentUser = currentAuthenticatedUser();
+        final UserModel currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -62,7 +62,7 @@ public class ReviewController {
             @RequestParam(value = "returnTo", required = false, defaultValue = "dashboard") final String returnTo,
             @RequestParam(value = "itemId", required = false) final Integer itemId,
             final RedirectAttributes redirectAttributes) {
-        final User currentUser = currentAuthenticatedUser();
+        final UserModel currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -86,7 +86,7 @@ public class ReviewController {
         return new ModelAndView("redirect:/bookings#sent-booking-requests");
     }
 
-    private User currentAuthenticatedUser() {
+    private UserModel currentAuthenticatedUser() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()

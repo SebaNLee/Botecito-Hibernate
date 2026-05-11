@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.models.nuevo;
 
-import java.time.OffsetDateTime;
+import ar.edu.itba.paw.models.nuevo.enums.TargetType;
+import java.time.LocalDateTime;
 import lombok.Getter;
 
 @Getter
@@ -8,9 +9,9 @@ public final class PendingReviewActionModel {
     private final int bookingId;
     private final int itemId;
     private final int targetUserId;
-    private final ReviewTargetType targetType;
-    private final OffsetDateTime startTime;
-    private final OffsetDateTime endTime;
+    private final TargetType targetType;
+    private final LocalDateTime startTime;
+    private final LocalDateTime endTime;
     private final String targetName;
     private final String targetEmail;
 
@@ -18,9 +19,9 @@ public final class PendingReviewActionModel {
             final int bookingId,
             final int itemId,
             final int targetUserId,
-            final ReviewTargetType targetType,
-            final OffsetDateTime startTime,
-            final OffsetDateTime endTime,
+            final TargetType targetType,
+            final LocalDateTime startTime,
+            final LocalDateTime endTime,
             final String targetName,
             final String targetEmail) {
         this.bookingId = bookingId;

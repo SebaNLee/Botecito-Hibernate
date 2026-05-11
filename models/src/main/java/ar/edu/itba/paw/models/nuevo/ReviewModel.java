@@ -1,19 +1,18 @@
 package ar.edu.itba.paw.models.nuevo;
 
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
+import ar.edu.itba.paw.models.nuevo.enums.TargetType;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 public class ReviewModel {
-    private Integer id;
-    private Integer bookingId;
-    private Integer senderId;
-    private ReviewTargetType targetType;
-    private Integer targetId;
-    private BigDecimal rating;
+    private int id;
+    private int bookingId;
+    private int senderId;
+    private TargetType targetType;
+    private double rating;
     private String comment;
-    private OffsetDateTime createdAt;
+    private LocalDateTime createdAt;
 }

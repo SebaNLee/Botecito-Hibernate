@@ -2,216 +2,169 @@ package ar.edu.itba.paw.persistence.orm.daos;
 
 import ar.edu.itba.paw.models.nuevo.RatingSummaryModel;
 import ar.edu.itba.paw.models.nuevo.ReviewModel;
-import ar.edu.itba.paw.models.nuevo.ReviewTargetType;
+import ar.edu.itba.paw.models.nuevo.enums.TargetType;
 import ar.edu.itba.paw.persistence.nuevo.ReviewDao;
 import ar.edu.itba.paw.persistence.orm.entities.BookingOrm;
 import ar.edu.itba.paw.persistence.orm.entities.ReviewOrm;
 import ar.edu.itba.paw.persistence.orm.entities.TargetEnumOrm;
 import ar.edu.itba.paw.persistence.orm.entities.UsersOrm;
-import ar.edu.itba.paw.persistence.orm.projections.ReviewRowOrm;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
-import javax.persistence.PersistenceException;
 import javax.persistence.TypedQuery;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 @Repository
-@Transactional(readOnly = true)
+@Transactional
 public class ReviewHibernateDao implements ReviewDao {
-
-    private static final String ITEM_TARGET_PARAM = "itemTarget";
-
-    private static final String ROW_SELECT = "SELECT new ar.edu.itba.paw.persistence.orm.projections.ReviewRowOrm("
-            + "r.id, b.id, sender.id, r.targetType, "
-            + "CASE WHEN r.targetType = :" + ITEM_TARGET_PARAM + " THEN i.id ELSE b.guest.id END, "
-            + "r.rating, r.comment, r.createdAt"
-            + ") "
-            + "FROM ReviewOrm r "
-            + "JOIN r.booking b "
-            + "JOIN b.version v "
-            + "JOIN v.item i "
-            + "LEFT JOIN r.sender sender";
 
     @PersistenceContext
     private EntityManager entityManager;
 
     @Override
-    @Transactional
     public Optional<ReviewModel> createReview(
             final int bookingId,
-            final int reviewerUserId,
-            final int revieweeUserId,
-            final ReviewTargetType targetType,
-            final int targetId,
-            final int rating,
+            final int senderUserId,
+            final TargetType targetType,
+            final double rating,
             final String reviewComment) {
-        if (findReviewByBookingReviewerAndTargetType(bookingId, reviewerUserId, targetType)
-                .isPresent()) {
-            return Optional.empty();
-        }
-
         final BookingOrm booking = entityManager.find(BookingOrm.class, bookingId);
         if (booking == null) {
             return Optional.empty();
         }
-        final UsersOrm sender = entityManager.find(UsersOrm.class, reviewerUserId);
+        final UsersOrm sender = entityManager.find(UsersOrm.class, senderUserId);
         if (sender == null) {
             return Optional.empty();
         }
+        final ReviewOrm orm = new ReviewOrm();
+        orm.setBooking(booking);
+        orm.setSender(sender);
+        orm.setTargetType(TargetEnumOrm.valueOf(targetType.name()));
+        orm.setRating(BigDecimal.valueOf(rating).setScale(1, RoundingMode.HALF_UP));
+        orm.setComment(reviewComment);
+        orm.setCreatedAt(LocalDateTime.now());
+        entityManager.persist(orm);
+        entityManager.flush();
+        return Optional.of(toModel(orm));
+    }
 
-        final ReviewOrm review = new ReviewOrm();
-        review.setBooking(booking);
-        review.setSender(sender);
-        review.setTargetType(TargetEnumOrm.valueOf(targetType.name()));
-        review.setRating(BigDecimal.valueOf(rating));
-        review.setComment(reviewComment);
-        review.setCreatedAt(LocalDateTime.now());
-        try {
-            entityManager.persist(review);
-            entityManager.flush();
-        } catch (final PersistenceException exception) {
-            return Optional.empty();
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ReviewModel> findReviewByBookingSenderAndTargetType(
+            final int bookingId, final int senderUserId, final TargetType targetType) {
+        final TypedQuery<ReviewOrm> q = entityManager.createQuery(
+                "SELECT r FROM ReviewOrm r WHERE r.booking.id = :bookingId "
+                        + "AND r.sender.id = :senderId AND r.targetType = :targetType",
+                ReviewOrm.class);
+        q.setParameter("bookingId", bookingId);
+        q.setParameter("senderId", senderUserId);
+        q.setParameter("targetType", TargetEnumOrm.valueOf(targetType.name()));
+        return q.getResultStream().findFirst().map(ReviewHibernateDao::toModel);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReviewModel> listLatestReviewsForItem(final int itemId, final int limit) {
+        final TypedQuery<ReviewOrm> q = entityManager.createQuery(
+                "SELECT r FROM ReviewOrm r JOIN FETCH r.booking b LEFT JOIN FETCH r.sender "
+                        + "WHERE r.targetType = :targetType AND b.version.item.id = :itemId "
+                        + "ORDER BY r.createdAt DESC",
+                ReviewOrm.class);
+        q.setParameter("targetType", TargetEnumOrm.ITEM);
+        q.setParameter("itemId", itemId);
+        if (limit > 0) {
+            q.setMaxResults(limit);
         }
-        return findReviewById(review.getId());
+        return q.getResultList().stream().map(ReviewHibernateDao::toModel).toList();
     }
 
     @Override
-    public Optional<ReviewModel> findReviewByBookingReviewerAndTargetType(
-            final int bookingId, final int reviewerUserId, final ReviewTargetType targetType) {
-        final TypedQuery<ReviewRowOrm> query = entityManager
-                .createQuery(
-                        ROW_SELECT
-                                + " WHERE b.id = :bookingId AND sender.id = :senderId"
-                                + " AND r.targetType = :targetType",
-                        ReviewRowOrm.class)
-                .setParameter(ITEM_TARGET_PARAM, TargetEnumOrm.ITEM)
-                .setParameter("bookingId", bookingId)
-                .setParameter("senderId", reviewerUserId)
-                .setParameter("targetType", TargetEnumOrm.valueOf(targetType.name()));
-        return query.getResultList().stream().findAny().map(ReviewHibernateDao::mapRow);
+    @Transactional(readOnly = true)
+    public List<ReviewModel> listReviewsBySender(final int senderUserId) {
+        final TypedQuery<ReviewOrm> q = entityManager.createQuery(
+                "SELECT r FROM ReviewOrm r JOIN FETCH r.booking WHERE r.sender.id = :senderId "
+                        + "ORDER BY r.createdAt DESC",
+                ReviewOrm.class);
+        q.setParameter("senderId", senderUserId);
+        return q.getResultList().stream().map(ReviewHibernateDao::toModel).toList();
     }
 
     @Override
-    public List<ReviewModel> listReviewsByTarget(final ReviewTargetType targetType, final int targetId) {
-        return mapRows(targetQuery(targetType, targetId, -1));
+    @Transactional(readOnly = true)
+    public List<ReviewModel> listReviewsForUser(final int userId) {
+        final TypedQuery<ReviewOrm> q = entityManager.createQuery(
+                "SELECT r FROM ReviewOrm r JOIN FETCH r.booking b LEFT JOIN FETCH r.sender "
+                        + "WHERE (r.targetType = :itemTarget AND b.version.item.host.id = :userId) "
+                        + "   OR (r.targetType = :userTarget "
+                        + "       AND ((b.version.item.host.id = :userId AND b.guest.id <> :userId) "
+                        + "         OR (b.guest.id = :userId AND b.version.item.host.id <> :userId))) "
+                        + "ORDER BY r.createdAt DESC",
+                ReviewOrm.class);
+        q.setParameter("itemTarget", TargetEnumOrm.ITEM);
+        q.setParameter("userTarget", TargetEnumOrm.USER);
+        q.setParameter("userId", userId);
+        return q.getResultList().stream().map(ReviewHibernateDao::toModel).toList();
     }
 
     @Override
-    public List<ReviewModel> listLatestReviewsByTarget(
-            final ReviewTargetType targetType, final int targetId, final int limit) {
-        final int safeLimit = Math.max(1, limit);
-        return mapRows(targetQuery(targetType, targetId, safeLimit));
-    }
-
-    @Override
-    public List<ReviewModel> listReviewsByReviewer(final int reviewerUserId) {
-        final TypedQuery<ReviewRowOrm> query = entityManager
-                .createQuery(
-                        ROW_SELECT + " WHERE sender.id = :senderId ORDER BY r.createdAt DESC, r.id DESC",
-                        ReviewRowOrm.class)
-                .setParameter(ITEM_TARGET_PARAM, TargetEnumOrm.ITEM)
-                .setParameter("senderId", reviewerUserId);
-        return mapRows(query.getResultList());
-    }
-
-    @Override
-    public List<ReviewModel> listReviewsByReviewee(final int revieweeUserId) {
-        final TypedQuery<ReviewRowOrm> query = entityManager
-                .createQuery(
-                        ROW_SELECT + " WHERE b.guest.id = :guestId ORDER BY r.createdAt DESC, r.id DESC",
-                        ReviewRowOrm.class)
-                .setParameter(ITEM_TARGET_PARAM, TargetEnumOrm.ITEM)
-                .setParameter("guestId", revieweeUserId);
-        return mapRows(query.getResultList());
-    }
-
-    @Override
+    @Transactional(readOnly = true)
     public Optional<ReviewModel> findReviewById(final int reviewId) {
-        final TypedQuery<ReviewRowOrm> query = entityManager
-                .createQuery(ROW_SELECT + " WHERE r.id = :reviewId", ReviewRowOrm.class)
-                .setParameter(ITEM_TARGET_PARAM, TargetEnumOrm.ITEM)
-                .setParameter("reviewId", reviewId);
-        return query.getResultList().stream().findAny().map(ReviewHibernateDao::mapRow);
+        return Optional.ofNullable(entityManager.find(ReviewOrm.class, reviewId))
+                .map(ReviewHibernateDao::toModel);
     }
 
     @Override
-    @Transactional
-    public boolean deleteReview(final int reviewId, final int reviewerUserId) {
-        return entityManager
-                        .createQuery("DELETE FROM ReviewOrm r WHERE r.id = :id AND r.sender.id = :senderId")
-                        .setParameter("id", reviewId)
-                        .setParameter("senderId", reviewerUserId)
-                        .executeUpdate()
-                > 0;
+    public boolean deleteReview(final int reviewId, final int senderUserId) {
+        final int rows = entityManager
+                .createQuery("DELETE FROM ReviewOrm r WHERE r.id = :id AND r.sender.id = :senderId")
+                .setParameter("id", reviewId)
+                .setParameter("senderId", senderUserId)
+                .executeUpdate();
+        return rows > 0;
     }
 
     @Override
-    public RatingSummaryModel ratingSummaryByTarget(final ReviewTargetType targetType, final int targetId) {
-        final String hql = "SELECT COALESCE(AVG(r.rating), 0), COUNT(r) FROM ReviewOrm r"
-                + " JOIN r.booking b JOIN b.version v JOIN v.item i"
-                + " WHERE r.targetType = :targetType"
-                + " AND (CASE WHEN r.targetType = :" + ITEM_TARGET_PARAM
-                + " THEN i.id ELSE b.guest.id END) = :targetId";
-        final Object[] row = (Object[]) entityManager
-                .createQuery(hql)
-                .setParameter("targetType", TargetEnumOrm.valueOf(targetType.name()))
-                .setParameter(ITEM_TARGET_PARAM, TargetEnumOrm.ITEM)
-                .setParameter("targetId", targetId)
-                .getSingleResult();
-        final double average = row[0] == null ? 0d : ((Number) row[0]).doubleValue();
-        final long total = row[1] == null ? 0L : ((Number) row[1]).longValue();
-        return new RatingSummaryModel(average, total);
-    }
-
-    private List<ReviewRowOrm> targetQuery(
-            final ReviewTargetType targetType, final int targetId, final int maxResults) {
-        final TypedQuery<ReviewRowOrm> query = entityManager
-                .createQuery(
-                        ROW_SELECT
-                                + " WHERE r.targetType = :targetType"
-                                + " AND (CASE WHEN r.targetType = :" + ITEM_TARGET_PARAM
-                                + " THEN i.id ELSE b.guest.id END) = :targetId"
-                                + " ORDER BY r.createdAt DESC, r.id DESC",
-                        ReviewRowOrm.class)
-                .setParameter(ITEM_TARGET_PARAM, TargetEnumOrm.ITEM)
-                .setParameter("targetType", TargetEnumOrm.valueOf(targetType.name()))
-                .setParameter("targetId", targetId);
-        if (maxResults > 0) {
-            query.setMaxResults(maxResults);
+    @Transactional(readOnly = true)
+    public RatingSummaryModel ratingSummaryForItem(final int itemId) {
+        try {
+            final Object[] row = (Object[]) entityManager
+                    .createQuery("SELECT AVG(r.rating), COUNT(r) FROM ReviewOrm r "
+                            + "WHERE r.targetType = :targetType AND r.booking.version.item.id = :itemId")
+                    .setParameter("targetType", TargetEnumOrm.ITEM)
+                    .setParameter("itemId", itemId)
+                    .getSingleResult();
+            final Number avg = (Number) row[0];
+            final Number count = (Number) row[1];
+            if (count == null || count.longValue() == 0L) {
+                return RatingSummaryModel.empty();
+            }
+            return new RatingSummaryModel(avg == null ? 0.0 : avg.doubleValue(), count.longValue());
+        } catch (final NoResultException e) {
+            return RatingSummaryModel.empty();
         }
-        return query.getResultList();
     }
 
-    private static List<ReviewModel> mapRows(final List<ReviewRowOrm> rows) {
-        final List<ReviewModel> reviews = new ArrayList<>(rows.size());
-        for (final ReviewRowOrm row : rows) {
-            reviews.add(mapRow(row));
-        }
-        return reviews;
-    }
-
-    private static ReviewModel mapRow(final ReviewRowOrm row) {
-        final ReviewModel review = new ReviewModel();
-        review.setId(row.getId());
-        review.setBookingId(row.getBookingId());
-        review.setSenderId(row.getSenderId());
-        final TargetEnumOrm target = row.getTargetType();
-        review.setTargetType(target == null ? null : ReviewTargetType.valueOf(target.name()));
-        review.setTargetId(row.getTargetId());
-        review.setRating(row.getRating());
-        review.setComment(row.getComment());
-        final LocalDateTime createdAt = row.getCreatedAt();
-        review.setCreatedAt(
-                createdAt == null
-                        ? null
-                        : createdAt.atZone(ZoneId.systemDefault()).toOffsetDateTime());
-        return review;
+    private static ReviewModel toModel(final ReviewOrm orm) {
+        final ReviewModel m = new ReviewModel();
+        m.setId(orm.getId() == null ? 0 : orm.getId());
+        m.setBookingId(
+                orm.getBooking() == null || orm.getBooking().getId() == null
+                        ? 0
+                        : orm.getBooking().getId());
+        m.setSenderId(
+                orm.getSender() == null || orm.getSender().getId() == null
+                        ? 0
+                        : orm.getSender().getId());
+        m.setTargetType(TargetType.valueOf(orm.getTargetType().name()));
+        m.setRating(orm.getRating() == null ? 0.0 : orm.getRating().doubleValue());
+        m.setComment(orm.getComment());
+        m.setCreatedAt(orm.getCreatedAt());
+        return m;
     }
 }

@@ -35,8 +35,8 @@ public class MailServiceImpl implements MailService {
     private final ItemDao itemDao;
     private final UserDao userDao;
     private final String reviewRecipient;
-    private final String accountBaseUrl;
-    private final String itemBaseUrl;
+    private final String myBoatsBaseUrl;
+    private final String bookingsBaseUrl;
     private final String passwordRecoveryBaseUrl;
 
     @SuppressFBWarnings(
@@ -57,8 +57,8 @@ public class MailServiceImpl implements MailService {
         this.userDao = userDao;
         final String baseUrl = requireProperty(credentialsProperties, "app.baseUrl");
         this.reviewRecipient = requireProperty(credentialsProperties, "mail.reviewRecipient");
-        this.accountBaseUrl = baseUrl + "/profile";
-        this.itemBaseUrl = baseUrl + "/item";
+        this.myBoatsBaseUrl = baseUrl + "/my-boats";
+        this.bookingsBaseUrl = baseUrl + "/bookings";
         this.passwordRecoveryBaseUrl = baseUrl + "/password-recovery";
     }
 
@@ -80,7 +80,7 @@ public class MailServiceImpl implements MailService {
             final Context context = new Context(locale);
             context.setVariable("ownerName", ownerName);
             context.setVariable("itemTitle", itemTitle);
-            context.setVariable("profileUrl", accountBaseUrl);
+            context.setVariable("profileUrl", myBoatsBaseUrl);
             sendHtmlEmail(
                     recipientEmail,
                     getMessage("mail.publishConfirmation.subject", locale, itemTitle),
@@ -122,7 +122,7 @@ public class MailServiceImpl implements MailService {
                     : bookingRequest.getDescription().trim();
             context.setVariable("hasRequestMessage", !message.isEmpty());
             context.setVariable("requestMessage", message);
-            context.setVariable("profileUrl", accountBaseUrl);
+            context.setVariable("profileUrl", myBoatsBaseUrl + "#received-booking-requests");
             sendHtmlEmail(
                     recipientEmail,
                     getMessage("mail.requestReview.subject", locale, bookingRequest.getRequesterName()),
@@ -144,9 +144,7 @@ public class MailServiceImpl implements MailService {
             final Context context = new Context(locale);
             context.setVariable("bookingRequest", bookingRequest);
             context.setVariable("statusLabel", getMessage(statusMessageCode(bookingRequest.getStatus()), locale));
-            if (bookingRequest.getItemId() != null) {
-                context.setVariable("itemUrl", itemBaseUrl + "/" + bookingRequest.getItemId());
-            }
+            context.setVariable("bookingUrl", bookingsBaseUrl + "#sent-booking-requests");
             sendHtmlEmail(
                     bookingRequest.getRequesterEmail(),
                     getMessage(
@@ -179,7 +177,7 @@ public class MailServiceImpl implements MailService {
             final Context context = new Context(locale);
             context.setVariable("requesterName", requesterName);
             context.setVariable("itemTitle", itemTitle);
-            context.setVariable("profileUrl", accountBaseUrl + "#received-booking-requests");
+            context.setVariable("profileUrl", myBoatsBaseUrl + "#received-booking-requests");
             final boolean hasProofImage = isInlineProofImage(proofFileData, proofContentType);
             context.setVariable("hasProofImage", hasProofImage);
             if (hasProofImage) {
@@ -210,7 +208,7 @@ public class MailServiceImpl implements MailService {
             final Locale locale = toSupportedLocale(requesterLocaleTag);
             final Context context = new Context(locale);
             context.setVariable("itemTitle", itemTitle);
-            context.setVariable("profileUrl", accountBaseUrl + "#sent-booking-requests");
+            context.setVariable("profileUrl", bookingsBaseUrl + "#sent-booking-requests");
             sendHtmlEmail(
                     requesterEmail,
                     getMessage("mail.paymentReceived.subject", locale, itemTitle),
@@ -237,7 +235,7 @@ public class MailServiceImpl implements MailService {
             context.setVariable("ownerName", ownerName);
             context.setVariable("itemTitle", itemTitle);
             context.setVariable("reason", reason);
-            context.setVariable("profileUrl", accountBaseUrl + "#sent-booking-requests");
+            context.setVariable("profileUrl", bookingsBaseUrl + "#sent-booking-requests");
             sendHtmlEmail(
                     requesterEmail,
                     getMessage("mail.paymentProofRefused.subject", locale, itemTitle),

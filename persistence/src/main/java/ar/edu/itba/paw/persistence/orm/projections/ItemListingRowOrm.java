@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence.orm.projections;
 
 import ar.edu.itba.paw.models.nuevo.ItemModel;
-import ar.edu.itba.paw.models.nuevo.ItemStatus;
+import ar.edu.itba.paw.models.nuevo.enums.ItemStatus;
 import ar.edu.itba.paw.persistence.orm.entities.ItemStatusEnumOrm;
 import ar.edu.itba.paw.persistence.orm.entities.WeekdayEnumOrm;
 import java.math.BigDecimal;

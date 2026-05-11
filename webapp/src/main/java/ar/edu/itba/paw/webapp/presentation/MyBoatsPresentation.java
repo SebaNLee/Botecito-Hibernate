@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
-import ar.edu.itba.paw.services.Page;
-import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.models.nuevo.PageModel;
+import ar.edu.itba.paw.models.nuevo.UserModel;
 import ar.edu.itba.paw.services.nuevo.ItemInterface;
+import ar.edu.itba.paw.services.nuevo.UserService;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +27,7 @@ public class MyBoatsPresentation {
     private final ItemInterface itemInterface;
 
     public ModelAndView myBoats(final HttpServletRequest request) {
-        final User currentUser = currentUser();
+        final UserModel currentUser = currentUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -62,7 +62,7 @@ public class MyBoatsPresentation {
         mav.addObject("publicationDeleteDeactivatesByItemId", publicationDeleteDeactivatesByItemId);
         mav.addObject("publicationDeleteDisabledByItemId", publicationDeleteDisabledByItemId);
         mav.addObject("receivedBookingRequests", List.of());
-        mav.addObject("receivedBookingPage", new Page<>(List.of(), 1, 6, 0));
+        mav.addObject("receivedBookingPage", new PageModel<>(List.of(), 1, 6, 0));
         mav.addObject("selectedBookingStatusFilters", List.of());
         mav.addObject("selectedBookingStatusFiltersByValue", emptyStatusSelection());
         mav.addObject("boatSearchQuery", "");
@@ -71,7 +71,7 @@ public class MyBoatsPresentation {
         return mav;
     }
 
-    private User currentUser() {
+    private UserModel currentUser() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()

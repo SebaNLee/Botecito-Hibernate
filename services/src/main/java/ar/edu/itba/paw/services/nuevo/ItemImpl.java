@@ -39,4 +39,9 @@ public class ItemImpl implements ItemInterface {
     public boolean deleteMyBoatsItem(final int itemId, final int ownerId) {
         return itemDao.deleteMyBoatsItem(itemId, ownerId);
     }
+
+    @Override
+    public boolean setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
+        return itemDao.setItemActiveForOwner(itemId, ownerId, active);
+    }
 }

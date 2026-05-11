@@ -16,4 +16,6 @@ public interface ItemDao {
     boolean updateMyBoatsItem(int itemId, int ownerId, ItemUpdateModel updateModel);
 
     boolean deleteMyBoatsItem(int itemId, int ownerId);
+
+    boolean setItemActiveForOwner(int itemId, int ownerId, boolean active);
 }

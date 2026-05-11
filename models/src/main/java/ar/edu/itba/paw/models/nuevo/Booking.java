@@ -10,6 +10,7 @@ import lombok.Setter;
 public class Booking {
     private int id;
     private int versionId;
+    private String versionTitle;
     private int guestId;
     private LocalDateTime start;
     private LocalDateTime end;

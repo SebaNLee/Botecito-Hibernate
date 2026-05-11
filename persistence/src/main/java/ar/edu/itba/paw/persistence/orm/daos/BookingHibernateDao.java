@@ -3,6 +3,8 @@ package ar.edu.itba.paw.persistence.orm.daos;
 import ar.edu.itba.paw.models.nuevo.Booking;
 import ar.edu.itba.paw.models.nuevo.BookingSearchModel;
 import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
+import ar.edu.itba.paw.models.nuevo.IncomingSearch;
+import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
 import ar.edu.itba.paw.persistence.nuevo.BookingDao;
@@ -147,18 +149,20 @@ public class BookingHibernateDao implements BookingDao {
 
     @Override
     @Transactional(readOnly = true)
-    public BookingSearchResult searchBookings(final BookingSearchModel search) {
-        if (search == null) {
+    public BookingSearchResult searchOutcomingBookings(final OutcomingSearch outcoming) {
+        if (outcoming == null) {
             return new BookingSearchResult(List.of(), 0L);
         }
+        final BookingSearchModel criteria =
+                outcoming.getSearch() != null ? outcoming.getSearch() : new BookingSearchModel();
         final Map<String, Object> params = new HashMap<>();
-        final int pageSize = resolvePageSize(search);
-        final int offset = (resolvePage(search) - 1) * pageSize;
+        final int pageSize = resolvePageSize(criteria);
+        final int offset = (resolvePage(criteria) - 1) * pageSize;
 
         final StringBuilder hql =
                 new StringBuilder("SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest INNER JOIN FETCH b.version ");
-        appendGuestBookingSearchFilters(hql, search, params);
-        hql.append(orderByBookings(search));
+        appendOutcomingGuestFilters(hql, outcoming.getGuestId(), criteria, params);
+        hql.append(orderByBookings(criteria));
 
         final TypedQuery<BookingOrm> query = entityManager.createQuery(hql.toString(), BookingOrm.class);
         bindParams(query, params);
@@ -166,7 +170,7 @@ public class BookingHibernateDao implements BookingDao {
         query.setMaxResults(pageSize);
 
         final List<BookingOrm> rows = query.getResultList();
-        final long total = countMatching(search);
+        final long total = countMatchingOutcoming(outcoming.getGuestId(), criteria);
         if (!rows.isEmpty()) {
             return new BookingSearchResult(
                     rows.stream().map(BookingHibernateDao::toBooking).toList(), total);
@@ -174,23 +178,79 @@ public class BookingHibernateDao implements BookingDao {
         return new BookingSearchResult(List.of(), total);
     }
 
-    private long countMatching(final BookingSearchModel search) {
+    @Override
+    @Transactional(readOnly = true)
+    public BookingSearchResult searchIncomingBookings(final IncomingSearch incoming) {
+        if (incoming == null) {
+            return new BookingSearchResult(List.of(), 0L);
+        }
+        final BookingSearchModel criteria =
+                incoming.getSearch() != null ? incoming.getSearch() : new BookingSearchModel();
+        final Map<String, Object> params = new HashMap<>();
+        final int pageSize = resolvePageSize(criteria);
+        final int offset = (resolvePage(criteria) - 1) * pageSize;
+
+        final StringBuilder hql =
+                new StringBuilder("SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest INNER JOIN FETCH b.version ");
+        appendIncomingHostFilters(hql, incoming.getHostId(), criteria, params);
+        hql.append(orderByBookings(criteria));
+
+        final TypedQuery<BookingOrm> query = entityManager.createQuery(hql.toString(), BookingOrm.class);
+        bindParams(query, params);
+        query.setFirstResult(offset);
+        query.setMaxResults(pageSize);
+
+        final List<BookingOrm> rows = query.getResultList();
+        final long total = countMatchingIncoming(incoming.getHostId(), criteria);
+        if (!rows.isEmpty()) {
+            return new BookingSearchResult(
+                    rows.stream().map(BookingHibernateDao::toBooking).toList(), total);
+        }
+        return new BookingSearchResult(List.of(), total);
+    }
+
+    private long countMatchingOutcoming(final int guestId, final BookingSearchModel criteria) {
         final Map<String, Object> params = new HashMap<>();
         final StringBuilder hql = new StringBuilder("SELECT COUNT(b) FROM BookingOrm b INNER JOIN b.version ");
-        appendGuestBookingSearchFilters(hql, search, params);
+        appendOutcomingGuestFilters(hql, guestId, criteria, params);
         final TypedQuery<Long> countQuery = entityManager.createQuery(hql.toString(), Long.class);
         bindParams(countQuery, params);
         return toLong(countQuery.getSingleResult());
     }
 
-    private static void appendGuestBookingSearchFilters(
-            final StringBuilder hql, final BookingSearchModel search, final Map<String, Object> params) {
-        hql.append("WHERE b.guest IS NOT NULL AND b.guest.id = :guestId");
-        params.put("guestId", search.getGuestId());
+    private long countMatchingIncoming(final int hostId, final BookingSearchModel criteria) {
+        final Map<String, Object> params = new HashMap<>();
+        final StringBuilder hql = new StringBuilder("SELECT COUNT(b) FROM BookingOrm b INNER JOIN b.version ");
+        appendIncomingHostFilters(hql, hostId, criteria, params);
+        final TypedQuery<Long> countQuery = entityManager.createQuery(hql.toString(), Long.class);
+        bindParams(countQuery, params);
+        return toLong(countQuery.getSingleResult());
+    }
 
+    private static void appendOutcomingGuestFilters(
+            final StringBuilder hql,
+            final int guestId,
+            final BookingSearchModel search,
+            final Map<String, Object> params) {
+        hql.append("WHERE b.guest IS NOT NULL AND b.guest.id = :guestId");
+        params.put("guestId", guestId);
+        appendSharedBookingSearchFilters(hql, search, params);
+    }
+
+    private static void appendIncomingHostFilters(
+            final StringBuilder hql,
+            final int hostId,
+            final BookingSearchModel search,
+            final Map<String, Object> params) {
+        hql.append("WHERE b.version.item.host.id = :hostId");
+        params.put("hostId", hostId);
+        appendSharedBookingSearchFilters(hql, search, params);
+    }
+
+    private static void appendSharedBookingSearchFilters(
+            final StringBuilder hql, final BookingSearchModel search, final Map<String, Object> params) {
         if (hasText(search.getSearchQuery())) {
-            hql.append(
-                    " AND (LOWER(b.version.title) LIKE :searchQuery ESCAPE '!' OR (b.msg IS NOT NULL AND LOWER(b.msg) LIKE :searchQuery ESCAPE '!'))");
+            hql.append(" AND LOWER(b.version.title) LIKE :searchQuery ESCAPE '!'");
             params.put("searchQuery", setupSearchQuery(search.getSearchQuery()));
         }
         if (search.getStatus() != null) {
@@ -271,6 +331,7 @@ public class BookingHibernateDao implements BookingDao {
         final Booking b = new Booking();
         b.setId(orm.getId());
         b.setVersionId(orm.getVersion().getId());
+        b.setVersionTitle(orm.getVersion().getTitle());
         b.setGuestId(orm.getGuest() != null ? orm.getGuest().getId() : 0);
         b.setStart(orm.getStart());
         b.setEnd(orm.getEnd());

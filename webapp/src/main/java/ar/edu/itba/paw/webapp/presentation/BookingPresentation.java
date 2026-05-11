@@ -3,6 +3,8 @@ package ar.edu.itba.paw.webapp.presentation;
 import ar.edu.itba.paw.models.nuevo.Booking;
 import ar.edu.itba.paw.models.nuevo.BookingSearchModel;
 import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
+import ar.edu.itba.paw.models.nuevo.IncomingSearch;
+import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
 import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
 import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.UserService;
@@ -29,13 +31,13 @@ public class BookingPresentation {
     private final UserService userService;
     private final ToastPresentation toastPresentation;
 
-    public ModelAndView bookingsGet(final HttpServletRequest request, final BookingSearchForm search) {
-        return currentGuestUserId()
-                .map(guestId -> {
-                    final BookingSearchModel model = toModel(search, guestId);
-                    final BookingSearchResult result = bookingInterface.searchBookings(model);
+    public ModelAndView outgoingBookingsGet(final HttpServletRequest request, final BookingSearchForm search) {
+        return currentUserId()
+                .map(userId -> {
+                    final OutcomingSearch outcoming = toOutcomingSearch(search, userId);
+                    final BookingSearchResult result = bookingInterface.searchOutcomingBookings(outcoming);
                     final List<Booking> bookings = result.getBookings();
-                    final ModelAndView mav = new ModelAndView("nuevo/my-bookings", "bookingSearch", search);
+                    final ModelAndView mav = new ModelAndView("nuevo/requests-outgoing", "bookingSearch", search);
                     mav.addObject("bookings", bookings);
                     addListingModelObjects(mav, search, bookings, result.getTotalCount());
                     return mav;
@@ -43,19 +45,46 @@ public class BookingPresentation {
                 .orElseGet(() -> new ModelAndView("redirect:/login"));
     }
 
-    public ModelAndView bookingsErrors(
+    public ModelAndView outgoingBookingsErrors(
             final HttpServletRequest request, final BookingSearchForm search, final BindingResult errors) {
-        return currentGuestUserId()
-                .map(guestId -> {
-                    final List<Booking> bookings = List.of();
-                    final ModelAndView mav = new ModelAndView("nuevo/my-bookings", "bookingSearch", search);
-                    mav.addAllObjects(errors.getModel());
+        if (currentUserId().isEmpty()) {
+            return new ModelAndView("redirect:/login");
+        }
+        final List<Booking> bookings = List.of();
+        final ModelAndView mav = new ModelAndView("nuevo/requests-outgoing", "bookingSearch", search);
+        mav.addAllObjects(errors.getModel());
+        mav.addObject("bookings", bookings);
+        addListingModelObjects(mav, search, bookings, 0L);
+        mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
+        return mav;
+    }
+
+    public ModelAndView incomingBookingsGet(final HttpServletRequest request, final BookingSearchForm search) {
+        return currentUserId()
+                .map(userId -> {
+                    final IncomingSearch incoming = toIncomingSearch(search, userId);
+                    final BookingSearchResult result = bookingInterface.searchIncomingBookings(incoming);
+                    final List<Booking> bookings = result.getBookings();
+                    final ModelAndView mav = new ModelAndView("nuevo/requests-incoming", "bookingSearch", search);
                     mav.addObject("bookings", bookings);
-                    addListingModelObjects(mav, search, bookings, 0L);
-                    mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
+                    addListingModelObjects(mav, search, bookings, result.getTotalCount());
                     return mav;
                 })
                 .orElseGet(() -> new ModelAndView("redirect:/login"));
+    }
+
+    public ModelAndView incomingBookingsErrors(
+            final HttpServletRequest request, final BookingSearchForm search, final BindingResult errors) {
+        if (currentUserId().isEmpty()) {
+            return new ModelAndView("redirect:/login");
+        }
+        final List<Booking> bookings = List.of();
+        final ModelAndView mav = new ModelAndView("nuevo/requests-incoming", "bookingSearch", search);
+        mav.addObject("bookings", bookings);
+        addListingModelObjects(mav, search, bookings, 0L);
+        mav.addAllObjects(errors.getModel());
+        mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
+        return mav;
     }
 
     private void addListingModelObjects(
@@ -75,16 +104,31 @@ public class BookingPresentation {
         return sortBy;
     }
 
-    public BookingSearchModel toModel(final BookingSearchForm form, final int guestId) {
-        final BookingSearchModel model = new BookingSearchModel();
-        model.setGuestId(guestId);
-        model.setSearchQuery(form.getSearchQuery());
-        model.setDate(PresentationUtils.parseDate(form.getDate()));
-        model.setStatus(parseStatus(form.getStatus()));
-        model.setPage(form.getPage());
-        model.setPageSize(form.getPageSize());
-        model.setSortBy(form.getSortBy());
-        return model;
+    public IncomingSearch toIncomingSearch(final BookingSearchForm form, final int hostId) {
+        final IncomingSearch incoming = new IncomingSearch();
+        incoming.setHostId(hostId);
+        final BookingSearchModel criteria = new BookingSearchModel();
+        copyFormToCriteria(form, criteria);
+        incoming.setSearch(criteria);
+        return incoming;
+    }
+
+    public OutcomingSearch toOutcomingSearch(final BookingSearchForm form, final int guestId) {
+        final OutcomingSearch outcoming = new OutcomingSearch();
+        outcoming.setGuestId(guestId);
+        final BookingSearchModel criteria = new BookingSearchModel();
+        copyFormToCriteria(form, criteria);
+        outcoming.setSearch(criteria);
+        return outcoming;
+    }
+
+    private static void copyFormToCriteria(final BookingSearchForm form, final BookingSearchModel criteria) {
+        criteria.setSearchQuery(form.getSearchQuery());
+        criteria.setDate(PresentationUtils.parseDate(form.getDate()));
+        criteria.setStatus(parseStatus(form.getStatus()));
+        criteria.setPage(form.getPage());
+        criteria.setPageSize(form.getPageSize());
+        criteria.setSortBy(form.getSortBy());
     }
 
     private static BookingStatus parseStatus(final String raw) {
@@ -94,7 +138,7 @@ public class BookingPresentation {
         return BookingStatus.valueOf(raw.trim());
     }
 
-    private Optional<Integer> currentGuestUserId() {
+    private Optional<Integer> currentUserId() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()

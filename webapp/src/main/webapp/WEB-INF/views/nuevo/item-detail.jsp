@@ -31,6 +31,7 @@
 <spring:message code="itemDetail.description.empty" var="itemDescriptionEmptyLabel" />
 <spring:message code="itemDetail.owner.ownPublicationNotice" var="ownerPublicationNotice" />
 <spring:message code="itemDetail.owner.blockButton" var="ownerBlockButtonLabel" />
+<spring:message code="itemDetail.owner.incomingRequestsButton" var="ownerIncomingRequestsLabel" />
 <spring:message code="detail.preBooking.subtitle" var="detailPreBookingSubtitle" />
 <c:url var="prebookLoginUrl" value="/login" />
 <spring:message code="itemDetail.form.loginToBook" var="itemDetailLoginToBookLabel" />
@@ -347,6 +348,11 @@
               <a href="${ownerManageAvailabilityUrl}" class="btn btn-primary btn-block btn-lg no-underline">
                 <c:out value="${ownerBlockButtonLabel}" />
                 <span class="material-symbols-outlined text-sm align-middle">event_busy</span>
+              </a>
+              <c:url var="ownerIncomingRequestsUrl" value="/requests/incoming" />
+              <a href="${ownerIncomingRequestsUrl}" class="btn btn-outline btn-block btn-lg no-underline">
+                <c:out value="${ownerIncomingRequestsLabel}" />
+                <span class="material-symbols-outlined text-sm align-middle">inbox</span>
               </a>
               <div hidden data-prebook-draft-clear-host data-item-id="${item.id}"></div>
             </c:when>

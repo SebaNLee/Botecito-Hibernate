@@ -23,8 +23,8 @@ public class RequestsController {
     private final BookingPresentation bookingPresentation;
 
     /**
-     * Defaults for GET /requests/outgoing before binding; omitted query params keep
-     * these values.
+     * Defaults for GET {@code /requests/outgoing} and {@code /requests/incoming}
+     * before binding; omitted query params keep these values.
      */
     @ModelAttribute("bookingSearch")
     public BookingSearchForm defaultBookingSearch() {
@@ -46,13 +46,19 @@ public class RequestsController {
             @Valid @ModelAttribute("bookingSearch") final BookingSearchForm search,
             final BindingResult errors) {
         if (errors.hasErrors()) {
-            return bookingPresentation.bookingsErrors(request, search, errors);
+            return bookingPresentation.outgoingBookingsErrors(request, search, errors);
         }
-        return bookingPresentation.bookingsGet(request, search);
+        return bookingPresentation.outgoingBookingsGet(request, search);
     }
 
     @RequestMapping(value = "/requests/incoming", method = RequestMethod.GET)
-    public ModelAndView incoming() {
-        return new ModelAndView("nuevo/requests-incoming");
+    public ModelAndView incoming(
+            final HttpServletRequest request,
+            @Valid @ModelAttribute("bookingSearch") final BookingSearchForm search,
+            final BindingResult errors) {
+        if (errors.hasErrors()) {
+            return bookingPresentation.incomingBookingsErrors(request, search, errors);
+        }
+        return bookingPresentation.incomingBookingsGet(request, search);
     }
 }

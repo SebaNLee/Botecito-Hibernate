@@ -1,8 +1,9 @@
 package ar.edu.itba.paw.services.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.Booking;
-import ar.edu.itba.paw.models.nuevo.BookingSearchModel;
 import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
+import ar.edu.itba.paw.models.nuevo.IncomingSearch;
+import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import ar.edu.itba.paw.persistence.nuevo.BookingDao;
 import java.util.List;
@@ -36,7 +37,12 @@ public class BookingImpl implements BookingInterface {
     }
 
     @Override
-    public BookingSearchResult searchBookings(final BookingSearchModel search) {
-        return bookingDao.searchBookings(search);
+    public BookingSearchResult searchOutcomingBookings(final OutcomingSearch search) {
+        return bookingDao.searchOutcomingBookings(search);
+    }
+
+    @Override
+    public BookingSearchResult searchIncomingBookings(final IncomingSearch search) {
+        return bookingDao.searchIncomingBookings(search);
     }
 }

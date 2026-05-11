@@ -1,8 +1,9 @@
 package ar.edu.itba.paw.persistence.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.Booking;
-import ar.edu.itba.paw.models.nuevo.BookingSearchModel;
 import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
+import ar.edu.itba.paw.models.nuevo.IncomingSearch;
+import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import java.util.List;
 
@@ -38,5 +39,9 @@ public interface BookingDao {
     /** Bookings for the given listing version, ordered by start time (UTC). */
     List<Booking> getBookingsForVersion(int versionId);
 
-    BookingSearchResult searchBookings(BookingSearchModel search);
+    /** Bookings where the guest is the current user (outgoing requests). */
+    BookingSearchResult searchOutcomingBookings(OutcomingSearch search);
+
+    /** Bookings on listings owned by the host (incoming requests). */
+    BookingSearchResult searchIncomingBookings(IncomingSearch search);
 }

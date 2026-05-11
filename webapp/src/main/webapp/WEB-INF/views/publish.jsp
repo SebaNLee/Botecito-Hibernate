@@ -6,7 +6,6 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="myBoatsUrl" value="/my-boats" />
 <c:url var="publishUrl" value="/publish" />
-<c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
 <spring:message
   code="publish.form.title.placeholder"
@@ -65,7 +64,6 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 <spring:message code="publish.difficulty.3" var="publishDifficulty3" />
 <spring:message code="publish.difficulty.4" var="publishDifficulty4" />
 <spring:message code="publish.difficulty.5" var="publishDifficulty5" />
-<spring:message code="publish.actions.saveDraft" var="publishSaveDraftLabel" />
 <spring:message
   code="publish.actions.continueAvailability"
   var="publishContinueAvailabilityLabel"
@@ -274,8 +272,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
         </jsp:body>
       </paw:sectionCard>
 
-      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
-        <paw:button href="${marketplaceUrl}" color="ghost" size="lg" cssClass="w-full sm:w-auto" text="${publishSaveDraftLabel}" />
+      <div class="flex flex-col sm:flex-row sm:justify-end items-center gap-4 pt-2">
         <paw:button type="submit" color="secondary" size="lg" icon="arrow_forward" iconTrailing="true" cssClass="w-full sm:w-auto" text="${publishContinueAvailabilityLabel}" />
       </div>
     </form:form>

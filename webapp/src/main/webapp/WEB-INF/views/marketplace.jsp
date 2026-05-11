@@ -139,7 +139,7 @@
             <div class="grid grid-cols-1 gap-4">
               <paw:datePicker
                   id="marketplace-date"
-                  name="date"
+                  dateFieldName="date"
                   label="${dateLabel}"
                   value="${param.date}"
                   placeholder="${datePlaceholder}"
@@ -149,8 +149,8 @@
               <paw:timeRangePicker
                   id="marketplace-time-range"
                   dateInputId="marketplace-date"
-                  startName="startTime"
-                  endName="endTime"
+                  startTimeFieldName="startTime"
+                  endTimeFieldName="endTime"
                   label="${timeLabel}"
                   startValue="${param.startTime}"
                   endValue="${param.endTime}"

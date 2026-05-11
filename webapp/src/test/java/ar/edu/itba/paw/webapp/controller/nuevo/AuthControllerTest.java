@@ -41,10 +41,33 @@ public class AuthControllerTest {
         final LoginForm form = new LoginForm();
         form.setRegistered("true");
 
-        final ModelAndView mav = controller.login(form);
+        final ModelAndView mav = controller.login(form, new MockHttpServletRequest());
 
         Assertions.assertEquals("login", mav.getViewName());
         Assertions.assertEquals(true, mav.getModel().get("registeredSuccess"));
+    }
+
+    @Test
+    public void testLoginStoresSafeNextRedirectInSession() {
+        final LoginForm form = new LoginForm();
+        form.setNext("/marketplace");
+        final MockHttpServletRequest request = new MockHttpServletRequest();
+
+        controller.login(form, request);
+
+        Assertions.assertEquals("/marketplace", request.getSession().getAttribute("POST_LOGIN_REDIRECT"));
+    }
+
+    @Test
+    public void testLoginIgnoresUnsafeNextRedirect() {
+        final LoginForm form = new LoginForm();
+        form.setNext("https://evil.example.com/steal");
+        final MockHttpServletRequest request = new MockHttpServletRequest();
+        request.getSession().setAttribute("POST_LOGIN_REDIRECT", "/old");
+
+        controller.login(form, request);
+
+        Assertions.assertNull(request.getSession().getAttribute("POST_LOGIN_REDIRECT"));
     }
 
     @Test

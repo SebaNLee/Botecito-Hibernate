@@ -5,6 +5,7 @@ import ar.edu.itba.paw.webapp.form.nuevo.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordResetForm;
 import ar.edu.itba.paw.webapp.form.nuevo.RegisterForm;
 import ar.edu.itba.paw.webapp.presentation.AuthPresentation;
+import ar.edu.itba.paw.webapp.util.PostLoginRedirectSupport;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,15 @@ public class AuthController {
     private final AuthPresentation authPresentation;
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
-    public ModelAndView login(@ModelAttribute("loginForm") final LoginForm form) {
+    public ModelAndView login(@ModelAttribute("loginForm") final LoginForm form, final HttpServletRequest request) {
+        final String next = form.getNext();
+        if (next != null) {
+            if (PostLoginRedirectSupport.isSafeInternalRedirect(next)) {
+                request.getSession().setAttribute(PostLoginRedirectSupport.SESSION_ATTR, next.trim());
+            } else {
+                request.getSession().removeAttribute(PostLoginRedirectSupport.SESSION_ATTR);
+            }
+        }
         return authPresentation.login(form);
     }
 

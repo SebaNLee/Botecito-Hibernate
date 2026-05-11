@@ -12,4 +12,5 @@ public class LoginForm {
     private String registered;
     private String legacyToken;
     private String passwordRecovered;
+    private String next;
 }

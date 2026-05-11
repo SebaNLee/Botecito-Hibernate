@@ -15,6 +15,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 @Configuration
 @EnableWebSecurity
@@ -32,11 +33,15 @@ public class WebAuthConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(
-            final HttpSecurity http, final UserAccountDetailsService userDetailsAccountService) throws Exception {
+            final HttpSecurity http,
+            final UserAccountDetailsService userDetailsAccountService,
+            final AuthenticationSuccessHandler authenticationSuccessHandler)
+            throws Exception {
         http.userDetailsService(userDetailsAccountService)
                 .sessionManagement(session -> session.invalidSessionUrl("/login"))
                 .authorizeHttpRequests(auth -> auth
-                        // Use AntPathRequestMatcher so Spring Security does not pick MvcRequestMatcher (Servlet 4).
+                        // Use AntPathRequestMatcher so Spring Security does not pick
+                        // MvcRequestMatcher (Servlet 4).
                         .requestMatchers(antMatcher("/login"))
                         .permitAll()
                         .requestMatchers(antMatcher("/register"))
@@ -63,7 +68,7 @@ public class WebAuthConfig {
                         .authenticated())
                 .formLogin(form -> form.usernameParameter("j_username")
                         .passwordParameter("j_password")
-                        .defaultSuccessUrl("/", false)
+                        .successHandler(authenticationSuccessHandler)
                         .loginPage("/login")
                         .failureUrl("/login?error=true"))
                 .rememberMe(remember -> remember.rememberMeParameter("j_rememberme")

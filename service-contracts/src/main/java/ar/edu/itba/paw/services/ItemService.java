@@ -14,15 +14,12 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public interface ItemService {
     List<Item> listItems();
 
     Page<Item> searchItems(ItemSearchCriteria criteria, int page, int pageSize);
-
-    List<Item> listItemsByOwnerId(int ownerId);
 
     List<LocationOption> listLocationOptions();
 
@@ -49,10 +46,6 @@ public interface ItemService {
             byte[] primaryImageData);
 
     boolean hasBlockingBookingsForEdition(int itemId);
-
-    Map<Integer, Boolean> publicationDeleteDeactivatesByItemId(List<Item> ownedItems);
-
-    Map<Integer, Boolean> publicationDeleteDisabledByItemId(List<Item> ownedItems);
 
     boolean deleteItemByIdForOwner(int itemId, int ownerId);
 

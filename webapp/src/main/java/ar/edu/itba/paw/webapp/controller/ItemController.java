@@ -14,16 +14,6 @@ import org.springframework.web.servlet.ModelAndView;
 @RequestMapping("/item")
 public class ItemController {
 
-    @RequestMapping(value = "/create", method = RequestMethod.GET)
-    public ModelAndView createForm() {
-        return new ModelAndView("redirect:/publish");
-    }
-
-    @RequestMapping(value = "/create", method = RequestMethod.POST)
-    public ModelAndView create() {
-        return new ModelAndView("redirect:/publish");
-    }
-
     @RequestMapping(value = "/{id}/book", method = RequestMethod.GET)
     public ModelAndView bookForm(@PathVariable("id") long id, @ModelAttribute("bookForm") final ItemBookingForm form) {
         ModelAndView mav = new ModelAndView("bookItem");
@@ -49,5 +39,17 @@ public class ItemController {
 
         // booking logic goes here
         return new ModelAndView("redirect:/");
+    }
+
+    // TODO move to /controller/nuevo
+    @RequestMapping(value = "/create", method = RequestMethod.GET)
+    public ModelAndView createForm() {
+        return new ModelAndView("redirect:/publish");
+    }
+
+    // TODO move to /controller/nuevo
+    @RequestMapping(value = "/create", method = RequestMethod.POST)
+    public ModelAndView create() {
+        return new ModelAndView("redirect:/publish");
     }
 }

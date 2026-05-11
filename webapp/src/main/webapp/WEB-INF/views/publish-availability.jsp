@@ -7,11 +7,9 @@
 
 <c:url var="stepOneUrl" value="/publish" />
 <c:url var="stepTwoUrl" value="/publish/availability" />
-<c:url var="marketplaceUrl" value="/marketplace" />
 <spring:message code="publish.availability.noRanges" var="publishNoRangesLabel" />
 <spring:message code="publish.step2.deleteRange" var="publishDeleteRangeLabel" />
 <spring:message code="publish.availability.day.empty.client" var="publishMissingRangeLabel" />
-<spring:message code="publish.actions.saveDraft" var="publishSaveDraftLabel" />
 <spring:message code="publish.actions.continueContact" var="publishContinueContactLabel" />
 
 <paw:layout
@@ -129,8 +127,7 @@
       </jsp:body>
     </paw:sectionCard>
 
-    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-2">
-      <paw:button href="${marketplaceUrl}" color="ghost" size="lg" cssClass="w-full sm:w-auto" text="${publishSaveDraftLabel}" />
+    <div class="flex flex-col sm:flex-row sm:justify-end items-center gap-4 pt-2">
       <paw:button type="submit" color="secondary" size="lg" icon="arrow_forward" iconTrailing="true" cssClass="w-full sm:w-auto" text="${publishContinueContactLabel}" />
     </div>
   </form:form>

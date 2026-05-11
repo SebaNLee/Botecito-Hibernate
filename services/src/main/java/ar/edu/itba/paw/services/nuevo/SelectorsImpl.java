@@ -1,10 +1,16 @@
 package ar.edu.itba.paw.services.nuevo;
 
+import ar.edu.itba.paw.models.nuevo.BookingStatusOptionModel;
 import ar.edu.itba.paw.models.nuevo.ItemTypeModel;
 import ar.edu.itba.paw.models.nuevo.Location;
+import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
 import ar.edu.itba.paw.persistence.nuevo.SelectorsDao;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,6 +18,7 @@ import org.springframework.stereotype.Service;
 public final class SelectorsImpl implements SelectorsInterface {
 
     private final SelectorsDao selectorsDao;
+    private final MessageSource messageSource;
 
     @Override
     public List<Location> getLocationOptions() {
@@ -21,5 +28,17 @@ public final class SelectorsImpl implements SelectorsInterface {
     @Override
     public List<ItemTypeModel> getItemTypeOptions() {
         return selectorsDao.getItemTypeOptions();
+    }
+
+    @Override
+    public List<BookingStatusOptionModel> getBookingStatusOptions() {
+        final Locale locale = LocaleContextHolder.getLocale();
+        return Arrays.stream(BookingStatus.values())
+                .map(status -> {
+                    final String code = "booking.status." + status.name();
+                    final String label = messageSource.getMessage(code, null, status.name(), locale);
+                    return new BookingStatusOptionModel(status.name(), label);
+                })
+                .toList();
     }
 }

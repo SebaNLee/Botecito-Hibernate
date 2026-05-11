@@ -5,10 +5,8 @@ import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.util.BookingDisplayFormatter;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -21,84 +19,6 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
 
     private final ItemService itemService;
     private final BookingRequestService bookingRequestService;
-
-    @Override
-    public OwnerBoatsDashboardData loadOwnerBoatsDashboard(final int ownerId, final int page, final int pageSize) {
-        final List<Item> ownedItems = itemService.listItemsByOwnerId(ownerId);
-        final Map<Integer, Integer> coverImageIdsByItemId = new LinkedHashMap<>();
-        final Set<Integer> imageItemIds = new LinkedHashSet<>();
-        for (final Item item : ownedItems) {
-            if (item == null || item.getId() == null) {
-                continue;
-            }
-            imageItemIds.add(item.getId());
-            itemService
-                    .findCoverImageIdByItemId(item.getId())
-                    .ifPresent(imageId -> coverImageIdsByItemId.put(item.getId(), imageId));
-        }
-
-        final User owner = itemService.findUserById(ownerId).orElse(null);
-        final String ownerPaymentAlias = BookingDisplayFormatter.resolvePaymentAlias(owner);
-        final Page<ItemBooking> receivedBookingPage =
-                Page.slice(itemService.listBookingsByOwnerId(ownerId), page, pageSize);
-        final List<OwnerReceivedBookingCard> receivedBookingCards = new ArrayList<>();
-        for (final ItemBooking booking : receivedBookingPage.getContent()) {
-            if (booking != null && booking.getItemId() != null) {
-                imageItemIds.add(booking.getItemId());
-            }
-            if (booking == null || booking.getId() == null) {
-                continue;
-            }
-
-            final Integer bookingId = booking.getId();
-            final Item item = booking.getItemId() == null
-                    ? null
-                    : itemService.findItemById(booking.getItemId()).orElse(null);
-            final User requester = booking.getGuestId() == null
-                    ? null
-                    : itemService.findUserById(booking.getGuestId()).orElse(null);
-            final Integer pricePerHour = item == null ? null : item.getPricePerHour();
-            final var paymentProof =
-                    bookingRequestService.findPaymentProofByBookingId(bookingId).orElse(null);
-            final String contentType = paymentProof == null ? null : paymentProof.getContentType();
-            final String paymentRefusalReason = paymentProof == null ? null : paymentProof.getRefusalReason();
-            final String paymentGuestReply = paymentProof == null ? null : paymentProof.getGuestReply();
-
-            receivedBookingCards.add(new OwnerReceivedBookingCard(
-                    bookingId,
-                    booking.getItemId(),
-                    item == null ? "" : item.getTitle(),
-                    booking.getState() == null ? "" : BookingDisplayFormatter.statusMessageCode(booking.getState()),
-                    BookingDisplayFormatter.formatDateLabel(booking.getStartTime()),
-                    BookingDisplayFormatter.formatTimeRangeLabel(booking.getStartTime(), booking.getEndTime()),
-                    BookingDisplayFormatter.formatTotalPriceLabel(
-                            booking.getStartTime(), booking.getEndTime(), pricePerHour),
-                    ownerPaymentAlias,
-                    booking.getRequestMessage(),
-                    booking.getRequestMessage() != null
-                            && !booking.getRequestMessage().isBlank(),
-                    requester == null ? "" : requester.getName(),
-                    requester == null ? "" : requester.getEmail(),
-                    false,
-                    0,
-                    0,
-                    paymentGuestReply != null && !paymentGuestReply.isBlank(),
-                    paymentGuestReply,
-                    paymentProof != null && paymentProof.getFileData() != null,
-                    "application/pdf".equalsIgnoreCase(contentType),
-                    paymentRefusalReason,
-                    paymentRefusalReason != null && !paymentRefusalReason.isBlank()));
-        }
-
-        return new OwnerBoatsDashboardData(
-                ownedItems,
-                coverImageIdsByItemId,
-                imageItemIds,
-                receivedBookingCards,
-                receivedBookingPage,
-                itemService.publicationDeleteDeactivatesByItemId(ownedItems),
-                itemService.publicationDeleteDisabledByItemId(ownedItems));
-    }
 
     @Override
     public GuestTripsDashboardData loadGuestTripsDashboard(final int guestId, final int page, final int pageSize) {

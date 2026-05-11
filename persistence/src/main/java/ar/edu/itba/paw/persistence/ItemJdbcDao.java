@@ -76,12 +76,6 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
-    public List<Item> listItemsByOwnerId(final int ownerId) {
-        return jdbcTemplate.query(
-                ITEM_SELECT + " WHERE i.host_id = ? ORDER BY i.id DESC", ItemJdbcRowMappers.ITEM_ROW_MAPPER, ownerId);
-    }
-
-    @Override
     public List<LocationOption> listLocationOptions() {
         return jdbcTemplate.query("SELECT id, name FROM location ORDER BY id", (rs, rowNum) -> {
             final LocationOption locationOption = new LocationOption();
@@ -181,7 +175,9 @@ public class ItemJdbcDao implements ItemDao {
         }
         if (hasBookingsBlockingHardDelete(itemId)) {
             if (Boolean.TRUE.equals(item.get().getActive())) {
-                snapshotBookingsForPublicationEdit(itemId);
+                if (!snapshotBookingsForPublicationEdit(itemId)) {
+                    return false;
+                }
                 return updateCurrentVersionActive(itemId, ownerId, false) > 0;
             }
             return false;

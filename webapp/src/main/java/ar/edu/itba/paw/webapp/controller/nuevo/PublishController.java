@@ -1,9 +1,10 @@
-package ar.edu.itba.paw.webapp.controller;
+package ar.edu.itba.paw.webapp.controller.nuevo;
 
-import ar.edu.itba.paw.webapp.controller.support.PublishMvcSupport;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import ar.edu.itba.paw.webapp.presentation.PublishPresentation;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,42 +25,72 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class PublishController {
 
-    private final PublishMvcSupport publishMvcSupport;
+    private final PublishPresentation publishPresentation;
+
+    @ModelAttribute("publishForm")
+    public PublishBoatForm publishForm() {
+        return new PublishBoatForm();
+    }
+
+    @ModelAttribute("itemTypeOptions")
+    public Map<String, String> itemTypeOptions() {
+        return PublishPresentation.buildItemTypeOptions();
+    }
+
+    @ModelAttribute("capacityOptions")
+    public Map<String, String> capacityOptions() {
+        return PublishPresentation.buildCapacityOptions();
+    }
+
+    @ModelAttribute("difficultyOptions")
+    public Map<String, String> difficultyOptions() {
+        return PublishPresentation.buildDifficultyOptions();
+    }
+
+    @ModelAttribute("uploadedImagePreviewUrls")
+    public List<String> uploadedImagePreviewUrls(@ModelAttribute("publishForm") final PublishBoatForm form) {
+        return PublishPresentation.buildUploadedImagePreviewUrls(form);
+    }
+
+    @ModelAttribute("maxGalleryImages")
+    public int maxGalleryImages() {
+        return PublishPresentation.MAX_GALLERY_IMAGES;
+    }
 
     @RequestMapping(value = "/publish", method = RequestMethod.GET)
     public ModelAndView publishStepOne(@ModelAttribute("publishForm") final PublishBoatForm form) {
-        return publishMvcSupport.publishStepOne(form);
+        return publishPresentation.publishStepOne(form);
     }
 
     @RequestMapping(value = "/publish", method = RequestMethod.POST)
     public ModelAndView publishStepOneSubmit(
             @Validated(PublishBoatForm.Step1.class) @ModelAttribute("publishForm") final PublishBoatForm form,
             final BindingResult errors) {
-        return publishMvcSupport.publishStepOneSubmit(form, errors);
+        return publishPresentation.publishStepOneSubmit(form, errors);
     }
 
     @RequestMapping(value = "/publish/images/upload", method = RequestMethod.POST)
     public ModelAndView publishImagesUpload(
             @ModelAttribute("publishForm") final PublishBoatForm form, final BindingResult errors) {
-        return publishMvcSupport.publishImagesUpload(form, errors);
+        return publishPresentation.publishImagesUpload(form, errors);
     }
 
     @RequestMapping(value = "/publish/images/remove", method = RequestMethod.POST)
     public ModelAndView publishImagesRemove(
             @ModelAttribute("publishForm") final PublishBoatForm form, @RequestParam("index") final int index) {
-        return publishMvcSupport.publishImagesRemove(form, index);
+        return publishPresentation.publishImagesRemove(form, index);
     }
 
     @RequestMapping(value = "/publish/images/reorder", method = RequestMethod.POST)
     public ModelAndView publishImagesReorder(
             @ModelAttribute("publishForm") final PublishBoatForm form,
             @RequestParam(value = "order", required = false) final String order) {
-        return publishMvcSupport.publishImagesReorder(form, order);
+        return publishPresentation.publishImagesReorder(form, order);
     }
 
     @RequestMapping(value = "/publish/availability", method = RequestMethod.GET)
     public ModelAndView publishStepTwo(@ModelAttribute("publishForm") final PublishBoatForm form) {
-        return publishMvcSupport.publishStepTwo(form);
+        return publishPresentation.publishStepTwo(form);
     }
 
     @RequestMapping(value = "/publish/availability", method = RequestMethod.POST)
@@ -69,19 +100,19 @@ public class PublishController {
             final Locale locale,
             @RequestParam(value = "enabledDays", required = false) final List<String> enabledDays,
             @RequestParam(value = "availabilityRanges", required = false) final List<String> availabilityRanges) {
-        return publishMvcSupport.publishStepTwoSubmit(form, errors, locale, enabledDays, availabilityRanges);
+        return publishPresentation.publishStepTwoSubmit(form, errors, locale, enabledDays, availabilityRanges);
     }
 
     @RequestMapping(value = "/publish/contact", method = RequestMethod.GET)
     public ModelAndView publishStepThree(
             @ModelAttribute("publishForm") final PublishBoatForm form, final Locale locale) {
-        return publishMvcSupport.publishStepThree(form, locale);
+        return publishPresentation.publishStepThree(form, locale);
     }
 
     @RequestMapping(value = "/publish/preview-image/{index}", method = RequestMethod.GET)
     public ResponseEntity<byte[]> publishPreviewImage(
             @ModelAttribute("publishForm") final PublishBoatForm form, @PathVariable("index") final int index) {
-        return publishMvcSupport.publishPreviewImage(form, index);
+        return publishPresentation.publishPreviewImage(form, index);
     }
 
     @RequestMapping(value = "/publish/contact", method = RequestMethod.POST)
@@ -90,12 +121,12 @@ public class PublishController {
             final BindingResult errors,
             final Locale locale,
             final SessionStatus sessionStatus) {
-        return publishMvcSupport.publishStepThreeSubmit(form, errors, locale, sessionStatus);
+        return publishPresentation.publishStepThreeSubmit(form, errors, locale, sessionStatus);
     }
 
     @RequestMapping(value = "/publish/success", method = RequestMethod.GET)
     public ModelAndView publishSuccess(
             final HttpServletRequest request, @RequestParam(value = "itemId", required = false) final Integer itemId) {
-        return publishMvcSupport.publishSuccess(request, itemId);
+        return publishPresentation.publishSuccess(request, itemId);
     }
 }

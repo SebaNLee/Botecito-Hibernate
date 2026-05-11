@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
+import ar.edu.itba.paw.models.nuevo.BookingStatusOptionModel;
 import ar.edu.itba.paw.models.nuevo.ItemTypeModel;
 import ar.edu.itba.paw.models.nuevo.Location;
 import ar.edu.itba.paw.webapp.presentation.SelectorsPresentation;
@@ -33,5 +34,14 @@ public class SelectorsController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     public List<ItemTypeModel> getItemTypeOptions() {
         return selectorsPresentation.getItemTypeOptions();
+    }
+
+    @ResponseBody
+    @RequestMapping(
+            value = "/booking-status-options",
+            method = RequestMethod.GET,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<BookingStatusOptionModel> getBookingStatusOptions() {
+        return selectorsPresentation.getBookingStatusOptions();
     }
 }

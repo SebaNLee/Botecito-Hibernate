@@ -85,41 +85,8 @@ public class ItemHibernateDao implements ItemDao {
 
     @Override
     public boolean updateMyBoatsItem(final int itemId, final int ownerId, final ItemUpdateModel updateModel) {
-        if (updateModel == null) {
-            return false;
-        }
-        final String hql = "SELECT v FROM VersionOrm v"
-                + " WHERE v.item.id = :itemId AND v.item.host.id = :ownerId"
-                + " AND v.id = (SELECT MAX(v2.id) FROM VersionOrm v2 WHERE v2.item.id = :itemId)";
-        final List<VersionOrm> versions = entityManager
-                .createQuery(hql, VersionOrm.class)
-                .setParameter("itemId", itemId)
-                .setParameter("ownerId", ownerId)
-                .setMaxResults(1)
-                .getResultList();
-        if (versions.isEmpty()) {
-            return false;
-        }
-        final VersionOrm latest = versions.get(0);
-        final VersionOrm version = VersionOrm.builder()
-                .item(latest.getItem())
-                .type(latest.getType())
-                .title(updateModel.getTitle())
-                .description(updateModel.getDescription())
-                .price(BigDecimal.valueOf(updateModel.getPricePerHour()))
-                .capacity(latest.getCapacity())
-                .weight(latest.getWeight())
-                .difficulty(
-                        updateModel.getDifficultyLevel() == null
-                                ? Integer.valueOf(DEFAULT_DIFFICULTY)
-                                : updateModel.getDifficultyLevel())
-                .location(entityManager.getReference(LocationOrm.class, updateModel.getLocationOptionId()))
-                .timezone(latest.getTimezone())
-                .createdAt(LocalDateTime.now())
-                .build();
-        entityManager.persist(version);
-        entityManager.flush();
-        return true;
+        // TODO hardcode redirect for now
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override

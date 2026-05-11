@@ -14,22 +14,18 @@ import ar.edu.itba.paw.services.nuevo.DetailInterface;
 import ar.edu.itba.paw.services.nuevo.PreBookingCreateResult;
 import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
 import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
-import ar.edu.itba.paw.webapp.controller.support.nuevo.ReviewViewHelper;
 import ar.edu.itba.paw.webapp.form.nuevo.PreBookingForm;
 import ar.edu.itba.paw.webapp.util.AvailabilityPickerSupport;
 import ar.edu.itba.paw.webapp.util.MarketplaceReturnUrl;
 import ar.edu.itba.paw.webapp.util.NuevoDetailAvailabilityPicker;
 import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -48,7 +44,7 @@ public class DetailPresentation {
     private final ItemService itemService;
     private final UserService userService;
     private final ToastPresentation toastPresentation;
-    private final ReviewViewHelper reviewViewHelper;
+    private final ReviewPresentation reviewPresentation;
 
     /**
      * @return {@link ModelAndView} for the detail page, or a {@link RedirectView}
@@ -289,10 +285,10 @@ public class DetailPresentation {
         mav.addObject("listingInactiveNotice", !isActive);
         mav.addObject("itemOwner", itemOwner);
         mav.addObject("versionReviews", versionReviews);
-        mav.addObject("reviewAuthorNames", reviewAuthorNames);
-        mav.addObject("reviewCreatedAtLabels", buildVersionReviewCreatedAtLabels(versionReviews));
-        mav.addObject("reviewFullStars", buildReviewFullStars(versionReviews));
-        reviewViewHelper.addMarketplaceItemReviewData(mav, itemId, viewer == null ? null : viewer.getId());
+        mav.addObject("versionReviewAuthorNames", reviewAuthorNames);
+        mav.addObject("reviewCreatedAtLabels", reviewPresentation.buildReviewCreatedAtLabels(versionReviews));
+        mav.addObject("reviewFullStars", reviewPresentation.buildReviewFullStars(versionReviews));
+        reviewPresentation.addMarketplaceItemReviewData(mav, itemId, viewer == null ? null : viewer.getId());
         mav.addObject("itemImageUrl", primaryImageUrl(item, contextPath));
         mav.addObject("itemImageUrls", prefixImagePaths(item.getImages(), contextPath));
         final String ownerName = itemOwner == null ? null : itemOwner.getName();
@@ -373,28 +369,6 @@ public class DetailPresentation {
             return path;
         }
         return path.startsWith("/") ? contextPath + path : contextPath + "/" + path;
-    }
-
-    private static Map<Integer, String> buildVersionReviewCreatedAtLabels(final List<ReviewModel> reviews) {
-        final Locale locale = LocaleContextHolder.getLocale();
-        final DateTimeFormatter formatter =
-                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale);
-        final Map<Integer, String> labels = new LinkedHashMap<>();
-        for (final ReviewModel review : reviews) {
-            if (review.getCreatedAt() == null) {
-                continue;
-            }
-            labels.put(review.getId(), formatter.format(review.getCreatedAt()));
-        }
-        return labels;
-    }
-
-    private static Map<Integer, Integer> buildReviewFullStars(final List<ReviewModel> reviews) {
-        final Map<Integer, Integer> stars = new LinkedHashMap<>();
-        for (final ReviewModel review : reviews) {
-            stars.put(review.getId(), (int) Math.floor(review.getRating()));
-        }
-        return stars;
     }
 
     private User currentAuthenticatedUserOrNull() {

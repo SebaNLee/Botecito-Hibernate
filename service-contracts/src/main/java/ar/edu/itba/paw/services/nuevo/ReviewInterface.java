@@ -1,5 +1,7 @@
 package ar.edu.itba.paw.services.nuevo;
 
+import ar.edu.itba.paw.models.nuevo.DashboardReviewView;
+import ar.edu.itba.paw.models.nuevo.ItemReviewsView;
 import ar.edu.itba.paw.models.nuevo.PendingReviewActionModel;
 import ar.edu.itba.paw.models.nuevo.RatingSummaryModel;
 import ar.edu.itba.paw.models.nuevo.ReviewModel;
@@ -23,4 +25,8 @@ public interface ReviewInterface {
     List<ReviewModel> listAuthoredReviews(int reviewerUserId);
 
     List<ReviewModel> listReceivedReviews(int revieweeUserId);
+
+    ItemReviewsView getItemReviewsView(int itemId, int limit, Integer viewerUserId);
+
+    DashboardReviewView getDashboardReviewView(int userId);
 }

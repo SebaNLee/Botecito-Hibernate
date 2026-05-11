@@ -6,7 +6,6 @@ import ar.edu.itba.paw.webapp.form.nuevo.ProfileForm;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,9 +19,10 @@ public class ProfilePresentation {
 
     private final UserService userService;
     private final ProfileModelMapper profileModelMapper;
+    private final AuthenticatedUserResolver authenticatedUserResolver;
 
     public ModelAndView profilePasswordRecoveryRequest() {
-        final UserModel user = currentAuthenticatedUser();
+        final UserModel user = authenticatedUserResolver.currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -32,7 +32,7 @@ public class ProfilePresentation {
     }
 
     public ModelAndView profile(final boolean edit, final ProfileForm form) {
-        final UserModel user = currentAuthenticatedUser();
+        final UserModel user = authenticatedUserResolver.currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -42,7 +42,7 @@ public class ProfilePresentation {
     }
 
     public ModelAndView profileSubmit(final ProfileForm form, final BindingResult errors) {
-        final UserModel currentUser = currentAuthenticatedUser();
+        final UserModel currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -68,16 +68,6 @@ public class ProfilePresentation {
         mav.addObject("memberSinceDisplay", formatMemberSince(user.getCreatedAt()));
         mav.addObject("profileEdit", profileEdit);
         return mav;
-    }
-
-    private UserModel currentAuthenticatedUser() {
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            return null;
-        }
-        return userService.findByEmail(authentication.getName()).orElse(null);
     }
 
     private static void refreshAuthenticatedPrincipal(final UserModel user) {

@@ -1,6 +1,8 @@
 package ar.edu.itba.paw.services.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.Booking;
+import ar.edu.itba.paw.models.nuevo.DashboardReviewView;
+import ar.edu.itba.paw.models.nuevo.ItemReviewsView;
 import ar.edu.itba.paw.models.nuevo.PendingReviewActionModel;
 import ar.edu.itba.paw.models.nuevo.RatingSummaryModel;
 import ar.edu.itba.paw.models.nuevo.ReviewModel;
@@ -11,7 +13,9 @@ import ar.edu.itba.paw.persistence.nuevo.ReviewDao;
 import ar.edu.itba.paw.persistence.nuevo.UserDao;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -111,6 +115,60 @@ public final class ReviewImpl implements ReviewInterface {
     @Override
     public List<ReviewModel> listReceivedReviews(final int revieweeUserId) {
         return reviewDao.listReviewsForUser(revieweeUserId);
+    }
+
+    @Override
+    public ItemReviewsView getItemReviewsView(final int itemId, final int limit, final Integer viewerUserId) {
+        final RatingSummaryModel ratingSummary = reviewDao.ratingSummaryForItem(itemId);
+        final List<ReviewModel> reviews = reviewDao.listLatestReviewsForItem(itemId, limit);
+        final Map<Integer, String> authorNamesBySenderId = new LinkedHashMap<>();
+        for (final ReviewModel review : reviews) {
+            final int senderId = review.getSenderId();
+            if (senderId <= 0 || authorNamesBySenderId.containsKey(senderId)) {
+                continue;
+            }
+            authorNamesBySenderId.put(
+                    senderId,
+                    userDao.findById(senderId)
+                            .map(u -> u.getName() == null ? "" : u.getName())
+                            .orElse(""));
+        }
+        final PendingReviewActionModel pendingViewerAction = viewerUserId == null
+                ? null
+                : findPendingItemReviewAction(viewerUserId, itemId).orElse(null);
+        return new ItemReviewsView(ratingSummary, reviews, authorNamesBySenderId, pendingViewerAction);
+    }
+
+    @Override
+    public DashboardReviewView getDashboardReviewView(final int userId) {
+        final Map<Integer, PendingReviewActionModel> pendingItemReviewsByBookingId = new LinkedHashMap<>();
+        final Map<Integer, PendingReviewActionModel> pendingUserReviewsByBookingId = new LinkedHashMap<>();
+        for (final PendingReviewActionModel action : listPendingReviewActions(userId)) {
+            if (action.getTargetType() == TargetType.ITEM) {
+                pendingItemReviewsByBookingId.put(action.getBookingId(), action);
+            } else if (action.getTargetType() == TargetType.USER) {
+                pendingUserReviewsByBookingId.put(action.getBookingId(), action);
+            }
+        }
+
+        final Map<Integer, ReviewModel> authoredItemReviewsByBookingId = new LinkedHashMap<>();
+        final Map<Integer, ReviewModel> authoredUserReviewsByBookingId = new LinkedHashMap<>();
+        for (final ReviewModel review : listAuthoredReviews(userId)) {
+            if (review.getBookingId() <= 0) {
+                continue;
+            }
+            if (review.getTargetType() == TargetType.ITEM) {
+                authoredItemReviewsByBookingId.putIfAbsent(review.getBookingId(), review);
+            } else if (review.getTargetType() == TargetType.USER) {
+                authoredUserReviewsByBookingId.putIfAbsent(review.getBookingId(), review);
+            }
+        }
+
+        return new DashboardReviewView(
+                pendingItemReviewsByBookingId,
+                pendingUserReviewsByBookingId,
+                authoredItemReviewsByBookingId,
+                authoredUserReviewsByBookingId);
     }
 
     private PendingReviewActionModel buildGuestPendingReviewAction(final int userId, final Booking booking) {

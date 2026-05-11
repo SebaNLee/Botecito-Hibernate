@@ -1,15 +1,12 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.UserModel;
-import ar.edu.itba.paw.services.nuevo.ReviewInterface;
-import ar.edu.itba.paw.services.nuevo.UserService;
 import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
 import ar.edu.itba.paw.webapp.form.nuevo.ReviewForm;
+import ar.edu.itba.paw.webapp.presentation.AuthenticatedUserResolver;
+import ar.edu.itba.paw.webapp.presentation.ReviewPresentation;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -24,8 +21,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class ReviewController {
 
-    private final ReviewInterface reviewService;
-    private final UserService userService;
+    private final ReviewPresentation reviewPresentation;
+    private final AuthenticatedUserResolver authenticatedUserResolver;
 
     @RequestMapping(value = "/reviews/booking/{bookingId:[0-9]+}", method = RequestMethod.POST)
     public ModelAndView createReview(
@@ -35,25 +32,22 @@ public class ReviewController {
             @RequestParam(value = "returnTo", required = false, defaultValue = "dashboard") final String returnTo,
             @RequestParam(value = "itemId", required = false) final Integer itemId,
             final RedirectAttributes redirectAttributes) {
-        final UserModel currentUser = currentAuthenticatedUser();
+        final UserModel currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
-
         if (errors.hasErrors()) {
             ToastSupport.error(redirectAttributes, "profile.reviews.validationError");
-            return reviewRedirect(returnTo, itemId);
+            return ReviewPresentation.reviewRedirect(returnTo, itemId);
         }
-
-        final boolean created = reviewService
-                .createReviewForBooking(bookingId, currentUser.getId(), form.getRating(), form.getComment())
-                .isPresent();
-        if (created) {
-            ToastSupport.success(redirectAttributes, "profile.reviews.created");
-        } else {
-            ToastSupport.error(redirectAttributes, "profile.reviews.error");
-        }
-        return reviewRedirect(returnTo, itemId);
+        return reviewPresentation.createReview(
+                bookingId,
+                currentUser.getId(),
+                form.getRating(),
+                form.getComment(),
+                returnTo,
+                itemId,
+                redirectAttributes);
     }
 
     @RequestMapping(value = "/reviews/{reviewId:[0-9]+}/delete", method = RequestMethod.POST)
@@ -62,37 +56,10 @@ public class ReviewController {
             @RequestParam(value = "returnTo", required = false, defaultValue = "dashboard") final String returnTo,
             @RequestParam(value = "itemId", required = false) final Integer itemId,
             final RedirectAttributes redirectAttributes) {
-        final UserModel currentUser = currentAuthenticatedUser();
+        final UserModel currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
-
-        final boolean deleted = reviewService.deleteReview(reviewId, currentUser.getId());
-        if (deleted) {
-            ToastSupport.success(redirectAttributes, "profile.reviews.deleted");
-        } else {
-            ToastSupport.error(redirectAttributes, "profile.reviews.error");
-        }
-        return reviewRedirect(returnTo, itemId);
-    }
-
-    private static ModelAndView reviewRedirect(final String returnTo, final Integer itemId) {
-        if ("item".equals(returnTo) && itemId != null) {
-            return new ModelAndView("redirect:/item/" + itemId);
-        }
-        if ("dashboardHosting".equals(returnTo)) {
-            return new ModelAndView("redirect:/my-boats#received-booking-requests");
-        }
-        return new ModelAndView("redirect:/bookings#sent-booking-requests");
-    }
-
-    private UserModel currentAuthenticatedUser() {
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            return null;
-        }
-        return userService.findByEmail(authentication.getName()).orElse(null);
+        return reviewPresentation.deleteReview(reviewId, currentUser.getId(), returnTo, itemId, redirectAttributes);
     }
 }

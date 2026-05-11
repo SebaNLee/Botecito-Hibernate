@@ -230,7 +230,7 @@
                       <div class="flex items-center justify-between gap-3">
                         <p class="m-0 text-sm font-bold text-on-surface">
                           <c:choose>
-                            <c:when test="${review.senderId > 0 and not empty reviewAuthorNames[review.senderId]}"><c:out value="${reviewAuthorNames[review.senderId]}" /></c:when>
+                            <c:when test="${review.senderId > 0 and not empty versionReviewAuthorNames[review.senderId]}"><c:out value="${versionReviewAuthorNames[review.senderId]}" /></c:when>
                             <c:otherwise><c:out value="${detailReviewAnonymousLabel}" /></c:otherwise>
                           </c:choose>
                         </p>

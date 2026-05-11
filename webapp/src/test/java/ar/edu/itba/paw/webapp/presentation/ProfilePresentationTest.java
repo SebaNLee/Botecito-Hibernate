@@ -32,7 +32,8 @@ public class ProfilePresentationTest {
 
     @BeforeEach
     public void setUp() {
-        profilePresentation = new ProfilePresentation(userService, new ProfileModelMapper());
+        profilePresentation = new ProfilePresentation(
+                userService, new ProfileModelMapper(), new AuthenticatedUserResolver(userService));
     }
 
     @AfterEach

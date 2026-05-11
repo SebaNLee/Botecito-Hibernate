@@ -30,15 +30,6 @@ public class BookingController {
         return bookingDashboardMvcSupport.myBoats(status, query, page, request);
     }
 
-    @RequestMapping(value = "/bookings", method = RequestMethod.GET)
-    public ModelAndView bookings(
-            @RequestParam(value = "status", required = false) final List<String> status,
-            @RequestParam(value = "q", required = false) final String query,
-            @RequestParam(value = "page", required = false, defaultValue = "1") final int page,
-            final HttpServletRequest request) {
-        return bookingDashboardMvcSupport.guestBookings(status, query, page, request);
-    }
-
     @RequestMapping(value = "/profile/dashboard", method = RequestMethod.GET)
     public ModelAndView legacyDashboardRedirect() {
         return new ModelAndView("redirect:/my-boats");

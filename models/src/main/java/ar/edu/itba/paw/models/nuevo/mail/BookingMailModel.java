@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.models.nuevo.mail;
 
+import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,7 +14,7 @@ public class BookingMailModel {
     private String requesterName;
     private String requesterEmail;
     private String description;
-    private BookingStatusModel status = BookingStatusModel.UPDATED;
+    private BookingStatus status;
     private Instant createdAt;
     private Instant resolvedAt;
 }

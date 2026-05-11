@@ -206,7 +206,8 @@ public class ItemHibernateDao implements ItemDao {
                 + " WHERE b.version.item = i"
                 + " AND b.status NOT IN (:rejectedStatus, :cancelledStatus)"
                 + " AND b.guest.id <> i.host.id"
-                + " AND b.end > CURRENT_TIMESTAMP)"
+                + " AND b.end > CURRENT_TIMESTAMP),"
+                + " v.description, v.difficulty, v.location.id"
                 + " FROM ItemOrm i"
                 + " JOIN VersionOrm v ON v.item = i"
                 + " AND v.id = (SELECT MAX(v2.id) FROM VersionOrm v2 WHERE v2.item = i)";
@@ -225,6 +226,9 @@ public class ItemHibernateDao implements ItemDao {
             final Integer coverImageId = (Integer) row[6];
             final boolean hasBlocking = Boolean.TRUE.equals(row[7]);
             final boolean hasFutureBlocking = Boolean.TRUE.equals(row[8]);
+            final String description = row[9] == null ? "" : (String) row[9];
+            final Integer difficultyLevel = (Integer) row[10];
+            final Integer locationOptionId = (Integer) row[11];
 
             items.add(new MyBoatsItem(
                     id,
@@ -235,7 +239,10 @@ public class ItemHibernateDao implements ItemDao {
                     active,
                     coverImageId,
                     active && hasBlocking,
-                    !active && hasFutureBlocking));
+                    !active && hasFutureBlocking,
+                    description,
+                    difficultyLevel,
+                    locationOptionId));
         }
         return items;
     }

@@ -5,7 +5,7 @@
 
 <c:url var="profileUrl" value="/profile" />
 <c:url var="myBoatsUrl" value="/my-boats" />
-<c:url var="bookingsUrl" value="/bookings" />
+<c:url var="bookingsUrl" value="/requests/outgoing" />
 
 <aside class="card bg-base-100 shadow-sm lg:sticky lg:top-24">
   <nav class="card-body gap-2 p-4">

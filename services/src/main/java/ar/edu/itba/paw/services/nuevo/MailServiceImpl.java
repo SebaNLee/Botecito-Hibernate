@@ -290,7 +290,7 @@ public class MailServiceImpl implements MailService {
         if (booking == null || booking.getStatus() == null) {
             return "request.status.updated";
         }
-        return booking.getStatus().getMessageCode();
+        return "booking.status." + booking.getStatus().name();
     }
 
     private void sendHtmlEmail(final String recipientEmail, final String subject, final String htmlBody) {

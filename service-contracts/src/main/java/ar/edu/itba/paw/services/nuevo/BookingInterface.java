@@ -1,6 +1,8 @@
 package ar.edu.itba.paw.services.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.Booking;
+import ar.edu.itba.paw.models.nuevo.BookingSearchModel;
+import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import java.util.List;
 
@@ -14,4 +16,6 @@ public interface BookingInterface {
     PreBookingCreateResult createBooking(PreBookingReq preBookingReq);
 
     List<Booking> getBookingsForVersion(int versionId);
+
+    BookingSearchResult searchBookings(BookingSearchModel search);
 }

@@ -28,7 +28,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public final class BookingRequestActionMvcSupport {
 
-    private static final String DASHBOARD_BOOKINGS_REDIRECT = "redirect:/bookings#sent-booking-requests";
+    private static final String DASHBOARD_BOOKINGS_REDIRECT = "redirect:/requests/outgoing";
     private static final String DASHBOARD_HOSTING_REDIRECT = "redirect:/my-boats#received-booking-requests";
 
     private final BookingRequestService bookingRequestService;

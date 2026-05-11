@@ -2,6 +2,7 @@ package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.persistence.orm.daos.BookingHibernateDao;
 import ar.edu.itba.paw.persistence.orm.daos.DetailHibernateDao;
+import ar.edu.itba.paw.persistence.orm.daos.ItemHibernateDao;
 import ar.edu.itba.paw.persistence.orm.daos.MarketplaceHibernateDao;
 import ar.edu.itba.paw.persistence.orm.daos.ReviewHibernateDao;
 import ar.edu.itba.paw.persistence.orm.daos.SelectorsHibernateDao;
@@ -36,6 +37,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
                         classes = {
                             BookingHibernateDao.class,
                             DetailHibernateDao.class,
+                            ItemHibernateDao.class,
                             MarketplaceHibernateDao.class,
                             ReviewHibernateDao.class,
                             SelectorsHibernateDao.class,

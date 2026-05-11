@@ -8,9 +8,7 @@
 <fmt:setLocale value="es_AR" />
 <c:url var="stepTwoUrl" value="/publish/availability" />
 <c:url var="stepThreeUrl" value="/publish/contact" />
-<c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
-<spring:message code="publish.actions.saveDraft" var="publishSaveDraftLabel" />
 <spring:message code="publish.actions.submit" var="publishSubmitLabel" />
 
 <paw:layout
@@ -138,8 +136,7 @@
             <spring:message code="publish.step3.note" />
           </div>
 
-          <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <paw:button href="${marketplaceUrl}" color="ghost" size="lg" cssClass="w-full sm:w-auto" text="${publishSaveDraftLabel}" />
+          <div class="flex flex-col sm:flex-row sm:justify-end items-center gap-4">
             <button
               type="submit"
               class="btn btn-secondary btn-lg w-full sm:w-auto"

@@ -16,8 +16,6 @@ public interface ItemDao {
 
     int countItems(ItemSearchCriteria criteria);
 
-    List<Item> listItemsByOwnerId(int ownerId);
-
     List<LocationOption> listLocationOptions();
 
     Optional<Item> findItemById(int id);

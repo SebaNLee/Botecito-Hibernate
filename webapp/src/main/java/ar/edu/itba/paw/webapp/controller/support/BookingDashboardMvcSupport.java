@@ -28,34 +28,6 @@ public final class BookingDashboardMvcSupport {
     private final ItemService itemService;
     private final BookingDashboardService bookingDashboardService;
 
-    public ModelAndView myBoats(
-            final List<String> status, final String query, final int page, final HttpServletRequest request) {
-        return currentUser()
-                .map(user -> {
-                    final ModelAndView mav = new ModelAndView("my-boats");
-                    mav.addObject("user", user);
-                    final var data = bookingDashboardService.loadOwnerBoatsDashboard(
-                            user.getId(), sanitizePage(page), DASHBOARD_PAGE_SIZE);
-                    final List<String> statusFilters = resolveBookingStatusFilters(status);
-                    mav.addObject("ownedItems", data.getOwnedItems());
-                    mav.addObject("publicationCoverImageIdsByItemId", data.getPublicationCoverImageIdsByItemId());
-                    mav.addObject(
-                            "imageUrlsByItemId",
-                            buildImageUrlsByItemId(data.getImageItemIds(), request.getContextPath()));
-                    mav.addObject(
-                            "publicationDeleteDeactivatesByItemId", data.getPublicationDeleteDeactivatesByItemId());
-                    mav.addObject("publicationDeleteDisabledByItemId", data.getPublicationDeleteDisabledByItemId());
-                    mav.addObject("receivedBookingRequests", data.getReceivedBookingCards());
-                    mav.addObject("receivedBookingPage", data.getReceivedBookingPage());
-                    mav.addObject("receivedCanReviewByBookingId", data.getReceivedCanReviewByBookingId());
-                    mav.addObject("selectedBookingStatusFilters", statusFilters);
-                    mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statusFilters));
-                    mav.addObject("boatSearchQuery", normalizeQuery(query));
-                    return mav;
-                })
-                .orElseGet(() -> new ModelAndView("redirect:/login"));
-    }
-
     public ModelAndView guestBookings(
             final List<String> status, final String query, final int page, final HttpServletRequest request) {
         return currentUser()

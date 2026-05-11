@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.presentation;
 
+import ar.edu.itba.paw.models.nuevo.BookingStatusOptionModel;
 import ar.edu.itba.paw.models.nuevo.ItemTypeModel;
 import ar.edu.itba.paw.models.nuevo.Location;
 import ar.edu.itba.paw.services.nuevo.SelectorsInterface;
@@ -19,5 +20,9 @@ public class SelectorsPresentation {
 
     public List<ItemTypeModel> getItemTypeOptions() {
         return selectorsInterface.getItemTypeOptions();
+    }
+
+    public List<BookingStatusOptionModel> getBookingStatusOptions() {
+        return selectorsInterface.getBookingStatusOptions();
     }
 }

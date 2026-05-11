@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.webapp.presentation.nuevo;
+package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.models.nuevo.MyBoatsItem;

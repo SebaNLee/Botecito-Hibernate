@@ -15,4 +15,7 @@ public class MyBoatsItem {
     private Integer coverImageId;
     private Boolean deleteDeactivates;
     private Boolean deleteDisabled;
+    private String description;
+    private Integer difficultyLevel;
+    private Integer locationOptionId;
 }

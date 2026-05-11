@@ -4,8 +4,12 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
+import ar.edu.itba.paw.models.nuevo.ItemCreateModel;
+import ar.edu.itba.paw.models.nuevo.ItemUpdateModel;
+import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
 import ar.edu.itba.paw.persistence.ItemDao;
 import ar.edu.itba.paw.persistence.ItemJdbcDao;
+import ar.edu.itba.paw.persistence.orm.entities.BookingStatusEnumOrm;
 import ar.edu.itba.paw.persistence.orm.entities.ItemOrm;
 import ar.edu.itba.paw.persistence.orm.entities.ItemStatusEnumOrm;
 import ar.edu.itba.paw.persistence.orm.entities.ItemTypeOrm;
@@ -26,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @Primary
 @Transactional
-public class ItemHibernateDao implements ItemDao {
+public class ItemHibernateDao implements ItemDao, ar.edu.itba.paw.persistence.nuevo.ItemDao {
 
     private static final int DEFAULT_WEIGHT = 2000;
     private static final int DEFAULT_DIFFICULTY = 1;
@@ -57,8 +61,71 @@ public class ItemHibernateDao implements ItemDao {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Item> listItemsByOwnerId(final int ownerId) {
-        return itemJdbcDao.listItemsByOwnerId(ownerId);
+    public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId) {
+        final String hql = baseMyBoatsQuery() + " WHERE i.host.id = :ownerId ORDER BY i.createdAt DESC, i.id DESC";
+        final List<Object[]> rows = entityManager.createQuery(hql, Object[].class)
+                .setParameter("ownerId", ownerId)
+                .setParameter("rejectedStatus", BookingStatusEnumOrm.REJECTED)
+                .setParameter("cancelledStatus", BookingStatusEnumOrm.CANCELLED)
+                .getResultList();
+        return mapMyBoatsRows(rows);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(final int itemId, final int ownerId) {
+        final String hql = baseMyBoatsQuery() + " WHERE i.id = :itemId AND i.host.id = :ownerId";
+        final List<Object[]> rows = entityManager.createQuery(hql, Object[].class)
+                .setParameter("itemId", itemId)
+                .setParameter("ownerId", ownerId)
+                .setParameter("rejectedStatus", BookingStatusEnumOrm.REJECTED)
+                .setParameter("cancelledStatus", BookingStatusEnumOrm.CANCELLED)
+                .setMaxResults(1)
+                .getResultList();
+        final List<MyBoatsItem> items = mapMyBoatsRows(rows);
+        return items.isEmpty() ? Optional.empty() : Optional.of(items.get(0));
+    }
+
+    @Override
+    public Optional<MyBoatsItem> createMyBoatsItem(final ItemCreateModel createModel) {
+        if (createModel == null) {
+            return Optional.empty();
+        }
+        final Item created = createItem(
+                createModel.getOwnerId(),
+                createModel.getTypeId(),
+                createModel.getTitle(),
+                createModel.getDescription(),
+                createModel.getPricePerHour(),
+                createModel.getCapacityPeople(),
+                createModel.getMaxWeightKg(),
+                createModel.getDifficultyLevel(),
+                createModel.getLocationOptionId(),
+                createModel.getOwnerDeleteToken());
+        if (created == null || created.getId() == null) {
+            return Optional.empty();
+        }
+        return findMyBoatsItemByIdForOwner(created.getId(), createModel.getOwnerId());
+    }
+
+    @Override
+    public boolean updateMyBoatsItem(final int itemId, final int ownerId, final ItemUpdateModel updateModel) {
+        if (updateModel == null) {
+            return false;
+        }
+        return updatePublicationForOwner(
+                itemId,
+                ownerId,
+                updateModel.getTitle(),
+                updateModel.getDescription(),
+                updateModel.getPricePerHour(),
+                updateModel.getDifficultyLevel(),
+                updateModel.getLocationOptionId());
+    }
+
+    @Override
+    public boolean deleteMyBoatsItem(final int itemId, final int ownerId) {
+        return deleteItemByIdForOwner(itemId, ownerId);
     }
 
     @Override
@@ -213,6 +280,46 @@ public class ItemHibernateDao implements ItemDao {
         entityManager.flush();
 
         return item.getId();
+    }
+
+    private static String baseMyBoatsQuery() {
+        return "SELECT i.id, v.title, v.price, v.capacity, v.location.name, i.status,"
+                + " (SELECT m.image.id FROM MediaOrm m"
+                + " WHERE m.version = v"
+                + " AND m.id.index = (SELECT MIN(m2.id.index) FROM MediaOrm m2 WHERE m2.version = v)),"
+                + " EXISTS (SELECT 1 FROM BookingOrm b"
+                + " WHERE b.version.item = i"
+                + " AND b.status NOT IN (:rejectedStatus, :cancelledStatus)"
+                + " AND b.guest.id <> i.host.id),"
+                + " EXISTS (SELECT 1 FROM BookingOrm b"
+                + " WHERE b.version.item = i"
+                + " AND b.status NOT IN (:rejectedStatus, :cancelledStatus)"
+                + " AND b.guest.id <> i.host.id"
+                + " AND b.end > CURRENT_TIMESTAMP)"
+                + " FROM ItemOrm i"
+                + " JOIN VersionOrm v ON v.item = i"
+                + " AND v.id = (SELECT MAX(v2.id) FROM VersionOrm v2 WHERE v2.item = i)";
+    }
+
+    private static List<MyBoatsItem> mapMyBoatsRows(final List<Object[]> rows) {
+        final List<MyBoatsItem> items = new java.util.ArrayList<>(rows.size());
+        for (final Object[] row : rows) {
+            final MyBoatsItem item = new MyBoatsItem();
+            item.setId((Integer) row[0]);
+            item.setTitle((String) row[1]);
+            final java.math.BigDecimal price = (java.math.BigDecimal) row[2];
+            item.setPricePerHour(price == null ? null : price.intValue());
+            item.setCapacityPeople((Integer) row[3]);
+            item.setLocation((String) row[4]);
+            item.setActive(ItemStatusEnumOrm.ACTIVE.equals(row[5]));
+            item.setCoverImageId((Integer) row[6]);
+            final boolean hasBlocking = Boolean.TRUE.equals(row[7]);
+            final boolean hasFutureBlocking = Boolean.TRUE.equals(row[8]);
+            item.setDeleteDeactivates(Boolean.TRUE.equals(item.getActive()) && hasBlocking);
+            item.setDeleteDisabled(!Boolean.TRUE.equals(item.getActive()) && hasFutureBlocking);
+            items.add(item);
+        }
+        return items;
     }
 
     private boolean deleteItemWithOwnershipScope(final int itemId, final Integer ownerId) {

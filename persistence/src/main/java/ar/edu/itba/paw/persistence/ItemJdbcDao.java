@@ -1,11 +1,8 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.Item;
-import ar.edu.itba.paw.models.ItemSearchCriteria;
-import ar.edu.itba.paw.models.ItemSearchSort;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
-import ar.edu.itba.paw.models.ReviewTargetType;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -41,38 +38,6 @@ public class ItemJdbcDao implements ItemDao {
     public ItemJdbcDao(final @NonNull DataSource dataSource, final @NonNull JdbcDialect jdbcDialect) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.postgresDialect = jdbcDialect.isPostgres();
-    }
-
-    @Override
-    public List<Item> listItems() {
-        return jdbcTemplate.query(
-                ITEM_SELECT + " WHERE i.status = 'ACTIVE' ORDER BY i.id", ItemJdbcRowMappers.ITEM_ROW_MAPPER);
-    }
-
-    @Override
-    public List<Item> listItems(final ItemSearchCriteria criteria, final int limit, final int offset) {
-        final List<Object> args = new ArrayList<>();
-        final String sql = ITEM_SELECT
-                + marketplaceWhereClause(criteria, args)
-                + marketplaceOrderBy(criteria)
-                + " LIMIT ? OFFSET ?";
-        args.add(limit);
-        args.add(offset);
-        return jdbcTemplate.query(sql, ItemJdbcRowMappers.ITEM_ROW_MAPPER, args.toArray());
-    }
-
-    @Override
-    public int countItems(final ItemSearchCriteria criteria) {
-        final List<Object> args = new ArrayList<>();
-        final Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*)"
-                        + " FROM item i"
-                        + " JOIN version v ON v.id = (SELECT MAX(v2.id) FROM version v2 WHERE v2.item_id = i.id)"
-                        + " JOIN location lo ON lo.id = v.location_id"
-                        + marketplaceWhereClause(criteria, args),
-                Integer.class,
-                args.toArray());
-        return count == null ? 0 : count;
     }
 
     @Override
@@ -267,69 +232,6 @@ public class ItemJdbcDao implements ItemDao {
         }
     }
 
-    private static String marketplaceWhereClause(final ItemSearchCriteria criteria, final List<Object> args) {
-        final StringBuilder sql = new StringBuilder(" WHERE i.status = 'ACTIVE'");
-        if (criteria == null) {
-            return sql.toString();
-        }
-        if (criteria.getLocationOptionId() != null) {
-            sql.append(" AND v.location_id = ?");
-            args.add(criteria.getLocationOptionId());
-        }
-        if (criteria.getCapacity() != null) {
-            sql.append(" AND v.capacity >= ?");
-            args.add(criteria.getCapacity());
-        }
-        if (criteria.getMaxWeightKg() != null) {
-            sql.append(" AND v.weight >= ?");
-            args.add(criteria.getMaxWeightKg());
-        }
-        if (criteria.getSearchQuery() != null) {
-            sql.append(" AND v.title ILIKE ? ESCAPE '!'");
-            args.add(setupSearchQuery(criteria.getSearchQuery()));
-        }
-        if (criteria.getDifficultyLevel() != null) {
-            sql.append(" AND v.difficulty = ?");
-            args.add(criteria.getDifficultyLevel());
-        }
-        if (criteria.getMinAverageRating() != null) {
-            sql.append(" AND COALESCE((SELECT AVG(r.rating)"
-                    + " FROM review r"
-                    + " JOIN booking b ON b.id = r.booking_id"
-                    + " JOIN version vv ON vv.id = b.version_id"
-                    + " WHERE "
-                    + ItemPersistenceSql.REVIEW_R_TARGET_TYPE_EQUALS
-                    + " AND vv.item_id = i.id), 0) >= ?");
-            args.add(ReviewTargetType.ITEM.name());
-            args.add(criteria.getMinAverageRating());
-        }
-        return sql.toString();
-    }
-
-    private static String setupSearchQuery(final String searchQuery) {
-        String queryWithWildcards = searchQuery
-                .trim()
-                .replace("!", "!!")
-                .replace("%", "!%")
-                .replace("_", "!_")
-                .replaceAll("\\s+", "%");
-
-        return "%" + queryWithWildcards + "%";
-    }
-
-    private static String marketplaceOrderBy(final ItemSearchCriteria criteria) {
-        final ItemSearchSort sort = criteria == null ? null : criteria.getSort();
-        if (sort == null) {
-            return " ORDER BY i.created_at DESC, i.id DESC";
-        }
-        return switch (sort) {
-            case OLDEST -> " ORDER BY i.created_at ASC, i.id ASC";
-            case PRICE_ASC -> " ORDER BY v.price ASC, i.id ASC";
-            case PRICE_DESC -> " ORDER BY v.price DESC, i.id ASC";
-            case NEWEST -> " ORDER BY i.created_at DESC, i.id DESC";
-        };
-    }
-
     private int insertPublicationVersion(final @NonNull Map<String, Object> itemData) {
         final SimpleJdbcInsert insert = new SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("version")
@@ -489,7 +391,11 @@ public class ItemJdbcDao implements ItemDao {
 
     private int updateCurrentVersionActive(final int itemId, final Integer ownerId, final boolean active) {
         final List<Object> args = new ArrayList<>();
-        final StringBuilder sql = new StringBuilder("UPDATE item" + " SET status = ?" + " WHERE id = ?");
+        final StringBuilder sql = new StringBuilder("UPDATE item SET status = ?");
+        if (postgresDialect) {
+            sql.append("::item_status_enum");
+        }
+        sql.append(" WHERE id = ?");
         args.add(active ? "ACTIVE" : "INACTIVE");
         args.add(itemId);
         if (ownerId != null) {

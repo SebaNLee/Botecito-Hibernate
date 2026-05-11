@@ -110,7 +110,9 @@ public class ItemHibernateDao implements ItemDao {
         version.setCapacity(latest.getCapacity());
         version.setWeight(latest.getWeight());
         version.setDifficulty(
-                updateModel.getDifficultyLevel() == null ? DEFAULT_DIFFICULTY : updateModel.getDifficultyLevel());
+                updateModel.getDifficultyLevel() == null
+                        ? Integer.valueOf(DEFAULT_DIFFICULTY)
+                        : updateModel.getDifficultyLevel());
         version.setLocation(entityManager.getReference(LocationOrm.class, updateModel.getLocationOptionId()));
         version.setTimezone(latest.getTimezone());
         version.setCreatedAt(LocalDateTime.now());
@@ -143,8 +145,7 @@ public class ItemHibernateDao implements ItemDao {
     @Override
     public boolean setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
         final int updated = entityManager
-                .createQuery(
-                        "UPDATE ItemOrm i SET i.status = :status WHERE i.id = :itemId AND i.host.id = :ownerId")
+                .createQuery("UPDATE ItemOrm i SET i.status = :status WHERE i.id = :itemId AND i.host.id = :ownerId")
                 .setParameter("status", active ? ItemStatusEnumOrm.ACTIVE : ItemStatusEnumOrm.INACTIVE)
                 .setParameter("itemId", itemId)
                 .setParameter("ownerId", ownerId)

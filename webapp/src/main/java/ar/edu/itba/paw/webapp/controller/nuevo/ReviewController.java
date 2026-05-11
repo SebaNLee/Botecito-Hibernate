@@ -30,13 +30,4 @@ public class ReviewController {
             final RedirectAttributes redirectAttributes) {
         return reviewMvcSupport.createReview(bookingId, form, errors, returnTo, itemId, redirectAttributes);
     }
-
-    @RequestMapping(value = "/reviews/{reviewId:[0-9]+}/delete", method = RequestMethod.POST)
-    public ModelAndView deleteReview(
-            @PathVariable("reviewId") final int reviewId,
-            @RequestParam(value = "returnTo", required = false, defaultValue = "dashboard") final String returnTo,
-            @RequestParam(value = "itemId", required = false) final Integer itemId,
-            final RedirectAttributes redirectAttributes) {
-        return reviewMvcSupport.deleteReview(reviewId, returnTo, itemId, redirectAttributes);
-    }
 }

@@ -8,10 +8,12 @@ import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "item_type")
 public class ItemTypeOrm {
@@ -26,6 +28,4 @@ public class ItemTypeOrm {
 
     @Column(name = "slug", nullable = false, unique = true, length = 100)
     private String slug;
-
-    public ItemTypeOrm() {}
 }

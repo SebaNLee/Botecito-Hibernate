@@ -5,9 +5,11 @@ import ar.edu.itba.paw.models.ItemBooking;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
+@AllArgsConstructor
 public final class OwnerBoatsDashboardData {
 
     private final List<Item> ownedItems;
@@ -17,21 +19,5 @@ public final class OwnerBoatsDashboardData {
     private final Page<ItemBooking> receivedBookingPage;
     private final Map<Integer, Boolean> publicationDeleteDeactivatesByItemId;
     private final Map<Integer, Boolean> publicationDeleteDisabledByItemId;
-
-    public OwnerBoatsDashboardData(
-            final List<Item> ownedItems,
-            final Map<Integer, Integer> publicationCoverImageIdsByItemId,
-            final Set<Integer> imageItemIds,
-            final List<OwnerReceivedBookingCard> receivedBookingCards,
-            final Page<ItemBooking> receivedBookingPage,
-            final Map<Integer, Boolean> publicationDeleteDeactivatesByItemId,
-            final Map<Integer, Boolean> publicationDeleteDisabledByItemId) {
-        this.ownedItems = ownedItems;
-        this.publicationCoverImageIdsByItemId = publicationCoverImageIdsByItemId;
-        this.imageItemIds = imageItemIds;
-        this.receivedBookingCards = receivedBookingCards;
-        this.receivedBookingPage = receivedBookingPage;
-        this.publicationDeleteDeactivatesByItemId = publicationDeleteDeactivatesByItemId;
-        this.publicationDeleteDisabledByItemId = publicationDeleteDisabledByItemId;
-    }
+    private final Map<Integer, Boolean> receivedCanReviewByBookingId;
 }

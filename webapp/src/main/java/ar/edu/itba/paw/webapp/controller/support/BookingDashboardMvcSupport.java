@@ -4,7 +4,6 @@ import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingDashboardService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
-import ar.edu.itba.paw.webapp.presentation.ReviewPresentation;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,7 +27,6 @@ public final class BookingDashboardMvcSupport {
     private final UserService userService;
     private final ItemService itemService;
     private final BookingDashboardService bookingDashboardService;
-    private final ReviewPresentation reviewPresentation;
 
     public ModelAndView myBoats(
             final List<String> status, final String query, final int page, final HttpServletRequest request) {
@@ -49,10 +47,10 @@ public final class BookingDashboardMvcSupport {
                     mav.addObject("publicationDeleteDisabledByItemId", data.getPublicationDeleteDisabledByItemId());
                     mav.addObject("receivedBookingRequests", data.getReceivedBookingCards());
                     mav.addObject("receivedBookingPage", data.getReceivedBookingPage());
+                    mav.addObject("receivedCanReviewByBookingId", data.getReceivedCanReviewByBookingId());
                     mav.addObject("selectedBookingStatusFilters", statusFilters);
                     mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statusFilters));
                     mav.addObject("boatSearchQuery", normalizeQuery(query));
-                    reviewPresentation.addDashboardReviewData(mav, user.getId());
                     return mav;
                 })
                 .orElseGet(() -> new ModelAndView("redirect:/login"));
@@ -87,10 +85,10 @@ public final class BookingDashboardMvcSupport {
                     mav.addObject("sentPaymentProofPdfByBookingId", data.getSentPaymentProofPdfByBookingId());
                     mav.addObject(
                             "sentBookedSnapshotVersionIdByBookingId", data.getSentBookedSnapshotVersionIdByBookingId());
+                    mav.addObject("sentCanReviewByBookingId", data.getSentCanReviewByBookingId());
                     mav.addObject("selectedBookingStatusFilters", statusFilters);
                     mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statusFilters));
                     mav.addObject("boatSearchQuery", normalizeQuery(query));
-                    reviewPresentation.addDashboardReviewData(mav, user.getId());
                     return mav;
                 })
                 .orElseGet(() -> new ModelAndView("redirect:/login"));

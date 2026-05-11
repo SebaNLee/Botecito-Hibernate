@@ -33,7 +33,6 @@
 <spring:message code="profile.reviews.submit" var="reviewSubmitLabel" />
 <spring:message code="profile.reviews.target.item" var="reviewTargetItemLabel" />
 <spring:message code="profile.reviews.target.user" var="reviewTargetUserLabel" />
-<spring:message code="profile.reviews.authoredSummary.label" var="authoredReviewSummaryLabel" />
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6">
   <paw:toastNotifier />
@@ -255,7 +254,6 @@
                     <c:url var="receivedPaymentProofUrl" value="/bookings/${receivedRequest.id}/payment-proof" />
                     <c:url var="confirmPaymentUrl" value="/bookings/${receivedRequest.id}/payment/confirm" />
                     <c:url var="receivedRequestItemUrl" value="/item/${receivedRequest.itemId}" />
-                    <c:set var="authoredUserReview" value="${authoredUserReviewsByBookingId[receivedRequest.id]}" />
                     <c:set var="receivedStatusClass" value="badge-ghost" />
                     <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.pending'}"><c:set var="receivedStatusClass" value="badge-warning" /></c:if>
                     <c:if test="${receivedRequest.statusMessageCode == 'profile.sentBookings.status.confirmed'}"><c:set var="receivedStatusClass" value="badge-success" /></c:if>
@@ -325,21 +323,6 @@
                             </c:if>
                           </div>
                         </div>
-                        <c:if test="${not empty authoredUserReview}">
-                          <div class="rounded-lg bg-base-100 p-3 space-y-2 border border-outline-variant/20">
-                            <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${authoredReviewSummaryLabel}" /></p>
-                            <div class="flex items-center gap-2">
-                              <div class="flex items-center gap-0.5" aria-label="${authoredUserReview.rating} of 5">
-                                <c:forEach var="starIndex" begin="1" end="5">
-                                  <span class="material-symbols-outlined text-sm leading-none ${starIndex <= authoredUserReview.rating ? 'text-warning opacity-100' : 'text-outline opacity-[0.35]'}">star</span>
-                                </c:forEach>
-                              </div>
-                            </div>
-                            <c:if test="${not empty authoredUserReview.comment}">
-                              <p class="m-0 break-words text-xs text-on-surface-variant"><c:out value="${authoredUserReview.comment}" /></p>
-                            </c:if>
-                          </div>
-                        </c:if>
                         <c:if test="${receivedRequest.hasRequestMessage}">
                           <div class="rounded-lg bg-base-100 p-3 border-l-4 border-primary">
                             <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="booking.requestMessage" /></p>
@@ -397,13 +380,12 @@
                             <p class="m-0 mt-1 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${receivedRequest.paymentRefusalReason}" /></p>
                           </div>
                         </c:if>
-                        <c:set var="ownerPendingReview" value="${pendingOwnerUserReviewsByBookingId[receivedRequest.id]}" />
-                        <c:if test="${not empty ownerPendingReview}">
+                        <c:if test="${receivedCanReviewByBookingId[receivedRequest.id]}">
                           <c:url var="createOwnerUserReviewUrl" value="/reviews/booking/${receivedRequest.id}" />
                           <form action="${createOwnerUserReviewUrl}" method="post" class="space-y-3 border-t border-outline-variant/20 pt-3">
                             <input type="hidden" name="returnTo" value="dashboardHosting" />
                             <div class="flex items-start justify-between gap-2">
-                              <p class="m-0 min-w-0 truncate text-xs text-on-surface-variant"><c:out value="${ownerPendingReview.targetName}" /> · <c:out value="${ownerPendingReview.targetEmail}" /></p>
+                              <p class="m-0 min-w-0 truncate text-xs text-on-surface-variant"><c:out value="${receivedRequest.requesterName}" /> · <c:out value="${receivedRequest.requesterEmail}" /></p>
                               <span class="badge badge-secondary badge-sm shrink-0 font-bold"><c:out value="${reviewTargetUserLabel}" /></span>
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">

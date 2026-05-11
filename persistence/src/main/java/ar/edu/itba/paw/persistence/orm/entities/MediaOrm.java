@@ -7,10 +7,12 @@ import javax.persistence.ManyToOne;
 import javax.persistence.MapsId;
 import javax.persistence.Table;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "media")
 public class MediaOrm {
@@ -26,6 +28,4 @@ public class MediaOrm {
     @ManyToOne(optional = false)
     @JoinColumn(name = "image_id", nullable = false)
     private ImageOrm image;
-
-    public MediaOrm() {}
 }

@@ -185,55 +185,25 @@
               <div class="flex items-center gap-2 text-lg font-black text-on-surface">
                 <span class="material-symbols-outlined text-warning">star</span>
                 <c:choose>
-                  <c:when test="${itemRatingSummary != null && itemRatingSummary.hasReviews()}">
-                    <fmt:formatNumber value="${itemRatingSummary.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
+                  <c:when test="${item.totalReviews > 0}">
+                    <fmt:formatNumber value="${item.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
                   </c:when>
                   <c:otherwise><c:out value="${reviewsEmptyShortLabel}" /></c:otherwise>
                 </c:choose>
               </div>
               <p class="m-0 text-xs text-on-surface-variant">
-                <spring:message code="itemDetail.reviews.count" arguments="${itemRatingSummary != null ? itemRatingSummary.totalReviews : 0}" />
+                <spring:message code="itemDetail.reviews.count" arguments="${item.totalReviews}" />
               </p>
             </div>
-
-            <c:if test="${pendingItemReviewAction != null}">
-              <c:url var="createItemReviewUrl" value="/reviews/booking/${pendingItemReviewAction.bookingId}" />
-              <form action="${createItemReviewUrl}" method="post" class="rounded-2xl bg-base-200 p-4 space-y-3">
-                <input type="hidden" name="returnTo" value="item" />
-                <input type="hidden" name="itemId" value="${item.id}" />
-                <h3 class="m-0 text-sm font-bold text-on-surface"><c:out value="${itemReviewLeaveLabel}" /></h3>
-                <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
-                  <label class="text-xs font-bold uppercase tracking-wider text-outline" for="item-review-rating"><c:out value="${itemReviewRatingLabel}" /></label>
-                  <div class="flex items-center gap-1" data-rating-stars>
-                    <input id="item-review-rating" type="hidden" name="rating" value="" data-rating-value />
-                    <c:forEach var="starIndex" begin="1" end="5">
-                      <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${itemReviewRatingLabel} ${starIndex}">
-                        <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
-                      </button>
-                    </c:forEach>
-                  </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
-                  <label class="text-xs font-bold uppercase tracking-wider text-outline pt-2" for="item-review-comment"><c:out value="${itemReviewCommentLabel}" /></label>
-                  <textarea id="item-review-comment" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
-                </div>
-                <paw:button type="submit" color="primary" size="sm" text="${itemReviewLeaveLabel}" />
-              </form>
-            </c:if>
 
             <c:choose>
               <c:when test="${not empty versionReviews}">
                 <div class="space-y-3">
                   <c:forEach items="${versionReviews}" var="review">
-                    <c:set var="fullStars" value="${reviewFullStars[review.id]}" />
+                    <c:set var="fullStars" value="${review.rating ge 5 ? 5 : (review.rating ge 4 ? 4 : (review.rating ge 3 ? 3 : (review.rating ge 2 ? 2 : (review.rating ge 1 ? 1 : 0))))}" />
                     <div class="rounded-xl bg-base-200 p-4 space-y-2">
                       <div class="flex items-center justify-between gap-3">
-                        <p class="m-0 text-sm font-bold text-on-surface">
-                          <c:choose>
-                            <c:when test="${review.senderId > 0 and not empty versionReviewAuthorNames[review.senderId]}"><c:out value="${versionReviewAuthorNames[review.senderId]}" /></c:when>
-                            <c:otherwise><c:out value="${detailReviewAnonymousLabel}" /></c:otherwise>
-                          </c:choose>
-                        </p>
+                        <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${detailReviewAnonymousLabel}" /></p>
                         <div class="flex flex-col items-end gap-0.5 shrink-0">
                           <div class="flex items-center gap-0.5" aria-label="${review.rating} of 5">
                             <c:forEach var="starIndex" begin="1" end="5">
@@ -253,7 +223,7 @@
                         </div>
                       </div>
                       <p class="m-0 text-xs text-on-surface-variant">
-                        <time datetime="${review.createdAt}"><c:out value="${reviewCreatedAtLabels[review.id]}" /></time>
+                        <time datetime="${review.createdAt}"><c:out value="${review.createdAt}" /></time>
                       </p>
                       <c:if test="${not empty review.comment}">
                         <p class="m-0 text-sm text-on-surface-variant break-words"><c:out value="${review.comment}" /></p>

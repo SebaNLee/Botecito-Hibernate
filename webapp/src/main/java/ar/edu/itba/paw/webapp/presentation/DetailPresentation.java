@@ -20,7 +20,6 @@ import ar.edu.itba.paw.webapp.util.MarketplaceReturnUrl;
 import ar.edu.itba.paw.webapp.util.NuevoDetailAvailabilityPicker;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,7 +43,6 @@ public class DetailPresentation {
     private final ItemService itemService;
     private final UserService userService;
     private final ToastPresentation toastPresentation;
-    private final ReviewPresentation reviewPresentation;
 
     /**
      * @return {@link ModelAndView} for the detail page, or a {@link RedirectView}
@@ -258,16 +256,6 @@ public class DetailPresentation {
 
         final List<ReviewModel> versionReviews =
                 displayPair.getReviews() == null ? List.of() : displayPair.getReviews();
-        final Map<Integer, String> reviewAuthorNames = new LinkedHashMap<>();
-        for (final ReviewModel review : versionReviews) {
-            final int senderId = review.getSenderId();
-            if (senderId <= 0 || reviewAuthorNames.containsKey(senderId)) {
-                continue;
-            }
-            reviewAuthorNames.put(
-                    senderId,
-                    itemService.findUserById(senderId).map(User::getName).orElse(""));
-        }
 
         final boolean isActive = item.getStatus() == ItemStatus.ACTIVE;
 
@@ -285,10 +273,6 @@ public class DetailPresentation {
         mav.addObject("listingInactiveNotice", !isActive);
         mav.addObject("itemOwner", itemOwner);
         mav.addObject("versionReviews", versionReviews);
-        mav.addObject("versionReviewAuthorNames", reviewAuthorNames);
-        mav.addObject("reviewCreatedAtLabels", reviewPresentation.buildReviewCreatedAtLabels(versionReviews));
-        mav.addObject("reviewFullStars", reviewPresentation.buildReviewFullStars(versionReviews));
-        reviewPresentation.addMarketplaceItemReviewData(mav, itemId, viewer == null ? null : viewer.getId());
         mav.addObject("itemImageUrl", primaryImageUrl(item, contextPath));
         mav.addObject("itemImageUrls", prefixImagePaths(item.getImages(), contextPath));
         final String ownerName = itemOwner == null ? null : itemOwner.getName();

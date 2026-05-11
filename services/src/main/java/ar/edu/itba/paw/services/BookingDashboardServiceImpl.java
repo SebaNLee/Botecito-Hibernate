@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.services.nuevo.ReviewInterface;
 import ar.edu.itba.paw.services.util.BookingDisplayFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -21,6 +22,7 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
 
     private final ItemService itemService;
     private final BookingRequestService bookingRequestService;
+    private final ReviewInterface reviewInterface;
 
     @Override
     public OwnerBoatsDashboardData loadOwnerBoatsDashboard(final int ownerId, final int page, final int pageSize) {
@@ -42,6 +44,7 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
         final Page<ItemBooking> receivedBookingPage =
                 Page.slice(itemService.listBookingsByOwnerId(ownerId), page, pageSize);
         final List<OwnerReceivedBookingCard> receivedBookingCards = new ArrayList<>();
+        final Map<Integer, Boolean> receivedCanReviewByBookingId = new LinkedHashMap<>();
         for (final ItemBooking booking : receivedBookingPage.getContent()) {
             if (booking != null && booking.getItemId() != null) {
                 imageItemIds.add(booking.getItemId());
@@ -88,6 +91,7 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
                     "application/pdf".equalsIgnoreCase(contentType),
                     paymentRefusalReason,
                     paymentRefusalReason != null && !paymentRefusalReason.isBlank()));
+            receivedCanReviewByBookingId.put(bookingId, reviewInterface.canCreateReview(bookingId, ownerId));
         }
 
         return new OwnerBoatsDashboardData(
@@ -97,7 +101,8 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
                 receivedBookingCards,
                 receivedBookingPage,
                 itemService.publicationDeleteDeactivatesByItemId(ownedItems),
-                itemService.publicationDeleteDisabledByItemId(ownedItems));
+                itemService.publicationDeleteDisabledByItemId(ownedItems),
+                receivedCanReviewByBookingId);
     }
 
     @Override
@@ -117,6 +122,7 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
         final Map<Integer, Boolean> sentHasPaymentRefusalReasonByBookingId = new LinkedHashMap<>();
         final Map<Integer, Boolean> sentPaymentProofPdfByBookingId = new LinkedHashMap<>();
         final Map<Integer, Integer> sentBookedSnapshotVersionIdByBookingId = new LinkedHashMap<>();
+        final Map<Integer, Boolean> sentCanReviewByBookingId = new LinkedHashMap<>();
 
         for (final ItemBooking booking : sentBookingPage.getContent()) {
             if (booking != null && booking.getItemId() != null) {
@@ -166,6 +172,7 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
             sentPaymentProofPdfByBookingId.put(bookingId, "application/pdf".equalsIgnoreCase(contentType));
             sentBookedSnapshotVersionIdByBookingId.put(
                     bookingId, bookedPublication.map(ItemSnapshot::getVersionId).orElse(null));
+            sentCanReviewByBookingId.put(bookingId, reviewInterface.canCreateReview(bookingId, guestId));
         }
 
         return new GuestTripsDashboardData(
@@ -182,6 +189,7 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
                 sentPaymentRefusalReasonByBookingId,
                 sentHasPaymentRefusalReasonByBookingId,
                 sentPaymentProofPdfByBookingId,
-                sentBookedSnapshotVersionIdByBookingId);
+                sentBookedSnapshotVersionIdByBookingId,
+                sentCanReviewByBookingId);
     }
 }

@@ -46,25 +46,6 @@ public class ReviewMvcSupport {
         return reviewRedirect(returnTo, itemId);
     }
 
-    public ModelAndView deleteReview(
-            final int reviewId,
-            final String returnTo,
-            final Integer itemId,
-            final RedirectAttributes redirectAttributes) {
-        final UserModel currentUser = authenticatedUserResolver.currentAuthenticatedUser();
-        if (currentUser == null) {
-            return new ModelAndView("redirect:/login");
-        }
-
-        final boolean deleted = reviewInterface.deleteReview(reviewId, currentUser.getId());
-        if (deleted) {
-            ToastSupport.success(redirectAttributes, "profile.reviews.deleted");
-        } else {
-            ToastSupport.error(redirectAttributes, "profile.reviews.error");
-        }
-        return reviewRedirect(returnTo, itemId);
-    }
-
     private static ModelAndView reviewRedirect(final String returnTo, final Integer itemId) {
         if ("item".equals(returnTo) && itemId != null) {
             return new ModelAndView("redirect:/item/" + itemId);

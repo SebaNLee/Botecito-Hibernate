@@ -8,11 +8,13 @@ import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "image")
 public class ImageOrm {
@@ -25,6 +27,4 @@ public class ImageOrm {
     @Type(type = "org.hibernate.type.BinaryType")
     @Column(name = "data", nullable = false)
     private byte[] data;
-
-    public ImageOrm() {}
 }

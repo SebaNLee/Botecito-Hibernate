@@ -209,6 +209,15 @@ public class BookingHibernateDao implements BookingDao {
         return new BookingSearchResult(List.of(), total);
     }
 
+    @Override
+    public void updateStatus(int id, BookingStatus status) {
+        entityManager
+                .createQuery("UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id = :bookingId")
+                .setParameter("newStatus", status)
+                .setParameter("bookingId", id)
+                .executeUpdate();
+    }
+
     private long countMatchingOutcoming(final int guestId, final BookingSearchModel criteria) {
         final Map<String, Object> params = new HashMap<>();
         final StringBuilder hql = new StringBuilder("SELECT COUNT(b) FROM BookingOrm b INNER JOIN b.version ");

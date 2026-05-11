@@ -19,14 +19,6 @@ public interface ItemDao {
 
     Optional<ItemType> findItemTypeById(int id);
 
-    boolean updatePublication(
-            int itemId,
-            String title,
-            String description,
-            int pricePerHour,
-            Integer difficultyLevel,
-            int locationOptionId);
-
     boolean updatePublicationForOwner(
             int itemId,
             int ownerId,
@@ -60,15 +52,4 @@ public interface ItemDao {
     boolean setItemActive(int itemId, boolean active);
 
     boolean setItemActiveForOwner(int itemId, int ownerId, boolean active);
-
-    Integer insertItem(
-            int ownerId,
-            int typeId,
-            String title,
-            String description,
-            int pricePerHour,
-            int capacityPeople,
-            BigDecimal maxWeightKg,
-            Integer difficultyLevel,
-            int locationOptionId);
 }

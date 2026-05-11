@@ -85,18 +85,6 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
-    public boolean updatePublication(
-            final int itemId,
-            final String title,
-            final String description,
-            final int pricePerHour,
-            final Integer difficultyLevel,
-            final int locationOptionId) {
-        return updatePublicationVersion(
-                itemId, null, title, description, pricePerHour, difficultyLevel, locationOptionId);
-    }
-
-    @Override
     public boolean updatePublicationForOwner(
             final int itemId,
             final int ownerId,
@@ -110,6 +98,7 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    // TODO versioning reference
     public boolean hasBlockingBookingsForEdition(final int itemId) {
         final Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*)"
@@ -132,6 +121,7 @@ public class ItemJdbcDao implements ItemDao {
         return deleteItemWithOwnershipScope(itemId, ownerId, id -> findItemByIdForOwner(id, ownerId));
     }
 
+    // TODO versioning reference
     private boolean deleteItemWithOwnershipScope(
             final int itemId, final Integer ownerId, final IntFunction<Optional<Item>> findItem) {
         final Optional<Item> item = findItem.apply(itemId);
@@ -185,6 +175,7 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    // TODO versioning reference
     public boolean snapshotBookingsForPublicationEdit(final int itemId) {
         // Since item_version_id is now NOT NULL, bookings are always tied to a publication version.
         return true;
@@ -200,38 +191,7 @@ public class ItemJdbcDao implements ItemDao {
         return updateCurrentVersionActive(itemId, ownerId, active) > 0;
     }
 
-    @Override
-    public Integer insertItem(
-            final int ownerId,
-            final int typeId,
-            final String title,
-            final String description,
-            final int pricePerHour,
-            final int capacityPeople,
-            final BigDecimal maxWeightKg,
-            final Integer difficultyLevel,
-            final int locationOptionId) {
-        final Timestamp now = Timestamp.from(Instant.now());
-        final int itemId = insertItemRow(ownerId, now, "Could not insert item for owner " + ownerId);
-        try {
-            insertPublicationVersion(buildPublicationVersionData(
-                    itemId,
-                    typeId,
-                    title,
-                    description,
-                    pricePerHour,
-                    capacityPeople,
-                    maxWeightKg,
-                    difficultyLevel,
-                    locationOptionId,
-                    now));
-            return itemId;
-        } catch (final RuntimeException exception) {
-            jdbcTemplate.update("DELETE FROM item WHERE id = ?", itemId);
-            throw exception;
-        }
-    }
-
+    // TODO versioning reference
     private int insertPublicationVersion(final @NonNull Map<String, Object> itemData) {
         final SimpleJdbcInsert insert = new SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("version")
@@ -270,6 +230,7 @@ public class ItemJdbcDao implements ItemDao {
         return insert.executeAndReturnKey(itemData).intValue();
     }
 
+    // TODO versioning reference
     private @NonNull Map<String, Object> buildPublicationVersionData(
             final int itemId,
             final int typeId,
@@ -297,6 +258,7 @@ public class ItemJdbcDao implements ItemDao {
         return itemData;
     }
 
+    // TODO versioning reference
     private boolean updatePublicationVersion(
             final int itemId,
             final Integer ownerId,
@@ -338,6 +300,7 @@ public class ItemJdbcDao implements ItemDao {
         return true;
     }
 
+    // TODO versioning reference
     private boolean updateCurrentPublicationVersion(
             final int currentVersionId,
             final Integer ownerId,
@@ -366,6 +329,7 @@ public class ItemJdbcDao implements ItemDao {
         return jdbcTemplate.update(requireSql(sql), args.toArray()) > 0;
     }
 
+    // TODO versioning reference
     private Optional<Map<String, Object>> findCurrentPublicationVersionData(final int itemId, final Integer ownerId) {
         final List<Object> args = new ArrayList<>();
         final StringBuilder sql =
@@ -383,12 +347,14 @@ public class ItemJdbcDao implements ItemDao {
                 .findFirst();
     }
 
+    // TODO versioning reference
     private boolean currentVersionHasBookingReferences(final int currentVersionId) {
         final Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM booking WHERE version_id = ?", Integer.class, currentVersionId);
         return count != null && count > 0;
     }
 
+    // TODO versioning reference
     private int updateCurrentVersionActive(final int itemId, final Integer ownerId, final boolean active) {
         final List<Object> args = new ArrayList<>();
         final StringBuilder sql = new StringBuilder("UPDATE item SET status = ?");
@@ -410,6 +376,7 @@ public class ItemJdbcDao implements ItemDao {
      * True when the item still has guest (non-owner) bookings that are not cancelled/rejected and have not ended yet,
      * so it cannot be removed from the database; an active listing is only deactivated instead.
      */
+    // TODO versioning reference
     private boolean hasBookingsBlockingHardDelete(final int itemId) {
         final Integer bookingCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*)"

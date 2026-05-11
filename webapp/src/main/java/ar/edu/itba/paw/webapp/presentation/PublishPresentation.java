@@ -56,14 +56,13 @@ public class PublishPresentation {
     public static final int MAX_GALLERY_IMAGES = 3;
 
     private static final Map<DayOfWeek, String> WEEKDAY_LABELS = Map.of(
-        DayOfWeek.MONDAY, "Lunes",
-        DayOfWeek.TUESDAY, "Martes",
-        DayOfWeek.WEDNESDAY, "Miercoles",
-        DayOfWeek.THURSDAY, "Jueves",
-        DayOfWeek.FRIDAY, "Viernes",
-        DayOfWeek.SATURDAY, "Sabado",
-        DayOfWeek.SUNDAY, "Domingo"
-    );
+            DayOfWeek.MONDAY, "Lunes",
+            DayOfWeek.TUESDAY, "Martes",
+            DayOfWeek.WEDNESDAY, "Miercoles",
+            DayOfWeek.THURSDAY, "Jueves",
+            DayOfWeek.FRIDAY, "Viernes",
+            DayOfWeek.SATURDAY, "Sabado",
+            DayOfWeek.SUNDAY, "Domingo");
 
     private final ItemService itemService;
     private final UserService userService;
@@ -192,7 +191,8 @@ public class PublishPresentation {
         }
 
         sessionStatus.setComplete();
-        return new ModelAndView("redirect:/publish/success?itemId=" + createdItem.get().getId());
+        return new ModelAndView(
+                "redirect:/publish/success?itemId=" + createdItem.get().getId());
     }
 
     public ModelAndView publishSuccess(final HttpServletRequest request, final Integer itemId) {
@@ -211,7 +211,8 @@ public class PublishPresentation {
 
         final ModelAndView mav = new ModelAndView("publish-success");
         mav.addObject("item", item);
-        mav.addObject("itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId(), request.getContextPath()));
+        mav.addObject(
+                "itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId(), request.getContextPath()));
         mav.addObject("availabilities", itemService.listAvailabilitiesByItemId(item.getId()));
         return mav;
     }
@@ -232,9 +233,15 @@ public class PublishPresentation {
         final EditPublicationForm form = new EditPublicationForm();
         form.setTitle(item.get().getTitle());
         form.setDescription(item.get().getDescription());
-        form.setPricePerHour(item.get().getPricePerHour() == null ? "" : String.valueOf(item.get().getPricePerHour()));
+        form.setPricePerHour(
+                item.get().getPricePerHour() == null
+                        ? ""
+                        : String.valueOf(item.get().getPricePerHour()));
         form.setDifficultyLevel(item.get().getDifficultyLevel());
-        form.setMarina(item.get().getLocationOptionId() == null ? "" : String.valueOf(item.get().getLocationOptionId()));
+        form.setMarina(
+                item.get().getLocationOptionId() == null
+                        ? ""
+                        : String.valueOf(item.get().getLocationOptionId()));
 
         return editPublicationModelAndView(item.get(), request).addObject("editForm", form);
     }
@@ -257,10 +264,13 @@ public class PublishPresentation {
         }
 
         validateUploadedImage(form.getFile(), errors);
-        final Integer parsedPrice = parseIntegerField(form.getPricePerHour(), "pricePerHour", "publish.validation.price.numeric", errors);
-        final Integer parsedLocationOptionId = parseIntegerField(form.getMarina(), "marina", "publish.validation.location.invalid", errors);
+        final Integer parsedPrice =
+                parseIntegerField(form.getPricePerHour(), "pricePerHour", "publish.validation.price.numeric", errors);
+        final Integer parsedLocationOptionId =
+                parseIntegerField(form.getMarina(), "marina", "publish.validation.location.invalid", errors);
         if (parsedLocationOptionId != null
-                && itemService.listLocationOptions().stream().noneMatch(option -> parsedLocationOptionId.equals(option.getId()))) {
+                && itemService.listLocationOptions().stream()
+                        .noneMatch(option -> parsedLocationOptionId.equals(option.getId()))) {
             errors.rejectValue("marina", "publish.validation.location.invalid");
         }
 
@@ -554,7 +564,8 @@ public class PublishPresentation {
 
     private static List<ItemAvailability> buildAvailabilitySlots(final PublishBoatForm form) {
         final List<ItemAvailability> availabilities = new ArrayList<>();
-        for (final Map.Entry<DayOfWeek, TimeRangeList> entry : form.getAvailabilityByWeekday().entrySet()) {
+        for (final Map.Entry<DayOfWeek, TimeRangeList> entry :
+                form.getAvailabilityByWeekday().entrySet()) {
             final TimeRangeList dayRanges = entry.getValue();
             if (dayRanges == null || dayRanges.isEmpty()) {
                 continue;
@@ -757,7 +768,10 @@ public class PublishPresentation {
                     booking.getId(),
                     booking.getGuestId() == null
                             ? ""
-                            : itemService.findUserById(booking.getGuestId()).map(User::getName).orElse(""));
+                            : itemService
+                                    .findUserById(booking.getGuestId())
+                                    .map(User::getName)
+                                    .orElse(""));
         }
         final Map<Integer, String> startLabels = new LinkedHashMap<>();
         final Map<Integer, String> friendlyDates = new LinkedHashMap<>();
@@ -772,11 +786,15 @@ public class PublishPresentation {
             final int id = booking.getId();
             startLabels.put(id, BookingDisplayFormatter.formatStartLabel(booking.getStartTime()));
             friendlyDates.put(id, BookingDisplayFormatter.formatFriendlyDate(booking.getStartTime()));
-            friendlyTimeRanges.put(id, BookingDisplayFormatter.formatFriendlyTimeRange(booking.getStartTime(), booking.getEndTime()));
+            friendlyTimeRanges.put(
+                    id, BookingDisplayFormatter.formatFriendlyTimeRange(booking.getStartTime(), booking.getEndTime()));
             friendlyPrices.put(
                     id,
-                    BookingDisplayFormatter.formatFriendlyTotalPrice(booking.getStartTime(), booking.getEndTime(), pricePerHour));
-            statusCodes.put(id, booking.getState() == null ? "" : BookingDisplayFormatter.statusMessageCode(booking.getState()));
+                    BookingDisplayFormatter.formatFriendlyTotalPrice(
+                            booking.getStartTime(), booking.getEndTime(), pricePerHour));
+            statusCodes.put(
+                    id,
+                    booking.getState() == null ? "" : BookingDisplayFormatter.statusMessageCode(booking.getState()));
         }
         mav.addObject("item", item);
         mav.addObject("activeEditBookings", activeBookings);
@@ -786,7 +804,8 @@ public class PublishPresentation {
         mav.addObject("editBookingFriendlyTimeRanges", friendlyTimeRanges);
         mav.addObject("editBookingFriendlyPrices", friendlyPrices);
         mav.addObject("editBookingStatusCodes", statusCodes);
-        mav.addObject("itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId(), request.getContextPath()));
+        mav.addObject(
+                "itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId(), request.getContextPath()));
         return mav;
     }
 
@@ -801,9 +820,11 @@ public class PublishPresentation {
             }
             final String decision = request.getParameter("bookingDecision_" + booking.getId());
             if ("accept".equals(decision)) {
-                decisions.add(new BookingDecisionBatch.Decision(booking.getHostDecisionToken(), BookingState.BOOKING_CONFIRMED));
+                decisions.add(new BookingDecisionBatch.Decision(
+                        booking.getHostDecisionToken(), BookingState.BOOKING_CONFIRMED));
             } else if ("decline".equals(decision)) {
-                decisions.add(new BookingDecisionBatch.Decision(booking.getHostDecisionToken(), BookingState.BOOKING_REJECTED));
+                decisions.add(new BookingDecisionBatch.Decision(
+                        booking.getHostDecisionToken(), BookingState.BOOKING_REJECTED));
             }
         }
         return new BookingDecisionBatch(decisions);

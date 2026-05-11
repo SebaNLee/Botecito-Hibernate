@@ -181,7 +181,9 @@ public class ItemJdbcDao implements ItemDao {
         }
         if (hasBookingsBlockingHardDelete(itemId)) {
             if (Boolean.TRUE.equals(item.get().getActive())) {
-                snapshotBookingsForPublicationEdit(itemId);
+                if (!snapshotBookingsForPublicationEdit(itemId)) {
+                    return false;
+                }
                 return updateCurrentVersionActive(itemId, ownerId, false) > 0;
             }
             return false;

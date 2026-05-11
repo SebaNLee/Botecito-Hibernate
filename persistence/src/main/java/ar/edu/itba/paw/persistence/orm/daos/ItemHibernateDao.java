@@ -4,8 +4,8 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
-import ar.edu.itba.paw.persistence.ItemJdbcDao;
 import ar.edu.itba.paw.persistence.ItemDao;
+import ar.edu.itba.paw.persistence.ItemJdbcDao;
 import ar.edu.itba.paw.persistence.orm.entities.ItemOrm;
 import ar.edu.itba.paw.persistence.orm.entities.ItemStatusEnumOrm;
 import ar.edu.itba.paw.persistence.orm.entities.ItemTypeOrm;
@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @Primary
 @Transactional
-public class ItemHibernateDao implements ItemDao {
+public final class ItemHibernateDao implements ItemDao {
 
     private static final int DEFAULT_WEIGHT = 2000;
     private static final int DEFAULT_DIFFICULTY = 1;
@@ -33,11 +34,8 @@ public class ItemHibernateDao implements ItemDao {
     @PersistenceContext
     private EntityManager entityManager;
 
-    private final ItemJdbcDao itemJdbcDao;
-
-    public ItemHibernateDao(final ItemJdbcDao itemJdbcDao) {
-        this.itemJdbcDao = itemJdbcDao;
-    }
+    @Autowired
+    private ItemJdbcDao itemJdbcDao;
 
     @Override
     @Transactional(readOnly = true)
@@ -101,7 +99,8 @@ public class ItemHibernateDao implements ItemDao {
             final int pricePerHour,
             final Integer difficultyLevel,
             final int locationOptionId) {
-        return itemJdbcDao.updatePublication(itemId, title, description, pricePerHour, difficultyLevel, locationOptionId);
+        return itemJdbcDao.updatePublication(
+                itemId, title, description, pricePerHour, difficultyLevel, locationOptionId);
     }
 
     @Override
@@ -204,9 +203,11 @@ public class ItemHibernateDao implements ItemDao {
         version.setPrice(BigDecimal.valueOf(pricePerHour));
         version.setCapacity(capacityPeople);
         version.setWeight(maxWeightKg == null ? DEFAULT_WEIGHT : maxWeightKg.intValue());
-        version.setDifficulty(difficultyLevel == null ? DEFAULT_DIFFICULTY : difficultyLevel);
+        final int difficulty = difficultyLevel == null ? DEFAULT_DIFFICULTY : difficultyLevel.intValue();
+        version.setDifficulty(difficulty);
         version.setLocation(entityManager.getReference(LocationOrm.class, locationOptionId));
-        version.setTimezone("America/Argentina/Buenos_Aires"); // TODO dynamic IANA timezones https://timeapi.io/documentation/iana-timezones
+        version.setTimezone("America/Argentina/Buenos_Aires"); // TODO dynamic IANA timezones
+        // https://timeapi.io/documentation/iana-timezones
         version.setCreatedAt(now);
         entityManager.persist(version);
         entityManager.flush();
@@ -248,14 +249,13 @@ public class ItemHibernateDao implements ItemDao {
 
     private boolean hasBookingsBlockingHardDelete(final int itemId) {
         final Number count = (Number) entityManager
-                .createNativeQuery(
-                        "SELECT COUNT(*) FROM booking b "
-                                + "JOIN version v ON v.id = b.version_id "
-                                + "JOIN item i ON i.id = v.item_id "
-                                + "WHERE i.id = :itemId "
-                                + "AND b.status NOT IN ('REJECTED', 'CANCELLED') "
-                                + "AND b.\"end\" > CURRENT_TIMESTAMP "
-                                + "AND b.guest_id <> i.host_id")
+                .createNativeQuery("SELECT COUNT(*) FROM booking b "
+                        + "JOIN version v ON v.id = b.version_id "
+                        + "JOIN item i ON i.id = v.item_id "
+                        + "WHERE i.id = :itemId "
+                        + "AND b.status NOT IN ('REJECTED', 'CANCELLED') "
+                        + "AND b.\"end\" > CURRENT_TIMESTAMP "
+                        + "AND b.guest_id <> i.host_id")
                 .setParameter("itemId", itemId)
                 .getSingleResult();
         return count != null && count.intValue() > 0;

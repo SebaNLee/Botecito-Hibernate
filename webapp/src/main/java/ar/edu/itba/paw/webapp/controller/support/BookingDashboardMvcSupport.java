@@ -32,37 +32,6 @@ public final class BookingDashboardMvcSupport {
     private final BookingDashboardService bookingDashboardService;
     private final ReviewService reviewService;
 
-    public ModelAndView myBoats(
-            final List<String> status, final String query, final int page, final HttpServletRequest request) {
-        return currentUser()
-                .map(user -> {
-                    final ModelAndView mav = new ModelAndView("my-boats");
-                    mav.addObject("user", user);
-                    final var data = bookingDashboardService.loadOwnerBoatsDashboard(
-                            user.getId(), sanitizePage(page), DASHBOARD_PAGE_SIZE);
-                    final List<String> statusFilters = resolveBookingStatusFilters(status);
-                    mav.addObject("ownedItems", data.getOwnedItems());
-                    mav.addObject("publicationCoverImageIdsByItemId", data.getPublicationCoverImageIdsByItemId());
-                    mav.addObject(
-                            "imageUrlsByItemId",
-                            buildImageUrlsByItemId(data.getImageItemIds(), request.getContextPath()));
-                    mav.addObject(
-                            "publicationDeleteDeactivatesByItemId", data.getPublicationDeleteDeactivatesByItemId());
-                    mav.addObject("publicationDeleteDisabledByItemId", data.getPublicationDeleteDisabledByItemId());
-                    mav.addObject("receivedBookingRequests", data.getReceivedBookingCards());
-                    mav.addObject("receivedBookingPage", data.getReceivedBookingPage());
-                    mav.addObject("selectedBookingStatusFilters", statusFilters);
-                    mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statusFilters));
-                    mav.addObject("boatSearchQuery", normalizeQuery(query));
-                    mav.addObject(
-                            "pendingOwnerUserReviewsByBookingId",
-                            buildPendingOwnerUserReviewsByBookingId(user.getId()));
-                    mav.addObject("authoredUserReviewsByBookingId", buildAuthoredUserReviewsByBookingId(user.getId()));
-                    return mav;
-                })
-                .orElseGet(() -> new ModelAndView("redirect:/login"));
-    }
-
     public ModelAndView guestBookings(
             final List<String> status, final String query, final int page, final HttpServletRequest request) {
         return currentUser()
@@ -190,32 +159,10 @@ public final class BookingDashboardMvcSupport {
         return byBookingId;
     }
 
-    private Map<Integer, ReviewService.PendingReviewAction> buildPendingOwnerUserReviewsByBookingId(final int userId) {
-        final Map<Integer, ReviewService.PendingReviewAction> byBookingId = new LinkedHashMap<>();
-        for (final ReviewService.PendingReviewAction action : reviewService.listPendingReviewActions(userId)) {
-            if (action.getTargetType() != ReviewTargetType.USER) {
-                continue;
-            }
-            byBookingId.put(action.getBookingId(), action);
-        }
-        return byBookingId;
-    }
-
     private Map<Integer, Review> buildAuthoredItemReviewsByBookingId(final int userId) {
         final Map<Integer, Review> byBookingId = new LinkedHashMap<>();
         for (final Review review : reviewService.listAuthoredReviews(userId)) {
             if (review.getBookingId() == null || review.getTargetType() != ReviewTargetType.ITEM) {
-                continue;
-            }
-            byBookingId.putIfAbsent(review.getBookingId(), review);
-        }
-        return byBookingId;
-    }
-
-    private Map<Integer, Review> buildAuthoredUserReviewsByBookingId(final int userId) {
-        final Map<Integer, Review> byBookingId = new LinkedHashMap<>();
-        for (final Review review : reviewService.listAuthoredReviews(userId)) {
-            if (review.getBookingId() == null || review.getTargetType() != ReviewTargetType.USER) {
                 continue;
             }
             byBookingId.putIfAbsent(review.getBookingId(), review);

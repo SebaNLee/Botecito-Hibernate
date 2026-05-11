@@ -63,7 +63,8 @@ public class ItemHibernateDao implements ItemDao, ar.edu.itba.paw.persistence.nu
     @Transactional(readOnly = true)
     public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId) {
         final String hql = baseMyBoatsQuery() + " WHERE i.host.id = :ownerId ORDER BY i.createdAt DESC, i.id DESC";
-        final List<Object[]> rows = entityManager.createQuery(hql, Object[].class)
+        final List<Object[]> rows = entityManager
+                .createQuery(hql, Object[].class)
                 .setParameter("ownerId", ownerId)
                 .setParameter("rejectedStatus", BookingStatusEnumOrm.REJECTED)
                 .setParameter("cancelledStatus", BookingStatusEnumOrm.CANCELLED)
@@ -75,7 +76,8 @@ public class ItemHibernateDao implements ItemDao, ar.edu.itba.paw.persistence.nu
     @Transactional(readOnly = true)
     public Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(final int itemId, final int ownerId) {
         final String hql = baseMyBoatsQuery() + " WHERE i.id = :itemId AND i.host.id = :ownerId";
-        final List<Object[]> rows = entityManager.createQuery(hql, Object[].class)
+        final List<Object[]> rows = entityManager
+                .createQuery(hql, Object[].class)
                 .setParameter("itemId", itemId)
                 .setParameter("ownerId", ownerId)
                 .setParameter("rejectedStatus", BookingStatusEnumOrm.REJECTED)

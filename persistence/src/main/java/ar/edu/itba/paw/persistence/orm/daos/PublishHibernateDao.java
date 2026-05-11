@@ -32,9 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class PublishHibernateDao implements PublishDao {
 
-    private static final int DEFAULT_WEIGHT = 2000;
-    private static final Integer DEFAULT_DIFFICULTY = 1;
-
     private static final String HQL_FIND_BY_ID =
             "SELECT i.id, i.host.id, v.type.id, v.title, v.description, v.price, v.capacity, v.weight, v.difficulty, v.location.name,"
                     + " (SELECT m.image.id FROM MediaOrm m WHERE m.version = v AND m.id.index = 0)"
@@ -80,8 +77,8 @@ public class PublishHibernateDao implements PublishDao {
                 .description(description)
                 .price(BigDecimal.valueOf(pricePerHour))
                 .capacity(capacityPeople)
-                .weight(maxWeightKg == null ? DEFAULT_WEIGHT : maxWeightKg.intValue())
-                .difficulty(difficultyLevel == null ? DEFAULT_DIFFICULTY : difficultyLevel)
+                .weight(maxWeightKg.intValue())
+                .difficulty(difficultyLevel)
                 .location(entityManager.getReference(LocationOrm.class, locationOptionId))
                 .timezone("America/Argentina/Buenos_Aires")
                 .createdAt(now)

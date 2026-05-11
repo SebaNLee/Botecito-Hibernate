@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -35,19 +36,19 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     @Transactional
-    public Optional<PublishItem> create(final PublishContent draft, final int ownerId) {
+    public Optional<PublishItem> create(final PublishContent content, final int ownerId) {
         final int itemId = publishDao.create(
                 ownerId,
-                draft.getTypeId(),
-                draft.getTitle(),
-                draft.getDescription(),
-                draft.getPricePerHour(),
-                draft.getCapacityPeople(),
-                draft.getMaxWeightKg(),
-                draft.getDifficultyLevel(),
-                draft.getLocationOptionId(),
-                draft.getAvailabilities(),
-                mapToImageUploads(draft));
+                content.getTypeId(),
+                content.getTitle(),
+                content.getDescription(),
+                content.getPricePerHour(),
+                content.getCapacityPeople(),
+                Objects.requireNonNull(content.getMaxWeightKg()),
+                Objects.requireNonNull(content.getDifficultyLevel()),
+                content.getLocationOptionId(),
+                content.getAvailabilities(),
+                mapToImageUploads(content));
         if (itemId <= 0) {
             LOGGER.error("Failed to create publication for owner {}", ownerId);
             return Optional.empty();
@@ -73,13 +74,13 @@ public class PublishServiceImpl implements PublishService {
     }
 
     @Override
-    public Map<String, String> validate(final PublishContent draft) {
+    public Map<String, String> validate(final PublishContent content) {
         final Map<String, String> errors = new LinkedHashMap<>();
-        if (draft == null) {
+        if (content == null) {
             errors.put("draft", "publish.validation.required");
             return errors;
         }
-        final List<AvailabilityWindow> availabilities = draft.getAvailabilities();
+        final List<AvailabilityWindow> availabilities = content.getAvailabilities();
         if (availabilities == null || availabilities.isEmpty()) {
             errors.put("availabilityByWeekday", "publish.availability.required");
             return errors;
@@ -138,8 +139,8 @@ public class PublishServiceImpl implements PublishService {
         }
     }
 
-    private static List<ImageUpload> mapToImageUploads(final PublishContent draft) {
-        final List<ImageUpload> images = draft.getImages();
+    private static List<ImageUpload> mapToImageUploads(final PublishContent content) {
+        final List<ImageUpload> images = content.getImages();
         return images == null ? List.of() : images;
     }
 }

@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ItemDao {
-    List<MyBoatsItem> listMyBoatsItemsByOwnerId(int ownerId);
+    List<MyBoatsItem> listMyBoatsItemsByOwnerId(int ownerId, int page, int pageSize);
+
+    int countMyBoatsItemsByOwnerId(int ownerId);
 
     Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(int itemId, int ownerId);
 
@@ -16,4 +18,6 @@ public interface ItemDao {
     boolean updateMyBoatsItem(int itemId, int ownerId, ItemUpdateModel updateModel);
 
     boolean deleteMyBoatsItem(int itemId, int ownerId);
+
+    boolean setItemActiveForOwner(int itemId, int ownerId, boolean active);
 }

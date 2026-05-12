@@ -16,8 +16,13 @@ public class ItemImpl implements ItemInterface {
     private final ItemDao itemDao;
 
     @Override
-    public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId) {
-        return itemDao.listMyBoatsItemsByOwnerId(ownerId);
+    public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId, final int page, final int pageSize) {
+        return itemDao.listMyBoatsItemsByOwnerId(ownerId, page, pageSize);
+    }
+
+    @Override
+    public int countMyBoatsItemsByOwnerId(final int ownerId) {
+        return itemDao.countMyBoatsItemsByOwnerId(ownerId);
     }
 
     @Override
@@ -38,5 +43,10 @@ public class ItemImpl implements ItemInterface {
     @Override
     public boolean deleteMyBoatsItem(final int itemId, final int ownerId) {
         return itemDao.deleteMyBoatsItem(itemId, ownerId);
+    }
+
+    @Override
+    public boolean setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
+        return itemDao.setItemActiveForOwner(itemId, ownerId, active);
     }
 }

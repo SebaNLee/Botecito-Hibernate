@@ -53,4 +53,10 @@ public interface BookingDao {
     void uploadPayment(PaymentProof paymentProof);
 
     void refusePayment(int bookingId, String message, LocalDateTime refuseTime);
+
+    /** Set all bookings that ended before {@code maxEndTime} (UTC) as FINISHED */
+    void finalizeBookingsBefore(LocalDateTime maxEndTime);
+
+    /** Set all bookings that start after {@code minStartTime} (UTC) as CANCELLED */
+    void expireBookingsAfter(LocalDateTime minStartTime);
 }

@@ -253,6 +253,24 @@ public class BookingHibernateDao implements BookingDao {
                 .executeUpdate();
     }
 
+    @Override
+    public void finalizeBookingsBefore(LocalDateTime maxEndTime) {
+        entityManager
+                .createQuery("UPDATE BookingOrm b SET b.status = :status WHERE b.end < :endTime")
+                .setParameter("status", BookingStatus.FINISHED)
+                .setParameter("endTime", maxEndTime)
+                .executeUpdate();
+    }
+
+    @Override
+    public void expireBookingsAfter(LocalDateTime minStartTime) {
+        entityManager
+                .createQuery("UPDATE BookingOrm b SET b.status = :status WHERE b.start > :startTime")
+                .setParameter("status", BookingStatus.CANCELLED)
+                .setParameter("startTime", minStartTime)
+                .executeUpdate();
+    }
+
     private long countMatchingOutcoming(final int guestId, final BookingSearchModel criteria) {
         final Map<String, Object> params = new HashMap<>();
         final StringBuilder hql = new StringBuilder("SELECT COUNT(b) FROM BookingOrm b INNER JOIN b.version ");

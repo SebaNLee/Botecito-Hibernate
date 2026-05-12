@@ -19,9 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-@Service
+// Legacy review service. Unwired from Spring (no @Service); the new ReviewImpl in services.nuevo is the active path.
 @RequiredArgsConstructor
 public class ReviewServiceImpl implements ReviewService {
 

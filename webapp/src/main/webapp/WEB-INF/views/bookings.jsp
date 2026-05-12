@@ -29,8 +29,6 @@
 <spring:message code="profile.reviews.comment.label" var="reviewCommentLabel" />
 <spring:message code="profile.reviews.submit" var="reviewSubmitLabel" />
 <spring:message code="profile.reviews.target.item" var="reviewTargetItemLabel" />
-<spring:message code="profile.reviews.target.user" var="reviewTargetUserLabel" />
-<spring:message code="profile.reviews.authoredSummary.label" var="authoredReviewSummaryLabel" />
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6">
   <paw:toastNotifier />
@@ -113,7 +111,6 @@
                         <c:url var="sentRequestItemUrl" value="/item/${sentRequest.itemId}" />
                       </c:otherwise>
                     </c:choose>
-                    <c:set var="authoredItemReview" value="${authoredItemReviewsByBookingId[sentRequest.id]}" />
                     <c:set var="sentStatusClass" value="badge-ghost" />
                     <c:if test="${sentStatusMessageCodeByBookingId[sentRequest.id] == 'profile.sentBookings.status.pending'}"><c:set var="sentStatusClass" value="badge-warning" /></c:if>
                     <c:if test="${sentStatusMessageCodeByBookingId[sentRequest.id] == 'profile.sentBookings.status.confirmed'}"><c:set var="sentStatusClass" value="badge-info" /></c:if>
@@ -172,12 +169,6 @@
                             </c:if>
                           </div>
                         </div>
-                        <c:if test="${not empty authoredItemReview}">
-                          <p class="m-0 flex items-center gap-1 text-xs font-bold text-success">
-                            <span class="material-symbols-outlined text-sm leading-none">check_circle</span>
-                            <spring:message code="profile.reviews.authoredSummary.done" />
-                          </p>
-                        </c:if>
                         <c:if test="${sentStatusMessageCodeByBookingId[sentRequest.id] == 'profile.sentBookings.status.confirmed'}">
                           <form action="${sentPaymentProofUrl}" method="post" enctype="multipart/form-data" class="space-y-2 border-t border-outline-variant/20 pt-3" data-submit-loading-form="true">
                             <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" class="file-input file-input-bordered file-input-sm w-full" />
@@ -227,13 +218,12 @@
                             </div>
                           </details>
                         </c:if>
-                        <c:set var="guestPendingReview" value="${pendingGuestItemReviewsByBookingId[sentRequest.id]}" />
-                        <c:if test="${not empty guestPendingReview}">
+                        <c:if test="${sentCanReviewByBookingId[sentRequest.id]}">
                           <c:url var="createGuestItemReviewUrl" value="/reviews/booking/${sentRequest.id}" />
                           <form action="${createGuestItemReviewUrl}" method="post" class="space-y-3 border-t border-outline-variant/20 pt-3">
                             <input type="hidden" name="returnTo" value="dashboardBookings" />
                             <div class="flex items-start justify-between gap-2">
-                              <p class="m-0 min-w-0 truncate text-xs text-on-surface-variant"><c:out value="${guestPendingReview.targetName}" /> · <c:out value="${guestPendingReview.targetEmail}" /></p>
+                              <p class="m-0 min-w-0 truncate text-xs text-on-surface-variant"><c:out value="${sentOwnerNameByBookingId[sentRequest.id]}" /> · <c:out value="${sentOwnerEmailByBookingId[sentRequest.id]}" /></p>
                               <span class="badge badge-primary badge-sm shrink-0 font-bold"><c:out value="${reviewTargetItemLabel}" /></span>
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
@@ -253,21 +243,6 @@
                             </div>
                             <paw:button type="submit" color="primary" size="sm" text="${reviewSubmitLabel}" />
                           </form>
-                        </c:if>
-                        <c:if test="${not empty authoredItemReview}">
-                          <div class="rounded-lg bg-base-100 p-3 space-y-2 border-t border-outline-variant/20">
-                            <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${authoredReviewSummaryLabel}" /></p>
-                            <div class="flex items-center gap-2">
-                              <div class="flex items-center gap-0.5" aria-label="${authoredItemReview.rating} of 5">
-                                <c:forEach var="starIndex" begin="1" end="5">
-                                  <span class="material-symbols-outlined text-sm leading-none ${starIndex <= authoredItemReview.rating ? 'text-warning opacity-100' : 'text-outline opacity-[0.35]'}">star</span>
-                                </c:forEach>
-                              </div>
-                            </div>
-                            <c:if test="${not empty authoredItemReview.comment}">
-                              <p class="m-0 break-words text-xs text-on-surface-variant"><c:out value="${authoredItemReview.comment}" /></p>
-                            </c:if>
-                          </div>
                         </c:if>
                       </jsp:body>
                     </paw:detailsModal>

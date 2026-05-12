@@ -3,12 +3,16 @@ package ar.edu.itba.paw.persistence.orm.entities;
 import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
+import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Embeddable
 @EqualsAndHashCode
 public class MediaId implements Serializable {
@@ -20,11 +24,4 @@ public class MediaId implements Serializable {
 
     @Column(name = "index", nullable = false)
     private Integer index;
-
-    public MediaId() {}
-
-    public MediaId(final Integer versionId, final Integer index) {
-        this.versionId = versionId;
-        this.index = index;
-    }
 }

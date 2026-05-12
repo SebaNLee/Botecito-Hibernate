@@ -19,16 +19,12 @@ import ar.edu.itba.paw.webapp.util.AvailabilityPickerSupport;
 import ar.edu.itba.paw.webapp.util.MarketplaceReturnUrl;
 import ar.edu.itba.paw.webapp.util.NuevoDetailAvailabilityPicker;
 import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -260,16 +256,6 @@ public class DetailPresentation {
 
         final List<ReviewModel> versionReviews =
                 displayPair.getReviews() == null ? List.of() : displayPair.getReviews();
-        final Map<Integer, String> reviewAuthorNames = new LinkedHashMap<>();
-        for (final ReviewModel review : versionReviews) {
-            final int senderId = review.getSenderId();
-            if (senderId <= 0 || reviewAuthorNames.containsKey(senderId)) {
-                continue;
-            }
-            reviewAuthorNames.put(
-                    senderId,
-                    itemService.findUserById(senderId).map(User::getName).orElse(""));
-        }
 
         final boolean isActive = item.getStatus() == ItemStatus.ACTIVE;
 
@@ -287,9 +273,6 @@ public class DetailPresentation {
         mav.addObject("listingInactiveNotice", !isActive);
         mav.addObject("itemOwner", itemOwner);
         mav.addObject("versionReviews", versionReviews);
-        mav.addObject("reviewAuthorNames", reviewAuthorNames);
-        mav.addObject("reviewCreatedAtLabels", buildVersionReviewCreatedAtLabels(versionReviews));
-        mav.addObject("reviewFullStars", buildReviewFullStars(versionReviews));
         mav.addObject("itemImageUrl", primaryImageUrl(item, contextPath));
         mav.addObject("itemImageUrls", prefixImagePaths(item.getImages(), contextPath));
         final String ownerName = itemOwner == null ? null : itemOwner.getName();
@@ -298,13 +281,6 @@ public class DetailPresentation {
                 ownerName == null || ownerName.isEmpty()
                         ? "I"
                         : ownerName.substring(0, 1).toUpperCase());
-        mav.addObject(
-                "pendingItemReviewAction",
-                viewer == null
-                        ? null
-                        : itemService
-                                .findPendingReviewAction(viewer.getId(), itemId)
-                                .orElse(null));
 
         mav.addObject("itemLocationSlug", "");
         mav.addObject("marketplaceBackHref", marketplaceBackHref);
@@ -377,28 +353,6 @@ public class DetailPresentation {
             return path;
         }
         return path.startsWith("/") ? contextPath + path : contextPath + "/" + path;
-    }
-
-    private static Map<Integer, String> buildVersionReviewCreatedAtLabels(final List<ReviewModel> reviews) {
-        final Locale locale = LocaleContextHolder.getLocale();
-        final DateTimeFormatter formatter =
-                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(locale);
-        final Map<Integer, String> labels = new LinkedHashMap<>();
-        for (final ReviewModel review : reviews) {
-            if (review.getCreatedAt() == null) {
-                continue;
-            }
-            labels.put(review.getId(), formatter.format(review.getCreatedAt()));
-        }
-        return labels;
-    }
-
-    private static Map<Integer, Integer> buildReviewFullStars(final List<ReviewModel> reviews) {
-        final Map<Integer, Integer> stars = new LinkedHashMap<>();
-        for (final ReviewModel review : reviews) {
-            stars.put(review.getId(), (int) Math.floor(review.getRating()));
-        }
-        return stars;
     }
 
     private User currentAuthenticatedUserOrNull() {

@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.nuevo.BookingSearchModel;
 import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import java.util.List;
+import java.util.Optional;
 
 public interface BookingDao {
 
@@ -37,6 +38,20 @@ public interface BookingDao {
 
     /** Bookings for the given listing version, ordered by start time (UTC). */
     List<Booking> getBookingsForVersion(int versionId);
+
+    Optional<Booking> findById(int bookingId);
+
+    /** Bookings where the user is the guest (across all items), ordered by start time (UTC). */
+    List<Booking> listBookingsByGuestId(int guestId);
+
+    /** Bookings on items hosted by the user, ordered by start time (UTC). */
+    List<Booking> listBookingsByOwnerId(int ownerId);
+
+    /** Item id this booking targets (resolved through the booking's version). */
+    Optional<Integer> findItemIdForBookingId(int bookingId);
+
+    /** Owning user id for the item this booking targets. */
+    Optional<Integer> findOwnerIdForBookingId(int bookingId);
 
     BookingSearchResult searchBookings(BookingSearchModel search);
 }

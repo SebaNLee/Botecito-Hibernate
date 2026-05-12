@@ -13,9 +13,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.lang.NonNull;
-import org.springframework.stereotype.Repository;
 
-@Repository
+// Legacy JDBC review DAO. Unwired from Spring (no @Repository); the new orm.daos.ReviewHibernateDao is the active bean.
 public class ReviewJdbcDao implements ReviewDao {
 
     private final @NonNull JdbcTemplate jdbcTemplate;

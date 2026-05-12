@@ -16,7 +16,9 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
@@ -143,6 +145,71 @@ public class BookingHibernateDao implements BookingDao {
         return query.getResultList().stream()
                 .map(BookingHibernateDao::toBooking)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Booking> findById(final int bookingId) {
+        return Optional.ofNullable(entityManager.find(BookingOrm.class, bookingId))
+                .map(BookingHibernateDao::toBooking);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Booking> listBookingsByGuestId(final int guestId) {
+        return entityManager
+                .createQuery(
+                        "SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest "
+                                + "WHERE b.guest.id = :guestId ORDER BY b.start ASC",
+                        BookingOrm.class)
+                .setParameter("guestId", guestId)
+                .getResultList()
+                .stream()
+                .map(BookingHibernateDao::toBooking)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Booking> listBookingsByOwnerId(final int ownerId) {
+        return entityManager
+                .createQuery(
+                        "SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest "
+                                + "WHERE b.version.item.host.id = :ownerId ORDER BY b.start ASC",
+                        BookingOrm.class)
+                .setParameter("ownerId", ownerId)
+                .getResultList()
+                .stream()
+                .map(BookingHibernateDao::toBooking)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Integer> findItemIdForBookingId(final int bookingId) {
+        try {
+            final Integer itemId = entityManager
+                    .createQuery("SELECT b.version.item.id FROM BookingOrm b WHERE b.id = :id", Integer.class)
+                    .setParameter("id", bookingId)
+                    .getSingleResult();
+            return Optional.ofNullable(itemId);
+        } catch (final NoResultException e) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Integer> findOwnerIdForBookingId(final int bookingId) {
+        try {
+            final Integer ownerId = entityManager
+                    .createQuery("SELECT b.version.item.host.id FROM BookingOrm b WHERE b.id = :id", Integer.class)
+                    .setParameter("id", bookingId)
+                    .getSingleResult();
+            return Optional.ofNullable(ownerId);
+        } catch (final NoResultException e) {
+            return Optional.empty();
+        }
     }
 
     @Override

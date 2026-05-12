@@ -48,7 +48,9 @@ public interface BookingDao {
     /** Bookings on listings owned by the host (incoming requests). */
     BookingSearchResult searchIncomingBookings(IncomingSearch search);
 
-    void updateStatus(int id, BookingStatus status);
+    void updateStatusIncoming(int id, int callerId, BookingStatus status);
+
+    void updateStatusOutgoing(int id, int callerId, BookingStatus status);
 
     void uploadPayment(PaymentProof paymentProof);
 

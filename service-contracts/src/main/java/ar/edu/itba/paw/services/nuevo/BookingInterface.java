@@ -25,20 +25,20 @@ public interface BookingInterface {
     /** Bookings on items where {@link IncomingSearch#getHostId()} is the host (received requests). */
     BookingSearchResult searchIncomingBookings(IncomingSearch search);
 
-    void acceptBooking(int bookingId);
+    void acceptBooking(int bookingId, int callerId);
 
-    void rejectBooking(int bookingId);
+    void rejectBooking(int bookingId, int callerId);
 
     /**
      * If {@code payment.replyMsg != null}, this method will update {@code payment.repliedAt}.
      * Will always update {@code payment.createdAt}.
      * The rest is always uploaded to persistence.
      */
-    void submitPayment(PaymentProof payment);
+    void submitPayment(PaymentProof payment, int callerId);
 
-    void confirmPayment(int bookingId);
+    void confirmPayment(int bookingId, int callerId);
 
-    void rejectPayment(int bookingId, String reason);
+    void rejectPayment(int bookingId, int callerId, String reason);
 
-    public void cancelBooking(int bookingId);
+    public void cancelBooking(int bookingId, int callerId);
 }

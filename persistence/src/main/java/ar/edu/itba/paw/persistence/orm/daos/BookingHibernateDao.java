@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,6 +75,14 @@ public class BookingHibernateDao implements BookingDao {
                     + "      ) "
                     + "  ) "
                     + "RETURNING id";
+
+    /** Booking states a host can actively set an incoming booking to */
+    private static final EnumSet<BookingStatus> HOST_STATUS_CHANGES =
+            EnumSet.of(BookingStatus.ACCEPTED, BookingStatus.REJECTED, BookingStatus.REFUSED, BookingStatus.CONFIRMED);
+
+    /** Booking states a guest can actively set an outgoing booking to */
+    private static final EnumSet<BookingStatus> GUEST_STATUS_CHANGES =
+            EnumSet.of(BookingStatus.PAID, BookingStatus.CANCELLED);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -211,13 +220,30 @@ public class BookingHibernateDao implements BookingDao {
         return new BookingSearchResult(List.of(), total);
     }
 
+    // TODO: throw custom exception when these fail
     @Override
-    public void updateStatus(int id, BookingStatus status) {
+    public void updateStatusIncoming(int id, int callerId, BookingStatus status) {
         if (status == null) return;
+        if (!HOST_STATUS_CHANGES.contains(status)) return;
         entityManager
-                .createQuery("UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id = :bookingId")
+                .createQuery(
+                        "UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id = :bookingId AND b.version.item.host.id = :caller")
                 .setParameter("newStatus", BookingStatusEnumOrm.valueOf(status.name()))
                 .setParameter("bookingId", id)
+                .setParameter("caller", callerId)
+                .executeUpdate();
+    }
+
+    @Override
+    public void updateStatusOutgoing(int id, int callerId, BookingStatus status) {
+        if (status == null) return;
+        if (!GUEST_STATUS_CHANGES.contains(status)) return;
+        entityManager
+                .createQuery(
+                        "UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id = :bookingId AND b.guest.id = :caller")
+                .setParameter("newStatus", BookingStatusEnumOrm.valueOf(status.name()))
+                .setParameter("bookingId", id)
+                .setParameter("caller", callerId)
                 .executeUpdate();
     }
 

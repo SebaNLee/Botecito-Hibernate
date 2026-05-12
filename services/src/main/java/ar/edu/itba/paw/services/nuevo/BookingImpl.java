@@ -57,10 +57,6 @@ public class BookingImpl implements BookingInterface {
         return LocalDateTime.now(ZoneOffset.UTC);
     }
 
-    private void updateStatus(int bookingId, BookingStatus status) {
-        bookingDao.updateStatus(bookingId, status);
-    }
-
     private void finalizeBookings() {
         bookingDao.finalizeBookingsBefore(currentDateTime());
     }
@@ -76,36 +72,39 @@ public class BookingImpl implements BookingInterface {
         expireDueBookings();
     }
 
-    public void acceptBooking(int bookingId) {
-        updateStatus(bookingId, BookingStatus.ACCEPTED);
+    // TODO: catch eventual exceptions here
+
+    public void acceptBooking(int bookingId, int callerId) {
+        bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.ACCEPTED);
     }
 
-    public void rejectBooking(int bookingId) {
-        updateStatus(bookingId, BookingStatus.REJECTED);
+    public void rejectBooking(int bookingId, int callerId) {
+        bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.REJECTED);
     }
 
-    public void submitPayment(PaymentProof payment) {
+    public void submitPayment(PaymentProof payment, int callerId) {
         if (payment == null) return;
+
+        bookingDao.updateStatusOutgoing(payment.getBookingId(), callerId, BookingStatus.PAID);
 
         var now = currentDateTime();
         payment.setCreatedAt(now);
         if (payment.getReplyMsg() != null) payment.setRepliedAt(now);
 
         bookingDao.uploadPayment(payment);
-        bookingDao.updateStatus(payment.getBookingId(), BookingStatus.PAID);
     }
 
-    public void confirmPayment(int bookingId) {
-        bookingDao.updateStatus(bookingId, BookingStatus.CONFIRMED);
+    public void confirmPayment(int bookingId, int callerId) {
+        bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.CONFIRMED);
     }
 
-    public void rejectPayment(int bookingId, String reason) {
+    public void rejectPayment(int bookingId, int callerId, String reason) {
         var now = currentDateTime();
+        bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.REFUSED);
         bookingDao.refusePayment(bookingId, reason, now);
-        bookingDao.updateStatus(bookingId, BookingStatus.REFUSED);
     }
 
-    public void cancelBooking(int bookingId) {
-        updateStatus(bookingId, BookingStatus.CANCELLED);
+    public void cancelBooking(int bookingId, int callerId) {
+        bookingDao.updateStatusOutgoing(bookingId, callerId, BookingStatus.CANCELLED);
     }
 }

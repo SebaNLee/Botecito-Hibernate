@@ -59,6 +59,9 @@
           <c:if test="${param.profileAction == 'updated'}">
             <paw:alertMessage type="success"><spring:message code="profile.updated" /></paw:alertMessage>
           </c:if>
+          <c:if test="${param.profileAction == 'verificationSent'}">
+            <paw:alertMessage type="success"><spring:message code="profile.emailVerification.sent" /></paw:alertMessage>
+          </c:if>
           <c:if test="${param.passwordRecovery == 'sent'}">
             <paw:alertMessage type="success"><spring:message code="profile.passwordRecovery.sent" /></paw:alertMessage>
           </c:if>

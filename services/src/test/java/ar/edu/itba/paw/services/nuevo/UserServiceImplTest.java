@@ -2,6 +2,7 @@ package ar.edu.itba.paw.services.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.PreferredLanguageModel;
 import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.models.nuevo.mail.EmailVerificationMailModel;
 import ar.edu.itba.paw.models.nuevo.mail.PasswordRecoveryMailModel;
 import ar.edu.itba.paw.persistence.nuevo.UserDao;
 import ar.edu.itba.paw.services.MissingUserNamesException;
@@ -36,6 +37,8 @@ public class UserServiceImplTest {
     public void testRegisterCreatesUser() {
         Mockito.when(passwordEncoder.encode("password123")).thenReturn("hashed-password");
         Mockito.when(userDao.findByEmail("a@a.com")).thenReturn(Optional.empty());
+        Mockito.when(userDao.createUser(Mockito.any(UserModel.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         final UserService.RegistrationResult result = userService.register(
                 registerUser("A", "B", " A@A.com ", "   ", PreferredLanguageModel.EN), "password123");
@@ -49,6 +52,13 @@ public class UserServiceImplTest {
         Assertions.assertEquals("hashed-password", userCaptor.getValue().getPasswordHash());
         Assertions.assertNull(userCaptor.getValue().getPaymentAlias());
         Assertions.assertEquals(PreferredLanguageModel.EN, userCaptor.getValue().getPreferredLanguage());
+        Assertions.assertFalse(userCaptor.getValue().isVerified());
+        Assertions.assertNotNull(userCaptor.getValue().getPasswordRecoveryToken());
+        final ArgumentCaptor<EmailVerificationMailModel> mailCaptor =
+                ArgumentCaptor.forClass(EmailVerificationMailModel.class);
+        Mockito.verify(mailService).sendEmailVerificationEmail(mailCaptor.capture());
+        Assertions.assertEquals("a@a.com", mailCaptor.getValue().getRecipient().getEmail());
+        Assertions.assertNotNull(mailCaptor.getValue().getVerificationToken());
     }
 
     @Test
@@ -60,12 +70,14 @@ public class UserServiceImplTest {
 
         Mockito.when(passwordEncoder.encode("password123")).thenReturn("hashed-password");
         Mockito.when(userDao.findByEmail("legacy@a.com")).thenReturn(Optional.of(existingUser));
-        Mockito.when(userDao.claimUser(Mockito.any(UserModel.class))).thenReturn(Optional.of(existingUser));
+        Mockito.when(userDao.claimUser(Mockito.any(UserModel.class)))
+                .thenAnswer(invocation -> Optional.of(invocation.getArgument(0)));
 
         final UserService.RegistrationResult result = userService.register(
                 registerUser("A", "B", " legacy@a.com ", " mi.alias ", PreferredLanguageModel.EN), "password123");
 
         Assertions.assertEquals(UserService.RegistrationResult.SUCCESS, result);
+        Mockito.verify(mailService).sendEmailVerificationEmail(Mockito.any(EmailVerificationMailModel.class));
     }
 
     @Test
@@ -110,6 +122,7 @@ public class UserServiceImplTest {
     public void testRequestPasswordRecoveryGeneratesTokenAndSendsEmail() {
         final UserModel existingUser = oldUser(5, "Ada", "Lovelace", "recover@a.com");
         existingUser.setPasswordHash("stored-hash");
+        existingUser.setVerified(true);
         Mockito.when(userDao.findByEmail("recover@a.com")).thenReturn(Optional.of(existingUser));
         Mockito.when(userDao.updatePasswordRecoveryToken(Mockito.any(UserModel.class)))
                 .thenAnswer(invocation -> {
@@ -149,6 +162,19 @@ public class UserServiceImplTest {
     }
 
     @Test
+    public void testPasswordRecoveryIgnoresUnverifiedUser() {
+        final UserModel existingUser = oldUser(5, "Unverified", "User", "unverified@a.com");
+        existingUser.setPasswordHash("stored-hash");
+        existingUser.setVerified(false);
+        Mockito.when(userDao.findByEmail("unverified@a.com")).thenReturn(Optional.of(existingUser));
+
+        final Optional<UserModel> result = userService.requestPasswordRecovery(recoveryUser("unverified@a.com"));
+
+        Assertions.assertTrue(result.isEmpty());
+        Mockito.verifyNoInteractions(mailService);
+    }
+
+    @Test
     public void testResetPasswordConsumesToken() {
         Mockito.when(passwordEncoder.encode("new-password")).thenReturn("new-password-hash");
         Mockito.when(userDao.resetPasswordByRecoveryToken(Mockito.any(UserModel.class)))
@@ -175,11 +201,14 @@ public class UserServiceImplTest {
     @Test
     public void testUpdateProfileNormalizesOptionalFieldsAndPreferredLanguage() {
         final UserModel currentOwner = oldUser(5, "Ada", "Lovelace", "new@example.com");
+        currentOwner.setVerified(true);
         final UserModel updatedUser = oldUser(5, "Ada", "Lovelace", "new@example.com");
         updatedUser.setPhone(null);
         updatedUser.setPaymentAlias("pay.alias");
         updatedUser.setPreferredLanguage(PreferredLanguageModel.ES);
+        updatedUser.setVerified(true);
 
+        Mockito.when(userDao.findById(5)).thenReturn(Optional.of(currentOwner));
         Mockito.when(userDao.findByEmail("new@example.com")).thenReturn(Optional.of(currentOwner));
         Mockito.when(userDao.updateProfile(Mockito.any(UserModel.class))).thenReturn(Optional.of(updatedUser));
 
@@ -191,11 +220,16 @@ public class UserServiceImplTest {
         Assertions.assertNull(result.get().getPhone());
         Assertions.assertEquals("pay.alias", result.get().getPaymentAlias());
         Assertions.assertEquals(PreferredLanguageModel.ES, result.get().getPreferredLanguage());
+        final ArgumentCaptor<UserModel> userCaptor = ArgumentCaptor.forClass(UserModel.class);
+        Mockito.verify(userDao).updateProfile(userCaptor.capture());
+        Assertions.assertTrue(userCaptor.getValue().isVerified());
+        Mockito.verify(mailService, Mockito.never()).sendEmailVerificationEmail(Mockito.any());
     }
 
     @Test
     public void testUpdateProfileReturnsEmptyWhenEmailBelongsToAnotherUser() {
         final UserModel otherUser = oldUser(9, "Other", "User", "taken@example.com");
+        Mockito.when(userDao.findById(5)).thenReturn(Optional.of(oldUser(5, "Ada", "Lovelace", "ada@example.com")));
         Mockito.when(userDao.findByEmail("taken@example.com")).thenReturn(Optional.of(otherUser));
 
         final Optional<UserModel> result = userService.updateProfile(
@@ -203,6 +237,42 @@ public class UserServiceImplTest {
 
         Assertions.assertTrue(result.isEmpty());
         Mockito.verify(userDao, Mockito.never()).updateProfile(Mockito.any(UserModel.class));
+    }
+
+    @Test
+    public void testUpdateProfileChangingEmailResetsVerificationAndSendsEmail() {
+        final UserModel currentOwner = oldUser(5, "Ada", "Lovelace", "old@example.com");
+        currentOwner.setVerified(true);
+        final UserModel updatedUser = oldUser(5, "Ada", "Lovelace", "new@example.com");
+        updatedUser.setVerified(false);
+        updatedUser.setPasswordRecoveryToken("verification-token");
+
+        Mockito.when(userDao.findById(5)).thenReturn(Optional.of(currentOwner));
+        Mockito.when(userDao.findByEmail("new@example.com")).thenReturn(Optional.empty());
+        Mockito.when(userDao.updateProfile(Mockito.any(UserModel.class))).thenReturn(Optional.of(updatedUser));
+
+        final Optional<UserModel> result = userService.updateProfile(
+                profileUser(5, "Ada", "Lovelace", "new@example.com", null, null, PreferredLanguageModel.EN));
+
+        Assertions.assertTrue(result.isPresent());
+        final ArgumentCaptor<UserModel> userCaptor = ArgumentCaptor.forClass(UserModel.class);
+        Mockito.verify(userDao).updateProfile(userCaptor.capture());
+        Assertions.assertFalse(userCaptor.getValue().isVerified());
+        Assertions.assertNotNull(userCaptor.getValue().getPasswordRecoveryToken());
+        Mockito.verify(mailService).sendEmailVerificationEmail(Mockito.any(EmailVerificationMailModel.class));
+    }
+
+    @Test
+    public void testVerifyEmailConsumesVerificationToken() {
+        final UserModel user = oldUser(5, "Ada", "Lovelace", "ada@example.com");
+        user.setPasswordRecoveryToken("verification-token");
+        Mockito.when(userDao.findByEmailVerificationToken("verification-token")).thenReturn(Optional.of(user));
+        Mockito.when(userDao.verifyEmailByToken("verification-token")).thenReturn(Optional.of(user));
+
+        final Optional<UserModel> result = userService.verifyEmail(" verification-token ");
+
+        Assertions.assertTrue(result.isPresent());
+        Mockito.verify(userDao).verifyEmailByToken("verification-token");
     }
 
     @Test

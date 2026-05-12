@@ -34,6 +34,18 @@
         <c:if test="${registeredSuccess}">
           <paw:alertMessage type="success"><spring:message code="login.registered" /></paw:alertMessage>
         </c:if>
+        <c:if test="${verificationSentSuccess}">
+          <paw:alertMessage type="success"><spring:message code="login.verificationSent" /></paw:alertMessage>
+        </c:if>
+        <c:if test="${emailVerifiedSuccess}">
+          <paw:alertMessage type="success"><spring:message code="login.verified" /></paw:alertMessage>
+        </c:if>
+        <c:if test="${verificationInvalidError}">
+          <paw:alertMessage type="error"><spring:message code="login.verificationInvalid" /></paw:alertMessage>
+        </c:if>
+        <c:if test="${unverifiedError}">
+          <paw:alertMessage type="warning"><spring:message code="login.unverified" /></paw:alertMessage>
+        </c:if>
         <c:if test="${legacyTokenError}">
           <paw:alertMessage type="warning"><spring:message code="login.legacyToken" /></paw:alertMessage>
         </c:if>

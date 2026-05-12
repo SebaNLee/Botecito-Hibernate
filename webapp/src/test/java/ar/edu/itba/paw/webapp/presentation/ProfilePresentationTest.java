@@ -109,6 +109,7 @@ public class ProfilePresentationTest {
         authenticate("ada@example.com");
         final UserModel currentUser = user(7, "Ada", "Lovelace", "ada@example.com");
         final UserModel updatedUser = user(7, "Augusta", "King", "augusta@example.com");
+        updatedUser.setVerified(false);
         Mockito.when(userService.findByEmail("ada@example.com")).thenReturn(Optional.of(currentUser));
         Mockito.when(userService.updateProfile(Mockito.any(UserModel.class))).thenReturn(Optional.of(updatedUser));
         final ProfileForm form = validProfileForm();
@@ -122,7 +123,7 @@ public class ProfilePresentationTest {
 
         final ModelAndView mav = profilePresentation.profileSubmit(form, errors);
 
-        Assertions.assertEquals("redirect:/profile?profileAction=updated", mav.getViewName());
+        Assertions.assertEquals("redirect:/profile?profileAction=verificationSent", mav.getViewName());
         Assertions.assertEquals(
                 "augusta@example.com",
                 SecurityContextHolder.getContext().getAuthentication().getName());

@@ -6,6 +6,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <fmt:setLocale value="es_AR" />
+<c:url var="myBoatsUrl" value="/my-boats" />
 <c:url var="publishUrl" value="/publish" />
 <spring:message code="nav.publishCta" var="publishCtaLabel" />
 <spring:message code="profile.publications.edit" var="editLabel" />
@@ -37,23 +38,32 @@
 <paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6">
   <paw:toastNotifier />
   <section class="min-w-0 space-y-6">
-      <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div class="min-w-0">
-          <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="myBoats.title" /></h1>
-          <p class="text-on-surface-variant mt-2 m-0"><spring:message code="myBoats.subtitle" /></p>
+      <div class="flex flex-col">
+        <div class="flex items-end justify-between mb-4">
+          <div class="min-w-0">
+            <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="myBoats.title" /></h1>
+            <p class="text-on-surface-variant mt-2 m-0"><spring:message code="myBoats.subtitle" /></p>
+          </div>
+          <a href="${publishUrl}" class="btn btn-secondary shrink-0 no-underline">
+            <span class="material-symbols-outlined text-base">add</span>
+            <c:out value="${publishCtaLabel}" />
+          </a>
         </div>
-        <a href="${publishUrl}" class="btn btn-secondary w-[70%] self-center no-underline sm:w-auto sm:self-auto sm:shrink-0">
-          <span class="material-symbols-outlined text-base">add</span>
-          <c:out value="${publishCtaLabel}" />
-        </a>
+        <form action="${myBoatsUrl}" method="get" class="flex items-center justify-end gap-3 text-sm font-medium text-on-surface-variant">
+          <input type="hidden" name="page" value="1" />
+          <label for="my-boats-page-size" class="shrink-0">Páginas:</label>
+          <select id="my-boats-page-size" name="pageSize" class="select select-sm w-20 font-bold text-primary" onchange="this.form.submit()">
+            <option value="6" ${param.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+            <option value="12" ${empty param.pageSize || param.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+            <option value="18" ${param.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+          </select>
+        </form>
       </div>
 
-      <div class="space-y-8">
-          <div id="my-publications" class="scroll-mt-24 space-y-4">
-            <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.publications.title" /></h2>
-            <c:choose>
+      <div id="my-publications" class="scroll-mt-24 space-y-4">
+        <c:choose>
               <c:when test="${not empty ownedItems}">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 px-1 sm:px-3 md:gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
                   <c:forEach var="item" items="${ownedItems}">
                     <c:url var="itemDetailUrl" value="/item/${item.id}" />
                     <c:url var="editItemUrl" value="/profile/item/${item.id}/edit" />
@@ -184,67 +194,53 @@
                 </div>
               </c:otherwise>
             </c:choose>
-          </div>
 
-          <div id="received-booking-requests" class="scroll-mt-24 space-y-4">
-            <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.bookings.title" /></h2>
-            <form action="<c:url value='/my-boats' />" method="get" class="flex flex-col gap-3 rounded-xl bg-base-200 p-4 sm:flex-row sm:items-end">
-              <label class="form-control w-full sm:max-w-sm">
-                <span class="label-text text-xs font-bold uppercase tracking-wider text-outline"><spring:message code="dashboard.filters.boatName" /></span>
-                <span class="join w-full">
-                  <input type="search" name="q" value="${fn:escapeXml(boatSearchQuery)}" class="input input-bordered input-sm join-item w-full" placeholder="<spring:message code="dashboard.filters.boatName.placeholder" />" />
-                  <button type="submit" class="btn btn-secondary btn-sm join-item px-3" aria-label="<spring:message code="dashboard.filters.search" />">
-                    <span class="material-symbols-outlined text-base">search</span>
-                  </button>
-                </span>
-              </label>
-              <div class="form-control w-full sm:max-w-sm">
-                <span class="label-text text-xs font-bold uppercase tracking-wider text-outline"><spring:message code="dashboard.filters.status" /></span>
-                <details class="dropdown w-full">
-                  <summary class="btn btn-outline btn-sm w-full justify-between no-underline">
-                    <span><spring:message code="dashboard.filters.status" /></span>
-                    <span class="material-symbols-outlined text-base">expand_more</span>
-                  </summary>
-                  <div class="dropdown-content z-20 mt-2 w-full rounded-xl border border-outline-variant/30 bg-base-100 p-3 shadow-lg">
-                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
-                      <input type="checkbox" name="status" value="pending" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.pending ? 'checked="checked"' : ''} />
-                      <spring:message code="dashboard.filters.status.pending" />
-                    </label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
-                      <input type="checkbox" name="status" value="confirmed" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.confirmed ? 'checked="checked"' : ''} />
-                      <spring:message code="dashboard.filters.status.confirmed" />
-                    </label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
-                      <input type="checkbox" name="status" value="paymentSubmitted" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.paymentSubmitted ? 'checked="checked"' : ''} />
-                      <spring:message code="dashboard.filters.status.paymentSubmitted" />
-                    </label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
-                      <input type="checkbox" name="status" value="paid" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.paid ? 'checked="checked"' : ''} />
-                      <spring:message code="dashboard.filters.status.paid" />
-                    </label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
-                      <input type="checkbox" name="status" value="paymentRefused" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.paymentRefused ? 'checked="checked"' : ''} />
-                      <spring:message code="dashboard.filters.status.paymentRefused" />
-                    </label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
-                      <input type="checkbox" name="status" value="completed" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.completed ? 'checked="checked"' : ''} />
-                      <spring:message code="dashboard.filters.status.completed" />
-                    </label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
-                      <input type="checkbox" name="status" value="rejected" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.rejected ? 'checked="checked"' : ''} />
-                      <spring:message code="dashboard.filters.status.rejected" />
-                    </label>
-                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold hover:bg-base-200">
-                      <input type="checkbox" name="status" value="cancelled" class="checkbox checkbox-sm" ${selectedBookingStatusFiltersByValue.cancelled ? 'checked="checked"' : ''} />
-                      <spring:message code="dashboard.filters.status.cancelled" />
-                    </label>
-                  </div>
-                </details>
-              </div>
-              <a href="<c:url value='/my-boats' />" class="btn btn-outline btn-sm border-base-300 bg-base-100 no-underline hover:bg-base-100 sm:ml-auto">
-                <spring:message code="dashboard.filters.clear" />
+      <c:if test="${itemPage.totalPages > 1}">
+        <c:url var="previousPageUrl" value="/my-boats">
+          <c:param name="page" value="${itemPage.previousPage}" />
+          <c:param name="pageSize" value="${itemPage.pageSize}" />
+        </c:url>
+        <c:url var="nextPageUrl" value="/my-boats">
+          <c:param name="page" value="${itemPage.nextPage}" />
+          <c:param name="pageSize" value="${itemPage.pageSize}" />
+        </c:url>
+        <nav class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
+          <c:choose>
+            <c:when test="${itemPage.hasPrevious}">
+              <a href="${previousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
+                <span class="material-symbols-outlined text-sm">arrow_back</span>
+                <spring:message code="marketplace.pagination.previous" />
               </a>
-            </form>
+            </c:when>
+            <c:otherwise>
+              <span class="btn btn-outline btn-sm btn-disabled gap-2">
+                <span class="material-symbols-outlined text-sm">arrow_back</span>
+                <spring:message code="marketplace.pagination.previous" />
+              </span>
+            </c:otherwise>
+          </c:choose>
+          <span>
+            <spring:message code="marketplace.pagination.page" arguments="${itemPage.page},${itemPage.totalPages}" />
+          </span>
+          <c:choose>
+            <c:when test="${itemPage.hasNext}">
+              <a href="${nextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
+                <spring:message code="marketplace.pagination.next" />
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+              </a>
+            </c:when>
+            <c:otherwise>
+              <span class="btn btn-outline btn-sm btn-disabled gap-2">
+                <spring:message code="marketplace.pagination.next" />
+                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+              </span>
+            </c:otherwise>
+          </c:choose>
+        </nav>
+      </c:if>
+
+      <div id="received-booking-requests" class="scroll-mt-24 space-y-4">
+        <h2 class="text-xl font-extrabold tracking-tight m-0"><spring:message code="profile.bookings.title" /></h2>
             <c:choose>
               <c:when test="${not empty receivedBookingRequests}">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
@@ -449,6 +445,5 @@
               </nav>
             </c:if>
           </div>
-      </div>
   </section>
 </paw:layout>

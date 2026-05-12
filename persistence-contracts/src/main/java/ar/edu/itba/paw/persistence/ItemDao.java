@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.Item;
-import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
 import java.math.BigDecimal;
@@ -10,12 +9,6 @@ import java.util.Optional;
 
 /** Persistence for listings, publication versions, and item lifecycle (not bookings or media). */
 public interface ItemDao {
-    List<Item> listItems();
-
-    List<Item> listItems(ItemSearchCriteria criteria, int limit, int offset);
-
-    int countItems(ItemSearchCriteria criteria);
-
     List<LocationOption> listLocationOptions();
 
     Optional<Item> findItemById(int id);
@@ -25,14 +18,6 @@ public interface ItemDao {
     Optional<Item> findAnyItemById(int id);
 
     Optional<ItemType> findItemTypeById(int id);
-
-    boolean updatePublication(
-            int itemId,
-            String title,
-            String description,
-            int pricePerHour,
-            Integer difficultyLevel,
-            int locationOptionId);
 
     boolean updatePublicationForOwner(
             int itemId,
@@ -67,15 +52,4 @@ public interface ItemDao {
     boolean setItemActive(int itemId, boolean active);
 
     boolean setItemActiveForOwner(int itemId, int ownerId, boolean active);
-
-    Integer insertItem(
-            int ownerId,
-            int typeId,
-            String title,
-            String description,
-            int pricePerHour,
-            int capacityPeople,
-            BigDecimal maxWeightKg,
-            Integer difficultyLevel,
-            int locationOptionId);
 }

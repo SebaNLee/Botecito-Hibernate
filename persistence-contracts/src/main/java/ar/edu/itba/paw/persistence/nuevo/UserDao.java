@@ -22,5 +22,9 @@ public interface UserDao {
 
     boolean resetPasswordByRecoveryToken(UserModel user);
 
+    Optional<UserModel> findByEmailVerificationToken(String token);
+
+    Optional<UserModel> verifyEmailByToken(String token);
+
     List<UserModel> findUsersByIds(Collection<Integer> userIds);
 }

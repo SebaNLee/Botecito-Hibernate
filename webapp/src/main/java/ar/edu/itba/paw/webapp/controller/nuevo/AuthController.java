@@ -7,6 +7,7 @@ import ar.edu.itba.paw.webapp.form.nuevo.RegisterForm;
 import ar.edu.itba.paw.webapp.presentation.AuthPresentation;
 import ar.edu.itba.paw.webapp.util.PostLoginRedirectSupport;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -92,8 +93,11 @@ public class AuthController {
     }
 
     @RequestMapping(value = "/verify-email/{token}", method = RequestMethod.GET)
-    public ModelAndView verifyEmail(@PathVariable("token") final String token) {
-        return authPresentation.verifyEmail(token);
+    public ModelAndView verifyEmail(
+            @PathVariable("token") final String token,
+            final HttpServletRequest request,
+            final HttpServletResponse response) {
+        return authPresentation.verifyEmail(token, request, response);
     }
 
     @RequestMapping("/403")

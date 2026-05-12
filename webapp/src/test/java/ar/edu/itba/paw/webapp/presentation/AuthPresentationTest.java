@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.nuevo.UserModel;
 import ar.edu.itba.paw.services.nuevo.UserService;
+import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordResetForm;
@@ -16,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
@@ -26,11 +28,14 @@ public class AuthPresentationTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private PostRegistrationAuthenticator postRegistrationAuthenticator;
+
     private AuthPresentation authPresentation;
 
     @BeforeEach
     public void setUp() {
-        authPresentation = new AuthPresentation(userService, new AuthModelMapper());
+        authPresentation = new AuthPresentation(userService, new AuthModelMapper(), postRegistrationAuthenticator);
     }
 
     @Test
@@ -159,20 +164,27 @@ public class AuthPresentationTest {
 
     @Test
     public void testVerifyEmailRedirectsAfterSuccess() {
-        Mockito.when(userService.verifyEmail("token")).thenReturn(Optional.of(Mockito.mock(UserModel.class)));
+        final UserModel user = Mockito.mock(UserModel.class);
+        Mockito.when(user.getEmail()).thenReturn("ada@example.com");
+        Mockito.when(userService.verifyEmail("token")).thenReturn(Optional.of(user));
+        final MockHttpServletRequest request = new MockHttpServletRequest();
+        final MockHttpServletResponse response = new MockHttpServletResponse();
 
-        final ModelAndView mav = authPresentation.verifyEmail("token");
+        final ModelAndView mav = authPresentation.verifyEmail("token", request, response);
 
-        Assertions.assertEquals("redirect:/login?verified=true", mav.getViewName());
+        Assertions.assertEquals("redirect:/", mav.getViewName());
+        Mockito.verify(postRegistrationAuthenticator).authenticateVerifiedUser("ada@example.com", request, response);
     }
 
     @Test
     public void testVerifyEmailRedirectsAfterInvalidToken() {
         Mockito.when(userService.verifyEmail("missing")).thenReturn(Optional.empty());
 
-        final ModelAndView mav = authPresentation.verifyEmail("missing");
+        final ModelAndView mav =
+                authPresentation.verifyEmail("missing", new MockHttpServletRequest(), new MockHttpServletResponse());
 
         Assertions.assertEquals("redirect:/login?verificationInvalid=true", mav.getViewName());
+        Mockito.verifyNoInteractions(postRegistrationAuthenticator);
     }
 
     private static RegisterForm validRegisterForm() {

@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
 import ar.edu.itba.paw.services.nuevo.UserService;
+import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
 import ar.edu.itba.paw.webapp.form.nuevo.RegisterForm;
 import ar.edu.itba.paw.webapp.presentation.AuthModelMapper;
@@ -23,11 +24,15 @@ public class AuthControllerTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private PostRegistrationAuthenticator postRegistrationAuthenticator;
+
     private AuthController controller;
 
     @BeforeEach
     public void setUp() {
-        final AuthPresentation authPresentation = new AuthPresentation(userService, new AuthModelMapper());
+        final AuthPresentation authPresentation =
+                new AuthPresentation(userService, new AuthModelMapper(), postRegistrationAuthenticator);
         controller = new AuthController(authPresentation);
     }
 

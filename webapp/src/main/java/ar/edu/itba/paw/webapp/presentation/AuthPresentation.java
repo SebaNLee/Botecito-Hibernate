@@ -2,10 +2,14 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.nuevo.UserModel;
 import ar.edu.itba.paw.services.nuevo.UserService;
+import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordResetForm;
 import ar.edu.itba.paw.webapp.form.nuevo.RegisterForm;
+import java.util.Optional;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
@@ -20,6 +24,7 @@ public class AuthPresentation {
 
     private final UserService userService;
     private final AuthModelMapper authModelMapper;
+    private final PostRegistrationAuthenticator postRegistrationAuthenticator;
 
     public ModelAndView login(final LoginForm form) {
         final ModelAndView mav = new ModelAndView("login");
@@ -119,9 +124,13 @@ public class AuthPresentation {
         return new ModelAndView("redirect:/login?passwordRecovered=true");
     }
 
-    public ModelAndView verifyEmail(final String token) {
-        if (userService.verifyEmail(token).isPresent()) {
-            return new ModelAndView("redirect:/login?verified=true");
+    public ModelAndView verifyEmail(
+            final String token, final HttpServletRequest request, final HttpServletResponse response) {
+        final Optional<UserModel> verifiedUser = userService.verifyEmail(token);
+        if (verifiedUser.isPresent()) {
+            postRegistrationAuthenticator.authenticateVerifiedUser(
+                    verifiedUser.get().getEmail(), request, response);
+            return new ModelAndView("redirect:/");
         }
         return new ModelAndView("redirect:/login?verificationInvalid=true");
     }

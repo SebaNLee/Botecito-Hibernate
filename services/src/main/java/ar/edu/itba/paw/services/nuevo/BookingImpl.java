@@ -23,6 +23,8 @@ public class BookingImpl implements BookingInterface {
 
     private static final int MIN_ANTICIPATION_MINUTES = 120;
 
+    // TODO: move current times to utils
+
     private LocalDateTime currentDateTime() {
         return LocalDateTime.now(ZoneOffset.UTC);
     }

@@ -76,14 +76,6 @@ public class BookingHibernateDao implements BookingDao {
                     + "  ) "
                     + "RETURNING id";
 
-    /** Booking states a host can actively set an incoming booking to */
-    private static final EnumSet<BookingStatus> HOST_STATUS_CHANGES =
-            EnumSet.of(BookingStatus.ACCEPTED, BookingStatus.REJECTED, BookingStatus.REFUSED, BookingStatus.CONFIRMED);
-
-    /** Booking states a guest can actively set an outgoing booking to */
-    private static final EnumSet<BookingStatus> GUEST_STATUS_CHANGES =
-            EnumSet.of(BookingStatus.PAID, BookingStatus.CANCELLED);
-
     /** A booking cannot change status if it already has one of these */
     private static final EnumSet<BookingStatusEnumOrm> IMMUTABLE_STATES =
             EnumSet.of(BookingStatusEnumOrm.FINISHED, BookingStatusEnumOrm.CANCELLED);
@@ -246,8 +238,9 @@ public class BookingHibernateDao implements BookingDao {
     // TODO: return false on failure here
 
     @Override
+    @Transactional
     public void updateStatusIncoming(int id, int callerId, BookingStatus status) {
-        if (status == null || !HOST_STATUS_CHANGES.contains(status) || isImmutable(id)) return;
+        if (status == null || isImmutable(id)) return;
         entityManager
                 .createQuery(
                         "UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id = :bookingId AND b.version.item.host.id = :caller")
@@ -258,8 +251,9 @@ public class BookingHibernateDao implements BookingDao {
     }
 
     @Override
+    @Transactional
     public void updateStatusOutgoing(int id, int callerId, BookingStatus status) {
-        if (status == null || !GUEST_STATUS_CHANGES.contains(status) || isImmutable(id)) return;
+        if (status == null || isImmutable(id)) return;
         entityManager
                 .createQuery(
                         "UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id = :bookingId AND b.guest.id = :caller")
@@ -270,6 +264,7 @@ public class BookingHibernateDao implements BookingDao {
     }
 
     @Override
+    @Transactional
     public void uploadPayment(PaymentProof p) {
         if (p == null) return;
 
@@ -291,6 +286,7 @@ public class BookingHibernateDao implements BookingDao {
     }
 
     @Override
+    @Transactional
     public void refusePayment(int bookingId, String message, LocalDateTime refuseTime) {
         entityManager
                 .createQuery(
@@ -302,6 +298,7 @@ public class BookingHibernateDao implements BookingDao {
     }
 
     @Override
+    @Transactional
     public void finalizeBookingsBefore(LocalDateTime maxEndTime) {
         entityManager
                 .createQuery(
@@ -313,6 +310,7 @@ public class BookingHibernateDao implements BookingDao {
     }
 
     @Override
+    @Transactional
     public void expireBookingsAfter(LocalDateTime minStartTime) {
         entityManager
                 .createQuery(
@@ -324,7 +322,7 @@ public class BookingHibernateDao implements BookingDao {
                         EnumSet.of(
                                 BookingStatusEnumOrm.CONFIRMED,
                                 BookingStatusEnumOrm.CANCELLED,
-                                BookingStatusEnumOrm.FINISHED))
+                                BookingStatusEnumOrm.FINISHED)) // TODO: cache
                 .executeUpdate();
     }
 

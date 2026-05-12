@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,6 +20,8 @@ import org.springframework.stereotype.Service;
 public class BookingImpl implements BookingInterface {
 
     private final BookingDao bookingDao;
+
+    private static final int MIN_ANTICIPATION_MINUTES = 120;
 
     @Override
     public PreBookingCreateResult createBooking(final PreBookingReq preBookingReq) {
@@ -59,6 +62,21 @@ public class BookingImpl implements BookingInterface {
         bookingDao.updateStatus(booking.getId(), status);
     }
 
+    private void finalizeBookings() {
+        bookingDao.finalizeBookingsBefore(currentDateTime());
+    }
+
+    private void expireDueBookings() {
+        LocalDateTime minStartTime = currentDateTime().plusMinutes(MIN_ANTICIPATION_MINUTES);
+        bookingDao.expireBookingsAfter(minStartTime);
+    }
+
+    @Scheduled(cron = "0 0,30 * * * *")
+    public void bookingResolutionRoutine() {
+        finalizeBookings();
+        expireDueBookings();
+    }
+
     public void acceptBooking(Booking booking) {
         updateStatus(booking, BookingStatus.ACCEPTED);
     }
@@ -88,5 +106,9 @@ public class BookingImpl implements BookingInterface {
         var now = currentDateTime();
         bookingDao.refusePayment(bookingId, reason, now);
         bookingDao.updateStatus(bookingId, BookingStatus.REFUSED);
+    }
+
+    public void cancelBooking(Booking booking) {
+        updateStatus(booking, BookingStatus.CANCELLED);
     }
 }

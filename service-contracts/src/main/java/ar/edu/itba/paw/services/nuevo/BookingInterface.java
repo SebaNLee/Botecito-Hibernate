@@ -39,4 +39,6 @@ public interface BookingInterface {
     void confirmPayment(Booking booking);
 
     void rejectPayment(int bookingId, String reason);
+
+    public void cancelBooking(Booking booking);
 }

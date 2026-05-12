@@ -23,6 +23,28 @@ public class BookingImpl implements BookingInterface {
 
     private static final int MIN_ANTICIPATION_MINUTES = 120;
 
+    private LocalDateTime currentDateTime() {
+        return LocalDateTime.now(ZoneOffset.UTC);
+    }
+
+    private LocalDateTime currentMinimumStart() {
+        return currentDateTime().plusMinutes(MIN_ANTICIPATION_MINUTES);
+    }
+
+    private boolean hasEnoughAnticipation(int bookingId) {
+        LocalDateTime minStartTime = currentMinimumStart();
+        return bookingDao.startsAfter(bookingId, minStartTime);
+    }
+
+    private void finalizeBookings() {
+        bookingDao.finalizeBookingsBefore(currentDateTime());
+    }
+
+    private void expireDueBookings() {
+        LocalDateTime minStartTime = currentMinimumStart();
+        bookingDao.expireBookingsAfter(minStartTime);
+    }
+
     @Override
     public PreBookingCreateResult createBooking(final PreBookingReq preBookingReq) {
         final int code = bookingDao.createBooking(preBookingReq);
@@ -53,28 +75,6 @@ public class BookingImpl implements BookingInterface {
         return bookingDao.searchIncomingBookings(search);
     }
 
-    private LocalDateTime currentDateTime() {
-        return LocalDateTime.now(ZoneOffset.UTC);
-    }
-
-    private LocalDateTime currentMinimumStart() {
-        return currentDateTime().plusMinutes(MIN_ANTICIPATION_MINUTES);
-    }
-
-    private boolean hasEnoughAnticipation(int bookingId) {
-        LocalDateTime minStartTime = currentMinimumStart();
-        return bookingDao.startsAfter(bookingId, minStartTime);
-    }
-
-    private void finalizeBookings() {
-        bookingDao.finalizeBookingsBefore(currentDateTime());
-    }
-
-    private void expireDueBookings() {
-        LocalDateTime minStartTime = currentMinimumStart();
-        bookingDao.expireBookingsAfter(minStartTime);
-    }
-
     @Scheduled(cron = "0 0,30 * * * *")
     public void bookingResolutionRoutine() {
         finalizeBookings();
@@ -83,16 +83,19 @@ public class BookingImpl implements BookingInterface {
 
     // TODO: change to return false on failure
 
+    @Override
     public void acceptBooking(int bookingId, int callerId) {
         if (!hasEnoughAnticipation(bookingId)) return;
         bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.ACCEPTED);
     }
 
+    @Override
     public void rejectBooking(int bookingId, int callerId) {
         if (!hasEnoughAnticipation(bookingId)) return;
         bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.REJECTED);
     }
 
+    @Override
     public void submitPayment(PaymentProof payment, int callerId) {
         if (payment == null || !hasEnoughAnticipation(payment.getBookingId())) return;
 
@@ -105,11 +108,13 @@ public class BookingImpl implements BookingInterface {
         bookingDao.uploadPayment(payment);
     }
 
+    @Override
     public void confirmPayment(int bookingId, int callerId) {
         if (!hasEnoughAnticipation(bookingId)) return;
         bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.CONFIRMED);
     }
 
+    @Override
     public void rejectPayment(int bookingId, int callerId, String reason) {
         if (!hasEnoughAnticipation(bookingId)) return;
         var now = currentDateTime();
@@ -117,6 +122,7 @@ public class BookingImpl implements BookingInterface {
         bookingDao.refusePayment(bookingId, reason, now);
     }
 
+    @Override
     public void cancelBooking(int bookingId, int callerId) {
         bookingDao.updateStatusOutgoing(bookingId, callerId, BookingStatus.CANCELLED);
     }

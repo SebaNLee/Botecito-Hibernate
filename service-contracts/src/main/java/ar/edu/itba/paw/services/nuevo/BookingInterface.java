@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.nuevo.Booking;
 import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
 import ar.edu.itba.paw.models.nuevo.IncomingSearch;
 import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
+import ar.edu.itba.paw.models.nuevo.PaymentProof;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import java.util.List;
 
@@ -23,4 +24,10 @@ public interface BookingInterface {
 
     /** Bookings on items where {@link IncomingSearch#getHostId()} is the host (received requests). */
     BookingSearchResult searchIncomingBookings(IncomingSearch search);
+
+    void acceptBooking(Booking booking);
+
+    void rejectBooking(Booking booking);
+
+    void submitPayment(PaymentProof payment);
 }

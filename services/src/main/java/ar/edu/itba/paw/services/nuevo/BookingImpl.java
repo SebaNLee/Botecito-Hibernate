@@ -4,7 +4,9 @@ import ar.edu.itba.paw.models.nuevo.Booking;
 import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
 import ar.edu.itba.paw.models.nuevo.IncomingSearch;
 import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
+import ar.edu.itba.paw.models.nuevo.PaymentProof;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
+import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
 import ar.edu.itba.paw.persistence.nuevo.BookingDao;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -44,5 +46,23 @@ public class BookingImpl implements BookingInterface {
     @Override
     public BookingSearchResult searchIncomingBookings(final IncomingSearch search) {
         return bookingDao.searchIncomingBookings(search);
+    }
+
+    private void updateStatus(Booking booking, BookingStatus status) {
+        if (status == null) return;
+        bookingDao.updateStatus(booking.getId(), status);
+    }
+
+    public void acceptBooking(Booking booking) {
+        updateStatus(booking, BookingStatus.ACCEPTED);
+    }
+
+    public void rejectBooking(Booking booking) {
+        updateStatus(booking, BookingStatus.REJECTED);
+    }
+
+    public void submitPayment(PaymentProof payment) {
+        bookingDao.uploadPayment(payment);
+        bookingDao.updateStatus(payment.getBookingId(), BookingStatus.PAID);
     }
 }

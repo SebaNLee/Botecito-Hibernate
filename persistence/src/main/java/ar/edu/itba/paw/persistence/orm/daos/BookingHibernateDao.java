@@ -240,7 +240,6 @@ public class BookingHibernateDao implements BookingDao {
                 .build();
 
         entityManager.merge(payment);
-        updateStatus(booking.getId(), BookingStatus.PAID);
     }
 
     private long countMatchingOutcoming(final int guestId, final BookingSearchModel criteria) {

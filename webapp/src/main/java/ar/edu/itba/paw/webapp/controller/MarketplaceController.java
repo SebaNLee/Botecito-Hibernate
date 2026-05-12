@@ -1,5 +1,7 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import static ar.edu.itba.paw.webapp.presentation.PresentationUtils.checkErrors;
+
 import ar.edu.itba.paw.webapp.form.nuevo.MarketplaceSearchForm;
 import ar.edu.itba.paw.webapp.presentation.MarketplacePresentation;
 import javax.servlet.http.HttpServletRequest;
@@ -36,9 +38,10 @@ public class MarketplaceController {
             final HttpServletRequest request,
             @Valid @ModelAttribute("marketplaceSearch") final MarketplaceSearchForm search,
             final BindingResult errors) {
-        if (errors.hasErrors()) {
-            return marketplacePresentation.marketplaceErrors(request, search, errors);
-        }
-        return marketplacePresentation.marketplaceGet(request, search);
+
+        return checkErrors(
+                errors,
+                () -> marketplacePresentation.marketplaceGet(request, search),
+                () -> marketplacePresentation.marketplaceErrors(request, search, errors));
     }
 }

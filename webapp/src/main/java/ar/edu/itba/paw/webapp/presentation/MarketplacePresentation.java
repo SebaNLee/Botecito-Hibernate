@@ -24,7 +24,8 @@ public class MarketplacePresentation {
 
     public ModelAndView marketplaceGet(final HttpServletRequest request, final MarketplaceSearchForm search) {
         final MarketplaceSearchModel model = toModel(search);
-        // Persistence joins MAX(version.id) per item; each ItemModel is the latest version only.
+        // Persistence joins MAX(version.id) per item; each ItemModel is the latest
+        // version only.
         final MarketplaceSearchResult result = marketplaceInterface.searchMarketplace(model);
         final List<ItemModel> items = result.getItems();
         final ModelAndView mav = new ModelAndView("marketplace", "marketplaceSearch", search);

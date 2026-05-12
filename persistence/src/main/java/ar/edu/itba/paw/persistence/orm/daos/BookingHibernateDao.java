@@ -1,5 +1,7 @@
 package ar.edu.itba.paw.persistence.orm.daos;
 
+import static java.util.Map.entry;
+
 import ar.edu.itba.paw.models.nuevo.Booking;
 import ar.edu.itba.paw.models.nuevo.BookingSearchModel;
 import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
@@ -21,6 +23,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
@@ -53,7 +56,7 @@ public class BookingHibernateDao implements BookingDao {
             + "WHERE v.id = :versionId";
 
     private static final String HQL_BOOKINGS_FOR_VERSION =
-            "SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest WHERE b.version.id = :versionId ORDER BY b.start ASC";
+            "SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof WHERE b.version.id = :versionId ORDER BY b.start ASC";
 
     private static final String INSERT_IF_SLOT_FREE =
             "INSERT INTO booking (version_id, guest_id, start, \"end\", status, msg, created_at, updated_at) "
@@ -79,6 +82,36 @@ public class BookingHibernateDao implements BookingDao {
     /** A booking cannot change status if it already has one of these */
     private static final EnumSet<BookingStatusEnumOrm> IMMUTABLE_STATES =
             EnumSet.of(BookingStatusEnumOrm.FINISHED, BookingStatusEnumOrm.CANCELLED);
+
+    private static final EnumSet<BookingStatusEnumOrm> NON_AUTO_CANCEL_STATES = EnumSet.of(
+            BookingStatusEnumOrm.CONFIRMED,
+            BookingStatusEnumOrm.CANCELLED,
+            BookingStatusEnumOrm.FINISHED,
+            BookingStatusEnumOrm.REJECTED);
+
+    private static final Map<BookingStatusEnumOrm, EnumSet<BookingStatusEnumOrm>> VALID_TRANSITIONS = Map.ofEntries(
+            entry(
+                    BookingStatusEnumOrm.PENDING,
+                    EnumSet.of(
+                            BookingStatusEnumOrm.ACCEPTED,
+                            BookingStatusEnumOrm.REJECTED,
+                            BookingStatusEnumOrm.CANCELLED)),
+            entry(BookingStatusEnumOrm.ACCEPTED, EnumSet.of(BookingStatusEnumOrm.PAID, BookingStatusEnumOrm.CANCELLED)),
+            entry(
+                    BookingStatusEnumOrm.PAID,
+                    EnumSet.of(
+                            BookingStatusEnumOrm.REFUSED,
+                            BookingStatusEnumOrm.CONFIRMED,
+                            BookingStatusEnumOrm.CANCELLED)),
+            entry(BookingStatusEnumOrm.REFUSED, EnumSet.of(BookingStatusEnumOrm.PAID, BookingStatusEnumOrm.CANCELLED)),
+            entry(
+                    BookingStatusEnumOrm.CONFIRMED,
+                    EnumSet.of(BookingStatusEnumOrm.FINISHED, BookingStatusEnumOrm.CANCELLED)));
+
+    private static boolean isValidTransition(BookingStatusEnumOrm source, BookingStatusEnumOrm target) {
+        var targets = VALID_TRANSITIONS.getOrDefault(source, EnumSet.noneOf(BookingStatusEnumOrm.class));
+        return targets.contains(target);
+    }
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -149,9 +182,10 @@ public class BookingHibernateDao implements BookingDao {
     public List<Booking> getBookingsForVersion(final int versionId) {
         final TypedQuery<BookingOrm> query = entityManager.createQuery(HQL_BOOKINGS_FOR_VERSION, BookingOrm.class);
         query.setParameter("versionId", versionId);
-        return query.getResultList().stream()
-                .map(BookingHibernateDao::toBooking)
-                .toList();
+        final List<BookingOrm> rows = query.getResultList();
+        final Map<Integer, PaymentProofOrm> proofByBookingId =
+                paymentProofsByBookingIds(rows.stream().map(BookingOrm::getId).toList());
+        return rows.stream().map(orm -> toBooking(orm, proofByBookingId)).toList();
     }
 
     @Override
@@ -166,8 +200,9 @@ public class BookingHibernateDao implements BookingDao {
         final int pageSize = resolvePageSize(criteria);
         final int offset = (resolvePage(criteria) - 1) * pageSize;
 
-        final StringBuilder hql =
-                new StringBuilder("SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest INNER JOIN FETCH b.version ");
+        final StringBuilder hql = new StringBuilder(
+                "SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof INNER JOIN FETCH b.version v "
+                        + "INNER JOIN FETCH v.item i LEFT JOIN FETCH i.host h ");
         appendOutcomingGuestFilters(hql, outcoming.getGuestId(), criteria, params);
         hql.append(orderByBookings(criteria));
 
@@ -179,8 +214,10 @@ public class BookingHibernateDao implements BookingDao {
         final List<BookingOrm> rows = query.getResultList();
         final long total = countMatchingOutcoming(outcoming.getGuestId(), criteria);
         if (!rows.isEmpty()) {
+            final Map<Integer, PaymentProofOrm> proofByBookingId = paymentProofsByBookingIds(
+                    rows.stream().map(BookingOrm::getId).toList());
             return new BookingSearchResult(
-                    rows.stream().map(BookingHibernateDao::toBooking).toList(), total);
+                    rows.stream().map(orm -> toBooking(orm, proofByBookingId)).toList(), total);
         }
         return new BookingSearchResult(List.of(), total);
     }
@@ -197,8 +234,9 @@ public class BookingHibernateDao implements BookingDao {
         final int pageSize = resolvePageSize(criteria);
         final int offset = (resolvePage(criteria) - 1) * pageSize;
 
-        final StringBuilder hql =
-                new StringBuilder("SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest INNER JOIN FETCH b.version ");
+        final StringBuilder hql = new StringBuilder(
+                "SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof INNER JOIN FETCH b.version v "
+                        + "INNER JOIN FETCH v.item i LEFT JOIN FETCH i.host h ");
         appendIncomingHostFilters(hql, incoming.getHostId(), criteria, params);
         hql.append(orderByBookings(criteria));
 
@@ -210,19 +248,12 @@ public class BookingHibernateDao implements BookingDao {
         final List<BookingOrm> rows = query.getResultList();
         final long total = countMatchingIncoming(incoming.getHostId(), criteria);
         if (!rows.isEmpty()) {
+            final Map<Integer, PaymentProofOrm> proofByBookingId = paymentProofsByBookingIds(
+                    rows.stream().map(BookingOrm::getId).toList());
             return new BookingSearchResult(
-                    rows.stream().map(BookingHibernateDao::toBooking).toList(), total);
+                    rows.stream().map(orm -> toBooking(orm, proofByBookingId)).toList(), total);
         }
         return new BookingSearchResult(List.of(), total);
-    }
-
-    private boolean isImmutable(int bookingId) {
-        return entityManager
-                .createQuery(
-                        "SELECT COUNT(b) > 0 FROM BookingOrm b WHERE b.id = :id AND b.status IN :status", Boolean.class)
-                .setParameter("id", bookingId)
-                .setParameter("status", IMMUTABLE_STATES)
-                .getSingleResult();
     }
 
     public boolean startsAfter(int bookingId, LocalDateTime requestedStart) {
@@ -235,38 +266,52 @@ public class BookingHibernateDao implements BookingDao {
                 .getSingleResult();
     }
 
-    // TODO: return false on failure here
+    private boolean canChangeStatus(int bookingId, BookingStatusEnumOrm target) {
+        var currentStatus = entityManager
+                .createQuery("SELECT b.status FROM BookingOrm b WHERE b.id = :id", BookingStatusEnumOrm.class)
+                .setParameter("id", bookingId)
+                .getSingleResult();
+        return isValidTransition(currentStatus, target);
+    }
 
-    @Override
-    @Transactional
-    public void updateStatusIncoming(int id, int callerId, BookingStatus status) {
-        if (status == null || isImmutable(id)) return;
-        entityManager
-                .createQuery(
-                        "UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id = :bookingId AND b.version.item.host.id = :caller")
-                .setParameter("newStatus", BookingStatusEnumOrm.valueOf(status.name()))
-                .setParameter("bookingId", id)
-                .setParameter("caller", callerId)
-                .executeUpdate();
+    private boolean canChangeStatus(int bookingId, BookingStatus target) {
+        return canChangeStatus(bookingId, BookingStatusEnumOrm.valueOf(target.name()));
     }
 
     @Override
     @Transactional
-    public void updateStatusOutgoing(int id, int callerId, BookingStatus status) {
-        if (status == null || isImmutable(id)) return;
-        entityManager
-                .createQuery(
-                        "UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id = :bookingId AND b.guest.id = :caller")
+    public boolean updateStatusIncoming(int id, int callerId, BookingStatus status) {
+        if (status == null || !canChangeStatus(id, status)) return false;
+        int rowsUpdated = entityManager
+                .createQuery("UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id IN ("
+                        + "SELECT b2.id FROM BookingOrm b2 INNER JOIN b2.version v INNER JOIN v.item i INNER JOIN i.host h "
+                        + "WHERE b2.id = :bookingId AND h.id = :caller)")
                 .setParameter("newStatus", BookingStatusEnumOrm.valueOf(status.name()))
                 .setParameter("bookingId", id)
                 .setParameter("caller", callerId)
                 .executeUpdate();
+        return rowsUpdated > 0;
     }
 
     @Override
     @Transactional
-    public void uploadPayment(PaymentProof p) {
-        if (p == null) return;
+    public boolean updateStatusOutgoing(int id, int callerId, BookingStatus status) {
+        if (status == null || !canChangeStatus(id, status)) return false;
+        int rowsUpdated = entityManager
+                .createQuery(
+                        "UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id IN ("
+                                + "SELECT b2.id FROM BookingOrm b2 INNER JOIN b2.guest g WHERE b2.id = :bookingId AND g.id = :caller)")
+                .setParameter("newStatus", BookingStatusEnumOrm.valueOf(status.name()))
+                .setParameter("bookingId", id)
+                .setParameter("caller", callerId)
+                .executeUpdate();
+        return rowsUpdated > 0;
+    }
+
+    @Override
+    @Transactional
+    public boolean uploadPayment(PaymentProof p) {
+        if (p == null) return false;
 
         final BookingOrm booking = entityManager.getReference(BookingOrm.class, p.getBookingId());
 
@@ -283,18 +328,52 @@ public class BookingHibernateDao implements BookingDao {
                 .build();
 
         entityManager.merge(payment);
+        return true;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<PaymentProof> findPaymentProofForParticipant(final int bookingId, final int userId) {
+        final TypedQuery<PaymentProofOrm> query = entityManager.createQuery(
+                "SELECT p FROM PaymentProofOrm p INNER JOIN p.booking b LEFT JOIN b.guest g "
+                        + "INNER JOIN b.version v INNER JOIN v.item i LEFT JOIN i.host h "
+                        + "WHERE b.id = :bookingId AND (g.id = :userId OR h.id = :userId)",
+                PaymentProofOrm.class);
+        query.setParameter("bookingId", bookingId);
+        query.setParameter("userId", userId);
+        final List<PaymentProofOrm> rows = query.getResultList();
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(toPaymentProof(rows.get(0)));
+    }
+
+    private static PaymentProof toPaymentProof(final PaymentProofOrm orm) {
+        return PaymentProof.builder()
+                .id(orm.getId() != null ? orm.getId() : 0)
+                .bookingId(orm.getBooking() != null ? orm.getBooking().getId() : 0)
+                .fileName(orm.getFilename())
+                .contentType(orm.getContentType())
+                .fileData(orm.getFileData())
+                .createdAt(orm.getCreatedAt())
+                .refuseMsg(orm.getRefuseMsg())
+                .refusedAt(orm.getRefusedAt())
+                .replyMsg(orm.getReplyMsg())
+                .repliedAt(orm.getRepliedAt())
+                .build();
     }
 
     @Override
     @Transactional
-    public void refusePayment(int bookingId, String message, LocalDateTime refuseTime) {
-        entityManager
-                .createQuery(
-                        "UPDATE PaymentProofOrm p SET p.refuseMsg = :message,  p.refusedAt = :time WHERE p.booking.id = :id")
+    public boolean refusePayment(int bookingId, String message, LocalDateTime refuseTime) {
+        final int rowsUpdated = entityManager
+                .createNativeQuery(
+                        "UPDATE payment_proof SET refuse_msg = :message, refused_at = :time WHERE booking_id = :id")
                 .setParameter("message", message)
                 .setParameter("time", refuseTime)
                 .setParameter("id", bookingId)
                 .executeUpdate();
+        return rowsUpdated > 0;
     }
 
     @Override
@@ -314,15 +393,10 @@ public class BookingHibernateDao implements BookingDao {
     public void expireBookingsAfter(LocalDateTime minStartTime) {
         entityManager
                 .createQuery(
-                        "UPDATE BookingOrm b SET b.status = :status WHERE b.start > :startTime AND b.status NOT IN :completeStates")
+                        "UPDATE BookingOrm b SET b.status = :status WHERE b.start > :startTime AND b.status NOT IN :excluded")
                 .setParameter("status", BookingStatus.CANCELLED)
                 .setParameter("startTime", minStartTime)
-                .setParameter(
-                        "completeStates",
-                        EnumSet.of(
-                                BookingStatusEnumOrm.CONFIRMED,
-                                BookingStatusEnumOrm.CANCELLED,
-                                BookingStatusEnumOrm.FINISHED)) // TODO: cache
+                .setParameter("excluded", NON_AUTO_CANCEL_STATES)
                 .executeUpdate();
     }
 
@@ -444,19 +518,64 @@ public class BookingHibernateDao implements BookingDao {
         return value != null && !value.isBlank();
     }
 
-    private static Booking toBooking(final BookingOrm orm) {
+    /**
+     * Loads proofs by booking id. Used after listing queries because {@code BookingOrm#paymentProof} is the
+     * inverse side of a one-to-one and {@code LEFT JOIN FETCH b.paymentProof} does not always populate it.
+     */
+    private Map<Integer, PaymentProofOrm> paymentProofsByBookingIds(final List<Integer> bookingIds) {
+        if (bookingIds == null || bookingIds.isEmpty()) {
+            return Map.of();
+        }
+        final List<PaymentProofOrm> proofs = entityManager
+                .createQuery("SELECT p FROM PaymentProofOrm p WHERE p.booking.id IN :bookingIds", PaymentProofOrm.class)
+                .setParameter("bookingIds", bookingIds)
+                .getResultList();
+        final Map<Integer, PaymentProofOrm> byId = new HashMap<>();
+        for (final PaymentProofOrm p : proofs) {
+            byId.put(p.getBooking().getId(), p);
+        }
+        return byId;
+    }
+
+    private static Booking toBooking(final BookingOrm orm, final Map<Integer, PaymentProofOrm> proofByBookingId) {
         final Booking b = new Booking();
         b.setId(orm.getId());
-        b.setVersionId(orm.getVersion().getId());
-        b.setVersionTitle(orm.getVersion().getTitle());
+        final var version = orm.getVersion();
+        b.setVersionId(version.getId());
+        b.setVersionTitle(version.getTitle());
+        b.setTimezone(version.getTimezone());
         b.setGuestId(orm.getGuest() != null ? orm.getGuest().getId() : 0);
+        final var item = version.getItem();
+        final var host = item.getHost();
+        if (host != null) {
+            b.setHostName(formatUserDisplayName(host.getFirstName(), host.getLastName()));
+            b.setAlias(host.getAlias());
+        }
+
         b.setStart(orm.getStart());
         b.setEnd(orm.getEnd());
         b.setStatus(BookingStatus.valueOf(orm.getStatus().name()));
         b.setMsg(orm.getMsg());
         b.setCreatedAt(orm.getCreatedAt());
         b.setUpdatedAt(orm.getUpdatedAt());
+        PaymentProofOrm proof = orm.getPaymentProof();
+        if (proof == null && proofByBookingId != null) {
+            proof = proofByBookingId.get(orm.getId());
+        }
+        if (proof != null) {
+            b.setProofRefuseMsg(proof.getRefuseMsg());
+            b.setProofRefusedAt(proof.getRefusedAt());
+            b.setProofReplyMsg(proof.getReplyMsg());
+            b.setProofRepliedAt(proof.getRepliedAt());
+        }
         return b;
+    }
+
+    private static String formatUserDisplayName(final String firstName, final String lastName) {
+        final String first = firstName != null ? firstName.trim() : "";
+        final String last = lastName != null ? lastName.trim() : "";
+        final String combined = (first + " " + last).trim();
+        return combined.isEmpty() ? null : combined;
     }
 
     private boolean guestExists(final int guestId) {

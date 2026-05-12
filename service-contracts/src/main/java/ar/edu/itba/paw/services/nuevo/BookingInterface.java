@@ -7,6 +7,7 @@ import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
 import ar.edu.itba.paw.models.nuevo.PaymentProof;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import java.util.List;
+import java.util.Optional;
 
 public interface BookingInterface {
 
@@ -35,6 +36,9 @@ public interface BookingInterface {
      * The rest is always uploaded to persistence.
      */
     void submitPayment(PaymentProof payment, int callerId);
+
+    /** Payment proof bytes/metadata if {@code callerId} is the booking guest or listing host. */
+    Optional<PaymentProof> getPaymentProofForParticipant(int bookingId, int callerId);
 
     void confirmPayment(int bookingId, int callerId);
 

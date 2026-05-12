@@ -7,10 +7,13 @@ import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
 import ar.edu.itba.paw.models.nuevo.PaymentProof;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
+import ar.edu.itba.paw.models.nuevo.exceptions.IllegalBookingOperationException;
+import ar.edu.itba.paw.models.nuevo.exceptions.NoAnticipationException;
 import ar.edu.itba.paw.persistence.nuevo.BookingDao;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -83,25 +86,29 @@ public class BookingImpl implements BookingInterface {
         expireDueBookings();
     }
 
-    // TODO: change to return false on failure
-
     @Override
     public void acceptBooking(int bookingId, int callerId) {
-        if (!hasEnoughAnticipation(bookingId)) return;
-        bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.ACCEPTED);
+        if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
+        boolean success = bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.ACCEPTED);
+        if (!success) throw new IllegalBookingOperationException();
     }
 
     @Override
     public void rejectBooking(int bookingId, int callerId) {
-        if (!hasEnoughAnticipation(bookingId)) return;
-        bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.REJECTED);
+        if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
+        boolean success = bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.REJECTED);
+        if (!success) throw new IllegalBookingOperationException();
     }
 
     @Override
     public void submitPayment(PaymentProof payment, int callerId) {
-        if (payment == null || !hasEnoughAnticipation(payment.getBookingId())) return;
+        if (payment == null) return;
+        int bookingId = payment.getBookingId();
 
-        bookingDao.updateStatusOutgoing(payment.getBookingId(), callerId, BookingStatus.PAID);
+        if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
+
+        boolean success = bookingDao.updateStatusOutgoing(bookingId, callerId, BookingStatus.PAID);
+        if (!success) throw new IllegalBookingOperationException();
 
         var now = currentDateTime();
         payment.setCreatedAt(now);
@@ -111,21 +118,31 @@ public class BookingImpl implements BookingInterface {
     }
 
     @Override
+    public Optional<PaymentProof> getPaymentProofForParticipant(final int bookingId, final int callerId) {
+        return bookingDao.findPaymentProofForParticipant(bookingId, callerId);
+    }
+
+    @Override
     public void confirmPayment(int bookingId, int callerId) {
-        if (!hasEnoughAnticipation(bookingId)) return;
-        bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.CONFIRMED);
+        if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
+        boolean success = bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.CONFIRMED);
+        if (!success) throw new IllegalBookingOperationException();
     }
 
     @Override
     public void rejectPayment(int bookingId, int callerId, String reason) {
-        if (!hasEnoughAnticipation(bookingId)) return;
+        if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
         var now = currentDateTime();
-        bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.REFUSED);
+        final boolean statusUpdated = bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.REFUSED);
+        if (!statusUpdated) {
+            throw new IllegalBookingOperationException();
+        }
         bookingDao.refusePayment(bookingId, reason, now);
     }
 
     @Override
     public void cancelBooking(int bookingId, int callerId) {
-        bookingDao.updateStatusOutgoing(bookingId, callerId, BookingStatus.CANCELLED);
+        boolean success = bookingDao.updateStatusOutgoing(bookingId, callerId, BookingStatus.CANCELLED);
+        if (!success) throw new IllegalBookingOperationException();
     }
 }

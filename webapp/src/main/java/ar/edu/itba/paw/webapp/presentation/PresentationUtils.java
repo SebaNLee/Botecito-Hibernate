@@ -3,6 +3,9 @@ package ar.edu.itba.paw.webapp.presentation;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.function.Supplier;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.servlet.ModelAndView;
 
 public final class PresentationUtils {
 
@@ -24,5 +27,13 @@ public final class PresentationUtils {
             return null;
         }
         return LocalTime.parse(value.trim(), REQUEST_TIME_FORMATTER);
+    }
+
+    public static ModelAndView checkErrors(
+            final BindingResult errors, final Supplier<ModelAndView> success, final Supplier<ModelAndView> failure) {
+        if (errors.hasErrors()) {
+            return failure.get();
+        }
+        return success.get();
     }
 }

@@ -22,6 +22,23 @@
 <c:set var="pageSize" value="${bookingSearch.pageSize != null ? bookingSearch.pageSize : 12}" />
 <c:set var="pageHiddenId" value="requests-${sidebarActive}-page-hidden" />
 <c:set var="isIncoming" value="${listMode == 'incoming'}" />
+<c:set var="filterFormId" value="requests-${sidebarActive}-filters-form" />
+<spring:message code="requests.action.accept" var="actionAcceptLabel" />
+<spring:message code="requests.action.reject" var="actionRejectLabel" />
+<spring:message code="requests.action.cancel" var="actionCancelLabel" />
+<spring:message code="requests.action.submitPayment" var="actionSubmitPaymentLabel" />
+<spring:message code="requests.action.confirmPayment" var="actionConfirmPaymentLabel" />
+<spring:message code="requests.action.rejectPayment" var="actionRejectPaymentLabel" />
+<spring:message code="requests.detail.timesStoredUtc" var="timesUtcCaption" />
+<spring:message code="requests.detail.listingTimezone" var="listingTimezoneLabel" />
+<spring:message code="requests.detail.host" var="hostLabel" />
+<spring:message code="requests.detail.alias" var="aliasLabel" />
+<spring:message code="requests.detail.created" var="createdLabel" />
+<spring:message code="requests.detail.updated" var="updatedLabel" />
+<spring:message code="payment.guestReply.input.label" var="guestReplyLabel" />
+<spring:message code="payment.reply.placeholder" var="guestReplyPlaceholder" />
+<spring:message code="payment.refusal.reason.label" var="rejectPaymentReasonLabel" />
+<spring:message code="profile.sentBookings.paymentProof.view" var="viewPaymentProofLabel" />
 
 <c:url var="clearFiltersUrl" value="${formAction}">
   <c:if test="${sort != 'newest'}">
@@ -52,11 +69,8 @@
 </c:if>
 
 <paw:toastNotifier />
-<form
-    id="requests-${sidebarActive}-filters-form"
-    action="${formAction}"
-    method="get"
-    class="grid grid-cols-1 gap-8 md:grid-cols-[18rem_minmax(0,1fr)] lg:grid-cols-[20rem_minmax(0,1fr)] items-start w-full">
+<div class="grid grid-cols-1 gap-8 md:grid-cols-[18rem_minmax(0,1fr)] lg:grid-cols-[20rem_minmax(0,1fr)] items-start w-full">
+  <form id="${filterFormId}" action="${formAction}" method="get" class="contents">
   <div class="relative z-40 w-full min-w-0 space-y-6">
     <paw:requestsSidebar active="${sidebarActive}" />
     <input type="hidden" name="page" value="1" id="${pageHiddenId}" />
@@ -99,6 +113,7 @@
       </jsp:body>
     </paw:sectionCard>
   </div>
+  </form>
 
   <section class="relative z-0 min-w-0 space-y-6">
     <div id="booking-requests-list" class="scroll-mt-24 space-y-8">
@@ -109,6 +124,7 @@
             <input
                 type="search"
                 name="searchQuery"
+                form="${filterFormId}"
                 value="${fn:escapeXml(bookingSearch.searchQuery)}"
                 placeholder="${searchLabel}"
                 aria-label="${searchLabel}"
@@ -121,6 +137,7 @@
           <select
               id="requests-${sidebarActive}-sort"
               name="sortBy"
+              form="${filterFormId}"
               class="select select-sm w-32 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none sm:w-36"
               onchange="document.getElementById('${pageHiddenId}').value='1'; this.form.requestSubmit();">
             <option value="newest" ${empty bookingSearch.sortBy || bookingSearch.sortBy == 'newest' ? 'selected="selected"' : ''}>
@@ -140,6 +157,7 @@
           <select
               id="requests-${sidebarActive}-page-size"
               name="pageSize"
+              form="${filterFormId}"
               class="select select-sm w-20 font-bold text-primary"
               onchange="document.getElementById('${pageHiddenId}').value='1'; this.form.requestSubmit();">
             <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
@@ -186,6 +204,7 @@
               <c:if test="${b.status.name() == 'ACCEPTED' || b.status.name() == 'CONFIRMED'}"><c:set var="badgeClass" value="badge-info" /></c:if>
               <c:if test="${b.status.name() == 'PAID'}"><c:set var="badgeClass" value="badge-success" /></c:if>
               <c:if test="${b.status.name() == 'REJECTED' || b.status.name() == 'CANCELLED' || b.status.name() == 'REFUSED'}"><c:set var="badgeClass" value="badge-error" /></c:if>
+              <c:if test="${b.status.name() == 'FINISHED'}"><c:set var="badgeClass" value="badge-ghost" /></c:if>
               <c:choose>
                 <c:when test="${isIncoming}">
                   <spring:message code="requests.incoming.detail.title" arguments="${b.id}" var="detailTitleVar" />
@@ -206,7 +225,10 @@
                     </p>
                     <span class="badge ${badgeClass} badge-xs shrink-0 font-bold"><spring:message code="booking.status.${b.status}" /></span>
                   </div>
-                  <p class="m-0 truncate text-[10px] text-on-surface-variant sm:text-xs" title="UTC"><c:out value="${b.start}" /> → <c:out value="${b.end}" /></p>
+                  <p class="m-0 truncate text-[10px] text-on-surface-variant sm:text-xs"><c:out value="${b.start}" /> → <c:out value="${b.end}" /></p>
+                  <c:if test="${not isIncoming && not empty b.hostName}">
+                    <p class="m-0 truncate text-[10px] text-on-surface-variant sm:text-xs"><c:out value="${b.hostName}" /></p>
+                  </c:if>
                   <p class="m-0 mt-auto truncate text-[11px] font-semibold text-on-surface-variant sm:text-xs">#<c:out value="${b.id}" /></p>
                 </div>
               </button>
@@ -220,7 +242,10 @@
                   </div>
                   <div class="rounded-lg bg-base-100 p-3 space-y-1">
                     <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.bookings.schedule.label" /></p>
-                    <p class="m-0 text-xs font-mono text-on-surface-variant">UTC</p>
+                    <p class="m-0 text-xs font-mono text-on-surface-variant"><c:out value="${timesUtcCaption}" /></p>
+                    <c:if test="${not empty b.timezone}">
+                      <p class="m-0 text-[10px] text-on-surface-variant"><c:out value="${listingTimezoneLabel}" />: <span class="font-mono"><c:out value="${b.timezone}" /></span></p>
+                    </c:if>
                     <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${b.start}" /></p>
                     <p class="m-0 text-xs text-on-surface-variant">→ <c:out value="${b.end}" /></p>
                   </div>
@@ -234,11 +259,11 @@
                       </div>
                       <div class="rounded-lg bg-base-100 p-3 space-y-1">
                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="requests.incoming.table.guest" /></p>
-                        <p class="m-0 font-mono text-sm font-bold text-on-surface">${b.guestId}</p>
+                        <p class="m-0 font-mono text-sm font-bold text-on-surface"><c:out value="${b.guestId}" /></p>
                       </div>
                       <div class="rounded-lg bg-base-100 p-3 space-y-1">
                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="requests.outgoing.table.version" /></p>
-                        <p class="m-0 font-mono text-sm font-bold text-on-surface">${b.versionId}</p>
+                        <p class="m-0 font-mono text-sm font-bold text-on-surface"><c:out value="${b.versionId}" /></p>
                       </div>
                     </c:when>
                     <c:otherwise>
@@ -248,16 +273,127 @@
                       </div>
                       <div class="rounded-lg bg-base-100 p-3 space-y-1">
                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="requests.outgoing.table.version" /></p>
-                        <p class="m-0 font-mono text-sm font-bold text-on-surface">${b.versionId}</p>
+                        <p class="m-0 font-mono text-sm font-bold text-on-surface"><c:out value="${b.versionId}" /></p>
                       </div>
+                      <c:if test="${not empty b.hostName || not empty b.alias}">
+                        <div class="rounded-lg bg-base-100 p-3 space-y-2">
+                          <c:if test="${not empty b.hostName}">
+                            <div>
+                              <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${hostLabel}" /></p>
+                              <p class="m-0 text-sm font-bold text-on-surface break-words"><c:out value="${b.hostName}" /></p>
+                            </div>
+                          </c:if>
+                          <c:if test="${not empty b.alias}">
+                            <div>
+                              <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${aliasLabel}" /></p>
+                              <p class="m-0 text-sm font-mono text-on-surface-variant break-all"><c:out value="${b.alias}" /></p>
+                            </div>
+                          </c:if>
+                        </div>
+                      </c:if>
                     </c:otherwise>
                   </c:choose>
+                  <c:if test="${not empty b.timezone}">
+                    <div class="rounded-lg bg-base-100 p-3 space-y-1">
+                      <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${listingTimezoneLabel}" /></p>
+                      <p class="m-0 font-mono text-sm font-bold text-on-surface"><c:out value="${b.timezone}" /></p>
+                    </div>
+                  </c:if>
+                  <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div class="rounded-lg bg-base-100 p-3 space-y-1">
+                      <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${createdLabel}" /></p>
+                      <p class="m-0 text-xs font-mono text-on-surface-variant"><c:out value="${b.createdAt}" /></p>
+                    </div>
+                    <div class="rounded-lg bg-base-100 p-3 space-y-1">
+                      <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${updatedLabel}" /></p>
+                      <p class="m-0 text-xs font-mono text-on-surface-variant"><c:out value="${b.updatedAt}" /></p>
+                    </div>
+                  </div>
                   <c:if test="${not empty b.msg}">
                     <div class="rounded-lg bg-base-100 p-3 border-l-4 border-primary">
                       <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="requests.outgoing.table.message" /></p>
                       <p class="m-0 mt-1 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${b.msg}" /></p>
                     </div>
                   </c:if>
+                  <c:if test="${not empty b.proofRefuseMsg}">
+                    <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error space-y-1">
+                      <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error">
+                        <c:choose>
+                          <c:when test="${isIncoming}"><spring:message code="requests.payment.refusalYouSent" /></c:when>
+                          <c:otherwise><spring:message code="payment.refusal.reason.label" /></c:otherwise>
+                        </c:choose>
+                      </p>
+                      <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${b.proofRefuseMsg}" /></p>
+                      <c:if test="${not empty b.proofRefusedAt}">
+                        <p class="m-0 text-xs font-mono text-on-surface-variant"><c:out value="${b.proofRefusedAt}" /></p>
+                      </c:if>
+                    </div>
+                  </c:if>
+                  <c:if test="${not empty b.proofReplyMsg}">
+                    <div class="rounded-lg bg-base-100 p-3 border-l-4 border-primary space-y-1">
+                      <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="payment.guestReply.display.label" /></p>
+                      <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${b.proofReplyMsg}" /></p>
+                      <c:if test="${not empty b.proofRepliedAt}">
+                        <p class="m-0 text-xs font-mono text-on-surface-variant"><c:out value="${b.proofRepliedAt}" /></p>
+                      </c:if>
+                    </div>
+                  </c:if>
+                  <c:url var="incomingAcceptUrl" value="/requests/incoming/${b.id}/accept" />
+                  <c:url var="incomingRejectUrl" value="/requests/incoming/${b.id}/reject" />
+                  <c:url var="incomingConfirmPaymentUrl" value="/requests/incoming/${b.id}/confirm-payment" />
+                  <c:url var="incomingRejectPaymentUrl" value="/requests/incoming/${b.id}/reject-payment" />
+                  <c:url var="outgoingCancelUrl" value="/requests/outgoing/${b.id}/cancel" />
+                  <c:url var="outgoingPaymentUrl" value="/requests/outgoing/${b.id}/payment" />
+                  <c:url var="nuevoPaymentProofUrl" value="/requests/bookings/${b.id}/payment-proof" />
+                  <div class="space-y-4 border-t border-outline-variant/20 pt-4 mt-2">
+                    <c:if test="${isIncoming && b.status.name() == 'PENDING'}">
+                      <div class="flex flex-wrap gap-2">
+                        <form action="${incomingAcceptUrl}" method="post" class="inline">
+                          <paw:button type="submit" color="primary" size="sm" text="${actionAcceptLabel}" submitLoading="true" />
+                        </form>
+                        <form action="${incomingRejectUrl}" method="post" class="inline">
+                          <paw:button type="submit" color="danger" variant="outline" size="sm" text="${actionRejectLabel}" submitLoading="true" />
+                        </form>
+                      </div>
+                    </c:if>
+                    <c:if test="${isIncoming && b.status.name() == 'PAID'}">
+                      <form action="${incomingConfirmPaymentUrl}" method="post" class="mb-2">
+                        <paw:button type="submit" color="primary" size="sm" text="${actionConfirmPaymentLabel}" submitLoading="true" />
+                      </form>
+                      <form action="${incomingRejectPaymentUrl}" method="post" class="space-y-2 rounded-lg bg-base-100 p-3">
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-outline" for="reject-pay-reason-${b.id}"><c:out value="${rejectPaymentReasonLabel}" /></label>
+                        <textarea id="reject-pay-reason-${b.id}" name="reason" rows="2" maxlength="255" required="required" class="textarea textarea-bordered textarea-sm w-full"></textarea>
+                        <paw:button type="submit" color="danger" variant="outline" size="sm" text="${actionRejectPaymentLabel}" submitLoading="true" />
+                      </form>
+                    </c:if>
+                    <c:if test="${not isIncoming && (b.status.name() == 'PENDING' || b.status.name() == 'ACCEPTED' || b.status.name() == 'PAID' || b.status.name() == 'CONFIRMED' || b.status.name() == 'REFUSED')}">
+                      <form action="${outgoingCancelUrl}" method="post">
+                        <paw:button type="submit" color="danger" variant="outline" size="sm" text="${actionCancelLabel}" submitLoading="true" />
+                      </form>
+                    </c:if>
+                    <c:if test="${not isIncoming && (b.status.name() == 'ACCEPTED' || b.status.name() == 'REFUSED')}">
+                      <form action="${outgoingPaymentUrl}" method="post" enctype="multipart/form-data" class="space-y-2" data-submit-loading-form="true">
+                        <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="requests.payment.uploadLabel" /></p>
+                        <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" required="required" class="file-input file-input-bordered file-input-sm w-full" />
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-outline" for="guest-reply-${b.id}"><c:out value="${guestReplyLabel}" /></label>
+                        <textarea id="guest-reply-${b.id}" name="guestReply" rows="2" maxlength="500" class="textarea textarea-bordered textarea-sm w-full" placeholder="${fn:escapeXml(guestReplyPlaceholder)}"></textarea>
+                        <paw:button type="submit" color="primary" size="sm" text="${actionSubmitPaymentLabel}" submitLoading="true" />
+                      </form>
+                    </c:if>
+                    <c:if test="${(not isIncoming && (b.status.name() == 'PAID' || b.status.name() == 'CONFIRMED' || b.status.name() == 'REFUSED' || b.status.name() == 'FINISHED')) || (isIncoming && (b.status.name() == 'PAID' || b.status.name() == 'CONFIRMED' || b.status.name() == 'REFUSED' || b.status.name() == 'FINISHED'))}">
+                      <details class="group rounded-lg bg-base-100 p-3 border border-outline-variant/20">
+                        <summary class="flex cursor-pointer list-none items-center gap-2 text-sm font-bold text-primary marker:content-none [&::-webkit-details-marker]:hidden">
+                          <span class="material-symbols-outlined shrink-0 text-primary transition-transform duration-200 group-open:rotate-180" aria-hidden="true">expand_more</span>
+                          <span><c:out value="${viewPaymentProofLabel}" /></span>
+                        </summary>
+                        <div class="mt-3 overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
+                          <object data="${nuevoPaymentProofUrl}" type="application/pdf" class="block h-80 w-full bg-base-100">
+                            <img src="${nuevoPaymentProofUrl}" alt="<spring:message code='profile.sentBookings.paymentProof.view' />" class="max-h-80 w-full object-contain" loading="lazy" />
+                          </object>
+                        </div>
+                      </details>
+                    </c:if>
+                  </div>
                 </jsp:body>
               </paw:detailsModal>
             </c:forEach>
@@ -309,4 +445,4 @@
       </c:if>
     </div>
   </section>
-</form>
+</div>

@@ -9,6 +9,7 @@ import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface BookingDao {
 
@@ -48,13 +49,18 @@ public interface BookingDao {
     /** Bookings on listings owned by the host (incoming requests). */
     BookingSearchResult searchIncomingBookings(IncomingSearch search);
 
-    void updateStatusIncoming(int id, int callerId, BookingStatus status);
+    boolean updateStatusIncoming(int id, int callerId, BookingStatus status);
 
-    void updateStatusOutgoing(int id, int callerId, BookingStatus status);
+    boolean updateStatusOutgoing(int id, int callerId, BookingStatus status);
 
-    void uploadPayment(PaymentProof paymentProof);
+    boolean uploadPayment(PaymentProof paymentProof);
 
-    void refusePayment(int bookingId, String message, LocalDateTime refuseTime);
+    /**
+     * Latest payment proof for the booking when {@code userId} is the guest or the item host.
+     */
+    Optional<PaymentProof> findPaymentProofForParticipant(int bookingId, int userId);
+
+    boolean refusePayment(int bookingId, String message, LocalDateTime refuseTime);
 
     /** Set all bookings that ended before {@code maxEndTime} (UTC) as FINISHED */
     void finalizeBookingsBefore(LocalDateTime maxEndTime);

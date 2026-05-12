@@ -84,6 +84,10 @@ public class BookingHibernateDao implements BookingDao {
     private static final EnumSet<BookingStatus> GUEST_STATUS_CHANGES =
             EnumSet.of(BookingStatus.PAID, BookingStatus.CANCELLED);
 
+    /** A booking cannot change status if it already has one of these */
+    private static final EnumSet<BookingStatusEnumOrm> IMMUTABLE_STATES =
+            EnumSet.of(BookingStatusEnumOrm.FINISHED, BookingStatusEnumOrm.CANCELLED);
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -220,11 +224,19 @@ public class BookingHibernateDao implements BookingDao {
         return new BookingSearchResult(List.of(), total);
     }
 
+    private boolean isImmutable(int bookingId) {
+        return entityManager
+                .createQuery(
+                        "SELECT COUNT(b) > 0 FROM BookingOrm b WHERE b.id = :id AND b.status IN :status", Boolean.class)
+                .setParameter("id", bookingId)
+                .setParameter("status", IMMUTABLE_STATES)
+                .getSingleResult();
+    }
+
     // TODO: throw custom exception when these fail
     @Override
     public void updateStatusIncoming(int id, int callerId, BookingStatus status) {
-        if (status == null) return;
-        if (!HOST_STATUS_CHANGES.contains(status)) return;
+        if (status == null || !HOST_STATUS_CHANGES.contains(status) || isImmutable(id)) return;
         entityManager
                 .createQuery(
                         "UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id = :bookingId AND b.version.item.host.id = :caller")
@@ -236,8 +248,7 @@ public class BookingHibernateDao implements BookingDao {
 
     @Override
     public void updateStatusOutgoing(int id, int callerId, BookingStatus status) {
-        if (status == null) return;
-        if (!GUEST_STATUS_CHANGES.contains(status)) return;
+        if (status == null || !GUEST_STATUS_CHANGES.contains(status) || isImmutable(id)) return;
         entityManager
                 .createQuery(
                         "UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id = :bookingId AND b.guest.id = :caller")
@@ -282,18 +293,27 @@ public class BookingHibernateDao implements BookingDao {
     @Override
     public void finalizeBookingsBefore(LocalDateTime maxEndTime) {
         entityManager
-                .createQuery("UPDATE BookingOrm b SET b.status = :status WHERE b.end < :endTime")
-                .setParameter("status", BookingStatus.FINISHED)
+                .createQuery(
+                        "UPDATE BookingOrm b SET b.status = :status WHERE b.end < :endTime AND b.status = :confirmed")
+                .setParameter("status", BookingStatusEnumOrm.FINISHED)
                 .setParameter("endTime", maxEndTime)
+                .setParameter("confirmed", BookingStatusEnumOrm.CONFIRMED)
                 .executeUpdate();
     }
 
     @Override
     public void expireBookingsAfter(LocalDateTime minStartTime) {
         entityManager
-                .createQuery("UPDATE BookingOrm b SET b.status = :status WHERE b.start > :startTime")
+                .createQuery(
+                        "UPDATE BookingOrm b SET b.status = :status WHERE b.start > :startTime AND b.status NOT IN :completeStates")
                 .setParameter("status", BookingStatus.CANCELLED)
                 .setParameter("startTime", minStartTime)
+                .setParameter(
+                        "completeStates",
+                        EnumSet.of(
+                                BookingStatusEnumOrm.CONFIRMED,
+                                BookingStatusEnumOrm.CANCELLED,
+                                BookingStatusEnumOrm.FINISHED))
                 .executeUpdate();
     }
 

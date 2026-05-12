@@ -229,11 +229,10 @@ public class PublishPresentation {
             if (weekday == null || !form.isDayEnabled(weekday)) {
                 continue;
             }
-            try {
-                final LocalTime start = LocalTime.parse(parts[1]);
-                final LocalTime end = LocalTime.parse(parts[2]);
+            final LocalTime start = parseLocalTimeOrNull(parts[1]);
+            final LocalTime end = parseLocalTimeOrNull(parts[2]);
+            if (start != null && end != null) {
                 form.getAvailabilityFor(weekday).add(TimeRange.of(start, end));
-            } catch (final DateTimeParseException | IllegalArgumentException ignored) {
             }
         }
     }
@@ -282,6 +281,17 @@ public class PublishPresentation {
         }
     }
 
+    private static LocalTime parseLocalTimeOrNull(final String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(raw.trim());
+        } catch (final DateTimeParseException e) {
+            return null;
+        }
+    }
+
     private static DayOfWeek parseWeekday(final String rawWeekday) {
         if (!StringUtils.hasText(rawWeekday)) {
             return null;
@@ -324,16 +334,15 @@ public class PublishPresentation {
         if (!StringUtils.hasText(locationOptionId)) {
             return "";
         }
-        try {
-            final int selectedId = Integer.parseInt(locationOptionId.trim());
-            return selectorsInterface.getLocationOptions().stream()
-                    .filter(option -> option.getId() != null && option.getId() == selectedId)
-                    .map(option -> option.getName() == null ? "" : option.getName())
-                    .findFirst()
-                    .orElse("");
-        } catch (final NumberFormatException exception) {
+        final Integer selectedId = parseIntOrNull(locationOptionId);
+        if (selectedId == null) {
             return "";
         }
+        return selectorsInterface.getLocationOptions().stream()
+                .filter(option -> selectedId.equals(option.getId()))
+                .map(option -> option.getName() == null ? "" : option.getName())
+                .findFirst()
+                .orElse("");
     }
 
     private List<String> buildAvailabilitySummary(final PublishBoatForm form, final Locale locale) {

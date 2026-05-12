@@ -61,4 +61,6 @@ public interface BookingDao {
 
     /** Set all bookings that start after {@code minStartTime} (UTC) as CANCELLED */
     void expireBookingsAfter(LocalDateTime minStartTime);
+
+    boolean startsAfter(int bookingId, LocalDateTime requestedStart);
 }

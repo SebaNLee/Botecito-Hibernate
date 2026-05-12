@@ -40,5 +40,5 @@ public interface BookingInterface {
 
     void rejectPayment(int bookingId, int callerId, String reason);
 
-    public void cancelBooking(int bookingId, int callerId);
+    void cancelBooking(int bookingId, int callerId);
 }

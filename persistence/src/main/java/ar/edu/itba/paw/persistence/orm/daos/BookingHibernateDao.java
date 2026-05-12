@@ -233,7 +233,18 @@ public class BookingHibernateDao implements BookingDao {
                 .getSingleResult();
     }
 
-    // TODO: throw custom exception when these fail
+    public boolean startsAfter(int bookingId, LocalDateTime requestedStart) {
+        return entityManager
+                .createQuery(
+                        "SELECT COUNT(b) > 0 FROM BookingOrm b WHERE b.id = :id AND b.start > :requested",
+                        Boolean.class)
+                .setParameter("id", bookingId)
+                .setParameter("requested", requestedStart)
+                .getSingleResult();
+    }
+
+    // TODO: return false on failure here
+
     @Override
     public void updateStatusIncoming(int id, int callerId, BookingStatus status) {
         if (status == null || !HOST_STATUS_CHANGES.contains(status) || isImmutable(id)) return;

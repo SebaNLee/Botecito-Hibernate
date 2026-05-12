@@ -57,12 +57,21 @@ public class BookingImpl implements BookingInterface {
         return LocalDateTime.now(ZoneOffset.UTC);
     }
 
+    private LocalDateTime currentMinimumStart() {
+        return currentDateTime().plusMinutes(MIN_ANTICIPATION_MINUTES);
+    }
+
+    private boolean hasEnoughAnticipation(int bookingId) {
+        LocalDateTime minStartTime = currentMinimumStart();
+        return bookingDao.startsAfter(bookingId, minStartTime);
+    }
+
     private void finalizeBookings() {
         bookingDao.finalizeBookingsBefore(currentDateTime());
     }
 
     private void expireDueBookings() {
-        LocalDateTime minStartTime = currentDateTime().plusMinutes(MIN_ANTICIPATION_MINUTES);
+        LocalDateTime minStartTime = currentMinimumStart();
         bookingDao.expireBookingsAfter(minStartTime);
     }
 
@@ -72,18 +81,20 @@ public class BookingImpl implements BookingInterface {
         expireDueBookings();
     }
 
-    // TODO: catch eventual exceptions here
+    // TODO: change to return false on failure
 
     public void acceptBooking(int bookingId, int callerId) {
+        if (!hasEnoughAnticipation(bookingId)) return;
         bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.ACCEPTED);
     }
 
     public void rejectBooking(int bookingId, int callerId) {
+        if (!hasEnoughAnticipation(bookingId)) return;
         bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.REJECTED);
     }
 
     public void submitPayment(PaymentProof payment, int callerId) {
-        if (payment == null) return;
+        if (payment == null || !hasEnoughAnticipation(payment.getBookingId())) return;
 
         bookingDao.updateStatusOutgoing(payment.getBookingId(), callerId, BookingStatus.PAID);
 
@@ -95,10 +106,12 @@ public class BookingImpl implements BookingInterface {
     }
 
     public void confirmPayment(int bookingId, int callerId) {
+        if (!hasEnoughAnticipation(bookingId)) return;
         bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.CONFIRMED);
     }
 
     public void rejectPayment(int bookingId, int callerId, String reason) {
+        if (!hasEnoughAnticipation(bookingId)) return;
         var now = currentDateTime();
         bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.REFUSED);
         bookingDao.refusePayment(bookingId, reason, now);

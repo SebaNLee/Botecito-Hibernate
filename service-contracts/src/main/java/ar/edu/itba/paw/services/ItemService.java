@@ -3,7 +3,6 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
-import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
@@ -17,10 +16,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ItemService {
-    List<Item> listItems();
-
-    Page<Item> searchItems(ItemSearchCriteria criteria, int page, int pageSize);
-
     List<LocationOption> listLocationOptions();
 
     Optional<Item> findItemById(int id);
@@ -117,8 +112,6 @@ public interface ItemService {
     boolean deleteImageFromItem(int itemId, int imageId);
 
     void reorderImagesForItem(int itemId, List<Integer> imageIdsInOrder);
-
-    Page<Item> searchMarketplace(ItemSearchCriteria criteria, int page, int pageSize);
 
     java.util.Map<String, String> validatePublicationDraft(PublicationDraft draft);
 

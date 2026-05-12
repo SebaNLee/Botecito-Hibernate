@@ -1,11 +1,8 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.Item;
-import ar.edu.itba.paw.models.ItemSearchCriteria;
-import ar.edu.itba.paw.models.ItemSearchSort;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
-import ar.edu.itba.paw.models.ReviewTargetType;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -41,38 +38,6 @@ public class ItemJdbcDao implements ItemDao {
     public ItemJdbcDao(final @NonNull DataSource dataSource, final @NonNull JdbcDialect jdbcDialect) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.postgresDialect = jdbcDialect.isPostgres();
-    }
-
-    @Override
-    public List<Item> listItems() {
-        return jdbcTemplate.query(
-                ITEM_SELECT + " WHERE i.status = 'ACTIVE' ORDER BY i.id", ItemJdbcRowMappers.ITEM_ROW_MAPPER);
-    }
-
-    @Override
-    public List<Item> listItems(final ItemSearchCriteria criteria, final int limit, final int offset) {
-        final List<Object> args = new ArrayList<>();
-        final String sql = ITEM_SELECT
-                + marketplaceWhereClause(criteria, args)
-                + marketplaceOrderBy(criteria)
-                + " LIMIT ? OFFSET ?";
-        args.add(limit);
-        args.add(offset);
-        return jdbcTemplate.query(sql, ItemJdbcRowMappers.ITEM_ROW_MAPPER, args.toArray());
-    }
-
-    @Override
-    public int countItems(final ItemSearchCriteria criteria) {
-        final List<Object> args = new ArrayList<>();
-        final Integer count = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*)"
-                        + " FROM item i"
-                        + " JOIN version v ON v.id = (SELECT MAX(v2.id) FROM version v2 WHERE v2.item_id = i.id)"
-                        + " JOIN location lo ON lo.id = v.location_id"
-                        + marketplaceWhereClause(criteria, args),
-                Integer.class,
-                args.toArray());
-        return count == null ? 0 : count;
     }
 
     @Override
@@ -120,18 +85,6 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
-    public boolean updatePublication(
-            final int itemId,
-            final String title,
-            final String description,
-            final int pricePerHour,
-            final Integer difficultyLevel,
-            final int locationOptionId) {
-        return updatePublicationVersion(
-                itemId, null, title, description, pricePerHour, difficultyLevel, locationOptionId);
-    }
-
-    @Override
     public boolean updatePublicationForOwner(
             final int itemId,
             final int ownerId,
@@ -145,6 +98,7 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    // TODO versioning reference
     public boolean hasBlockingBookingsForEdition(final int itemId) {
         final Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*)"
@@ -167,6 +121,7 @@ public class ItemJdbcDao implements ItemDao {
         return deleteItemWithOwnershipScope(itemId, ownerId, id -> findItemByIdForOwner(id, ownerId));
     }
 
+    // TODO versioning reference
     private boolean deleteItemWithOwnershipScope(
             final int itemId, final Integer ownerId, final IntFunction<Optional<Item>> findItem) {
         final Optional<Item> item = findItem.apply(itemId);
@@ -220,6 +175,7 @@ public class ItemJdbcDao implements ItemDao {
     }
 
     @Override
+    // TODO versioning reference
     public boolean snapshotBookingsForPublicationEdit(final int itemId) {
         // Since item_version_id is now NOT NULL, bookings are always tied to a publication version.
         return true;
@@ -235,101 +191,7 @@ public class ItemJdbcDao implements ItemDao {
         return updateCurrentVersionActive(itemId, ownerId, active) > 0;
     }
 
-    @Override
-    public Integer insertItem(
-            final int ownerId,
-            final int typeId,
-            final String title,
-            final String description,
-            final int pricePerHour,
-            final int capacityPeople,
-            final BigDecimal maxWeightKg,
-            final Integer difficultyLevel,
-            final int locationOptionId) {
-        final Timestamp now = Timestamp.from(Instant.now());
-        final int itemId = insertItemRow(ownerId, now, "Could not insert item for owner " + ownerId);
-        try {
-            insertPublicationVersion(buildPublicationVersionData(
-                    itemId,
-                    typeId,
-                    title,
-                    description,
-                    pricePerHour,
-                    capacityPeople,
-                    maxWeightKg,
-                    difficultyLevel,
-                    locationOptionId,
-                    now));
-            return itemId;
-        } catch (final RuntimeException exception) {
-            jdbcTemplate.update("DELETE FROM item WHERE id = ?", itemId);
-            throw exception;
-        }
-    }
-
-    private static String marketplaceWhereClause(final ItemSearchCriteria criteria, final List<Object> args) {
-        final StringBuilder sql = new StringBuilder(" WHERE i.status = 'ACTIVE'");
-        if (criteria == null) {
-            return sql.toString();
-        }
-        if (criteria.getLocationOptionId() != null) {
-            sql.append(" AND v.location_id = ?");
-            args.add(criteria.getLocationOptionId());
-        }
-        if (criteria.getCapacity() != null) {
-            sql.append(" AND v.capacity >= ?");
-            args.add(criteria.getCapacity());
-        }
-        if (criteria.getMaxWeightKg() != null) {
-            sql.append(" AND v.weight >= ?");
-            args.add(criteria.getMaxWeightKg());
-        }
-        if (criteria.getSearchQuery() != null) {
-            sql.append(" AND v.title ILIKE ? ESCAPE '!'");
-            args.add(setupSearchQuery(criteria.getSearchQuery()));
-        }
-        if (criteria.getDifficultyLevel() != null) {
-            sql.append(" AND v.difficulty = ?");
-            args.add(criteria.getDifficultyLevel());
-        }
-        if (criteria.getMinAverageRating() != null) {
-            sql.append(" AND COALESCE((SELECT AVG(r.rating)"
-                    + " FROM review r"
-                    + " JOIN booking b ON b.id = r.booking_id"
-                    + " JOIN version vv ON vv.id = b.version_id"
-                    + " WHERE "
-                    + ItemPersistenceSql.REVIEW_R_TARGET_TYPE_EQUALS
-                    + " AND vv.item_id = i.id), 0) >= ?");
-            args.add(ReviewTargetType.ITEM.name());
-            args.add(criteria.getMinAverageRating());
-        }
-        return sql.toString();
-    }
-
-    private static String setupSearchQuery(final String searchQuery) {
-        String queryWithWildcards = searchQuery
-                .trim()
-                .replace("!", "!!")
-                .replace("%", "!%")
-                .replace("_", "!_")
-                .replaceAll("\\s+", "%");
-
-        return "%" + queryWithWildcards + "%";
-    }
-
-    private static String marketplaceOrderBy(final ItemSearchCriteria criteria) {
-        final ItemSearchSort sort = criteria == null ? null : criteria.getSort();
-        if (sort == null) {
-            return " ORDER BY i.created_at DESC, i.id DESC";
-        }
-        return switch (sort) {
-            case OLDEST -> " ORDER BY i.created_at ASC, i.id ASC";
-            case PRICE_ASC -> " ORDER BY v.price ASC, i.id ASC";
-            case PRICE_DESC -> " ORDER BY v.price DESC, i.id ASC";
-            case NEWEST -> " ORDER BY i.created_at DESC, i.id DESC";
-        };
-    }
-
+    // TODO versioning reference
     private int insertPublicationVersion(final @NonNull Map<String, Object> itemData) {
         final SimpleJdbcInsert insert = new SimpleJdbcInsert(jdbcTemplate)
                 .withTableName("version")
@@ -368,6 +230,7 @@ public class ItemJdbcDao implements ItemDao {
         return insert.executeAndReturnKey(itemData).intValue();
     }
 
+    // TODO versioning reference
     private @NonNull Map<String, Object> buildPublicationVersionData(
             final int itemId,
             final int typeId,
@@ -395,6 +258,7 @@ public class ItemJdbcDao implements ItemDao {
         return itemData;
     }
 
+    // TODO versioning reference
     private boolean updatePublicationVersion(
             final int itemId,
             final Integer ownerId,
@@ -436,6 +300,7 @@ public class ItemJdbcDao implements ItemDao {
         return true;
     }
 
+    // TODO versioning reference
     private boolean updateCurrentPublicationVersion(
             final int currentVersionId,
             final Integer ownerId,
@@ -464,6 +329,7 @@ public class ItemJdbcDao implements ItemDao {
         return jdbcTemplate.update(requireSql(sql), args.toArray()) > 0;
     }
 
+    // TODO versioning reference
     private Optional<Map<String, Object>> findCurrentPublicationVersionData(final int itemId, final Integer ownerId) {
         final List<Object> args = new ArrayList<>();
         final StringBuilder sql =
@@ -481,15 +347,21 @@ public class ItemJdbcDao implements ItemDao {
                 .findFirst();
     }
 
+    // TODO versioning reference
     private boolean currentVersionHasBookingReferences(final int currentVersionId) {
         final Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM booking WHERE version_id = ?", Integer.class, currentVersionId);
         return count != null && count > 0;
     }
 
+    // TODO versioning reference
     private int updateCurrentVersionActive(final int itemId, final Integer ownerId, final boolean active) {
         final List<Object> args = new ArrayList<>();
-        final StringBuilder sql = new StringBuilder("UPDATE item" + " SET status = ?" + " WHERE id = ?");
+        final StringBuilder sql = new StringBuilder("UPDATE item SET status = ?");
+        if (postgresDialect) {
+            sql.append("::item_status_enum");
+        }
+        sql.append(" WHERE id = ?");
         args.add(active ? "ACTIVE" : "INACTIVE");
         args.add(itemId);
         if (ownerId != null) {
@@ -504,6 +376,7 @@ public class ItemJdbcDao implements ItemDao {
      * True when the item still has guest (non-owner) bookings that are not cancelled/rejected and have not ended yet,
      * so it cannot be removed from the database; an active listing is only deactivated instead.
      */
+    // TODO versioning reference
     private boolean hasBookingsBlockingHardDelete(final int itemId) {
         final Integer bookingCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*)"

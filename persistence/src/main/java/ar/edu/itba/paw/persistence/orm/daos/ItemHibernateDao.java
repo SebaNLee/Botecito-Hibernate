@@ -1,14 +1,9 @@
 package ar.edu.itba.paw.persistence.orm.daos;
 
-import ar.edu.itba.paw.models.Item;
-import ar.edu.itba.paw.models.ItemSearchCriteria;
-import ar.edu.itba.paw.models.ItemType;
-import ar.edu.itba.paw.models.LocationOption;
 import ar.edu.itba.paw.models.nuevo.ItemCreateModel;
 import ar.edu.itba.paw.models.nuevo.ItemUpdateModel;
 import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
-import ar.edu.itba.paw.persistence.ItemDao;
-import ar.edu.itba.paw.persistence.ItemJdbcDao;
+import ar.edu.itba.paw.persistence.nuevo.ItemDao;
 import ar.edu.itba.paw.persistence.orm.entities.BookingStatusEnumOrm;
 import ar.edu.itba.paw.persistence.orm.entities.ItemOrm;
 import ar.edu.itba.paw.persistence.orm.entities.ItemStatusEnumOrm;
@@ -18,11 +13,11 @@ import ar.edu.itba.paw.persistence.orm.entities.UsersOrm;
 import ar.edu.itba.paw.persistence.orm.entities.VersionOrm;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,8 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @Primary
 @Transactional
-public class ItemHibernateDao
-        implements ItemDao, ar.edu.itba.paw.persistence.nuevo.ItemDao { // TODO delete deprecated fn
+public class ItemHibernateDao implements ItemDao {
 
     private static final int DEFAULT_WEIGHT = 2000;
     private static final int DEFAULT_DIFFICULTY = 1;
@@ -39,38 +33,29 @@ public class ItemHibernateDao
     @PersistenceContext
     private EntityManager entityManager;
 
-    @Autowired
-    private ItemJdbcDao itemJdbcDao;
-
     @Override
     @Transactional(readOnly = true)
-    public List<Item> listItems() {
-        return itemJdbcDao.listItems();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Item> listItems(final ItemSearchCriteria criteria, final int limit, final int offset) {
-        return itemJdbcDao.listItems(criteria, limit, offset);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public int countItems(final ItemSearchCriteria criteria) {
-        return itemJdbcDao.countItems(criteria);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId) {
+    public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId, final int page, final int pageSize) {
         final String hql = baseMyBoatsQuery() + " WHERE i.host.id = :ownerId ORDER BY i.createdAt DESC, i.id DESC";
         final List<Object[]> rows = entityManager
                 .createQuery(hql, Object[].class)
                 .setParameter("ownerId", ownerId)
                 .setParameter("rejectedStatus", BookingStatusEnumOrm.REJECTED)
                 .setParameter("cancelledStatus", BookingStatusEnumOrm.CANCELLED)
+                .setFirstResult((page - 1) * pageSize)
+                .setMaxResults(pageSize)
                 .getResultList();
         return mapMyBoatsRows(rows);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int countMyBoatsItemsByOwnerId(final int ownerId) {
+        final Number count = (Number) entityManager
+                .createQuery("SELECT COUNT(i) FROM ItemOrm i WHERE i.host.id = :ownerId")
+                .setParameter("ownerId", ownerId)
+                .getSingleResult();
+        return count == null ? 0 : count.intValue();
     }
 
     @Override
@@ -94,7 +79,7 @@ public class ItemHibernateDao
         if (createModel == null) {
             return Optional.empty();
         }
-        final Item created = createItem(
+        final Integer itemId = insertItem(
                 createModel.getOwnerId(),
                 createModel.getTypeId(),
                 createModel.getTitle(),
@@ -103,150 +88,52 @@ public class ItemHibernateDao
                 createModel.getCapacityPeople(),
                 createModel.getMaxWeightKg(),
                 createModel.getDifficultyLevel(),
-                createModel.getLocationOptionId(),
-                createModel.getOwnerDeleteToken());
-        if (created == null || created.getId() == null) {
+                createModel.getLocationOptionId());
+        if (itemId == null) {
             return Optional.empty();
         }
-        return findMyBoatsItemByIdForOwner(created.getId(), createModel.getOwnerId());
+        return findMyBoatsItemByIdForOwner(itemId, createModel.getOwnerId());
     }
 
     @Override
     public boolean updateMyBoatsItem(final int itemId, final int ownerId, final ItemUpdateModel updateModel) {
-        if (updateModel == null) {
-            return false;
-        }
-        return updatePublicationForOwner(
-                itemId,
-                ownerId,
-                updateModel.getTitle(),
-                updateModel.getDescription(),
-                updateModel.getPricePerHour(),
-                updateModel.getDifficultyLevel(),
-                updateModel.getLocationOptionId());
+        // TODO hardcode redirect for now
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
     public boolean deleteMyBoatsItem(final int itemId, final int ownerId) {
-        return deleteItemByIdForOwner(itemId, ownerId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<LocationOption> listLocationOptions() {
-        return itemJdbcDao.listLocationOptions();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<Item> findItemById(final int id) {
-        return itemJdbcDao.findItemById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<Item> findItemByIdForOwner(final int id, final int ownerId) {
-        return itemJdbcDao.findItemByIdForOwner(id, ownerId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<Item> findAnyItemById(final int id) {
-        return itemJdbcDao.findAnyItemById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<ItemType> findItemTypeById(final int id) {
-        return itemJdbcDao.findItemTypeById(id);
-    }
-
-    @Override
-    public boolean updatePublication(
-            final int itemId,
-            final String title,
-            final String description,
-            final int pricePerHour,
-            final Integer difficultyLevel,
-            final int locationOptionId) {
-        return itemJdbcDao.updatePublication(
-                itemId, title, description, pricePerHour, difficultyLevel, locationOptionId);
-    }
-
-    @Override
-    public boolean updatePublicationForOwner(
-            final int itemId,
-            final int ownerId,
-            final String title,
-            final String description,
-            final int pricePerHour,
-            final Integer difficultyLevel,
-            final int locationOptionId) {
-        return itemJdbcDao.updatePublicationForOwner(
-                itemId, ownerId, title, description, pricePerHour, difficultyLevel, locationOptionId);
-    }
-
-    @Override
-    public boolean hasBlockingBookingsForEdition(final int itemId) {
-        return itemJdbcDao.hasBlockingBookingsForEdition(itemId);
-    }
-
-    @Override
-    public boolean deleteItemById(final int itemId) {
-        return deleteItemWithOwnershipScope(itemId, null);
-    }
-
-    @Override
-    public boolean deleteItemByIdForOwner(final int itemId, final int ownerId) {
-        return deleteItemWithOwnershipScope(itemId, ownerId);
-    }
-
-    @Override
-    public Item createItem(
-            final int ownerId,
-            final int typeId,
-            final String title,
-            final String description,
-            final int pricePerHour,
-            final int capacityPeople,
-            final BigDecimal maxWeightKg,
-            final Integer difficultyLevel,
-            final int locationOptionId,
-            final String ownerDeleteToken) {
-        final Integer itemId = insertItem(
-                ownerId,
-                typeId,
-                title,
-                description,
-                pricePerHour,
-                capacityPeople,
-                maxWeightKg,
-                difficultyLevel,
-                locationOptionId);
-        if (itemId == null) {
-            throw new IllegalStateException("Could not create item for owner " + ownerId);
+        final Optional<ItemOrm> item = findItemOrm(itemId, ownerId);
+        if (item.isEmpty()) {
+            return false;
         }
-        return itemJdbcDao
-                .findAnyItemById(itemId)
-                .orElseThrow(() -> new IllegalStateException("Could not read inserted item " + itemId));
-    }
 
-    @Override
-    public boolean snapshotBookingsForPublicationEdit(final int itemId) {
-        return itemJdbcDao.snapshotBookingsForPublicationEdit(itemId);
-    }
+        if (hasBookingsBlockingHardDelete(itemId)) {
+            if (item.get().getStatus() == ItemStatusEnumOrm.ACTIVE) {
+                item.get().setStatus(ItemStatusEnumOrm.INACTIVE);
+                entityManager.flush();
+                return true;
+            }
+            return false;
+        }
 
-    @Override
-    public boolean setItemActive(final int itemId, final boolean active) {
-        return itemJdbcDao.setItemActive(itemId, active);
+        entityManager.remove(item.get());
+        entityManager.flush();
+        return true;
     }
 
     @Override
     public boolean setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
-        return itemJdbcDao.setItemActiveForOwner(itemId, ownerId, active);
+        final int updated = entityManager
+                .createQuery("UPDATE ItemOrm i SET i.status = :status WHERE i.id = :itemId AND i.host.id = :ownerId")
+                .setParameter("status", active ? ItemStatusEnumOrm.ACTIVE : ItemStatusEnumOrm.INACTIVE)
+                .setParameter("itemId", itemId)
+                .setParameter("ownerId", ownerId)
+                .executeUpdate();
+        entityManager.flush();
+        return updated > 0;
     }
 
-    @Override
     public Integer insertItem(
             final int ownerId,
             final int typeId,
@@ -259,26 +146,26 @@ public class ItemHibernateDao
             final int locationOptionId) {
         final LocalDateTime now = LocalDateTime.now();
 
-        final ItemOrm item = new ItemOrm();
-        item.setHost(entityManager.getReference(UsersOrm.class, ownerId));
-        item.setStatus(ItemStatusEnumOrm.ACTIVE);
-        item.setCreatedAt(now);
+        final ItemOrm item = ItemOrm.builder()
+                .host(entityManager.getReference(UsersOrm.class, ownerId))
+                .status(ItemStatusEnumOrm.ACTIVE)
+                .createdAt(now)
+                .build();
         entityManager.persist(item);
 
-        final VersionOrm version = new VersionOrm();
-        version.setItem(item);
-        version.setType(entityManager.getReference(ItemTypeOrm.class, typeId));
-        version.setTitle(title);
-        version.setDescription(description);
-        version.setPrice(BigDecimal.valueOf(pricePerHour));
-        version.setCapacity(capacityPeople);
-        version.setWeight(maxWeightKg == null ? DEFAULT_WEIGHT : maxWeightKg.intValue());
-        final int difficulty = difficultyLevel == null ? DEFAULT_DIFFICULTY : difficultyLevel.intValue();
-        version.setDifficulty(difficulty);
-        version.setLocation(entityManager.getReference(LocationOrm.class, locationOptionId));
-        version.setTimezone("America/Argentina/Buenos_Aires"); // TODO dynamic IANA timezones
-        // https://timeapi.io/documentation/iana-timezones
-        version.setCreatedAt(now);
+        final VersionOrm version = VersionOrm.builder()
+                .item(item)
+                .type(entityManager.getReference(ItemTypeOrm.class, typeId))
+                .title(title)
+                .description(description)
+                .price(BigDecimal.valueOf(pricePerHour))
+                .capacity(capacityPeople)
+                .weight(maxWeightKg == null ? DEFAULT_WEIGHT : maxWeightKg.intValue())
+                .difficulty(difficultyLevel == null ? Integer.valueOf(DEFAULT_DIFFICULTY) : difficultyLevel)
+                .location(entityManager.getReference(LocationOrm.class, locationOptionId))
+                .timezone("America/Argentina/Buenos_Aires")
+                .createdAt(now)
+                .build();
         entityManager.persist(version);
         entityManager.flush();
 
@@ -298,51 +185,45 @@ public class ItemHibernateDao
                 + " WHERE b.version.item = i"
                 + " AND b.status NOT IN (:rejectedStatus, :cancelledStatus)"
                 + " AND b.guest.id <> i.host.id"
-                + " AND b.end > CURRENT_TIMESTAMP)"
+                + " AND b.end > CURRENT_TIMESTAMP),"
+                + " v.description, v.difficulty, v.location.id"
                 + " FROM ItemOrm i"
                 + " JOIN VersionOrm v ON v.item = i"
                 + " AND v.id = (SELECT MAX(v2.id) FROM VersionOrm v2 WHERE v2.item = i)";
     }
 
     private static List<MyBoatsItem> mapMyBoatsRows(final List<Object[]> rows) {
-        final List<MyBoatsItem> items = new java.util.ArrayList<>(rows.size());
+        final List<MyBoatsItem> items = new ArrayList<>(rows.size());
         for (final Object[] row : rows) {
-            final MyBoatsItem item = new MyBoatsItem();
-            item.setId((Integer) row[0]);
-            item.setTitle((String) row[1]);
-            final java.math.BigDecimal price = (java.math.BigDecimal) row[2];
-            item.setPricePerHour(price == null ? null : price.intValue());
-            item.setCapacityPeople((Integer) row[3]);
-            item.setLocation((String) row[4]);
-            item.setActive(ItemStatusEnumOrm.ACTIVE.equals(row[5]));
-            item.setCoverImageId((Integer) row[6]);
+            final Integer id = (Integer) row[0];
+            final String title = (String) row[1];
+            final BigDecimal price = (BigDecimal) row[2];
+            final Integer pricePerHour = price == null ? null : price.intValue();
+            final Integer capacityPeople = (Integer) row[3];
+            final String location = (String) row[4];
+            final Boolean active = ItemStatusEnumOrm.ACTIVE.equals(row[5]);
+            final Integer coverImageId = (Integer) row[6];
             final boolean hasBlocking = Boolean.TRUE.equals(row[7]);
             final boolean hasFutureBlocking = Boolean.TRUE.equals(row[8]);
-            item.setDeleteDeactivates(Boolean.TRUE.equals(item.getActive()) && hasBlocking);
-            item.setDeleteDisabled(!Boolean.TRUE.equals(item.getActive()) && hasFutureBlocking);
-            items.add(item);
+            final String description = row[9] == null ? "" : (String) row[9];
+            final Integer difficultyLevel = (Integer) row[10];
+            final Integer locationOptionId = (Integer) row[11];
+
+            items.add(new MyBoatsItem(
+                    id,
+                    title,
+                    pricePerHour,
+                    capacityPeople,
+                    location,
+                    active,
+                    coverImageId,
+                    active && hasBlocking,
+                    !active && hasFutureBlocking,
+                    description,
+                    difficultyLevel,
+                    locationOptionId));
         }
         return items;
-    }
-
-    private boolean deleteItemWithOwnershipScope(final int itemId, final Integer ownerId) {
-        final Optional<ItemOrm> item = findItemOrm(itemId, ownerId);
-        if (item.isEmpty()) {
-            return false;
-        }
-
-        if (hasBookingsBlockingHardDelete(itemId)) {
-            if (item.get().getStatus() == ItemStatusEnumOrm.ACTIVE) {
-                item.get().setStatus(ItemStatusEnumOrm.INACTIVE);
-                entityManager.flush();
-                return true;
-            }
-            return false;
-        }
-
-        entityManager.remove(item.get());
-        entityManager.flush();
-        return true;
     }
 
     private Optional<ItemOrm> findItemOrm(final int itemId, final Integer ownerId) {

@@ -25,9 +25,9 @@ public interface BookingInterface {
     /** Bookings on items where {@link IncomingSearch#getHostId()} is the host (received requests). */
     BookingSearchResult searchIncomingBookings(IncomingSearch search);
 
-    void acceptBooking(Booking booking);
+    void acceptBooking(int bookingId);
 
-    void rejectBooking(Booking booking);
+    void rejectBooking(int bookingId);
 
     /**
      * If {@code payment.replyMsg != null}, this method will update {@code payment.repliedAt}.
@@ -36,9 +36,9 @@ public interface BookingInterface {
      */
     void submitPayment(PaymentProof payment);
 
-    void confirmPayment(Booking booking);
+    void confirmPayment(int bookingId);
 
     void rejectPayment(int bookingId, String reason);
 
-    public void cancelBooking(Booking booking);
+    public void cancelBooking(int bookingId);
 }

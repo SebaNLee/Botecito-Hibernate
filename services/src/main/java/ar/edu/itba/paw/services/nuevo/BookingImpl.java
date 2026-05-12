@@ -57,9 +57,8 @@ public class BookingImpl implements BookingInterface {
         return LocalDateTime.now(ZoneOffset.UTC);
     }
 
-    private void updateStatus(Booking booking, BookingStatus status) {
-        if (booking == null || status == null) return;
-        bookingDao.updateStatus(booking.getId(), status);
+    private void updateStatus(int bookingId, BookingStatus status) {
+        bookingDao.updateStatus(bookingId, status);
     }
 
     private void finalizeBookings() {
@@ -77,12 +76,12 @@ public class BookingImpl implements BookingInterface {
         expireDueBookings();
     }
 
-    public void acceptBooking(Booking booking) {
-        updateStatus(booking, BookingStatus.ACCEPTED);
+    public void acceptBooking(int bookingId) {
+        updateStatus(bookingId, BookingStatus.ACCEPTED);
     }
 
-    public void rejectBooking(Booking booking) {
-        updateStatus(booking, BookingStatus.REJECTED);
+    public void rejectBooking(int bookingId) {
+        updateStatus(bookingId, BookingStatus.REJECTED);
     }
 
     public void submitPayment(PaymentProof payment) {
@@ -96,10 +95,8 @@ public class BookingImpl implements BookingInterface {
         bookingDao.updateStatus(payment.getBookingId(), BookingStatus.PAID);
     }
 
-    public void confirmPayment(Booking booking) {
-        if (booking == null) return;
-
-        bookingDao.updateStatus(booking.getId(), BookingStatus.CONFIRMED);
+    public void confirmPayment(int bookingId) {
+        bookingDao.updateStatus(bookingId, BookingStatus.CONFIRMED);
     }
 
     public void rejectPayment(int bookingId, String reason) {
@@ -108,7 +105,7 @@ public class BookingImpl implements BookingInterface {
         bookingDao.updateStatus(bookingId, BookingStatus.REFUSED);
     }
 
-    public void cancelBooking(Booking booking) {
-        updateStatus(booking, BookingStatus.CANCELLED);
+    public void cancelBooking(int bookingId) {
+        updateStatus(bookingId, BookingStatus.CANCELLED);
     }
 }

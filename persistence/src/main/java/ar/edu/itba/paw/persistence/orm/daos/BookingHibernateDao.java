@@ -232,7 +232,7 @@ public class BookingHibernateDao implements BookingDao {
                 .filename(p.getFileName())
                 .contentType(p.getContentType())
                 .fileData(p.getFileData())
-                .createdAt(LocalDateTime.now())
+                .createdAt(p.getCreatedAt())
                 .refuseMsg(p.getRefuseMsg())
                 .refusedAt(p.getRefusedAt())
                 .replyMsg(p.getReplyMsg())
@@ -240,6 +240,17 @@ public class BookingHibernateDao implements BookingDao {
                 .build();
 
         entityManager.merge(payment);
+    }
+
+    @Override
+    public void refusePayment(int bookingId, String message, LocalDateTime refuseTime) {
+        entityManager
+                .createQuery(
+                        "UPDATE PaymentProofOrm p SET p.refuseMsg = :message,  p.refusedAt = :time WHERE p.booking.id = :id")
+                .setParameter("message", message)
+                .setParameter("time", refuseTime)
+                .setParameter("id", bookingId)
+                .executeUpdate();
     }
 
     private long countMatchingOutcoming(final int guestId, final BookingSearchModel criteria) {

@@ -7,6 +7,7 @@ import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
 import ar.edu.itba.paw.models.nuevo.PaymentProof;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface BookingDao {
@@ -50,4 +51,6 @@ public interface BookingDao {
     void updateStatus(int id, BookingStatus status);
 
     void uploadPayment(PaymentProof paymentProof);
+
+    void refusePayment(int bookingId, String message, LocalDateTime refuseTime);
 }

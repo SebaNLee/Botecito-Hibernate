@@ -29,5 +29,14 @@ public interface BookingInterface {
 
     void rejectBooking(Booking booking);
 
+    /**
+     * If {@code payment.replyMsg != null}, this method will update {@code payment.repliedAt}.
+     * Will always update {@code payment.createdAt}.
+     * The rest is always uploaded to persistence.
+     */
     void submitPayment(PaymentProof payment);
+
+    void confirmPayment(Booking booking);
+
+    void rejectPayment(int bookingId, String reason);
 }

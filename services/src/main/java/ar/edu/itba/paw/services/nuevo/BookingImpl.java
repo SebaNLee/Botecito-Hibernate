@@ -8,6 +8,8 @@ import ar.edu.itba.paw.models.nuevo.PaymentProof;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
 import ar.edu.itba.paw.persistence.nuevo.BookingDao;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,8 +50,12 @@ public class BookingImpl implements BookingInterface {
         return bookingDao.searchIncomingBookings(search);
     }
 
+    private LocalDateTime currentDateTime() {
+        return LocalDateTime.now(ZoneOffset.UTC);
+    }
+
     private void updateStatus(Booking booking, BookingStatus status) {
-        if (status == null) return;
+        if (booking == null || status == null) return;
         bookingDao.updateStatus(booking.getId(), status);
     }
 
@@ -62,7 +68,25 @@ public class BookingImpl implements BookingInterface {
     }
 
     public void submitPayment(PaymentProof payment) {
+        if (payment == null) return;
+
+        var now = currentDateTime();
+        payment.setCreatedAt(now);
+        if (payment.getReplyMsg() != null) payment.setRepliedAt(now);
+
         bookingDao.uploadPayment(payment);
         bookingDao.updateStatus(payment.getBookingId(), BookingStatus.PAID);
+    }
+
+    public void confirmPayment(Booking booking) {
+        if (booking == null) return;
+
+        bookingDao.updateStatus(booking.getId(), BookingStatus.CONFIRMED);
+    }
+
+    public void rejectPayment(int bookingId, String reason) {
+        var now = currentDateTime();
+        bookingDao.refusePayment(bookingId, reason, now);
+        bookingDao.updateStatus(bookingId, BookingStatus.REFUSED);
     }
 }

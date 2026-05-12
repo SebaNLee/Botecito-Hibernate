@@ -216,7 +216,7 @@ public class BookingHibernateDao implements BookingDao {
         if (status == null) return;
         entityManager
                 .createQuery("UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id = :bookingId")
-                .setParameter("newStatus", status)
+                .setParameter("newStatus", BookingStatusEnumOrm.valueOf(status.name()))
                 .setParameter("bookingId", id)
                 .executeUpdate();
     }

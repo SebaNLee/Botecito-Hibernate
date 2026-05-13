@@ -2,7 +2,6 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
-import ar.edu.itba.paw.services.Page;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.services.nuevo.ItemInterface;
 import java.util.LinkedHashMap;
@@ -61,13 +60,6 @@ public class MyBoatsPresentation {
         mav.addObject("imageUrlsByItemId", imageUrlsByItemId);
         mav.addObject("publicationDeleteDeactivatesByItemId", publicationDeleteDeactivatesByItemId);
         mav.addObject("publicationDeleteDisabledByItemId", publicationDeleteDisabledByItemId);
-        mav.addObject("receivedBookingRequests", List.of());
-        mav.addObject("receivedBookingPage", new Page<>(List.of(), 1, 6, 0));
-        mav.addObject("selectedBookingStatusFilters", List.of());
-        mav.addObject("selectedBookingStatusFiltersByValue", emptyStatusSelection());
-        mav.addObject("boatSearchQuery", "");
-        mav.addObject("pendingOwnerUserReviewsByBookingId", Map.of());
-        mav.addObject("authoredUserReviewsByBookingId", Map.of());
         return mav;
     }
 
@@ -79,22 +71,5 @@ public class MyBoatsPresentation {
             return null;
         }
         return userService.findByEmail(authentication.getName()).orElse(null);
-    }
-
-    private static Map<String, Boolean> emptyStatusSelection() {
-        final Map<String, Boolean> selectedByStatus = new LinkedHashMap<>();
-        // TODO fetch status enum from DB
-        for (final String status : List.of(
-                "pending",
-                "confirmed",
-                "paymentSubmitted",
-                "paid",
-                "paymentRefused",
-                "completed",
-                "rejected",
-                "cancelled")) {
-            selectedByStatus.put(status, false);
-        }
-        return selectedByStatus;
     }
 }

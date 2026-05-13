@@ -113,7 +113,8 @@ public class DetailPresentation {
     }
 
     /**
-     * Same as {@link #detailPage(int, HttpServletRequest, Optional)} for canonical item URL, plus
+     * Same as {@link #detailPage(int, HttpServletRequest, Optional)} for canonical
+     * item URL, plus
      * validation error toasts for the pre-booking form.
      */
     public Object detailPageWithPreBookingValidationErrors(

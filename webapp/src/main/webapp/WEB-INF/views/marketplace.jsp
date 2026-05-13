@@ -33,15 +33,18 @@
 <c:set
     var="pageSize"
     value="${marketplaceSearch != null && marketplaceSearch.pageSize != null ? marketplaceSearch.pageSize : 12}" />
+<c:set
+    var="marketplaceSortBy"
+    value="${empty marketplaceSearch.sortBy ? 'newest' : marketplaceSearch.sortBy}" />
 <c:url var="clearMarketplaceFiltersUrl" value="/marketplace">
-  <c:if test="${sort != 'newest'}">
-    <c:param name="sort" value="${sort}" />
+  <c:if test="${marketplaceSortBy != 'newest'}">
+    <c:param name="sortBy" value="${marketplaceSortBy}" />
   </c:if>
 </c:url>
 <c:if test="${itemPage.hasPrevious}">
   <c:url var="previousPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.previousPage}" />
-    <c:param name="sort" value="${sort}" />
+    <c:param name="sortBy" value="${marketplaceSortBy}" />
     <c:param name="pageSize" value="${pageSize}" />
     <c:if test="${not empty param.searchQuery}">
       <c:param name="searchQuery" value="${param.searchQuery}" />
@@ -78,7 +81,7 @@
 <c:if test="${itemPage.hasNext}">
   <c:url var="nextPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.nextPage}" />
-    <c:param name="sort" value="${sort}" />
+    <c:param name="sortBy" value="${marketplaceSortBy}" />
     <c:param name="pageSize" value="${pageSize}" />
     <c:if test="${not empty param.searchQuery}">
       <c:param name="searchQuery" value="${param.searchQuery}" />

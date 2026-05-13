@@ -22,7 +22,7 @@ public class ToastPresentation {
 
     /**
      * Builds error toasts from a {@link BindingResult}, using {@code messagePrefix} for i18n keys
-     * (e.g. {@code marketplaceSearch}, {@code detail}): {@code {prefix}.validation.toastFormat},
+     * (e.g. {@code marketplace}, {@code detail}): {@code {prefix}.validation.toastFormat},
      * {@code {prefix}.field.*}, {@code {prefix}.validation.bannerTitle}.
      */
     public List<Map<String, String>> validationToasts(final BindingResult errors, final String messagePrefix) {

@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.nuevo.ItemCreateModel;
 import ar.edu.itba.paw.models.nuevo.ItemUpdateModel;
 import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
 import ar.edu.itba.paw.persistence.nuevo.ItemDao;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,15 @@ public class ItemImpl implements ItemInterface {
 
     @Override
     public Optional<MyBoatsItem> createMyBoatsItem(final ItemCreateModel createModel) {
+        if (createModel == null) {
+            return Optional.empty();
+        }
+        if (createModel.getMaxWeightKg() == null) {
+            createModel.setMaxWeightKg(BigDecimal.valueOf(2000));
+        }
+        if (createModel.getDifficultyLevel() == null) {
+            createModel.setDifficultyLevel(1);
+        }
         return itemDao.createMyBoatsItem(createModel);
     }
 

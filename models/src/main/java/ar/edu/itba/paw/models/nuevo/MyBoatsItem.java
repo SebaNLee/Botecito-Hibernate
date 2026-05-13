@@ -7,8 +7,12 @@ import lombok.Setter;
 @Setter
 public class MyBoatsItem {
     private Integer id;
+    private Integer versionId;
     private String title;
+    private String description;
     private Integer pricePerHour;
+    private Integer difficultyLevel;
+    private Integer locationOptionId;
     private Integer capacityPeople;
     private String location;
     private Boolean active;

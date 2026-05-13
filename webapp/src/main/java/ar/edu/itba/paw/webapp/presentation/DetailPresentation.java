@@ -88,7 +88,7 @@ public class DetailPresentation {
             displayPair = itemDetail.getVersions().stream()
                     .filter(v -> v.getVersionId() == requestedId)
                     .findFirst()
-                    .get();
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         }
         final boolean viewingNonCurrentVersion = displayPair.getVersionId() != currentVersionId;
         return buildNuevoItemDetailView(

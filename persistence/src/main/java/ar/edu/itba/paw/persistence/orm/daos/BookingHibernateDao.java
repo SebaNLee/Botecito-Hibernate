@@ -79,10 +79,6 @@ public class BookingHibernateDao implements BookingDao {
                     + "  ) "
                     + "RETURNING id";
 
-    /** A booking cannot change status if it already has one of these */
-    private static final EnumSet<BookingStatusEnumOrm> IMMUTABLE_STATES =
-            EnumSet.of(BookingStatusEnumOrm.FINISHED, BookingStatusEnumOrm.CANCELLED);
-
     private static final EnumSet<BookingStatusEnumOrm> NON_AUTO_CANCEL_STATES = EnumSet.of(
             BookingStatusEnumOrm.CONFIRMED,
             BookingStatusEnumOrm.CANCELLED,
@@ -380,8 +376,9 @@ public class BookingHibernateDao implements BookingDao {
     @Transactional
     public void finalizeBookingsBefore(LocalDateTime maxEndTime) {
         entityManager
-                .createQuery(
-                        "UPDATE BookingOrm b SET b.status = :status WHERE b.end < :endTime AND b.status = :confirmed")
+                .createQuery("UPDATE BookingOrm b SET b.status = :status WHERE b.id IN ("
+                        + "SELECT b2.id FROM BookingOrm b2 INNER JOIN b2.version v INNER JOIN v.item i INNER JOIN i.host h "
+                        + "WHERE b2.end < :endTime AND b2.status = :confirmed AND h.id <> b2.guest.id)")
                 .setParameter("status", BookingStatusEnumOrm.FINISHED)
                 .setParameter("endTime", maxEndTime)
                 .setParameter("confirmed", BookingStatusEnumOrm.CONFIRMED)
@@ -394,7 +391,7 @@ public class BookingHibernateDao implements BookingDao {
         entityManager
                 .createQuery(
                         "UPDATE BookingOrm b SET b.status = :status WHERE b.start > :startTime AND b.status NOT IN :excluded")
-                .setParameter("status", BookingStatus.CANCELLED)
+                .setParameter("status", BookingStatusEnumOrm.CANCELLED)
                 .setParameter("startTime", minStartTime)
                 .setParameter("excluded", NON_AUTO_CANCEL_STATES)
                 .executeUpdate();

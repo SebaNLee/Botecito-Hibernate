@@ -60,8 +60,11 @@ public class BookingHibernateDao implements BookingDao {
 
     private static final String INSERT_IF_SLOT_FREE =
             "INSERT INTO booking (version_id, guest_id, start, \"end\", status, msg, created_at, updated_at) "
-                    + "SELECT :versionId, :guestId, :utcStart, :utcEnd, CAST('PENDING' AS booking_status_enum), :msg, :now, :now "
-                    + "WHERE EXISTS (SELECT 1 FROM version v WHERE v.id = :versionId) "
+                    + "SELECT :versionId, :guestId, :utcStart, :utcEnd, "
+                    + "CASE WHEN i.host_id = :guestId THEN CAST('CONFIRMED' AS booking_status_enum) "
+                    + "ELSE CAST('PENDING' AS booking_status_enum) END, :msg, :now, :now "
+                    + "FROM version v INNER JOIN item i ON i.id = v.item_id "
+                    + "WHERE v.id = :versionId "
                     + "  AND EXISTS (SELECT 1 FROM users u WHERE u.id = :guestId) "
                     + "  AND NOT EXISTS ( "
                     + "    SELECT 1 FROM booking b "
@@ -420,7 +423,7 @@ public class BookingHibernateDao implements BookingDao {
             final int guestId,
             final BookingSearchModel search,
             final Map<String, Object> params) {
-        hql.append("WHERE b.guest IS NOT NULL AND b.guest.id = :guestId");
+        hql.append("WHERE b.guest IS NOT NULL AND b.guest.id = :guestId AND b.version.item.host.id <> :guestId");
         params.put("guestId", guestId);
         appendSharedBookingSearchFilters(hql, search, params);
     }
@@ -430,7 +433,7 @@ public class BookingHibernateDao implements BookingDao {
             final int hostId,
             final BookingSearchModel search,
             final Map<String, Object> params) {
-        hql.append("WHERE b.version.item.host.id = :hostId");
+        hql.append("WHERE b.version.item.host.id = :hostId AND b.guest IS NOT NULL AND b.guest.id <> :hostId");
         params.put("hostId", hostId);
         appendSharedBookingSearchFilters(hql, search, params);
     }

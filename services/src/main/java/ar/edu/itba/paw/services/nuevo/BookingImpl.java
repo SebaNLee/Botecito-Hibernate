@@ -47,11 +47,21 @@ public class BookingImpl implements BookingInterface {
 
     private void expireDueBookings() {
         LocalDateTime minStartTime = currentMinimumStart();
-        bookingDao.expireBookingsAfter(minStartTime);
+        bookingDao.expireBookingsBefore(minStartTime);
+    }
+
+    private void verifyAnticipation(int bookingId) {
+        if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
+    }
+
+    private void verifyAnticipation(final PreBookingReq request) {
+        LocalDateTime start = LocalDateTime.of(request.getDate(), request.getStartTime());
+        if (start.isBefore(currentMinimumStart())) throw new NoAnticipationException();
     }
 
     @Override
     public PreBookingCreateResult createBooking(final PreBookingReq preBookingReq) {
+        verifyAnticipation(preBookingReq);
         final int code = bookingDao.createBooking(preBookingReq);
         if (code > 0) {
             return new PreBookingCreateResult.Created(code);
@@ -88,14 +98,14 @@ public class BookingImpl implements BookingInterface {
 
     @Override
     public void acceptBooking(int bookingId, int callerId) {
-        if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
+        verifyAnticipation(bookingId);
         boolean success = bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.ACCEPTED);
         if (!success) throw new IllegalBookingOperationException();
     }
 
     @Override
     public void rejectBooking(int bookingId, int callerId) {
-        if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
+        verifyAnticipation(bookingId);
         boolean success = bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.REJECTED);
         if (!success) throw new IllegalBookingOperationException();
     }
@@ -105,7 +115,7 @@ public class BookingImpl implements BookingInterface {
         if (payment == null) return;
         int bookingId = payment.getBookingId();
 
-        if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
+        verifyAnticipation(bookingId);
 
         boolean success = bookingDao.updateStatusOutgoing(bookingId, callerId, BookingStatus.PAID);
         if (!success) throw new IllegalBookingOperationException();
@@ -124,14 +134,14 @@ public class BookingImpl implements BookingInterface {
 
     @Override
     public void confirmPayment(int bookingId, int callerId) {
-        if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
+        verifyAnticipation(bookingId);
         boolean success = bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.CONFIRMED);
         if (!success) throw new IllegalBookingOperationException();
     }
 
     @Override
     public void rejectPayment(int bookingId, int callerId, String reason) {
-        if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
+        verifyAnticipation(bookingId);
         var now = currentDateTime();
         final boolean statusUpdated = bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.REFUSED);
         if (!statusUpdated) {

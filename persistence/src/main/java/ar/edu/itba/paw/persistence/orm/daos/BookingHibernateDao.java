@@ -390,10 +390,10 @@ public class BookingHibernateDao implements BookingDao {
 
     @Override
     @Transactional
-    public void expireBookingsAfter(LocalDateTime minStartTime) {
+    public void expireBookingsBefore(LocalDateTime minStartTime) {
         entityManager
                 .createQuery(
-                        "UPDATE BookingOrm b SET b.status = :status WHERE b.start > :startTime AND b.status NOT IN :excluded")
+                        "UPDATE BookingOrm b SET b.status = :status WHERE b.start < :startTime AND b.status NOT IN :excluded")
                 .setParameter("status", BookingStatusEnumOrm.CANCELLED)
                 .setParameter("startTime", minStartTime)
                 .setParameter("excluded", NON_AUTO_CANCEL_STATES)

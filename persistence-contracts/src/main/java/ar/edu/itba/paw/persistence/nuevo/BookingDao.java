@@ -65,8 +65,8 @@ public interface BookingDao {
     /** Set all bookings that ended before {@code maxEndTime} (UTC) as FINISHED */
     void finalizeBookingsBefore(LocalDateTime maxEndTime);
 
-    /** Set all bookings that start after {@code minStartTime} (UTC) as CANCELLED */
-    void expireBookingsAfter(LocalDateTime minStartTime);
+    /** Set all bookings that start before {@code minStartTime} (UTC) as CANCELLED */
+    void expireBookingsBefore(LocalDateTime minStartTime);
 
     boolean startsAfter(int bookingId, LocalDateTime requestedStart);
 }

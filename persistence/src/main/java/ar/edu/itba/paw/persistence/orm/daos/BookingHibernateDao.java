@@ -279,55 +279,73 @@ public class BookingHibernateDao implements BookingDao {
 
     @Override
     @Transactional
-    public boolean updateStatusIncoming(int id, int callerId, BookingStatus status) {
-        if (status == null || !canChangeStatus(id, status)) return false;
-        int rowsUpdated = entityManager
-                .createQuery("UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id IN ("
-                        + "SELECT b2.id FROM BookingOrm b2 INNER JOIN b2.version v INNER JOIN v.item i INNER JOIN i.host h "
-                        + "WHERE b2.id = :bookingId AND h.id = :caller)")
-                .setParameter("newStatus", BookingStatusEnumOrm.valueOf(status.name()))
-                .setParameter("bookingId", id)
-                .setParameter("caller", callerId)
-                .executeUpdate();
-        return rowsUpdated > 0;
+    public Optional<Booking> updateStatusIncoming(int id, int callerId, BookingStatus status) {
+        try {
+            if (status == null || !canChangeStatus(id, status)) return Optional.empty();
+            int rowsUpdated = entityManager
+                    .createQuery("UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id IN ("
+                            + "SELECT b2.id FROM BookingOrm b2 INNER JOIN b2.version v INNER JOIN v.item i INNER JOIN i.host h "
+                            + "WHERE b2.id = :bookingId AND h.id = :caller)")
+                    .setParameter("newStatus", BookingStatusEnumOrm.valueOf(status.name()))
+                    .setParameter("bookingId", id)
+                    .setParameter("caller", callerId)
+                    .executeUpdate();
+            if (rowsUpdated <= 0) {
+                return Optional.empty();
+            }
+            return findBookingById(id);
+        } catch (final RuntimeException e) {
+            return Optional.empty();
+        }
     }
 
     @Override
     @Transactional
-    public boolean updateStatusOutgoing(int id, int callerId, BookingStatus status) {
-        if (status == null || !canChangeStatus(id, status)) return false;
-        int rowsUpdated = entityManager
-                .createQuery(
-                        "UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id IN ("
-                                + "SELECT b2.id FROM BookingOrm b2 INNER JOIN b2.guest g WHERE b2.id = :bookingId AND g.id = :caller)")
-                .setParameter("newStatus", BookingStatusEnumOrm.valueOf(status.name()))
-                .setParameter("bookingId", id)
-                .setParameter("caller", callerId)
-                .executeUpdate();
-        return rowsUpdated > 0;
+    public Optional<Booking> updateStatusOutgoing(int id, int callerId, BookingStatus status) {
+        try {
+            if (status == null || !canChangeStatus(id, status)) return Optional.empty();
+            int rowsUpdated = entityManager
+                    .createQuery(
+                            "UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id IN ("
+                                    + "SELECT b2.id FROM BookingOrm b2 INNER JOIN b2.guest g WHERE b2.id = :bookingId AND g.id = :caller)")
+                    .setParameter("newStatus", BookingStatusEnumOrm.valueOf(status.name()))
+                    .setParameter("bookingId", id)
+                    .setParameter("caller", callerId)
+                    .executeUpdate();
+            if (rowsUpdated <= 0) {
+                return Optional.empty();
+            }
+            return findBookingById(id);
+        } catch (final RuntimeException e) {
+            return Optional.empty();
+        }
     }
 
     @Override
     @Transactional
-    public boolean uploadPayment(PaymentProof p) {
-        if (p == null) return false;
+    public Optional<PaymentProof> uploadPayment(PaymentProof p) {
+        if (p == null) return Optional.empty();
 
-        final BookingOrm booking = entityManager.getReference(BookingOrm.class, p.getBookingId());
+        try {
+            final BookingOrm booking = entityManager.getReference(BookingOrm.class, p.getBookingId());
 
-        final PaymentProofOrm payment = PaymentProofOrm.builder()
-                .booking(booking)
-                .filename(p.getFileName())
-                .contentType(p.getContentType())
-                .fileData(p.getFileData())
-                .createdAt(p.getCreatedAt())
-                .refuseMsg(p.getRefuseMsg())
-                .refusedAt(p.getRefusedAt())
-                .replyMsg(p.getReplyMsg())
-                .repliedAt(p.getRepliedAt())
-                .build();
+            final PaymentProofOrm payment = PaymentProofOrm.builder()
+                    .booking(booking)
+                    .filename(p.getFileName())
+                    .contentType(p.getContentType())
+                    .fileData(p.getFileData())
+                    .createdAt(p.getCreatedAt())
+                    .refuseMsg(p.getRefuseMsg())
+                    .refusedAt(p.getRefusedAt())
+                    .replyMsg(p.getReplyMsg())
+                    .repliedAt(p.getRepliedAt())
+                    .build();
 
-        entityManager.merge(payment);
-        return true;
+            entityManager.merge(payment);
+            return findPaymentProofByBookingId(p.getBookingId());
+        } catch (final RuntimeException e) {
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -364,15 +382,22 @@ public class BookingHibernateDao implements BookingDao {
 
     @Override
     @Transactional
-    public boolean refusePayment(int bookingId, String message, LocalDateTime refuseTime) {
-        final int rowsUpdated = entityManager
-                .createNativeQuery(
-                        "UPDATE payment_proof SET refuse_msg = :message, refused_at = :time WHERE booking_id = :id")
-                .setParameter("message", message)
-                .setParameter("time", refuseTime)
-                .setParameter("id", bookingId)
-                .executeUpdate();
-        return rowsUpdated > 0;
+    public Optional<Booking> refusePayment(int bookingId, String message, LocalDateTime refuseTime) {
+        try {
+            final int rowsUpdated = entityManager
+                    .createNativeQuery(
+                            "UPDATE payment_proof SET refuse_msg = :message, refused_at = :time WHERE booking_id = :id")
+                    .setParameter("message", message)
+                    .setParameter("time", refuseTime)
+                    .setParameter("id", bookingId)
+                    .executeUpdate();
+            if (rowsUpdated <= 0) {
+                return Optional.empty();
+            }
+            return findBookingById(bookingId);
+        } catch (final RuntimeException e) {
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -535,6 +560,35 @@ public class BookingHibernateDao implements BookingDao {
             byId.put(p.getBooking().getId(), p);
         }
         return byId;
+    }
+
+    private Optional<Booking> findBookingById(final int bookingId) {
+        final List<BookingOrm> rows = entityManager
+                .createQuery(
+                        "SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof "
+                                + "INNER JOIN FETCH b.version v INNER JOIN FETCH v.item i LEFT JOIN FETCH i.host "
+                                + "WHERE b.id = :bookingId",
+                        BookingOrm.class)
+                .setParameter("bookingId", bookingId)
+                .getResultList();
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        final Map<Integer, PaymentProofOrm> proofByBookingId = paymentProofsByBookingIds(List.of(bookingId));
+        return Optional.of(toBooking(rows.get(0), proofByBookingId));
+    }
+
+    private Optional<PaymentProof> findPaymentProofByBookingId(final int bookingId) {
+        final List<PaymentProofOrm> rows = entityManager
+                .createQuery(
+                        "SELECT p FROM PaymentProofOrm p INNER JOIN FETCH p.booking b WHERE b.id = :bookingId",
+                        PaymentProofOrm.class)
+                .setParameter("bookingId", bookingId)
+                .getResultList();
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(toPaymentProof(rows.get(0)));
     }
 
     private static Booking toBooking(final BookingOrm orm, final Map<Integer, PaymentProofOrm> proofByBookingId) {

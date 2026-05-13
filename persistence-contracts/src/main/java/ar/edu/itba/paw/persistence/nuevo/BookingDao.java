@@ -49,18 +49,18 @@ public interface BookingDao {
     /** Bookings on listings owned by the host (incoming requests). */
     BookingSearchResult searchIncomingBookings(IncomingSearch search);
 
-    boolean updateStatusIncoming(int id, int callerId, BookingStatus status);
+    Optional<Booking> updateStatusIncoming(int id, int callerId, BookingStatus status);
 
-    boolean updateStatusOutgoing(int id, int callerId, BookingStatus status);
+    Optional<Booking> updateStatusOutgoing(int id, int callerId, BookingStatus status);
 
-    boolean uploadPayment(PaymentProof paymentProof);
+    Optional<PaymentProof> uploadPayment(PaymentProof paymentProof);
 
     /**
      * Latest payment proof for the booking when {@code userId} is the guest or the item host.
      */
     Optional<PaymentProof> findPaymentProofForParticipant(int bookingId, int userId);
 
-    boolean refusePayment(int bookingId, String message, LocalDateTime refuseTime);
+    Optional<Booking> refusePayment(int bookingId, String message, LocalDateTime refuseTime);
 
     /** Set all bookings that ended before {@code maxEndTime} (UTC) as FINISHED */
     void finalizeBookingsBefore(LocalDateTime maxEndTime);

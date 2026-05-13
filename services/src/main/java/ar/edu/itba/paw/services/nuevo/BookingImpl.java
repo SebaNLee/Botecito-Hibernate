@@ -59,6 +59,8 @@ public class BookingImpl implements BookingInterface {
         if (start.isBefore(currentMinimumStart())) throw new NoAnticipationException();
     }
 
+    // TODO: send emails
+
     @Override
     public PreBookingCreateResult createBooking(final PreBookingReq preBookingReq) {
         verifyAnticipation(preBookingReq);
@@ -99,15 +101,17 @@ public class BookingImpl implements BookingInterface {
     @Override
     public void acceptBooking(int bookingId, int callerId) {
         verifyAnticipation(bookingId);
-        boolean success = bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.ACCEPTED);
-        if (!success) throw new IllegalBookingOperationException();
+        bookingDao
+                .updateStatusIncoming(bookingId, callerId, BookingStatus.ACCEPTED)
+                .orElseThrow(IllegalBookingOperationException::new);
     }
 
     @Override
     public void rejectBooking(int bookingId, int callerId) {
         verifyAnticipation(bookingId);
-        boolean success = bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.REJECTED);
-        if (!success) throw new IllegalBookingOperationException();
+        bookingDao
+                .updateStatusIncoming(bookingId, callerId, BookingStatus.REJECTED)
+                .orElseThrow(IllegalBookingOperationException::new);
     }
 
     @Override
@@ -117,14 +121,15 @@ public class BookingImpl implements BookingInterface {
 
         verifyAnticipation(bookingId);
 
-        boolean success = bookingDao.updateStatusOutgoing(bookingId, callerId, BookingStatus.PAID);
-        if (!success) throw new IllegalBookingOperationException();
+        bookingDao
+                .updateStatusOutgoing(bookingId, callerId, BookingStatus.PAID)
+                .orElseThrow(IllegalBookingOperationException::new);
 
         var now = currentDateTime();
         payment.setCreatedAt(now);
         if (payment.getReplyMsg() != null) payment.setRepliedAt(now);
 
-        bookingDao.uploadPayment(payment);
+        bookingDao.uploadPayment(payment).orElseThrow(IllegalBookingOperationException::new);
     }
 
     @Override
@@ -135,24 +140,25 @@ public class BookingImpl implements BookingInterface {
     @Override
     public void confirmPayment(int bookingId, int callerId) {
         verifyAnticipation(bookingId);
-        boolean success = bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.CONFIRMED);
-        if (!success) throw new IllegalBookingOperationException();
+        bookingDao
+                .updateStatusIncoming(bookingId, callerId, BookingStatus.CONFIRMED)
+                .orElseThrow(IllegalBookingOperationException::new);
     }
 
     @Override
     public void rejectPayment(int bookingId, int callerId, String reason) {
         verifyAnticipation(bookingId);
         var now = currentDateTime();
-        final boolean statusUpdated = bookingDao.updateStatusIncoming(bookingId, callerId, BookingStatus.REFUSED);
-        if (!statusUpdated) {
-            throw new IllegalBookingOperationException();
-        }
-        bookingDao.refusePayment(bookingId, reason, now);
+        bookingDao
+                .updateStatusIncoming(bookingId, callerId, BookingStatus.REFUSED)
+                .orElseThrow(IllegalBookingOperationException::new);
+        bookingDao.refusePayment(bookingId, reason, now).orElseThrow(IllegalBookingOperationException::new);
     }
 
     @Override
     public void cancelBooking(int bookingId, int callerId) {
-        boolean success = bookingDao.updateStatusOutgoing(bookingId, callerId, BookingStatus.CANCELLED);
-        if (!success) throw new IllegalBookingOperationException();
+        bookingDao
+                .updateStatusOutgoing(bookingId, callerId, BookingStatus.CANCELLED)
+                .orElseThrow(IllegalBookingOperationException::new);
     }
 }

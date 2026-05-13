@@ -297,9 +297,7 @@ public class ItemHibernateDao
             current.setDescription(update.getDescription());
             current.setPrice(BigDecimal.valueOf(update.getPricePerHour()));
             current.setDifficulty(
-                    update.getDifficultyLevel() != null
-                            ? update.getDifficultyLevel()
-                            : current.getDifficulty());
+                    update.getDifficultyLevel() != null ? update.getDifficultyLevel() : current.getDifficulty());
             current.setLocation(entityManager.getReference(LocationOrm.class, update.getLocationOptionId()));
             current.setCreatedAt(LocalDateTime.now());
             entityManager.flush();
@@ -314,10 +312,7 @@ public class ItemHibernateDao
         next.setPrice(BigDecimal.valueOf(update.getPricePerHour()));
         next.setCapacity(current.getCapacity());
         next.setWeight(current.getWeight());
-        next.setDifficulty(
-                update.getDifficultyLevel() != null
-                        ? update.getDifficultyLevel()
-                        : current.getDifficulty());
+        next.setDifficulty(update.getDifficultyLevel() != null ? update.getDifficultyLevel() : current.getDifficulty());
         next.setLocation(entityManager.getReference(LocationOrm.class, update.getLocationOptionId()));
         next.setTimezone(current.getTimezone());
         next.setCreatedAt(LocalDateTime.now());
@@ -333,8 +328,8 @@ public class ItemHibernateDao
 
     @Override
     public boolean setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
-        final int updated = entityManager.createQuery(
-                        "UPDATE ItemOrm i SET i.status = :status WHERE i.id = :itemId AND i.host.id = :ownerId")
+        final int updated = entityManager
+                .createQuery("UPDATE ItemOrm i SET i.status = :status WHERE i.id = :itemId AND i.host.id = :ownerId")
                 .setParameter("status", active ? ItemStatusEnumOrm.ACTIVE : ItemStatusEnumOrm.INACTIVE)
                 .setParameter("itemId", itemId)
                 .setParameter("ownerId", ownerId)
@@ -352,8 +347,8 @@ public class ItemHibernateDao
         entityManager.persist(image);
         entityManager.flush();
 
-        entityManager.createQuery(
-                        "DELETE FROM MediaOrm m WHERE m.version.id = :versionId AND m.id.index = 0")
+        entityManager
+                .createQuery("DELETE FROM MediaOrm m WHERE m.version.id = :versionId AND m.id.index = 0")
                 .setParameter("versionId", versionId)
                 .executeUpdate();
 
@@ -386,8 +381,7 @@ public class ItemHibernateDao
 
     private void copyAvailabilities(final int sourceVersionId, final VersionOrm targetVersion) {
         final List<AvailabilityOrm> availabilities = entityManager
-                .createQuery(
-                        "FROM AvailabilityOrm a WHERE a.version.id = :versionId", AvailabilityOrm.class)
+                .createQuery("FROM AvailabilityOrm a WHERE a.version.id = :versionId", AvailabilityOrm.class)
                 .setParameter("versionId", sourceVersionId)
                 .getResultList();
         for (final AvailabilityOrm a : availabilities) {

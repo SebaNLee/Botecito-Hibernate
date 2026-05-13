@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.webapp.presentation.nuevo;
+package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
@@ -83,6 +83,7 @@ public class MyBoatsPresentation {
 
     private static Map<String, Boolean> emptyStatusSelection() {
         final Map<String, Boolean> selectedByStatus = new LinkedHashMap<>();
+        // TODO fetch status enum from DB
         for (final String status : List.of(
                 "pending",
                 "confirmed",

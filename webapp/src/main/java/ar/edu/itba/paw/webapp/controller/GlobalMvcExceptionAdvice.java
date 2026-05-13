@@ -13,6 +13,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
@@ -26,6 +27,17 @@ public class GlobalMvcExceptionAdvice {
     public ModelAndView handleNotFound(final NoHandlerFoundException exception, final HttpServletResponse response) {
         response.setStatus(HttpStatus.NOT_FOUND.value());
         return ErrorPageSupport.modelAndView(HttpStatus.NOT_FOUND.value(), exception.getRequestURL());
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ModelAndView handleResponseStatus(
+            final ResponseStatusException exception,
+            final HttpServletRequest request,
+            final HttpServletResponse response) {
+        final int status = exception.getStatus().value();
+        response.setStatus(status);
+        final String failedPath = request != null ? request.getRequestURI() : null;
+        return ErrorPageSupport.modelAndView(status, failedPath);
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)

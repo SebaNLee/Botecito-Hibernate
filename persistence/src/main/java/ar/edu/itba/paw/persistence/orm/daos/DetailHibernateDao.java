@@ -86,6 +86,11 @@ public class DetailHibernateDao implements DetailDao {
         return toItemDetail(query.getResultList());
     }
 
+    @Override
+    public Optional<ItemDetail> getItemDetailCurrent(final int itemId) {
+        return getItemDetailById(itemId, false);
+    }
+
     private Optional<ItemDetail> toItemDetail(final List<ItemListingRowOrm> rows) {
         if (rows.isEmpty()) {
             return Optional.empty();

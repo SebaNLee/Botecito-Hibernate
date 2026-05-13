@@ -35,7 +35,7 @@ public final class MarketplaceJdbc implements MarketplaceDao {
      * does not support {@code COUNT(DISTINCT i.id) OVER ()}; this query’s joins
      * yield at most one row per item.
      */
-    private static final String ITEM_SELECT = "SELECT i.id, i.host_id, i.status,"
+    private static final String ITEM_SELECT = "SELECT i.id, i.host_id, v.id AS version_id, i.status,"
             + " v.title, v.description, v.price, v.capacity, v.weight, v.difficulty, v.location_id,"
             + " lo.name AS location_name,"
             + " a.weekday, a.start_time, a.end_time,"

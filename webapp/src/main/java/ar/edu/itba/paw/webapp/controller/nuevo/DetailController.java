@@ -6,6 +6,8 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -21,7 +23,10 @@ public class DetailController {
     private final DetailPresentation detailPresentation;
 
     @RequestMapping(value = "/item/{id:[1-9]\\d*}", method = RequestMethod.GET)
-    public Object itemDetail(@PathVariable("id") final int itemId, final HttpServletRequest request) {
+    public Object itemDetail(
+            @PathVariable("id") final int itemId,
+            @AuthenticationPrincipal final UserDetails user,
+            final HttpServletRequest request) {
         return detailPresentation.detailPage(itemId, request, Optional.empty());
     }
 

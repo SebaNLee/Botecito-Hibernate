@@ -2,8 +2,6 @@ package ar.edu.itba.paw.models.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.enums.ItemStatus;
 import java.math.BigDecimal;
-import java.time.DayOfWeek;
-import java.time.LocalTime;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,8 +9,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ItemModel {
-    private int id;
-    private String hostId;
+    private int itemId;
+    private int versionId;
+    private int hostId;
+
     private ItemStatus status;
 
     // Details
@@ -34,7 +34,5 @@ public class ItemModel {
     private int totalReviews;
 
     // Availability
-    private DayOfWeek weekday;
-    private LocalTime startTime;
-    private LocalTime endTime;
+    private List<AvailabilityWindow> availabilityWindows;
 }

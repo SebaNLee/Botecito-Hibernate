@@ -69,7 +69,7 @@
       </div>
     </c:when>
     <c:otherwise>
-      <c:url var="currentVersionUrl" value="/item/${item.id}" />
+      <c:url var="currentVersionUrl" value="/item/${item.itemId}" />
       <div class="w-full">
         <a href="<c:out value="${marketplaceBackHref}" />" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
           <span class="material-symbols-outlined">arrow_back</span>
@@ -201,7 +201,7 @@
               <c:url var="createItemReviewUrl" value="/reviews/booking/${pendingItemReviewAction.bookingId}" />
               <form action="${createItemReviewUrl}" method="post" class="rounded-2xl bg-base-200 p-4 space-y-3">
                 <input type="hidden" name="returnTo" value="item" />
-                <input type="hidden" name="itemId" value="${item.id}" />
+                <input type="hidden" name="itemId" value="${item.itemId}" />
                 <h3 class="m-0 text-sm font-bold text-on-surface"><c:out value="${itemReviewLeaveLabel}" /></h3>
                 <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
                   <label class="text-xs font-bold uppercase tracking-wider text-outline" for="item-review-rating"><c:out value="${itemReviewRatingLabel}" /></label>
@@ -303,7 +303,7 @@
                     <ul tabindex="0" class="dropdown-content menu p-3 space-y-2 shadow bg-base-100 rounded-box w-64 max-h-56 overflow-auto border border-outline-variant/20">
                       <c:forEach items="${itemDetail.versions}" var="ver">
                         <c:if test="${ver.versionId ne currentVersionId}">
-                          <c:url var="snapshotUrl" value="/item/${item.id}/snapshot/${ver.versionId}" />
+                          <c:url var="snapshotUrl" value="/item/${item.itemId}/snapshot/${ver.versionId}" />
                           <li>
                             <a href="${snapshotUrl}" class="${ver.versionId eq selectedVersionId ? 'active' : ''}">
                               <spring:message code="itemDetail.version.guestSnapshot" arguments="${ver.versionId}" />
@@ -342,8 +342,8 @@
             </c:when>
             <c:when test="${isOwner}">
               <paw:alertMessage type="info"><c:out value="${ownerPublicationNotice}" /></paw:alertMessage>
-              <c:url var="ownerManageAvailabilityUrl" value="/profile/item/${item.id}/availability">
-                <c:param name="return" value="/item/${item.id}" />
+              <c:url var="ownerManageAvailabilityUrl" value="/profile/item/${item.itemId}/availability">
+                <c:param name="return" value="/item/${item.itemId}" />
               </c:url>
               <a href="${ownerManageAvailabilityUrl}" class="btn btn-primary btn-block btn-lg no-underline">
                 <c:out value="${ownerBlockButtonLabel}" />
@@ -354,12 +354,12 @@
                 <c:out value="${ownerIncomingRequestsLabel}" />
                 <span class="material-symbols-outlined text-sm align-middle">inbox</span>
               </a>
-              <div hidden data-prebook-draft-clear-host data-item-id="${item.id}"></div>
+              <div hidden data-prebook-draft-clear-host data-item-id="${item.itemId}"></div>
             </c:when>
             <c:when test="${showPreBookingPanel}">
               <div
                   data-prebook-draft-root
-                  data-item-id="${item.id}"
+                  data-item-id="${item.itemId}"
                   data-viewer-logged-in="${viewer != null ? 'true' : 'false'}"
                   data-login-url="<c:out value="${prebookLoginUrl}" />">
                 <div
@@ -379,7 +379,7 @@
                   </div>
                   <p class="mb-0 mt-2 text-xs text-on-surface-variant" data-price-duration><c:out value="${itemDetailPricePendingHelpLabel}" /></p>
                 </div>
-                <c:url var="preBookingPostUrl" value="/item/${item.id}" />
+                <c:url var="preBookingPostUrl" value="/item/${item.itemId}" />
                 <form:form
                     id="detail-prebook-form"
                     modelAttribute="preBookingForm"

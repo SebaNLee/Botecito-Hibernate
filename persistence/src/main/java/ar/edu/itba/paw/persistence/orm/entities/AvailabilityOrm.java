@@ -42,5 +42,5 @@ public class AvailabilityOrm {
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
-    protected AvailabilityOrm() {}
+    public AvailabilityOrm() {}
 }

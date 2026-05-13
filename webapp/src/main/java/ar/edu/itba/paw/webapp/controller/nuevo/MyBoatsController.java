@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
-import ar.edu.itba.paw.webapp.presentation.nuevo.MyBoatsPresentation;
+import ar.edu.itba.paw.webapp.presentation.MyBoatsPresentation;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;

@@ -16,4 +16,11 @@ public interface ItemInterface {
     boolean updateMyBoatsItem(int itemId, int ownerId, ItemUpdateModel updateModel);
 
     boolean deleteMyBoatsItem(int itemId, int ownerId);
+
+    int createPublicationVersion(int itemId, int ownerId, ItemUpdateModel update);
+
+    // TODO temp fix for edit item page (should use PublishForm in the futuro)
+    boolean replaceVersionPrimaryImage(int versionId, byte[] imageData);
+
+    boolean setItemActiveForOwner(int itemId, int ownerId, boolean active);
 }

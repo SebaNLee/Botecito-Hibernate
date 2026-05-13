@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -38,5 +39,24 @@ public class ItemImpl implements ItemInterface {
     @Override
     public boolean deleteMyBoatsItem(final int itemId, final int ownerId) {
         return itemDao.deleteMyBoatsItem(itemId, ownerId);
+    }
+
+    @Override
+    @Transactional
+    public int createPublicationVersion(final int itemId, final int ownerId, final ItemUpdateModel update) {
+        return itemDao.createPublicationVersion(itemId, ownerId, update);
+    }
+
+    @Override
+    @Transactional
+    // TODO temp fix for edit item page (should use PublishForm in the futuro)
+    public boolean replaceVersionPrimaryImage(final int versionId, final byte[] imageData) {
+        return itemDao.replaceVersionPrimaryImage(versionId, imageData);
+    }
+
+    @Override
+    @Transactional
+    public boolean setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
+        return itemDao.setItemActiveForOwner(itemId, ownerId, active);
     }
 }

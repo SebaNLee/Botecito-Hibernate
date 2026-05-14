@@ -42,6 +42,7 @@ public class MailServiceImpl implements MailService {
     private final MessageSource messageSource;
     private final String reviewRecipient;
     private final String myBoatsBaseUrl;
+    private final String requestsBaseUrl;
     private final String bookingsBaseUrl;
     private final String passwordRecoveryBaseUrl;
     private final String emailVerificationBaseUrl;
@@ -57,6 +58,7 @@ public class MailServiceImpl implements MailService {
         final String baseUrl = requireProperty(credentialsProperties, "app.baseUrl");
         this.reviewRecipient = requireProperty(credentialsProperties, "mail.reviewRecipient");
         this.myBoatsBaseUrl = baseUrl + "/my-boats";
+        this.requestsBaseUrl = baseUrl + "/requests/incoming";
         this.bookingsBaseUrl = baseUrl + "/bookings";
         this.passwordRecoveryBaseUrl = baseUrl + "/password-recovery";
         this.emailVerificationBaseUrl = baseUrl + "/verify-email";
@@ -118,7 +120,7 @@ public class MailServiceImpl implements MailService {
                     : booking.getDescription().trim();
             context.setVariable("hasRequestMessage", !message.isEmpty());
             context.setVariable("requestMessage", message);
-            context.setVariable("profileUrl", myBoatsBaseUrl + "#received-booking-requests");
+            context.setVariable("profileUrl", requestsBaseUrl);
             sendHtmlEmail(
                     recipient.getEmail(),
                     getMessage("mail.requestReview.subject", locale, requesterName(mail)),
@@ -162,7 +164,7 @@ public class MailServiceImpl implements MailService {
             final Context context = new Context(locale);
             context.setVariable("requesterName", mail.getRequesterName());
             context.setVariable("itemTitle", mail.getItemTitle());
-            context.setVariable("profileUrl", myBoatsBaseUrl + "#received-booking-requests");
+            context.setVariable("profileUrl", requestsBaseUrl);
             final boolean hasProofImage = isInlineProofImage(mail.getProofFileData(), mail.getProofContentType());
             context.setVariable("hasProofImage", hasProofImage);
             if (hasProofImage) {

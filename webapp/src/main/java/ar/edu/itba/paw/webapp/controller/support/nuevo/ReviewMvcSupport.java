@@ -51,7 +51,7 @@ public class ReviewMvcSupport {
             return new ModelAndView("redirect:/item/" + itemId);
         }
         if ("dashboardHosting".equals(returnTo)) {
-            return new ModelAndView("redirect:/my-boats#received-booking-requests");
+            return new ModelAndView("redirect:/requests/incoming");
         }
         return new ModelAndView("redirect:/bookings#sent-booking-requests");
     }

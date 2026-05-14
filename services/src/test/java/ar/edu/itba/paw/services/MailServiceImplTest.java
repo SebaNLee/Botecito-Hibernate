@@ -88,7 +88,7 @@ public class MailServiceImplTest {
         final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
         Mockito.verify(templateEngine).process(Mockito.eq("booking-review"), contextCaptor.capture());
         Assertions.assertEquals(
-                "http://localhost:8080/my-boats#received-booking-requests",
+                "http://localhost:8080/requests/incoming",
                 contextCaptor.getValue().getVariable("profileUrl"));
     }
 
@@ -147,7 +147,7 @@ public class MailServiceImplTest {
         final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
         Mockito.verify(templateEngine).process(Mockito.eq("payment-proof-submitted"), contextCaptor.capture());
         Assertions.assertEquals(
-                "http://localhost:8080/my-boats#received-booking-requests",
+                "http://localhost:8080/requests/incoming",
                 contextCaptor.getValue().getVariable("profileUrl"));
     }
 

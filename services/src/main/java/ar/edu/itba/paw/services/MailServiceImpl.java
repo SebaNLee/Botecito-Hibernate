@@ -36,6 +36,7 @@ public class MailServiceImpl implements MailService {
     private final UserDao userDao;
     private final String reviewRecipient;
     private final String myBoatsBaseUrl;
+    private final String requestsBaseUrl;
     private final String bookingsBaseUrl;
     private final String passwordRecoveryBaseUrl;
 
@@ -58,6 +59,7 @@ public class MailServiceImpl implements MailService {
         final String baseUrl = requireProperty(credentialsProperties, "app.baseUrl");
         this.reviewRecipient = requireProperty(credentialsProperties, "mail.reviewRecipient");
         this.myBoatsBaseUrl = baseUrl + "/my-boats";
+        this.requestsBaseUrl = baseUrl + "/requests/incoming";
         this.bookingsBaseUrl = baseUrl + "/bookings";
         this.passwordRecoveryBaseUrl = baseUrl + "/password-recovery";
     }
@@ -122,7 +124,7 @@ public class MailServiceImpl implements MailService {
                     : bookingRequest.getDescription().trim();
             context.setVariable("hasRequestMessage", !message.isEmpty());
             context.setVariable("requestMessage", message);
-            context.setVariable("profileUrl", myBoatsBaseUrl + "#received-booking-requests");
+            context.setVariable("profileUrl", requestsBaseUrl);
             sendHtmlEmail(
                     recipientEmail,
                     getMessage("mail.requestReview.subject", locale, bookingRequest.getRequesterName()),
@@ -177,7 +179,7 @@ public class MailServiceImpl implements MailService {
             final Context context = new Context(locale);
             context.setVariable("requesterName", requesterName);
             context.setVariable("itemTitle", itemTitle);
-            context.setVariable("profileUrl", myBoatsBaseUrl + "#received-booking-requests");
+            context.setVariable("profileUrl", requestsBaseUrl);
             final boolean hasProofImage = isInlineProofImage(proofFileData, proofContentType);
             context.setVariable("hasProofImage", hasProofImage);
             if (hasProofImage) {

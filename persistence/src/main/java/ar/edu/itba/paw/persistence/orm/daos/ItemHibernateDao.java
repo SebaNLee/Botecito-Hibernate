@@ -36,15 +36,27 @@ public class ItemHibernateDao implements ItemDao {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId) {
+    public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId, final int page, final int pageSize) {
         final String hql = baseMyBoatsQuery() + " WHERE i.host.id = :ownerId ORDER BY i.createdAt DESC, i.id DESC";
         final List<Object[]> rows = entityManager
                 .createQuery(hql, Object[].class)
                 .setParameter("ownerId", ownerId)
                 .setParameter("rejectedStatus", BookingStatusEnumOrm.REJECTED)
                 .setParameter("cancelledStatus", BookingStatusEnumOrm.CANCELLED)
+                .setFirstResult((page - 1) * pageSize)
+                .setMaxResults(pageSize)
                 .getResultList();
         return mapMyBoatsRows(rows);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int countMyBoatsItemsByOwnerId(final int ownerId) {
+        final Number count = (Number) entityManager
+                .createQuery("SELECT COUNT(i) FROM ItemOrm i WHERE i.host.id = :ownerId")
+                .setParameter("ownerId", ownerId)
+                .getSingleResult();
+        return count == null ? 0 : count.intValue();
     }
 
     @Override
@@ -204,10 +216,11 @@ public class ItemHibernateDao implements ItemDao {
             final int locationOptionId) {
         final LocalDateTime now = LocalDateTime.now();
 
-        final ItemOrm item = new ItemOrm();
-        item.setHost(entityManager.getReference(UsersOrm.class, ownerId));
-        item.setStatus(ItemStatusEnumOrm.ACTIVE);
-        item.setCreatedAt(now);
+        final ItemOrm item = ItemOrm.builder()
+                .host(entityManager.getReference(UsersOrm.class, ownerId))
+                .status(ItemStatusEnumOrm.ACTIVE)
+                .createdAt(now)
+                .build();
         entityManager.persist(item);
 
         final VersionOrm version = new VersionOrm();
@@ -288,7 +301,8 @@ public class ItemHibernateDao implements ItemDao {
                 + " WHERE b.version.item = i"
                 + " AND b.status NOT IN (:rejectedStatus, :cancelledStatus)"
                 + " AND b.guest.id <> i.host.id"
-                + " AND b.end > CURRENT_TIMESTAMP)"
+                + " AND b.end > CURRENT_TIMESTAMP),"
+                + " v.description, v.difficulty, v.location.id"
                 + " FROM ItemOrm i"
                 + " JOIN VersionOrm v ON v.item = i"
                 + " AND v.id = (SELECT MAX(v2.id) FROM VersionOrm v2 WHERE v2.item = i)";

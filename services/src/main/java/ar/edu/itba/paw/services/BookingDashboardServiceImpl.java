@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemBooking;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.services.nuevo.ReviewInterface;
 import ar.edu.itba.paw.services.util.BookingDisplayFormatter;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -19,6 +20,7 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
 
     private final ItemService itemService;
     private final BookingRequestService bookingRequestService;
+    private final ReviewInterface reviewInterface;
 
     @Override
     public GuestTripsDashboardData loadGuestTripsDashboard(final int guestId, final int page, final int pageSize) {
@@ -37,6 +39,7 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
         final Map<Integer, Boolean> sentHasPaymentRefusalReasonByBookingId = new LinkedHashMap<>();
         final Map<Integer, Boolean> sentPaymentProofPdfByBookingId = new LinkedHashMap<>();
         final Map<Integer, Integer> sentBookedSnapshotVersionIdByBookingId = new LinkedHashMap<>();
+        final Map<Integer, Boolean> sentCanReviewByBookingId = new LinkedHashMap<>();
 
         for (final ItemBooking booking : sentBookingPage.getContent()) {
             if (booking != null && booking.getItemId() != null) {
@@ -86,6 +89,7 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
             sentPaymentProofPdfByBookingId.put(bookingId, "application/pdf".equalsIgnoreCase(contentType));
             sentBookedSnapshotVersionIdByBookingId.put(
                     bookingId, bookedPublication.map(ItemSnapshot::getVersionId).orElse(null));
+            sentCanReviewByBookingId.put(bookingId, reviewInterface.canCreateReview(bookingId, guestId));
         }
 
         return new GuestTripsDashboardData(
@@ -102,6 +106,7 @@ public final class BookingDashboardServiceImpl implements BookingDashboardServic
                 sentPaymentRefusalReasonByBookingId,
                 sentHasPaymentRefusalReasonByBookingId,
                 sentPaymentProofPdfByBookingId,
-                sentBookedSnapshotVersionIdByBookingId);
+                sentBookedSnapshotVersionIdByBookingId,
+                sentCanReviewByBookingId);
     }
 }

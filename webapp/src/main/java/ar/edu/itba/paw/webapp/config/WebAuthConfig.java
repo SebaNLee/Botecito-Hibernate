@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -56,6 +57,8 @@ public class WebAuthConfig {
                         .permitAll()
                         .requestMatchers(antMatcher("/password-recovery/**"))
                         .permitAll()
+                        .requestMatchers(antMatcher("/verify-email/**"))
+                        .permitAll()
                         .requestMatchers(
                                 antMatcher(HttpMethod.GET, "/image/*"),
                                 antMatcher(HttpMethod.GET, "/bookings/*/accept"),
@@ -69,7 +72,10 @@ public class WebAuthConfig {
                         .passwordParameter("j_password")
                         .successHandler(authenticationSuccessHandler)
                         .loginPage("/login")
-                        .failureUrl("/login?error=true"))
+                        .failureHandler((request, response, exception) -> response.sendRedirect(request.getContextPath()
+                                + (exception instanceof DisabledException
+                                        ? "/login?unverified=true"
+                                        : "/login?error=true"))))
                 .rememberMe(remember -> remember.rememberMeParameter("j_rememberme")
                         .userDetailsService(userDetailsAccountService)
                         .key("botecito-remember-me-secret")

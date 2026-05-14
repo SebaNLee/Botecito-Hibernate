@@ -226,15 +226,10 @@
               <c:when test="${not empty versionReviews}">
                 <div class="space-y-3">
                   <c:forEach items="${versionReviews}" var="review">
-                    <c:set var="fullStars" value="${reviewFullStars[review.id]}" />
+                    <c:set var="fullStars" value="${review.rating ge 5 ? 5 : (review.rating ge 4 ? 4 : (review.rating ge 3 ? 3 : (review.rating ge 2 ? 2 : (review.rating ge 1 ? 1 : 0))))}" />
                     <div class="rounded-xl bg-base-200 p-4 space-y-2">
                       <div class="flex items-center justify-between gap-3">
-                        <p class="m-0 text-sm font-bold text-on-surface">
-                          <c:choose>
-                            <c:when test="${review.senderId > 0 and not empty reviewAuthorNames[review.senderId]}"><c:out value="${reviewAuthorNames[review.senderId]}" /></c:when>
-                            <c:otherwise><c:out value="${detailReviewAnonymousLabel}" /></c:otherwise>
-                          </c:choose>
-                        </p>
+                        <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${detailReviewAnonymousLabel}" /></p>
                         <div class="flex flex-col items-end gap-0.5 shrink-0">
                           <div class="flex items-center gap-0.5" aria-label="${review.rating} of 5">
                             <c:forEach var="starIndex" begin="1" end="5">
@@ -254,7 +249,7 @@
                         </div>
                       </div>
                       <p class="m-0 text-xs text-on-surface-variant">
-                        <time datetime="${review.createdAt}"><c:out value="${reviewCreatedAtLabels[review.id]}" /></time>
+                        <time datetime="${review.createdAt}"><c:out value="${review.createdAt}" /></time>
                       </p>
                       <c:if test="${not empty review.comment}">
                         <p class="m-0 text-sm text-on-surface-variant break-words"><c:out value="${review.comment}" /></p>

@@ -3,6 +3,7 @@ package ar.edu.itba.paw.services.nuevo;
 import ar.edu.itba.paw.models.nuevo.PreferredLanguageModel;
 import ar.edu.itba.paw.models.nuevo.mail.BookingMailModel;
 import ar.edu.itba.paw.models.nuevo.mail.BookingReviewMailModel;
+import ar.edu.itba.paw.models.nuevo.mail.EmailVerificationMailModel;
 import ar.edu.itba.paw.models.nuevo.mail.MailRecipientModel;
 import ar.edu.itba.paw.models.nuevo.mail.PasswordRecoveryMailModel;
 import ar.edu.itba.paw.models.nuevo.mail.PaymentReceivedMailModel;
@@ -74,6 +75,25 @@ public class MailServiceImplTest {
         Assertions.assertDoesNotThrow(() -> mailService.sendPasswordRecoveryEmail(mail));
 
         Mockito.verify(mailSender).send(Mockito.any(MimeMessage.class));
+    }
+
+    @Test
+    public void testSendEmailVerificationEmailUsesModelInput() {
+        final EmailVerificationMailModel mail = new EmailVerificationMailModel();
+        mail.setRecipient(recipient("verify@a.com", "Verify User", PreferredLanguageModel.EN));
+        mail.setVerificationToken("token-1");
+        stubMessage("mail.emailVerification.subject", "Verify your email");
+        stubTemplate("email-verification");
+        stubMimeMessage();
+
+        Assertions.assertDoesNotThrow(() -> mailService.sendEmailVerificationEmail(mail));
+
+        Mockito.verify(mailSender).send(Mockito.any(MimeMessage.class));
+        final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
+        Mockito.verify(templateEngine).process(Mockito.eq("email-verification"), contextCaptor.capture());
+        Assertions.assertEquals(
+                "http://localhost:8080/verify-email/token-1",
+                contextCaptor.getValue().getVariable("verificationUrl"));
     }
 
     @Test

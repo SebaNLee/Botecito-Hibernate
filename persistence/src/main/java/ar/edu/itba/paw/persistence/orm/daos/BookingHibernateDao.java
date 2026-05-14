@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
@@ -185,6 +186,110 @@ public class BookingHibernateDao implements BookingDao {
         final Map<Integer, PaymentProofOrm> proofByBookingId =
                 paymentProofsByBookingIds(rows.stream().map(BookingOrm::getId).toList());
         return rows.stream().map(orm -> toBooking(orm, proofByBookingId)).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Booking> findById(final int bookingId) {
+        return Optional.ofNullable(entityManager.find(BookingOrm.class, bookingId))
+                .map(BookingHibernateDao::toBooking);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Booking> listBookingsByGuestId(final int guestId) {
+        return entityManager
+                .createQuery(
+                        "SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest "
+                                + "WHERE b.guest.id = :guestId ORDER BY b.start ASC",
+                        BookingOrm.class)
+                .setParameter("guestId", guestId)
+                .getResultList()
+                .stream()
+                .map(BookingHibernateDao::toBooking)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Booking> listBookingsByOwnerId(final int ownerId) {
+        return entityManager
+                .createQuery(
+                        "SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest "
+                                + "WHERE b.version.item.host.id = :ownerId ORDER BY b.start ASC",
+                        BookingOrm.class)
+                .setParameter("ownerId", ownerId)
+                .getResultList()
+                .stream()
+                .map(BookingHibernateDao::toBooking)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Integer> findItemIdForBookingId(final int bookingId) {
+        try {
+            final Integer itemId = entityManager
+                    .createQuery("SELECT b.version.item.id FROM BookingOrm b WHERE b.id = :id", Integer.class)
+                    .setParameter("id", bookingId)
+                    .getSingleResult();
+            return Optional.ofNullable(itemId);
+        } catch (final NoResultException e) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Integer> findOwnerIdForBookingId(final int bookingId) {
+        try {
+            final Integer ownerId = entityManager
+                    .createQuery("SELECT b.version.item.host.id FROM BookingOrm b WHERE b.id = :id", Integer.class)
+                    .setParameter("id", bookingId)
+                    .getSingleResult();
+            return Optional.ofNullable(ownerId);
+        } catch (final NoResultException e) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BookingSearchResult searchBookings(final BookingSearchModel search) {
+        if (search == null) {
+            return new BookingSearchResult(List.of(), 0L);
+        }
+        final Map<String, Object> params = new HashMap<>();
+        final int pageSize = resolvePageSize(search);
+        final int offset = (resolvePage(search) - 1) * pageSize;
+
+        final StringBuilder hql = new StringBuilder(
+                "SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof INNER JOIN FETCH b.version v "
+                        + "INNER JOIN FETCH v.item i LEFT JOIN FETCH i.host h WHERE 1=1 ");
+        appendSharedBookingSearchFilters(hql, search, params);
+        hql.append(orderByBookings(search));
+
+        final TypedQuery<BookingOrm> query = entityManager.createQuery(hql.toString(), BookingOrm.class);
+        bindParams(query, params);
+        query.setFirstResult(offset);
+        query.setMaxResults(pageSize);
+
+        final List<BookingOrm> rows = query.getResultList();
+
+        final StringBuilder countHql =
+                new StringBuilder("SELECT COUNT(b) FROM BookingOrm b INNER JOIN b.version v WHERE 1=1 ");
+        appendSharedBookingSearchFilters(countHql, search, params);
+        final TypedQuery<Long> countQuery = entityManager.createQuery(countHql.toString(), Long.class);
+        bindParams(countQuery, params);
+        final long total = toLong(countQuery.getSingleResult());
+
+        if (!rows.isEmpty()) {
+            final Map<Integer, PaymentProofOrm> proofByBookingId = paymentProofsByBookingIds(
+                    rows.stream().map(BookingOrm::getId).toList());
+            return new BookingSearchResult(
+                    rows.stream().map(orm -> toBooking(orm, proofByBookingId)).toList(), total);
+        }
+        return new BookingSearchResult(List.of(), total);
     }
 
     @Override
@@ -589,6 +694,10 @@ public class BookingHibernateDao implements BookingDao {
             return Optional.empty();
         }
         return Optional.of(toPaymentProof(rows.get(0)));
+    }
+
+    private static Booking toBooking(final BookingOrm orm) {
+        return toBooking(orm, Map.of());
     }
 
     private static Booking toBooking(final BookingOrm orm, final Map<Integer, PaymentProofOrm> proofByBookingId) {

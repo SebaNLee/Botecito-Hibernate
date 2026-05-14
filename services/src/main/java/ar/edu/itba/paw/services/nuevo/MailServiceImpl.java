@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.nuevo.PreferredLanguageModel;
 import ar.edu.itba.paw.models.nuevo.mail.BookingMailModel;
 import ar.edu.itba.paw.models.nuevo.mail.BookingResolutionMailModel;
 import ar.edu.itba.paw.models.nuevo.mail.BookingReviewMailModel;
+import ar.edu.itba.paw.models.nuevo.mail.EmailVerificationMailModel;
 import ar.edu.itba.paw.models.nuevo.mail.MailRecipientModel;
 import ar.edu.itba.paw.models.nuevo.mail.PasswordRecoveryMailModel;
 import ar.edu.itba.paw.models.nuevo.mail.PaymentProofRefusedMailModel;
@@ -43,6 +44,7 @@ public class MailServiceImpl implements MailService {
     private final String myBoatsBaseUrl;
     private final String bookingsBaseUrl;
     private final String passwordRecoveryBaseUrl;
+    private final String emailVerificationBaseUrl;
 
     public MailServiceImpl(
             final JavaMailSender mailSender,
@@ -57,6 +59,7 @@ public class MailServiceImpl implements MailService {
         this.myBoatsBaseUrl = baseUrl + "/my-boats";
         this.bookingsBaseUrl = baseUrl + "/bookings";
         this.passwordRecoveryBaseUrl = baseUrl + "/password-recovery";
+        this.emailVerificationBaseUrl = baseUrl + "/verify-email";
     }
 
     @Override
@@ -239,6 +242,29 @@ public class MailServiceImpl implements MailService {
         } catch (final RuntimeException e) {
             LOGGER.error(
                     "Could not send password recovery email to {}.",
+                    mail.getRecipient().getEmail(),
+                    e);
+        }
+    }
+
+    @Override
+    @Async("mailTaskExecutor")
+    public void sendEmailVerificationEmail(final EmailVerificationMailModel mail) {
+        if (mail == null || !hasEmail(mail.getRecipient()) || isBlank(mail.getVerificationToken())) {
+            return;
+        }
+        try {
+            final Locale locale = resolveLocale(mail.getRecipient());
+            final Context context = new Context(locale);
+            context.setVariable("recipientName", mail.getRecipient().getDisplayName());
+            context.setVariable("verificationUrl", emailVerificationBaseUrl + "/" + mail.getVerificationToken());
+            sendHtmlEmail(
+                    mail.getRecipient().getEmail(),
+                    getMessage("mail.emailVerification.subject", locale),
+                    templateEngine.process("email-verification", context));
+        } catch (final RuntimeException e) {
+            LOGGER.error(
+                    "Could not send email verification to {}.",
                     mail.getRecipient().getEmail(),
                     e);
         }

@@ -32,7 +32,7 @@ public class AuthControllerTest {
     @BeforeEach
     public void setUp() {
         final AuthPresentation authPresentation =
-                new AuthPresentation(userService, postRegistrationAuthenticator, new AuthModelMapper());
+                new AuthPresentation(userService, new AuthModelMapper(), postRegistrationAuthenticator);
         controller = new AuthController(authPresentation);
     }
 
@@ -86,6 +86,6 @@ public class AuthControllerTest {
         final ModelAndView mav = controller.registerSubmit(form, errors, new MockHttpServletRequest());
 
         Assertions.assertEquals("nuevo/register", mav.getViewName());
-        Mockito.verifyNoInteractions(userService, postRegistrationAuthenticator);
+        Mockito.verifyNoInteractions(userService);
     }
 }

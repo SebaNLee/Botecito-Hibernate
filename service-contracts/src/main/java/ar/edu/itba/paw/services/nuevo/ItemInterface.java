@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ItemInterface {
-    List<MyBoatsItem> listMyBoatsItemsByOwnerId(int ownerId);
+    List<MyBoatsItem> listMyBoatsItemsByOwnerId(int ownerId, int page, int pageSize);
+
+    int countMyBoatsItemsByOwnerId(int ownerId);
 
     Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(int itemId, int ownerId);
 
@@ -24,6 +26,4 @@ public interface ItemInterface {
     boolean replaceVersionPrimaryImage(int versionId, byte[] imageData);
 
     boolean setItemActiveForOwner(int itemId, int ownerId, boolean active);
-
-    // TODO: Soft delete item method
 }

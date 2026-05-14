@@ -15,11 +15,13 @@ import javax.persistence.OneToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "booking")
 public class BookingOrm {
@@ -59,6 +61,4 @@ public class BookingOrm {
 
     @OneToOne(mappedBy = "booking", fetch = FetchType.LAZY)
     private PaymentProofOrm paymentProof;
-
-    public BookingOrm() {}
 }

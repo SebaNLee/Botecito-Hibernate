@@ -7,6 +7,9 @@ import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.nuevo.PasswordResetForm;
 import ar.edu.itba.paw.webapp.form.nuevo.RegisterForm;
+import java.util.Optional;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
@@ -20,8 +23,8 @@ public class AuthPresentation {
     private static final String PASSWORD_RECOVERY_RESET_VIEW = "nuevo/password-recovery-reset";
 
     private final UserService userService;
-    private final PostRegistrationAuthenticator postRegistrationAuthenticator;
     private final AuthModelMapper authModelMapper;
+    private final PostRegistrationAuthenticator postRegistrationAuthenticator;
 
     public ModelAndView login(final LoginForm form) {
         final ModelAndView mav = new ModelAndView("login");
@@ -33,6 +36,18 @@ public class AuthPresentation {
         }
         if (form.getRegistered() != null) {
             mav.addObject("registeredSuccess", true);
+        }
+        if (form.getVerificationSent() != null) {
+            mav.addObject("verificationSentSuccess", true);
+        }
+        if (form.getVerified() != null) {
+            mav.addObject("emailVerifiedSuccess", true);
+        }
+        if (form.getVerificationInvalid() != null) {
+            mav.addObject("verificationInvalidError", true);
+        }
+        if (form.getUnverified() != null) {
+            mav.addObject("unverifiedError", true);
         }
         if (form.getLegacyToken() != null) {
             mav.addObject("legacyTokenError", true);
@@ -55,10 +70,7 @@ public class AuthPresentation {
             return new ModelAndView(REGISTER_VIEW);
         }
 
-        if (!postRegistrationAuthenticator.authenticate(user.getEmail(), rawPassword, form.getRequest())) {
-            return new ModelAndView("redirect:/login?registered=true");
-        }
-        return new ModelAndView("redirect:/");
+        return new ModelAndView("redirect:/login?verificationSent=true");
     }
 
     public ModelAndView passwordRecoveryRequestForm(final PasswordRecoveryRequestForm form) {
@@ -110,6 +122,17 @@ public class AuthPresentation {
         }
 
         return new ModelAndView("redirect:/login?passwordRecovered=true");
+    }
+
+    public ModelAndView verifyEmail(
+            final String token, final HttpServletRequest request, final HttpServletResponse response) {
+        final Optional<UserModel> verifiedUser = userService.verifyEmail(token);
+        if (verifiedUser.isPresent()) {
+            postRegistrationAuthenticator.authenticateVerifiedUser(
+                    verifiedUser.get().getEmail(), request, response);
+            return new ModelAndView("redirect:/");
+        }
+        return new ModelAndView("redirect:/login?verificationInvalid=true");
     }
 
     public ModelAndView forbidden() {

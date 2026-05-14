@@ -3,12 +3,9 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.Item;
 import ar.edu.itba.paw.models.ItemAvailability;
 import ar.edu.itba.paw.models.ItemBooking;
-import ar.edu.itba.paw.models.ItemSearchCriteria;
 import ar.edu.itba.paw.models.ItemSnapshot;
 import ar.edu.itba.paw.models.ItemType;
 import ar.edu.itba.paw.models.LocationOption;
-import ar.edu.itba.paw.models.RatingSummary;
-import ar.edu.itba.paw.models.Review;
 import ar.edu.itba.paw.models.User;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -17,10 +14,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ItemService {
-    List<Item> listItems();
-
-    Page<Item> searchItems(ItemSearchCriteria criteria, int page, int pageSize);
-
     List<LocationOption> listLocationOptions();
 
     Optional<Item> findItemById(int id);
@@ -118,8 +111,6 @@ public interface ItemService {
 
     void reorderImagesForItem(int itemId, List<Integer> imageIdsInOrder);
 
-    Page<Item> searchMarketplace(ItemSearchCriteria criteria, int page, int pageSize);
-
     java.util.Map<String, String> validatePublicationDraft(PublicationDraft draft);
 
     /**
@@ -145,12 +136,6 @@ public interface ItemService {
 
     /** Comma-separated image ids; returns an empty list if the input is blank or any token is not a valid id. */
     List<Integer> parseGalleryImageOrderCsv(String csv);
-
-    RatingSummary getItemRatingSummary(int itemId);
-
-    List<Review> listLatestReviews(int itemId, int limit);
-
-    Optional<ReviewService.PendingReviewAction> findPendingReviewAction(int userId, int itemId);
 
     /**
      * Whether the requested calendar range lies in continuously offered availability for the item (same rules as the

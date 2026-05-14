@@ -9,10 +9,12 @@ import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "users")
 public class UsersOrm {
@@ -55,6 +57,4 @@ public class UsersOrm {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-
-    public UsersOrm() {}
 }

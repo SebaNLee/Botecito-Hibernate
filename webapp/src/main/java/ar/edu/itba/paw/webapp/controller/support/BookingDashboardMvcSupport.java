@@ -1,11 +1,8 @@
 package ar.edu.itba.paw.webapp.controller.support;
 
-import ar.edu.itba.paw.models.Review;
-import ar.edu.itba.paw.models.ReviewTargetType;
 import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.services.BookingDashboardService;
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.UserService;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -30,7 +27,6 @@ public final class BookingDashboardMvcSupport {
     private final UserService userService;
     private final ItemService itemService;
     private final BookingDashboardService bookingDashboardService;
-    private final ReviewService reviewService;
 
     public ModelAndView guestBookings(
             final List<String> status, final String query, final int page, final HttpServletRequest request) {
@@ -61,13 +57,10 @@ public final class BookingDashboardMvcSupport {
                     mav.addObject("sentPaymentProofPdfByBookingId", data.getSentPaymentProofPdfByBookingId());
                     mav.addObject(
                             "sentBookedSnapshotVersionIdByBookingId", data.getSentBookedSnapshotVersionIdByBookingId());
+                    mav.addObject("sentCanReviewByBookingId", data.getSentCanReviewByBookingId());
                     mav.addObject("selectedBookingStatusFilters", statusFilters);
                     mav.addObject("selectedBookingStatusFiltersByValue", buildSelectedStatusFilterMap(statusFilters));
                     mav.addObject("boatSearchQuery", normalizeQuery(query));
-                    mav.addObject(
-                            "pendingGuestItemReviewsByBookingId",
-                            buildPendingGuestItemReviewsByBookingId(user.getId()));
-                    mav.addObject("authoredItemReviewsByBookingId", buildAuthoredItemReviewsByBookingId(user.getId()));
                     return mav;
                 })
                 .orElseGet(() -> new ModelAndView("redirect:/login"));
@@ -146,27 +139,5 @@ public final class BookingDashboardMvcSupport {
             urls.put(itemId, ItemImageUtils.resolveImageUrl(itemService, itemId, contextPath));
         }
         return urls;
-    }
-
-    private Map<Integer, ReviewService.PendingReviewAction> buildPendingGuestItemReviewsByBookingId(final int userId) {
-        final Map<Integer, ReviewService.PendingReviewAction> byBookingId = new LinkedHashMap<>();
-        for (final ReviewService.PendingReviewAction action : reviewService.listPendingReviewActions(userId)) {
-            if (action.getTargetType() != ReviewTargetType.ITEM) {
-                continue;
-            }
-            byBookingId.put(action.getBookingId(), action);
-        }
-        return byBookingId;
-    }
-
-    private Map<Integer, Review> buildAuthoredItemReviewsByBookingId(final int userId) {
-        final Map<Integer, Review> byBookingId = new LinkedHashMap<>();
-        for (final Review review : reviewService.listAuthoredReviews(userId)) {
-            if (review.getBookingId() == null || review.getTargetType() != ReviewTargetType.ITEM) {
-                continue;
-            }
-            byBookingId.putIfAbsent(review.getBookingId(), review);
-        }
-        return byBookingId;
     }
 }

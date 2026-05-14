@@ -1,9 +1,9 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
 import ar.edu.itba.paw.webapp.form.nuevo.EditPublicationForm;
+import ar.edu.itba.paw.webapp.presentation.MyBoatsActionsPresentation;
 import ar.edu.itba.paw.webapp.presentation.PublishActionPresentation;
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -16,8 +16,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequiredArgsConstructor
-public class PublishActionController {
+public class MyBoatsActionController {
 
+    private final MyBoatsActionsPresentation myBoatsActionsPresentation;
     private final PublishActionPresentation publishActionPresentation;
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/edit", method = RequestMethod.GET)
@@ -31,7 +32,7 @@ public class PublishActionController {
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/edit", method = RequestMethod.POST)
     public ModelAndView editPublicationSubmit(
             @PathVariable("id") final int itemId,
-            @Valid @ModelAttribute("editForm") final EditPublicationForm form,
+            @ModelAttribute("editForm") final EditPublicationForm form,
             final BindingResult errors,
             final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
@@ -41,18 +42,18 @@ public class PublishActionController {
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/disable", method = RequestMethod.POST)
     public ModelAndView disablePublication(
             @PathVariable("id") final int itemId, final RedirectAttributes redirectAttributes) {
-        return publishActionPresentation.disablePublication(itemId, redirectAttributes);
+        return myBoatsActionsPresentation.disablePublication(itemId, redirectAttributes);
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/enable", method = RequestMethod.POST)
     public ModelAndView enablePublication(
             @PathVariable("id") final int itemId, final RedirectAttributes redirectAttributes) {
-        return publishActionPresentation.enablePublication(itemId, redirectAttributes);
+        return myBoatsActionsPresentation.enablePublication(itemId, redirectAttributes);
     }
 
     @RequestMapping(value = "/profile/item/{id:[0-9]+}/delete", method = RequestMethod.POST)
     public ModelAndView hardDeletePublication(
             @PathVariable("id") final int itemId, final RedirectAttributes redirectAttributes) {
-        return publishActionPresentation.hardDeletePublication(itemId, redirectAttributes);
+        return myBoatsActionsPresentation.hardDeletePublication(itemId, redirectAttributes);
     }
 }

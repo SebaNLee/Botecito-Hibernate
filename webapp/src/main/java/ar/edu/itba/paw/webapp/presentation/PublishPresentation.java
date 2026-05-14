@@ -1,24 +1,22 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.Item;
-import ar.edu.itba.paw.models.ItemAvailability;
-import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.services.GalleryImageUpload;
-import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.PublicationDraft;
-import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.models.nuevo.AvailabilityWindow;
+import ar.edu.itba.paw.models.nuevo.ImageUpload;
+import ar.edu.itba.paw.models.nuevo.ItemTypeModel;
+import ar.edu.itba.paw.models.nuevo.PublishContent;
+import ar.edu.itba.paw.models.nuevo.PublishItem;
+import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.services.nuevo.PublishService;
+import ar.edu.itba.paw.services.nuevo.SelectorsInterface;
+import ar.edu.itba.paw.services.nuevo.UserService;
 import ar.edu.itba.paw.services.utils.TimeRange;
 import ar.edu.itba.paw.services.utils.TimeRangeList;
-import ar.edu.itba.paw.webapp.controller.support.ItemImageUtils;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
-import ar.edu.itba.paw.webapp.form.PublishBoatForm.UploadedImage;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,9 +26,6 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
-import org.springframework.http.CacheControl;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -38,26 +33,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.support.SessionStatus;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
 @Component
 @RequiredArgsConstructor
 public class PublishPresentation {
 
-    public static final int MAX_GALLERY_IMAGES = 3;
-
-    private static final Map<DayOfWeek, String> WEEKDAY_LABELS = Map.of(
-            DayOfWeek.MONDAY, "Lunes",
-            DayOfWeek.TUESDAY, "Martes",
-            DayOfWeek.WEDNESDAY, "Miercoles",
-            DayOfWeek.THURSDAY, "Jueves",
-            DayOfWeek.FRIDAY, "Viernes",
-            DayOfWeek.SATURDAY, "Sabado",
-            DayOfWeek.SUNDAY, "Domingo");
-
-    private final ItemService itemService;
+    private final PublishService publishService;
     private final UserService userService;
+    private final SelectorsInterface selectorsInterface;
     private final MessageSource messageSource;
 
     public ModelAndView publishStepOne(final PublishBoatForm form) {
@@ -65,33 +49,10 @@ public class PublishPresentation {
     }
 
     public ModelAndView publishStepOneSubmit(final PublishBoatForm form, final BindingResult errors) {
-        if (!errors.hasFieldErrors("files")) {
-            appendUploadedImagesIfPresent(form, errors);
-        }
-        form.setFiles(new ArrayList<>());
-
         if (errors.hasErrors()) {
             return new ModelAndView("publish");
         }
-
         return new ModelAndView("redirect:/publish/availability");
-    }
-
-    public ModelAndView publishImagesUpload(final PublishBoatForm form, final BindingResult errors) {
-        appendUploadedImagesIfPresent(form, errors);
-        form.setFiles(new ArrayList<>());
-        return new ModelAndView("redirect:/publish");
-    }
-
-    public ModelAndView publishImagesRemove(final PublishBoatForm form, final int index) {
-        form.removeUploadedImageAt(index);
-        return new ModelAndView("redirect:/publish");
-    }
-
-    public ModelAndView publishImagesReorder(final PublishBoatForm form, final String order) {
-        final List<Integer> parsed = parseOrderCsv(order);
-        form.reorderUploadedImages(parsed);
-        return new ModelAndView("redirect:/publish");
     }
 
     public ModelAndView publishStepTwo(final PublishBoatForm form) {
@@ -139,25 +100,12 @@ public class PublishPresentation {
         return mav;
     }
 
-    public ResponseEntity<byte[]> publishPreviewImage(final PublishBoatForm form, final int index) {
-        final UploadedImage image = form.getUploadedImageAt(index);
-        if (image == null || image.getSize() == 0) {
-            return ResponseEntity.notFound().build();
-        }
-        final byte[] imageBytes = image.getData();
-        return ResponseEntity.ok()
-                .cacheControl(CacheControl.noStore())
-                .contentType(resolvePreviewMediaType(image.getContentType()))
-                .contentLength(imageBytes.length)
-                .body(imageBytes);
-    }
-
     public ModelAndView publishStepThreeSubmit(
             final PublishBoatForm form,
             final BindingResult errors,
             final Locale locale,
             final SessionStatus sessionStatus) {
-        final User currentUser = currentAuthenticatedUser();
+        final UserModel currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -174,7 +122,7 @@ public class PublishPresentation {
             return mav;
         }
 
-        final Optional<Item> createdItem = itemService.createPublicationFromDraft(toDraft(form, currentUser));
+        final Optional<PublishItem> createdItem = publishService.create(toDraft(form), currentUser.getId());
         if (createdItem.isEmpty()) {
             final ModelAndView mav = new ModelAndView("publish-contact");
             errors.reject("publish.submit.persistenceError");
@@ -188,67 +136,40 @@ public class PublishPresentation {
     }
 
     public ModelAndView publishSuccess(final HttpServletRequest request, final Integer itemId) {
-        final User currentUser = currentAuthenticatedUser();
+        final UserModel currentUser = currentAuthenticatedUser();
         if (currentUser == null || itemId == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        final Item item = itemService.findItemById(itemId).orElse(null);
-        if (item == null) {
+        final Optional<PublishItem> item = publishService.findById(itemId);
+        if (item.isEmpty()) {
             return new ModelAndView("redirect:/publish");
         }
-        if (!item.getOwnerId().equals(currentUser.getId())) {
+        if (item.get().getOwnerId() != currentUser.getId()) {
             return new ModelAndView("redirect:/403");
         }
 
         final ModelAndView mav = new ModelAndView("publish-success");
-        mav.addObject("item", item);
+        mav.addObject("item", item.get());
+        mav.addObject("itemImageUrl", resolveImageUrl(item.get(), request.getContextPath()));
         mav.addObject(
-                "itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId(), request.getContextPath()));
-        mav.addObject("availabilities", itemService.listAvailabilitiesByItemId(item.getId()));
+                "availabilities", publishService.listAvailabilities(item.get().getId()));
         return mav;
     }
 
-    public static List<String> buildUploadedImagePreviewUrls(final PublishBoatForm form) {
-        final List<String> urls = new ArrayList<>();
-        for (int i = 0; i < form.getUploadedImageCount(); i++) {
-            urls.add("/publish/preview-image" + "/" + i);
+    public Map<String, String> buildItemTypeOptions() {
+        final List<ItemTypeModel> types = selectorsInterface.getItemTypeOptions();
+        final Map<String, String> options = new LinkedHashMap<>();
+        for (final ItemTypeModel type : types) {
+            final String id = type.getId() == null ? "" : String.valueOf(type.getId());
+            final String name = type.getName() == null ? "" : type.getName();
+            options.put(id, name);
         }
-        return urls;
-    }
-
-    public static Map<String, String> buildItemTypeOptions() {
-        final Map<String, String> options = new LinkedHashMap<>();
-        options.put("1", "Otros");
-        options.put("2", "Kayak");
-        options.put("3", "Paddle");
-        options.put("4", "Canoa");
-        options.put("5", "Windsurf");
-        options.put("6", "eFoil");
-        options.put("7", "Optimist");
         return options;
     }
 
-    public static Map<String, String> buildCapacityOptions() {
-        final Map<String, String> options = new LinkedHashMap<>();
-        options.put("1", "1 persona");
-        options.put("2", "2 personas");
-        options.put("4", "4 personas");
-        options.put("6", "6 personas");
-        options.put("8", "8 personas");
-        options.put("10", "10 personas");
-        options.put("12", "12 personas");
-        return options;
-    }
-
-    public static Map<String, String> buildDifficultyOptions() {
-        final Map<String, String> options = new LinkedHashMap<>();
-        options.put("1", "1 - Principiante");
-        options.put("2", "2 - Basico");
-        options.put("3", "3 - Intermedio");
-        options.put("4", "4 - Avanzado");
-        options.put("5", "5 - Experto");
-        return options;
+    public Map<String, String> buildDifficultyOptions() {
+        return selectorsInterface.getDifficultyOptions();
     }
 
     private static boolean isStepOneComplete(final PublishBoatForm form) {
@@ -273,7 +194,7 @@ public class PublishPresentation {
 
     private static Map<String, Boolean> buildEnabledWeekdaysModel(final PublishBoatForm form) {
         final Map<String, Boolean> model = new LinkedHashMap<>();
-        for (final DayOfWeek weekday : WEEKDAY_LABELS.keySet()) {
+        for (final DayOfWeek weekday : DayOfWeek.values()) {
             model.put(weekday.name(), form.isDayEnabled(weekday));
         }
         return model;
@@ -308,31 +229,24 @@ public class PublishPresentation {
             if (weekday == null || !form.isDayEnabled(weekday)) {
                 continue;
             }
-            try {
-                final LocalTime start = LocalTime.parse(parts[1]);
-                final LocalTime end = LocalTime.parse(parts[2]);
+            final LocalTime start = parseLocalTimeOrNull(parts[1]);
+            final LocalTime end = parseLocalTimeOrNull(parts[2]);
+            if (start != null && end != null) {
                 form.getAvailabilityFor(weekday).add(TimeRange.of(start, end));
-            } catch (final DateTimeParseException | IllegalArgumentException ignored) {
             }
         }
     }
 
     private void applyDraftValidation(final PublishBoatForm form, final BindingResult errors, final Locale locale) {
-        final PublicationDraft draft = toDraft(form, null);
-        final Map<String, String> validationErrors = itemService.validatePublicationDraft(draft);
+        final PublishContent draft = toDraft(form);
+        final Map<String, String> validationErrors = publishService.validate(draft);
         for (final Map.Entry<String, String> entry : validationErrors.entrySet()) {
             errors.rejectValue(entry.getKey(), entry.getValue(), new Object[] {dayLabel(locale, null)}, null);
         }
     }
 
-    private PublicationDraft toDraft(final PublishBoatForm form, final User currentUser) {
-        return new PublicationDraft(
-                currentUser == null ? null : currentUser.getGivenName(),
-                currentUser == null ? null : currentUser.getLastName(),
-                currentUser == null ? null : currentUser.getEmail(),
-                currentUser == null || currentUser.getPreferredLanguage() == null
-                        ? null
-                        : currentUser.getPreferredLanguage().getPersistenceCode(),
+    private PublishContent toDraft(final PublishBoatForm form) {
+        return new PublishContent(
                 parseIntOrNull(form.getItemTypeId()),
                 form.getTitle() == null ? null : form.getTitle().trim(),
                 form.getDescription() == null ? "" : form.getDescription().trim(),
@@ -341,17 +255,17 @@ public class PublishPresentation {
                 parseMaxWeight(form.getMaxWeight()),
                 form.getDifficultyLevel(),
                 parseIntOrNull(form.getLocationOptionId()),
-                buildAvailabilitySlots(form),
+                buildAvailabilityWindows(form),
                 buildImageUploads(form));
     }
 
-    private static List<GalleryImageUpload> buildImageUploads(final PublishBoatForm form) {
+    private static List<ImageUpload> buildImageUploads(final PublishBoatForm form) {
         if (!form.hasUploadedImages()) {
             return List.of();
         }
-        final List<GalleryImageUpload> uploads = new ArrayList<>();
-        for (final UploadedImage image : form.getUploadedImages()) {
-            uploads.add(new GalleryImageUpload(null, image.getContentType(), image.getData()));
+        final List<ImageUpload> uploads = new ArrayList<>();
+        for (final PublishBoatForm.UploadedImage image : form.getUploadedImages()) {
+            uploads.add(new ImageUpload(image.getData(), image.getContentType()));
         }
         return uploads;
     }
@@ -367,6 +281,17 @@ public class PublishPresentation {
         }
     }
 
+    private static LocalTime parseLocalTimeOrNull(final String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(raw.trim());
+        } catch (final DateTimeParseException e) {
+            return null;
+        }
+    }
+
     private static DayOfWeek parseWeekday(final String rawWeekday) {
         if (!StringUtils.hasText(rawWeekday)) {
             return null;
@@ -378,8 +303,8 @@ public class PublishPresentation {
         }
     }
 
-    private static List<ItemAvailability> buildAvailabilitySlots(final PublishBoatForm form) {
-        final List<ItemAvailability> availabilities = new ArrayList<>();
+    private static List<AvailabilityWindow> buildAvailabilityWindows(final PublishBoatForm form) {
+        final List<AvailabilityWindow> availabilities = new ArrayList<>();
         for (final Map.Entry<DayOfWeek, TimeRangeList> entry :
                 form.getAvailabilityByWeekday().entrySet()) {
             final TimeRangeList dayRanges = entry.getValue();
@@ -390,11 +315,11 @@ public class PublishPresentation {
                 if (range.getStart() == null || range.getEnd() == null) {
                     continue;
                 }
-                final ItemAvailability availability = new ItemAvailability();
-                availability.setWeekday(entry.getKey());
-                availability.setStartTime(range.getStart());
-                availability.setEndTime(range.getEnd());
-                availabilities.add(availability);
+                final AvailabilityWindow window = new AvailabilityWindow();
+                window.setWeekday(entry.getKey());
+                window.setStartTime(range.getStart());
+                window.setEndTime(range.getEnd());
+                availabilities.add(window);
             }
         }
         return availabilities;
@@ -402,7 +327,6 @@ public class PublishPresentation {
 
     private void addSummaryData(final ModelAndView mav, final PublishBoatForm form, final Locale locale) {
         mav.addObject("availabilitySummary", buildAvailabilitySummary(form, locale));
-        mav.addObject("uploadedImagePreviewUrls", buildUploadedImagePreviewUrls(form));
         mav.addObject("selectedLocationName", resolveLocationName(form.getLocationOptionId()));
     }
 
@@ -410,86 +334,28 @@ public class PublishPresentation {
         if (!StringUtils.hasText(locationOptionId)) {
             return "";
         }
-        try {
-            final int selectedId = Integer.parseInt(locationOptionId.trim());
-            return itemService.listLocationOptions().stream()
-                    .filter(option -> option.getId() != null && option.getId() == selectedId)
-                    .map(option -> option.getName() == null ? "" : option.getName())
-                    .findFirst()
-                    .orElse("");
-        } catch (final NumberFormatException exception) {
+        final Integer selectedId = parseIntOrNull(locationOptionId);
+        if (selectedId == null) {
             return "";
         }
-    }
-
-    private static void appendUploadedImagesIfPresent(final PublishBoatForm form, final BindingResult errors) {
-        final List<MultipartFile> uploaded = form.getFiles();
-        if (uploaded == null || uploaded.isEmpty()) {
-            return;
-        }
-        for (final MultipartFile file : uploaded) {
-            if (file == null || file.isEmpty()) {
-                continue;
-            }
-            if (form.getUploadedImageCount() >= MAX_GALLERY_IMAGES) {
-                errors.rejectValue("files", "publish.validation.images.count");
-                return;
-            }
-            final String contentType = file.getContentType();
-            if (!StringUtils.hasText(contentType) || !contentType.regionMatches(true, 0, "image/", 0, 6)) {
-                continue;
-            }
-            try {
-                final byte[] imageBytes = file.getBytes();
-                if (imageBytes.length > 0) {
-                    form.appendUploadedImage(imageBytes, contentType);
-                }
-            } catch (final IOException ignored) {
-            }
-        }
-    }
-
-    private static List<Integer> parseOrderCsv(final String csv) {
-        if (!StringUtils.hasText(csv)) {
-            return List.of();
-        }
-        final List<Integer> result = new ArrayList<>();
-        for (final String token : Arrays.asList(csv.split(","))) {
-            final String trimmed = token.trim();
-            if (trimmed.isEmpty()) {
-                continue;
-            }
-            try {
-                result.add(Integer.parseInt(trimmed));
-            } catch (final NumberFormatException ignored) {
-                return List.of();
-            }
-        }
-        return result;
-    }
-
-    private static MediaType resolvePreviewMediaType(final String contentType) {
-        if (!StringUtils.hasText(contentType)) {
-            return MediaType.APPLICATION_OCTET_STREAM;
-        }
-        try {
-            return MediaType.parseMediaType(contentType);
-        } catch (final IllegalArgumentException ignored) {
-            return MediaType.APPLICATION_OCTET_STREAM;
-        }
+        return selectorsInterface.getLocationOptions().stream()
+                .filter(option -> selectedId.equals(option.getId()))
+                .map(option -> option.getName() == null ? "" : option.getName())
+                .findFirst()
+                .orElse("");
     }
 
     private List<String> buildAvailabilitySummary(final PublishBoatForm form, final Locale locale) {
         final List<String> summary = new ArrayList<>();
-        for (final Map.Entry<DayOfWeek, String> entry : WEEKDAY_LABELS.entrySet()) {
-            final TimeRangeList daySlots = form.getAvailabilityFor(entry.getKey());
+        for (final DayOfWeek weekday : DayOfWeek.values()) {
+            final TimeRangeList daySlots = form.getAvailabilityFor(weekday);
             if (daySlots == null || daySlots.isEmpty()) {
                 continue;
             }
             final List<TimeRange> sortedSlots = new ArrayList<>(daySlots);
             sortedSlots.sort(Comparator.comparing(TimeRange::getStart));
 
-            final StringBuilder sb = new StringBuilder(dayLabel(locale, entry.getKey())).append(": ");
+            final StringBuilder sb = new StringBuilder(dayLabel(locale, weekday)).append(": ");
             for (int i = 0; i < sortedSlots.size(); i++) {
                 if (i > 0) {
                     sb.append(", ");
@@ -509,7 +375,7 @@ public class PublishPresentation {
         }
         final StringBuilder sb = new StringBuilder("[");
         boolean first = true;
-        for (final DayOfWeek weekday : WEEKDAY_LABELS.keySet()) {
+        for (final DayOfWeek weekday : DayOfWeek.values()) {
             final TimeRangeList dayRanges = form.getAvailabilityFor(weekday);
             if (dayRanges == null || dayRanges.isEmpty()) {
                 continue;
@@ -558,7 +424,7 @@ public class PublishPresentation {
         };
     }
 
-    private User currentAuthenticatedUser() {
+    private UserModel currentAuthenticatedUser() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()
@@ -566,5 +432,14 @@ public class PublishPresentation {
             return null;
         }
         return userService.findByEmail(authentication.getName()).orElse(null);
+    }
+
+    private static String resolveImageUrl(final PublishItem item, final String contextPath) {
+        final String prefix = contextPath == null ? "" : contextPath;
+        final Integer coverImageId = item.getCoverImageId();
+        if (coverImageId != null) {
+            return prefix + "/image/" + coverImageId;
+        }
+        return prefix + "/css/boat-placeholder.svg";
     }
 }

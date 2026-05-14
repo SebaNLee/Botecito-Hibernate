@@ -1,14 +1,13 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.models.nuevo.Booking;
 import ar.edu.itba.paw.models.nuevo.ItemUpdateModel;
 import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
+import ar.edu.itba.paw.models.nuevo.UserModel;
 import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
-import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.services.nuevo.BookingInterface;
 import ar.edu.itba.paw.services.nuevo.ItemInterface;
-import ar.edu.itba.paw.webapp.controller.support.ItemImageUtils;
+import ar.edu.itba.paw.services.nuevo.UserService;
 import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
 import ar.edu.itba.paw.webapp.form.nuevo.EditPublicationForm;
 import java.io.IOException;
@@ -37,11 +36,10 @@ public class PublishActionPresentation {
     private final ItemInterface itemInterface;
     private final BookingInterface bookingInterface;
     private final UserService userService;
-    private final ar.edu.itba.paw.services.ItemService itemService;
 
     public ModelAndView editPublicationForm(
             final int itemId, final HttpServletRequest request, final RedirectAttributes redirectAttributes) {
-        final User currentUser = currentAuthenticatedUser();
+        final UserModel currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -74,7 +72,7 @@ public class PublishActionPresentation {
             final BindingResult errors,
             final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
-        final User currentUser = currentAuthenticatedUser();
+        final UserModel currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -156,7 +154,7 @@ public class PublishActionPresentation {
     }
 
     public ModelAndView disablePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final User currentUser = currentAuthenticatedUser();
+        final UserModel currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -172,7 +170,7 @@ public class PublishActionPresentation {
     }
 
     public ModelAndView enablePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final User currentUser = currentAuthenticatedUser();
+        final UserModel currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -188,7 +186,7 @@ public class PublishActionPresentation {
     }
 
     public ModelAndView hardDeletePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final User currentUser = currentAuthenticatedUser();
+        final UserModel currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -238,7 +236,7 @@ public class PublishActionPresentation {
                         id,
                         userService
                                 .findById(booking.getGuestId())
-                                .map(User::getName)
+                                .map(UserModel::getName)
                                 .orElse(""));
             }
 
@@ -275,8 +273,13 @@ public class PublishActionPresentation {
         mav.addObject("editBookingFriendlyTimeRanges", friendlyTimeRanges);
         mav.addObject("editBookingFriendlyPrices", friendlyPrices);
         mav.addObject("editBookingStatusCodes", statusCodes);
-        mav.addObject(
-                "itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId(), request.getContextPath()));
+        final String imageUrl;
+        if (item.getCoverImageId() != null) {
+            imageUrl = request.getContextPath() + "/image/" + item.getCoverImageId();
+        } else {
+            imageUrl = request.getContextPath() + "/css/boat-placeholder.svg";
+        }
+        mav.addObject("itemImageUrl", imageUrl);
         return mav;
     }
 
@@ -393,7 +396,7 @@ public class PublishActionPresentation {
         }
     }
 
-    private User currentAuthenticatedUser() {
+    private UserModel currentAuthenticatedUser() {
         final var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             return null;

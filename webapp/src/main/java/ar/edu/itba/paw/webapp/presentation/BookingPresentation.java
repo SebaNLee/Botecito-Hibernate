@@ -6,11 +6,11 @@ import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
 import ar.edu.itba.paw.models.nuevo.IncomingSearch;
 import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
 import ar.edu.itba.paw.models.nuevo.PaymentProof;
+import ar.edu.itba.paw.models.nuevo.UserModel;
 import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
 import ar.edu.itba.paw.models.nuevo.exceptions.IllegalBookingOperationException;
 import ar.edu.itba.paw.models.nuevo.exceptions.NoAnticipationException;
 import ar.edu.itba.paw.services.Page;
-import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.services.nuevo.BookingInterface;
 import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
 import ar.edu.itba.paw.webapp.form.PaymentProofForm;
@@ -24,9 +24,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
@@ -45,7 +42,7 @@ public class BookingPresentation {
     private static final String REDIRECT_OUTGOING = "redirect:/requests/outgoing";
 
     private final BookingInterface bookingInterface;
-    private final UserService userService;
+    private final AuthenticatedUserResolver authenticatedUserResolver;
     private final ToastPresentation toastPresentation;
 
     public ModelAndView outgoingBookingsGet(final HttpServletRequest request, final BookingSearchForm search) {
@@ -313,12 +310,7 @@ public class BookingPresentation {
     }
 
     private Optional<Integer> currentUserId() {
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            return Optional.empty();
-        }
-        return userService.findByEmail(authentication.getName()).flatMap(u -> Optional.ofNullable(u.getId()));
+        final UserModel user = authenticatedUserResolver.currentAuthenticatedUser();
+        return user == null ? Optional.empty() : Optional.ofNullable(user.getId());
     }
 }

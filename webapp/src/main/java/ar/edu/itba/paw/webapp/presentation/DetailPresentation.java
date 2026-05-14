@@ -1,17 +1,16 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.User;
 import ar.edu.itba.paw.models.nuevo.AvailabilityWindow;
 import ar.edu.itba.paw.models.nuevo.ItemDetail;
 import ar.edu.itba.paw.models.nuevo.ItemModel;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
 import ar.edu.itba.paw.models.nuevo.ReviewModel;
+import ar.edu.itba.paw.models.nuevo.UserModel;
 import ar.edu.itba.paw.models.nuevo.enums.ItemStatus;
-import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.services.nuevo.BookingInterface;
 import ar.edu.itba.paw.services.nuevo.DetailInterface;
 import ar.edu.itba.paw.services.nuevo.PreBookingCreateResult;
+import ar.edu.itba.paw.services.nuevo.UserService;
 import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
 import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
 import ar.edu.itba.paw.webapp.form.nuevo.PreBookingForm;
@@ -42,7 +41,6 @@ public class DetailPresentation {
 
     private final DetailInterface detailInterface;
     private final BookingInterface bookingInterface;
-    private final ItemService itemService;
     private final UserService userService;
     private final ToastPresentation toastPresentation;
 
@@ -59,7 +57,7 @@ public class DetailPresentation {
     public Object detailPage(
             final int itemId, final HttpServletRequest request, final Optional<Long> pathSnapshotVersionId) {
         final String marketplaceBackHref = MarketplaceReturnUrl.marketplaceBackHref(request, null);
-        final User viewer = currentAuthenticatedUserOrNull();
+        final UserModel viewer = currentAuthenticatedUserOrNull();
         final Optional<Integer> viewerId = viewer == null ? Optional.empty() : Optional.of(viewer.getId());
 
         final Optional<ItemDetail> nuevoDetail = detailInterface.getItemDetail(itemId, viewerId, pathSnapshotVersionId);
@@ -122,7 +120,7 @@ public class DetailPresentation {
             final int itemId,
             final PreBookingForm form,
             final RedirectAttributes redirectAttributes) {
-        final User viewer = currentAuthenticatedUserOrNull();
+        final UserModel viewer = currentAuthenticatedUserOrNull();
         if (viewer == null) {
             ToastSupport.error(redirectAttributes, "detail.preBooking.loginRequired");
             return contextRelativeRedirect("/login");
@@ -217,7 +215,7 @@ public class DetailPresentation {
             final ItemDetail.ItemModelVersion displayPair,
             final long currentVersionId,
             final boolean viewingNonCurrentVersion,
-            final User viewer,
+            final UserModel viewer,
             final HttpServletRequest request,
             final String marketplaceBackHref) {
         final ItemModel item = displayPair.getItemModel();
@@ -226,8 +224,8 @@ public class DetailPresentation {
         final int ownerId = item.getHostId();
         final boolean isOwner = viewer != null && ownerId > 0 && ownerId == viewer.getId();
 
-        final User itemOwner =
-                ownerId <= 0 ? null : itemService.findUserById(ownerId).orElse(null);
+        final UserModel itemOwner =
+                ownerId <= 0 ? null : userService.findById(ownerId).orElse(null);
 
         final List<ReviewModel> versionReviews =
                 displayPair.getReviews() == null ? List.of() : displayPair.getReviews();
@@ -319,7 +317,7 @@ public class DetailPresentation {
         return path.startsWith("/") ? contextPath + path : contextPath + "/" + path;
     }
 
-    private User currentAuthenticatedUserOrNull() {
+    private UserModel currentAuthenticatedUserOrNull() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()

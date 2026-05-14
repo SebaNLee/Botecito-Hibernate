@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.persistence.orm.entities;
+package ar.edu.itba.paw.models.entity;
 
 import java.io.Serializable;
 import javax.persistence.Column;

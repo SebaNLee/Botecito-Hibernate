@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.persistence.orm.entities;
+package ar.edu.itba.paw.models.entity;
 
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;

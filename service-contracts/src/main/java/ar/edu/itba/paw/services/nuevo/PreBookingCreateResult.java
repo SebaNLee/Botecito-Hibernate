@@ -1,7 +1,10 @@
 package ar.edu.itba.paw.services.nuevo;
 
+// TODO: eliminar, se puede reemplazar por lanzar excepciones en DAO (o service)
+
 /**
- * Outcome of attempting to create a pre-booking. Produced by the service from persistence return
+ * Outcome of attempting to create a pre-booking. Produced by the service from
+ * persistence return
  * codes.
  */
 public sealed interface PreBookingCreateResult

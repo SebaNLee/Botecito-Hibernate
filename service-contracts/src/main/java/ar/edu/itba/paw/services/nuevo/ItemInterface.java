@@ -11,6 +11,7 @@ public interface ItemInterface {
 
     Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(int itemId, int ownerId);
 
+    // Eventualmente que sea create or update, reciben la misma info
     Optional<MyBoatsItem> createMyBoatsItem(ItemCreateModel createModel);
 
     boolean updateMyBoatsItem(int itemId, int ownerId, ItemUpdateModel updateModel);
@@ -23,4 +24,6 @@ public interface ItemInterface {
     boolean replaceVersionPrimaryImage(int versionId, byte[] imageData);
 
     boolean setItemActiveForOwner(int itemId, int ownerId, boolean active);
+
+    // TODO: Soft delete item method
 }

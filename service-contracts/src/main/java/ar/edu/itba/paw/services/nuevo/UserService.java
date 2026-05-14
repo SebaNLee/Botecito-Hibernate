@@ -4,6 +4,8 @@ import ar.edu.itba.paw.models.nuevo.UserModel;
 import java.util.Optional;
 
 public interface UserService {
+    // TODO: Idealmente en vez de enums, no hacer nada si sale bien, tirar excepcion
+    // si sale mal
     enum PasswordRecoveryResult {
         SUCCESS,
         INVALID_TOKEN

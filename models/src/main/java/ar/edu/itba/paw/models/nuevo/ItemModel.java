@@ -27,7 +27,7 @@ public class ItemModel {
     private String itemTypeName;
 
     // Media
-    private List<String> images; // URLs or base64 encoded strings
+    private List<String> images; // URLs or esto no->(base64) encoded strings
 
     // Ratings
     private double averageRating;

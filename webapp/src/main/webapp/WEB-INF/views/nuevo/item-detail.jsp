@@ -31,6 +31,7 @@
 <spring:message code="itemDetail.description.empty" var="itemDescriptionEmptyLabel" />
 <spring:message code="itemDetail.owner.ownPublicationNotice" var="ownerPublicationNotice" />
 <spring:message code="itemDetail.owner.blockButton" var="ownerBlockButtonLabel" />
+<spring:message code="itemDetail.owner.incomingRequestsButton" var="ownerIncomingRequestsLabel" />
 <spring:message code="detail.preBooking.subtitle" var="detailPreBookingSubtitle" />
 <c:url var="prebookLoginUrl" value="/login" />
 <spring:message code="itemDetail.form.loginToBook" var="itemDetailLoginToBookLabel" />
@@ -68,7 +69,7 @@
       </div>
     </c:when>
     <c:otherwise>
-      <c:url var="currentVersionUrl" value="/item/${item.id}" />
+      <c:url var="currentVersionUrl" value="/item/${item.itemId}" />
       <div class="w-full">
         <a href="<c:out value="${marketplaceBackHref}" />" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
           <span class="material-symbols-outlined">arrow_back</span>
@@ -196,6 +197,31 @@
               </p>
             </div>
 
+            <c:if test="${pendingItemReviewAction != null}">
+              <c:url var="createItemReviewUrl" value="/reviews/booking/${pendingItemReviewAction.bookingId}" />
+              <form action="${createItemReviewUrl}" method="post" class="rounded-2xl bg-base-200 p-4 space-y-3">
+                <input type="hidden" name="returnTo" value="item" />
+                <input type="hidden" name="itemId" value="${item.itemId}" />
+                <h3 class="m-0 text-sm font-bold text-on-surface"><c:out value="${itemReviewLeaveLabel}" /></h3>
+                <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
+                  <label class="text-xs font-bold uppercase tracking-wider text-outline" for="item-review-rating"><c:out value="${itemReviewRatingLabel}" /></label>
+                  <div class="flex items-center gap-1" data-rating-stars>
+                    <input id="item-review-rating" type="hidden" name="rating" value="" data-rating-value />
+                    <c:forEach var="starIndex" begin="1" end="5">
+                      <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${itemReviewRatingLabel} ${starIndex}">
+                        <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
+                      </button>
+                    </c:forEach>
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
+                  <label class="text-xs font-bold uppercase tracking-wider text-outline pt-2" for="item-review-comment"><c:out value="${itemReviewCommentLabel}" /></label>
+                  <textarea id="item-review-comment" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
+                </div>
+                <paw:button type="submit" color="primary" size="sm" text="${itemReviewLeaveLabel}" />
+              </form>
+            </c:if>
+
             <c:choose>
               <c:when test="${not empty versionReviews}">
                 <div class="space-y-3">
@@ -272,7 +298,7 @@
                     <ul tabindex="0" class="dropdown-content menu p-3 space-y-2 shadow bg-base-100 rounded-box w-64 max-h-56 overflow-auto border border-outline-variant/20">
                       <c:forEach items="${itemDetail.versions}" var="ver">
                         <c:if test="${ver.versionId ne currentVersionId}">
-                          <c:url var="snapshotUrl" value="/item/${item.id}/snapshot/${ver.versionId}" />
+                          <c:url var="snapshotUrl" value="/item/${item.itemId}/snapshot/${ver.versionId}" />
                           <li>
                             <a href="${snapshotUrl}" class="${ver.versionId eq selectedVersionId ? 'active' : ''}">
                               <spring:message code="itemDetail.version.guestSnapshot" arguments="${ver.versionId}" />
@@ -311,19 +337,24 @@
             </c:when>
             <c:when test="${isOwner}">
               <paw:alertMessage type="info"><c:out value="${ownerPublicationNotice}" /></paw:alertMessage>
-              <c:url var="ownerManageAvailabilityUrl" value="/profile/item/${item.id}/availability">
-                <c:param name="return" value="/item/${item.id}" />
+              <c:url var="ownerManageAvailabilityUrl" value="/profile/item/${item.itemId}/availability">
+                <c:param name="return" value="/item/${item.itemId}" />
               </c:url>
               <a href="${ownerManageAvailabilityUrl}" class="btn btn-primary btn-block btn-lg no-underline">
                 <c:out value="${ownerBlockButtonLabel}" />
                 <span class="material-symbols-outlined text-sm align-middle">event_busy</span>
               </a>
-              <div hidden data-prebook-draft-clear-host data-item-id="${item.id}"></div>
+              <c:url var="ownerIncomingRequestsUrl" value="/requests/incoming" />
+              <a href="${ownerIncomingRequestsUrl}" class="btn btn-outline btn-block btn-lg no-underline">
+                <c:out value="${ownerIncomingRequestsLabel}" />
+                <span class="material-symbols-outlined text-sm align-middle">inbox</span>
+              </a>
+              <div hidden data-prebook-draft-clear-host data-item-id="${item.itemId}"></div>
             </c:when>
             <c:when test="${showPreBookingPanel}">
               <div
                   data-prebook-draft-root
-                  data-item-id="${item.id}"
+                  data-item-id="${item.itemId}"
                   data-viewer-logged-in="${viewer != null ? 'true' : 'false'}"
                   data-login-url="<c:out value="${prebookLoginUrl}" />">
                 <div
@@ -343,7 +374,7 @@
                   </div>
                   <p class="mb-0 mt-2 text-xs text-on-surface-variant" data-price-duration><c:out value="${itemDetailPricePendingHelpLabel}" /></p>
                 </div>
-                <c:url var="preBookingPostUrl" value="/item/${item.id}" />
+                <c:url var="preBookingPostUrl" value="/item/${item.itemId}" />
                 <form:form
                     id="detail-prebook-form"
                     modelAttribute="preBookingForm"

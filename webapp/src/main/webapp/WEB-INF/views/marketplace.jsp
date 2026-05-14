@@ -33,15 +33,14 @@
 <c:set
     var="pageSize"
     value="${marketplaceSearch != null && marketplaceSearch.pageSize != null ? marketplaceSearch.pageSize : 12}" />
-<c:url var="clearMarketplaceFiltersUrl" value="/marketplace">
-  <c:if test="${sort != 'newest'}">
-    <c:param name="sort" value="${sort}" />
-  </c:if>
-</c:url>
+<c:set
+    var="marketplaceSortBy"
+    value="${empty marketplaceSearch.sortBy ? 'newest' : marketplaceSearch.sortBy}" />
+<c:url var="clearMarketplaceFiltersUrl" value="/marketplace" />
 <c:if test="${itemPage.hasPrevious}">
   <c:url var="previousPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.previousPage}" />
-    <c:param name="sort" value="${sort}" />
+    <c:param name="sortBy" value="${marketplaceSortBy}" />
     <c:param name="pageSize" value="${pageSize}" />
     <c:if test="${not empty param.searchQuery}">
       <c:param name="searchQuery" value="${param.searchQuery}" />
@@ -78,7 +77,7 @@
 <c:if test="${itemPage.hasNext}">
   <c:url var="nextPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.nextPage}" />
-    <c:param name="sort" value="${sort}" />
+    <c:param name="sortBy" value="${marketplaceSortBy}" />
     <c:param name="pageSize" value="${pageSize}" />
     <c:if test="${not empty param.searchQuery}">
       <c:param name="searchQuery" value="${param.searchQuery}" />
@@ -303,7 +302,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <c:forEach items="${items}" var="item">
-        <c:url var="itemUrl" value="/item/${item.id}" />
+        <c:url var="itemUrl" value="/item/${item.itemId}" />
         <a href="${itemUrl}" data-marketplace-item-link class="group card min-w-0 bg-base-100 shadow-sm overflow-hidden no-underline text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <figure class="aspect-[4/3] overflow-hidden">
             <c:url var="itemCoverSrc" value="${item.images[0]}" />

@@ -46,9 +46,7 @@ public final class DetailImpl implements DetailInterface {
             return currentOnly;
         }
         final int viewer = viewerUserId.get();
-        final Integer ownerId = parseHostId(
-                currentOnly.get().getVersions().get(0).getItemModel().getHostId());
-        if (ownerId != null && ownerId.equals(viewer)) {
+        if (currentOnly.get().getVersions().get(0).getItemModel().getHostId() == viewer) {
             return detailDao.getItemDetailById(itemId, true);
         }
         final List<Integer> bookedVersionIds = detailDao.findVersionIdsFromGuestBookingsForItem(itemId, viewer);
@@ -71,16 +69,5 @@ public final class DetailImpl implements DetailInterface {
         final List<Integer> ordered =
                 merged.stream().sorted(Comparator.reverseOrder()).toList();
         return detailDao.getItemDetailForVersionIds(itemId, ordered).or(() -> currentOnly);
-    }
-
-    private static Integer parseHostId(final String hostId) {
-        if (hostId == null || hostId.isBlank()) {
-            return null;
-        }
-        try {
-            return Integer.valueOf(hostId.trim());
-        } catch (final NumberFormatException ignored) {
-            return null;
-        }
     }
 }

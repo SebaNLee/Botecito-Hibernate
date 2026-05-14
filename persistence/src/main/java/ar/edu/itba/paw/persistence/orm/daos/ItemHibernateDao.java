@@ -4,11 +4,15 @@ import ar.edu.itba.paw.models.nuevo.ItemCreateModel;
 import ar.edu.itba.paw.models.nuevo.ItemUpdateModel;
 import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
 import ar.edu.itba.paw.persistence.nuevo.ItemDao;
+import ar.edu.itba.paw.persistence.orm.entities.AvailabilityOrm;
 import ar.edu.itba.paw.persistence.orm.entities.BookingStatusEnumOrm;
+import ar.edu.itba.paw.persistence.orm.entities.ImageOrm;
 import ar.edu.itba.paw.persistence.orm.entities.ItemOrm;
 import ar.edu.itba.paw.persistence.orm.entities.ItemStatusEnumOrm;
 import ar.edu.itba.paw.persistence.orm.entities.ItemTypeOrm;
 import ar.edu.itba.paw.persistence.orm.entities.LocationOrm;
+import ar.edu.itba.paw.persistence.orm.entities.MediaId;
+import ar.edu.itba.paw.persistence.orm.entities.MediaOrm;
 import ar.edu.itba.paw.persistence.orm.entities.UsersOrm;
 import ar.edu.itba.paw.persistence.orm.entities.VersionOrm;
 import java.math.BigDecimal;
@@ -26,9 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Primary
 @Transactional
 public class ItemHibernateDao implements ItemDao {
-
-    private static final int DEFAULT_WEIGHT = 2000;
-    private static final int DEFAULT_DIFFICULTY = 1;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -86,7 +87,7 @@ public class ItemHibernateDao implements ItemDao {
                 createModel.getDescription(),
                 createModel.getPricePerHour(),
                 createModel.getCapacityPeople(),
-                createModel.getMaxWeightKg(),
+                createModel.getMaxWeightKg().intValue(),
                 createModel.getDifficultyLevel(),
                 createModel.getLocationOptionId());
         if (itemId == null) {
@@ -97,8 +98,10 @@ public class ItemHibernateDao implements ItemDao {
 
     @Override
     public boolean updateMyBoatsItem(final int itemId, final int ownerId, final ItemUpdateModel updateModel) {
-        // TODO hardcode redirect for now
-        throw new UnsupportedOperationException("Not yet implemented");
+        if (updateModel == null) {
+            return false;
+        }
+        return createPublicationVersion(itemId, ownerId, updateModel) >= 0;
     }
 
     @Override
@@ -134,6 +137,73 @@ public class ItemHibernateDao implements ItemDao {
         return updated > 0;
     }
 
+    @Override
+    public int createPublicationVersion(final int itemId, final int ownerId, final ItemUpdateModel update) {
+        final VersionOrm current = findCurrentVersion(itemId);
+        if (current == null) {
+            return -1;
+        }
+
+        final boolean hasBookings = hasBookingReferences(current.getId());
+        if (!hasBookings) {
+            current.setTitle(update.getTitle());
+            current.setDescription(update.getDescription());
+            current.setPrice(BigDecimal.valueOf(update.getPricePerHour()));
+            current.setDifficulty(
+                    update.getDifficultyLevel() != null ? update.getDifficultyLevel() : current.getDifficulty());
+            current.setLocation(entityManager.getReference(LocationOrm.class, update.getLocationOptionId()));
+            current.setCreatedAt(LocalDateTime.now());
+            entityManager.flush();
+            return current.getId();
+        }
+
+        final VersionOrm next = new VersionOrm();
+        next.setItem(current.getItem());
+        next.setType(current.getType());
+        next.setTitle(update.getTitle());
+        next.setDescription(update.getDescription());
+        next.setPrice(BigDecimal.valueOf(update.getPricePerHour()));
+        next.setCapacity(current.getCapacity());
+        next.setWeight(current.getWeight());
+        next.setDifficulty(update.getDifficultyLevel() != null ? update.getDifficultyLevel() : current.getDifficulty());
+        next.setLocation(entityManager.getReference(LocationOrm.class, update.getLocationOptionId()));
+        next.setTimezone(current.getTimezone());
+        next.setCreatedAt(LocalDateTime.now());
+        entityManager.persist(next);
+        entityManager.flush();
+
+        copyAvailabilities(current.getId(), next);
+        copyMedia(current.getId(), next);
+
+        entityManager.flush();
+        return next.getId();
+    }
+
+    @Override
+    public boolean replaceVersionPrimaryImage(final int versionId, final byte[] imageData) {
+        if (imageData == null || imageData.length == 0) {
+            return false;
+        }
+        final ImageOrm image = new ImageOrm();
+        image.setData(imageData);
+        entityManager.persist(image);
+        entityManager.flush();
+
+        entityManager
+                .createQuery("DELETE FROM MediaOrm m WHERE m.version.id = :versionId AND m.id.index = 0")
+                .setParameter("versionId", versionId)
+                .executeUpdate();
+
+        final MediaOrm media = new MediaOrm();
+        media.setId(new MediaId(versionId, 0));
+        media.setVersion(entityManager.getReference(VersionOrm.class, versionId));
+        media.setImage(image);
+        entityManager.persist(media);
+
+        entityManager.flush();
+        return true;
+    }
+
     public Integer insertItem(
             final int ownerId,
             final int typeId,
@@ -141,8 +211,8 @@ public class ItemHibernateDao implements ItemDao {
             final String description,
             final int pricePerHour,
             final int capacityPeople,
-            final BigDecimal maxWeightKg,
-            final Integer difficultyLevel,
+            final int weight,
+            final int difficulty,
             final int locationOptionId) {
         final LocalDateTime now = LocalDateTime.now();
 
@@ -153,27 +223,73 @@ public class ItemHibernateDao implements ItemDao {
                 .build();
         entityManager.persist(item);
 
-        final VersionOrm version = VersionOrm.builder()
-                .item(item)
-                .type(entityManager.getReference(ItemTypeOrm.class, typeId))
-                .title(title)
-                .description(description)
-                .price(BigDecimal.valueOf(pricePerHour))
-                .capacity(capacityPeople)
-                .weight(maxWeightKg == null ? DEFAULT_WEIGHT : maxWeightKg.intValue())
-                .difficulty(difficultyLevel == null ? Integer.valueOf(DEFAULT_DIFFICULTY) : difficultyLevel)
-                .location(entityManager.getReference(LocationOrm.class, locationOptionId))
-                .timezone("America/Argentina/Buenos_Aires")
-                .createdAt(now)
-                .build();
+        final VersionOrm version = new VersionOrm();
+        version.setItem(item);
+        version.setType(entityManager.getReference(ItemTypeOrm.class, typeId));
+        version.setTitle(title);
+        version.setDescription(description);
+        version.setPrice(BigDecimal.valueOf(pricePerHour));
+        version.setCapacity(capacityPeople);
+        version.setWeight(weight);
+        version.setDifficulty(difficulty);
+        version.setLocation(entityManager.getReference(LocationOrm.class, locationOptionId));
+        version.setTimezone("America/Argentina/Buenos_Aires");
+        version.setCreatedAt(now);
         entityManager.persist(version);
         entityManager.flush();
 
         return item.getId();
     }
 
+    private VersionOrm findCurrentVersion(final int itemId) {
+        final List<VersionOrm> rows = entityManager
+                .createQuery("FROM VersionOrm v WHERE v.item.id = :itemId ORDER BY v.id DESC", VersionOrm.class)
+                .setParameter("itemId", itemId)
+                .setMaxResults(1)
+                .getResultList();
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    private boolean hasBookingReferences(final int versionId) {
+        final Long count = entityManager
+                .createQuery("SELECT COUNT(b) FROM BookingOrm b WHERE b.version.id = :versionId", Long.class)
+                .setParameter("versionId", versionId)
+                .getSingleResult();
+        return count != null && count > 0;
+    }
+
+    private void copyAvailabilities(final int sourceVersionId, final VersionOrm targetVersion) {
+        final List<AvailabilityOrm> availabilities = entityManager
+                .createQuery("FROM AvailabilityOrm a WHERE a.version.id = :versionId", AvailabilityOrm.class)
+                .setParameter("versionId", sourceVersionId)
+                .getResultList();
+        for (final AvailabilityOrm a : availabilities) {
+            final AvailabilityOrm copy = new AvailabilityOrm();
+            copy.setVersion(targetVersion);
+            copy.setWeekday(a.getWeekday());
+            copy.setStartTime(a.getStartTime());
+            copy.setEndTime(a.getEndTime());
+            entityManager.persist(copy);
+        }
+    }
+
+    private void copyMedia(final int sourceVersionId, final VersionOrm targetVersion) {
+        final List<MediaOrm> mediaList = entityManager
+                .createQuery("FROM MediaOrm m WHERE m.version.id = :versionId", MediaOrm.class)
+                .setParameter("versionId", sourceVersionId)
+                .getResultList();
+        for (final MediaOrm m : mediaList) {
+            final MediaOrm copy = new MediaOrm();
+            copy.setId(new MediaId(targetVersion.getId(), m.getId().getIndex()));
+            copy.setVersion(targetVersion);
+            copy.setImage(m.getImage());
+            entityManager.persist(copy);
+        }
+    }
+
     private static String baseMyBoatsQuery() {
-        return "SELECT i.id, v.title, v.price, v.capacity, v.location.name, i.status,"
+        return "SELECT i.id, v.id, v.title, v.description, v.price, v.difficulty, v.location.id,"
+                + " v.capacity, v.location.name, i.status,"
                 + " (SELECT m.image.id FROM MediaOrm m"
                 + " WHERE m.version = v"
                 + " AND m.id.index = (SELECT MIN(m2.id.index) FROM MediaOrm m2 WHERE m2.version = v)),"
@@ -195,33 +311,24 @@ public class ItemHibernateDao implements ItemDao {
     private static List<MyBoatsItem> mapMyBoatsRows(final List<Object[]> rows) {
         final List<MyBoatsItem> items = new ArrayList<>(rows.size());
         for (final Object[] row : rows) {
-            final Integer id = (Integer) row[0];
-            final String title = (String) row[1];
-            final BigDecimal price = (BigDecimal) row[2];
-            final Integer pricePerHour = price == null ? null : price.intValue();
-            final Integer capacityPeople = (Integer) row[3];
-            final String location = (String) row[4];
-            final Boolean active = ItemStatusEnumOrm.ACTIVE.equals(row[5]);
-            final Integer coverImageId = (Integer) row[6];
-            final boolean hasBlocking = Boolean.TRUE.equals(row[7]);
-            final boolean hasFutureBlocking = Boolean.TRUE.equals(row[8]);
-            final String description = row[9] == null ? "" : (String) row[9];
-            final Integer difficultyLevel = (Integer) row[10];
-            final Integer locationOptionId = (Integer) row[11];
-
-            items.add(new MyBoatsItem(
-                    id,
-                    title,
-                    pricePerHour,
-                    capacityPeople,
-                    location,
-                    active,
-                    coverImageId,
-                    active && hasBlocking,
-                    !active && hasFutureBlocking,
-                    description,
-                    difficultyLevel,
-                    locationOptionId));
+            final MyBoatsItem item = new MyBoatsItem();
+            item.setId((Integer) row[0]);
+            item.setVersionId((Integer) row[1]);
+            item.setTitle((String) row[2]);
+            item.setDescription((String) row[3]);
+            final BigDecimal price = (BigDecimal) row[4];
+            item.setPricePerHour(price == null ? null : price.intValue());
+            item.setDifficultyLevel((Integer) row[5]);
+            item.setLocationOptionId((Integer) row[6]);
+            item.setCapacityPeople((Integer) row[7]);
+            item.setLocation((String) row[8]);
+            item.setActive(ItemStatusEnumOrm.ACTIVE.equals(row[9]));
+            item.setCoverImageId((Integer) row[10]);
+            final boolean hasBlocking = Boolean.TRUE.equals(row[11]);
+            final boolean hasFutureBlocking = Boolean.TRUE.equals(row[12]);
+            item.setDeleteDeactivates(Boolean.TRUE.equals(item.getActive()) && hasBlocking);
+            item.setDeleteDisabled(!Boolean.TRUE.equals(item.getActive()) && hasFutureBlocking);
+            items.add(item);
         }
         return items;
     }

@@ -25,11 +25,13 @@ import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
@@ -45,9 +47,14 @@ public class DetailPresentation {
     private final ToastPresentation toastPresentation;
 
     /**
+     * @param pathSnapshotVersionId when present, the requested listing version from
+     *                              {@code /item/{id}/snapshot/{versionId}}
+     *                              (requires authentication via
+     *                              {@link ar.edu.itba.paw.webapp.config.WebAuthConfig}).
      * @return {@link ModelAndView} for the detail page, or a {@link RedirectView}
-     *         for canonical snapshot / auth
-     *         redirects.
+     *         to
+     *         the canonical item URL when the path names the current published
+     *         version.
      */
     public Object detailPage(
             final int itemId, final HttpServletRequest request, final Optional<Long> pathSnapshotVersionId) {
@@ -55,29 +62,12 @@ public class DetailPresentation {
         final User viewer = currentAuthenticatedUserOrNull();
         final Optional<Integer> viewerId = viewer == null ? Optional.empty() : Optional.of(viewer.getId());
 
-        if (pathSnapshotVersionId.isPresent()) {
-            final Optional<ItemDetail> viewerHead = detailInterface.getItemDetail(itemId, viewerId, Optional.empty());
-            if (viewerHead.isEmpty()
-                    || viewerHead.get().getVersions() == null
-                    || viewerHead.get().getVersions().isEmpty()) {
-                return contextRelativeRedirect("/marketplace");
-            }
-            final long pathVid = pathSnapshotVersionId.get();
-            final long effectiveCurrentVersionId = resolvePublishedOrViewerCurrentVersionId(itemId, viewerHead.get());
-            if (pathVid == effectiveCurrentVersionId) {
-                return snapshotRedirectToCanonicalItem(itemId);
-            }
-            if (viewer == null) {
-                return contextRelativeRedirect("/login");
-            }
-        }
-
         final Optional<ItemDetail> nuevoDetail = detailInterface.getItemDetail(itemId, viewerId, pathSnapshotVersionId);
         if (nuevoDetail.isEmpty()
                 || nuevoDetail.get().getVersions() == null
                 || nuevoDetail.get().getVersions().isEmpty()) {
             if (pathSnapshotVersionId.isPresent()) {
-                return contextRelativeRedirect("/marketplace");
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
             }
             return buildNuevoItemListingMissingView(itemId, marketplaceBackHref);
         }
@@ -88,13 +78,13 @@ public class DetailPresentation {
             displayPair = itemDetail.getVersions().get(0);
         } else {
             final long requestedId = pathSnapshotVersionId.get();
-            final Optional<ItemDetail.ItemModelVersion> match = itemDetail.getVersions().stream()
-                    .filter(v -> v.getVersionId() == requestedId)
-                    .findFirst();
-            if (match.isEmpty()) {
-                return contextRelativeRedirect("/marketplace");
+            if (requestedId == currentVersionId) {
+                return snapshotRedirectToCanonicalItem(itemId);
             }
-            displayPair = match.get();
+            displayPair = itemDetail.getVersions().stream()
+                    .filter(v -> v.getVersionId() == requestedId)
+                    .findFirst()
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         }
         final boolean viewingNonCurrentVersion = displayPair.getVersionId() != currentVersionId;
         return buildNuevoItemDetailView(
@@ -109,7 +99,8 @@ public class DetailPresentation {
     }
 
     /**
-     * Same as {@link #detailPage(int, HttpServletRequest, Optional)} for canonical item URL, plus
+     * Same as {@link #detailPage(int, HttpServletRequest, Optional)} for canonical
+     * item URL, plus
      * validation error toasts for the pre-booking form.
      */
     public Object detailPageWithPreBookingValidationErrors(
@@ -199,22 +190,6 @@ public class DetailPresentation {
         return view;
     }
 
-    /**
-     * Published "live" version id (same as anonymous detail) when the item is
-     * visible publicly; otherwise the first
-     * version in the viewer-specific list (e.g. host-only draft).
-     */
-    private long resolvePublishedOrViewerCurrentVersionId(final int itemId, final ItemDetail viewerHead) {
-        final Optional<ItemDetail> publicHead =
-                detailInterface.getItemDetail(itemId, Optional.empty(), Optional.empty());
-        if (publicHead.isPresent()
-                && publicHead.get().getVersions() != null
-                && !publicHead.get().getVersions().isEmpty()) {
-            return publicHead.get().getVersions().get(0).getVersionId();
-        }
-        return viewerHead.getVersions().get(0).getVersionId();
-    }
-
     private ModelAndView buildNuevoItemListingMissingView(final int itemId, final String marketplaceBackHref) {
         final ModelAndView mav = new ModelAndView("nuevo/item-detail");
         mav.addObject("itemListingMissing", true);
@@ -248,11 +223,11 @@ public class DetailPresentation {
         final ItemModel item = displayPair.getItemModel();
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
 
-        final Integer ownerId = parseHostId(item.getHostId());
-        final boolean isOwner = viewer != null && ownerId != null && ownerId.equals(viewer.getId());
+        final int ownerId = item.getHostId();
+        final boolean isOwner = viewer != null && ownerId > 0 && ownerId == viewer.getId();
 
         final User itemOwner =
-                ownerId == null ? null : itemService.findUserById(ownerId).orElse(null);
+                ownerId <= 0 ? null : itemService.findUserById(ownerId).orElse(null);
 
         final List<ReviewModel> versionReviews =
                 displayPair.getReviews() == null ? List.of() : displayPair.getReviews();
@@ -318,17 +293,6 @@ public class DetailPresentation {
                 && w.getStartTime() != null
                 && w.getEndTime() != null
                 && w.getEndTime().isAfter(w.getStartTime());
-    }
-
-    private static Integer parseHostId(final String hostId) {
-        if (hostId == null || hostId.isBlank()) {
-            return null;
-        }
-        try {
-            return Integer.valueOf(hostId.trim());
-        } catch (final NumberFormatException ignored) {
-            return null;
-        }
     }
 
     private static String primaryImageUrl(final ItemModel item, final String contextPath) {

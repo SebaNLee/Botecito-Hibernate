@@ -36,9 +36,7 @@ public class MarketplaceController {
             final HttpServletRequest request,
             @Valid @ModelAttribute("marketplaceSearch") final MarketplaceSearchForm search,
             final BindingResult errors) {
-        if (errors.hasErrors()) {
-            return marketplacePresentation.marketplaceErrors(request, search, errors);
-        }
-        return marketplacePresentation.marketplaceGet(request, search);
+
+        return marketplacePresentation.marketplace(request, search, errors);
     }
 }

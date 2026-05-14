@@ -1,66 +1,87 @@
 package ar.edu.itba.paw.webapp.form.nuevo;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
 
+/**
+ * Query parameters for GET {@code /marketplace}. Field names and types mirror
+ * {@link ar.edu.itba.paw.models.nuevo.MarketplaceSearchModel}.
+ */
 @Getter
 @Setter
 public class MarketplaceSearchForm {
-    @Size(max = 100, message = "{marketplaceSearch.validation.searchQuery.size}")
+
+    @Size(max = 100, message = "{marketplace.validation.searchQuery.size}")
     private String searchQuery;
 
-    @Pattern(regexp = "^$|^\\d{4}-\\d{2}-\\d{2}$", message = "{marketplaceSearch.validation.date.pattern}")
-    private String date;
+    @DateTimeFormat(iso = ISO.DATE)
+    private LocalDate date;
 
-    @Pattern(regexp = "^$|^\\d{1,2}:\\d{2}(:\\d{2})?$", message = "{marketplaceSearch.validation.time.pattern}")
-    private String startTime;
+    @DateTimeFormat(
+            iso = ISO.TIME,
+            fallbackPatterns = {"H:mm", "HH:mm", "H:mm:ss", "HH:mm:ss"})
+    private LocalTime startTime;
 
-    @Pattern(regexp = "^$|^\\d{1,2}:\\d{2}(:\\d{2})?$", message = "{marketplaceSearch.validation.time.pattern}")
-    private String endTime;
+    @DateTimeFormat(
+            iso = ISO.TIME,
+            fallbackPatterns = {"H:mm", "HH:mm", "H:mm:ss", "HH:mm:ss"})
+    private LocalTime endTime;
 
-    @Min(value = 1, message = "{marketplaceSearch.validation.capacity.min}")
-    @Max(value = 20, message = "{marketplaceSearch.validation.capacity.max}")
+    @Min(value = 1, message = "{marketplace.validation.number.pattern}")
+    @Max(value = 20, message = "{marketplace.validation.number.pattern}")
     private Integer capacity;
 
-    @Min(value = 50, message = "{marketplaceSearch.validation.weight.min}")
-    @Max(value = 2000, message = "{marketplaceSearch.validation.weight.max}")
+    @Min(value = 50, message = "{marketplace.validation.number.pattern}")
+    @Max(value = 2000, message = "{marketplace.validation.number.pattern}")
     private Integer weight;
 
-    @Min(value = 1, message = "{marketplaceSearch.validation.difficulty.min}")
-    @Max(value = 5, message = "{marketplaceSearch.validation.difficulty.max}")
-    private Integer difficultyLevel;
+    @Min(value = 1, message = "{marketplace.validation.difficultyOrRating.pattern}")
+    @Max(value = 5, message = "{marketplace.validation.difficultyOrRating.pattern}")
+    private Integer difficulty;
 
-    @Pattern(
-            regexp = "^$|^(0\\.5|[1-4](\\.5)?|5(\\.0)?)$",
-            message = "{marketplaceSearch.validation.minAvgRating.pattern}")
-    private String minAvgRating;
+    private Double minAvgRating;
 
-    @Pattern(regexp = "^$|^[a-z][a-z0-9-]*$", message = "{marketplaceSearch.validation.location.pattern}")
+    @Size(max = 100)
     private String location;
 
-    @Pattern(regexp = "^$|^[a-z][a-z0-9-]*$", message = "{marketplaceSearch.validation.itemType.pattern}")
+    @Size(max = 100)
     private String itemType;
 
-    @Pattern(
-            regexp = "^$|^(newest|oldest|price_asc|price_desc)$",
-            message = "{marketplaceSearch.validation.sort.pattern}")
-    private String sortBy;
-
-    @NotNull
-    @Min(value = 1, message = "{marketplaceSearch.validation.page.pattern}")
+    @Min(value = 1, message = "{marketplace.validation.page.pattern}")
     private Integer page;
 
-    @NotNull(message = "{marketplaceSearch.validation.pageSize.pattern}")
     private Integer pageSize;
 
-    @AssertTrue(message = "{marketplaceSearch.validation.pageSize.pattern}")
+    @Pattern(regexp = "^$|^(newest|oldest|priceAsc|priceDesc)$", message = "{marketplace.validation.sort.pattern}")
+    private String sortBy;
+
+    @AssertTrue(message = "{marketplace.validation.pageSize.pattern}")
     public boolean isPageSizeValid() {
-        return pageSize != null && (pageSize == 6 || pageSize == 12 || pageSize == 18);
+        if (pageSize == null) {
+            return true;
+        }
+        return pageSize == 6 || pageSize == 12 || pageSize == 18;
+    }
+
+    @AssertTrue(message = "{marketplace.validation.timeOrder}")
+    public boolean isSearchTimeRangeValid() {
+        if (startTime == null || endTime == null) {
+            return true;
+        }
+        return startTime.isBefore(endTime);
+    }
+
+    @AssertTrue(message = "{marketplace.validation.minAvgRating.pattern}")
+    public boolean isMinAvgRatingValid() {
+        return minAvgRating == null || (minAvgRating >= 0.5 && minAvgRating <= 5 && minAvgRating % 0.5 == 0);
     }
 }

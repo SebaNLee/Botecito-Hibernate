@@ -3,7 +3,12 @@ package ar.edu.itba.paw.persistence.nuevo;
 import ar.edu.itba.paw.models.nuevo.Booking;
 import ar.edu.itba.paw.models.nuevo.BookingSearchModel;
 import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
+import ar.edu.itba.paw.models.nuevo.IncomingSearch;
+import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
+import ar.edu.itba.paw.models.nuevo.PaymentProof;
 import ar.edu.itba.paw.models.nuevo.PreBookingReq;
+import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,4 +59,31 @@ public interface BookingDao {
     Optional<Integer> findOwnerIdForBookingId(int bookingId);
 
     BookingSearchResult searchBookings(BookingSearchModel search);
+
+    /** Bookings where the guest is the current user (outgoing requests). */
+    BookingSearchResult searchOutcomingBookings(OutcomingSearch search);
+
+    /** Bookings on listings owned by the host (incoming requests). */
+    BookingSearchResult searchIncomingBookings(IncomingSearch search);
+
+    Optional<Booking> updateStatusIncoming(int id, int callerId, BookingStatus status);
+
+    Optional<Booking> updateStatusOutgoing(int id, int callerId, BookingStatus status);
+
+    Optional<PaymentProof> uploadPayment(PaymentProof paymentProof);
+
+    /**
+     * Latest payment proof for the booking when {@code userId} is the guest or the item host.
+     */
+    Optional<PaymentProof> findPaymentProofForParticipant(int bookingId, int userId);
+
+    Optional<Booking> refusePayment(int bookingId, String message, LocalDateTime refuseTime);
+
+    /** Set all bookings that ended before {@code maxEndTime} (UTC) as FINISHED */
+    void finalizeBookingsBefore(LocalDateTime maxEndTime);
+
+    /** Set all bookings that start before {@code minStartTime} (UTC) as CANCELLED */
+    void expireBookingsBefore(LocalDateTime minStartTime);
+
+    boolean startsAfter(int bookingId, LocalDateTime requestedStart);
 }

@@ -8,8 +8,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class BookingSearchModel {
-    private int guestId;
-
     private String searchQuery;
     private LocalDate date;
     private BookingStatus status;

@@ -19,5 +19,9 @@ public interface ItemDao {
 
     boolean deleteMyBoatsItem(int itemId, int ownerId);
 
+    int createPublicationVersion(int itemId, int ownerId, ItemUpdateModel update);
+
+    boolean replaceVersionPrimaryImage(int versionId, byte[] imageData);
+
     boolean setItemActiveForOwner(int itemId, int ownerId, boolean active);
 }

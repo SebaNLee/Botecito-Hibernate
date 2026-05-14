@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.webapp.form;
+package ar.edu.itba.paw.webapp.form.nuevo;
 
 import ar.edu.itba.paw.webapp.form.validation.FileSize;
 import javax.validation.constraints.Max;
@@ -13,6 +13,8 @@ import org.springframework.web.multipart.MultipartFile;
 @Getter
 @Setter
 public class EditPublicationForm {
+
+    // TODO should use PublicationForm in the future completed with existing values from DB
 
     @NotBlank(message = "{publish.validation.title.required}")
     @Size(max = 100, message = "{publish.validation.title.max}")

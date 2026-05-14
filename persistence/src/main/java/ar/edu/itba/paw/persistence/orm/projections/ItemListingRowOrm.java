@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.persistence.orm.projections;
 
+import ar.edu.itba.paw.models.nuevo.AvailabilityWindow;
 import ar.edu.itba.paw.models.nuevo.ItemModel;
 import ar.edu.itba.paw.models.nuevo.enums.ItemStatus;
 import ar.edu.itba.paw.persistence.orm.entities.ItemStatusEnumOrm;
@@ -40,8 +41,9 @@ public class ItemListingRowOrm {
 
     public ItemModel toItemModel() {
         final ItemModel item = new ItemModel();
-        item.setId(Objects.requireNonNull(itemId, "itemId"));
-        item.setHostId(hostId == null ? null : hostId.toString());
+        item.setItemId(Objects.requireNonNull(itemId, "itemId"));
+        item.setVersionId(Objects.requireNonNull(versionId, "versionId"));
+        item.setHostId(hostId != null ? hostId : 0);
         item.setStatus(status == null ? null : ItemStatus.valueOf(status.name()));
         item.setTitle(title);
         item.setDescription(description);
@@ -62,9 +64,17 @@ public class ItemListingRowOrm {
         item.setAverageRating(averageRating == null ? 0D : averageRating);
         item.setTotalReviews(totalReviews == null ? 0 : totalReviews.intValue());
 
-        item.setWeekday(weekday == null ? null : DayOfWeek.valueOf(weekday.name()));
-        item.setStartTime(startTime);
-        item.setEndTime(endTime);
+        if (weekday != null || startTime != null || endTime != null) {
+            final AvailabilityWindow window = new AvailabilityWindow();
+            if (weekday != null) {
+                window.setWeekday(DayOfWeek.valueOf(weekday.name()));
+            }
+            window.setStartTime(startTime);
+            window.setEndTime(endTime);
+            item.setAvailabilityWindows(List.of(window));
+        } else {
+            item.setAvailabilityWindows(List.of());
+        }
 
         return item;
     }

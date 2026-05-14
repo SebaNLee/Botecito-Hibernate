@@ -219,7 +219,7 @@
                         </div>
                       </div>
 
-                      <c:if test="${booking.state == 'BOOKING_PENDING'}">
+                      <c:if test="${booking.status.name() == 'PENDING'}">
                         <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                           <label class="label cursor-pointer justify-start gap-3 rounded-xl border border-success/25 bg-success/10 px-3 py-2.5">
                             <input type="radio" class="radio radio-success radio-sm" name="bookingDecision_${booking.id}" value="accept" />

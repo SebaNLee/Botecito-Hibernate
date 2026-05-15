@@ -100,8 +100,4 @@ public class AuthController {
         return authPresentation.verifyEmail(token, request, response);
     }
 
-    @RequestMapping("/403")
-    public ModelAndView forbidden() {
-        return authPresentation.forbidden();
-    }
 }

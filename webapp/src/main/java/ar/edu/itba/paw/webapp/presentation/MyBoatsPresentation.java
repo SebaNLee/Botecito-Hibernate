@@ -2,7 +2,7 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
 import ar.edu.itba.paw.models.nuevo.PageModel;
-import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.models.entity.UsersOrm;
 import ar.edu.itba.paw.services.nuevo.ItemInterface;
 import ar.edu.itba.paw.services.nuevo.UserService;
 import java.util.LinkedHashMap;
@@ -28,7 +28,7 @@ public class MyBoatsPresentation {
     private final ItemInterface itemInterface;
 
     public ModelAndView myBoats(final HttpServletRequest request, final int page, final int pageSize) {
-        final UserModel currentUser = currentUser();
+        final UsersOrm currentUser = currentUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -70,7 +70,7 @@ public class MyBoatsPresentation {
         return mav;
     }
 
-    private UserModel currentUser() {
+    private UsersOrm currentUser() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()

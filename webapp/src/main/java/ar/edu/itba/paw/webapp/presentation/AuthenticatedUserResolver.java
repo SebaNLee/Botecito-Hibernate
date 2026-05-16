@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.models.entity.UsersOrm;
 import ar.edu.itba.paw.services.nuevo.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -14,7 +14,7 @@ public class AuthenticatedUserResolver {
 
     private final UserService userService;
 
-    public UserModel currentAuthenticatedUser() {
+    public UsersOrm currentAuthenticatedUser() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()

@@ -1,25 +1,21 @@
-package ar.edu.itba.paw.webapp.util;
+package ar.edu.itba.paw.webapp.util.nuevo;
 
-import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
+import ar.edu.itba.paw.models.nuevo.AvailabilityData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.springframework.web.servlet.ModelAndView;
 
-/**
- * Webapp-layer helper that publishes availability payload into the model as
- * JSON-serialized strings consumed by the JSP picker.
- */
-public final class AvailabilityPickerSupport {
+public final class AvailabilityJsonHelper {
 
-    private AvailabilityPickerSupport() {}
+    private AvailabilityJsonHelper() {}
 
     public static void addAvailabilityPickerData(
-            final ModelAndView mav, final String prefix, final AvailabilityPickerBuilder.Data data) {
-        mav.addObject(prefix + "OfferedDatesJson", toJsonArray(data.offeredDates()));
-        mav.addObject(prefix + "OccupiedDatesJson", toJsonArray(data.occupiedDates()));
-        mav.addObject(prefix + "OfferedTimesJson", toJsonMap(data.offeredTimesByDate()));
-        mav.addObject(prefix + "OccupiedTimesJson", toJsonMap(data.occupiedTimesByDate()));
+            final ModelAndView mav, final String prefix, final AvailabilityData data) {
+        mav.addObject(prefix + "OfferedDatesJson", toJsonArray(data.getOfferedDates()));
+        mav.addObject(prefix + "OccupiedDatesJson", toJsonArray(data.getOccupiedDates()));
+        mav.addObject(prefix + "OfferedTimesJson", toJsonMap(data.getOfferedTimesByDate()));
+        mav.addObject(prefix + "OccupiedTimesJson", toJsonMap(data.getOccupiedTimesByDate()));
     }
 
     private static String toJsonArray(final List<String> values) {

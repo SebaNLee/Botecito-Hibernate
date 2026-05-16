@@ -1,11 +1,13 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.exceptions.BookingCollisionException;
+import ar.edu.itba.paw.models.nuevo.exceptions.EmailAlreadyExistsException;
 import ar.edu.itba.paw.models.nuevo.exceptions.IllegalBookingOperationException;
+import ar.edu.itba.paw.models.nuevo.exceptions.InvalidBookingStatusException;
+import ar.edu.itba.paw.models.nuevo.exceptions.InvalidDateFormatException;
 import ar.edu.itba.paw.models.nuevo.exceptions.NoAnticipationException;
 import ar.edu.itba.paw.models.nuevo.exceptions.OutsideAvailabilityException;
-import ar.edu.itba.paw.services.SelfBookingNotAllowedException;
-import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
+import ar.edu.itba.paw.webapp.util.nuevo.ToastSupport;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -69,11 +71,6 @@ public class GlobalExceptionHandler {
         return new ModelAndView("redirect:/403");
     }
 
-    @ExceptionHandler(SelfBookingNotAllowedException.class)
-    public ModelAndView handleSelfBookingNotAllowed(final HttpServletRequest request) {
-        return new ModelAndView("redirect:" + request.getRequestURI() + "?error=selfBooking");
-    }
-
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ModelAndView handleUnexpected(final Exception exception) {
@@ -102,6 +99,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalBookingOperationException.class)
     public ModelAndView handleIllegalOperation(HttpServletRequest request, RedirectAttributes ra) {
         ToastSupport.error(ra, "requests.booking.operationFailed");
+        return redirectToReferer(request);
+    }
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ModelAndView handleEmailAlreadyExists(HttpServletRequest request, RedirectAttributes ra) {
+        ToastSupport.error(ra, "register.validation.email.duplicate");
+        return redirectToReferer(request);
+    }
+
+    @ExceptionHandler(InvalidDateFormatException.class)
+    public ModelAndView handleInvalidDateFormat(HttpServletRequest request, RedirectAttributes ra) {
+        ToastSupport.error(ra, "bookingSearch.validation.date.invalid");
+        return redirectToReferer(request);
+    }
+
+    @ExceptionHandler(InvalidBookingStatusException.class)
+    public ModelAndView handleInvalidBookingStatus(HttpServletRequest request, RedirectAttributes ra) {
+        ToastSupport.error(ra, "bookingSearch.validation.status.invalid");
         return redirectToReferer(request);
     }
 

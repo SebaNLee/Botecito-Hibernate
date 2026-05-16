@@ -1,8 +1,7 @@
-package ar.edu.itba.paw.webapp.controller;
+package ar.edu.itba.paw.webapp.controller.nuevo;
 
-import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
-import ar.edu.itba.paw.webapp.util.AvailabilityPickerSupport;
+import ar.edu.itba.paw.services.nuevo.MarketplaceInterface;
+import ar.edu.itba.paw.webapp.util.nuevo.AvailabilityJsonHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,15 +12,13 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class HomeController {
 
-    private final ItemService itemService;
+    private final MarketplaceInterface marketplaceInterface;
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
     public ModelAndView landing() {
+        final var data = marketplaceInterface.buildHomeAvailabilityData();
         final ModelAndView mav = new ModelAndView("index");
-        AvailabilityPickerSupport.addAvailabilityPickerData(
-                mav,
-                "search",
-                AvailabilityPickerBuilder.build(itemService.listAvailabilities(), itemService.listBookings()));
+        AvailabilityJsonHelper.addAvailabilityPickerData(mav, "search", data);
         return mav;
     }
 }

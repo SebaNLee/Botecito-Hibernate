@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.webapp.controller.nuevo;
 
-import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.models.entity.UsersOrm;
 import ar.edu.itba.paw.services.nuevo.ReviewInterface;
-import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
+import ar.edu.itba.paw.webapp.util.nuevo.ToastSupport;
 import ar.edu.itba.paw.webapp.form.nuevo.ReviewForm;
 import ar.edu.itba.paw.webapp.presentation.AuthenticatedUserResolver;
 import javax.validation.Valid;
@@ -32,7 +32,7 @@ public class ReviewController {
             @RequestParam(value = "returnTo", required = false, defaultValue = "dashboard") final String returnTo,
             @RequestParam(value = "itemId", required = false) final Integer itemId,
             final RedirectAttributes redirectAttributes) {
-        final UserModel currentUser = authenticatedUserResolver.currentAuthenticatedUser();
+        final UsersOrm currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }

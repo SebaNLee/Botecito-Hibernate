@@ -1,27 +1,29 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.nuevo.AvailabilityWindow;
+import ar.edu.itba.paw.models.entity.AvailabilityOrm;
+import ar.edu.itba.paw.models.entity.BookingOrm;
+import ar.edu.itba.paw.models.entity.ItemStatusEnumOrm;
+import ar.edu.itba.paw.models.entity.ReviewOrm;
+import ar.edu.itba.paw.models.entity.UsersOrm;
+import ar.edu.itba.paw.models.nuevo.AvailabilityData;
 import ar.edu.itba.paw.models.nuevo.ItemDetail;
-import ar.edu.itba.paw.models.nuevo.ItemModel;
-import ar.edu.itba.paw.models.nuevo.PreBookingReq;
-import ar.edu.itba.paw.models.nuevo.ReviewModel;
-import ar.edu.itba.paw.models.nuevo.UserModel;
-import ar.edu.itba.paw.models.nuevo.enums.ItemStatus;
 import ar.edu.itba.paw.services.nuevo.BookingInterface;
 import ar.edu.itba.paw.services.nuevo.DetailInterface;
-import ar.edu.itba.paw.services.nuevo.PreBookingCreateResult;
+import ar.edu.itba.paw.models.nuevo.exceptions.BookingCollisionException;
+import ar.edu.itba.paw.models.nuevo.exceptions.OutsideAvailabilityException;
 import ar.edu.itba.paw.services.nuevo.UserService;
-import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
-import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
+
+import ar.edu.itba.paw.webapp.util.nuevo.ToastSupport;
 import ar.edu.itba.paw.webapp.form.nuevo.PreBookingForm;
-import ar.edu.itba.paw.webapp.util.AvailabilityPickerSupport;
+import ar.edu.itba.paw.webapp.util.nuevo.AvailabilityJsonHelper;
 import ar.edu.itba.paw.webapp.util.MarketplaceReturnUrl;
-import ar.edu.itba.paw.webapp.util.NuevoDetailAvailabilityPicker;
+import ar.edu.itba.paw.webapp.util.DetailAvailabilityPicker;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -57,10 +59,14 @@ public class DetailPresentation {
     public Object detailPage(
             final int itemId, final HttpServletRequest request, final Optional<Long> pathSnapshotVersionId) {
         final String marketplaceBackHref = MarketplaceReturnUrl.marketplaceBackHref(request, null);
-        final UserModel viewer = currentAuthenticatedUserOrNull();
-        final Optional<Integer> viewerId = viewer == null ? Optional.empty() : Optional.of(viewer.getId());
+        final UsersOrm viewer = currentAuthenticatedUserOrNull();
 
-        final Optional<ItemDetail> nuevoDetail = detailInterface.getItemDetail(itemId, viewerId, pathSnapshotVersionId);
+        final Optional<ItemDetail> nuevoDetail;
+        if (viewer != null && pathSnapshotVersionId.isPresent()) {
+            nuevoDetail = detailInterface.getItemDetail(itemId, viewer.getId(), pathSnapshotVersionId.get());
+        } else {
+            nuevoDetail = detailInterface.getItemDetail(itemId);
+        }
         if (nuevoDetail.isEmpty()
                 || nuevoDetail.get().getVersions() == null
                 || nuevoDetail.get().getVersions().isEmpty()) {
@@ -71,7 +77,7 @@ public class DetailPresentation {
         }
         final ItemDetail itemDetail = nuevoDetail.get();
         final long currentVersionId = itemDetail.getVersions().get(0).getVersionId();
-        final ItemDetail.ItemModelVersion displayPair;
+        final ItemDetail.VersionDetail displayPair;
         if (pathSnapshotVersionId.isEmpty()) {
             displayPair = itemDetail.getVersions().get(0);
         } else {
@@ -85,12 +91,16 @@ public class DetailPresentation {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         }
         final boolean viewingNonCurrentVersion = displayPair.getVersionId() != currentVersionId;
+        final List<Long> visibleVersionIds = viewer != null
+                ? detailInterface.getVisibleVersionIds(itemId, viewer.getId())
+                : List.of(currentVersionId);
         return buildNuevoItemDetailView(
                 itemId,
                 itemDetail,
                 displayPair,
                 currentVersionId,
                 viewingNonCurrentVersion,
+                visibleVersionIds,
                 viewer,
                 request,
                 marketplaceBackHref);
@@ -120,7 +130,7 @@ public class DetailPresentation {
             final int itemId,
             final PreBookingForm form,
             final RedirectAttributes redirectAttributes) {
-        final UserModel viewer = currentAuthenticatedUserOrNull();
+        final UsersOrm viewer = currentAuthenticatedUserOrNull();
         if (viewer == null) {
             ToastSupport.error(redirectAttributes, "detail.preBooking.loginRequired");
             return contextRelativeRedirect("/login");
@@ -132,40 +142,19 @@ public class DetailPresentation {
             return redirectToItem(itemId);
         }
 
-        final PreBookingReq req = new PreBookingReq();
-        req.setVersionId(form.getVersionId().intValue());
-        req.setDate(form.getDate());
-        req.setStartTime(form.getStartTime());
-        req.setEndTime(form.getEndTime());
-        req.setMessage(form.getMessage());
-        req.setGuestId(viewer.getId());
-
-        final PreBookingCreateResult outcome = bookingInterface.createBooking(req);
-        if (outcome instanceof PreBookingCreateResult.Created) {
-            ToastSupport.success(redirectAttributes, "detail.preBooking.success");
-            return redirectToItem(itemId);
-        }
-        if (outcome == PreBookingCreateResult.OutsideAvailability.INSTANCE) {
-            ToastSupport.error(redirectAttributes, "detail.preBooking.outsideAvailability");
-            return redirectToItem(itemId);
-        }
-        if (outcome == PreBookingCreateResult.Collision.INSTANCE) {
-            ToastSupport.error(redirectAttributes, "detail.preBooking.collision");
-            return redirectToItem(itemId);
-        }
-        ToastSupport.error(redirectAttributes, "detail.preBooking.unexpected");
+        bookingInterface.createBooking(
+                form.getVersionId().intValue(),
+                form.getDate(),
+                form.getStartTime(),
+                form.getEndTime(),
+                form.getMessage(),
+                viewer.getId());
+        ToastSupport.success(redirectAttributes, "detail.preBooking.success");
         return redirectToItem(itemId);
     }
 
     private boolean isVersionVisibleForViewer(final int itemId, final int viewerUserId, final int versionId) {
-        final Optional<ItemDetail> detail =
-                detailInterface.getItemDetail(itemId, Optional.of(viewerUserId), Optional.empty());
-        if (detail.isEmpty()
-                || detail.get().getVersions() == null
-                || detail.get().getVersions().isEmpty()) {
-            return false;
-        }
-        return detail.get().getVersions().stream().anyMatch(v -> v.getVersionId() == versionId);
+        return detailInterface.getVisibleVersionIds(itemId, viewerUserId).contains((long) versionId);
     }
 
     private void mergeValidationToasts(final ModelAndView mav, final BindingResult errors) {
@@ -212,48 +201,57 @@ public class DetailPresentation {
     private ModelAndView buildNuevoItemDetailView(
             final int itemId,
             final ItemDetail itemDetail,
-            final ItemDetail.ItemModelVersion displayPair,
+            final ItemDetail.VersionDetail displayPair,
             final long currentVersionId,
             final boolean viewingNonCurrentVersion,
-            final UserModel viewer,
+            final List<Long> visibleVersionIds,
+            final UsersOrm viewer,
             final HttpServletRequest request,
             final String marketplaceBackHref) {
-        final ItemModel item = displayPair.getItemModel();
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
 
-        final int ownerId = item.getHostId();
+        final int ownerId = displayPair.getHostId();
         final boolean isOwner = viewer != null && ownerId > 0 && ownerId == viewer.getId();
 
-        final UserModel itemOwner =
+        final UsersOrm itemOwner =
                 ownerId <= 0 ? null : userService.findById(ownerId).orElse(null);
 
-        final List<ReviewModel> versionReviews =
+        final List<ReviewOrm> versionReviews =
                 displayPair.getReviews() == null ? List.of() : displayPair.getReviews();
 
-        final boolean isActive = item.getStatus() == ItemStatus.ACTIVE;
+        final boolean isActive = displayPair.getStatus() == ItemStatusEnumOrm.ACTIVE;
 
         final ModelAndView mav = new ModelAndView("nuevo/item-detail");
         mav.addObject("itemListingMissing", false);
         mav.addObject("itemDetail", itemDetail);
-        mav.addObject("item", item);
+        mav.addObject("item", displayPair);
         mav.addObject("currentVersionId", currentVersionId);
         mav.addObject("selectedVersionId", displayPair.getVersionId());
         mav.addObject("viewingNonCurrentVersion", viewingNonCurrentVersion);
-        mav.addObject("showVersionSelector", itemDetail.getVersions().size() > 1);
+        mav.addObject("showVersionSelector", visibleVersionIds.size() > 1);
+        mav.addObject("visibleVersionIds", visibleVersionIds);
         mav.addObject("isOwner", isOwner);
         mav.addObject("viewer", viewer);
         mav.addObject("hideListingLiveVersionNavigation", viewingNonCurrentVersion && !isActive && !isOwner);
         mav.addObject("listingInactiveNotice", !isActive);
         mav.addObject("itemOwner", itemOwner);
         mav.addObject("versionReviews", versionReviews);
-        mav.addObject("itemImageUrl", primaryImageUrl(item, contextPath));
-        mav.addObject("itemImageUrls", prefixImagePaths(item.getImages(), contextPath));
-        final String ownerName = itemOwner == null ? null : itemOwner.getName();
+        mav.addObject("itemImageUrl", primaryImageUrl(displayPair.getImages(), contextPath));
+        mav.addObject("itemImageUrls", prefixImagePaths(displayPair.getImages(), contextPath));
+        final String ownerName = itemOwner == null ? ""
+                : ((itemOwner.getFirstName() == null ? "" : itemOwner.getFirstName().trim())
+                                + " "
+                                + (itemOwner.getLastName() == null ? "" : itemOwner.getLastName().trim()))
+                        .trim();
+        final String ownerDisplayName = ownerName.isBlank()
+                ? (itemOwner == null || itemOwner.getEmail() == null ? "" : itemOwner.getEmail())
+                : ownerName;
+        mav.addObject("itemOwnerDisplayName", ownerDisplayName);
         mav.addObject(
                 "ownerInitial",
-                ownerName == null || ownerName.isEmpty()
+                ownerDisplayName.isEmpty()
                         ? "I"
-                        : ownerName.substring(0, 1).toUpperCase());
+                        : ownerDisplayName.substring(0, 1).toUpperCase());
 
         mav.addObject("itemLocationSlug", "");
         mav.addObject("marketplaceBackHref", marketplaceBackHref);
@@ -262,19 +260,22 @@ public class DetailPresentation {
         preBookingForm.setVersionId((int) displayPair.getVersionId());
         mav.addObject("preBookingForm", preBookingForm);
 
-        final List<AvailabilityWindow> availabilityWindows =
+        final List<AvailabilityOrm> availabilityWindows =
                 displayPair.getAvailabilityWindows() == null ? List.of() : displayPair.getAvailabilityWindows();
-        final AvailabilityPickerBuilder.Data detailPickerData = NuevoDetailAvailabilityPicker.build(
+        final var builderData = DetailAvailabilityPicker.build(
                 availabilityWindows, displayPair.getBookings(), displayPair.getVersionTimezone());
-        AvailabilityPickerSupport.addAvailabilityPickerData(mav, "detail", detailPickerData);
+        final var detailData = new AvailabilityData(
+                builderData.offeredDates(), builderData.occupiedDates(),
+                builderData.offeredTimesByDate(), builderData.occupiedTimesByDate());
+        AvailabilityJsonHelper.addAvailabilityPickerData(mav, "detail", detailData);
         final String listingTz = displayPair.getVersionTimezone();
         mav.addObject("detailListingTimezoneId", listingTz == null || listingTz.isBlank() ? "" : listingTz.trim());
         mav.addObject(
                 "detailListingTodayIso",
-                NuevoDetailAvailabilityPicker.listingCalendarToday(listingTz).format(DateTimeFormatter.ISO_LOCAL_DATE));
+                DetailAvailabilityPicker.listingCalendarToday(listingTz).format(DateTimeFormatter.ISO_LOCAL_DATE));
         mav.addObject(
                 "detailListingMaxDateIso",
-                NuevoDetailAvailabilityPicker.listingCalendarMaxInclusive(listingTz)
+                DetailAvailabilityPicker.listingCalendarMaxInclusive(listingTz)
                         .format(DateTimeFormatter.ISO_LOCAL_DATE));
 
         final boolean showPreBookingPanel = isActive
@@ -286,18 +287,18 @@ public class DetailPresentation {
         return mav;
     }
 
-    private boolean isCompleteAvailabilityWindow(final AvailabilityWindow w) {
+    private boolean isCompleteAvailabilityWindow(final AvailabilityOrm w) {
         return w.getWeekday() != null
                 && w.getStartTime() != null
                 && w.getEndTime() != null
                 && w.getEndTime().isAfter(w.getStartTime());
     }
 
-    private static String primaryImageUrl(final ItemModel item, final String contextPath) {
-        if (item.getImages() == null || item.getImages().isEmpty()) {
+    private static String primaryImageUrl(final List<String> images, final String contextPath) {
+        if (images == null || images.isEmpty()) {
             return contextPath + "/css/boat-placeholder.svg";
         }
-        return prefixPath(item.getImages().get(0), contextPath);
+        return prefixPath(images.get(0), contextPath);
     }
 
     private static List<String> prefixImagePaths(final List<String> paths, final String contextPath) {
@@ -317,7 +318,7 @@ public class DetailPresentation {
         return path.startsWith("/") ? contextPath + path : contextPath + "/" + path;
     }
 
-    private UserModel currentAuthenticatedUserOrNull() {
+    private UsersOrm currentAuthenticatedUserOrNull() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()

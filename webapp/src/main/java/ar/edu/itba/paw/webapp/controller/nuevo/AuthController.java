@@ -22,6 +22,8 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class AuthController {
 
+    private static final String PASSWORD_RECOVERY_RESET_VIEW = "nuevo/password-reset";
+
     private final AuthPresentation authPresentation;
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
@@ -51,7 +53,6 @@ public class AuthController {
             return new ModelAndView("nuevo/register");
         }
         form.setPreferredLanguage(request.getLocale().getLanguage());
-        form.setRequest(request);
         return authPresentation.registerSubmit(form, errors);
     }
 
@@ -72,11 +73,8 @@ public class AuthController {
     }
 
     @RequestMapping(value = "/password-recovery/{token}", method = RequestMethod.GET)
-    public ModelAndView passwordRecoveryResetForm(
-            @PathVariable("token") final String token,
-            @ModelAttribute("passwordResetForm") final PasswordResetForm form) {
-        form.setToken(token);
-        return authPresentation.passwordRecoveryResetForm(form);
+    public ModelAndView passwordRecoveryResetForm(@PathVariable("token") final String token) {
+        return authPresentation.passwordRecoveryResetForm(token);
     }
 
     @RequestMapping(value = "/password-recovery/{token}", method = RequestMethod.POST)
@@ -85,11 +83,12 @@ public class AuthController {
             @Valid @ModelAttribute("passwordResetForm") final PasswordResetForm form,
             final BindingResult errors) {
         if (errors.hasErrors()) {
-            form.setToken(token);
-            return authPresentation.passwordRecoveryResetWithErrors(form);
+            return new ModelAndView(PASSWORD_RECOVERY_RESET_VIEW)
+                    .addObject("token", token)
+                    .addObject("tokenValid", true)
+                    .addObject("org.springframework.validation.BindingResult.passwordResetForm", errors);
         }
-        form.setToken(token);
-        return authPresentation.passwordRecoveryResetSubmit(form);
+        return authPresentation.passwordRecoveryResetSubmit(token, form.getPassword());
     }
 
     @RequestMapping(value = "/verify-email/{token}", method = RequestMethod.GET)

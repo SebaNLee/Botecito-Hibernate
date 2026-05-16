@@ -15,38 +15,12 @@ public final class MarketplaceReturnUrl {
     }
 
     /**
-     * Builds a {@code returnTo} query value for links from the marketplace listing to item detail:
-     * {@code /marketplace} plus the current request query string, or {@code null} when there is no
-     * query (plain listing).
-     */
-    public static String returnToFromMarketplaceRequest(final HttpServletRequest request) {
-        final String qs = request.getQueryString();
-        if (qs == null || qs.isBlank()) {
-            return null;
-        }
-        final String candidate = "/marketplace?" + qs;
-        return sanitizeRelativePath(candidate).equals(candidate) ? candidate : null;
-    }
-
-    /**
      * Full href for "back to marketplace" including context path. Only allows {@code /marketplace}
      * with an optional query string (no open redirects).
      */
     public static String marketplaceBackHref(final HttpServletRequest request, final String returnToParam) {
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
         return contextPath + sanitizeRelativePath(returnToParam);
-    }
-
-    /**
-     * Sanitized relative path to echo into {@code returnTo} on item URLs, or {@code null} when the
-     * client did not pass a meaningful value (caller omits the param).
-     */
-    public static String listingReturnToForParam(final String returnToParam) {
-        if (returnToParam == null || returnToParam.isBlank()) {
-            return null;
-        }
-        final String sanitized = sanitizeRelativePath(returnToParam);
-        return "/marketplace".equals(sanitized) ? null : sanitized;
     }
 
     private static String sanitizeRelativePath(final String returnToParam) {

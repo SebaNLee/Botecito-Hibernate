@@ -427,14 +427,4 @@ public class BookingJpaDao implements BookingDao {
     private static boolean hasText(final String value) {
         return value != null && !value.isBlank();
     }
-
-    private static boolean toBoolean(final Object value) {
-        if (value instanceof Boolean) {
-            return (Boolean) value;
-        }
-        if (value instanceof Number) {
-            return ((Number) value).intValue() != 0;
-        }
-        return false;
-    }
 }

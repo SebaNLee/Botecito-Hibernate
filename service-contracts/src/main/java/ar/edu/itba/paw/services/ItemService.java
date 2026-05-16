@@ -33,4 +33,6 @@ public interface ItemService {
     boolean deleteImageFromGallery(int imageId);
 
     boolean reorderGallery(int itemId, int ownerId, List<Integer> imageIdsInOrder);
+
+    // TODO: Soft delete item method
 }

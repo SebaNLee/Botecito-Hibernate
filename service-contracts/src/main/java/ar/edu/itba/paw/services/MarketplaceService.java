@@ -21,5 +21,6 @@ public interface MarketplaceService {
             Integer pageSize,
             String sortBy);
 
+    // TODO evaluate possbile refactor of AvailabilityData DTO
     AvailabilityData buildHomeAvailabilityData();
 }

@@ -7,6 +7,7 @@ import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.BookingService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.services.exceptions.VersionNotFoundException;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.time.format.DateTimeFormatter;
@@ -120,15 +121,16 @@ public class PublishActionPresentation {
 
         resolvePendingBookings(activeBookings, currentUser.getId(), request);
 
-        final int newVersionId = itemInterface.createPublicationVersion(
-                itemId,
-                currentUser.getId(),
-                form.getTitle().trim(),
-                form.getDescription() == null ? "" : form.getDescription().trim(),
-                parsedPrice,
-                form.getDifficultyLevel(),
-                parsedLocationOptionId);
-        if (newVersionId < 0) {
+        try {
+            itemInterface.createPublicationVersion(
+                    itemId,
+                    currentUser.getId(),
+                    form.getTitle().trim(),
+                    form.getDescription() == null ? "" : form.getDescription().trim(),
+                    parsedPrice,
+                    form.getDifficultyLevel(),
+                    parsedLocationOptionId);
+        } catch (final VersionNotFoundException e) {
             errors.reject("publish.submit.persistenceError");
             return editPublicationModelAndView(item.get(), request);
         }

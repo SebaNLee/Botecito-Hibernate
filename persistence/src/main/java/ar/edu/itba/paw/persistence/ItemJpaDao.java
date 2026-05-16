@@ -6,15 +6,12 @@ import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
-import ar.edu.itba.paw.models.entity.ItemType;
 import ar.edu.itba.paw.models.entity.Location;
 import ar.edu.itba.paw.models.entity.Media;
 import ar.edu.itba.paw.models.entity.MediaId;
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.persistence.projections.MyBoatsRow;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -69,27 +66,6 @@ public class ItemJpaDao implements ItemDao {
     }
 
     @Override
-    public boolean deleteMyBoatsItem(final int itemId, final int ownerId) {
-        final Optional<Item> item = findItemOrm(itemId, ownerId);
-        if (item.isEmpty()) {
-            return false;
-        }
-
-        if (hasBookingsBlockingHardDelete(itemId)) {
-            if (item.get().getStatus() == ItemStatusEnum.ACTIVE) {
-                item.get().setStatus(ItemStatusEnum.INACTIVE);
-                entityManager.flush();
-                return true;
-            }
-            return false;
-        }
-
-        entityManager.remove(item.get());
-        entityManager.flush();
-        return true;
-    }
-
-    @Override
     public boolean setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
         final int updated = entityManager
                 .createQuery("UPDATE Item i SET i.status = :status WHERE i.id = :itemId AND i.host.id = :ownerId")
@@ -97,110 +73,73 @@ public class ItemJpaDao implements ItemDao {
                 .setParameter("itemId", itemId)
                 .setParameter("ownerId", ownerId)
                 .executeUpdate();
-        entityManager.flush();
         return updated > 0;
     }
 
     @Override
-    public int createPublicationVersion(
-            final int itemId,
-            final int ownerId,
-            final String title,
-            final String description,
-            final int pricePerHour,
-            final Integer difficultyLevel,
-            final int locationOptionId) {
-        final Version current = findCurrentVersion(itemId);
-        if (current == null) {
-            return -1;
-        }
-
-        final boolean hasBookings = hasBookingReferences(current.getId());
-        if (!hasBookings) {
-            current.setTitle(title);
-            current.setDescription(description);
-            current.setPrice(BigDecimal.valueOf(pricePerHour));
-            current.setDifficulty(difficultyLevel != null ? difficultyLevel : current.getDifficulty());
-            current.setLocation(entityManager.getReference(Location.class, locationOptionId));
-            current.setCreatedAt(LocalDateTime.now());
-            entityManager.flush();
-            return current.getId();
-        }
-
-        final Version next = new Version();
-        next.setItem(current.getItem());
-        next.setType(current.getType());
-        next.setTitle(title);
-        next.setDescription(description);
-        next.setPrice(BigDecimal.valueOf(pricePerHour));
-        next.setCapacity(current.getCapacity());
-        next.setWeight(current.getWeight());
-        next.setDifficulty(difficultyLevel != null ? difficultyLevel : current.getDifficulty());
-        next.setLocation(entityManager.getReference(Location.class, locationOptionId));
-        next.setTimezone(current.getTimezone());
-        next.setCreatedAt(LocalDateTime.now());
-        entityManager.persist(next);
-        entityManager.flush();
-
-        copyAvailabilities(current.getId(), next);
-        copyMedia(current.getId(), next);
-
-        entityManager.flush();
-        return next.getId();
+    public Optional<Item> findItemByIdAndOwner(final int itemId, final int ownerId) {
+        final List<Item> rows = entityManager
+                .createQuery("FROM Item i WHERE i.id = :itemId AND i.host.id = :ownerId", Item.class)
+                .setParameter("itemId", itemId)
+                .setParameter("ownerId", ownerId)
+                .setMaxResults(1)
+                .getResultList();
+        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
-    public Integer insertItem(
-            final int ownerId,
-            final int typeId,
-            final String title,
-            final String description,
-            final int pricePerHour,
-            final int capacityPeople,
-            final int weight,
-            final int difficulty,
-            final int locationOptionId) {
-        final LocalDateTime now = LocalDateTime.now();
-
-        final Item item = Item.builder()
-                .host(entityManager.getReference(Users.class, ownerId))
-                .status(ItemStatusEnum.ACTIVE)
-                .createdAt(now)
-                .build();
-        entityManager.persist(item);
-
-        final Version version = new Version();
-        version.setItem(item);
-        version.setType(entityManager.getReference(ItemType.class, typeId));
-        version.setTitle(title);
-        version.setDescription(description);
-        version.setPrice(BigDecimal.valueOf(pricePerHour));
-        version.setCapacity(capacityPeople);
-        version.setWeight(weight);
-        version.setDifficulty(difficulty);
-        version.setLocation(entityManager.getReference(Location.class, locationOptionId));
-        version.setTimezone("America/Argentina/Buenos_Aires");
-        version.setCreatedAt(now);
-        entityManager.persist(version);
-        entityManager.flush();
-
-        return item.getId();
+    @Override
+    public boolean hasActiveOrFutureBookings(final int itemId) {
+        final Number count = (Number) entityManager
+                .createNativeQuery("SELECT COUNT(*) FROM booking b "
+                        + "JOIN version v ON v.id = b.version_id "
+                        + "JOIN item i ON i.id = v.item_id "
+                        + "WHERE i.id = :itemId "
+                        + "AND b.status NOT IN ('REJECTED', 'CANCELLED') "
+                        + "AND b.\"end\" > CURRENT_TIMESTAMP "
+                        + "AND b.guest_id <> i.host_id")
+                .setParameter("itemId", itemId)
+                .getSingleResult();
+        return count != null && count.intValue() > 0;
     }
 
-    private Version findCurrentVersion(final int itemId) {
+    @Override
+    public void deleteItem(final Item item) {
+        entityManager.remove(item);
+    }
+
+    @Override
+    public Optional<Version> findCurrentVersionByItemId(final int itemId) {
         final List<Version> rows = entityManager
                 .createQuery("FROM Version v WHERE v.item.id = :itemId ORDER BY v.id DESC", Version.class)
                 .setParameter("itemId", itemId)
                 .setMaxResults(1)
                 .getResultList();
-        return rows.isEmpty() ? null : rows.get(0);
+        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
-    private boolean hasBookingReferences(final int versionId) {
+    @Override
+    public boolean hasBookingReferencesByVersionId(final int versionId) {
         final Long count = entityManager
                 .createQuery("SELECT COUNT(b) FROM Booking b WHERE b.version.id = :versionId", Long.class)
                 .setParameter("versionId", versionId)
                 .getSingleResult();
         return count != null && count > 0;
+    }
+
+    @Override
+    public void persistVersion(final Version version) {
+        entityManager.persist(version);
+    }
+
+    @Override
+    public void copyVersionContent(final int sourceVersionId, final Version targetVersion) {
+        copyAvailabilities(sourceVersionId, targetVersion);
+        copyMedia(sourceVersionId, targetVersion);
+    }
+
+    @Override
+    public Location getLocationReference(final int locationId) {
+        return entityManager.getReference(Location.class, locationId);
     }
 
     private void copyAvailabilities(final int sourceVersionId, final Version targetVersion) {
@@ -277,32 +216,6 @@ public class ItemJpaDao implements ItemDao {
         return items;
     }
 
-    private Optional<Item> findItemOrm(final int itemId, final Integer ownerId) {
-        final String hql = ownerId == null
-                ? "FROM Item i WHERE i.id = :itemId"
-                : "FROM Item i WHERE i.id = :itemId AND i.host.id = :ownerId";
-        final var query = entityManager.createQuery(hql, Item.class).setParameter("itemId", itemId);
-        if (ownerId != null) {
-            query.setParameter("ownerId", ownerId);
-        }
-        final List<Item> rows = query.setMaxResults(1).getResultList();
-        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
-    }
-
-    private boolean hasBookingsBlockingHardDelete(final int itemId) {
-        final Number count = (Number) entityManager
-                .createNativeQuery("SELECT COUNT(*) FROM booking b "
-                        + "JOIN version v ON v.id = b.version_id "
-                        + "JOIN item i ON i.id = v.item_id "
-                        + "WHERE i.id = :itemId "
-                        + "AND b.status NOT IN ('REJECTED', 'CANCELLED') "
-                        + "AND b.\"end\" > CURRENT_TIMESTAMP "
-                        + "AND b.guest_id <> i.host_id")
-                .setParameter("itemId", itemId)
-                .getSingleResult();
-        return count != null && count.intValue() > 0;
-    }
-
     @Override
     public Optional<byte[]> findImageDataById(final int imageId) {
         return Optional.ofNullable(entityManager.find(Image.class, imageId)).map(Image::getData);
@@ -338,7 +251,6 @@ public class ItemJpaDao implements ItemDao {
         final Image image = new Image();
         image.setData(imageData);
         entityManager.persist(image);
-        entityManager.flush();
 
         final Media media = new Media();
         media.setId(new MediaId(versionId, (int) count));

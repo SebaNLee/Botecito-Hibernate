@@ -1,7 +1,13 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
+import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.models.entity.ItemStatusEnum;
+import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.persistence.ItemDao;
+import ar.edu.itba.paw.services.exceptions.VersionNotFoundException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +41,21 @@ public class ItemImpl implements ItemService {
     @Override
     @Transactional
     public boolean deleteMyBoatsItem(final int itemId, final int ownerId) {
-        return itemDao.deleteMyBoatsItem(itemId, ownerId);
+        final Optional<Item> item = itemDao.findItemByIdAndOwner(itemId, ownerId);
+        if (item.isEmpty()) {
+            return false;
+        }
+
+        if (itemDao.hasActiveOrFutureBookings(itemId)) {
+            if (item.get().getStatus() == ItemStatusEnum.ACTIVE) {
+                item.get().setStatus(ItemStatusEnum.INACTIVE);
+                return true;
+            }
+            return false;
+        }
+
+        itemDao.deleteItem(item.get());
+        return true;
     }
 
     @Override
@@ -48,8 +68,45 @@ public class ItemImpl implements ItemService {
             final int pricePerHour,
             final Integer difficultyLevel,
             final int locationOptionId) {
-        return itemDao.createPublicationVersion(
-                itemId, ownerId, title, description, pricePerHour, difficultyLevel, locationOptionId);
+        final Optional<Version> current = itemDao.findCurrentVersionByItemId(itemId);
+        if (current.isEmpty()) {
+            throw new VersionNotFoundException(itemId);
+        }
+
+        final boolean hasBookings =
+                itemDao.hasBookingReferencesByVersionId(current.get().getId());
+        if (!hasBookings) {
+            current.get().setTitle(title);
+            current.get().setDescription(description);
+            current.get().setPrice(BigDecimal.valueOf(pricePerHour));
+            current.get()
+                    .setDifficulty(
+                            difficultyLevel != null
+                                    ? difficultyLevel
+                                    : current.get().getDifficulty());
+            current.get().setLocation(itemDao.getLocationReference(locationOptionId));
+            current.get().setCreatedAt(LocalDateTime.now());
+            return current.get().getId();
+        }
+
+        final Version next = new Version();
+        next.setItem(current.get().getItem());
+        next.setType(current.get().getType());
+        next.setTitle(title);
+        next.setDescription(description);
+        next.setPrice(BigDecimal.valueOf(pricePerHour));
+        next.setCapacity(current.get().getCapacity());
+        next.setWeight(current.get().getWeight());
+        next.setDifficulty(
+                difficultyLevel != null ? difficultyLevel : current.get().getDifficulty());
+        next.setLocation(itemDao.getLocationReference(locationOptionId));
+        next.setTimezone(current.get().getTimezone());
+        next.setCreatedAt(LocalDateTime.now());
+        itemDao.persistVersion(next);
+
+        itemDao.copyVersionContent(current.get().getId(), next);
+
+        return next.getId();
     }
 
     @Override

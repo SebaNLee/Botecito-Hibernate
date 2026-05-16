@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.config;
 
 import ar.edu.itba.paw.models.dto.PreferredLanguageModel;
-import ar.edu.itba.paw.models.entity.UsersOrm;
+import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.UserService;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
@@ -19,7 +19,7 @@ public class UserLocaleResolver implements LocaleResolver {
 
     @Override
     public Locale resolveLocale(HttpServletRequest request) {
-        final UsersOrm user = currentAuthenticatedUser();
+        final Users user = currentAuthenticatedUser();
         return user != null
                 ? PreferredLanguageModel.fromPersistence(user.getLanguage()).toLocale()
                 : request.getLocale();
@@ -30,7 +30,7 @@ public class UserLocaleResolver implements LocaleResolver {
         // Locale is owned by the user's preference in the database
     }
 
-    private UsersOrm currentAuthenticatedUser() {
+    private Users currentAuthenticatedUser() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()

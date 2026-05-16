@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.services.util;
 
-import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.BookingOrm;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Booking;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -27,14 +27,14 @@ public final class AvailabilityPickerBuilder {
 
     private AvailabilityPickerBuilder() {}
 
-    public static Data buildFromEntities(final List<AvailabilityOrm> availabilities, final List<BookingOrm> bookings) {
+    public static Data buildFromEntities(final List<Availability> availabilities, final List<Booking> bookings) {
         final Set<Integer> itemIds = new LinkedHashSet<>();
-        final Map<Integer, List<AvailabilityOrm>> availabilitiesByItemId = new LinkedHashMap<>();
-        final Map<Integer, List<BookingOrm>> bookingsByItemId = new LinkedHashMap<>();
+        final Map<Integer, List<Availability>> availabilitiesByItemId = new LinkedHashMap<>();
+        final Map<Integer, List<Booking>> bookingsByItemId = new LinkedHashMap<>();
         final Map<String, TreeSet<String>> scheduledTimesByDate = new TreeMap<>();
         final Map<String, TreeSet<String>> availableTimesByDate = new TreeMap<>();
 
-        for (final AvailabilityOrm availability : availabilities) {
+        for (final Availability availability : availabilities) {
             final Integer itemId = availability.getVersion().getItem().getId();
             itemIds.add(itemId);
             availabilitiesByItemId
@@ -42,7 +42,7 @@ public final class AvailabilityPickerBuilder {
                     .add(availability);
         }
 
-        for (final BookingOrm booking : bookings) {
+        for (final Booking booking : bookings) {
             final Integer itemId = booking.getVersion().getItem().getId();
             itemIds.add(itemId);
             bookingsByItemId
@@ -163,12 +163,12 @@ public final class AvailabilityPickerBuilder {
         }
     }
 
-    private static Map<String, TreeSet<String>> buildScheduledTimesByOrm(final List<AvailabilityOrm> availabilities) {
+    private static Map<String, TreeSet<String>> buildScheduledTimesByOrm(final List<Availability> availabilities) {
         final Map<String, TreeSet<String>> collectedTimesByDate = new TreeMap<>();
         final LocalDate startDate = availabilityStartDate();
         final LocalDate endDate = pickerEndDate();
 
-        for (final AvailabilityOrm availability : availabilities) {
+        for (final Availability availability : availabilities) {
             final DayOfWeek weekday = availability.getWeekday() == null
                     ? null
                     : DayOfWeek.valueOf(availability.getWeekday().name());
@@ -188,12 +188,12 @@ public final class AvailabilityPickerBuilder {
         return collectedTimesByDate;
     }
 
-    private static Map<String, TreeSet<String>> buildBookedTimesByOrm(final List<BookingOrm> bookings) {
+    private static Map<String, TreeSet<String>> buildBookedTimesByOrm(final List<Booking> bookings) {
         final Map<String, TreeSet<String>> collectedTimesByDate = new TreeMap<>();
         final LocalDate startDate = availabilityStartDate();
         final LocalDate endDate = pickerEndDate();
 
-        for (final BookingOrm booking : bookings) {
+        for (final Booking booking : bookings) {
             if (!isBlockingBooking(booking)) {
                 continue;
             }
@@ -213,7 +213,7 @@ public final class AvailabilityPickerBuilder {
         return collectedTimesByDate;
     }
 
-    private static boolean isBlockingBooking(final BookingOrm booking) {
+    private static boolean isBlockingBooking(final Booking booking) {
         if (booking.getStatus() == null) return false;
         return switch (booking.getStatus()) {
             case PENDING, ACCEPTED, PAID, CONFIRMED -> true;

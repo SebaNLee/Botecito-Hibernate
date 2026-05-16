@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.AvailabilityWindow;
-import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.VersionOrm;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Version;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,7 +22,7 @@ public interface PublishDao {
             List<AvailabilityWindow> availabilities,
             List<ar.edu.itba.paw.models.dto.ImageUpload> images);
 
-    Optional<VersionOrm> findById(int itemId);
+    Optional<Version> findById(int itemId);
 
-    List<AvailabilityOrm> listAvailabilities(int itemId);
+    List<Availability> listAvailabilities(int itemId);
 }

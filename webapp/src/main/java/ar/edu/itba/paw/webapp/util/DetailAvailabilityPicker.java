@@ -36,10 +36,7 @@ public final class DetailAvailabilityPicker {
     private static final int CLEARANCE_MINUTES = 30;
 
     private static final Set<BookingStatusEnum> BLOCKING_STATUSES = EnumSet.of(
-            BookingStatusEnum.PENDING,
-            BookingStatusEnum.ACCEPTED,
-            BookingStatusEnum.PAID,
-            BookingStatusEnum.CONFIRMED);
+            BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED, BookingStatusEnum.PAID, BookingStatusEnum.CONFIRMED);
 
     private static final DateTimeFormatter INPUT_DATE_FORMAT = AvailabilityPickerBuilder.INPUT_DATE_FORMAT;
     private static final DateTimeFormatter RESERVATION_TIME_FORMAT = AvailabilityPickerBuilder.RESERVATION_TIME_FORMAT;
@@ -70,9 +67,7 @@ public final class DetailAvailabilityPicker {
     }
 
     public static AvailabilityPickerBuilder.Data build(
-            final List<Availability> availabilityWindows,
-            final List<Booking> bookings,
-            final String versionTimezone) {
+            final List<Availability> availabilityWindows, final List<Booking> bookings, final String versionTimezone) {
         if (availabilityWindows == null || availabilityWindows.isEmpty()) {
             return new AvailabilityPickerBuilder.Data(List.of(), List.of(), Map.of(), Map.of());
         }
@@ -146,10 +141,7 @@ public final class DetailAvailabilityPicker {
     }
 
     private static Map<String, TreeSet<String>> buildBookedTimesByDate(
-            final List<Booking> bookings,
-            final ZoneId zoneId,
-            final LocalDate rangeStart,
-            final LocalDate rangeEnd) {
+            final List<Booking> bookings, final ZoneId zoneId, final LocalDate rangeStart, final LocalDate rangeEnd) {
         final Map<String, TreeSet<String>> collectedTimesByDate = new TreeMap<>();
         for (final Booking booking : bookings) {
             if (!isBlocking(booking) || booking.getStart() == null || booking.getEnd() == null) {

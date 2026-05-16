@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
-import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.BookingOrm;
-import ar.edu.itba.paw.models.entity.BookingStatusEnumOrm;
-import ar.edu.itba.paw.models.entity.PaymentProofOrm;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.BookingStatusEnum;
+import ar.edu.itba.paw.models.entity.PaymentProof;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -33,7 +33,7 @@ public class BookingJpaDao implements BookingDao {
     private static final int MIN_CLEARANCE_BETWEEN_BOOKINGS_MINUTES = 30;
 
     private static final String HQL_BOOKINGS_FOR_VERSION =
-            "SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof WHERE b.version.id = :versionId ORDER BY b.start ASC";
+            "SELECT b FROM Booking b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof WHERE b.version.id = :versionId ORDER BY b.start ASC";
 
     private static final String INSERT_WITH_OVERLAP_CHECK =
             "INSERT INTO booking (version_id, guest_id, start, \"end\", status, msg, created_at, updated_at) "
@@ -55,19 +55,18 @@ public class BookingJpaDao implements BookingDao {
                     + ") "
                     + "RETURNING id";
 
-    private static final String HQL_VERSION_TIMEZONE = "SELECT v.timezone FROM VersionOrm v WHERE v.id = :versionId";
+    private static final String HQL_VERSION_TIMEZONE = "SELECT v.timezone FROM Version v WHERE v.id = :versionId";
 
-    private static final String HQL_VERSION_OWNER_ID =
-            "SELECT v.item.host.id FROM VersionOrm v WHERE v.id = :versionId";
+    private static final String HQL_VERSION_OWNER_ID = "SELECT v.item.host.id FROM Version v WHERE v.id = :versionId";
 
     private static final String HQL_AVAILABILITIES_FOR_VERSION =
-            "SELECT a FROM AvailabilityOrm a WHERE a.version.id = :versionId ORDER BY a.weekday, a.startTime, a.id";
+            "SELECT a FROM Availability a WHERE a.version.id = :versionId ORDER BY a.weekday, a.startTime, a.id";
 
-    private static final EnumSet<BookingStatusEnumOrm> NON_AUTO_CANCEL_STATES = EnumSet.of(
-            BookingStatusEnumOrm.CONFIRMED,
-            BookingStatusEnumOrm.CANCELLED,
-            BookingStatusEnumOrm.FINISHED,
-            BookingStatusEnumOrm.REJECTED);
+    private static final EnumSet<BookingStatusEnum> NON_AUTO_CANCEL_STATES = EnumSet.of(
+            BookingStatusEnum.CONFIRMED,
+            BookingStatusEnum.CANCELLED,
+            BookingStatusEnum.FINISHED,
+            BookingStatusEnum.REJECTED);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -78,7 +77,7 @@ public class BookingJpaDao implements BookingDao {
             final int guestId,
             final LocalDateTime utcStart,
             final LocalDateTime utcEnd,
-            final BookingStatusEnumOrm status,
+            final BookingStatusEnum status,
             final String msg) {
         final LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         final Query query = entityManager.createNativeQuery(INSERT_WITH_OVERLAP_CHECK);
@@ -124,9 +123,9 @@ public class BookingJpaDao implements BookingDao {
     }
 
     @Override
-    public List<AvailabilityOrm> listAvailabilitiesForVersion(final int versionId) {
+    public List<Availability> listAvailabilitiesForVersion(final int versionId) {
         return entityManager
-                .createQuery(HQL_AVAILABILITIES_FOR_VERSION, AvailabilityOrm.class)
+                .createQuery(HQL_AVAILABILITIES_FOR_VERSION, Availability.class)
                 .setParameter("versionId", versionId)
                 .getResultList();
     }
@@ -134,34 +133,33 @@ public class BookingJpaDao implements BookingDao {
     @Override
     public boolean deleteOwnerSelfBlock(final int bookingId, final int ownerId) {
         return entityManager
-                        .createQuery("DELETE FROM BookingOrm b WHERE b.id = :id AND b.guest.id = :ownerId "
+                        .createQuery("DELETE FROM Booking b WHERE b.id = :id AND b.guest.id = :ownerId "
                                 + "AND b.status IN :statuses")
                         .setParameter("id", bookingId)
                         .setParameter("ownerId", ownerId)
-                        .setParameter(
-                                "statuses", EnumSet.of(BookingStatusEnumOrm.CONFIRMED, BookingStatusEnumOrm.ACCEPTED))
+                        .setParameter("statuses", EnumSet.of(BookingStatusEnum.CONFIRMED, BookingStatusEnum.ACCEPTED))
                         .executeUpdate()
                 > 0;
     }
 
     @Override
-    public List<BookingOrm> getBookingsForVersion(final int versionId) {
+    public List<Booking> getBookingsForVersion(final int versionId) {
         return entityManager
-                .createQuery(HQL_BOOKINGS_FOR_VERSION, BookingOrm.class)
+                .createQuery(HQL_BOOKINGS_FOR_VERSION, Booking.class)
                 .setParameter("versionId", versionId)
                 .getResultList();
     }
 
     @Override
-    public Optional<BookingOrm> findById(final int bookingId) {
-        return Optional.ofNullable(entityManager.find(BookingOrm.class, bookingId));
+    public Optional<Booking> findById(final int bookingId) {
+        return Optional.ofNullable(entityManager.find(Booking.class, bookingId));
     }
 
     @Override
     public Optional<Integer> findOwnerIdForBookingId(final int bookingId) {
         try {
             final Integer ownerId = entityManager
-                    .createQuery("SELECT b.version.item.host.id FROM BookingOrm b WHERE b.id = :id", Integer.class)
+                    .createQuery("SELECT b.version.item.host.id FROM Booking b WHERE b.id = :id", Integer.class)
                     .setParameter("id", bookingId)
                     .getSingleResult();
             return Optional.ofNullable(ownerId);
@@ -176,7 +174,7 @@ public class BookingJpaDao implements BookingDao {
             final boolean asHost,
             final String searchQuery,
             final LocalDate date,
-            final BookingStatusEnumOrm status,
+            final BookingStatusEnum status,
             final Integer page,
             final Integer pageSize,
             final String sortBy) {
@@ -185,17 +183,17 @@ public class BookingJpaDao implements BookingDao {
         final int offset = (resolvePage(page) - 1) * resolvedPageSize;
 
         final StringBuilder hql = new StringBuilder(
-                "SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof INNER JOIN FETCH b.version v "
+                "SELECT b FROM Booking b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof INNER JOIN FETCH b.version v "
                         + "INNER JOIN FETCH v.item i LEFT JOIN FETCH i.host h ");
         appendUserFilters(hql, userId, asHost, searchQuery, date, status, params);
         hql.append(orderByBookings(sortBy));
 
-        final TypedQuery<BookingOrm> query = entityManager.createQuery(hql.toString(), BookingOrm.class);
+        final TypedQuery<Booking> query = entityManager.createQuery(hql.toString(), Booking.class);
         bindParams(query, params);
         query.setFirstResult(offset);
         query.setMaxResults(resolvedPageSize);
 
-        final List<BookingOrm> rows = query.getResultList();
+        final List<Booking> rows = query.getResultList();
         final long total = countMatching(userId, asHost, searchQuery, date, status);
         return new BookingSearchResult(rows, total);
     }
@@ -204,19 +202,18 @@ public class BookingJpaDao implements BookingDao {
     public boolean startsAfter(int bookingId, LocalDateTime requestedStart) {
         return entityManager
                 .createQuery(
-                        "SELECT COUNT(b) > 0 FROM BookingOrm b WHERE b.id = :id AND b.start > :requested",
-                        Boolean.class)
+                        "SELECT COUNT(b) > 0 FROM Booking b WHERE b.id = :id AND b.start > :requested", Boolean.class)
                 .setParameter("id", bookingId)
                 .setParameter("requested", requestedStart)
                 .getSingleResult();
     }
 
     @Override
-    public Optional<BookingOrm> updateStatusIncoming(int id, int callerId, BookingStatusEnumOrm status) {
+    public Optional<Booking> updateStatusIncoming(int id, int callerId, BookingStatusEnum status) {
         try {
             int rowsUpdated = entityManager
-                    .createQuery("UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id IN ("
-                            + "SELECT b2.id FROM BookingOrm b2 INNER JOIN b2.version v INNER JOIN v.item i INNER JOIN i.host h "
+                    .createQuery("UPDATE Booking b SET b.status = :newStatus WHERE b.id IN ("
+                            + "SELECT b2.id FROM Booking b2 INNER JOIN b2.version v INNER JOIN v.item i INNER JOIN i.host h "
                             + "WHERE b2.id = :bookingId AND h.id = :caller)")
                     .setParameter("newStatus", status)
                     .setParameter("bookingId", id)
@@ -232,12 +229,12 @@ public class BookingJpaDao implements BookingDao {
     }
 
     @Override
-    public Optional<BookingOrm> updateStatusOutgoing(int id, int callerId, BookingStatusEnumOrm status) {
+    public Optional<Booking> updateStatusOutgoing(int id, int callerId, BookingStatusEnum status) {
         try {
             int rowsUpdated = entityManager
                     .createQuery(
-                            "UPDATE BookingOrm b SET b.status = :newStatus WHERE b.id IN ("
-                                    + "SELECT b2.id FROM BookingOrm b2 INNER JOIN b2.guest g WHERE b2.id = :bookingId AND g.id = :caller)")
+                            "UPDATE Booking b SET b.status = :newStatus WHERE b.id IN ("
+                                    + "SELECT b2.id FROM Booking b2 INNER JOIN b2.guest g WHERE b2.id = :bookingId AND g.id = :caller)")
                     .setParameter("newStatus", status)
                     .setParameter("bookingId", id)
                     .setParameter("caller", callerId)
@@ -252,7 +249,7 @@ public class BookingJpaDao implements BookingDao {
     }
 
     @Override
-    public Optional<PaymentProofOrm> uploadPayment(final PaymentProofOrm proof) {
+    public Optional<PaymentProof> uploadPayment(final PaymentProof proof) {
         if (proof == null) return Optional.empty();
 
         try {
@@ -264,20 +261,20 @@ public class BookingJpaDao implements BookingDao {
     }
 
     @Override
-    public Optional<PaymentProofOrm> findPaymentProofForParticipant(final int bookingId, final int userId) {
-        final TypedQuery<PaymentProofOrm> query = entityManager.createQuery(
-                "SELECT p FROM PaymentProofOrm p INNER JOIN p.booking b LEFT JOIN b.guest g "
+    public Optional<PaymentProof> findPaymentProofForParticipant(final int bookingId, final int userId) {
+        final TypedQuery<PaymentProof> query = entityManager.createQuery(
+                "SELECT p FROM PaymentProof p INNER JOIN p.booking b LEFT JOIN b.guest g "
                         + "INNER JOIN b.version v INNER JOIN v.item i LEFT JOIN i.host h "
                         + "WHERE b.id = :bookingId AND (g.id = :userId OR h.id = :userId)",
-                PaymentProofOrm.class);
+                PaymentProof.class);
         query.setParameter("bookingId", bookingId);
         query.setParameter("userId", userId);
-        final List<PaymentProofOrm> rows = query.getResultList();
+        final List<PaymentProof> rows = query.getResultList();
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
     @Override
-    public Optional<BookingOrm> refusePayment(int bookingId, String message, LocalDateTime refuseTime) {
+    public Optional<Booking> refusePayment(int bookingId, String message, LocalDateTime refuseTime) {
         try {
             final int rowsUpdated = entityManager
                     .createNativeQuery(
@@ -298,12 +295,12 @@ public class BookingJpaDao implements BookingDao {
     @Override
     public void finalizeBookingsBefore(LocalDateTime maxEndTime) {
         entityManager
-                .createQuery("UPDATE BookingOrm b SET b.status = :status WHERE b.id IN ("
-                        + "SELECT b2.id FROM BookingOrm b2 INNER JOIN b2.version v INNER JOIN v.item i INNER JOIN i.host h "
+                .createQuery("UPDATE Booking b SET b.status = :status WHERE b.id IN ("
+                        + "SELECT b2.id FROM Booking b2 INNER JOIN b2.version v INNER JOIN v.item i INNER JOIN i.host h "
                         + "WHERE b2.end < :endTime AND b2.status = :confirmed AND h.id <> b2.guest.id)")
-                .setParameter("status", BookingStatusEnumOrm.FINISHED)
+                .setParameter("status", BookingStatusEnum.FINISHED)
                 .setParameter("endTime", maxEndTime)
-                .setParameter("confirmed", BookingStatusEnumOrm.CONFIRMED)
+                .setParameter("confirmed", BookingStatusEnum.CONFIRMED)
                 .executeUpdate();
     }
 
@@ -311,8 +308,8 @@ public class BookingJpaDao implements BookingDao {
     public void expireBookingsBefore(LocalDateTime minStartTime) {
         entityManager
                 .createQuery(
-                        "UPDATE BookingOrm b SET b.status = :status WHERE b.start < :startTime AND b.status NOT IN :excluded")
-                .setParameter("status", BookingStatusEnumOrm.CANCELLED)
+                        "UPDATE Booking b SET b.status = :status WHERE b.start < :startTime AND b.status NOT IN :excluded")
+                .setParameter("status", BookingStatusEnum.CANCELLED)
                 .setParameter("startTime", minStartTime)
                 .setParameter("excluded", NON_AUTO_CANCEL_STATES)
                 .executeUpdate();
@@ -323,9 +320,9 @@ public class BookingJpaDao implements BookingDao {
             final boolean isHost,
             final String searchQuery,
             final LocalDate date,
-            final BookingStatusEnumOrm status) {
+            final BookingStatusEnum status) {
         final Map<String, Object> params = new HashMap<>();
-        final StringBuilder hql = new StringBuilder("SELECT COUNT(b) FROM BookingOrm b INNER JOIN b.version ");
+        final StringBuilder hql = new StringBuilder("SELECT COUNT(b) FROM Booking b INNER JOIN b.version ");
         appendUserFilters(hql, userId, isHost, searchQuery, date, status, params);
         final TypedQuery<Long> countQuery = entityManager.createQuery(hql.toString(), Long.class);
         bindParams(countQuery, params);
@@ -338,7 +335,7 @@ public class BookingJpaDao implements BookingDao {
             final boolean isHost,
             final String searchQuery,
             final LocalDate date,
-            final BookingStatusEnumOrm status,
+            final BookingStatusEnum status,
             final Map<String, Object> params) {
         if (isHost) {
             hql.append("WHERE b.version.item.host.id = :userId AND b.guest IS NOT NULL AND b.guest.id <> :userId");
@@ -353,7 +350,7 @@ public class BookingJpaDao implements BookingDao {
             final StringBuilder hql,
             final String searchQuery,
             final LocalDate date,
-            final BookingStatusEnumOrm status,
+            final BookingStatusEnum status,
             final Map<String, Object> params) {
         if (hasText(searchQuery)) {
             hql.append(" AND LOWER(b.version.title) LIKE :searchQuery ESCAPE '!'");

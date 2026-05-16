@@ -20,7 +20,7 @@ import org.hibernate.annotations.Type;
 @Setter
 @Entity
 @Table(name = "availability")
-public class AvailabilityOrm {
+public class Availability {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "availability_id_seq")
@@ -29,12 +29,12 @@ public class AvailabilityOrm {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "version_id", nullable = false)
-    private VersionOrm version;
+    private Version version;
 
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")
     @Column(name = "weekday", nullable = false, columnDefinition = "weekday_enum")
-    private WeekdayEnumOrm weekday;
+    private WeekdayEnum weekday;
 
     @Column(name = "start_time", nullable = false)
     private LocalTime startTime;
@@ -42,5 +42,5 @@ public class AvailabilityOrm {
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
-    public AvailabilityOrm() {}
+    public Availability() {}
 }

@@ -1,15 +1,15 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.BookingStatusOptionModel;
-import ar.edu.itba.paw.models.entity.ItemTypeOrm;
-import ar.edu.itba.paw.models.entity.LocationOrm;
+import ar.edu.itba.paw.models.entity.ItemType;
+import ar.edu.itba.paw.models.entity.Location;
 import java.util.List;
 import java.util.Map;
 
-public interface SelectorsInterface {
-    List<LocationOrm> getLocationOptions();
+public interface SelectorsService {
+    List<Location> getLocationOptions();
 
-    List<ItemTypeOrm> getItemTypeOptions();
+    List<ItemType> getItemTypeOptions();
 
     List<BookingStatusOptionModel> getBookingStatusOptions();
 

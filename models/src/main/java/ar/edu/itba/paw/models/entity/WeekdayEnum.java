@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.models.entity;
 
-public enum WeekdayEnumOrm {
+public enum WeekdayEnum {
     MONDAY,
     TUESDAY,
     WEDNESDAY,

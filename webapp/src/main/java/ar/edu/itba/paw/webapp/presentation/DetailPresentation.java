@@ -2,12 +2,12 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.AvailabilityData;
 import ar.edu.itba.paw.models.dto.ItemDetail;
-import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.ItemStatusEnumOrm;
-import ar.edu.itba.paw.models.entity.ReviewOrm;
-import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.services.BookingInterface;
-import ar.edu.itba.paw.services.DetailInterface;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.ItemStatusEnum;
+import ar.edu.itba.paw.models.entity.Review;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.services.BookingService;
+import ar.edu.itba.paw.services.DetailService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.PreBookingForm;
 import ar.edu.itba.paw.webapp.util.AvailabilityJsonHelper;
@@ -36,8 +36,8 @@ import org.springframework.web.servlet.view.RedirectView;
 @RequiredArgsConstructor
 public class DetailPresentation {
 
-    private final DetailInterface detailInterface;
-    private final BookingInterface bookingInterface;
+    private final DetailService detailInterface;
+    private final BookingService bookingInterface;
     private final UserService userService;
     private final ToastPresentation toastPresentation;
 
@@ -54,7 +54,7 @@ public class DetailPresentation {
     public Object detailPage(
             final int itemId, final HttpServletRequest request, final Optional<Long> pathSnapshotVersionId) {
         final String marketplaceBackHref = MarketplaceReturnUrl.marketplaceBackHref(request, null);
-        final UsersOrm viewer = currentAuthenticatedUserOrNull();
+        final Users viewer = currentAuthenticatedUserOrNull();
 
         final Optional<ItemDetail> nuevoDetail;
         if (viewer != null && pathSnapshotVersionId.isPresent()) {
@@ -125,7 +125,7 @@ public class DetailPresentation {
             final int itemId,
             final PreBookingForm form,
             final RedirectAttributes redirectAttributes) {
-        final UsersOrm viewer = currentAuthenticatedUserOrNull();
+        final Users viewer = currentAuthenticatedUserOrNull();
         if (viewer == null) {
             ToastSupport.error(redirectAttributes, "detail.preBooking.loginRequired");
             return contextRelativeRedirect("/login");
@@ -200,7 +200,7 @@ public class DetailPresentation {
             final long currentVersionId,
             final boolean viewingNonCurrentVersion,
             final List<Long> visibleVersionIds,
-            final UsersOrm viewer,
+            final Users viewer,
             final HttpServletRequest request,
             final String marketplaceBackHref) {
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
@@ -208,12 +208,12 @@ public class DetailPresentation {
         final int ownerId = displayPair.getHostId();
         final boolean isOwner = viewer != null && ownerId > 0 && ownerId == viewer.getId();
 
-        final UsersOrm itemOwner =
+        final Users itemOwner =
                 ownerId <= 0 ? null : userService.findById(ownerId).orElse(null);
 
-        final List<ReviewOrm> versionReviews = displayPair.getReviews() == null ? List.of() : displayPair.getReviews();
+        final List<Review> versionReviews = displayPair.getReviews() == null ? List.of() : displayPair.getReviews();
 
-        final boolean isActive = displayPair.getStatus() == ItemStatusEnumOrm.ACTIVE;
+        final boolean isActive = displayPair.getStatus() == ItemStatusEnum.ACTIVE;
 
         final ModelAndView mav = new ModelAndView("item-detail");
         mav.addObject("itemListingMissing", false);
@@ -259,7 +259,7 @@ public class DetailPresentation {
         preBookingForm.setVersionId((int) displayPair.getVersionId());
         mav.addObject("preBookingForm", preBookingForm);
 
-        final List<AvailabilityOrm> availabilityWindows =
+        final List<Availability> availabilityWindows =
                 displayPair.getAvailabilityWindows() == null ? List.of() : displayPair.getAvailabilityWindows();
         final var builderData = DetailAvailabilityPicker.build(
                 availabilityWindows, displayPair.getBookings(), displayPair.getVersionTimezone());
@@ -286,7 +286,7 @@ public class DetailPresentation {
         return mav;
     }
 
-    private boolean isCompleteAvailabilityWindow(final AvailabilityOrm w) {
+    private boolean isCompleteAvailabilityWindow(final Availability w) {
         return w.getWeekday() != null
                 && w.getStartTime() != null
                 && w.getEndTime() != null
@@ -317,7 +317,7 @@ public class DetailPresentation {
         return path.startsWith("/") ? contextPath + path : contextPath + "/" + path;
     }
 
-    private UsersOrm currentAuthenticatedUserOrNull() {
+    private Users currentAuthenticatedUserOrNull() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()

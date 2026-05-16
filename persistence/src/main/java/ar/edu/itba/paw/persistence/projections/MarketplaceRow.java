@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.persistence.orm.projections;
+package ar.edu.itba.paw.persistence.projections;
 
 import ar.edu.itba.paw.models.dto.MarketplaceCardItem;
 import java.math.BigDecimal;
@@ -9,7 +9,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class MarketplaceRowOrm {
+public class MarketplaceRow {
     private final Integer itemId;
     private final Integer hostId;
     private final Integer versionId;

@@ -17,7 +17,7 @@ import org.hibernate.annotations.Type;
 @NoArgsConstructor
 @Entity
 @Table(name = "image")
-public class ImageOrm {
+public class Image {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "image_id_seq")

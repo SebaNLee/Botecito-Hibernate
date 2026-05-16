@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.entity.ItemTypeOrm;
-import ar.edu.itba.paw.models.entity.LocationOrm;
+import ar.edu.itba.paw.models.entity.ItemType;
+import ar.edu.itba.paw.models.entity.Location;
 import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -15,16 +15,16 @@ public class SelectorsJpaDao implements SelectorsDao {
     private EntityManager entityManager;
 
     @Override
-    public List<LocationOrm> getLocationOptions() {
-        final TypedQuery<LocationOrm> query =
-                entityManager.createQuery("SELECT l FROM LocationOrm l ORDER BY l.id", LocationOrm.class);
+    public List<Location> getLocationOptions() {
+        final TypedQuery<Location> query =
+                entityManager.createQuery("SELECT l FROM Location l ORDER BY l.id", Location.class);
         return query.getResultList();
     }
 
     @Override
-    public List<ItemTypeOrm> getItemTypeOptions() {
-        final TypedQuery<ItemTypeOrm> query =
-                entityManager.createQuery("SELECT t FROM ItemTypeOrm t ORDER BY t.name", ItemTypeOrm.class);
+    public List<ItemType> getItemTypeOptions() {
+        final TypedQuery<ItemType> query =
+                entityManager.createQuery("SELECT t FROM ItemType t ORDER BY t.name", ItemType.class);
         return query.getResultList();
     }
 }

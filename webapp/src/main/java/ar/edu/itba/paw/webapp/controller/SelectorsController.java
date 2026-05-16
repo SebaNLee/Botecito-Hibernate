@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.dto.BookingStatusOptionModel;
-import ar.edu.itba.paw.models.entity.ItemTypeOrm;
-import ar.edu.itba.paw.models.entity.LocationOrm;
+import ar.edu.itba.paw.models.entity.ItemType;
+import ar.edu.itba.paw.models.entity.Location;
 import ar.edu.itba.paw.webapp.presentation.SelectorsPresentation;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class SelectorsController {
             value = "/location-options",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<LocationOrm> getLocationOptions() {
+    public List<Location> getLocationOptions() {
         return selectorsPresentation.getLocationOptions();
     }
 
@@ -32,7 +32,7 @@ public class SelectorsController {
             value = "/item-type-options",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<ItemTypeOrm> getItemTypeOptions() {
+    public List<ItemType> getItemTypeOptions() {
         return selectorsPresentation.getItemTypeOptions();
     }
 

@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.entity.UsersOrm;
+import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.exceptions.EmailAlreadyExistsException;
 import ar.edu.itba.paw.models.exceptions.MissingUserNamesException;
 import ar.edu.itba.paw.models.mail.EmailVerificationMailModel;
@@ -41,10 +41,10 @@ public class UserServiceImpl implements UserService {
         final String passwordHash = passwordEncoder.encode(rawPassword);
         final String verificationToken = UUID.randomUUID().toString();
 
-        final Optional<UsersOrm> existingUser = userDao.findByEmail(normalizedEmail);
+        final Optional<Users> existingUser = userDao.findByEmail(normalizedEmail);
         if (existingUser.isEmpty()) {
             LOGGER.info("Registering new user with email {}", normalizedEmail);
-            final UsersOrm userToCreate = new UsersOrm();
+            final Users userToCreate = new Users();
             userToCreate.setFirstName(firstName);
             userToCreate.setLastName(lastName);
             userToCreate.setEmail(normalizedEmail);
@@ -60,7 +60,7 @@ public class UserServiceImpl implements UserService {
 
         if (existingUser.get().getPasswordHash() == null) {
             LOGGER.info("Claiming account for user with email {}", normalizedEmail);
-            final UsersOrm userToClaim = new UsersOrm();
+            final Users userToClaim = new Users();
             userToClaim.setFirstName(firstName);
             userToClaim.setLastName(lastName);
             userToClaim.setEmail(normalizedEmail);
@@ -81,7 +81,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<UsersOrm> findByEmail(final String email) {
+    public Optional<Users> findByEmail(final String email) {
         if (email == null || email.isBlank()) {
             return Optional.empty();
         }
@@ -90,13 +90,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<UsersOrm> findById(final int id) {
+    public Optional<Users> findById(final int id) {
         return userDao.findById(id);
     }
 
     @Override
     @Transactional
-    public Optional<UsersOrm> updateProfile(
+    public Optional<Users> updateProfile(
             final int userId,
             final String firstName,
             final String lastName,
@@ -105,13 +105,13 @@ public class UserServiceImpl implements UserService {
             final String alias,
             final String language) {
 
-        final Optional<UsersOrm> currentUser = userDao.findById(userId);
+        final Optional<Users> currentUser = userDao.findById(userId);
         if (currentUser.isEmpty()) {
             return Optional.empty();
         }
 
         final String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
-        final Optional<UsersOrm> emailOwner = userDao.findByEmail(normalizedEmail);
+        final Optional<Users> emailOwner = userDao.findByEmail(normalizedEmail);
         if (normalizedEmail.isBlank()
                 || emailOwner
                         .filter(owner -> owner.getId() == null || !owner.getId().equals(userId))
@@ -128,7 +128,7 @@ public class UserServiceImpl implements UserService {
                 !normalizedEmail.equalsIgnoreCase(currentUser.get().getEmail());
 
         LOGGER.info("Updating profile for user {}", userId);
-        final UsersOrm profileUpdate = new UsersOrm();
+        final Users profileUpdate = new Users();
         profileUpdate.setId(userId);
         profileUpdate.setFirstName(firstName.trim());
         profileUpdate.setLastName(lastName.trim());
@@ -145,7 +145,7 @@ public class UserServiceImpl implements UserService {
             profileUpdate.setMailToken(currentUser.get().getMailToken());
             profileUpdate.setMailTokenEmittedAt(currentUser.get().getMailTokenEmittedAt());
         }
-        final Optional<UsersOrm> updatedUser = userDao.updateProfile(profileUpdate);
+        final Optional<Users> updatedUser = userDao.updateProfile(profileUpdate);
         if (emailChanged) {
             updatedUser.ifPresent(this::sendEmailVerificationEmail);
         }
@@ -154,12 +154,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public Optional<UsersOrm> requestPasswordRecovery(final String email) {
+    public Optional<Users> requestPasswordRecovery(final String email) {
         if (email == null || email.isBlank()) {
             return Optional.empty();
         }
 
-        final Optional<UsersOrm> existingUser = userDao.findByEmail(email.trim().toLowerCase());
+        final Optional<Users> existingUser = userDao.findByEmail(email.trim().toLowerCase());
         if (existingUser.isEmpty()
                 || existingUser.get().getPasswordHash() == null
                 || !Boolean.TRUE.equals(existingUser.get().getVerified())) {
@@ -167,22 +167,22 @@ public class UserServiceImpl implements UserService {
             return Optional.empty();
         }
 
-        final UsersOrm existing = existingUser.get();
+        final Users existing = existingUser.get();
         LOGGER.info("Password recovery requested for user {}", existing.getId());
         final String recoveryToken = UUID.randomUUID().toString();
-        final Optional<UsersOrm> updatedUser = userDao.updatePasswordRecoveryToken(existing.getId(), recoveryToken);
+        final Optional<Users> updatedUser = userDao.updatePasswordRecoveryToken(existing.getId(), recoveryToken);
         updatedUser.ifPresent(this::sendPasswordRecoveryEmail);
         return updatedUser;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<UsersOrm> findByPasswordRecoveryToken(final String token) {
+    public Optional<Users> findByPasswordRecoveryToken(final String token) {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
 
-        final Optional<UsersOrm> user = userDao.findByPasswordRecoveryToken(token.trim());
+        final Optional<Users> user = userDao.findByPasswordRecoveryToken(token.trim());
         if (user.isEmpty() || user.get().getMailTokenEmittedAt() != null) {
             return Optional.empty();
         }
@@ -209,7 +209,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public Optional<UsersOrm> verifyEmail(final String token) {
+    public Optional<Users> verifyEmail(final String token) {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
@@ -234,7 +234,7 @@ public class UserServiceImpl implements UserService {
         return trimmedValue.isEmpty() ? null : trimmedValue;
     }
 
-    private void sendPasswordRecoveryEmail(final UsersOrm user) {
+    private void sendPasswordRecoveryEmail(final Users user) {
         try {
             final PasswordRecoveryMailModel mail = new PasswordRecoveryMailModel();
             mail.setRecipient(MailRecipientModel.fromUser(user));
@@ -245,7 +245,7 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private void sendEmailVerificationEmail(final UsersOrm user) {
+    private void sendEmailVerificationEmail(final Users user) {
         try {
             final EmailVerificationMailModel mail = new EmailVerificationMailModel();
             mail.setRecipient(MailRecipientModel.fromUser(user));

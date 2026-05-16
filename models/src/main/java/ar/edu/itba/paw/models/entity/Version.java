@@ -27,7 +27,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(name = "version")
-public class VersionOrm {
+public class Version {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "version_id_seq")
@@ -36,11 +36,11 @@ public class VersionOrm {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "item_id", nullable = false)
-    private ItemOrm item;
+    private Item item;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "type_id", nullable = false)
-    private ItemTypeOrm type;
+    private ItemType type;
 
     @Column(name = "title", nullable = false, length = 1000)
     private String title;
@@ -62,7 +62,7 @@ public class VersionOrm {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "location_id", nullable = false)
-    private LocationOrm location;
+    private Location location;
 
     @Column(name = "timezone", nullable = false, length = 50)
     private String timezone;
@@ -72,5 +72,5 @@ public class VersionOrm {
 
     @OneToMany(mappedBy = "version")
     @OrderBy("id.index ASC")
-    private List<MediaOrm> media;
+    private List<Media> media;
 }

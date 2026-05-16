@@ -2,7 +2,7 @@ package ar.edu.itba.paw.persistence;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ar.edu.itba.paw.models.entity.UsersOrm;
+import ar.edu.itba.paw.models.entity.Users;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -24,7 +24,7 @@ public class UserJpaDaoTest {
     static class TestConfig {
         @Bean
         public List<String> entityClassNames() {
-            return List.of("ar.edu.itba.paw.models.entity.UsersOrm");
+            return List.of("ar.edu.itba.paw.models.entity.Users");
         }
     }
 
@@ -33,7 +33,7 @@ public class UserJpaDaoTest {
 
     @Test
     public void testCreateAndFindUser() {
-        final UsersOrm user = new UsersOrm();
+        final Users user = new Users();
         user.setFirstName("Ada");
         user.setLastName("Lovelace");
         user.setEmail("ada@example.com");
@@ -41,12 +41,12 @@ public class UserJpaDaoTest {
         user.setVerified(false);
         user.setCreatedAt(LocalDateTime.now());
 
-        final UsersOrm created = userDao.createUser(user);
+        final Users created = userDao.createUser(user);
 
         assertNotNull(created.getId());
         assertNotNull(created.getCreatedAt());
 
-        final Optional<UsersOrm> found = userDao.findById(created.getId());
+        final Optional<Users> found = userDao.findById(created.getId());
         assertTrue(found.isPresent());
         assertEquals("Ada", found.get().getFirstName());
         assertEquals("Lovelace", found.get().getLastName());

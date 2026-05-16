@@ -4,21 +4,12 @@ import ar.edu.itba.paw.models.dto.MyBoatsItem;
 import java.util.List;
 import java.util.Optional;
 
-public interface ItemInterface {
+public interface ItemService {
     List<MyBoatsItem> listMyBoatsItemsByOwnerId(int ownerId, int page, int pageSize);
 
     int countMyBoatsItemsByOwnerId(int ownerId);
 
     Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(int itemId, int ownerId);
-
-    boolean updateMyBoatsItem(
-            int itemId,
-            int ownerId,
-            String title,
-            String description,
-            int pricePerHour,
-            Integer difficultyLevel,
-            int locationOptionId);
 
     boolean deleteMyBoatsItem(int itemId, int ownerId);
 
@@ -30,9 +21,6 @@ public interface ItemInterface {
             int pricePerHour,
             Integer difficultyLevel,
             int locationOptionId);
-
-    // TODO temp fix for edit item page (should use PublishForm in the futuro)
-    boolean replaceVersionPrimaryImage(int versionId, byte[] imageData);
 
     boolean setItemActiveForOwner(int itemId, int ownerId, boolean active);
 

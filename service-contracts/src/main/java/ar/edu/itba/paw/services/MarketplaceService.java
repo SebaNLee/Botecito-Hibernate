@@ -5,7 +5,7 @@ import ar.edu.itba.paw.models.dto.MarketplaceSearchResult;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-public interface MarketplaceInterface {
+public interface MarketplaceService {
     MarketplaceSearchResult searchMarketplace(
             String searchQuery,
             LocalDate date,

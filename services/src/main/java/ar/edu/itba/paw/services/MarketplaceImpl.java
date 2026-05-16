@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public final class MarketplaceImpl implements MarketplaceInterface {
+public final class MarketplaceImpl implements MarketplaceService {
 
     private final MarketplaceDao marketplaceDao;
 

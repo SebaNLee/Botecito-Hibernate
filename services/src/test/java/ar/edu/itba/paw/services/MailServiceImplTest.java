@@ -1,12 +1,9 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.PreferredLanguageModel;
-import ar.edu.itba.paw.models.mail.BookingMailModel;
-import ar.edu.itba.paw.models.mail.BookingReviewMailModel;
 import ar.edu.itba.paw.models.mail.EmailVerificationMailModel;
 import ar.edu.itba.paw.models.mail.MailRecipientModel;
 import ar.edu.itba.paw.models.mail.PasswordRecoveryMailModel;
-import ar.edu.itba.paw.models.mail.PaymentReceivedMailModel;
 import ar.edu.itba.paw.models.mail.PublishConfirmationMailModel;
 import java.util.Locale;
 import java.util.Properties;
@@ -42,8 +39,6 @@ public class MailServiceImplTest {
     public void setUp() {
         final Properties properties = new Properties();
         properties.setProperty("app.baseUrl", "http://localhost:8080");
-        properties.setProperty("mail.reviewRecipient", "review@a.com");
-
         mailService = new MailServiceImpl(mailSender, templateEngine, messageSource, properties);
     }
 
@@ -112,78 +107,6 @@ public class MailServiceImplTest {
         Mockito.verify(templateEngine).process(Mockito.eq("publish-confirmation"), contextCaptor.capture());
         Assertions.assertEquals(
                 "http://localhost:8080/my-boats", contextCaptor.getValue().getVariable("profileUrl"));
-    }
-
-    @Test
-    public void testSendBookingReviewEmailFallsBackToReviewRecipient() {
-        final BookingMailModel booking = new BookingMailModel();
-        booking.setRequesterName("Requester User");
-        booking.setRequesterEmail("requester@a.com");
-        booking.setDescription("Please review");
-
-        final BookingReviewMailModel mail = new BookingReviewMailModel();
-        mail.setBooking(booking);
-        mail.setItemTitle("Boat");
-        mail.setLocation("Dock");
-        mail.setRequestedDateLabel("2026-05-02");
-        mail.setRequestedTimeLabel("10:00 - 12:00");
-        stubMessage("mail.requestReview.subject", "Review");
-        stubTemplate("booking-review");
-        stubMimeMessage();
-
-        Assertions.assertDoesNotThrow(() -> mailService.sendBookingReviewEmail(mail));
-
-        Mockito.verify(mailSender).send(Mockito.any(MimeMessage.class));
-        final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
-        Mockito.verify(templateEngine).process(Mockito.eq("booking-review"), contextCaptor.capture());
-        Assertions.assertEquals(
-                "http://localhost:8080/requests/incoming",
-                contextCaptor.getValue().getVariable("profileUrl"));
-    }
-
-    @Test
-    public void testSendBookingResolutionEmailLinksToBookings() {
-        final BookingMailModel booking = new BookingMailModel();
-        booking.setRequesterName("Requester User");
-        booking.setRequesterEmail("requester@a.com");
-        booking.setItemId(10);
-
-        final ar.edu.itba.paw.models.mail.BookingResolutionMailModel mail =
-                new ar.edu.itba.paw.models.mail.BookingResolutionMailModel();
-        mail.setRequester(recipient("requester@a.com", "Requester User", PreferredLanguageModel.EN));
-        mail.setBooking(booking);
-        mail.setItemTitle("Boat");
-        Mockito.when(messageSource.getMessage(Mockito.anyString(), Mockito.any(), Mockito.any(Locale.class)))
-                .thenReturn("Updated");
-        stubTemplate("booking-resolution");
-        stubMimeMessage();
-
-        Assertions.assertDoesNotThrow(() -> mailService.sendBookingResolutionEmail(mail));
-
-        final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
-        Mockito.verify(templateEngine).process(Mockito.eq("booking-resolution"), contextCaptor.capture());
-        Assertions.assertEquals(
-                "http://localhost:8080/bookings#sent-booking-requests",
-                contextCaptor.getValue().getVariable("bookingUrl"));
-    }
-
-    @Test
-    public void testSendPaymentReceivedEmailUsesRequesterModel() {
-        final PaymentReceivedMailModel mail = new PaymentReceivedMailModel();
-        mail.setRequester(recipient("requester@a.com", "Requester User", PreferredLanguageModel.EN));
-        mail.setItemTitle("Boat");
-        stubMessage("mail.paymentReceived.subject", "Payment received");
-        stubTemplate("payment-received");
-        stubMimeMessage();
-
-        Assertions.assertDoesNotThrow(() -> mailService.sendPaymentReceivedEmail(mail));
-
-        Mockito.verify(mailSender).send(Mockito.any(MimeMessage.class));
-        final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
-        Mockito.verify(templateEngine).process(Mockito.eq("payment-received"), contextCaptor.capture());
-        Assertions.assertEquals(
-                "http://localhost:8080/bookings#sent-booking-requests",
-                contextCaptor.getValue().getVariable("profileUrl"));
     }
 
     private void stubMessage(final String code, final String message) {

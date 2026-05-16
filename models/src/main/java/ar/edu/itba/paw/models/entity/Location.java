@@ -15,15 +15,15 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "item_type")
-public class ItemTypeOrm {
+@Table(name = "location")
+public class Location {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "new_item_type_id_seq")
-    @SequenceGenerator(name = "new_item_type_id_seq", sequenceName = "new_item_type_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "location_id_seq")
+    @SequenceGenerator(name = "location_id_seq", sequenceName = "location_id_seq", allocationSize = 1)
     private Integer id;
 
-    @Column(name = "name", nullable = false, unique = true, length = 100)
+    @Column(name = "name", nullable = false, unique = true, length = 120)
     private String name;
 
     @Column(name = "slug", nullable = false, unique = true, length = 100)

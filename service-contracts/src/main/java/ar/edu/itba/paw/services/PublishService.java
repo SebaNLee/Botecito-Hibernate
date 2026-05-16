@@ -2,15 +2,15 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.AvailabilityWindow;
 import ar.edu.itba.paw.models.dto.ImageUpload;
-import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.VersionOrm;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Version;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 public interface PublishService {
-    Optional<VersionOrm> create(
+    Optional<Version> create(
             int ownerId,
             int typeId,
             String title,
@@ -23,9 +23,9 @@ public interface PublishService {
             List<AvailabilityWindow> availabilities,
             List<ImageUpload> images);
 
-    Optional<VersionOrm> findById(int itemId);
+    Optional<Version> findById(int itemId);
 
-    List<AvailabilityOrm> listAvailabilities(int itemId);
+    List<Availability> listAvailabilities(int itemId);
 
     Map<String, String> validate(
             String title,

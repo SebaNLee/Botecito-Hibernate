@@ -1,15 +1,8 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.PreferredLanguageModel;
-import ar.edu.itba.paw.models.mail.BookingMailModel;
-import ar.edu.itba.paw.models.mail.BookingResolutionMailModel;
-import ar.edu.itba.paw.models.mail.BookingReviewMailModel;
 import ar.edu.itba.paw.models.mail.EmailVerificationMailModel;
 import ar.edu.itba.paw.models.mail.MailRecipientModel;
 import ar.edu.itba.paw.models.mail.PasswordRecoveryMailModel;
-import ar.edu.itba.paw.models.mail.PaymentProofRefusedMailModel;
-import ar.edu.itba.paw.models.mail.PaymentProofSubmittedMailModel;
-import ar.edu.itba.paw.models.mail.PaymentReceivedMailModel;
 import ar.edu.itba.paw.models.mail.PublishConfirmationMailModel;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Locale;
@@ -40,10 +33,7 @@ public class MailServiceImpl implements MailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
     private final MessageSource messageSource;
-    private final String reviewRecipient;
     private final String myBoatsBaseUrl;
-    private final String requestsBaseUrl;
-    private final String bookingsBaseUrl;
     private final String passwordRecoveryBaseUrl;
     private final String emailVerificationBaseUrl;
 
@@ -56,24 +46,9 @@ public class MailServiceImpl implements MailService {
         this.templateEngine = templateEngine;
         this.messageSource = messageSource;
         final String baseUrl = requireProperty(credentialsProperties, "app.baseUrl");
-        this.reviewRecipient = requireProperty(credentialsProperties, "mail.reviewRecipient");
         this.myBoatsBaseUrl = baseUrl + "/my-boats";
-        this.requestsBaseUrl = baseUrl + "/requests/incoming";
-        this.bookingsBaseUrl = baseUrl + "/bookings";
         this.passwordRecoveryBaseUrl = baseUrl + "/password-recovery";
         this.emailVerificationBaseUrl = baseUrl + "/verify-email";
-    }
-
-    @Override
-    public void sendTestConfirmationEmail(final MailRecipientModel recipient) {
-        if (!hasEmail(recipient)) {
-            return;
-        }
-        final Locale locale = resolveLocale(recipient);
-        sendHtmlEmail(
-                recipient.getEmail(),
-                getMessage("mail.testConfirmation.subject", locale),
-                templateEngine.process("test-confirmation", new Context(locale)));
     }
 
     @Override
@@ -94,135 +69,6 @@ public class MailServiceImpl implements MailService {
                     templateEngine.process("publish-confirmation", context));
         } catch (final RuntimeException e) {
             LOGGER.error("Could not send publish confirmation email for item title '{}'.", mail.getItemTitle(), e);
-        }
-    }
-
-    @Override
-    @Async("mailTaskExecutor")
-    public void sendBookingReviewEmail(final BookingReviewMailModel mail) {
-        if (mail == null) {
-            return;
-        }
-        try {
-            final MailRecipientModel recipient = hasEmail(mail.getOwner())
-                    ? mail.getOwner()
-                    : fallbackRecipient(reviewRecipient, PreferredLanguageModel.ES);
-            final Locale locale = resolveLocale(recipient);
-            final BookingMailModel booking = mail.getBooking();
-            final Context context = new Context(locale);
-            context.setVariable("bookingRequest", booking);
-            context.setVariable("itemTitle", mail.getItemTitle());
-            context.setVariable("location", mail.getLocation());
-            context.setVariable("requestedDateLabel", mail.getRequestedDateLabel());
-            context.setVariable("requestedTimeLabel", mail.getRequestedTimeLabel());
-            final String message = booking == null || booking.getDescription() == null
-                    ? ""
-                    : booking.getDescription().trim();
-            context.setVariable("hasRequestMessage", !message.isEmpty());
-            context.setVariable("requestMessage", message);
-            context.setVariable("profileUrl", requestsBaseUrl);
-            sendHtmlEmail(
-                    recipient.getEmail(),
-                    getMessage("mail.requestReview.subject", locale, requesterName(mail)),
-                    templateEngine.process("booking-review", context));
-        } catch (final RuntimeException e) {
-            LOGGER.error("Could not send booking review email.", e);
-        }
-    }
-
-    @Override
-    @Async("mailTaskExecutor")
-    public void sendBookingResolutionEmail(final BookingResolutionMailModel mail) {
-        if (mail == null || !hasEmail(mail.getRequester()) || mail.getBooking() == null) {
-            return;
-        }
-        try {
-            final Locale locale = resolveLocale(mail.getRequester());
-            final BookingMailModel booking = mail.getBooking();
-            final Context context = new Context(locale);
-            context.setVariable("bookingRequest", booking);
-            context.setVariable("statusLabel", getMessage(statusMessageCode(booking), locale));
-            context.setVariable("bookingUrl", bookingsBaseUrl + "#sent-booking-requests");
-            sendHtmlEmail(
-                    mail.getRequester().getEmail(),
-                    getMessage(
-                            "mail.requestResolution.subject", locale, getMessage(statusMessageCode(booking), locale)),
-                    templateEngine.process("booking-resolution", context));
-        } catch (final RuntimeException e) {
-            LOGGER.error("Could not send booking resolution email.", e);
-        }
-    }
-
-    @Override
-    @Async("mailTaskExecutor")
-    public void sendPaymentProofSubmittedEmail(final PaymentProofSubmittedMailModel mail) {
-        if (mail == null || !hasEmail(mail.getOwner())) {
-            return;
-        }
-        try {
-            final Locale locale = resolveLocale(mail.getOwner());
-            final Context context = new Context(locale);
-            context.setVariable("requesterName", mail.getRequesterName());
-            context.setVariable("itemTitle", mail.getItemTitle());
-            context.setVariable("profileUrl", requestsBaseUrl);
-            final boolean hasProofImage = isInlineProofImage(mail.getProofFileData(), mail.getProofContentType());
-            context.setVariable("hasProofImage", hasProofImage);
-            if (hasProofImage) {
-                context.setVariable("proofImageSrc", "cid:payment-proof-image");
-            }
-
-            final String htmlBody = templateEngine.process("payment-proof-submitted", context);
-            sendHtmlEmail(
-                    mail.getOwner().getEmail(),
-                    getMessage("mail.paymentProofSubmitted.subject", locale, mail.getRequesterName()),
-                    htmlBody,
-                    hasProofImage ? mail.getProofFileData() : null,
-                    hasProofImage ? mail.getProofContentType() : null,
-                    hasProofImage ? "payment-proof-image" : null);
-        } catch (final RuntimeException e) {
-            LOGGER.error("Could not send payment proof email.", e);
-        }
-    }
-
-    @Override
-    @Async("mailTaskExecutor")
-    public void sendPaymentReceivedEmail(final PaymentReceivedMailModel mail) {
-        if (mail == null || !hasEmail(mail.getRequester())) {
-            return;
-        }
-        try {
-            final Locale locale = resolveLocale(mail.getRequester());
-            final Context context = new Context(locale);
-            context.setVariable("itemTitle", mail.getItemTitle());
-            context.setVariable("profileUrl", bookingsBaseUrl + "#sent-booking-requests");
-            sendHtmlEmail(
-                    mail.getRequester().getEmail(),
-                    getMessage("mail.paymentReceived.subject", locale, mail.getItemTitle()),
-                    templateEngine.process("payment-received", context));
-        } catch (final RuntimeException e) {
-            LOGGER.error("Could not send payment received email.", e);
-        }
-    }
-
-    @Override
-    @Async("mailTaskExecutor")
-    public void sendPaymentProofRefusedEmail(final PaymentProofRefusedMailModel mail) {
-        if (mail == null || !hasEmail(mail.getRequester())) {
-            return;
-        }
-        try {
-            final Locale locale = resolveLocale(mail.getRequester());
-            final Context context = new Context(locale);
-            context.setVariable("ownerName", mail.getOwnerName());
-            context.setVariable("itemTitle", mail.getItemTitle());
-            context.setVariable("reason", mail.getReason());
-            context.setVariable("profileUrl", bookingsBaseUrl + "#sent-booking-requests");
-            sendHtmlEmail(
-                    mail.getRequester().getEmail(),
-                    getMessage("mail.paymentProofRefused.subject", locale, mail.getItemTitle()),
-                    templateEngine.process("payment-proof-refused", context));
-        } catch (final RuntimeException e) {
-            LOGGER.error("Could not send payment proof refused email.", e);
         }
     }
 
@@ -286,39 +132,6 @@ public class MailServiceImpl implements MailService {
 
     private static boolean isBlank(final String value) {
         return value == null || value.isBlank();
-    }
-
-    private static boolean isInlineProofImage(final byte[] proofFileData, final String proofContentType) {
-        return proofFileData != null
-                && proofFileData.length > 0
-                && proofContentType != null
-                && proofContentType.toLowerCase(Locale.ROOT).startsWith("image/");
-    }
-
-    private static MailRecipientModel fallbackRecipient(
-            final String email, final PreferredLanguageModel preferredLanguage) {
-        final MailRecipientModel recipient = new MailRecipientModel();
-        recipient.setEmail(email);
-        recipient.setDisplayName(email);
-        recipient.setPreferredLanguage(preferredLanguage);
-        return recipient;
-    }
-
-    private static String requesterName(final BookingReviewMailModel mail) {
-        if (mail.getBooking() != null && !isBlank(mail.getBooking().getRequesterName())) {
-            return mail.getBooking().getRequesterName();
-        }
-        if (mail.getRequester() != null && !isBlank(mail.getRequester().getDisplayName())) {
-            return mail.getRequester().getDisplayName();
-        }
-        return "";
-    }
-
-    private static String statusMessageCode(final BookingMailModel booking) {
-        if (booking == null || booking.getStatus() == null) {
-            return "request.status.updated";
-        }
-        return "booking.status." + booking.getStatus().name();
     }
 
     private void sendHtmlEmail(final String recipientEmail, final String subject, final String htmlBody) {

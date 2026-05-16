@@ -1,9 +1,9 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.entity.BookingOrm;
-import ar.edu.itba.paw.models.entity.ReviewOrm;
-import ar.edu.itba.paw.models.entity.TargetEnumOrm;
-import ar.edu.itba.paw.models.entity.UsersOrm;
+import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.Review;
+import ar.edu.itba.paw.models.entity.TargetEnum;
+import ar.edu.itba.paw.models.entity.Users;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -20,21 +20,21 @@ public class ReviewJpaDao implements ReviewDao {
     private EntityManager entityManager;
 
     @Override
-    public Optional<ReviewOrm> createReview(
+    public Optional<Review> createReview(
             final int bookingId,
             final int senderUserId,
-            final TargetEnumOrm targetType,
+            final TargetEnum targetType,
             final double rating,
             final String reviewComment) {
-        final BookingOrm booking = entityManager.find(BookingOrm.class, bookingId);
+        final Booking booking = entityManager.find(Booking.class, bookingId);
         if (booking == null) {
             return Optional.empty();
         }
-        final UsersOrm sender = entityManager.find(UsersOrm.class, senderUserId);
+        final Users sender = entityManager.find(Users.class, senderUserId);
         if (sender == null) {
             return Optional.empty();
         }
-        final ReviewOrm orm = new ReviewOrm();
+        final Review orm = new Review();
         orm.setBooking(booking);
         orm.setSender(sender);
         orm.setTargetType(targetType);
@@ -47,12 +47,12 @@ public class ReviewJpaDao implements ReviewDao {
     }
 
     @Override
-    public Optional<ReviewOrm> findReviewByBookingSenderAndTargetType(
-            final int bookingId, final int senderUserId, final TargetEnumOrm targetType) {
-        final TypedQuery<ReviewOrm> q = entityManager.createQuery(
-                "SELECT r FROM ReviewOrm r WHERE r.booking.id = :bookingId "
+    public Optional<Review> findReviewByBookingSenderAndTargetType(
+            final int bookingId, final int senderUserId, final TargetEnum targetType) {
+        final TypedQuery<Review> q = entityManager.createQuery(
+                "SELECT r FROM Review r WHERE r.booking.id = :bookingId "
                         + "AND r.sender.id = :senderId AND r.targetType = :targetType",
-                ReviewOrm.class);
+                Review.class);
         q.setParameter("bookingId", bookingId);
         q.setParameter("senderId", senderUserId);
         q.setParameter("targetType", targetType);

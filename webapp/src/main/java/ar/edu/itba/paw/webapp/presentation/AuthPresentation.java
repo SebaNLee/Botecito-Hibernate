@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.entity.UsersOrm;
+import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.LoginForm;
@@ -86,7 +86,7 @@ public class AuthPresentation {
     }
 
     public ModelAndView passwordRecoveryResetForm(final String token) {
-        final Optional<UsersOrm> user = userService.findByPasswordRecoveryToken(token);
+        final Optional<Users> user = userService.findByPasswordRecoveryToken(token);
         return user.isEmpty() || user.get().getMailTokenEmittedAt() != null
                 ? new ModelAndView("redirect:/password-recovery/" + token + "?invalid=true")
                 : new ModelAndView(PASSWORD_RECOVERY_RESET_VIEW)
@@ -112,7 +112,7 @@ public class AuthPresentation {
 
     public ModelAndView verifyEmail(
             final String token, final HttpServletRequest request, final HttpServletResponse response) {
-        final Optional<UsersOrm> verifiedUser = userService.verifyEmail(token);
+        final Optional<Users> verifiedUser = userService.verifyEmail(token);
         if (verifiedUser.isPresent()) {
             postRegistrationAuthenticator.authenticateVerifiedUser(
                     verifiedUser.get().getEmail(), request, response);

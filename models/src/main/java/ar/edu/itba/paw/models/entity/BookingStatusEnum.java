@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.models.entity;
 
-public enum BookingStatusEnumOrm {
+public enum BookingStatusEnum {
     PENDING,
     ACCEPTED,
     REJECTED,

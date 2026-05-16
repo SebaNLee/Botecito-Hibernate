@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.entity.UsersOrm;
+import ar.edu.itba.paw.models.entity.Users;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -16,31 +16,31 @@ public class UserJpaDao implements UserDao {
     private EntityManager entityManager;
 
     @Override
-    public Optional<UsersOrm> findById(final int id) {
-        return Optional.ofNullable(entityManager.find(UsersOrm.class, id));
+    public Optional<Users> findById(final int id) {
+        return Optional.ofNullable(entityManager.find(Users.class, id));
     }
 
     @Override
-    public Optional<UsersOrm> findByEmail(final String email) {
+    public Optional<Users> findByEmail(final String email) {
         if (email == null || email.isBlank()) {
             return Optional.empty();
         }
         return entityManager
-                .createQuery("FROM UsersOrm u WHERE LOWER(u.email) = LOWER(:email)", UsersOrm.class)
+                .createQuery("FROM Users u WHERE LOWER(u.email) = LOWER(:email)", Users.class)
                 .setParameter("email", email.trim())
                 .getResultStream()
                 .findFirst();
     }
 
     @Override
-    public UsersOrm createUser(final UsersOrm user) {
+    public Users createUser(final Users user) {
         entityManager.persist(user);
         entityManager.flush();
         return user;
     }
 
     @Override
-    public Optional<UsersOrm> claimUser(final UsersOrm user) {
+    public Optional<Users> claimUser(final Users user) {
         return findByEmail(user.getEmail())
                 .filter(existing -> existing.getPasswordHash() == null)
                 .map(existing -> {
@@ -60,11 +60,11 @@ public class UserJpaDao implements UserDao {
     }
 
     @Override
-    public Optional<UsersOrm> updateProfile(final UsersOrm user) {
+    public Optional<Users> updateProfile(final Users user) {
         if (user.getId() == null) {
             return Optional.empty();
         }
-        final UsersOrm existing = entityManager.find(UsersOrm.class, user.getId());
+        final Users existing = entityManager.find(Users.class, user.getId());
         if (existing == null) {
             return Optional.empty();
         }
@@ -82,8 +82,8 @@ public class UserJpaDao implements UserDao {
     }
 
     @Override
-    public Optional<UsersOrm> updatePasswordRecoveryToken(final int userId, final String mailToken) {
-        final UsersOrm existing = entityManager.find(UsersOrm.class, userId);
+    public Optional<Users> updatePasswordRecoveryToken(final int userId, final String mailToken) {
+        final Users existing = entityManager.find(Users.class, userId);
         if (existing == null || !Boolean.TRUE.equals(existing.getVerified())) {
             return Optional.empty();
         }
@@ -94,12 +94,12 @@ public class UserJpaDao implements UserDao {
     }
 
     @Override
-    public Optional<UsersOrm> findByPasswordRecoveryToken(final String token) {
+    public Optional<Users> findByPasswordRecoveryToken(final String token) {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
         return entityManager
-                .createQuery("FROM UsersOrm u WHERE u.mailToken = :token AND u.verified = true", UsersOrm.class)
+                .createQuery("FROM Users u WHERE u.mailToken = :token AND u.verified = true", Users.class)
                 .setParameter("token", token.trim())
                 .getResultStream()
                 .findFirst();
@@ -109,7 +109,7 @@ public class UserJpaDao implements UserDao {
     public boolean resetPasswordByRecoveryToken(
             final String token, final String passwordHash, final LocalDateTime usedAt) {
         final int updatedRows = entityManager
-                .createQuery("UPDATE UsersOrm u"
+                .createQuery("UPDATE Users u"
                         + " SET u.passwordHash = :passwordHash, u.mailTokenEmittedAt = :usedAt"
                         + " WHERE u.mailToken = :token AND u.mailTokenEmittedAt IS NULL AND u.verified = true")
                 .setParameter("passwordHash", passwordHash)
@@ -120,31 +120,31 @@ public class UserJpaDao implements UserDao {
     }
 
     @Override
-    public Optional<UsersOrm> findByEmailVerificationToken(final String token) {
+    public Optional<Users> findByEmailVerificationToken(final String token) {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
         return entityManager
-                .createQuery("FROM UsersOrm u WHERE u.mailToken = :token AND u.verified = false", UsersOrm.class)
+                .createQuery("FROM Users u WHERE u.mailToken = :token AND u.verified = false", Users.class)
                 .setParameter("token", token.trim())
                 .getResultStream()
                 .findFirst();
     }
 
     @Override
-    public Optional<UsersOrm> verifyEmailByToken(final String token) {
+    public Optional<Users> verifyEmailByToken(final String token) {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
-        final Optional<UsersOrm> user = entityManager
-                .createQuery("FROM UsersOrm u WHERE u.mailToken = :token AND u.verified = false", UsersOrm.class)
+        final Optional<Users> user = entityManager
+                .createQuery("FROM Users u WHERE u.mailToken = :token AND u.verified = false", Users.class)
                 .setParameter("token", token.trim())
                 .getResultStream()
                 .findFirst();
         if (user.isEmpty()) {
             return Optional.empty();
         }
-        final UsersOrm existing = user.get();
+        final Users existing = user.get();
         existing.setVerified(true);
         existing.setMailToken(null);
         existing.setMailTokenEmittedAt(null);
@@ -153,12 +153,12 @@ public class UserJpaDao implements UserDao {
     }
 
     @Override
-    public List<UsersOrm> findUsersByIds(final Collection<Integer> userIds) {
+    public List<Users> findUsersByIds(final Collection<Integer> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return List.of();
         }
         return entityManager
-                .createQuery("FROM UsersOrm u WHERE u.id IN :ids", UsersOrm.class)
+                .createQuery("FROM Users u WHERE u.id IN :ids", Users.class)
                 .setParameter("ids", userIds)
                 .getResultStream()
                 .toList();

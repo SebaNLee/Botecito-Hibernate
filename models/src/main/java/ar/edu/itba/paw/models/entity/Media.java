@@ -15,7 +15,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(name = "media")
-public class MediaOrm {
+public class Media {
 
     @EmbeddedId
     private MediaId id; // remember that this is a composite PK (version_id, index)
@@ -23,9 +23,9 @@ public class MediaOrm {
     @MapsId("versionId")
     @ManyToOne(optional = false)
     @JoinColumn(name = "version_id", nullable = false)
-    private VersionOrm version;
+    private Version version;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "image_id", nullable = false)
-    private ImageOrm image;
+    private Image image;
 }

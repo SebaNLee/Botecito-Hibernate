@@ -2,11 +2,11 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.AvailabilityWindow;
 import ar.edu.itba.paw.models.dto.ImageUpload;
-import ar.edu.itba.paw.models.entity.ItemTypeOrm;
-import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.models.entity.VersionOrm;
+import ar.edu.itba.paw.models.entity.ItemType;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.services.PublishService;
-import ar.edu.itba.paw.services.SelectorsInterface;
+import ar.edu.itba.paw.services.SelectorsService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import java.math.BigDecimal;
@@ -38,7 +38,7 @@ public class PublishPresentation {
 
     private final PublishService publishService;
     private final UserService userService;
-    private final SelectorsInterface selectorsInterface;
+    private final SelectorsService selectorsInterface;
     private final MessageSource messageSource;
 
     public ModelAndView publishStepOne(final PublishBoatForm form) {
@@ -102,7 +102,7 @@ public class PublishPresentation {
             final BindingResult errors,
             final Locale locale,
             final SessionStatus sessionStatus) {
-        final UsersOrm currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -119,7 +119,7 @@ public class PublishPresentation {
             return mav;
         }
 
-        final Optional<VersionOrm> createdVersion = publishService.create(
+        final Optional<Version> createdVersion = publishService.create(
                 currentUser.getId(),
                 parseIntOrNull(form.getItemTypeId()),
                 form.getTitle() == null ? null : form.getTitle().trim(),
@@ -144,12 +144,12 @@ public class PublishPresentation {
     }
 
     public ModelAndView publishSuccess(final HttpServletRequest request, final Integer itemId) {
-        final UsersOrm currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null || itemId == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<VersionOrm> version = publishService.findById(itemId);
+        final Optional<Version> version = publishService.findById(itemId);
         if (version.isEmpty()) {
             return new ModelAndView("redirect:/publish");
         }
@@ -167,9 +167,9 @@ public class PublishPresentation {
     }
 
     public Map<String, String> buildItemTypeOptions() {
-        final List<ItemTypeOrm> types = selectorsInterface.getItemTypeOptions();
+        final List<ItemType> types = selectorsInterface.getItemTypeOptions();
         final Map<String, String> options = new LinkedHashMap<>();
-        for (final ItemTypeOrm type : types) {
+        for (final ItemType type : types) {
             final String id = type.getId() == null ? "" : String.valueOf(type.getId());
             final String name = type.getName() == null ? "" : type.getName();
             options.put(id, name);
@@ -421,7 +421,7 @@ public class PublishPresentation {
         };
     }
 
-    private UsersOrm currentAuthenticatedUser() {
+    private Users currentAuthenticatedUser() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()
@@ -431,7 +431,7 @@ public class PublishPresentation {
         return userService.findByEmail(authentication.getName()).orElse(null);
     }
 
-    private static String resolveImageUrl(final VersionOrm version, final String contextPath) {
+    private static String resolveImageUrl(final Version version, final String contextPath) {
         final String prefix = contextPath == null ? "" : contextPath;
         if (version.getMedia() != null && !version.getMedia().isEmpty()) {
             final Integer coverImageId = version.getMedia().get(0).getImage().getId();

@@ -1,18 +1,18 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
-import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.BookingStatusEnumOrm;
-import ar.edu.itba.paw.models.entity.ImageOrm;
-import ar.edu.itba.paw.models.entity.ItemOrm;
-import ar.edu.itba.paw.models.entity.ItemStatusEnumOrm;
-import ar.edu.itba.paw.models.entity.ItemTypeOrm;
-import ar.edu.itba.paw.models.entity.LocationOrm;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.BookingStatusEnum;
+import ar.edu.itba.paw.models.entity.Image;
+import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.models.entity.ItemStatusEnum;
+import ar.edu.itba.paw.models.entity.ItemType;
+import ar.edu.itba.paw.models.entity.Location;
+import ar.edu.itba.paw.models.entity.Media;
 import ar.edu.itba.paw.models.entity.MediaId;
-import ar.edu.itba.paw.models.entity.MediaOrm;
-import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.models.entity.VersionOrm;
-import ar.edu.itba.paw.persistence.orm.projections.MyBoatsRowOrm;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.models.entity.Version;
+import ar.edu.itba.paw.persistence.projections.MyBoatsRow;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -33,11 +33,11 @@ public class ItemJpaDao implements ItemDao {
     @Override
     public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId, final int page, final int pageSize) {
         final String hql = baseMyBoatsQuery() + " WHERE i.host.id = :ownerId ORDER BY i.createdAt DESC, i.id DESC";
-        final List<MyBoatsRowOrm> rows = entityManager
-                .createQuery(hql, MyBoatsRowOrm.class)
+        final List<MyBoatsRow> rows = entityManager
+                .createQuery(hql, MyBoatsRow.class)
                 .setParameter("ownerId", ownerId)
-                .setParameter("rejectedStatus", BookingStatusEnumOrm.REJECTED)
-                .setParameter("cancelledStatus", BookingStatusEnumOrm.CANCELLED)
+                .setParameter("rejectedStatus", BookingStatusEnum.REJECTED)
+                .setParameter("cancelledStatus", BookingStatusEnum.CANCELLED)
                 .setFirstResult((page - 1) * pageSize)
                 .setMaxResults(pageSize)
                 .getResultList();
@@ -47,7 +47,7 @@ public class ItemJpaDao implements ItemDao {
     @Override
     public int countMyBoatsItemsByOwnerId(final int ownerId) {
         final Number count = (Number) entityManager
-                .createQuery("SELECT COUNT(i) FROM ItemOrm i WHERE i.host.id = :ownerId")
+                .createQuery("SELECT COUNT(i) FROM Item i WHERE i.host.id = :ownerId")
                 .setParameter("ownerId", ownerId)
                 .getSingleResult();
         return count == null ? 0 : count.intValue();
@@ -56,12 +56,12 @@ public class ItemJpaDao implements ItemDao {
     @Override
     public Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(final int itemId, final int ownerId) {
         final String hql = baseMyBoatsQuery() + " WHERE i.id = :itemId AND i.host.id = :ownerId";
-        final List<MyBoatsRowOrm> rows = entityManager
-                .createQuery(hql, MyBoatsRowOrm.class)
+        final List<MyBoatsRow> rows = entityManager
+                .createQuery(hql, MyBoatsRow.class)
                 .setParameter("itemId", itemId)
                 .setParameter("ownerId", ownerId)
-                .setParameter("rejectedStatus", BookingStatusEnumOrm.REJECTED)
-                .setParameter("cancelledStatus", BookingStatusEnumOrm.CANCELLED)
+                .setParameter("rejectedStatus", BookingStatusEnum.REJECTED)
+                .setParameter("cancelledStatus", BookingStatusEnum.CANCELLED)
                 .setMaxResults(1)
                 .getResultList();
         final List<MyBoatsItem> items = toDomainItems(rows);
@@ -69,29 +69,15 @@ public class ItemJpaDao implements ItemDao {
     }
 
     @Override
-    public boolean updateMyBoatsItem(
-            final int itemId,
-            final int ownerId,
-            final String title,
-            final String description,
-            final int pricePerHour,
-            final Integer difficultyLevel,
-            final int locationOptionId) {
-        return createPublicationVersion(
-                        itemId, ownerId, title, description, pricePerHour, difficultyLevel, locationOptionId)
-                >= 0;
-    }
-
-    @Override
     public boolean deleteMyBoatsItem(final int itemId, final int ownerId) {
-        final Optional<ItemOrm> item = findItemOrm(itemId, ownerId);
+        final Optional<Item> item = findItemOrm(itemId, ownerId);
         if (item.isEmpty()) {
             return false;
         }
 
         if (hasBookingsBlockingHardDelete(itemId)) {
-            if (item.get().getStatus() == ItemStatusEnumOrm.ACTIVE) {
-                item.get().setStatus(ItemStatusEnumOrm.INACTIVE);
+            if (item.get().getStatus() == ItemStatusEnum.ACTIVE) {
+                item.get().setStatus(ItemStatusEnum.INACTIVE);
                 entityManager.flush();
                 return true;
             }
@@ -106,8 +92,8 @@ public class ItemJpaDao implements ItemDao {
     @Override
     public boolean setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
         final int updated = entityManager
-                .createQuery("UPDATE ItemOrm i SET i.status = :status WHERE i.id = :itemId AND i.host.id = :ownerId")
-                .setParameter("status", active ? ItemStatusEnumOrm.ACTIVE : ItemStatusEnumOrm.INACTIVE)
+                .createQuery("UPDATE Item i SET i.status = :status WHERE i.id = :itemId AND i.host.id = :ownerId")
+                .setParameter("status", active ? ItemStatusEnum.ACTIVE : ItemStatusEnum.INACTIVE)
                 .setParameter("itemId", itemId)
                 .setParameter("ownerId", ownerId)
                 .executeUpdate();
@@ -124,7 +110,7 @@ public class ItemJpaDao implements ItemDao {
             final int pricePerHour,
             final Integer difficultyLevel,
             final int locationOptionId) {
-        final VersionOrm current = findCurrentVersion(itemId);
+        final Version current = findCurrentVersion(itemId);
         if (current == null) {
             return -1;
         }
@@ -135,13 +121,13 @@ public class ItemJpaDao implements ItemDao {
             current.setDescription(description);
             current.setPrice(BigDecimal.valueOf(pricePerHour));
             current.setDifficulty(difficultyLevel != null ? difficultyLevel : current.getDifficulty());
-            current.setLocation(entityManager.getReference(LocationOrm.class, locationOptionId));
+            current.setLocation(entityManager.getReference(Location.class, locationOptionId));
             current.setCreatedAt(LocalDateTime.now());
             entityManager.flush();
             return current.getId();
         }
 
-        final VersionOrm next = new VersionOrm();
+        final Version next = new Version();
         next.setItem(current.getItem());
         next.setType(current.getType());
         next.setTitle(title);
@@ -150,7 +136,7 @@ public class ItemJpaDao implements ItemDao {
         next.setCapacity(current.getCapacity());
         next.setWeight(current.getWeight());
         next.setDifficulty(difficultyLevel != null ? difficultyLevel : current.getDifficulty());
-        next.setLocation(entityManager.getReference(LocationOrm.class, locationOptionId));
+        next.setLocation(entityManager.getReference(Location.class, locationOptionId));
         next.setTimezone(current.getTimezone());
         next.setCreatedAt(LocalDateTime.now());
         entityManager.persist(next);
@@ -161,31 +147,6 @@ public class ItemJpaDao implements ItemDao {
 
         entityManager.flush();
         return next.getId();
-    }
-
-    @Override
-    public boolean replaceVersionPrimaryImage(final int versionId, final byte[] imageData) {
-        if (imageData == null || imageData.length == 0) {
-            return false;
-        }
-        final ImageOrm image = new ImageOrm();
-        image.setData(imageData);
-        entityManager.persist(image);
-        entityManager.flush();
-
-        entityManager
-                .createQuery("DELETE FROM MediaOrm m WHERE m.version.id = :versionId AND m.id.index = 0")
-                .setParameter("versionId", versionId)
-                .executeUpdate();
-
-        final MediaOrm media = new MediaOrm();
-        media.setId(new MediaId(versionId, 0));
-        media.setVersion(entityManager.getReference(VersionOrm.class, versionId));
-        media.setImage(image);
-        entityManager.persist(media);
-
-        entityManager.flush();
-        return true;
     }
 
     public Integer insertItem(
@@ -200,23 +161,23 @@ public class ItemJpaDao implements ItemDao {
             final int locationOptionId) {
         final LocalDateTime now = LocalDateTime.now();
 
-        final ItemOrm item = ItemOrm.builder()
-                .host(entityManager.getReference(UsersOrm.class, ownerId))
-                .status(ItemStatusEnumOrm.ACTIVE)
+        final Item item = Item.builder()
+                .host(entityManager.getReference(Users.class, ownerId))
+                .status(ItemStatusEnum.ACTIVE)
                 .createdAt(now)
                 .build();
         entityManager.persist(item);
 
-        final VersionOrm version = new VersionOrm();
+        final Version version = new Version();
         version.setItem(item);
-        version.setType(entityManager.getReference(ItemTypeOrm.class, typeId));
+        version.setType(entityManager.getReference(ItemType.class, typeId));
         version.setTitle(title);
         version.setDescription(description);
         version.setPrice(BigDecimal.valueOf(pricePerHour));
         version.setCapacity(capacityPeople);
         version.setWeight(weight);
         version.setDifficulty(difficulty);
-        version.setLocation(entityManager.getReference(LocationOrm.class, locationOptionId));
+        version.setLocation(entityManager.getReference(Location.class, locationOptionId));
         version.setTimezone("America/Argentina/Buenos_Aires");
         version.setCreatedAt(now);
         entityManager.persist(version);
@@ -225,9 +186,9 @@ public class ItemJpaDao implements ItemDao {
         return item.getId();
     }
 
-    private VersionOrm findCurrentVersion(final int itemId) {
-        final List<VersionOrm> rows = entityManager
-                .createQuery("FROM VersionOrm v WHERE v.item.id = :itemId ORDER BY v.id DESC", VersionOrm.class)
+    private Version findCurrentVersion(final int itemId) {
+        final List<Version> rows = entityManager
+                .createQuery("FROM Version v WHERE v.item.id = :itemId ORDER BY v.id DESC", Version.class)
                 .setParameter("itemId", itemId)
                 .setMaxResults(1)
                 .getResultList();
@@ -236,19 +197,19 @@ public class ItemJpaDao implements ItemDao {
 
     private boolean hasBookingReferences(final int versionId) {
         final Long count = entityManager
-                .createQuery("SELECT COUNT(b) FROM BookingOrm b WHERE b.version.id = :versionId", Long.class)
+                .createQuery("SELECT COUNT(b) FROM Booking b WHERE b.version.id = :versionId", Long.class)
                 .setParameter("versionId", versionId)
                 .getSingleResult();
         return count != null && count > 0;
     }
 
-    private void copyAvailabilities(final int sourceVersionId, final VersionOrm targetVersion) {
-        final List<AvailabilityOrm> availabilities = entityManager
-                .createQuery("FROM AvailabilityOrm a WHERE a.version.id = :versionId", AvailabilityOrm.class)
+    private void copyAvailabilities(final int sourceVersionId, final Version targetVersion) {
+        final List<Availability> availabilities = entityManager
+                .createQuery("FROM Availability a WHERE a.version.id = :versionId", Availability.class)
                 .setParameter("versionId", sourceVersionId)
                 .getResultList();
-        for (final AvailabilityOrm a : availabilities) {
-            final AvailabilityOrm copy = new AvailabilityOrm();
+        for (final Availability a : availabilities) {
+            final Availability copy = new Availability();
             copy.setVersion(targetVersion);
             copy.setWeekday(a.getWeekday());
             copy.setStartTime(a.getStartTime());
@@ -257,13 +218,13 @@ public class ItemJpaDao implements ItemDao {
         }
     }
 
-    private void copyMedia(final int sourceVersionId, final VersionOrm targetVersion) {
-        final List<MediaOrm> mediaList = entityManager
-                .createQuery("FROM MediaOrm m WHERE m.version.id = :versionId", MediaOrm.class)
+    private void copyMedia(final int sourceVersionId, final Version targetVersion) {
+        final List<Media> mediaList = entityManager
+                .createQuery("FROM Media m WHERE m.version.id = :versionId", Media.class)
                 .setParameter("versionId", sourceVersionId)
                 .getResultList();
-        for (final MediaOrm m : mediaList) {
-            final MediaOrm copy = new MediaOrm();
+        for (final Media m : mediaList) {
+            final Media copy = new Media();
             copy.setId(new MediaId(targetVersion.getId(), m.getId().getIndex()));
             copy.setVersion(targetVersion);
             copy.setImage(m.getImage());
@@ -272,29 +233,29 @@ public class ItemJpaDao implements ItemDao {
     }
 
     private static String baseMyBoatsQuery() {
-        return "SELECT NEW ar.edu.itba.paw.persistence.orm.projections.MyBoatsRowOrm("
+        return "SELECT NEW ar.edu.itba.paw.persistence.projections.MyBoatsRow("
                 + "i.id, v.id, v.title, v.description, v.price, v.difficulty, v.location.id,"
                 + " v.capacity, v.location.name, i.status,"
-                + " (SELECT m.image.id FROM MediaOrm m"
+                + " (SELECT m.image.id FROM Media m"
                 + " WHERE m.version = v"
-                + " AND m.id.index = (SELECT MIN(m2.id.index) FROM MediaOrm m2 WHERE m2.version = v)),"
-                + " EXISTS (SELECT 1 FROM BookingOrm b"
+                + " AND m.id.index = (SELECT MIN(m2.id.index) FROM Media m2 WHERE m2.version = v)),"
+                + " EXISTS (SELECT 1 FROM Booking b"
                 + " WHERE b.version.item = i"
                 + " AND b.status NOT IN (:rejectedStatus, :cancelledStatus)"
                 + " AND b.guest.id <> i.host.id),"
-                + " EXISTS (SELECT 1 FROM BookingOrm b"
+                + " EXISTS (SELECT 1 FROM Booking b"
                 + " WHERE b.version.item = i"
                 + " AND b.status NOT IN (:rejectedStatus, :cancelledStatus)"
                 + " AND b.guest.id <> i.host.id"
                 + " AND b.end > CURRENT_TIMESTAMP))"
-                + " FROM ItemOrm i"
-                + " JOIN VersionOrm v ON v.item = i"
-                + " AND v.id = (SELECT MAX(v2.id) FROM VersionOrm v2 WHERE v2.item = i)";
+                + " FROM Item i"
+                + " JOIN Version v ON v.item = i"
+                + " AND v.id = (SELECT MAX(v2.id) FROM Version v2 WHERE v2.item = i)";
     }
 
-    static List<MyBoatsItem> toDomainItems(final List<MyBoatsRowOrm> projections) {
+    static List<MyBoatsItem> toDomainItems(final List<MyBoatsRow> projections) {
         final List<MyBoatsItem> items = new ArrayList<>(projections.size());
-        for (final MyBoatsRowOrm p : projections) {
+        for (final MyBoatsRow p : projections) {
             final MyBoatsItem item = new MyBoatsItem();
             item.setId(p.getItemId());
             item.setVersionId(p.getVersionId());
@@ -306,7 +267,7 @@ public class ItemJpaDao implements ItemDao {
             item.setLocationId(p.getLocationId());
             item.setCapacity(p.getCapacity());
             item.setLocation(p.getLocationName());
-            item.setActive(ItemStatusEnumOrm.ACTIVE.equals(p.getStatus()));
+            item.setActive(ItemStatusEnum.ACTIVE.equals(p.getStatus()));
             item.setCoverImageId(p.getCoverImageId());
             final boolean active = Boolean.TRUE.equals(item.getActive());
             item.setDeleteDeactivates(active && Boolean.TRUE.equals(p.getHasBlockingBookings()));
@@ -316,15 +277,15 @@ public class ItemJpaDao implements ItemDao {
         return items;
     }
 
-    private Optional<ItemOrm> findItemOrm(final int itemId, final Integer ownerId) {
+    private Optional<Item> findItemOrm(final int itemId, final Integer ownerId) {
         final String hql = ownerId == null
-                ? "FROM ItemOrm i WHERE i.id = :itemId"
-                : "FROM ItemOrm i WHERE i.id = :itemId AND i.host.id = :ownerId";
-        final var query = entityManager.createQuery(hql, ItemOrm.class).setParameter("itemId", itemId);
+                ? "FROM Item i WHERE i.id = :itemId"
+                : "FROM Item i WHERE i.id = :itemId AND i.host.id = :ownerId";
+        final var query = entityManager.createQuery(hql, Item.class).setParameter("itemId", itemId);
         if (ownerId != null) {
             query.setParameter("ownerId", ownerId);
         }
-        final List<ItemOrm> rows = query.setMaxResults(1).getResultList();
+        final List<Item> rows = query.setMaxResults(1).getResultList();
         return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
@@ -344,7 +305,7 @@ public class ItemJpaDao implements ItemDao {
 
     @Override
     public Optional<byte[]> findImageDataById(final int imageId) {
-        return Optional.ofNullable(entityManager.find(ImageOrm.class, imageId)).map(ImageOrm::getData);
+        return Optional.ofNullable(entityManager.find(Image.class, imageId)).map(Image::getData);
     }
 
     @Override
@@ -355,7 +316,7 @@ public class ItemJpaDao implements ItemDao {
         }
         return entityManager
                 .createQuery(
-                        "SELECT m.image.id FROM MediaOrm m WHERE m.version.id = :versionId ORDER BY m.id.index",
+                        "SELECT m.image.id FROM Media m WHERE m.version.id = :versionId ORDER BY m.id.index",
                         Integer.class)
                 .setParameter("versionId", versionId)
                 .getResultList();
@@ -368,20 +329,20 @@ public class ItemJpaDao implements ItemDao {
             return Optional.empty();
         }
         final long count = (Long) entityManager
-                .createQuery("SELECT COUNT(m) FROM MediaOrm m WHERE m.version.id = :versionId")
+                .createQuery("SELECT COUNT(m) FROM Media m WHERE m.version.id = :versionId")
                 .setParameter("versionId", versionId)
                 .getSingleResult();
         if (count >= MAX_GALLERY_IMAGES) {
             return Optional.empty();
         }
-        final ImageOrm image = new ImageOrm();
+        final Image image = new Image();
         image.setData(imageData);
         entityManager.persist(image);
         entityManager.flush();
 
-        final MediaOrm media = new MediaOrm();
+        final Media media = new Media();
         media.setId(new MediaId(versionId, (int) count));
-        media.setVersion(entityManager.getReference(VersionOrm.class, versionId));
+        media.setVersion(entityManager.getReference(Version.class, versionId));
         media.setImage(image);
         entityManager.persist(media);
 
@@ -391,12 +352,12 @@ public class ItemJpaDao implements ItemDao {
     @Override
     public boolean deleteImageFromGallery(final int imageId) {
         final int deleted = entityManager
-                .createQuery("DELETE FROM MediaOrm m WHERE m.image.id = :imageId")
+                .createQuery("DELETE FROM Media m WHERE m.image.id = :imageId")
                 .setParameter("imageId", imageId)
                 .executeUpdate();
         if (deleted > 0) {
             entityManager
-                    .createQuery("DELETE FROM ImageOrm i WHERE i.id = :imageId")
+                    .createQuery("DELETE FROM Image i WHERE i.id = :imageId")
                     .setParameter("imageId", imageId)
                     .executeUpdate();
             return true;
@@ -413,7 +374,7 @@ public class ItemJpaDao implements ItemDao {
         for (int i = 0; i < imageIdsInOrder.size(); i++) {
             entityManager
                     .createQuery(
-                            "UPDATE MediaOrm m SET m.id.index = :index WHERE m.version.id = :versionId AND m.image.id = :imageId")
+                            "UPDATE Media m SET m.id.index = :index WHERE m.version.id = :versionId AND m.image.id = :imageId")
                     .setParameter("index", i)
                     .setParameter("versionId", versionId)
                     .setParameter("imageId", imageIdsInOrder.get(i))
@@ -424,7 +385,7 @@ public class ItemJpaDao implements ItemDao {
 
     private Integer findCurrentVersionId(final int itemId) {
         final List<Integer> result = entityManager
-                .createQuery("SELECT MAX(v.id) FROM VersionOrm v WHERE v.item.id = :itemId", Integer.class)
+                .createQuery("SELECT MAX(v.id) FROM Version v WHERE v.item.id = :itemId", Integer.class)
                 .setParameter("itemId", itemId)
                 .getResultList();
         return result.isEmpty() ? null : result.get(0);

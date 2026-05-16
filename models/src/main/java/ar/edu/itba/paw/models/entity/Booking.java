@@ -24,7 +24,7 @@ import org.hibernate.annotations.Type;
 @NoArgsConstructor
 @Entity
 @Table(name = "booking")
-public class BookingOrm {
+public class Booking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "booking_id_seq")
@@ -33,11 +33,11 @@ public class BookingOrm {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "version_id", nullable = false)
-    private VersionOrm version;
+    private Version version;
 
     @ManyToOne
     @JoinColumn(name = "guest_id")
-    private UsersOrm guest;
+    private Users guest;
 
     @Column(name = "start", nullable = false)
     private LocalDateTime start;
@@ -48,7 +48,7 @@ public class BookingOrm {
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")
     @Column(name = "status", nullable = false, columnDefinition = "booking_status_enum")
-    private BookingStatusEnumOrm status;
+    private BookingStatusEnum status;
 
     @Column(name = "msg", length = 255)
     private String msg;
@@ -60,5 +60,5 @@ public class BookingOrm {
     private LocalDateTime updatedAt;
 
     @OneToOne(mappedBy = "booking", fetch = FetchType.LAZY)
-    private PaymentProofOrm paymentProof;
+    private PaymentProof paymentProof;
 }

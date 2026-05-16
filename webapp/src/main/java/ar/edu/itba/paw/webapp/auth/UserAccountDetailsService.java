@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.auth;
 
-import ar.edu.itba.paw.models.entity.UsersOrm;
+import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.UserService;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ public class UserAccountDetailsService implements org.springframework.security.c
 
     @Override
     public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
-        final UsersOrm user = userService
+        final Users user = userService
                 .findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("No user found with email " + username));
         if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {

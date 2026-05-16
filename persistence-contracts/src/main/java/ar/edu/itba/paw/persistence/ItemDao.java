@@ -11,18 +11,8 @@ public interface ItemDao {
 
     Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(int itemId, int ownerId);
 
-    boolean updateMyBoatsItem(
-            int itemId,
-            int ownerId,
-            String title,
-            String description,
-            int pricePerHour,
-            Integer difficultyLevel,
-            int locationOptionId);
-
     boolean deleteMyBoatsItem(int itemId, int ownerId);
 
-    // Eventualmente que sea create or update, reciben la misma info
     int createPublicationVersion(
             int itemId,
             int ownerId,
@@ -31,8 +21,6 @@ public interface ItemDao {
             int pricePerHour,
             Integer difficultyLevel,
             int locationOptionId);
-
-    boolean replaceVersionPrimaryImage(int versionId, byte[] imageData);
 
     boolean setItemActiveForOwner(int itemId, int ownerId, boolean active);
 

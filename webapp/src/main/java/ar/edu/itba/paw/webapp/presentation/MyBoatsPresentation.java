@@ -2,8 +2,8 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
 import ar.edu.itba.paw.models.dto.PageModel;
-import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.services.ItemInterface;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,10 +25,10 @@ public class MyBoatsPresentation {
     private static final String PLACEHOLDER_IMAGE_PATH = "/css/boat-placeholder.svg";
 
     private final UserService userService;
-    private final ItemInterface itemInterface;
+    private final ItemService itemInterface;
 
     public ModelAndView myBoats(final HttpServletRequest request, final int page, final int pageSize) {
-        final UsersOrm currentUser = currentUser();
+        final Users currentUser = currentUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -70,7 +70,7 @@ public class MyBoatsPresentation {
         return mav;
     }
 
-    private UsersOrm currentUser() {
+    private Users currentUser() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()

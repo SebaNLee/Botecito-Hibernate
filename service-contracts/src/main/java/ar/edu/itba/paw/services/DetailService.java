@@ -4,7 +4,7 @@ import ar.edu.itba.paw.models.dto.ItemDetail;
 import java.util.List;
 import java.util.Optional;
 
-public interface DetailInterface {
+public interface DetailService {
     /**
      * Anonymous access; returns the current published version only.
      */

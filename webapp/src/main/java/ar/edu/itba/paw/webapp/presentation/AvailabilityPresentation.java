@@ -1,13 +1,13 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.OwnerAvailabilityPage;
-import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.BookingOrm;
-import ar.edu.itba.paw.models.entity.BookingStatusEnumOrm;
-import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.services.BookingInterface;
-import ar.edu.itba.paw.services.BookingInterface.BlockSlotOutcome;
-import ar.edu.itba.paw.services.ItemInterface;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.BookingStatusEnum;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.services.BookingService;
+import ar.edu.itba.paw.services.BookingService.BlockSlotOutcome;
+import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.webapp.form.BlockSlotForm;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.net.URLDecoder;
@@ -43,8 +43,8 @@ public class AvailabilityPresentation {
     private static final String DEFAULT_AVAILABILITY_BACK_PATH = "/profile";
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
 
-    private final BookingInterface bookingInterface;
-    private final ItemInterface itemInterface;
+    private final BookingService bookingInterface;
+    private final ItemService itemInterface;
     private final AuthenticatedUserResolver authenticatedUserResolver;
 
     public ModelAndView manageAvailabilityPage(
@@ -52,7 +52,7 @@ public class AvailabilityPresentation {
             final String requestedDate,
             final String returnParam,
             final RedirectAttributes redirectAttributes) {
-        final UsersOrm currentUser = authenticatedUserResolver.currentAuthenticatedUser();
+        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -72,7 +72,7 @@ public class AvailabilityPresentation {
             final BlockSlotForm form,
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
-        final UsersOrm currentUser = authenticatedUserResolver.currentAuthenticatedUser();
+        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -108,7 +108,7 @@ public class AvailabilityPresentation {
             final String requestedDate,
             final String returnParam,
             final RedirectAttributes redirectAttributes) {
-        final UsersOrm currentUser = authenticatedUserResolver.currentAuthenticatedUser();
+        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -135,7 +135,7 @@ public class AvailabilityPresentation {
         mav.addObject("blockedDatesJson", toJsonArray(model.getBlockedDates()));
         mav.addObject("selectedDate", model.getSelectedDate());
         final Set<Integer> selfBlockIds =
-                model.getOwnerSelfBlocks().stream().map(BookingOrm::getId).collect(Collectors.toSet());
+                model.getOwnerSelfBlocks().stream().map(Booking::getId).collect(Collectors.toSet());
         final List<SlotRow> slots = buildSlotGrid(
                 model.getSelectedDate(), model.getAvailabilityWindows(), model.getActiveBookings(), selfBlockIds);
         mav.addObject("slots", slots);
@@ -150,15 +150,15 @@ public class AvailabilityPresentation {
 
     static List<SlotRow> buildSlotGrid(
             final String selectedDate,
-            final List<AvailabilityOrm> availabilities,
-            final List<BookingOrm> bookings,
+            final List<Availability> availabilities,
+            final List<Booking> bookings,
             final Set<Integer> selfBlockBookingIds) {
         if (selectedDate == null || selectedDate.isBlank()) {
             return List.of();
         }
         final LocalDate day = LocalDate.parse(selectedDate);
         final TreeSet<String> scheduled = new TreeSet<>();
-        for (final AvailabilityOrm availability : availabilities) {
+        for (final Availability availability : availabilities) {
             if (availability.getWeekday().name().equals(day.getDayOfWeek().name())) {
                 final int startMinute = availability.getStartTime().toSecondOfDay() / 60;
                 final int endMinute = availability.getEndTime().toSecondOfDay() / 60;
@@ -171,7 +171,7 @@ public class AvailabilityPresentation {
         }
         final Set<String> guestBooked = new HashSet<>();
         final Map<String, Integer> ownerBlocks = new HashMap<>();
-        for (final BookingOrm booking : bookings) {
+        for (final Booking booking : bookings) {
             if (!isBlockingState(booking.getStatus())) {
                 continue;
             }
@@ -205,15 +205,14 @@ public class AvailabilityPresentation {
         return slots;
     }
 
-    private static boolean isBlockingState(final BookingStatusEnumOrm status) {
-        return status == BookingStatusEnumOrm.PENDING
-                || status == BookingStatusEnumOrm.ACCEPTED
-                || status == BookingStatusEnumOrm.PAID
-                || status == BookingStatusEnumOrm.CONFIRMED;
+    private static boolean isBlockingState(final BookingStatusEnum status) {
+        return status == BookingStatusEnum.PENDING
+                || status == BookingStatusEnum.ACCEPTED
+                || status == BookingStatusEnum.PAID
+                || status == BookingStatusEnum.CONFIRMED;
     }
 
-    private static List<PersonalBlockRow> toPersonalBlockRows(
-            final List<BookingOrm> selfBlocks, final String timezone) {
+    private static List<PersonalBlockRow> toPersonalBlockRows(final List<Booking> selfBlocks, final String timezone) {
         final ZoneId zone = ZoneId.of(timezone);
         return selfBlocks.stream()
                 .filter(b -> b.getId() != null && b.getStart() != null && b.getEnd() != null)

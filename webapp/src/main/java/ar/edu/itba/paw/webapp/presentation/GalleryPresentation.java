@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
-import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.services.ItemInterface;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.services.ItemService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -19,11 +19,11 @@ public class GalleryPresentation {
 
     private static final int MAX_GALLERY_IMAGES = 5;
 
-    private final ItemInterface itemInterface;
+    private final ItemService itemInterface;
     private final AuthenticatedUserResolver authenticatedUserResolver;
 
     public ModelAndView galleryPage(final int itemId, final String error, final HttpServletRequest request) {
-        final UsersOrm currentUser = authenticatedUserResolver.currentAuthenticatedUser();
+        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -53,7 +53,7 @@ public class GalleryPresentation {
     }
 
     public ModelAndView uploadGallery(final int itemId, final List<MultipartFile> files) {
-        final UsersOrm currentUser = authenticatedUserResolver.currentAuthenticatedUser();
+        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -84,7 +84,7 @@ public class GalleryPresentation {
     }
 
     public ModelAndView deleteGalleryImage(final int itemId, final int imageId) {
-        final UsersOrm currentUser = authenticatedUserResolver.currentAuthenticatedUser();
+        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -99,7 +99,7 @@ public class GalleryPresentation {
     }
 
     public ModelAndView reorderGallery(final int itemId, final String order) {
-        final UsersOrm currentUser = authenticatedUserResolver.currentAuthenticatedUser();
+        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }

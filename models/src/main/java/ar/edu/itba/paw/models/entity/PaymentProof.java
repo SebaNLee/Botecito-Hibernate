@@ -24,7 +24,7 @@ import org.hibernate.annotations.Type;
 @Builder
 @Entity
 @Table(name = "payment_proof")
-public class PaymentProofOrm {
+public class PaymentProof {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "payment_proof_id_seq")
@@ -33,7 +33,7 @@ public class PaymentProofOrm {
 
     @OneToOne(optional = false)
     @JoinColumn(name = "booking_id", nullable = false, unique = true)
-    private BookingOrm booking;
+    private Booking booking;
 
     @Column(name = "filename", nullable = false, length = 100)
     private String filename;

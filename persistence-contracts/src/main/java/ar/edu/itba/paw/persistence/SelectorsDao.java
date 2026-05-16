@@ -1,11 +1,11 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.entity.ItemTypeOrm;
-import ar.edu.itba.paw.models.entity.LocationOrm;
+import ar.edu.itba.paw.models.entity.ItemType;
+import ar.edu.itba.paw.models.entity.Location;
 import java.util.List;
 
 public interface SelectorsDao {
-    List<LocationOrm> getLocationOptions();
+    List<Location> getLocationOptions();
 
-    List<ItemTypeOrm> getItemTypeOptions();
+    List<ItemType> getItemTypeOptions();
 }

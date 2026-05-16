@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.entity.UsersOrm;
+import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.ProfileForm;
 import java.time.LocalDateTime;
@@ -21,7 +21,7 @@ public class ProfilePresentation {
     private final AuthenticatedUserResolver authenticatedUserResolver;
 
     public ModelAndView profilePasswordRecoveryRequest() {
-        final UsersOrm user = authenticatedUserResolver.currentAuthenticatedUser();
+        final Users user = authenticatedUserResolver.currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -31,7 +31,7 @@ public class ProfilePresentation {
     }
 
     public ModelAndView profile(final boolean edit, final ProfileForm form) {
-        final UsersOrm user = authenticatedUserResolver.currentAuthenticatedUser();
+        final Users user = authenticatedUserResolver.currentAuthenticatedUser();
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -48,7 +48,7 @@ public class ProfilePresentation {
     }
 
     public ModelAndView profileSubmit(final ProfileForm form, final BindingResult errors) {
-        final UsersOrm currentUser = authenticatedUserResolver.currentAuthenticatedUser();
+        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -57,7 +57,7 @@ public class ProfilePresentation {
             return buildProfileView(currentUser, true);
         }
 
-        final UsersOrm updatedUser = userService
+        final Users updatedUser = userService
                 .updateProfile(
                         currentUser.getId(),
                         trim(form.getGivenName()),
@@ -79,7 +79,7 @@ public class ProfilePresentation {
         return new ModelAndView("redirect:/profile?profileAction=updated");
     }
 
-    private ModelAndView buildProfileView(final UsersOrm user, final boolean profileEdit) {
+    private ModelAndView buildProfileView(final Users user, final boolean profileEdit) {
         final ModelAndView mav = new ModelAndView("profile");
         mav.addObject("user", user);
         mav.addObject("memberSinceDisplay", formatMemberSince(user.getCreatedAt()));
@@ -87,7 +87,7 @@ public class ProfilePresentation {
         return mav;
     }
 
-    private static void refreshAuthenticatedPrincipal(final UsersOrm user) {
+    private static void refreshAuthenticatedPrincipal(final Users user) {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || user == null || user.getEmail() == null) {
             return;

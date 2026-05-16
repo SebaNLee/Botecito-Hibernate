@@ -3,7 +3,7 @@ package ar.edu.itba.paw.webapp.presentation;
 import ar.edu.itba.paw.models.dto.MarketplaceCardItem;
 import ar.edu.itba.paw.models.dto.MarketplaceSearchResult;
 import ar.edu.itba.paw.models.dto.PageModel;
-import ar.edu.itba.paw.services.MarketplaceInterface;
+import ar.edu.itba.paw.services.MarketplaceService;
 import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
@@ -18,7 +18,7 @@ public class MarketplacePresentation {
 
     private static final String MESSAGE_PREFIX = "marketplace";
 
-    private final MarketplaceInterface marketplaceInterface;
+    private final MarketplaceService marketplaceInterface;
     private final ToastPresentation toastPresentation;
 
     public ModelAndView marketplace(

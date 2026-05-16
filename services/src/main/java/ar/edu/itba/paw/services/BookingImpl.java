@@ -5,10 +5,10 @@ import static java.util.Map.entry;
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
 import ar.edu.itba.paw.models.dto.OwnerAvailabilityPage;
-import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.BookingOrm;
-import ar.edu.itba.paw.models.entity.BookingStatusEnumOrm;
-import ar.edu.itba.paw.models.entity.PaymentProofOrm;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.BookingStatusEnum;
+import ar.edu.itba.paw.models.entity.PaymentProof;
 import ar.edu.itba.paw.models.exceptions.BookingCollisionException;
 import ar.edu.itba.paw.models.exceptions.IllegalBookingOperationException;
 import ar.edu.itba.paw.models.exceptions.InvalidBookingStatusException;
@@ -38,36 +38,28 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class BookingImpl implements BookingInterface {
+public class BookingImpl implements BookingService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BookingImpl.class);
 
     private final BookingDao bookingDao;
-    private final ItemInterface itemInterface;
+    private final ItemService itemInterface;
 
     private static final int MIN_ANTICIPATION_MINUTES = 120;
 
-    private static final Map<BookingStatusEnumOrm, EnumSet<BookingStatusEnumOrm>> VALID_TRANSITIONS = Map.ofEntries(
+    private static final Map<BookingStatusEnum, EnumSet<BookingStatusEnum>> VALID_TRANSITIONS = Map.ofEntries(
             entry(
-                    BookingStatusEnumOrm.PENDING,
-                    EnumSet.of(
-                            BookingStatusEnumOrm.ACCEPTED,
-                            BookingStatusEnumOrm.REJECTED,
-                            BookingStatusEnumOrm.CANCELLED)),
-            entry(BookingStatusEnumOrm.ACCEPTED, EnumSet.of(BookingStatusEnumOrm.PAID, BookingStatusEnumOrm.CANCELLED)),
+                    BookingStatusEnum.PENDING,
+                    EnumSet.of(BookingStatusEnum.ACCEPTED, BookingStatusEnum.REJECTED, BookingStatusEnum.CANCELLED)),
+            entry(BookingStatusEnum.ACCEPTED, EnumSet.of(BookingStatusEnum.PAID, BookingStatusEnum.CANCELLED)),
             entry(
-                    BookingStatusEnumOrm.PAID,
-                    EnumSet.of(
-                            BookingStatusEnumOrm.REFUSED,
-                            BookingStatusEnumOrm.CONFIRMED,
-                            BookingStatusEnumOrm.CANCELLED)),
-            entry(BookingStatusEnumOrm.REFUSED, EnumSet.of(BookingStatusEnumOrm.PAID, BookingStatusEnumOrm.CANCELLED)),
-            entry(
-                    BookingStatusEnumOrm.CONFIRMED,
-                    EnumSet.of(BookingStatusEnumOrm.FINISHED, BookingStatusEnumOrm.CANCELLED)));
+                    BookingStatusEnum.PAID,
+                    EnumSet.of(BookingStatusEnum.REFUSED, BookingStatusEnum.CONFIRMED, BookingStatusEnum.CANCELLED)),
+            entry(BookingStatusEnum.REFUSED, EnumSet.of(BookingStatusEnum.PAID, BookingStatusEnum.CANCELLED)),
+            entry(BookingStatusEnum.CONFIRMED, EnumSet.of(BookingStatusEnum.FINISHED, BookingStatusEnum.CANCELLED)));
 
-    private static boolean isValidTransition(BookingStatusEnumOrm source, BookingStatusEnumOrm target) {
-        var targets = VALID_TRANSITIONS.getOrDefault(source, EnumSet.noneOf(BookingStatusEnumOrm.class));
+    private static boolean isValidTransition(BookingStatusEnum source, BookingStatusEnum target) {
+        var targets = VALID_TRANSITIONS.getOrDefault(source, EnumSet.noneOf(BookingStatusEnum.class));
         return targets.contains(target);
     }
 
@@ -116,7 +108,7 @@ public class BookingImpl implements BookingInterface {
         final LocalDateTime localStart = LocalDateTime.of(date, startTime);
         final LocalDateTime localEnd = LocalDateTime.of(date, endTime);
 
-        final List<AvailabilityOrm> availabilities = bookingDao.listAvailabilitiesForVersion(versionId);
+        final List<Availability> availabilities = bookingDao.listAvailabilitiesForVersion(versionId);
         final DayOfWeek dayOfWeek = localStart.getDayOfWeek();
         final boolean withinAvailability = availabilities.stream()
                 .anyMatch(a -> a.getWeekday().name().equals(dayOfWeek.name())
@@ -134,7 +126,7 @@ public class BookingImpl implements BookingInterface {
         final Integer ownerId =
                 bookingDao.findOwnerIdForVersion(versionId).orElseThrow(OutsideAvailabilityException::new);
         final boolean isOwner = guestId == ownerId;
-        final BookingStatusEnumOrm status = isOwner ? BookingStatusEnumOrm.CONFIRMED : BookingStatusEnumOrm.PENDING;
+        final BookingStatusEnum status = isOwner ? BookingStatusEnum.CONFIRMED : BookingStatusEnum.PENDING;
 
         return bookingDao
                 .insertBooking(versionId, guestId, utcStart, utcEnd, status, message)
@@ -143,7 +135,7 @@ public class BookingImpl implements BookingInterface {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingOrm> getBookingsForVersion(final int versionId) {
+    public List<Booking> getBookingsForVersion(final int versionId) {
         return bookingDao.getBookingsForVersion(versionId);
     }
 
@@ -159,7 +151,7 @@ public class BookingImpl implements BookingInterface {
             final Integer pageSize,
             final String sortBy) {
         final LocalDate date = parseDate(rawDate);
-        final BookingStatusEnumOrm status = parseStatus(rawStatus);
+        final BookingStatusEnum status = parseStatus(rawStatus);
         return bookingDao.searchBookings(userId, asHost, searchQuery, date, status, page, pageSize, sortBy);
     }
 
@@ -174,12 +166,12 @@ public class BookingImpl implements BookingInterface {
         }
     }
 
-    private static BookingStatusEnumOrm parseStatus(final String raw) {
+    private static BookingStatusEnum parseStatus(final String raw) {
         if (raw == null || raw.isBlank()) {
             return null;
         }
         try {
-            return BookingStatusEnumOrm.valueOf(raw.trim());
+            return BookingStatusEnum.valueOf(raw.trim());
         } catch (final IllegalArgumentException e) {
             throw new InvalidBookingStatusException(raw);
         }
@@ -197,12 +189,12 @@ public class BookingImpl implements BookingInterface {
     @Transactional
     public void acceptBooking(int bookingId, int callerId) {
         verifyAnticipation(bookingId);
-        final BookingOrm booking = bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
-        if (!isValidTransition(booking.getStatus(), BookingStatusEnumOrm.ACCEPTED)) {
+        final Booking booking = bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
+        if (!isValidTransition(booking.getStatus(), BookingStatusEnum.ACCEPTED)) {
             throw new IllegalBookingOperationException();
         }
         bookingDao
-                .updateStatusIncoming(bookingId, callerId, BookingStatusEnumOrm.ACCEPTED)
+                .updateStatusIncoming(bookingId, callerId, BookingStatusEnum.ACCEPTED)
                 .orElseThrow(IllegalBookingOperationException::new);
     }
 
@@ -210,29 +202,29 @@ public class BookingImpl implements BookingInterface {
     @Transactional
     public void rejectBooking(int bookingId, int callerId) {
         verifyAnticipation(bookingId);
-        final BookingOrm booking = bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
-        if (!isValidTransition(booking.getStatus(), BookingStatusEnumOrm.REJECTED)) {
+        final Booking booking = bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
+        if (!isValidTransition(booking.getStatus(), BookingStatusEnum.REJECTED)) {
             throw new IllegalBookingOperationException();
         }
         bookingDao
-                .updateStatusIncoming(bookingId, callerId, BookingStatusEnumOrm.REJECTED)
+                .updateStatusIncoming(bookingId, callerId, BookingStatusEnum.REJECTED)
                 .orElseThrow(IllegalBookingOperationException::new);
     }
 
     @Override
     @Transactional
-    public void submitPayment(final int bookingId, final PaymentProofOrm payment, final int callerId) {
+    public void submitPayment(final int bookingId, final PaymentProof payment, final int callerId) {
         if (payment == null) return;
 
         verifyAnticipation(bookingId);
 
-        final BookingOrm booking = bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
-        if (!isValidTransition(booking.getStatus(), BookingStatusEnumOrm.PAID)) {
+        final Booking booking = bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
+        if (!isValidTransition(booking.getStatus(), BookingStatusEnum.PAID)) {
             throw new IllegalBookingOperationException();
         }
 
         bookingDao
-                .updateStatusOutgoing(bookingId, callerId, BookingStatusEnumOrm.PAID)
+                .updateStatusOutgoing(bookingId, callerId, BookingStatusEnum.PAID)
                 .orElseThrow(IllegalBookingOperationException::new);
 
         final LocalDateTime now = currentDateTime();
@@ -246,7 +238,7 @@ public class BookingImpl implements BookingInterface {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<PaymentProofOrm> getPaymentProofForParticipant(final int bookingId, final int callerId) {
+    public Optional<PaymentProof> getPaymentProofForParticipant(final int bookingId, final int callerId) {
         return bookingDao.findPaymentProofForParticipant(bookingId, callerId);
     }
 
@@ -254,12 +246,12 @@ public class BookingImpl implements BookingInterface {
     @Transactional
     public void confirmPayment(int bookingId, int callerId) {
         verifyAnticipation(bookingId);
-        final BookingOrm booking = bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
-        if (!isValidTransition(booking.getStatus(), BookingStatusEnumOrm.CONFIRMED)) {
+        final Booking booking = bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
+        if (!isValidTransition(booking.getStatus(), BookingStatusEnum.CONFIRMED)) {
             throw new IllegalBookingOperationException();
         }
         bookingDao
-                .updateStatusIncoming(bookingId, callerId, BookingStatusEnumOrm.CONFIRMED)
+                .updateStatusIncoming(bookingId, callerId, BookingStatusEnum.CONFIRMED)
                 .orElseThrow(IllegalBookingOperationException::new);
     }
 
@@ -267,13 +259,13 @@ public class BookingImpl implements BookingInterface {
     @Transactional
     public void rejectPayment(int bookingId, int callerId, String reason) {
         verifyAnticipation(bookingId);
-        final BookingOrm booking = bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
-        if (!isValidTransition(booking.getStatus(), BookingStatusEnumOrm.REFUSED)) {
+        final Booking booking = bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
+        if (!isValidTransition(booking.getStatus(), BookingStatusEnum.REFUSED)) {
             throw new IllegalBookingOperationException();
         }
         var now = currentDateTime();
         bookingDao
-                .updateStatusIncoming(bookingId, callerId, BookingStatusEnumOrm.REFUSED)
+                .updateStatusIncoming(bookingId, callerId, BookingStatusEnum.REFUSED)
                 .orElseThrow(IllegalBookingOperationException::new);
         bookingDao.refusePayment(bookingId, reason, now).orElseThrow(IllegalBookingOperationException::new);
     }
@@ -281,12 +273,12 @@ public class BookingImpl implements BookingInterface {
     @Override
     @Transactional
     public void cancelBooking(int bookingId, int callerId) {
-        final BookingOrm booking = bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
-        if (!isValidTransition(booking.getStatus(), BookingStatusEnumOrm.CANCELLED)) {
+        final Booking booking = bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
+        if (!isValidTransition(booking.getStatus(), BookingStatusEnum.CANCELLED)) {
             throw new IllegalBookingOperationException();
         }
         bookingDao
-                .updateStatusOutgoing(bookingId, callerId, BookingStatusEnumOrm.CANCELLED)
+                .updateStatusOutgoing(bookingId, callerId, BookingStatusEnum.CANCELLED)
                 .orElseThrow(IllegalBookingOperationException::new);
     }
 
@@ -302,14 +294,14 @@ public class BookingImpl implements BookingInterface {
         final int versionId = item.getVersionId();
 
         final String timezone = bookingDao.findVersionTimezone(versionId).orElse("UTC");
-        final List<AvailabilityOrm> availabilities = bookingDao.listAvailabilitiesForVersion(versionId);
-        final List<BookingOrm> bookings = bookingDao.getBookingsForVersion(versionId);
+        final List<Availability> availabilities = bookingDao.listAvailabilitiesForVersion(versionId);
+        final List<Booking> bookings = bookingDao.getBookingsForVersion(versionId);
 
         final List<String> offeredDates = buildOfferedDates(availabilities, timezone);
-        final List<BookingOrm> selfBlocks = bookings.stream()
+        final List<Booking> selfBlocks = bookings.stream()
                 .filter(b -> b.getGuest() != null && b.getGuest().getId().equals(ownerId))
-                .filter(b -> b.getStatus() == BookingStatusEnumOrm.CONFIRMED
-                        || b.getStatus() == BookingStatusEnumOrm.ACCEPTED)
+                .filter(b ->
+                        b.getStatus() == BookingStatusEnum.CONFIRMED || b.getStatus() == BookingStatusEnum.ACCEPTED)
                 .toList();
         final List<String> blockedDates = selfBlocks.stream()
                 .map(b -> b.getStart().atZone(ZoneId.of(timezone)).toLocalDate().toString())
@@ -368,7 +360,7 @@ public class BookingImpl implements BookingInterface {
                 endOdt.withOffsetSameInstant(ZoneOffset.UTC).toLocalDateTime();
 
         final Optional<Integer> id =
-                bookingDao.insertBooking(versionId, ownerId, utcStart, utcEnd, BookingStatusEnumOrm.CONFIRMED, null);
+                bookingDao.insertBooking(versionId, ownerId, utcStart, utcEnd, BookingStatusEnum.CONFIRMED, null);
         if (id.isEmpty()) {
             return BlockSlotOutcome.OVERLAP;
         }
@@ -378,18 +370,18 @@ public class BookingImpl implements BookingInterface {
     @Override
     @Transactional
     public boolean removeOwnerSelfBlock(final int bookingId, final int ownerId) {
-        final Optional<BookingOrm> bookingOpt = bookingDao.findById(bookingId);
+        final Optional<Booking> bookingOpt = bookingDao.findById(bookingId);
         if (bookingOpt.isEmpty()) {
             return false;
         }
-        final BookingOrm booking = bookingOpt.get();
+        final Booking booking = bookingOpt.get();
         if (booking.getGuest() == null || !booking.getGuest().getId().equals(ownerId)) {
             return false;
         }
         return bookingDao.deleteOwnerSelfBlock(bookingId, ownerId);
     }
 
-    private static List<String> buildOfferedDates(final List<AvailabilityOrm> availabilities, final String timezone) {
+    private static List<String> buildOfferedDates(final List<Availability> availabilities, final String timezone) {
         final ZoneId zone = ZoneId.of(timezone);
         final LocalDate today = LocalDate.now(zone);
         final LocalDate end = today.plusDays(60);

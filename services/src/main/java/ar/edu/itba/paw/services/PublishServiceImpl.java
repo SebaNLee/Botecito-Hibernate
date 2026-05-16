@@ -2,9 +2,9 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.AvailabilityWindow;
 import ar.edu.itba.paw.models.dto.ImageUpload;
-import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.models.entity.VersionOrm;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.models.mail.MailRecipientModel;
 import ar.edu.itba.paw.models.mail.PublishConfirmationMailModel;
 import ar.edu.itba.paw.persistence.PublishDao;
@@ -40,7 +40,7 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     @Transactional
-    public Optional<VersionOrm> create(
+    public Optional<Version> create(
             final int ownerId,
             final int typeId,
             final String title,
@@ -70,7 +70,7 @@ public class PublishServiceImpl implements PublishService {
                 filteredAvailabilities,
                 filteredImages);
 
-        final Optional<VersionOrm> created = publishDao.findById(itemId);
+        final Optional<Version> created = publishDao.findById(itemId);
         if (created.isPresent()) {
             sendConfirmationEmail(created.get());
         }
@@ -79,13 +79,13 @@ public class PublishServiceImpl implements PublishService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<VersionOrm> findById(final int itemId) {
+    public Optional<Version> findById(final int itemId) {
         return publishDao.findById(itemId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<AvailabilityOrm> listAvailabilities(final int itemId) {
+    public List<Availability> listAvailabilities(final int itemId) {
         return publishDao.listAvailabilities(itemId);
     }
 
@@ -143,9 +143,9 @@ public class PublishServiceImpl implements PublishService {
         return errors;
     }
 
-    private void sendConfirmationEmail(final VersionOrm version) {
+    private void sendConfirmationEmail(final Version version) {
         final int ownerId = version.getItem().getHost().getId();
-        final Optional<UsersOrm> owner = userService.findById(ownerId);
+        final Optional<Users> owner = userService.findById(ownerId);
         if (owner.isEmpty()) {
             LOGGER.warn("Cannot send confirmation email: user {} not found", ownerId);
             return;

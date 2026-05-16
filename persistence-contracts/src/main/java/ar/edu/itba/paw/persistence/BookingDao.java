@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
-import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.BookingOrm;
-import ar.edu.itba.paw.models.entity.BookingStatusEnumOrm;
-import ar.edu.itba.paw.models.entity.PaymentProofOrm;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.BookingStatusEnum;
+import ar.edu.itba.paw.models.entity.PaymentProof;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,12 +17,12 @@ public interface BookingDao {
             int guestId,
             LocalDateTime utcStart,
             LocalDateTime utcEnd,
-            BookingStatusEnumOrm status,
+            BookingStatusEnum status,
             String msg);
 
-    List<BookingOrm> getBookingsForVersion(int versionId);
+    List<Booking> getBookingsForVersion(int versionId);
 
-    Optional<BookingOrm> findById(int bookingId);
+    Optional<Booking> findById(int bookingId);
 
     Optional<Integer> findOwnerIdForBookingId(int bookingId);
 
@@ -31,20 +31,20 @@ public interface BookingDao {
             boolean asHost,
             String searchQuery,
             LocalDate date,
-            BookingStatusEnumOrm status,
+            BookingStatusEnum status,
             Integer page,
             Integer pageSize,
             String sortBy);
 
-    Optional<BookingOrm> updateStatusIncoming(int id, int callerId, BookingStatusEnumOrm status);
+    Optional<Booking> updateStatusIncoming(int id, int callerId, BookingStatusEnum status);
 
-    Optional<BookingOrm> updateStatusOutgoing(int id, int callerId, BookingStatusEnumOrm status);
+    Optional<Booking> updateStatusOutgoing(int id, int callerId, BookingStatusEnum status);
 
-    Optional<PaymentProofOrm> uploadPayment(PaymentProofOrm paymentProof);
+    Optional<PaymentProof> uploadPayment(PaymentProof paymentProof);
 
-    Optional<PaymentProofOrm> findPaymentProofForParticipant(int bookingId, int userId);
+    Optional<PaymentProof> findPaymentProofForParticipant(int bookingId, int userId);
 
-    Optional<BookingOrm> refusePayment(int bookingId, String message, LocalDateTime refuseTime);
+    Optional<Booking> refusePayment(int bookingId, String message, LocalDateTime refuseTime);
 
     void finalizeBookingsBefore(LocalDateTime maxEndTime);
 
@@ -56,7 +56,7 @@ public interface BookingDao {
 
     Optional<Integer> findOwnerIdForVersion(int versionId);
 
-    List<AvailabilityOrm> listAvailabilitiesForVersion(int versionId);
+    List<Availability> listAvailabilitiesForVersion(int versionId);
 
     boolean deleteOwnerSelfBlock(int bookingId, int ownerId);
 }

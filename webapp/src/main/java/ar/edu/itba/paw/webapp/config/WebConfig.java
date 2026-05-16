@@ -7,13 +7,13 @@ import java.util.Properties;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
+import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
-import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.lang.NonNull;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.JpaVendorAdapter;
@@ -100,7 +100,7 @@ public class WebConfig implements WebMvcConfigurer {
     @DependsOn("flyway")
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(final DataSource dataSource) {
         final LocalContainerEntityManagerFactoryBean factoryBean = new LocalContainerEntityManagerFactoryBean();
-        factoryBean.setPackagesToScan("ar.edu.itba.paw.models", "ar.edu.itba.paw.persistence.orm", "ar.edu.itba.paw.persistence");
+        factoryBean.setPackagesToScan("ar.edu.itba.paw.models", "ar.edu.itba.paw.persistence");
         factoryBean.setDataSource(dataSource);
 
         final JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();

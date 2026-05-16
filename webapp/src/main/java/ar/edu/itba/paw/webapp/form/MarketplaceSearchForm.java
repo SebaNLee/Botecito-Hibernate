@@ -14,7 +14,7 @@ import org.springframework.format.annotation.DateTimeFormat.ISO;
 
 /**
  * Query parameters for GET {@code /marketplace}. Field names and types mirror
- * {@link ar.edu.itba.paw.services.MarketplaceInterface}.
+ * {@link ar.edu.itba.paw.services.MarketplaceService}.
  */
 @Getter
 @Setter

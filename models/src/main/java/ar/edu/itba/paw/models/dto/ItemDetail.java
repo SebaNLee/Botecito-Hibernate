@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.models.dto;
 
-import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.BookingOrm;
-import ar.edu.itba.paw.models.entity.ItemStatusEnumOrm;
-import ar.edu.itba.paw.models.entity.ReviewOrm;
-import ar.edu.itba.paw.models.entity.VersionOrm;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.ItemStatusEnum;
+import ar.edu.itba.paw.models.entity.Review;
+import ar.edu.itba.paw.models.entity.Version;
 import java.math.BigDecimal;
 import java.util.List;
 import lombok.Builder;
@@ -22,7 +22,7 @@ public class ItemDetail {
     public static class VersionDetail {
         int itemId;
         int hostId;
-        ItemStatusEnumOrm status;
+        ItemStatusEnum status;
         long versionId;
         String title;
         String description;
@@ -36,10 +36,10 @@ public class ItemDetail {
         double averageRating;
         int totalReviews;
         List<String> images;
-        List<BookingOrm> bookings;
-        List<ReviewOrm> reviews;
+        List<Booking> bookings;
+        List<Review> reviews;
         String versionTimezone;
-        List<AvailabilityOrm> availabilityWindows;
-        VersionOrm version;
+        List<Availability> availabilityWindows;
+        Version version;
     }
 }

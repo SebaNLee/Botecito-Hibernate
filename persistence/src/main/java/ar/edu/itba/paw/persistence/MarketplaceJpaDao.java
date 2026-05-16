@@ -3,12 +3,12 @@ package ar.edu.itba.paw.persistence;
 import ar.edu.itba.paw.models.dto.MarketplaceCardItem;
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
 import ar.edu.itba.paw.models.dto.MarketplaceSearchResult;
-import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.BookingOrm;
-import ar.edu.itba.paw.models.entity.ItemStatusEnumOrm;
-import ar.edu.itba.paw.models.entity.TargetEnumOrm;
-import ar.edu.itba.paw.models.entity.WeekdayEnumOrm;
-import ar.edu.itba.paw.persistence.orm.projections.MarketplaceRowOrm;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.ItemStatusEnum;
+import ar.edu.itba.paw.models.entity.TargetEnum;
+import ar.edu.itba.paw.models.entity.WeekdayEnum;
+import ar.edu.itba.paw.persistence.projections.MarketplaceRow;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,25 +24,25 @@ public class MarketplaceJpaDao implements MarketplaceDao {
     private static final int DEFAULT_PAGE_SIZE = 12;
 
     private static final String MARKETPLACE_LISTING =
-            "SELECT NEW ar.edu.itba.paw.persistence.orm.projections.MarketplaceRowOrm("
+            "SELECT NEW ar.edu.itba.paw.persistence.projections.MarketplaceRow("
                     + "i.id, i.host.id, v.id,"
                     + " v.title, v.description, v.price, v.capacity, v.weight, v.difficulty,"
                     + " v.location.id, v.location.name, v.type.name, "
-                    + "(SELECT MIN(m.image.id) FROM MediaOrm m"
+                    + "(SELECT MIN(m.image.id) FROM Media m"
                     + " WHERE m.version = v AND m.id.index = ("
-                    + "   SELECT MIN(m2.id.index) FROM MediaOrm m2 WHERE m2.version = v"
+                    + "   SELECT MIN(m2.id.index) FROM Media m2 WHERE m2.version = v"
                     + " )),"
-                    + "(SELECT COALESCE(AVG(r.rating), 0) FROM ReviewOrm r"
+                    + "(SELECT COALESCE(AVG(r.rating), 0) FROM Review r"
                     + " WHERE r.targetType = :itemTargetType AND r.booking.version.item = i),"
-                    + "(SELECT COUNT(r) FROM ReviewOrm r"
+                    + "(SELECT COUNT(r) FROM Review r"
                     + " WHERE r.targetType = :itemTargetType AND r.booking.version.item = i)"
                     + ") "
-                    + "FROM ItemOrm i JOIN VersionOrm v ON v.item = i"
-                    + "  AND v.id = (SELECT MAX(v2.id) FROM VersionOrm v2 WHERE v2.item = i)";
+                    + "FROM Item i JOIN Version v ON v.item = i"
+                    + "  AND v.id = (SELECT MAX(v2.id) FROM Version v2 WHERE v2.item = i)";
 
-    private static final String ITEM_LISTING_COUNT = "SELECT COUNT(i) FROM ItemOrm i"
-            + " JOIN VersionOrm v ON v.item = i"
-            + "  AND v.id = (SELECT MAX(v2.id) FROM VersionOrm v2 WHERE v2.item = i)";
+    private static final String ITEM_LISTING_COUNT = "SELECT COUNT(i) FROM Item i"
+            + " JOIN Version v ON v.item = i"
+            + "  AND v.id = (SELECT MAX(v2.id) FROM Version v2 WHERE v2.item = i)";
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -52,16 +52,16 @@ public class MarketplaceJpaDao implements MarketplaceDao {
         final Map<String, Object> params = new HashMap<>();
         final int pageSize = resolvePageSize(query);
         final int offset = (resolvePage(query) - 1) * pageSize;
-        params.put("itemTargetType", TargetEnumOrm.ITEM);
+        params.put("itemTargetType", TargetEnum.ITEM);
 
         final String hql = MARKETPLACE_LISTING + whereClause(query, params) + orderBy(query);
-        final TypedQuery<MarketplaceRowOrm> queryResult = entityManager.createQuery(hql, MarketplaceRowOrm.class);
+        final TypedQuery<MarketplaceRow> queryResult = entityManager.createQuery(hql, MarketplaceRow.class);
         bindParams(queryResult, params);
         queryResult.setFirstResult(offset);
         queryResult.setMaxResults(pageSize);
 
         final List<MarketplaceCardItem> items = queryResult.getResultList().stream()
-                .map(MarketplaceRowOrm::toCardItem)
+                .map(MarketplaceRow::toCardItem)
                 .toList();
         return new MarketplaceSearchResult(items, countMatching(query));
     }
@@ -82,7 +82,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
 
     private static String whereClause(final MarketplaceQueryModel query, final Map<String, Object> params) {
         final StringBuilder sql = new StringBuilder(" WHERE i.status = :activeStatus");
-        params.put("activeStatus", ItemStatusEnumOrm.ACTIVE);
+        params.put("activeStatus", ItemStatusEnum.ACTIVE);
         if (query == null) {
             return sql.toString();
         }
@@ -111,10 +111,9 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             params.put("difficulty", query.getDifficulty());
         }
         if (query.getMinAvgRating() != null) {
-            sql.append(
-                    " AND (SELECT COALESCE(AVG(rm.rating), 0) FROM ReviewOrm rm WHERE rm.targetType = :itemTargetType"
-                            + " AND rm.booking.version.item = i) >= :minAvgRating");
-            params.put("itemTargetType", TargetEnumOrm.ITEM);
+            sql.append(" AND (SELECT COALESCE(AVG(rm.rating), 0) FROM Review rm WHERE rm.targetType = :itemTargetType"
+                    + " AND rm.booking.version.item = i) >= :minAvgRating");
+            params.put("itemTargetType", TargetEnum.ITEM);
             params.put("minAvgRating", query.getMinAvgRating());
         }
         appendAvailabilityFilter(query, sql, params);
@@ -126,10 +125,10 @@ public class MarketplaceJpaDao implements MarketplaceDao {
         if (query.getWeekday() == null && query.getStartTime() == null && query.getEndTime() == null) {
             return;
         }
-        sql.append(" AND EXISTS (SELECT 1 FROM AvailabilityOrm af WHERE af.version = v");
+        sql.append(" AND EXISTS (SELECT 1 FROM Availability af WHERE af.version = v");
         if (query.getWeekday() != null) {
             sql.append(" AND af.weekday = :weekday");
-            params.put("weekday", WeekdayEnumOrm.valueOf(query.getWeekday().name()));
+            params.put("weekday", WeekdayEnum.valueOf(query.getWeekday().name()));
         }
         if (query.getStartTime() != null) {
             sql.append(" AND af.startTime <= :startTime");
@@ -189,18 +188,18 @@ public class MarketplaceJpaDao implements MarketplaceDao {
     }
 
     @Override
-    public List<AvailabilityOrm> getAllAvailabilities() {
+    public List<Availability> getAllAvailabilities() {
         return entityManager
-                .createQuery("FROM AvailabilityOrm", AvailabilityOrm.class)
+                .createQuery("FROM Availability", Availability.class)
                 .getResultList();
     }
 
     @Override
-    public List<BookingOrm> getAllBlockingBookings() {
+    public List<Booking> getAllBlockingBookings() {
         return entityManager
                 .createQuery(
-                        "SELECT b FROM BookingOrm b WHERE b.guest IS NOT NULL AND b.guest.id <> b.version.item.host.id",
-                        BookingOrm.class)
+                        "SELECT b FROM Booking b WHERE b.guest IS NOT NULL AND b.guest.id <> b.version.item.host.id",
+                        Booking.class)
                 .getResultList();
     }
 

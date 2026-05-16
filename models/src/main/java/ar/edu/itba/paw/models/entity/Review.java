@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.models.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -11,44 +11,44 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OrderBy;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.Type;
 
-@AllArgsConstructor
-@Builder
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "item")
-public class ItemOrm {
+@Table(name = "review")
+public class Review {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "new_item_id_seq")
-    @SequenceGenerator(name = "new_item_id_seq", sequenceName = "new_item_id_seq", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "new_review_id_seq")
+    @SequenceGenerator(name = "new_review_id_seq", sequenceName = "new_review_id_seq", allocationSize = 1)
     private Integer id;
 
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "booking_id", nullable = false)
+    private Booking booking;
+
     @ManyToOne
-    @JoinColumn(name = "host_id")
-    private UsersOrm host;
+    @JoinColumn(name = "sender_id")
+    private Users sender;
 
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")
-    @Column(name = "status", nullable = false, columnDefinition = "item_status_enum")
-    private ItemStatusEnumOrm status;
+    @Column(name = "target_type", nullable = false, columnDefinition = "target_enum")
+    private TargetEnum targetType;
+
+    @Column(name = "rating", nullable = false, precision = 2, scale = 1)
+    private BigDecimal rating;
+
+    @Column(name = "comment", length = 255)
+    private String comment;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-
-    @OneToMany(mappedBy = "item")
-    @OrderBy("id DESC")
-    private List<VersionOrm> versions;
 }

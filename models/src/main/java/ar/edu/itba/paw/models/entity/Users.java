@@ -17,7 +17,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(name = "users")
-public class UsersOrm {
+public class Users {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "new_users_id_seq")

@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class ItemImpl implements ItemInterface {
+public class ItemImpl implements ItemService {
 
     private final ItemDao itemDao;
 
@@ -34,20 +34,6 @@ public class ItemImpl implements ItemInterface {
 
     @Override
     @Transactional
-    public boolean updateMyBoatsItem(
-            final int itemId,
-            final int ownerId,
-            final String title,
-            final String description,
-            final int pricePerHour,
-            final Integer difficultyLevel,
-            final int locationOptionId) {
-        return itemDao.updateMyBoatsItem(
-                itemId, ownerId, title, description, pricePerHour, difficultyLevel, locationOptionId);
-    }
-
-    @Override
-    @Transactional
     public boolean deleteMyBoatsItem(final int itemId, final int ownerId) {
         return itemDao.deleteMyBoatsItem(itemId, ownerId);
     }
@@ -64,13 +50,6 @@ public class ItemImpl implements ItemInterface {
             final int locationOptionId) {
         return itemDao.createPublicationVersion(
                 itemId, ownerId, title, description, pricePerHour, difficultyLevel, locationOptionId);
-    }
-
-    @Override
-    @Transactional
-    // TODO temp fix for edit item page (should use PublishForm in the futuro)
-    public boolean replaceVersionPrimaryImage(final int versionId, final byte[] imageData) {
-        return itemDao.replaceVersionPrimaryImage(versionId, imageData);
     }
 
     @Override

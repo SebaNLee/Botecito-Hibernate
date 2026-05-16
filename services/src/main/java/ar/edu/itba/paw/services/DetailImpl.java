@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
-public final class DetailImpl implements DetailInterface {
+public final class DetailImpl implements DetailService {
     private final DetailDao detailDao;
 
     @Override

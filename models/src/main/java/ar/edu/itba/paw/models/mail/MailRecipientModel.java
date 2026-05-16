@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.models.mail;
 
 import ar.edu.itba.paw.models.dto.PreferredLanguageModel;
-import ar.edu.itba.paw.models.entity.UsersOrm;
+import ar.edu.itba.paw.models.entity.Users;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,7 +13,7 @@ public class MailRecipientModel {
     private String displayName;
     private PreferredLanguageModel preferredLanguage = PreferredLanguageModel.ES;
 
-    public static MailRecipientModel fromUser(final UsersOrm user) {
+    public static MailRecipientModel fromUser(final Users user) {
         final MailRecipientModel recipient = new MailRecipientModel();
         if (user == null) {
             return recipient;

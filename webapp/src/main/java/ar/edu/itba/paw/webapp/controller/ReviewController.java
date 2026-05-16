@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.services.ReviewInterface;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.webapp.form.ReviewForm;
 import ar.edu.itba.paw.webapp.presentation.AuthenticatedUserResolver;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
@@ -21,7 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class ReviewController {
 
-    private final ReviewInterface reviewInterface;
+    private final ReviewService reviewInterface;
     private final AuthenticatedUserResolver authenticatedUserResolver;
 
     @RequestMapping(value = "/reviews/booking/{bookingId:[0-9]+}", method = RequestMethod.POST)
@@ -32,7 +32,7 @@ public class ReviewController {
             @RequestParam(value = "returnTo", required = false, defaultValue = "dashboard") final String returnTo,
             @RequestParam(value = "itemId", required = false) final Integer itemId,
             final RedirectAttributes redirectAttributes) {
-        final UsersOrm currentUser = authenticatedUserResolver.currentAuthenticatedUser();
+        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }

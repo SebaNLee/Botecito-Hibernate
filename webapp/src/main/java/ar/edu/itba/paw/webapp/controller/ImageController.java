@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.services.ItemInterface;
+import ar.edu.itba.paw.services.ItemService;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
@@ -17,7 +17,7 @@ public class ImageController {
 
     private static final Duration IMAGE_CACHE_MAX_AGE = Duration.ofHours(1);
 
-    private final ItemInterface itemInterface;
+    private final ItemService itemInterface;
 
     @RequestMapping("/{id:[0-9]+}")
     public ResponseEntity<byte[]> imageById(@PathVariable("id") final int imageId) {

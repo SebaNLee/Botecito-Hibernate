@@ -1,14 +1,13 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.entity.ReviewOrm;
-import ar.edu.itba.paw.models.entity.TargetEnumOrm;
+import ar.edu.itba.paw.models.entity.Review;
+import ar.edu.itba.paw.models.entity.TargetEnum;
 import java.util.Optional;
 
 public interface ReviewDao {
 
-    Optional<ReviewOrm> createReview(
-            int bookingId, int senderUserId, TargetEnumOrm targetType, double rating, String reviewComment);
+    Optional<Review> createReview(
+            int bookingId, int senderUserId, TargetEnum targetType, double rating, String reviewComment);
 
-    Optional<ReviewOrm> findReviewByBookingSenderAndTargetType(
-            int bookingId, int senderUserId, TargetEnumOrm targetType);
+    Optional<Review> findReviewByBookingSenderAndTargetType(int bookingId, int senderUserId, TargetEnum targetType);
 }

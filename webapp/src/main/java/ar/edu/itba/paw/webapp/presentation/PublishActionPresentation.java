@@ -1,11 +1,11 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
-import ar.edu.itba.paw.models.entity.BookingOrm;
-import ar.edu.itba.paw.models.entity.BookingStatusEnumOrm;
-import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.services.BookingInterface;
-import ar.edu.itba.paw.services.ItemInterface;
+import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.BookingStatusEnum;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.services.BookingService;
+import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
@@ -30,13 +30,13 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class PublishActionPresentation {
 
-    private final ItemInterface itemInterface;
-    private final BookingInterface bookingInterface;
+    private final ItemService itemInterface;
+    private final BookingService bookingInterface;
     private final UserService userService;
 
     public ModelAndView editPublicationForm(
             final int itemId, final HttpServletRequest request, final RedirectAttributes redirectAttributes) {
-        final UsersOrm currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -67,7 +67,7 @@ public class PublishActionPresentation {
             final BindingResult errors,
             final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
-        final UsersOrm currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -102,7 +102,7 @@ public class PublishActionPresentation {
             return editPublicationModelAndView(item.get(), request);
         }
 
-        final List<BookingOrm> activeBookings = bookingInterface.getBookingsForVersion(versionId).stream()
+        final List<Booking> activeBookings = bookingInterface.getBookingsForVersion(versionId).stream()
                 .filter(b -> {
                     if (b.getStatus() == null) return false;
                     final String name = b.getStatus().name();
@@ -140,7 +140,7 @@ public class PublishActionPresentation {
     }
 
     public ModelAndView disablePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final UsersOrm currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -156,7 +156,7 @@ public class PublishActionPresentation {
     }
 
     public ModelAndView enablePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final UsersOrm currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -172,7 +172,7 @@ public class PublishActionPresentation {
     }
 
     public ModelAndView hardDeletePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final UsersOrm currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -200,7 +200,7 @@ public class PublishActionPresentation {
         final ModelAndView mav = new ModelAndView("edit-publication");
 
         final Integer versionId = item.getVersionId();
-        final List<BookingOrm> activeBookings = versionId == null
+        final List<Booking> activeBookings = versionId == null
                 ? List.of()
                 : bookingInterface.getBookingsForVersion(versionId).stream()
                         .filter(b -> {
@@ -217,7 +217,7 @@ public class PublishActionPresentation {
         final Map<Integer, String> statusCodes = new LinkedHashMap<>();
         final Integer pricePerHour = item.getPrice();
 
-        for (final BookingOrm booking : activeBookings) {
+        for (final Booking booking : activeBookings) {
             final int id = booking.getId();
             final int guestId = booking.getGuest() != null ? booking.getGuest().getId() : 0;
 
@@ -278,7 +278,7 @@ public class PublishActionPresentation {
             DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(Locale.ENGLISH);
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
-    private static String resolveStatusMessageCode(final BookingStatusEnumOrm status) {
+    private static String resolveStatusMessageCode(final BookingStatusEnum status) {
         if (status == null) {
             return "profile.sentBookings.status.unknown";
         }
@@ -322,8 +322,8 @@ public class PublishActionPresentation {
     }
 
     private static boolean allPendingBookingsHaveDecisions(
-            final List<BookingOrm> activeBookings, final HttpServletRequest request) {
-        for (final BookingOrm booking : activeBookings) {
+            final List<Booking> activeBookings, final HttpServletRequest request) {
+        for (final Booking booking : activeBookings) {
             final String statusName =
                     booking.getStatus() != null ? booking.getStatus().name() : "";
             if (!"PENDING".equals(statusName)) {
@@ -338,8 +338,8 @@ public class PublishActionPresentation {
     }
 
     private void resolvePendingBookings(
-            final List<BookingOrm> activeBookings, final int ownerId, final HttpServletRequest request) {
-        for (final BookingOrm booking : activeBookings) {
+            final List<Booking> activeBookings, final int ownerId, final HttpServletRequest request) {
+        for (final Booking booking : activeBookings) {
             final String statusName =
                     booking.getStatus() != null ? booking.getStatus().name() : "";
             if (!"PENDING".equals(statusName)) {
@@ -367,7 +367,7 @@ public class PublishActionPresentation {
         }
     }
 
-    private UsersOrm currentAuthenticatedUser() {
+    private Users currentAuthenticatedUser() {
         final var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             return null;

@@ -26,23 +26,14 @@ public class ReviewJpaDao implements ReviewDao {
             final TargetEnum targetType,
             final double rating,
             final String reviewComment) {
-        final Booking booking = entityManager.find(Booking.class, bookingId);
-        if (booking == null) {
-            return Optional.empty();
-        }
-        final Users sender = entityManager.find(Users.class, senderUserId);
-        if (sender == null) {
-            return Optional.empty();
-        }
         final Review orm = new Review();
-        orm.setBooking(booking);
-        orm.setSender(sender);
+        orm.setBooking(entityManager.getReference(Booking.class, bookingId));
+        orm.setSender(entityManager.getReference(Users.class, senderUserId));
         orm.setTargetType(targetType);
         orm.setRating(BigDecimal.valueOf(rating).setScale(1, RoundingMode.HALF_UP));
         orm.setComment(reviewComment);
         orm.setCreatedAt(LocalDateTime.now());
         entityManager.persist(orm);
-        entityManager.flush();
         return Optional.of(orm);
     }
 

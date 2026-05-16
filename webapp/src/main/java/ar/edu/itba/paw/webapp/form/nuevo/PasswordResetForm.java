@@ -22,13 +22,9 @@ public class PasswordResetForm {
 
     @AssertTrue(message = "{passwordRecovery.reset.validation.password.mismatch}")
     public boolean isPasswordConfirmationValid() {
-        if (isBlank(password) || isBlank(confirmPassword)) {
+        if (password == null || password.isBlank() || confirmPassword == null || confirmPassword.isBlank()) {
             return true;
         }
         return password.equals(confirmPassword);
-    }
-
-    private static boolean isBlank(final String value) {
-        return value == null || value.isBlank();
     }
 }

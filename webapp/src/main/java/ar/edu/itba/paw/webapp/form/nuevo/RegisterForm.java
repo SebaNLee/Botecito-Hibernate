@@ -1,6 +1,5 @@
 package ar.edu.itba.paw.webapp.form.nuevo;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
@@ -36,17 +35,12 @@ public class RegisterForm {
     private String paymentAlias;
 
     private String preferredLanguage;
-    private HttpServletRequest request;
 
     @AssertTrue(message = "{register.validation.password.mismatch}")
     public boolean isPasswordConfirmationValid() {
-        if (isBlank(password) || isBlank(confirmPassword)) {
+        if (password == null || password.isBlank() || confirmPassword == null || confirmPassword.isBlank()) {
             return true;
         }
         return password.equals(confirmPassword);
-    }
-
-    private static boolean isBlank(final String value) {
-        return value == null || value.isBlank();
     }
 }

@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.webapp.util;
 
-import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.BookingOrm;
-import ar.edu.itba.paw.models.entity.BookingStatusEnumOrm;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -35,11 +35,11 @@ public final class DetailAvailabilityPicker {
 
     private static final int CLEARANCE_MINUTES = 30;
 
-    private static final Set<BookingStatusEnumOrm> BLOCKING_STATUSES = EnumSet.of(
-            BookingStatusEnumOrm.PENDING,
-            BookingStatusEnumOrm.ACCEPTED,
-            BookingStatusEnumOrm.PAID,
-            BookingStatusEnumOrm.CONFIRMED);
+    private static final Set<BookingStatusEnum> BLOCKING_STATUSES = EnumSet.of(
+            BookingStatusEnum.PENDING,
+            BookingStatusEnum.ACCEPTED,
+            BookingStatusEnum.PAID,
+            BookingStatusEnum.CONFIRMED);
 
     private static final DateTimeFormatter INPUT_DATE_FORMAT = AvailabilityPickerBuilder.INPUT_DATE_FORMAT;
     private static final DateTimeFormatter RESERVATION_TIME_FORMAT = AvailabilityPickerBuilder.RESERVATION_TIME_FORMAT;
@@ -70,8 +70,8 @@ public final class DetailAvailabilityPicker {
     }
 
     public static AvailabilityPickerBuilder.Data build(
-            final List<AvailabilityOrm> availabilityWindows,
-            final List<BookingOrm> bookings,
+            final List<Availability> availabilityWindows,
+            final List<Booking> bookings,
             final String versionTimezone) {
         if (availabilityWindows == null || availabilityWindows.isEmpty()) {
             return new AvailabilityPickerBuilder.Data(List.of(), List.of(), Map.of(), Map.of());
@@ -80,7 +80,7 @@ public final class DetailAvailabilityPicker {
         final LocalDate rangeStart = listingCalendarToday(versionTimezone);
         final LocalDate rangeEnd = listingCalendarMaxInclusive(versionTimezone);
         final Map<String, TreeSet<String>> scheduledTimesByDate = new TreeMap<>();
-        for (final AvailabilityOrm window : availabilityWindows) {
+        for (final Availability window : availabilityWindows) {
             if (!isUsableWindow(window)) {
                 continue;
             }
@@ -117,7 +117,7 @@ public final class DetailAvailabilityPicker {
                 toImmutableTimesByDate(occupiedTimesByDate));
     }
 
-    private static boolean isUsableWindow(final AvailabilityOrm window) {
+    private static boolean isUsableWindow(final Availability window) {
         if (window.getWeekday() == null || window.getStartTime() == null || window.getEndTime() == null) {
             return false;
         }
@@ -146,12 +146,12 @@ public final class DetailAvailabilityPicker {
     }
 
     private static Map<String, TreeSet<String>> buildBookedTimesByDate(
-            final List<BookingOrm> bookings,
+            final List<Booking> bookings,
             final ZoneId zoneId,
             final LocalDate rangeStart,
             final LocalDate rangeEnd) {
         final Map<String, TreeSet<String>> collectedTimesByDate = new TreeMap<>();
-        for (final BookingOrm booking : bookings) {
+        for (final Booking booking : bookings) {
             if (!isBlocking(booking) || booking.getStart() == null || booking.getEnd() == null) {
                 continue;
             }
@@ -176,7 +176,7 @@ public final class DetailAvailabilityPicker {
         return collectedTimesByDate;
     }
 
-    private static boolean isBlocking(final BookingOrm booking) {
+    private static boolean isBlocking(final Booking booking) {
         return booking.getStatus() != null && BLOCKING_STATUSES.contains(booking.getStatus());
     }
 

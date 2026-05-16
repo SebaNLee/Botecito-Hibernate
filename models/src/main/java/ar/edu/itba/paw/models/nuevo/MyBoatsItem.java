@@ -14,10 +14,10 @@ public class MyBoatsItem {
     private Integer versionId;
     private String title;
     private String description;
-    private Integer pricePerHour;
-    private Integer difficultyLevel;
-    private Integer locationOptionId;
-    private Integer capacityPeople;
+    private Integer price;
+    private Integer difficulty;
+    private Integer locationId;
+    private Integer capacity;
     private String location;
     private Boolean active;
     private Integer coverImageId;

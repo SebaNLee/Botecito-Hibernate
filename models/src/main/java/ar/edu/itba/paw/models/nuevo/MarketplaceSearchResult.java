@@ -7,6 +7,6 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public final class MarketplaceSearchResult {
-    private final List<ItemModel> items;
+    private final List<MarketplaceCardItem> items;
     private final long totalCount;
 }

@@ -13,8 +13,11 @@ import ar.edu.itba.paw.models.exceptions.BookingCollisionException;
 import ar.edu.itba.paw.models.exceptions.IllegalBookingOperationException;
 import ar.edu.itba.paw.models.exceptions.InvalidBookingStatusException;
 import ar.edu.itba.paw.models.exceptions.InvalidDateFormatException;
+import ar.edu.itba.paw.models.exceptions.InvalidSlotException;
 import ar.edu.itba.paw.models.exceptions.NoAnticipationException;
 import ar.edu.itba.paw.models.exceptions.OutsideAvailabilityException;
+import ar.edu.itba.paw.models.exceptions.PastSlotException;
+import ar.edu.itba.paw.models.exceptions.SlotOverlapException;
 import ar.edu.itba.paw.persistence.BookingDao;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -320,10 +323,10 @@ public class BookingImpl implements BookingService {
 
     @Override
     @Transactional
-    public BlockSlotOutcome blockSlotForOwner(
+    public void blockSlotForOwner(
             final int itemId, final int ownerId, final String date, final String startTime, final String endTime) {
         if (date == null || startTime == null || endTime == null) {
-            return BlockSlotOutcome.INVALID;
+            throw new InvalidSlotException();
         }
         final LocalDate parsedDate;
         final LocalTime parsedStart;
@@ -333,21 +336,21 @@ public class BookingImpl implements BookingService {
             parsedStart = LocalTime.parse(startTime);
             parsedEnd = LocalTime.parse(endTime);
         } catch (final Exception e) {
-            return BlockSlotOutcome.INVALID;
+            throw new InvalidSlotException();
         }
         if (parsedDate.isBefore(LocalDate.now())) {
-            return BlockSlotOutcome.PAST_DATE;
+            throw new PastSlotException();
         }
         final Optional<MyBoatsItem> itemOpt = itemInterface.findMyBoatsItemByIdForOwner(itemId, ownerId);
         if (itemOpt.isEmpty()) {
-            return BlockSlotOutcome.INVALID;
+            throw new InvalidSlotException();
         }
         final MyBoatsItem item = itemOpt.get();
         final int versionId = item.getVersionId();
 
         final String timezone = bookingDao.findVersionTimezone(versionId).orElse(null);
         if (timezone == null) {
-            return BlockSlotOutcome.INVALID;
+            throw new InvalidSlotException();
         }
         final ZoneId zone = ZoneId.of(timezone.trim());
         final OffsetDateTime startOdt =
@@ -362,9 +365,8 @@ public class BookingImpl implements BookingService {
         final Optional<Integer> id =
                 bookingDao.insertBooking(versionId, ownerId, utcStart, utcEnd, BookingStatusEnum.CONFIRMED, null);
         if (id.isEmpty()) {
-            return BlockSlotOutcome.OVERLAP;
+            throw new SlotOverlapException();
         }
-        return BlockSlotOutcome.BLOCKED;
     }
 
     @Override

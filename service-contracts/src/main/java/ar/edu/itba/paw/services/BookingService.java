@@ -14,8 +14,6 @@ public interface BookingService {
     int createBooking(
             int versionId, LocalDate date, LocalTime startTime, LocalTime endTime, String message, int guestId);
 
-    // TODO: Change to getBookings(int itemId) -> this will return bookings not
-    // cancelled, declined, finished for the current version of that item
     List<Booking> getBookingsForVersion(int versionId);
 
     BookingSearchResult searchBookings(
@@ -44,16 +42,9 @@ public interface BookingService {
 
     Optional<OwnerAvailabilityPage> loadOwnerAvailabilityPage(int itemId, int ownerId, String requestedDate);
 
-    BlockSlotOutcome blockSlotForOwner(int itemId, int ownerId, String date, String startTime, String endTime);
+    void blockSlotForOwner(int itemId, int ownerId, String date, String startTime, String endTime);
 
     boolean removeOwnerSelfBlock(int bookingId, int ownerId);
-
-    enum BlockSlotOutcome {
-        BLOCKED,
-        PAST_DATE,
-        OVERLAP,
-        INVALID
-    }
 
     // cron job
     void bookingResolutionRoutine();

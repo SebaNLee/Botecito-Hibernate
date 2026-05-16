@@ -6,7 +6,6 @@ import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.BookingService;
-import ar.edu.itba.paw.services.BookingService.BlockSlotOutcome;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.webapp.form.BlockSlotForm;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
@@ -97,9 +96,9 @@ public class AvailabilityPresentation {
         final String startStr = form.getStartTime().format(TIME_FMT);
         final String endStr = form.getEndTime().format(TIME_FMT);
         final String redirectBase = "redirect:/my-boats/" + itemId + "/availability";
-        final BlockSlotOutcome outcome =
-                bookingInterface.blockSlotForOwner(itemId, currentUser.getId(), dateStr, startStr, endStr);
-        return new ModelAndView(appendReturnQuery(buildBlockRedirect(redirectBase, dateStr, outcome), safeReturn));
+        bookingInterface.blockSlotForOwner(itemId, currentUser.getId(), dateStr, startStr, endStr);
+        return new ModelAndView(
+                appendReturnQuery(redirectBase + "?date=" + dateStr + "&availabilityAction=blocked", safeReturn));
     }
 
     public ModelAndView unblockSlot(
@@ -237,16 +236,6 @@ public class AvailabilityPresentation {
                     return new PersonalBlockRow(b.getId(), date.toString(), startLocal, endLocal);
                 })
                 .toList();
-    }
-
-    private static String buildBlockRedirect(
-            final String redirectBase, final String formDate, final BlockSlotOutcome outcome) {
-        return switch (outcome) {
-            case BLOCKED -> redirectBase + "?date=" + formDate + "&availabilityAction=blocked";
-            case PAST_DATE -> redirectBase + "?availabilityAction=pastDate";
-            case OVERLAP -> redirectBase + "?date=" + formDate + "&availabilityAction=hasBookings";
-            case INVALID -> redirectBase + "?availabilityAction=invalid";
-        };
     }
 
     static String sanitizeReturnPath(final String raw) {

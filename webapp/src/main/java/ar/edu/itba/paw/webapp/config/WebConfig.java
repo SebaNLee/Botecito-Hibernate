@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.config;
 
-import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.services.nuevo.UserService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -13,7 +13,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.datasource.SimpleDriverDataSource;
+import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.lang.NonNull;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.JpaVendorAdapter;
@@ -89,10 +89,9 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Bean
     public DataSource dataSource(@Qualifier("credentialsProperties") final Properties credentialsProperties) {
-        final SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
-        dataSource.setDriverClass(org.postgresql.Driver.class);
-        dataSource.setUrl(credentialsProperties.getProperty("jdbc.url"));
-        dataSource.setUsername(credentialsProperties.getProperty("jdbc.username"));
+        final PGSimpleDataSource dataSource = new PGSimpleDataSource();
+        dataSource.setURL(credentialsProperties.getProperty("jdbc.url"));
+        dataSource.setUser(credentialsProperties.getProperty("jdbc.username"));
         dataSource.setPassword(credentialsProperties.getProperty("jdbc.password"));
         return dataSource;
     }
@@ -101,7 +100,7 @@ public class WebConfig implements WebMvcConfigurer {
     @DependsOn("flyway")
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(final DataSource dataSource) {
         final LocalContainerEntityManagerFactoryBean factoryBean = new LocalContainerEntityManagerFactoryBean();
-        factoryBean.setPackagesToScan("ar.edu.itba.paw.models");
+        factoryBean.setPackagesToScan("ar.edu.itba.paw.models", "ar.edu.itba.paw.persistence.orm");
         factoryBean.setDataSource(dataSource);
 
         final JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
@@ -123,6 +122,7 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Bean
+    // TODO check this, should be bc of UserDetails SpringSecurity probs
     public LocaleResolver localeResolver(final UserService userService) {
         return new UserLocaleResolver(userService);
     }

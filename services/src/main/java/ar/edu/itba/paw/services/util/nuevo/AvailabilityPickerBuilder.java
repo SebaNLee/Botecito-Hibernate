@@ -1,13 +1,13 @@
-package ar.edu.itba.paw.services.util;
+package ar.edu.itba.paw.services.util.nuevo;
 
-import ar.edu.itba.paw.models.BookingState;
-import ar.edu.itba.paw.models.ItemAvailability;
-import ar.edu.itba.paw.models.ItemBooking;
+import ar.edu.itba.paw.models.entity.AvailabilityOrm;
+import ar.edu.itba.paw.models.entity.BookingOrm;
+import ar.edu.itba.paw.models.entity.BookingStatusEnumOrm;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -28,32 +28,34 @@ public final class AvailabilityPickerBuilder {
 
     private AvailabilityPickerBuilder() {}
 
-    public static Data build(final List<ItemAvailability> availabilities, final List<ItemBooking> bookings) {
+    public static Data buildFromEntities(final List<AvailabilityOrm> availabilities, final List<BookingOrm> bookings) {
         final Set<Integer> itemIds = new LinkedHashSet<>();
-        final Map<Integer, List<ItemAvailability>> availabilitiesByItemId = new LinkedHashMap<>();
-        final Map<Integer, List<ItemBooking>> bookingsByItemId = new LinkedHashMap<>();
+        final Map<Integer, List<AvailabilityOrm>> availabilitiesByItemId = new LinkedHashMap<>();
+        final Map<Integer, List<BookingOrm>> bookingsByItemId = new LinkedHashMap<>();
         final Map<String, TreeSet<String>> scheduledTimesByDate = new TreeMap<>();
         final Map<String, TreeSet<String>> availableTimesByDate = new TreeMap<>();
 
-        for (final ItemAvailability availability : availabilities) {
-            itemIds.add(availability.getItemId());
+        for (final AvailabilityOrm availability : availabilities) {
+            final Integer itemId = availability.getVersion().getItem().getId();
+            itemIds.add(itemId);
             availabilitiesByItemId
-                    .computeIfAbsent(availability.getItemId(), ignored -> new ArrayList<>())
+                    .computeIfAbsent(itemId, ignored -> new ArrayList<>())
                     .add(availability);
         }
 
-        for (final ItemBooking booking : bookings) {
-            itemIds.add(booking.getItemId());
+        for (final BookingOrm booking : bookings) {
+            final Integer itemId = booking.getVersion().getItem().getId();
+            itemIds.add(itemId);
             bookingsByItemId
-                    .computeIfAbsent(booking.getItemId(), ignored -> new ArrayList<>())
+                    .computeIfAbsent(itemId, ignored -> new ArrayList<>())
                     .add(booking);
         }
 
         for (final Integer itemId : itemIds) {
             final Map<String, TreeSet<String>> itemScheduledTimesByDate =
-                    buildScheduledTimesByDate(availabilitiesByItemId.getOrDefault(itemId, List.of()));
+                    buildScheduledTimesByOrm(availabilitiesByItemId.getOrDefault(itemId, List.of()));
             final Map<String, TreeSet<String>> itemBookedTimesByDate =
-                    buildBookedTimesByDate(bookingsByItemId.getOrDefault(itemId, List.of()));
+                    buildBookedTimesByOrm(bookingsByItemId.getOrDefault(itemId, List.of()));
             final Map<String, TreeSet<String>> itemAvailableTimesByDate =
                     subtractTimes(itemScheduledTimesByDate, itemBookedTimesByDate);
 
@@ -162,13 +164,14 @@ public final class AvailabilityPickerBuilder {
         }
     }
 
-    private static Map<String, TreeSet<String>> buildScheduledTimesByDate(final List<ItemAvailability> availabilities) {
+    private static Map<String, TreeSet<String>> buildScheduledTimesByOrm(final List<AvailabilityOrm> availabilities) {
         final Map<String, TreeSet<String>> collectedTimesByDate = new TreeMap<>();
         final LocalDate startDate = availabilityStartDate();
         final LocalDate endDate = pickerEndDate();
 
-        for (final ItemAvailability availability : availabilities) {
-            final DayOfWeek weekday = availability.getWeekday();
+        for (final AvailabilityOrm availability : availabilities) {
+            final DayOfWeek weekday = availability.getWeekday() == null ? null : DayOfWeek.valueOf(availability.getWeekday().name());
+            if (weekday == null) continue;
             final LocalTime startTime = availability.getStartTime();
             final LocalTime endTime = availability.getEndTime();
 
@@ -184,17 +187,17 @@ public final class AvailabilityPickerBuilder {
         return collectedTimesByDate;
     }
 
-    private static Map<String, TreeSet<String>> buildBookedTimesByDate(final List<ItemBooking> bookings) {
+    private static Map<String, TreeSet<String>> buildBookedTimesByOrm(final List<BookingOrm> bookings) {
         final Map<String, TreeSet<String>> collectedTimesByDate = new TreeMap<>();
         final LocalDate startDate = availabilityStartDate();
         final LocalDate endDate = pickerEndDate();
 
-        for (final ItemBooking booking : bookings) {
+        for (final BookingOrm booking : bookings) {
             if (!isBlockingBooking(booking)) {
                 continue;
             }
-            OffsetDateTime currentTime = booking.getStartTime();
-            final OffsetDateTime endTime = booking.getEndTime();
+            LocalDateTime currentTime = booking.getStart();
+            final LocalDateTime endTime = booking.getEnd();
 
             while (currentTime.isBefore(endTime)) {
                 final LocalDate currentDate = currentTime.toLocalDate();
@@ -209,14 +212,12 @@ public final class AvailabilityPickerBuilder {
         return collectedTimesByDate;
     }
 
-    private static boolean isBlockingBooking(final ItemBooking booking) {
-        if (booking.getState() == null) {
-            return true;
-        }
-        return booking.getState() == BookingState.BOOKING_PENDING
-                || booking.getState() == BookingState.BOOKING_CONFIRMED
-                || booking.getState() == BookingState.BOOKING_PAYMENT_SUBMITTED
-                || booking.getState() == BookingState.BOOKING_PAID;
+    private static boolean isBlockingBooking(final BookingOrm booking) {
+        if (booking.getStatus() == null) return false;
+        return switch (booking.getStatus()) {
+            case PENDING, ACCEPTED, PAID, CONFIRMED -> true;
+            default -> false;
+        };
     }
 
     private static void addTimeRange(

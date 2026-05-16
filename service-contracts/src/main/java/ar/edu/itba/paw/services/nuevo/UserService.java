@@ -1,34 +1,25 @@
 package ar.edu.itba.paw.services.nuevo;
 
-import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.models.entity.UsersOrm;
 import java.util.Optional;
 
 public interface UserService {
-    // TODO: Idealmente en vez de enums, no hacer nada si sale bien, tirar excepcion
-    // si sale mal
-    enum PasswordRecoveryResult {
-        SUCCESS,
-        INVALID_TOKEN
-    }
 
-    enum RegistrationResult {
-        SUCCESS,
-        EMAIL_ALREADY_EXISTS
-    }
+    void register(String firstName, String lastName, String email,
+            String alias, String language, String rawPassword);
 
-    RegistrationResult register(UserModel user, String rawPassword);
+    Optional<UsersOrm> findByEmail(String email);
 
-    Optional<UserModel> findByEmail(String email);
+    Optional<UsersOrm> findById(int id);
 
-    Optional<UserModel> findById(int id);
+    Optional<UsersOrm> updateProfile(int userId, String firstName, String lastName,
+            String email, String phone, String alias, String language);
 
-    Optional<UserModel> updateProfile(UserModel user);
+    Optional<UsersOrm> requestPasswordRecovery(String email);
 
-    Optional<UserModel> requestPasswordRecovery(UserModel user);
+    Optional<UsersOrm> findByPasswordRecoveryToken(String token);
 
-    Optional<UserModel> findByPasswordRecoveryToken(String token);
+    boolean resetPassword(String token, String rawPassword);
 
-    PasswordRecoveryResult resetPassword(UserModel user, String rawPassword);
-
-    Optional<UserModel> verifyEmail(String token);
+    Optional<UsersOrm> verifyEmail(String token);
 }

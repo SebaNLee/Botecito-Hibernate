@@ -1,20 +1,25 @@
 package ar.edu.itba.paw.services.nuevo;
 
 import ar.edu.itba.paw.models.nuevo.ItemDetail;
+import java.util.List;
 import java.util.Optional;
-
-// Fix: instead of one method with optional parameters, make two overloads, one that only takes itemId (for current
-// version), and one that takes all 3 parameters, not optional (for specific version)
 
 public interface DetailInterface {
     /**
-     * Resolves visible {@link ItemDetail} for an item. Visibility matches existing
-     * rules (anonymous: current version
-     * only; host: all versions; other users: current plus versions tied to their
-     * bookings). When {@code versionId} is
-     * present, the version must appear in that visible set or the result is empty.
-     * When absent, the same visible set
-     * is returned (the current head is always {@code versions.get(0)}).
+     * Anonymous access; returns the current published version only.
      */
-    Optional<ItemDetail> getItemDetail(int itemId, Optional<Integer> viewerUserId, Optional<Long> versionId);
+    Optional<ItemDetail> getItemDetail(int itemId);
+
+    /**
+     * Authenticated access for a specific version; returns all visible
+     * versions if {@code versionId} is in the viewer's visible set,
+     * empty otherwise.
+     */
+    Optional<ItemDetail> getItemDetail(int itemId, int viewerUserId, long versionId);
+
+    /**
+     * Returns the version ids visible to the viewer (for populating
+     * the version selector control).
+     */
+    List<Long> getVisibleVersionIds(int itemId, int viewerUserId);
 }

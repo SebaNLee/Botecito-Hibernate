@@ -1,15 +1,16 @@
 package ar.edu.itba.paw.services.nuevo;
 
-import ar.edu.itba.paw.models.nuevo.Booking;
-import ar.edu.itba.paw.models.nuevo.ReviewModel;
-import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
-import ar.edu.itba.paw.models.nuevo.enums.TargetType;
+import ar.edu.itba.paw.models.entity.BookingOrm;
+import ar.edu.itba.paw.models.entity.BookingStatusEnumOrm;
+import ar.edu.itba.paw.models.entity.ReviewOrm;
+import ar.edu.itba.paw.models.entity.TargetEnumOrm;
 import ar.edu.itba.paw.persistence.nuevo.BookingDao;
 import ar.edu.itba.paw.persistence.nuevo.ReviewDao;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -19,13 +20,14 @@ public final class ReviewImpl implements ReviewInterface {
     private final ReviewDao reviewDao;
 
     @Override
-    public Optional<ReviewModel> createReviewForBooking(
+    @Transactional
+    public Optional<ReviewOrm> createReviewForBooking(
             final int bookingId, final int reviewerUserId, final int rating, final String comment) {
         if (rating < 1 || rating > 5) {
             return Optional.empty();
         }
 
-        final Optional<Booking> booking = bookingDao.findById(bookingId);
+        final Optional<BookingOrm> booking = bookingDao.findById(bookingId);
         if (booking.isEmpty() || !isReviewWindowOpen(booking.get())) {
             return Optional.empty();
         }
@@ -51,8 +53,9 @@ public final class ReviewImpl implements ReviewInterface {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean canCreateReview(final int bookingId, final int reviewerUserId) {
-        final Optional<Booking> booking = bookingDao.findById(bookingId);
+        final Optional<BookingOrm> booking = bookingDao.findById(bookingId);
         if (booking.isEmpty() || !isReviewWindowOpen(booking.get())) {
             return false;
         }
@@ -70,17 +73,18 @@ public final class ReviewImpl implements ReviewInterface {
     }
 
     private static ReviewDescriptor resolveReviewDescriptor(
-            final Booking booking, final int ownerId, final int reviewerUserId) {
-        if (booking.getGuestId() == reviewerUserId && ownerId != reviewerUserId) {
-            return new ReviewDescriptor(TargetType.ITEM);
+            final BookingOrm booking, final int ownerId, final int reviewerUserId) {
+        final int guestId = booking.getGuest() != null ? booking.getGuest().getId() : 0;
+        if (guestId == reviewerUserId && ownerId != reviewerUserId) {
+            return new ReviewDescriptor(TargetEnumOrm.ITEM);
         }
-        if (ownerId == reviewerUserId && booking.getGuestId() != reviewerUserId) {
-            return new ReviewDescriptor(TargetType.USER);
+        if (ownerId == reviewerUserId && guestId != reviewerUserId) {
+            return new ReviewDescriptor(TargetEnumOrm.USER);
         }
         return null;
     }
 
-    private record ReviewDescriptor(TargetType targetType) {}
+    private record ReviewDescriptor(TargetEnumOrm targetType) {}
 
     private static String normalizeComment(final String comment) {
         if (comment == null) {
@@ -90,7 +94,7 @@ public final class ReviewImpl implements ReviewInterface {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private static boolean isReviewWindowOpen(final Booking booking) {
+    private static boolean isReviewWindowOpen(final BookingOrm booking) {
         if (booking == null || booking.getStatus() == null || booking.getEnd() == null) {
             return false;
         }
@@ -98,7 +102,7 @@ public final class ReviewImpl implements ReviewInterface {
                 && booking.getEnd().isBefore(LocalDateTime.now());
     }
 
-    private static boolean isBookingEligibleForPostStayReview(final BookingStatus status) {
+    private static boolean isBookingEligibleForPostStayReview(final BookingStatusEnumOrm status) {
         return switch (status) {
             case CONFIRMED, PAID, FINISHED -> true;
             default -> false;

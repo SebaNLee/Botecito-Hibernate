@@ -1,10 +1,11 @@
 package ar.edu.itba.paw.services.nuevo;
 
+import ar.edu.itba.paw.models.entity.AvailabilityOrm;
+import ar.edu.itba.paw.models.entity.VersionOrm;
+import ar.edu.itba.paw.models.entity.UsersOrm;
 import ar.edu.itba.paw.models.nuevo.AvailabilityWindow;
 import ar.edu.itba.paw.models.nuevo.ImageUpload;
-import ar.edu.itba.paw.models.nuevo.PublishContent;
-import ar.edu.itba.paw.models.nuevo.PublishItem;
-import ar.edu.itba.paw.models.nuevo.UserModel;
+import java.math.BigDecimal;
 import ar.edu.itba.paw.models.nuevo.mail.MailRecipientModel;
 import ar.edu.itba.paw.models.nuevo.mail.PublishConfirmationMailModel;
 import ar.edu.itba.paw.persistence.nuevo.PublishDao;
@@ -30,57 +31,63 @@ public class PublishServiceImpl implements PublishService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PublishServiceImpl.class);
 
+    private static final String DEFAULT_STATUS = "ACTIVE";
+    private static final String DEFAULT_TIMEZONE = "America/Argentina/Buenos_Aires"; // TODO hardcode default timezone
+
     private final PublishDao publishDao;
     private final UserService userService;
     private final MailService mailService;
 
     @Override
     @Transactional
-    public Optional<PublishItem> create(final PublishContent content, final int ownerId) {
+    public Optional<VersionOrm> create(final int ownerId, final int typeId,
+            final String title, final String description,
+            final int pricePerHour, final int capacityPeople, final BigDecimal maxWeightKg,
+            final Integer difficultyLevel, final int locationOptionId,
+            final List<AvailabilityWindow> availabilities, final List<ImageUpload> images) {
+        final List<AvailabilityWindow> filteredAvailabilities = filterAvailabilities(availabilities);
+        final List<ImageUpload> filteredImages = filterImages(images);
+
         final int itemId = publishDao.create(
                 ownerId,
-                content.getTypeId(),
-                content.getTitle(),
-                content.getDescription(),
-                content.getPricePerHour(),
-                content.getCapacityPeople(),
-                Objects.requireNonNull(content.getMaxWeightKg()),
-                Objects.requireNonNull(content.getDifficultyLevel()),
-                content.getLocationOptionId(),
-                content.getAvailabilities(),
-                mapToImageUploads(content));
-        if (itemId <= 0) {
-            LOGGER.error("Failed to create publication for owner {}", ownerId);
-            return Optional.empty();
-        }
+                typeId,
+                title,
+                description,
+                pricePerHour,
+                capacityPeople,
+                Objects.requireNonNull(maxWeightKg),
+                Objects.requireNonNull(difficultyLevel),
+                locationOptionId,
+                DEFAULT_TIMEZONE,
+                DEFAULT_STATUS,
+                filteredAvailabilities,
+                filteredImages);
 
-        final Optional<PublishItem> created = publishDao.findById(itemId);
+        final Optional<VersionOrm> created = publishDao.findById(itemId);
         if (created.isPresent()) {
-            sendConfirmationEmail(ownerId, created.get().getTitle());
+            sendConfirmationEmail(created.get());
         }
         return created;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<PublishItem> findById(final int itemId) {
+    public Optional<VersionOrm> findById(final int itemId) {
         return publishDao.findById(itemId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<AvailabilityWindow> listAvailabilities(final int itemId) {
+    public List<AvailabilityOrm> listAvailabilities(final int itemId) {
         return publishDao.listAvailabilities(itemId);
     }
 
     @Override
-    public Map<String, String> validate(final PublishContent content) {
+    public Map<String, String> validate(final String title, final String description,
+            final int pricePerHour, final int capacityPeople, final BigDecimal maxWeightKg,
+            final Integer difficultyLevel, final int locationOptionId,
+            final List<AvailabilityWindow> availabilities, final List<ImageUpload> images) {
         final Map<String, String> errors = new LinkedHashMap<>();
-        if (content == null) {
-            errors.put("draft", "publish.validation.required");
-            return errors;
-        }
-        final List<AvailabilityWindow> availabilities = content.getAvailabilities();
         if (availabilities == null || availabilities.isEmpty()) {
             errors.put("availabilityByWeekday", "publish.availability.required");
             return errors;
@@ -123,24 +130,38 @@ public class PublishServiceImpl implements PublishService {
         return errors;
     }
 
-    private void sendConfirmationEmail(final int ownerId, final String itemTitle) {
-        final Optional<UserModel> owner = userService.findById(ownerId);
+    private void sendConfirmationEmail(final VersionOrm version) {
+        final int ownerId = version.getItem().getHost().getId();
+        final Optional<UsersOrm> owner = userService.findById(ownerId);
         if (owner.isEmpty()) {
             LOGGER.warn("Cannot send confirmation email: user {} not found", ownerId);
             return;
         }
         final PublishConfirmationMailModel mail = new PublishConfirmationMailModel();
         mail.setOwner(MailRecipientModel.fromUser(owner.get()));
-        mail.setItemTitle(itemTitle);
+        mail.setItemTitle(version.getTitle());
         try {
             mailService.sendPublishConfirmationEmail(mail);
         } catch (final RuntimeException e) {
-            LOGGER.error("Failed to send confirmation email for item {} to user {}", itemTitle, ownerId, e);
+            LOGGER.error("Failed to send confirmation email for item {} to user {}", version.getTitle(), ownerId, e);
         }
     }
 
-    private static List<ImageUpload> mapToImageUploads(final PublishContent content) {
-        final List<ImageUpload> images = content.getImages();
-        return images == null ? List.of() : images;
+    private static List<AvailabilityWindow> filterAvailabilities(final List<AvailabilityWindow> windows) {
+        if (windows == null) {
+            return List.of();
+        }
+        return windows.stream()
+                .filter(w -> w != null && w.getWeekday() != null && w.getStartTime() != null && w.getEndTime() != null)
+                .toList();
+    }
+
+    private static List<ImageUpload> filterImages(final List<ImageUpload> imgs) {
+        if (imgs == null) {
+            return List.of();
+        }
+        return imgs.stream()
+                .filter(u -> u != null && u.getData() != null && u.getData().length > 0)
+                .toList();
     }
 }

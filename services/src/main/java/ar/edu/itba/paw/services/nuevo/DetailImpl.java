@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Resolves item detail visibility for guests and hosts. {@link ItemDetail#getVersions()} entries include per-version
@@ -20,21 +21,35 @@ public final class DetailImpl implements DetailInterface {
     private final DetailDao detailDao;
 
     @Override
-    public Optional<ItemDetail> getItemDetail(
-            final int itemId, final Optional<Integer> viewerUserId, final Optional<Long> versionId) {
-        final Optional<ItemDetail> visible = resolveVisibleItemDetail(itemId, viewerUserId);
+    @Transactional(readOnly = true)
+    public Optional<ItemDetail> getItemDetail(final int itemId) {
+        return resolveVisibleItemDetail(itemId, Optional.empty());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<ItemDetail> getItemDetail(final int itemId, final int viewerUserId, final long versionId) {
+        final Optional<ItemDetail> visible = resolveVisibleItemDetail(itemId, Optional.of(viewerUserId));
         if (visible.isEmpty()) {
             return Optional.empty();
         }
-        if (versionId.isEmpty()) {
-            return visible;
-        }
-        final long requested = versionId.get();
-        final boolean allowed = visible.get().getVersions().stream().anyMatch(v -> v.getVersionId() == requested);
+        final boolean allowed = visible.get().getVersions().stream().anyMatch(v -> v.getVersionId() == versionId);
         if (!allowed) {
             return Optional.empty();
         }
         return visible;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> getVisibleVersionIds(final int itemId, final int viewerUserId) {
+        final Optional<ItemDetail> visible = resolveVisibleItemDetail(itemId, Optional.of(viewerUserId));
+        if (visible.isEmpty()) {
+            return List.of();
+        }
+        return visible.get().getVersions().stream()
+                .map(v -> (long) v.getVersionId())
+                .toList();
     }
 
     private Optional<ItemDetail> resolveVisibleItemDetail(final int itemId, final Optional<Integer> viewerUserId) {
@@ -46,7 +61,7 @@ public final class DetailImpl implements DetailInterface {
             return currentOnly;
         }
         final int viewer = viewerUserId.get();
-        if (currentOnly.get().getVersions().get(0).getItemModel().getHostId() == viewer) {
+        if (currentOnly.get().getVersions().get(0).getHostId() == viewer) {
             return detailDao.getItemDetailById(itemId, true);
         }
         final List<Integer> bookedVersionIds = detailDao.findVersionIdsFromGuestBookingsForItem(itemId, viewer);

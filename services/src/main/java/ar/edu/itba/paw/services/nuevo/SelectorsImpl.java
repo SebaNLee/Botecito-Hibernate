@@ -1,9 +1,9 @@
 package ar.edu.itba.paw.services.nuevo;
 
+import ar.edu.itba.paw.models.entity.ItemTypeOrm;
+import ar.edu.itba.paw.models.entity.LocationOrm;
+import ar.edu.itba.paw.models.entity.BookingStatusEnumOrm;
 import ar.edu.itba.paw.models.nuevo.BookingStatusOptionModel;
-import ar.edu.itba.paw.models.nuevo.ItemTypeModel;
-import ar.edu.itba.paw.models.nuevo.Location;
-import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
 import ar.edu.itba.paw.persistence.nuevo.SelectorsDao;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,19 +24,22 @@ public final class SelectorsImpl implements SelectorsInterface {
     private final MessageSource messageSource;
 
     @Override
-    public List<Location> getLocationOptions() {
+    @Transactional(readOnly = true)
+    public List<LocationOrm> getLocationOptions() {
         return selectorsDao.getLocationOptions();
     }
 
     @Override
-    public List<ItemTypeModel> getItemTypeOptions() {
+    @Transactional(readOnly = true)
+    public List<ItemTypeOrm> getItemTypeOptions() {
         return selectorsDao.getItemTypeOptions();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<BookingStatusOptionModel> getBookingStatusOptions() {
         final Locale locale = LocaleContextHolder.getLocale();
-        return Arrays.stream(BookingStatus.values())
+        return Arrays.stream(BookingStatusEnumOrm.values())
                 .map(status -> {
                     final String code = "booking.status." + status.name();
                     final String label = messageSource.getMessage(code, null, status.name(), locale);
@@ -45,8 +49,10 @@ public final class SelectorsImpl implements SelectorsInterface {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Map<String, String> getDifficultyOptions() {
         final Map<String, String> options = new LinkedHashMap<>();
+        // TODO hardcode, maybe create table in DB?
         options.put("1", "1 - Principiante");
         options.put("2", "2 - Basico");
         options.put("3", "3 - Intermedio");

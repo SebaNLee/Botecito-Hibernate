@@ -1,33 +1,76 @@
 package ar.edu.itba.paw.services.nuevo;
 
-import ar.edu.itba.paw.models.nuevo.Booking;
+import static java.util.Map.entry;
+
+import ar.edu.itba.paw.models.entity.AvailabilityOrm;
+import ar.edu.itba.paw.models.entity.BookingOrm;
+import ar.edu.itba.paw.models.entity.BookingStatusEnumOrm;
+import ar.edu.itba.paw.models.entity.PaymentProofOrm;
 import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
-import ar.edu.itba.paw.models.nuevo.IncomingSearch;
-import ar.edu.itba.paw.models.nuevo.OutcomingSearch;
-import ar.edu.itba.paw.models.nuevo.PaymentProof;
-import ar.edu.itba.paw.models.nuevo.PreBookingReq;
-import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
+import ar.edu.itba.paw.models.nuevo.exceptions.InvalidBookingStatusException;
+import ar.edu.itba.paw.models.nuevo.exceptions.InvalidDateFormatException;
+import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
+import ar.edu.itba.paw.models.nuevo.OwnerAvailabilityPage;
+import ar.edu.itba.paw.models.nuevo.exceptions.BookingCollisionException;
 import ar.edu.itba.paw.models.nuevo.exceptions.IllegalBookingOperationException;
 import ar.edu.itba.paw.models.nuevo.exceptions.NoAnticipationException;
+import ar.edu.itba.paw.models.nuevo.exceptions.OutsideAvailabilityException;
 import ar.edu.itba.paw.persistence.nuevo.BookingDao;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class BookingImpl implements BookingInterface {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(BookingImpl.class);
+
     private final BookingDao bookingDao;
+    private final ItemInterface itemInterface;
 
     private static final int MIN_ANTICIPATION_MINUTES = 120;
 
-    // TODO: move current times to utils
+    private static final Map<BookingStatusEnumOrm, EnumSet<BookingStatusEnumOrm>> VALID_TRANSITIONS = Map.ofEntries(
+            entry(
+                    BookingStatusEnumOrm.PENDING,
+                    EnumSet.of(BookingStatusEnumOrm.ACCEPTED, BookingStatusEnumOrm.REJECTED, BookingStatusEnumOrm.CANCELLED)),
+            entry(
+                    BookingStatusEnumOrm.ACCEPTED,
+                    EnumSet.of(BookingStatusEnumOrm.PAID, BookingStatusEnumOrm.CANCELLED)),
+            entry(
+                    BookingStatusEnumOrm.PAID,
+                    EnumSet.of(BookingStatusEnumOrm.REFUSED, BookingStatusEnumOrm.CONFIRMED, BookingStatusEnumOrm.CANCELLED)),
+            entry(
+                    BookingStatusEnumOrm.REFUSED,
+                    EnumSet.of(BookingStatusEnumOrm.PAID, BookingStatusEnumOrm.CANCELLED)),
+            entry(
+                    BookingStatusEnumOrm.CONFIRMED,
+                    EnumSet.of(BookingStatusEnumOrm.FINISHED, BookingStatusEnumOrm.CANCELLED)));
 
+    private static boolean isValidTransition(BookingStatusEnumOrm source, BookingStatusEnumOrm target) {
+        var targets = VALID_TRANSITIONS.getOrDefault(source, EnumSet.noneOf(BookingStatusEnumOrm.class));
+        return targets.contains(target);
+    }
+
+    // TODO: move current times to utils
     private LocalDateTime currentDateTime() {
         return LocalDateTime.now(ZoneOffset.UTC);
     }
@@ -54,44 +97,85 @@ public class BookingImpl implements BookingInterface {
         if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
     }
 
-    private void verifyAnticipation(final PreBookingReq request) {
-        LocalDateTime start = LocalDateTime.of(request.getDate(), request.getStartTime());
+    @Override
+    @Transactional
+    public int createBooking(final int versionId, final LocalDate date,
+            final LocalTime startTime, final LocalTime endTime,
+            final String message, final int guestId) {
+        final LocalDateTime start = LocalDateTime.of(date, startTime);
         if (start.isBefore(currentMinimumStart())) throw new NoAnticipationException();
+
+        final String timezone = bookingDao.findVersionTimezone(versionId)
+                .orElseThrow(OutsideAvailabilityException::new);
+        final ZoneId zoneId = ZoneId.of(timezone.trim());
+        final LocalDateTime localStart = LocalDateTime.of(date, startTime);
+        final LocalDateTime localEnd = LocalDateTime.of(date, endTime);
+
+        final List<AvailabilityOrm> availabilities =
+                bookingDao.listAvailabilitiesForVersion(versionId);
+        final DayOfWeek dayOfWeek = localStart.getDayOfWeek();
+        final boolean withinAvailability = availabilities.stream().anyMatch(a ->
+                a.getWeekday().name().equals(dayOfWeek.name())
+                        && !a.getStartTime().isAfter(startTime)
+                        && !a.getEndTime().isBefore(endTime));
+        if (!withinAvailability) {
+            throw new OutsideAvailabilityException();
+        }
+
+        final ZonedDateTime zonedStart = localStart.atZone(zoneId);
+        final ZonedDateTime zonedEnd = localEnd.atZone(zoneId);
+        final LocalDateTime utcStart = LocalDateTime.ofInstant(zonedStart.toInstant(), ZoneOffset.UTC);
+        final LocalDateTime utcEnd = LocalDateTime.ofInstant(zonedEnd.toInstant(), ZoneOffset.UTC);
+
+        final Integer ownerId = bookingDao.findOwnerIdForVersion(versionId)
+                .orElseThrow(OutsideAvailabilityException::new);
+        final boolean isOwner = guestId == ownerId;
+        final BookingStatusEnumOrm status = isOwner ? BookingStatusEnumOrm.CONFIRMED : BookingStatusEnumOrm.PENDING;
+
+        return bookingDao.insertBooking(versionId, guestId, utcStart, utcEnd, status, message)
+                .orElseThrow(BookingCollisionException::new);
     }
 
-    // TODO: send emails
-
     @Override
-    public PreBookingCreateResult createBooking(final PreBookingReq preBookingReq) {
-        verifyAnticipation(preBookingReq);
-        final int code = bookingDao.createBooking(preBookingReq);
-        if (code > 0) {
-            return new PreBookingCreateResult.Created(code);
-        }
-        if (code == BookingDao.RESULT_OUTSIDE_AVAILABILITY) {
-            return PreBookingCreateResult.OutsideAvailability.INSTANCE;
-        }
-        if (code == BookingDao.RESULT_BOOKING_COLLISION) {
-            return PreBookingCreateResult.Collision.INSTANCE;
-        }
-        return PreBookingCreateResult.Unexpected.INSTANCE;
-    }
-
-    @Override
-    public List<Booking> getBookingsForVersion(final int versionId) {
+    @Transactional(readOnly = true)
+    public List<BookingOrm> getBookingsForVersion(final int versionId) {
         return bookingDao.getBookingsForVersion(versionId);
     }
 
     @Override
-    public BookingSearchResult searchOutcomingBookings(final OutcomingSearch search) {
-        return bookingDao.searchOutcomingBookings(search);
+    @Transactional(readOnly = true)
+    public BookingSearchResult searchBookings(final int userId, final boolean asHost,
+            final String searchQuery, final String rawDate, final String rawStatus,
+            final Integer page, final Integer pageSize, final String sortBy) {
+        final LocalDate date = parseDate(rawDate);
+        final BookingStatusEnumOrm status = parseStatus(rawStatus);
+        return bookingDao.searchBookings(userId, asHost, searchQuery, date, status, page, pageSize, sortBy);
+    }
+
+    private static LocalDate parseDate(final String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(raw.trim());
+        } catch (final Exception e) {
+            throw new InvalidDateFormatException(raw);
+        }
+    }
+
+    private static BookingStatusEnumOrm parseStatus(final String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return BookingStatusEnumOrm.valueOf(raw.trim());
+        } catch (final IllegalArgumentException e) {
+            throw new InvalidBookingStatusException(raw);
+        }
     }
 
     @Override
-    public BookingSearchResult searchIncomingBookings(final IncomingSearch search) {
-        return bookingDao.searchIncomingBookings(search);
-    }
-
+    @Transactional
     @Scheduled(cron = "0 0,30 * * * *")
     public void bookingResolutionRoutine() {
         finalizeBookings();
@@ -99,66 +183,221 @@ public class BookingImpl implements BookingInterface {
     }
 
     @Override
+    @Transactional
     public void acceptBooking(int bookingId, int callerId) {
         verifyAnticipation(bookingId);
+        final BookingOrm booking = bookingDao.findById(bookingId)
+                .orElseThrow(IllegalBookingOperationException::new);
+        if (!isValidTransition(booking.getStatus(), BookingStatusEnumOrm.ACCEPTED)) {
+            throw new IllegalBookingOperationException();
+        }
         bookingDao
-                .updateStatusIncoming(bookingId, callerId, BookingStatus.ACCEPTED)
+                .updateStatusIncoming(bookingId, callerId, BookingStatusEnumOrm.ACCEPTED)
                 .orElseThrow(IllegalBookingOperationException::new);
     }
 
     @Override
+    @Transactional
     public void rejectBooking(int bookingId, int callerId) {
         verifyAnticipation(bookingId);
+        final BookingOrm booking = bookingDao.findById(bookingId)
+                .orElseThrow(IllegalBookingOperationException::new);
+        if (!isValidTransition(booking.getStatus(), BookingStatusEnumOrm.REJECTED)) {
+            throw new IllegalBookingOperationException();
+        }
         bookingDao
-                .updateStatusIncoming(bookingId, callerId, BookingStatus.REJECTED)
+                .updateStatusIncoming(bookingId, callerId, BookingStatusEnumOrm.REJECTED)
                 .orElseThrow(IllegalBookingOperationException::new);
     }
 
     @Override
-    public void submitPayment(PaymentProof payment, int callerId) {
+    @Transactional
+    public void submitPayment(final int bookingId, final PaymentProofOrm payment, final int callerId) {
         if (payment == null) return;
-        int bookingId = payment.getBookingId();
 
         verifyAnticipation(bookingId);
 
+        final BookingOrm booking = bookingDao.findById(bookingId)
+                .orElseThrow(IllegalBookingOperationException::new);
+        if (!isValidTransition(booking.getStatus(), BookingStatusEnumOrm.PAID)) {
+            throw new IllegalBookingOperationException();
+        }
+
         bookingDao
-                .updateStatusOutgoing(bookingId, callerId, BookingStatus.PAID)
+                .updateStatusOutgoing(bookingId, callerId, BookingStatusEnumOrm.PAID)
                 .orElseThrow(IllegalBookingOperationException::new);
 
-        var now = currentDateTime();
+        final LocalDateTime now = currentDateTime();
         payment.setCreatedAt(now);
-        if (payment.getReplyMsg() != null) payment.setRepliedAt(now);
-
+        if (payment.getReplyMsg() != null) {
+            payment.setRepliedAt(now);
+        }
+        payment.setBooking(booking);
         bookingDao.uploadPayment(payment).orElseThrow(IllegalBookingOperationException::new);
     }
 
     @Override
-    public Optional<PaymentProof> getPaymentProofForParticipant(final int bookingId, final int callerId) {
+    @Transactional(readOnly = true)
+    public Optional<PaymentProofOrm> getPaymentProofForParticipant(final int bookingId, final int callerId) {
         return bookingDao.findPaymentProofForParticipant(bookingId, callerId);
     }
 
     @Override
+    @Transactional
     public void confirmPayment(int bookingId, int callerId) {
         verifyAnticipation(bookingId);
+        final BookingOrm booking = bookingDao.findById(bookingId)
+                .orElseThrow(IllegalBookingOperationException::new);
+        if (!isValidTransition(booking.getStatus(), BookingStatusEnumOrm.CONFIRMED)) {
+            throw new IllegalBookingOperationException();
+        }
         bookingDao
-                .updateStatusIncoming(bookingId, callerId, BookingStatus.CONFIRMED)
+                .updateStatusIncoming(bookingId, callerId, BookingStatusEnumOrm.CONFIRMED)
                 .orElseThrow(IllegalBookingOperationException::new);
     }
 
     @Override
+    @Transactional
     public void rejectPayment(int bookingId, int callerId, String reason) {
         verifyAnticipation(bookingId);
+        final BookingOrm booking = bookingDao.findById(bookingId)
+                .orElseThrow(IllegalBookingOperationException::new);
+        if (!isValidTransition(booking.getStatus(), BookingStatusEnumOrm.REFUSED)) {
+            throw new IllegalBookingOperationException();
+        }
         var now = currentDateTime();
         bookingDao
-                .updateStatusIncoming(bookingId, callerId, BookingStatus.REFUSED)
+                .updateStatusIncoming(bookingId, callerId, BookingStatusEnumOrm.REFUSED)
                 .orElseThrow(IllegalBookingOperationException::new);
         bookingDao.refusePayment(bookingId, reason, now).orElseThrow(IllegalBookingOperationException::new);
     }
 
     @Override
+    @Transactional
     public void cancelBooking(int bookingId, int callerId) {
-        bookingDao
-                .updateStatusOutgoing(bookingId, callerId, BookingStatus.CANCELLED)
+        final BookingOrm booking = bookingDao.findById(bookingId)
                 .orElseThrow(IllegalBookingOperationException::new);
+        if (!isValidTransition(booking.getStatus(), BookingStatusEnumOrm.CANCELLED)) {
+            throw new IllegalBookingOperationException();
+        }
+        bookingDao
+                .updateStatusOutgoing(bookingId, callerId, BookingStatusEnumOrm.CANCELLED)
+                .orElseThrow(IllegalBookingOperationException::new);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<OwnerAvailabilityPage> loadOwnerAvailabilityPage(
+            final int itemId, final int ownerId, final String requestedDate) {
+        final Optional<MyBoatsItem> itemOpt = itemInterface.findMyBoatsItemByIdForOwner(itemId, ownerId);
+        if (itemOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        final MyBoatsItem item = itemOpt.get();
+        final int versionId = item.getVersionId();
+
+        final String timezone = bookingDao.findVersionTimezone(versionId).orElse("UTC");
+        final List<AvailabilityOrm> availabilities = bookingDao.listAvailabilitiesForVersion(versionId);
+        final List<BookingOrm> bookings = bookingDao.getBookingsForVersion(versionId);
+
+        final List<String> offeredDates = buildOfferedDates(availabilities, timezone);
+        final List<BookingOrm> selfBlocks = bookings.stream()
+                .filter(b -> b.getGuest() != null && b.getGuest().getId().equals(ownerId))
+                .filter(b -> b.getStatus() == BookingStatusEnumOrm.CONFIRMED
+                        || b.getStatus() == BookingStatusEnumOrm.ACCEPTED)
+                .toList();
+        final List<String> blockedDates = selfBlocks.stream()
+                .map(b -> b.getStart().atZone(ZoneId.of(timezone)).toLocalDate().toString())
+                .distinct()
+                .sorted()
+                .toList();
+
+        final String selectedDate = requestedDate != null && !requestedDate.isBlank()
+                && offeredDates.contains(requestedDate)
+                ? requestedDate
+                : (offeredDates.isEmpty() ? null : offeredDates.get(0));
+
+        return Optional.of(new OwnerAvailabilityPage(
+                item, availabilities, bookings, selfBlocks,
+                offeredDates, blockedDates, selectedDate, timezone));
+    }
+
+    @Override
+    @Transactional
+    public BlockSlotOutcome blockSlotForOwner(
+            final int itemId, final int ownerId,
+            final String date, final String startTime, final String endTime) {
+        if (date == null || startTime == null || endTime == null) {
+            return BlockSlotOutcome.INVALID;
+        }
+        final LocalDate parsedDate;
+        final LocalTime parsedStart;
+        final LocalTime parsedEnd;
+        try {
+            parsedDate = LocalDate.parse(date);
+            parsedStart = LocalTime.parse(startTime);
+            parsedEnd = LocalTime.parse(endTime);
+        } catch (final Exception e) {
+            return BlockSlotOutcome.INVALID;
+        }
+        if (parsedDate.isBefore(LocalDate.now())) {
+            return BlockSlotOutcome.PAST_DATE;
+        }
+        final Optional<MyBoatsItem> itemOpt = itemInterface.findMyBoatsItemByIdForOwner(itemId, ownerId);
+        if (itemOpt.isEmpty()) {
+            return BlockSlotOutcome.INVALID;
+        }
+        final MyBoatsItem item = itemOpt.get();
+        final int versionId = item.getVersionId();
+
+        final String timezone = bookingDao.findVersionTimezone(versionId).orElse(null);
+        if (timezone == null) {
+            return BlockSlotOutcome.INVALID;
+        }
+        final ZoneId zone = ZoneId.of(timezone.trim());
+        final OffsetDateTime startOdt = LocalDateTime.of(parsedDate, parsedStart).atZone(zone).toOffsetDateTime();
+        final OffsetDateTime endOdt = LocalDateTime.of(parsedDate, parsedEnd).atZone(zone).toOffsetDateTime();
+        final LocalDateTime utcStart = startOdt.withOffsetSameInstant(ZoneOffset.UTC).toLocalDateTime();
+        final LocalDateTime utcEnd = endOdt.withOffsetSameInstant(ZoneOffset.UTC).toLocalDateTime();
+
+        final Optional<Integer> id = bookingDao.insertBooking(
+                versionId, ownerId, utcStart, utcEnd, BookingStatusEnumOrm.CONFIRMED, null);
+        if (id.isEmpty()) {
+            return BlockSlotOutcome.OVERLAP;
+        }
+        return BlockSlotOutcome.BLOCKED;
+    }
+
+    @Override
+    @Transactional
+    public boolean removeOwnerSelfBlock(final int bookingId, final int ownerId) {
+        final Optional<BookingOrm> bookingOpt = bookingDao.findById(bookingId);
+        if (bookingOpt.isEmpty()) {
+            return false;
+        }
+        final BookingOrm booking = bookingOpt.get();
+        if (booking.getGuest() == null || !booking.getGuest().getId().equals(ownerId)) {
+            return false;
+        }
+        return bookingDao.deleteOwnerSelfBlock(bookingId, ownerId);
+    }
+
+    private static List<String> buildOfferedDates(
+            final List<AvailabilityOrm> availabilities, final String timezone) {
+        final ZoneId zone = ZoneId.of(timezone);
+        final LocalDate today = LocalDate.now(zone);
+        final LocalDate end = today.plusDays(60);
+        final List<String> dates = new ArrayList<>();
+        LocalDate cursor = today;
+        while (!cursor.isAfter(end)) {
+            final DayOfWeek dow = cursor.getDayOfWeek();
+            final boolean hasAvailability = availabilities.stream()
+                    .anyMatch(a -> a.getWeekday().name().equals(dow.name()));
+            if (hasAvailability) {
+                dates.add(cursor.toString());
+            }
+            cursor = cursor.plusDays(1);
+        }
+        return dates;
     }
 }

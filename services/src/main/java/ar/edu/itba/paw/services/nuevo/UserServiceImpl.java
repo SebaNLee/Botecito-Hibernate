@@ -1,13 +1,13 @@
 package ar.edu.itba.paw.services.nuevo;
 
-import ar.edu.itba.paw.models.nuevo.PreferredLanguageModel;
-import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.models.entity.UsersOrm;
+import ar.edu.itba.paw.models.nuevo.exceptions.EmailAlreadyExistsException;
+import ar.edu.itba.paw.models.nuevo.exceptions.MissingUserNamesException;
 import ar.edu.itba.paw.models.nuevo.mail.EmailVerificationMailModel;
 import ar.edu.itba.paw.models.nuevo.mail.MailRecipientModel;
 import ar.edu.itba.paw.models.nuevo.mail.PasswordRecoveryMailModel;
 import ar.edu.itba.paw.persistence.nuevo.UserDao;
-import ar.edu.itba.paw.services.utils.UserNameRules;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service("nuevoUserService")
 @RequiredArgsConstructor
@@ -27,52 +28,55 @@ public class UserServiceImpl implements UserService {
     private final MailService mailService;
 
     @Override
-    public RegistrationResult register(final UserModel user, final String rawPassword) {
-        UserNameRules.requireBothLegalNames(user.getGivenName(), user.getLastName());
-        final String normalizedEmail = user.getEmail().trim().toLowerCase();
+    @Transactional
+    public void register(final String firstName, final String lastName, final String email,
+            final String alias, final String language, final String rawPassword) {
+        requireBothLegalNames(firstName, lastName);
+        final String normalizedEmail = email.trim().toLowerCase();
         final String passwordHash = passwordEncoder.encode(rawPassword);
-        final String normalizedPaymentAlias = normalizePaymentAlias(user.getPaymentAlias());
-        final String normalizedPreferredLanguage = user.getPreferredLanguage().getPersistenceCode();
         final String verificationToken = UUID.randomUUID().toString();
 
-        final Optional<UserModel> existingUser = userDao.findByEmail(normalizedEmail);
+        final Optional<UsersOrm> existingUser = userDao.findByEmail(normalizedEmail);
         if (existingUser.isEmpty()) {
             LOGGER.info("Registering new user with email {}", normalizedEmail);
-            final UserModel userToCreate = new UserModel();
-            userToCreate.setGivenName(user.getGivenName());
-            userToCreate.setLastName(user.getLastName());
+            final UsersOrm userToCreate = new UsersOrm();
+            userToCreate.setFirstName(firstName);
+            userToCreate.setLastName(lastName);
             userToCreate.setEmail(normalizedEmail);
             userToCreate.setPasswordHash(passwordHash);
-            userToCreate.setPaymentAlias(normalizedPaymentAlias);
-            userToCreate.setPreferredLanguage(PreferredLanguageModel.fromPersistence(normalizedPreferredLanguage));
+            userToCreate.setAlias(normalizeNullable(alias));
+            userToCreate.setLanguage(language != null ? language : "ES");
             userToCreate.setVerified(false);
-            userToCreate.setPasswordRecoveryToken(verificationToken);
+            userToCreate.setMailToken(verificationToken);
+            userToCreate.setCreatedAt(LocalDateTime.now());
             sendEmailVerificationEmail(userDao.createUser(userToCreate));
-            return RegistrationResult.SUCCESS;
+            return;
         }
 
         if (existingUser.get().getPasswordHash() == null) {
             LOGGER.info("Claiming account for user with email {}", normalizedEmail);
-            final UserModel userToClaim = new UserModel();
-            userToClaim.setGivenName(user.getGivenName());
-            userToClaim.setLastName(user.getLastName());
+            final UsersOrm userToClaim = new UsersOrm();
+            userToClaim.setFirstName(firstName);
+            userToClaim.setLastName(lastName);
             userToClaim.setEmail(normalizedEmail);
             userToClaim.setPasswordHash(passwordHash);
-            userToClaim.setPaymentAlias(normalizedPaymentAlias);
-            userToClaim.setPreferredLanguage(PreferredLanguageModel.fromPersistence(normalizedPreferredLanguage));
+            userToClaim.setAlias(normalizeNullable(alias));
+            userToClaim.setLanguage(language != null ? language : "ES");
             userToClaim.setVerified(false);
-            userToClaim.setPasswordRecoveryToken(verificationToken);
+            userToClaim.setMailToken(verificationToken);
+            userToClaim.setCreatedAt(LocalDateTime.now());
             sendEmailVerificationEmail(userDao.claimUser(userToClaim)
                     .orElseThrow(() -> new IllegalStateException("Could not claim account for " + normalizedEmail)));
-            return RegistrationResult.SUCCESS;
+            return;
         }
 
         LOGGER.warn("Attempted registration with existing email: {}", normalizedEmail);
-        return RegistrationResult.EMAIL_ALREADY_EXISTS;
+        throw new EmailAlreadyExistsException();
     }
 
     @Override
-    public Optional<UserModel> findByEmail(final String email) {
+    @Transactional(readOnly = true)
+    public Optional<UsersOrm> findByEmail(final String email) {
         if (email == null || email.isBlank()) {
             return Optional.empty();
         }
@@ -80,58 +84,57 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Optional<UserModel> findById(final int id) {
+    @Transactional(readOnly = true)
+    public Optional<UsersOrm> findById(final int id) {
         return userDao.findById(id);
     }
 
     @Override
-    public Optional<UserModel> updateProfile(final UserModel user) {
-        if (user.getId() == null) {
-            return Optional.empty();
-        }
+    @Transactional
+    public Optional<UsersOrm> updateProfile(final int userId, final String firstName, final String lastName,
+            final String email, final String phone, final String alias, final String language) {
 
-        final Optional<UserModel> currentUser = userDao.findById(user.getId());
+        final Optional<UsersOrm> currentUser = userDao.findById(userId);
         if (currentUser.isEmpty()) {
             return Optional.empty();
         }
 
         final String normalizedEmail =
-                user.getEmail() == null ? "" : user.getEmail().trim().toLowerCase();
-        final Optional<UserModel> emailOwner = userDao.findByEmail(normalizedEmail);
+                email == null ? "" : email.trim().toLowerCase();
+        final Optional<UsersOrm> emailOwner = userDao.findByEmail(normalizedEmail);
         if (normalizedEmail.isBlank()
                 || emailOwner
-                        .filter(owner -> owner.getId() == null || !owner.getId().equals(user.getId()))
+                        .filter(owner -> owner.getId() == null || !owner.getId().equals(userId))
                         .isPresent()) {
             LOGGER.warn(
                     "Attempt to update profile with email {} by user {} failed: email in use or invalid",
                     normalizedEmail,
-                    user.getId());
+                    userId);
             return Optional.empty();
         }
 
-        UserNameRules.requireBothLegalNames(user.getGivenName(), user.getLastName());
+        requireBothLegalNames(firstName, lastName);
         final boolean emailChanged =
                 !normalizedEmail.equalsIgnoreCase(currentUser.get().getEmail());
 
-        LOGGER.info("Updating profile for user {}", user.getId());
-        final UserModel profileUpdate = new UserModel();
-        profileUpdate.setId(user.getId());
-        profileUpdate.setGivenName(user.getGivenName().trim());
-        profileUpdate.setLastName(user.getLastName().trim());
+        LOGGER.info("Updating profile for user {}", userId);
+        final UsersOrm profileUpdate = new UsersOrm();
+        profileUpdate.setId(userId);
+        profileUpdate.setFirstName(firstName.trim());
+        profileUpdate.setLastName(lastName.trim());
         profileUpdate.setEmail(normalizedEmail);
-        profileUpdate.setPhone(normalizeNullable(user.getPhone()));
-        profileUpdate.setPaymentAlias(normalizePaymentAlias(user.getPaymentAlias()));
-        profileUpdate.setPreferredLanguage(user.getPreferredLanguage());
+        profileUpdate.setPhone(normalizeNullable(phone));
+        profileUpdate.setAlias(normalizeNullable(alias));
+        profileUpdate.setLanguage(language);
         if (emailChanged) {
             profileUpdate.setVerified(false);
-            profileUpdate.setPasswordRecoveryToken(UUID.randomUUID().toString());
-            profileUpdate.setPasswordRecoveryUsedAt(null);
+            profileUpdate.setMailToken(UUID.randomUUID().toString());
         } else {
-            profileUpdate.setVerified(currentUser.get().isVerified());
-            profileUpdate.setPasswordRecoveryToken(currentUser.get().getPasswordRecoveryToken());
-            profileUpdate.setPasswordRecoveryUsedAt(currentUser.get().getPasswordRecoveryUsedAt());
+            profileUpdate.setVerified(currentUser.get().getVerified() != null && currentUser.get().getVerified());
+            profileUpdate.setMailToken(currentUser.get().getMailToken());
+            profileUpdate.setMailTokenEmittedAt(currentUser.get().getMailTokenEmittedAt());
         }
-        final Optional<UserModel> updatedUser = userDao.updateProfile(profileUpdate);
+        final Optional<UsersOrm> updatedUser = userDao.updateProfile(profileUpdate);
         if (emailChanged) {
             updatedUser.ifPresent(this::sendEmailVerificationEmail);
         }
@@ -139,66 +142,63 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Optional<UserModel> requestPasswordRecovery(final UserModel user) {
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
+    @Transactional
+    public Optional<UsersOrm> requestPasswordRecovery(final String email) {
+        if (email == null || email.isBlank()) {
             return Optional.empty();
         }
 
-        final Optional<UserModel> existingUser =
-                userDao.findByEmail(user.getEmail().trim().toLowerCase());
+        final Optional<UsersOrm> existingUser = userDao.findByEmail(email.trim().toLowerCase());
         if (existingUser.isEmpty()
                 || existingUser.get().getPasswordHash() == null
-                || !existingUser.get().isVerified()) {
-            LOGGER.warn("Password recovery requested for non-existent or unclaimable user: {}", user.getEmail());
+                || !Boolean.TRUE.equals(existingUser.get().getVerified())) {
+            LOGGER.warn("Password recovery requested for non-existent or unclaimable user: {}", email);
             return Optional.empty();
         }
 
-        LOGGER.info(
-                "Password recovery requested for user {}", existingUser.get().getId());
-        final UserModel recoveryUpdate = new UserModel();
-        recoveryUpdate.setId(existingUser.get().getId());
-        recoveryUpdate.setPasswordRecoveryToken(UUID.randomUUID().toString());
-        final Optional<UserModel> updatedUser = userDao.updatePasswordRecoveryToken(recoveryUpdate);
+        final UsersOrm existing = existingUser.get();
+        LOGGER.info("Password recovery requested for user {}", existing.getId());
+        final String recoveryToken = UUID.randomUUID().toString();
+        final Optional<UsersOrm> updatedUser = userDao.updatePasswordRecoveryToken(existing.getId(), recoveryToken);
         updatedUser.ifPresent(this::sendPasswordRecoveryEmail);
         return updatedUser;
     }
 
     @Override
-    public Optional<UserModel> findByPasswordRecoveryToken(final String token) {
+    @Transactional(readOnly = true)
+    public Optional<UsersOrm> findByPasswordRecoveryToken(final String token) {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
 
-        final Optional<UserModel> user = userDao.findByPasswordRecoveryToken(token.trim());
-        if (user.isEmpty() || user.get().getPasswordRecoveryUsedAt() != null) {
+        final Optional<UsersOrm> user = userDao.findByPasswordRecoveryToken(token.trim());
+        if (user.isEmpty() || user.get().getMailTokenEmittedAt() != null) {
             return Optional.empty();
         }
         return user;
     }
 
     @Override
-    public PasswordRecoveryResult resetPassword(final UserModel user, final String rawPassword) {
-        final String token = user.getPasswordRecoveryToken();
+    @Transactional
+    public boolean resetPassword(final String token, final String rawPassword) {
         if (token == null || token.isBlank() || rawPassword == null || rawPassword.isBlank()) {
-            return PasswordRecoveryResult.INVALID_TOKEN;
+            return false;
         }
 
-        final UserModel passwordUpdate = new UserModel();
-        passwordUpdate.setPasswordRecoveryToken(token.trim());
-        passwordUpdate.setPasswordHash(passwordEncoder.encode(rawPassword));
-        passwordUpdate.setPasswordRecoveryUsedAt(OffsetDateTime.now());
-        final boolean updated = userDao.resetPasswordByRecoveryToken(passwordUpdate);
+        final String passwordHash = passwordEncoder.encode(rawPassword);
+        final boolean updated = userDao.resetPasswordByRecoveryToken(token.trim(), passwordHash, LocalDateTime.now());
         if (!updated) {
             LOGGER.warn("Failed password reset attempt with invalid token");
-            return PasswordRecoveryResult.INVALID_TOKEN;
+            return false;
         }
 
         LOGGER.info("Password successfully reset using recovery token");
-        return PasswordRecoveryResult.SUCCESS;
+        return true;
     }
 
     @Override
-    public Optional<UserModel> verifyEmail(final String token) {
+    @Transactional
+    public Optional<UsersOrm> verifyEmail(final String token) {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
@@ -209,8 +209,10 @@ public class UserServiceImpl implements UserService {
         return userDao.verifyEmailByToken(normalizedToken);
     }
 
-    private static String normalizePaymentAlias(final String paymentAlias) {
-        return normalizeNullable(paymentAlias);
+    private static void requireBothLegalNames(final String givenName, final String lastName) {
+        if (givenName == null || givenName.isBlank() || lastName == null || lastName.isBlank()) {
+            throw new MissingUserNamesException();
+        }
     }
 
     private static String normalizeNullable(final String value) {
@@ -221,22 +223,22 @@ public class UserServiceImpl implements UserService {
         return trimmedValue.isEmpty() ? null : trimmedValue;
     }
 
-    private void sendPasswordRecoveryEmail(final UserModel user) {
+    private void sendPasswordRecoveryEmail(final UsersOrm user) {
         try {
             final PasswordRecoveryMailModel mail = new PasswordRecoveryMailModel();
             mail.setRecipient(MailRecipientModel.fromUser(user));
-            mail.setRecoveryToken(user.getPasswordRecoveryToken());
+            mail.setRecoveryToken(user.getMailToken());
             mailService.sendPasswordRecoveryEmail(mail);
         } catch (final RuntimeException e) {
             LOGGER.error("Could not trigger password recovery email for user {}.", user.getId(), e);
         }
     }
 
-    private void sendEmailVerificationEmail(final UserModel user) {
+    private void sendEmailVerificationEmail(final UsersOrm user) {
         try {
             final EmailVerificationMailModel mail = new EmailVerificationMailModel();
             mail.setRecipient(MailRecipientModel.fromUser(user));
-            mail.setVerificationToken(user.getPasswordRecoveryToken());
+            mail.setVerificationToken(user.getMailToken());
             mailService.sendEmailVerificationEmail(mail);
         } catch (final RuntimeException e) {
             LOGGER.error("Could not trigger email verification for user {}.", user.getId(), e);

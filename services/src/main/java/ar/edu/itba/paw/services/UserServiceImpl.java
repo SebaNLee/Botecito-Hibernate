@@ -60,18 +60,19 @@ public class UserServiceImpl implements UserService {
 
         if (existingUser.get().getPasswordHash() == null) {
             LOGGER.info("Claiming account for user with email {}", normalizedEmail);
-            final Users userToClaim = new Users();
-            userToClaim.setFirstName(firstName);
-            userToClaim.setLastName(lastName);
-            userToClaim.setEmail(normalizedEmail);
-            userToClaim.setPasswordHash(passwordHash);
-            userToClaim.setAlias(normalizeNullable(alias));
-            userToClaim.setLanguage(language != null ? language : "ES");
-            userToClaim.setVerified(false);
-            userToClaim.setMailToken(verificationToken);
-            userToClaim.setCreatedAt(LocalDateTime.now());
-            sendEmailVerificationEmail(userDao.claimUser(userToClaim)
-                    .orElseThrow(() -> new IllegalStateException("Could not claim account for " + normalizedEmail)));
+            final Users existing = existingUser.get();
+            existing.setFirstName(firstName);
+            existing.setLastName(lastName);
+            existing.setLanguage(language != null ? language : "ES");
+            existing.setPasswordHash(passwordHash);
+            existing.setMailToken(verificationToken);
+            existing.setMailTokenEmittedAt(null);
+            existing.setVerified(false);
+            final String normalizedAlias = normalizeNullable(alias);
+            if (normalizedAlias != null) {
+                existing.setAlias(normalizedAlias);
+            }
+            sendEmailVerificationEmail(existing);
             return;
         }
 
@@ -124,32 +125,25 @@ public class UserServiceImpl implements UserService {
         }
 
         requireBothLegalNames(firstName, lastName);
-        final boolean emailChanged =
-                !normalizedEmail.equalsIgnoreCase(currentUser.get().getEmail());
+        final Users existing = currentUser.get();
+        final boolean emailChanged = !normalizedEmail.equalsIgnoreCase(existing.getEmail());
 
         LOGGER.info("Updating profile for user {}", userId);
-        final Users profileUpdate = new Users();
-        profileUpdate.setId(userId);
-        profileUpdate.setFirstName(firstName.trim());
-        profileUpdate.setLastName(lastName.trim());
-        profileUpdate.setEmail(normalizedEmail);
-        profileUpdate.setPhone(normalizeNullable(phone));
-        profileUpdate.setAlias(normalizeNullable(alias));
-        profileUpdate.setLanguage(language);
+        existing.setFirstName(firstName.trim());
+        existing.setLastName(lastName.trim());
+        existing.setEmail(normalizedEmail);
+        existing.setPhone(normalizeNullable(phone));
+        existing.setAlias(normalizeNullable(alias));
+        existing.setLanguage(language);
         if (emailChanged) {
-            profileUpdate.setVerified(false);
-            profileUpdate.setMailToken(UUID.randomUUID().toString());
+            existing.setVerified(false);
+            existing.setMailToken(UUID.randomUUID().toString());
+            existing.setMailTokenEmittedAt(null);
+            sendEmailVerificationEmail(existing);
         } else {
-            profileUpdate.setVerified(
-                    currentUser.get().getVerified() != null && currentUser.get().getVerified());
-            profileUpdate.setMailToken(currentUser.get().getMailToken());
-            profileUpdate.setMailTokenEmittedAt(currentUser.get().getMailTokenEmittedAt());
+            existing.setVerified(existing.getVerified() != null && existing.getVerified());
         }
-        final Optional<Users> updatedUser = userDao.updateProfile(profileUpdate);
-        if (emailChanged) {
-            updatedUser.ifPresent(this::sendEmailVerificationEmail);
-        }
-        return updatedUser;
+        return Optional.of(existing);
     }
 
     @Override
@@ -169,10 +163,10 @@ public class UserServiceImpl implements UserService {
 
         final Users existing = existingUser.get();
         LOGGER.info("Password recovery requested for user {}", existing.getId());
-        final String recoveryToken = UUID.randomUUID().toString();
-        final Optional<Users> updatedUser = userDao.updatePasswordRecoveryToken(existing.getId(), recoveryToken);
-        updatedUser.ifPresent(this::sendPasswordRecoveryEmail);
-        return updatedUser;
+        existing.setMailToken(UUID.randomUUID().toString());
+        existing.setMailTokenEmittedAt(null);
+        sendPasswordRecoveryEmail(existing);
+        return Optional.of(existing);
     }
 
     @Override
@@ -213,11 +207,15 @@ public class UserServiceImpl implements UserService {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
-        final String normalizedToken = token.trim();
-        if (userDao.findByEmailVerificationToken(normalizedToken).isEmpty()) {
+        final Optional<Users> user = userDao.findByEmailVerificationToken(token.trim());
+        if (user.isEmpty()) {
             return Optional.empty();
         }
-        return userDao.verifyEmailByToken(normalizedToken);
+        final Users existing = user.get();
+        existing.setVerified(true);
+        existing.setMailToken(null);
+        existing.setMailTokenEmittedAt(null);
+        return Optional.of(existing);
     }
 
     private static void requireBothLegalNames(final String givenName, final String lastName) {

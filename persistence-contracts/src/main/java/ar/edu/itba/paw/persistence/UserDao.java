@@ -13,19 +13,11 @@ public interface UserDao {
 
     Users createUser(Users user);
 
-    Optional<Users> claimUser(Users user);
-
-    Optional<Users> updateProfile(Users user);
-
-    Optional<Users> updatePasswordRecoveryToken(int userId, String mailToken);
-
     Optional<Users> findByPasswordRecoveryToken(String token);
 
     boolean resetPasswordByRecoveryToken(String token, String passwordHash, LocalDateTime usedAt);
 
     Optional<Users> findByEmailVerificationToken(String token);
-
-    Optional<Users> verifyEmailByToken(String token);
 
     List<Users> findUsersByIds(Collection<Integer> userIds);
 }

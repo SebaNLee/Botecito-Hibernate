@@ -1,19 +1,16 @@
 package ar.edu.itba.paw.persistence.orm.daos;
 
-import ar.edu.itba.paw.models.nuevo.AvailabilityWindow;
-import ar.edu.itba.paw.models.nuevo.Booking;
+
+import ar.edu.itba.paw.models.entity.AvailabilityOrm;
+import ar.edu.itba.paw.models.entity.BookingOrm;
+import ar.edu.itba.paw.models.entity.ItemStatusEnumOrm;
+import ar.edu.itba.paw.models.entity.ReviewOrm;
+import ar.edu.itba.paw.models.entity.TargetEnumOrm;
+import ar.edu.itba.paw.models.entity.VersionOrm;
 import ar.edu.itba.paw.models.nuevo.ItemDetail;
-import ar.edu.itba.paw.models.nuevo.ItemModel;
-import ar.edu.itba.paw.models.nuevo.ReviewModel;
-import ar.edu.itba.paw.models.nuevo.enums.TargetType;
-import ar.edu.itba.paw.persistence.nuevo.BookingDao;
 import ar.edu.itba.paw.persistence.nuevo.DetailDao;
-import ar.edu.itba.paw.persistence.orm.entities.AvailabilityOrm;
-import ar.edu.itba.paw.persistence.orm.entities.ReviewOrm;
-import ar.edu.itba.paw.persistence.orm.entities.TargetEnumOrm;
-import ar.edu.itba.paw.persistence.orm.projections.ItemListingRowOrm;
-import ar.edu.itba.paw.persistence.orm.queries.ItemListingHql;
-import java.time.DayOfWeek;
+import ar.edu.itba.paw.persistence.orm.projections.DetailRowOrm;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -22,10 +19,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 @Repository
-@Transactional(readOnly = true)
 public class DetailHibernateDao implements DetailDao {
 
     private static final String GALLERY_IMAGE_IDS_FOR_VERSION =
@@ -34,9 +29,9 @@ public class DetailHibernateDao implements DetailDao {
     private static final String HQL_VERSION_TIMEZONE = "SELECT v.timezone FROM VersionOrm v WHERE v.id = :versionId";
 
     /**
-     * Item-scoped reviews (matches {@link ar.edu.itba.paw.persistence.orm.queries.ItemListingHql} aggregate
-     * subqueries on {@code r.booking.version.item}), so detail ratings and listed reviews stay consistent when a
-     * booking was made on an older listing version.
+     * Item-scoped reviews (matches aggregate subqueries on {@code r.booking.version.item}),
+     * so detail ratings and listed reviews stay consistent when a booking was made on an older
+     * listing version.
      */
     private static final String HQL_REVIEWS_FOR_ITEM =
             "SELECT r FROM ReviewOrm r JOIN FETCH r.booking b LEFT JOIN FETCH r.sender "
@@ -45,29 +40,69 @@ public class DetailHibernateDao implements DetailDao {
     private static final String HQL_AVAILABILITIES_FOR_VERSION =
             "SELECT a FROM AvailabilityOrm a WHERE a.version.id = :versionId ORDER BY a.weekday, a.startTime, a.id";
 
-    private final BookingDao bookingDao;
+    private static final String HQL_BOOKINGS_FOR_VERSION =
+            "SELECT b FROM BookingOrm b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof "
+                    + "WHERE b.version.id = :versionId ORDER BY b.start ASC";
+
+    private static final String ITEM_WITH_CURRENT_VERSION = "FROM ItemOrm i "
+            + "JOIN VersionOrm v ON v.item = i "
+            + "  AND v.id = (SELECT MAX(v2.id) FROM VersionOrm v2 WHERE v2.item = i) ";
+
+    private static final String ITEM_WITH_VERSION_JOIN = "FROM ItemOrm i JOIN VersionOrm v ON v.item = i ";
+
+    private static final String COVER_IMAGE_SUBQUERY =
+            "(SELECT MIN(m.image.id) FROM MediaOrm m"
+            + " WHERE m.version = v AND m.id.index = ("
+            + "   SELECT MIN(m2.id.index) FROM MediaOrm m2 WHERE m2.version = v"
+            + " ))";
+
+    private static final String RATING_SUBQUERY =
+            "(SELECT COALESCE(AVG(r.rating), 0) FROM ReviewOrm r"
+            + " WHERE r.targetType = :itemTargetType AND r.booking.version.item = i)";
+
+    private static final String REVIEW_COUNT_SUBQUERY =
+            "(SELECT COUNT(r) FROM ReviewOrm r"
+            + " WHERE r.targetType = :itemTargetType AND r.booking.version.item = i)";
+
+    private static final String DETAIL_ROW_CONSTRUCTOR =
+            "SELECT NEW ar.edu.itba.paw.persistence.orm.projections.DetailRowOrm("
+            + "i.id, i.host.id, i.status,"
+            + " v.title, v.description, v.price, v.capacity, v.weight, v.difficulty,"
+            + " v.location.id, v.location.name, v.type.name, "
+            + COVER_IMAGE_SUBQUERY + ", " + RATING_SUBQUERY + ", " + REVIEW_COUNT_SUBQUERY + ","
+            + " v.id"
+            + ") ";
+
+    private static final String ITEM_DETAIL_BY_ID = DETAIL_ROW_CONSTRUCTOR + ITEM_WITH_CURRENT_VERSION
+            + " WHERE i.id = :itemId";
+
+    private static final String ITEM_DETAIL_VERSIONS_BY_ITEM_ID = DETAIL_ROW_CONSTRUCTOR + ITEM_WITH_VERSION_JOIN
+            + " WHERE i.id = :itemId ORDER BY v.id DESC";
+
+    private static final String ITEM_DETAIL_VERSIONS_BY_ITEM_ID_IN_VERSION_IDS = DETAIL_ROW_CONSTRUCTOR
+            + ITEM_WITH_VERSION_JOIN + " WHERE i.id = :itemId AND v.id IN :versionIds ORDER BY v.id DESC";
+
+    private static final String VERSION_IDS_FOR_GUEST_BOOKINGS_ON_ITEM =
+            "SELECT DISTINCT b.version.id FROM BookingOrm b WHERE b.guest IS NOT NULL"
+                    + " AND b.guest.id = :guestId AND b.version.item.id = :itemId";
 
     @PersistenceContext
     private EntityManager entityManager;
 
-    public DetailHibernateDao(final BookingDao bookingDao) {
-        this.bookingDao = bookingDao;
-    }
-
     @Override
     public Optional<ItemDetail> getItemDetailById(final int itemId, final boolean allVersions) {
         final String hql =
-                allVersions ? ItemListingHql.ITEM_DETAIL_VERSIONS_BY_ITEM_ID : ItemListingHql.ITEM_DETAIL_BY_ID;
-        final TypedQuery<ItemListingRowOrm> query = entityManager.createQuery(hql, ItemListingRowOrm.class);
+                allVersions ? ITEM_DETAIL_VERSIONS_BY_ITEM_ID : ITEM_DETAIL_BY_ID;
+        final TypedQuery<DetailRowOrm> query = entityManager.createQuery(hql, DetailRowOrm.class);
         query.setParameter("itemId", itemId);
-        query.setParameter(ItemListingHql.ITEM_TARGET_PARAM, TargetEnumOrm.ITEM);
+        query.setParameter("itemTargetType", TargetEnumOrm.ITEM);
         return toItemDetail(query.getResultList());
     }
 
     @Override
     public List<Integer> findVersionIdsFromGuestBookingsForItem(final int itemId, final int guestUserId) {
         final TypedQuery<Integer> query =
-                entityManager.createQuery(ItemListingHql.VERSION_IDS_FOR_GUEST_BOOKINGS_ON_ITEM, Integer.class);
+                entityManager.createQuery(VERSION_IDS_FOR_GUEST_BOOKINGS_ON_ITEM, Integer.class);
         query.setParameter("itemId", itemId);
         query.setParameter("guestId", guestUserId);
         return List.copyOf(query.getResultList());
@@ -78,11 +113,11 @@ public class DetailHibernateDao implements DetailDao {
         if (versionIds == null || versionIds.isEmpty()) {
             return Optional.empty();
         }
-        final TypedQuery<ItemListingRowOrm> query = entityManager.createQuery(
-                ItemListingHql.ITEM_DETAIL_VERSIONS_BY_ITEM_ID_IN_VERSION_IDS, ItemListingRowOrm.class);
+        final TypedQuery<DetailRowOrm> query = entityManager.createQuery(
+                ITEM_DETAIL_VERSIONS_BY_ITEM_ID_IN_VERSION_IDS, DetailRowOrm.class);
         query.setParameter("itemId", itemId);
         query.setParameter("versionIds", versionIds);
-        query.setParameter(ItemListingHql.ITEM_TARGET_PARAM, TargetEnumOrm.ITEM);
+        query.setParameter("itemTargetType", TargetEnumOrm.ITEM);
         return toItemDetail(query.getResultList());
     }
 
@@ -91,27 +126,47 @@ public class DetailHibernateDao implements DetailDao {
         return getItemDetailById(itemId, false);
     }
 
-    private Optional<ItemDetail> toItemDetail(final List<ItemListingRowOrm> rows) {
+    private Optional<ItemDetail> toItemDetail(final List<DetailRowOrm> rows) {
         if (rows.isEmpty()) {
             return Optional.empty();
         }
         final ItemDetail detail = new ItemDetail();
         final int itemId = Objects.requireNonNull(rows.get(0).getItemId(), "itemId");
-        final List<ReviewModel> itemReviews = List.copyOf(loadReviewsForItem(itemId));
-        final List<ItemDetail.ItemModelVersion> versions = new ArrayList<>(rows.size());
-        for (final ItemListingRowOrm row : rows) {
+        final List<ReviewOrm> itemReviews = List.copyOf(loadReviewsForItem(itemId));
+        final List<ItemDetail.VersionDetail> versions = new ArrayList<>(rows.size());
+        for (final DetailRowOrm row : rows) {
             final Integer versionId = row.getVersionId();
             if (versionId == null) {
                 continue;
             }
-            final ItemModel item = row.toItemModel();
-            item.setImages(resolveGalleryPathsForVersion(versionId));
             final String timezone = resolveVersionTimezone(versionId);
-            final List<Booking> bookings = List.copyOf(bookingDao.getBookingsForVersion(versionId));
-            final List<AvailabilityWindow> availabilityWindows =
+            final List<BookingOrm> bookings = List.copyOf(loadBookingsForVersion(versionId));
+            final List<AvailabilityOrm> availabilityWindows =
                     List.copyOf(loadAvailabilityWindowsForVersion(versionId));
-            versions.add(new ItemDetail.ItemModelVersion(
-                    item, bookings, itemReviews, versionId.longValue(), timezone, availabilityWindows));
+            final VersionOrm versionEntity = entityManager.find(VersionOrm.class, versionId);
+            versions.add(ItemDetail.VersionDetail.builder()
+                    .itemId(itemId)
+                    .hostId(row.getHostId() != null ? row.getHostId() : 0)
+                    .status(row.getStatus())
+                    .versionId(versionId)
+                    .title(row.getTitle())
+                    .description(row.getDescription())
+                    .price(row.getPrice())
+                    .capacity(Objects.requireNonNull(row.getCapacity(), "capacity"))
+                    .weight(Objects.requireNonNull(row.getWeight(), "weight"))
+                    .difficulty(Objects.requireNonNull(row.getDifficulty(), "difficulty"))
+                    .locationId(Objects.requireNonNull(row.getLocationId(), "locationId"))
+                    .location(row.getLocationName())
+                    .itemTypeName(row.getItemTypeName())
+                    .averageRating(row.getAverageRating() == null ? 0D : row.getAverageRating())
+                    .totalReviews(row.getTotalReviews() == null ? 0 : row.getTotalReviews().intValue())
+                    .images(resolveGalleryPathsForVersion(versionId))
+                    .bookings(bookings)
+                    .reviews(itemReviews)
+                    .versionTimezone(timezone)
+                    .availabilityWindows(availabilityWindows)
+                    .version(versionEntity)
+                    .build());
         }
         if (versions.isEmpty()) {
             return Optional.empty();
@@ -141,50 +196,24 @@ public class DetailHibernateDao implements DetailDao {
         return tz == null ? "" : tz.trim();
     }
 
-    private List<AvailabilityWindow> loadAvailabilityWindowsForVersion(final int versionId) {
+    private List<BookingOrm> loadBookingsForVersion(final int versionId) {
+        final TypedQuery<BookingOrm> q =
+                entityManager.createQuery(HQL_BOOKINGS_FOR_VERSION, BookingOrm.class);
+        q.setParameter("versionId", versionId);
+        return q.getResultList();
+    }
+
+    private List<AvailabilityOrm> loadAvailabilityWindowsForVersion(final int versionId) {
         final TypedQuery<AvailabilityOrm> q =
                 entityManager.createQuery(HQL_AVAILABILITIES_FOR_VERSION, AvailabilityOrm.class);
         q.setParameter("versionId", versionId);
-        final List<AvailabilityOrm> rows = q.getResultList();
-        final List<AvailabilityWindow> out = new ArrayList<>(rows.size());
-        for (final AvailabilityOrm orm : rows) {
-            out.add(toAvailabilityWindow(orm));
-        }
-        return out;
+        return q.getResultList();
     }
 
-    private static AvailabilityWindow toAvailabilityWindow(final AvailabilityOrm orm) {
-        final AvailabilityWindow w = new AvailabilityWindow();
-        w.setWeekday(
-                orm.getWeekday() == null
-                        ? null
-                        : DayOfWeek.valueOf(orm.getWeekday().name()));
-        w.setStartTime(orm.getStartTime());
-        w.setEndTime(orm.getEndTime());
-        return w;
-    }
-
-    private List<ReviewModel> loadReviewsForItem(final int itemId) {
+    private List<ReviewOrm> loadReviewsForItem(final int itemId) {
         final TypedQuery<ReviewOrm> q = entityManager.createQuery(HQL_REVIEWS_FOR_ITEM, ReviewOrm.class);
         q.setParameter("itemId", itemId);
         q.setParameter("itemTarget", TargetEnumOrm.ITEM);
-        final List<ReviewOrm> rows = q.getResultList();
-        final List<ReviewModel> out = new ArrayList<>(rows.size());
-        for (final ReviewOrm orm : rows) {
-            out.add(toReviewModel(orm));
-        }
-        return out;
-    }
-
-    private static ReviewModel toReviewModel(final ReviewOrm orm) {
-        final ReviewModel m = new ReviewModel();
-        m.setId(orm.getId());
-        m.setBookingId(orm.getBooking().getId());
-        m.setSenderId(orm.getSender() != null ? orm.getSender().getId() : 0);
-        m.setTargetType(TargetType.valueOf(orm.getTargetType().name()));
-        m.setRating(orm.getRating() == null ? 0d : orm.getRating().doubleValue());
-        m.setComment(orm.getComment());
-        m.setCreatedAt(orm.getCreatedAt());
-        return m;
+        return q.getResultList();
     }
 }

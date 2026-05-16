@@ -1,30 +1,31 @@
 package ar.edu.itba.paw.persistence.nuevo;
 
-import ar.edu.itba.paw.models.nuevo.UserModel;
+import ar.edu.itba.paw.models.entity.UsersOrm;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface UserDao {
-    Optional<UserModel> findById(int id);
+    Optional<UsersOrm> findById(int id);
 
-    Optional<UserModel> findByEmail(String email);
+    Optional<UsersOrm> findByEmail(String email);
 
-    UserModel createUser(UserModel user);
+    UsersOrm createUser(UsersOrm user);
 
-    Optional<UserModel> claimUser(UserModel user);
+    Optional<UsersOrm> claimUser(UsersOrm user);
 
-    Optional<UserModel> updateProfile(UserModel user);
+    Optional<UsersOrm> updateProfile(UsersOrm user);
 
-    Optional<UserModel> updatePasswordRecoveryToken(UserModel user);
+    Optional<UsersOrm> updatePasswordRecoveryToken(int userId, String mailToken);
 
-    Optional<UserModel> findByPasswordRecoveryToken(String token);
+    Optional<UsersOrm> findByPasswordRecoveryToken(String token);
 
-    boolean resetPasswordByRecoveryToken(UserModel user);
+    boolean resetPasswordByRecoveryToken(String token, String passwordHash, LocalDateTime usedAt);
 
-    Optional<UserModel> findByEmailVerificationToken(String token);
+    Optional<UsersOrm> findByEmailVerificationToken(String token);
 
-    Optional<UserModel> verifyEmailByToken(String token);
+    Optional<UsersOrm> verifyEmailByToken(String token);
 
-    List<UserModel> findUsersByIds(Collection<Integer> userIds);
+    List<UsersOrm> findUsersByIds(Collection<Integer> userIds);
 }

@@ -1,7 +1,8 @@
 package ar.edu.itba.paw.persistence.nuevo;
 
+import ar.edu.itba.paw.models.entity.AvailabilityOrm;
+import ar.edu.itba.paw.models.entity.VersionOrm;
 import ar.edu.itba.paw.models.nuevo.AvailabilityWindow;
-import ar.edu.itba.paw.models.nuevo.PublishItem;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,10 +17,12 @@ public interface PublishDao {
             java.math.BigDecimal maxWeightKg,
             Integer difficultyLevel,
             int locationOptionId,
+            String timezone,
+            String status,
             List<AvailabilityWindow> availabilities,
             List<ar.edu.itba.paw.models.nuevo.ImageUpload> images);
 
-    Optional<PublishItem> findById(int itemId);
+    Optional<VersionOrm> findById(int itemId);
 
-    List<AvailabilityWindow> listAvailabilities(int itemId);
+    List<AvailabilityOrm> listAvailabilities(int itemId);
 }

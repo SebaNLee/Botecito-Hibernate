@@ -52,10 +52,10 @@ charset=UTF-8" pageEncoding="UTF-8" %>
   code="publish.form.difficulty.label"
   var="publishDifficultyLabel"
 />
-<spring:message code="publish.type.other" var="publishTypeOther" />
+<spring:message code="publish.type.otros" var="publishTypeOther" />
 <spring:message code="publish.type.kayak" var="publishTypeKayak" />
 <spring:message code="publish.type.paddle" var="publishTypePaddle" />
-<spring:message code="publish.type.canoe" var="publishTypeCanoe" />
+<spring:message code="publish.type.canoa" var="publishTypeCanoe" />
 <spring:message code="publish.type.windsurf" var="publishTypeWindsurf" />
 <spring:message code="publish.type.efoil" var="publishTypeEFoil" />
 <spring:message code="publish.type.optimist" var="publishTypeOptimist" />

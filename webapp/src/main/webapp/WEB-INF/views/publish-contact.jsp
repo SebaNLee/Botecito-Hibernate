@@ -74,10 +74,10 @@
               <p class="text-[11px] uppercase tracking-wider font-bold text-outline m-0"><spring:message code="publish.form.type.label" /></p>
               <p class="text-sm font-bold text-on-surface mt-1 mb-0">
                 <c:choose>
-                  <c:when test="${publishForm.itemTypeId == '1'}"><spring:message code="publish.type.other" /></c:when>
+                  <c:when test="${publishForm.itemTypeId == '1'}"><spring:message code="publish.type.otros" /></c:when>
                   <c:when test="${publishForm.itemTypeId == '2'}"><spring:message code="publish.type.kayak" /></c:when>
                   <c:when test="${publishForm.itemTypeId == '3'}"><spring:message code="publish.type.paddle" /></c:when>
-                  <c:when test="${publishForm.itemTypeId == '4'}"><spring:message code="publish.type.canoe" /></c:when>
+                  <c:when test="${publishForm.itemTypeId == '4'}"><spring:message code="publish.type.canoa" /></c:when>
                   <c:when test="${publishForm.itemTypeId == '5'}"><spring:message code="publish.type.windsurf" /></c:when>
                   <c:when test="${publishForm.itemTypeId == '6'}"><spring:message code="publish.type.efoil" /></c:when>
                   <c:when test="${publishForm.itemTypeId == '7'}"><spring:message code="publish.type.optimist" /></c:when>

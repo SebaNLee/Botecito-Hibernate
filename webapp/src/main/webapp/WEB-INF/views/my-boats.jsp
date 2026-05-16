@@ -53,13 +53,13 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
                   <c:forEach var="item" items="${ownedItems}">
                     <c:url var="itemDetailUrl" value="/item/${item.id}" />
-                    <c:url var="editItemUrl" value="/profile/item/${item.id}/edit" />
-                    <c:url var="manageAvailabilityItemUrl" value="/profile/item/${item.id}/availability">
+                    <c:url var="editItemUrl" value="/my-boats/${item.id}/edit" />
+                    <c:url var="manageAvailabilityItemUrl" value="/my-boats/${item.id}/availability">
                       <c:param name="return" value="/my-boats" />
                     </c:url>
-                    <c:url var="disableItemUrl" value="/profile/item/${item.id}/disable" />
-                    <c:url var="enableItemUrl" value="/profile/item/${item.id}/enable" />
-                    <c:url var="deleteItemUrl" value="/profile/item/${item.id}/delete" />
+                    <c:url var="disableItemUrl" value="/my-boats/${item.id}/disable" />
+                    <c:url var="enableItemUrl" value="/my-boats/${item.id}/enable" />
+                    <c:url var="deleteItemUrl" value="/my-boats/${item.id}/delete" />
                     <c:set var="publicationImageUrl" value="${imageUrlsByItemId[item.id]}" />
                     <c:set var="detailsModalId" value="publication-details-modal-${item.id}" />
                     <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
@@ -83,7 +83,7 @@
                           </span>
                         </div>
                         <p class="m-0 mt-auto text-[11px] font-bold text-on-surface sm:text-xs">
-                          $<fmt:formatNumber value="${item.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0" />
+                          $<fmt:formatNumber value="${item.price}" type="number" groupingUsed="true" maxFractionDigits="0" />
                           <span class="font-normal text-on-surface-variant"> · <spring:message code="marketplace.card.perHour" /></span>
                         </p>
                       </div>
@@ -108,13 +108,13 @@
                           <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="item.capacityPeople" /></p>
                           <p class="m-0 flex items-center gap-1 text-sm font-bold text-on-surface">
                             <span class="material-symbols-outlined text-base leading-none text-primary">groups</span>
-                            <spring:message code="marketplace.card.people" arguments="${item.capacityPeople}" />
+                            <spring:message code="marketplace.card.people" arguments="${item.capacity}" />
                           </p>
                         </div>
                         <div class="rounded-lg bg-base-100 p-3 space-y-1">
                           <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.publications.pricePerHour.label" /></p>
                           <p class="m-0 text-sm font-bold">
-                            $<fmt:formatNumber value="${item.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0" />
+                            $<fmt:formatNumber value="${item.price}" type="number" groupingUsed="true" maxFractionDigits="0" />
                           </p>
                         </div>
                       </div>

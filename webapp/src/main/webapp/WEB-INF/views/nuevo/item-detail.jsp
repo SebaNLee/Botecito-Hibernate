@@ -155,7 +155,7 @@
               <div class="min-w-0">
                 <h3 class="font-extrabold text-lg m-0 break-words">
                   <c:choose>
-                    <c:when test="${itemOwner != null}"><c:out value="${itemOwner.name}" /></c:when>
+                    <c:when test="${itemOwner != null}"><c:out value="${itemOwnerDisplayName}" /></c:when>
                     <c:otherwise><spring:message code="itemDetail.owner.none" /></c:otherwise>
                   </c:choose>
                 </h3>
@@ -296,12 +296,12 @@
                       <spring:message code="itemDetail.version.seeOlder" />
                     </button>
                     <ul tabindex="0" class="dropdown-content menu p-3 space-y-2 shadow bg-base-100 rounded-box w-64 max-h-56 overflow-auto border border-outline-variant/20">
-                      <c:forEach items="${itemDetail.versions}" var="ver">
-                        <c:if test="${ver.versionId ne currentVersionId}">
-                          <c:url var="snapshotUrl" value="/item/${item.itemId}/snapshot/${ver.versionId}" />
+                      <c:forEach items="${visibleVersionIds}" var="vid">
+                        <c:if test="${vid ne currentVersionId}">
+                          <c:url var="snapshotUrl" value="/item/${item.itemId}/snapshot/${vid}" />
                           <li>
-                            <a href="${snapshotUrl}" class="${ver.versionId eq selectedVersionId ? 'active' : ''}">
-                              <spring:message code="itemDetail.version.guestSnapshot" arguments="${ver.versionId}" />
+                            <a href="${snapshotUrl}" class="${vid eq selectedVersionId ? 'active' : ''}">
+                              <spring:message code="itemDetail.version.guestSnapshot" arguments="${vid}" />
                             </a>
                           </li>
                         </c:if>
@@ -337,7 +337,7 @@
             </c:when>
             <c:when test="${isOwner}">
               <paw:alertMessage type="info"><c:out value="${ownerPublicationNotice}" /></paw:alertMessage>
-              <c:url var="ownerManageAvailabilityUrl" value="/profile/item/${item.itemId}/availability">
+              <c:url var="ownerManageAvailabilityUrl" value="/my-boats/${item.itemId}/availability">
                 <c:param name="return" value="/item/${item.itemId}" />
               </c:url>
               <a href="${ownerManageAvailabilityUrl}" class="btn btn-primary btn-block btn-lg no-underline">

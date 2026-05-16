@@ -23,8 +23,8 @@
 <spring:message code="profile.preferredLanguage.en" var="englishLabel" />
 
 <c:set var="initials" value="" />
-<c:if test="${not empty user.givenName}">
-  <c:set var="initials" value="${fn:substring(user.givenName, 0, 1)}" />
+<c:if test="${not empty user.firstName}">
+  <c:set var="initials" value="${fn:substring(user.firstName, 0, 1)}" />
 </c:if>
 <c:if test="${not empty user.lastName}">
   <c:set var="initials" value="${initials}${fn:substring(user.lastName, 0, 1)}" />

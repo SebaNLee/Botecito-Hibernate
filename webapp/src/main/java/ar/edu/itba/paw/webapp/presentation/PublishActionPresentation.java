@@ -1,14 +1,14 @@
 package ar.edu.itba.paw.webapp.presentation;
 
+import ar.edu.itba.paw.models.dto.MyBoatsItem;
 import ar.edu.itba.paw.models.entity.BookingOrm;
 import ar.edu.itba.paw.models.entity.BookingStatusEnumOrm;
-import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
 import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.services.nuevo.BookingInterface;
-import ar.edu.itba.paw.services.nuevo.ItemInterface;
-import ar.edu.itba.paw.services.nuevo.UserService;
-import ar.edu.itba.paw.webapp.util.nuevo.ToastSupport;
+import ar.edu.itba.paw.services.BookingInterface;
+import ar.edu.itba.paw.services.ItemInterface;
+import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.LinkedHashMap;
@@ -51,9 +51,7 @@ public class PublishActionPresentation {
         form.setTitle(item.get().getTitle());
         form.setDescription(item.get().getDescription());
         form.setPricePerHour(
-                item.get().getPrice() == null
-                        ? ""
-                        : String.valueOf(item.get().getPrice()));
+                item.get().getPrice() == null ? "" : String.valueOf(item.get().getPrice()));
         form.setDifficultyLevel(item.get().getDifficulty());
         form.setLocationOptionId(
                 item.get().getLocationId() == null
@@ -82,8 +80,8 @@ public class PublishActionPresentation {
 
         final Integer parsedPrice =
                 parseIntegerField(form.getPricePerHour(), "pricePerHour", "publish.validation.price.numeric", errors);
-        final Integer parsedLocationOptionId =
-                parseIntegerField(form.getLocationOptionId(), "locationOptionId", "publish.validation.location.invalid", errors);
+        final Integer parsedLocationOptionId = parseIntegerField(
+                form.getLocationOptionId(), "locationOptionId", "publish.validation.location.invalid", errors);
 
         if (errors.hasErrors()) {
             return editPublicationModelAndView(item.get(), request);
@@ -123,7 +121,8 @@ public class PublishActionPresentation {
         resolvePendingBookings(activeBookings, currentUser.getId(), request);
 
         final int newVersionId = itemInterface.createPublicationVersion(
-                itemId, currentUser.getId(),
+                itemId,
+                currentUser.getId(),
                 form.getTitle().trim(),
                 form.getDescription() == null ? "" : form.getDescription().trim(),
                 parsedPrice,
@@ -227,7 +226,8 @@ public class PublishActionPresentation {
                         id,
                         userService
                                 .findById(guestId)
-                                .map(u -> (u.getFirstName() != null ? u.getFirstName() : "") + " " + (u.getLastName() != null ? u.getLastName() : ""))
+                                .map(u -> (u.getFirstName() != null ? u.getFirstName() : "") + " "
+                                        + (u.getLastName() != null ? u.getLastName() : ""))
                                 .orElse(""));
             }
 
@@ -254,8 +254,7 @@ public class PublishActionPresentation {
                     friendlyPrices.put(id, nf.format(total));
                 }
             }
-            statusCodes.put(id, resolveStatusMessageCode(
-                    booking.getStatus()));
+            statusCodes.put(id, resolveStatusMessageCode(booking.getStatus()));
         }
 
         mav.addObject("item", item);
@@ -295,8 +294,7 @@ public class PublishActionPresentation {
         };
     }
 
-    private static boolean hasPublicationChanges(
-            final MyBoatsItem item, final PublishBoatForm form) {
+    private static boolean hasPublicationChanges(final MyBoatsItem item, final PublishBoatForm form) {
         if (!Objects.equals(
                 item.getTitle(), form.getTitle() == null ? "" : form.getTitle().trim())) {
             return true;
@@ -306,8 +304,7 @@ public class PublishActionPresentation {
                 form.getDescription() == null ? "" : form.getDescription().trim())) {
             return true;
         }
-        if (item.getPrice() == null
-                || !Objects.equals(String.valueOf(item.getPrice()), form.getPricePerHour())) {
+        if (item.getPrice() == null || !Objects.equals(String.valueOf(item.getPrice()), form.getPricePerHour())) {
             return true;
         }
         if (!Objects.equals(item.getDifficulty(), form.getDifficultyLevel())) {
@@ -327,7 +324,8 @@ public class PublishActionPresentation {
     private static boolean allPendingBookingsHaveDecisions(
             final List<BookingOrm> activeBookings, final HttpServletRequest request) {
         for (final BookingOrm booking : activeBookings) {
-            final String statusName = booking.getStatus() != null ? booking.getStatus().name() : "";
+            final String statusName =
+                    booking.getStatus() != null ? booking.getStatus().name() : "";
             if (!"PENDING".equals(statusName)) {
                 continue;
             }
@@ -342,7 +340,8 @@ public class PublishActionPresentation {
     private void resolvePendingBookings(
             final List<BookingOrm> activeBookings, final int ownerId, final HttpServletRequest request) {
         for (final BookingOrm booking : activeBookings) {
-            final String statusName = booking.getStatus() != null ? booking.getStatus().name() : "";
+            final String statusName =
+                    booking.getStatus() != null ? booking.getStatus().name() : "";
             if (!"PENDING".equals(statusName)) {
                 continue;
             }

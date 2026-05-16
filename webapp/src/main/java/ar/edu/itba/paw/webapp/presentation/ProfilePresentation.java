@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.services.nuevo.UserService;
-import ar.edu.itba.paw.webapp.form.nuevo.ProfileForm;
+import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.form.ProfileForm;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
@@ -57,11 +57,16 @@ public class ProfilePresentation {
             return buildProfileView(currentUser, true);
         }
 
-        final UsersOrm updatedUser = userService.updateProfile(
-                currentUser.getId(), trim(form.getGivenName()), trim(form.getLastName()),
-                trim(form.getEmail()), form.getPhone(), form.getPaymentAlias(),
-                languageFromInput(form.getPreferredLanguage())
-        ).orElse(null);
+        final UsersOrm updatedUser = userService
+                .updateProfile(
+                        currentUser.getId(),
+                        trim(form.getGivenName()),
+                        trim(form.getLastName()),
+                        trim(form.getEmail()),
+                        form.getPhone(),
+                        form.getPaymentAlias(),
+                        languageFromInput(form.getPreferredLanguage()))
+                .orElse(null);
         if (updatedUser == null) {
             errors.rejectValue("email", "profile.validation.email.duplicate");
             return buildProfileView(currentUser, true);

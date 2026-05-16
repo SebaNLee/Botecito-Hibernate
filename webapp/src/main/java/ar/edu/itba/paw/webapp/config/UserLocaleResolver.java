@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.webapp.config;
 
+import ar.edu.itba.paw.models.dto.PreferredLanguageModel;
 import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.models.nuevo.PreferredLanguageModel;
-import ar.edu.itba.paw.services.nuevo.UserService;
+import ar.edu.itba.paw.services.UserService;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;

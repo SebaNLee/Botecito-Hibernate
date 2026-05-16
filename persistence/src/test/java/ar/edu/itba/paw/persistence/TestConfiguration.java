@@ -14,7 +14,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @EnableTransactionManagement
-@ComponentScan("ar.edu.itba.paw.persistence.orm.daos")
+@ComponentScan("ar.edu.itba.paw.persistence")
 @Configuration
 public class TestConfiguration {
 

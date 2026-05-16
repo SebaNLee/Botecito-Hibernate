@@ -1,14 +1,14 @@
 package ar.edu.itba.paw.webapp.presentation;
 
+import ar.edu.itba.paw.models.dto.BookingSearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.BookingOrm;
 import ar.edu.itba.paw.models.entity.PaymentProofOrm;
 import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.models.nuevo.BookingSearchResult;
-import ar.edu.itba.paw.models.nuevo.PageModel;
-import ar.edu.itba.paw.services.nuevo.BookingInterface;
+import ar.edu.itba.paw.services.BookingInterface;
+import ar.edu.itba.paw.webapp.form.BookingSearchForm;
 import ar.edu.itba.paw.webapp.form.PaymentProofForm;
-import ar.edu.itba.paw.webapp.form.nuevo.BookingSearchForm;
-import ar.edu.itba.paw.webapp.util.nuevo.ToastSupport;
+import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -41,11 +41,16 @@ public class BookingPresentation {
         return currentUserId()
                 .map(userId -> {
                     final BookingSearchResult result = bookingInterface.searchBookings(
-                            userId, false, search.getSearchQuery(),
-                            search.getDate(), search.getStatus(),
-                            search.getPage(), search.getPageSize(), search.getSortBy());
+                            userId,
+                            false,
+                            search.getSearchQuery(),
+                            search.getDate(),
+                            search.getStatus(),
+                            search.getPage(),
+                            search.getPageSize(),
+                            search.getSortBy());
                     final List<BookingOrm> bookings = result.getBookings();
-                    final ModelAndView mav = new ModelAndView("nuevo/requests-outgoing", "bookingSearch", search);
+                    final ModelAndView mav = new ModelAndView("requests-outgoing", "bookingSearch", search);
                     mav.addObject("bookings", bookings);
                     addListingModelObjects(mav, search, bookings, result.getTotalCount());
                     return mav;
@@ -59,7 +64,7 @@ public class BookingPresentation {
             return new ModelAndView("redirect:/login");
         }
         final List<BookingOrm> bookings = List.of();
-        final ModelAndView mav = new ModelAndView("nuevo/requests-outgoing", "bookingSearch", search);
+        final ModelAndView mav = new ModelAndView("requests-outgoing", "bookingSearch", search);
         mav.addAllObjects(errors.getModel());
         mav.addObject("bookings", bookings);
         addListingModelObjects(mav, search, bookings, 0L);
@@ -71,11 +76,16 @@ public class BookingPresentation {
         return currentUserId()
                 .map(userId -> {
                     final BookingSearchResult result = bookingInterface.searchBookings(
-                            userId, true, search.getSearchQuery(),
-                            search.getDate(), search.getStatus(),
-                            search.getPage(), search.getPageSize(), search.getSortBy());
+                            userId,
+                            true,
+                            search.getSearchQuery(),
+                            search.getDate(),
+                            search.getStatus(),
+                            search.getPage(),
+                            search.getPageSize(),
+                            search.getSortBy());
                     final List<BookingOrm> bookings = result.getBookings();
-                    final ModelAndView mav = new ModelAndView("nuevo/requests-incoming", "bookingSearch", search);
+                    final ModelAndView mav = new ModelAndView("requests-incoming", "bookingSearch", search);
                     mav.addObject("bookings", bookings);
                     addListingModelObjects(mav, search, bookings, result.getTotalCount());
                     return mav;
@@ -89,7 +99,7 @@ public class BookingPresentation {
             return new ModelAndView("redirect:/login");
         }
         final List<BookingOrm> bookings = List.of();
-        final ModelAndView mav = new ModelAndView("nuevo/requests-incoming", "bookingSearch", search);
+        final ModelAndView mav = new ModelAndView("requests-incoming", "bookingSearch", search);
         mav.addObject("bookings", bookings);
         addListingModelObjects(mav, search, bookings, 0L);
         mav.addAllObjects(errors.getModel());
@@ -200,7 +210,8 @@ public class BookingPresentation {
         if (callerId.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        final Optional<PaymentProofOrm> proof = bookingInterface.getPaymentProofForParticipant(bookingId, callerId.get());
+        final Optional<PaymentProofOrm> proof =
+                bookingInterface.getPaymentProofForParticipant(bookingId, callerId.get());
         if (proof.isEmpty()) {
             return ResponseEntity.notFound().build();
         }

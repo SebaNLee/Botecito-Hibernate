@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.persistence.orm.projections;
 
-import ar.edu.itba.paw.models.nuevo.MarketplaceCardItem;
+import ar.edu.itba.paw.models.dto.MarketplaceCardItem;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
@@ -27,9 +27,8 @@ public class MarketplaceRowOrm {
     private final Long totalReviews;
 
     public MarketplaceCardItem toCardItem() {
-        final List<String> images = coverImageId != null
-                ? List.of("/image/" + coverImageId)
-                : List.of("/css/boat-placeholder.svg");
+        final List<String> images =
+                coverImageId != null ? List.of("/image/" + coverImageId) : List.of("/css/boat-placeholder.svg");
         return MarketplaceCardItem.builder()
                 .itemId(Objects.requireNonNull(itemId, "itemId"))
                 .hostId(hostId != null ? hostId : 0)

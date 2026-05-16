@@ -1,29 +1,24 @@
 package ar.edu.itba.paw.webapp.presentation;
 
+import ar.edu.itba.paw.models.dto.AvailabilityData;
+import ar.edu.itba.paw.models.dto.ItemDetail;
 import ar.edu.itba.paw.models.entity.AvailabilityOrm;
-import ar.edu.itba.paw.models.entity.BookingOrm;
 import ar.edu.itba.paw.models.entity.ItemStatusEnumOrm;
 import ar.edu.itba.paw.models.entity.ReviewOrm;
 import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.models.nuevo.AvailabilityData;
-import ar.edu.itba.paw.models.nuevo.ItemDetail;
-import ar.edu.itba.paw.services.nuevo.BookingInterface;
-import ar.edu.itba.paw.services.nuevo.DetailInterface;
-import ar.edu.itba.paw.models.nuevo.exceptions.BookingCollisionException;
-import ar.edu.itba.paw.models.nuevo.exceptions.OutsideAvailabilityException;
-import ar.edu.itba.paw.services.nuevo.UserService;
-
-import ar.edu.itba.paw.webapp.util.nuevo.ToastSupport;
-import ar.edu.itba.paw.webapp.form.nuevo.PreBookingForm;
-import ar.edu.itba.paw.webapp.util.nuevo.AvailabilityJsonHelper;
-import ar.edu.itba.paw.webapp.util.MarketplaceReturnUrl;
+import ar.edu.itba.paw.services.BookingInterface;
+import ar.edu.itba.paw.services.DetailInterface;
+import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.form.PreBookingForm;
+import ar.edu.itba.paw.webapp.util.AvailabilityJsonHelper;
 import ar.edu.itba.paw.webapp.util.DetailAvailabilityPicker;
+import ar.edu.itba.paw.webapp.util.MarketplaceReturnUrl;
+import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -118,7 +113,7 @@ public class DetailPresentation {
             return page;
         }
         final ModelAndView mav = (ModelAndView) page;
-        if (!"nuevo/item-detail".equals(mav.getViewName())) {
+        if (!"item-detail".equals(mav.getViewName())) {
             return page;
         }
         mergeValidationToasts(mav, errors);
@@ -178,7 +173,7 @@ public class DetailPresentation {
     }
 
     private ModelAndView buildNuevoItemListingMissingView(final int itemId, final String marketplaceBackHref) {
-        final ModelAndView mav = new ModelAndView("nuevo/item-detail");
+        final ModelAndView mav = new ModelAndView("item-detail");
         mav.addObject("itemListingMissing", true);
         mav.addObject("itemId", itemId);
         mav.addObject("marketplaceBackHref", marketplaceBackHref);
@@ -216,12 +211,11 @@ public class DetailPresentation {
         final UsersOrm itemOwner =
                 ownerId <= 0 ? null : userService.findById(ownerId).orElse(null);
 
-        final List<ReviewOrm> versionReviews =
-                displayPair.getReviews() == null ? List.of() : displayPair.getReviews();
+        final List<ReviewOrm> versionReviews = displayPair.getReviews() == null ? List.of() : displayPair.getReviews();
 
         final boolean isActive = displayPair.getStatus() == ItemStatusEnumOrm.ACTIVE;
 
-        final ModelAndView mav = new ModelAndView("nuevo/item-detail");
+        final ModelAndView mav = new ModelAndView("item-detail");
         mav.addObject("itemListingMissing", false);
         mav.addObject("itemDetail", itemDetail);
         mav.addObject("item", displayPair);
@@ -238,10 +232,15 @@ public class DetailPresentation {
         mav.addObject("versionReviews", versionReviews);
         mav.addObject("itemImageUrl", primaryImageUrl(displayPair.getImages(), contextPath));
         mav.addObject("itemImageUrls", prefixImagePaths(displayPair.getImages(), contextPath));
-        final String ownerName = itemOwner == null ? ""
-                : ((itemOwner.getFirstName() == null ? "" : itemOwner.getFirstName().trim())
+        final String ownerName = itemOwner == null
+                ? ""
+                : ((itemOwner.getFirstName() == null
+                                        ? ""
+                                        : itemOwner.getFirstName().trim())
                                 + " "
-                                + (itemOwner.getLastName() == null ? "" : itemOwner.getLastName().trim()))
+                                + (itemOwner.getLastName() == null
+                                        ? ""
+                                        : itemOwner.getLastName().trim()))
                         .trim();
         final String ownerDisplayName = ownerName.isBlank()
                 ? (itemOwner == null || itemOwner.getEmail() == null ? "" : itemOwner.getEmail())

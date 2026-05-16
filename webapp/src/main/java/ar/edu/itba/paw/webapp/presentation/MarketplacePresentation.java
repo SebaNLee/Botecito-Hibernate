@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.nuevo.MarketplaceCardItem;
-import ar.edu.itba.paw.models.nuevo.MarketplaceSearchResult;
-import ar.edu.itba.paw.models.nuevo.PageModel;
-import ar.edu.itba.paw.services.nuevo.MarketplaceInterface;
-import ar.edu.itba.paw.webapp.form.nuevo.MarketplaceSearchForm;
+import ar.edu.itba.paw.models.dto.MarketplaceCardItem;
+import ar.edu.itba.paw.models.dto.MarketplaceSearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.services.MarketplaceInterface;
+import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -29,9 +29,19 @@ public class MarketplacePresentation {
 
         if (!errors.hasErrors()) {
             final MarketplaceSearchResult result = marketplaceInterface.searchMarketplace(
-                    form.getSearchQuery(), form.getDate(), form.getStartTime(), form.getEndTime(),
-                    form.getCapacity(), form.getWeight(), form.getDifficulty(), form.getMinAvgRating(),
-                    form.getLocation(), form.getItemType(), form.getPage(), form.getPageSize(), form.getSortBy());
+                    form.getSearchQuery(),
+                    form.getDate(),
+                    form.getStartTime(),
+                    form.getEndTime(),
+                    form.getCapacity(),
+                    form.getWeight(),
+                    form.getDifficulty(),
+                    form.getMinAvgRating(),
+                    form.getLocation(),
+                    form.getItemType(),
+                    form.getPage(),
+                    form.getPageSize(),
+                    form.getSortBy());
             items = result.getItems();
             totalCount = result.getTotalCount();
         } else {
@@ -44,7 +54,10 @@ public class MarketplacePresentation {
     }
 
     private void addListingModelObjects(
-            final ModelAndView mav, final MarketplaceSearchForm search, final List<MarketplaceCardItem> items, final long total) {
+            final ModelAndView mav,
+            final MarketplaceSearchForm search,
+            final List<MarketplaceCardItem> items,
+            final long total) {
         final int page = search.getPage() == null ? 1 : search.getPage();
         final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
         final int totalItems = total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;

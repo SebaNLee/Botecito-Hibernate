@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.auth;
 
 import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.services.nuevo.UserService;
+import ar.edu.itba.paw.services.UserService;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

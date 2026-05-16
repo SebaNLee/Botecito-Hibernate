@@ -1,19 +1,18 @@
 package ar.edu.itba.paw.webapp.presentation;
 
+import ar.edu.itba.paw.models.dto.OwnerAvailabilityPage;
 import ar.edu.itba.paw.models.entity.AvailabilityOrm;
 import ar.edu.itba.paw.models.entity.BookingOrm;
 import ar.edu.itba.paw.models.entity.BookingStatusEnumOrm;
 import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.models.nuevo.OwnerAvailabilityPage;
-import ar.edu.itba.paw.services.nuevo.BookingInterface;
-import ar.edu.itba.paw.services.nuevo.BookingInterface.BlockSlotOutcome;
-import ar.edu.itba.paw.services.nuevo.ItemInterface;
-import ar.edu.itba.paw.webapp.util.nuevo.ToastSupport;
-import ar.edu.itba.paw.webapp.form.nuevo.BlockSlotForm;
+import ar.edu.itba.paw.services.BookingInterface;
+import ar.edu.itba.paw.services.BookingInterface.BlockSlotOutcome;
+import ar.edu.itba.paw.services.ItemInterface;
+import ar.edu.itba.paw.webapp.form.BlockSlotForm;
+import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
@@ -35,7 +34,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
 
 @Component
 @RequiredArgsConstructor
@@ -79,13 +77,16 @@ public class AvailabilityPresentation {
             return new ModelAndView("redirect:/login");
         }
         final String safeReturn = sanitizeReturnPath(returnParam);
-        if (itemInterface.findMyBoatsItemByIdForOwner(itemId, currentUser.getId()).isEmpty()) {
+        if (itemInterface
+                .findMyBoatsItemByIdForOwner(itemId, currentUser.getId())
+                .isEmpty()) {
             ToastSupport.error(redirectAttributes, "profile.publications.error");
             return new ModelAndView("redirect:/my-boats");
         }
         if (errors.hasErrors()) {
             return bookingInterface
-                    .loadOwnerAvailabilityPage(itemId, currentUser.getId(), form.getDate().toString())
+                    .loadOwnerAvailabilityPage(
+                            itemId, currentUser.getId(), form.getDate().toString())
                     .map(model -> buildManageAvailabilityView(model, safeReturn))
                     .orElseGet(() -> {
                         ToastSupport.error(redirectAttributes, "profile.publications.error");
@@ -98,8 +99,7 @@ public class AvailabilityPresentation {
         final String redirectBase = "redirect:/my-boats/" + itemId + "/availability";
         final BlockSlotOutcome outcome =
                 bookingInterface.blockSlotForOwner(itemId, currentUser.getId(), dateStr, startStr, endStr);
-        return new ModelAndView(
-                appendReturnQuery(buildBlockRedirect(redirectBase, dateStr, outcome), safeReturn));
+        return new ModelAndView(appendReturnQuery(buildBlockRedirect(redirectBase, dateStr, outcome), safeReturn));
     }
 
     public ModelAndView unblockSlot(
@@ -112,7 +112,9 @@ public class AvailabilityPresentation {
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
-        if (itemInterface.findMyBoatsItemByIdForOwner(itemId, currentUser.getId()).isEmpty()) {
+        if (itemInterface
+                .findMyBoatsItemByIdForOwner(itemId, currentUser.getId())
+                .isEmpty()) {
             ToastSupport.error(redirectAttributes, "profile.publications.error");
             return new ModelAndView("redirect:/my-boats");
         }
@@ -132,12 +134,10 @@ public class AvailabilityPresentation {
         mav.addObject("offeredDatesJson", toJsonArray(model.getOfferedDates()));
         mav.addObject("blockedDatesJson", toJsonArray(model.getBlockedDates()));
         mav.addObject("selectedDate", model.getSelectedDate());
-        final Set<Integer> selfBlockIds = model.getOwnerSelfBlocks().stream()
-                .map(BookingOrm::getId)
-                .collect(Collectors.toSet());
+        final Set<Integer> selfBlockIds =
+                model.getOwnerSelfBlocks().stream().map(BookingOrm::getId).collect(Collectors.toSet());
         final List<SlotRow> slots = buildSlotGrid(
-                model.getSelectedDate(), model.getAvailabilityWindows(),
-                model.getActiveBookings(), selfBlockIds);
+                model.getSelectedDate(), model.getAvailabilityWindows(), model.getActiveBookings(), selfBlockIds);
         mav.addObject("slots", slots);
         mav.addObject("slotsStateJson", slotsToJson(slots));
         mav.addObject("personalBlockRows", toPersonalBlockRows(model.getOwnerSelfBlocks(), model.getTimezone()));
@@ -163,7 +163,9 @@ public class AvailabilityPresentation {
                 final int startMinute = availability.getStartTime().toSecondOfDay() / 60;
                 final int endMinute = availability.getEndTime().toSecondOfDay() / 60;
                 for (int minute = startMinute; minute < endMinute; minute += 30) {
-                    scheduled.add(LocalTime.ofSecondOfDay((long) minute * 60).toString().substring(0, 5));
+                    scheduled.add(LocalTime.ofSecondOfDay((long) minute * 60)
+                            .toString()
+                            .substring(0, 5));
                 }
             }
         }
@@ -176,10 +178,10 @@ public class AvailabilityPresentation {
             if (booking.getStart() == null || booking.getEnd() == null) {
                 continue;
             }
-            OffsetDateTime cursor = booking.getStart().atZone(ZoneOffset.UTC).toOffsetDateTime()
-                    .withOffsetSameInstant(ZoneOffset.UTC);
-            final OffsetDateTime end = booking.getEnd().atZone(ZoneOffset.UTC).toOffsetDateTime()
-                    .withOffsetSameInstant(ZoneOffset.UTC);
+            OffsetDateTime cursor =
+                    booking.getStart().atZone(ZoneOffset.UTC).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
+            final OffsetDateTime end =
+                    booking.getEnd().atZone(ZoneOffset.UTC).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
             while (cursor.isBefore(end)) {
                 if (day.equals(cursor.toLocalDate())) {
                     final String key = cursor.toLocalTime().toString().substring(0, 5);
@@ -217,11 +219,22 @@ public class AvailabilityPresentation {
                 .filter(b -> b.getId() != null && b.getStart() != null && b.getEnd() != null)
                 .sorted((a, b) -> a.getStart().compareTo(b.getStart()))
                 .map(b -> {
-                    final LocalDate date = b.getStart().atZone(ZoneOffset.UTC).withZoneSameInstant(zone).toLocalDate();
-                    final String startLocal = b.getStart().atZone(ZoneOffset.UTC)
-                            .withZoneSameInstant(zone).toLocalTime().toString().substring(0, 5);
-                    final String endLocal = b.getEnd().atZone(ZoneOffset.UTC)
-                            .withZoneSameInstant(zone).toLocalTime().toString().substring(0, 5);
+                    final LocalDate date = b.getStart()
+                            .atZone(ZoneOffset.UTC)
+                            .withZoneSameInstant(zone)
+                            .toLocalDate();
+                    final String startLocal = b.getStart()
+                            .atZone(ZoneOffset.UTC)
+                            .withZoneSameInstant(zone)
+                            .toLocalTime()
+                            .toString()
+                            .substring(0, 5);
+                    final String endLocal = b.getEnd()
+                            .atZone(ZoneOffset.UTC)
+                            .withZoneSameInstant(zone)
+                            .toLocalTime()
+                            .toString()
+                            .substring(0, 5);
                     return new PersonalBlockRow(b.getId(), date.toString(), startLocal, endLocal);
                 })
                 .toList();

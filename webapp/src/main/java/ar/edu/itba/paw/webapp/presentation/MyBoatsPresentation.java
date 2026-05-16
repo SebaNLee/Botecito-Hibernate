@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
-import ar.edu.itba.paw.models.nuevo.PageModel;
+import ar.edu.itba.paw.models.dto.MyBoatsItem;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.services.nuevo.ItemInterface;
-import ar.edu.itba.paw.services.nuevo.UserService;
+import ar.edu.itba.paw.services.ItemInterface;
+import ar.edu.itba.paw.services.UserService;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

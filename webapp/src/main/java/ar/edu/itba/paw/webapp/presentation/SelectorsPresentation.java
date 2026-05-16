@@ -1,9 +1,9 @@
 package ar.edu.itba.paw.webapp.presentation;
 
+import ar.edu.itba.paw.models.dto.BookingStatusOptionModel;
 import ar.edu.itba.paw.models.entity.ItemTypeOrm;
 import ar.edu.itba.paw.models.entity.LocationOrm;
-import ar.edu.itba.paw.models.nuevo.BookingStatusOptionModel;
-import ar.edu.itba.paw.services.nuevo.SelectorsInterface;
+import ar.edu.itba.paw.services.SelectorsInterface;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

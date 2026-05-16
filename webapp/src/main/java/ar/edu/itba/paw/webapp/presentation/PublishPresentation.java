@@ -1,14 +1,13 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.nuevo.AvailabilityWindow;
-import ar.edu.itba.paw.models.nuevo.ImageUpload;
+import ar.edu.itba.paw.models.dto.AvailabilityWindow;
+import ar.edu.itba.paw.models.dto.ImageUpload;
 import ar.edu.itba.paw.models.entity.ItemTypeOrm;
-
-import ar.edu.itba.paw.models.entity.VersionOrm;
 import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.services.nuevo.PublishService;
-import ar.edu.itba.paw.services.nuevo.SelectorsInterface;
-import ar.edu.itba.paw.services.nuevo.UserService;
+import ar.edu.itba.paw.models.entity.VersionOrm;
+import ar.edu.itba.paw.services.PublishService;
+import ar.edu.itba.paw.services.SelectorsInterface;
+import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -140,8 +139,8 @@ public class PublishPresentation {
         }
 
         sessionStatus.setComplete();
-        return new ModelAndView(
-                "redirect:/publish/success?itemId=" + createdVersion.get().getItem().getId());
+        return new ModelAndView("redirect:/publish/success?itemId="
+                + createdVersion.get().getItem().getId());
     }
 
     public ModelAndView publishSuccess(final HttpServletRequest request, final Integer itemId) {
@@ -162,7 +161,8 @@ public class PublishPresentation {
         mav.addObject("item", version.get());
         mav.addObject("itemImageUrl", resolveImageUrl(version.get(), request.getContextPath()));
         mav.addObject(
-                "availabilities", publishService.listAvailabilities(version.get().getItem().getId()));
+                "availabilities",
+                publishService.listAvailabilities(version.get().getItem().getId()));
         return mav;
     }
 

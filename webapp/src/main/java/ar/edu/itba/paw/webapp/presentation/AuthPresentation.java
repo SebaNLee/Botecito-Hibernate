@@ -1,12 +1,11 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.entity.UsersOrm;
-import ar.edu.itba.paw.services.nuevo.UserService;
+import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
-import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
-import ar.edu.itba.paw.webapp.form.nuevo.PasswordRecoveryRequestForm;
-import ar.edu.itba.paw.webapp.form.nuevo.PasswordResetForm;
-import ar.edu.itba.paw.webapp.form.nuevo.RegisterForm;
+import ar.edu.itba.paw.webapp.form.LoginForm;
+import ar.edu.itba.paw.webapp.form.PasswordRecoveryRequestForm;
+import ar.edu.itba.paw.webapp.form.RegisterForm;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -19,8 +18,8 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class AuthPresentation {
 
-    private static final String REGISTER_VIEW = "nuevo/register";
-    private static final String PASSWORD_RECOVERY_RESET_VIEW = "nuevo/password-recovery-reset";
+    private static final String REGISTER_VIEW = "register";
+    private static final String PASSWORD_RECOVERY_RESET_VIEW = "password-recovery-reset";
 
     private final UserService userService;
     private final PostRegistrationAuthenticator postRegistrationAuthenticator;
@@ -63,8 +62,11 @@ public class AuthPresentation {
 
     public ModelAndView registerSubmit(final RegisterForm form, final BindingResult errors) {
         userService.register(
-                trim(form.getGivenName()), trim(form.getLastName()), trim(form.getEmail()),
-                form.getPaymentAlias(), languageFromInput(form.getPreferredLanguage()),
+                trim(form.getGivenName()),
+                trim(form.getLastName()),
+                trim(form.getEmail()),
+                form.getPaymentAlias(),
+                languageFromInput(form.getPreferredLanguage()),
                 form.getPassword());
         return new ModelAndView("redirect:/login?verificationSent=true");
     }
@@ -93,9 +95,8 @@ public class AuthPresentation {
     }
 
     public ModelAndView passwordRecoveryResetSubmit(final String token, final String rawPassword) {
-        final boolean tokenValid = userService
-                .findByPasswordRecoveryToken(token)
-                .isPresent();
+        final boolean tokenValid =
+                userService.findByPasswordRecoveryToken(token).isPresent();
         if (!tokenValid) {
             return new ModelAndView(PASSWORD_RECOVERY_RESET_VIEW)
                     .addObject("token", token)

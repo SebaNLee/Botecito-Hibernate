@@ -1,28 +1,48 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.webapp.controller.support.ImageMvcSupport;
-import java.util.Optional;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 
 @Controller
 @RequestMapping("/image")
 @RequiredArgsConstructor
 public class ImageController {
 
-    private final ItemService itemService;
+    private static final Duration IMAGE_CACHE_MAX_AGE = Duration.ofHours(1);
 
-    @RequestMapping(value = "/{id:[0-9]+}", method = RequestMethod.GET)
+    private final ItemService itemInterface;
+
+    @RequestMapping("/{id:[0-9]+}")
     public ResponseEntity<byte[]> imageById(@PathVariable("id") final int imageId) {
-        final Optional<byte[]> imageData = itemService.findImageById(imageId);
-        if (imageData.isEmpty() || imageData.get().length == 0) {
-            return ResponseEntity.notFound().build();
+        return itemInterface
+                .findImageDataById(imageId)
+                .filter(data -> data.length > 0)
+                .map(ImageController::okCachedImage)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    private static ResponseEntity<byte[]> okCachedImage(final byte[] bytes) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(IMAGE_CACHE_MAX_AGE).cachePublic())
+                .contentType(resolveMediaType(bytes))
+                .contentLength(bytes.length)
+                .body(bytes);
+    }
+
+    private static MediaType resolveMediaType(final byte[] bytes) {
+        if (bytes.length > 3 && bytes[0] == (byte) 0xFF && bytes[1] == (byte) 0xD8) {
+            return MediaType.IMAGE_JPEG;
         }
-        return ImageMvcSupport.okCachedImage(imageData.get());
+        if (bytes.length > 3 && bytes[0] == (byte) 0x89 && bytes[1] == 'P' && bytes[2] == 'N' && bytes[3] == 'G') {
+            return MediaType.IMAGE_PNG;
+        }
+        return MediaType.APPLICATION_OCTET_STREAM;
     }
 }

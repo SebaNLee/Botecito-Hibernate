@@ -1,55 +1,44 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.Item;
-import ar.edu.itba.paw.models.ItemType;
-import ar.edu.itba.paw.models.LocationOption;
-import java.math.BigDecimal;
+import ar.edu.itba.paw.models.dto.MyBoatsItem;
+import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.models.entity.Location;
+import ar.edu.itba.paw.models.entity.Version;
 import java.util.List;
 import java.util.Optional;
 
-/** Persistence for listings, publication versions, and item lifecycle (not bookings or media). */
 public interface ItemDao {
-    List<LocationOption> listLocationOptions();
+    List<MyBoatsItem> listMyBoatsItemsByOwnerId(int ownerId, int page, int pageSize);
 
-    Optional<Item> findItemById(int id);
+    int countMyBoatsItemsByOwnerId(int ownerId);
 
-    Optional<Item> findItemByIdForOwner(int id, int ownerId);
-
-    Optional<Item> findAnyItemById(int id);
-
-    Optional<ItemType> findItemTypeById(int id);
-
-    boolean updatePublicationForOwner(
-            int itemId,
-            int ownerId,
-            String title,
-            String description,
-            int pricePerHour,
-            Integer difficultyLevel,
-            int locationOptionId);
-
-    /** True when non-owner guest bookings would block publication edits (excludes owner personal blocks). */
-    boolean hasBlockingBookingsForEdition(int itemId);
-
-    boolean deleteItemById(int itemId);
-
-    boolean deleteItemByIdForOwner(int itemId, int ownerId);
-
-    Item createItem(
-            int ownerId,
-            int typeId,
-            String title,
-            String description,
-            int pricePerHour,
-            int capacityPeople,
-            BigDecimal maxWeightKg,
-            Integer difficultyLevel,
-            int locationOptionId,
-            String ownerDeleteToken);
-
-    boolean snapshotBookingsForPublicationEdit(int itemId);
-
-    boolean setItemActive(int itemId, boolean active);
+    Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(int itemId, int ownerId);
 
     boolean setItemActiveForOwner(int itemId, int ownerId, boolean active);
+
+    Optional<Item> findItemByIdAndOwner(int itemId, int ownerId);
+
+    boolean hasActiveOrFutureBookings(int itemId);
+
+    void deleteItem(Item item);
+
+    Optional<Version> findCurrentVersionByItemId(int itemId);
+
+    boolean hasBookingReferencesByVersionId(int versionId);
+
+    void persistVersion(Version version);
+
+    void copyVersionContent(int sourceVersionId, Version targetVersion);
+
+    Location getLocationReference(int locationId);
+
+    Optional<byte[]> findImageDataById(int imageId);
+
+    List<Integer> listImageIds(int itemId);
+
+    Optional<Integer> uploadGalleryImage(int itemId, byte[] imageData);
+
+    boolean deleteImageFromGallery(int imageId);
+
+    boolean reorderGallery(int itemId, List<Integer> imageIdsInOrder);
 }

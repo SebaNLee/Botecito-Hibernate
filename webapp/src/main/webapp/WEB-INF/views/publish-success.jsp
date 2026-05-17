@@ -96,32 +96,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             <spring:message code="publish.form.type.label" />
           </p>
           <p class="text-sm font-bold text-on-surface mt-1 mb-0">
-            <c:choose>
-              <c:when test="${item.typeId == 1}"
-                ><spring:message code="publish.type.other"
-              /></c:when>
-              <c:when test="${item.typeId == 2}"
-                ><spring:message code="publish.type.kayak"
-              /></c:when>
-              <c:when test="${item.typeId == 3}"
-                ><spring:message code="publish.type.paddle"
-              /></c:when>
-              <c:when test="${item.typeId == 4}"
-                ><spring:message code="publish.type.canoe"
-              /></c:when>
-              <c:when test="${item.typeId == 5}"
-                ><spring:message code="publish.type.windsurf"
-              /></c:when>
-              <c:when test="${item.typeId == 6}"
-                ><spring:message code="publish.type.efoil"
-              /></c:when>
-              <c:when test="${item.typeId == 7}"
-                ><spring:message code="publish.type.optimist"
-              /></c:when>
-              <c:otherwise
-                ><spring:message code="publish.type.none"
-              /></c:otherwise>
-            </c:choose>
+            <spring:message code="publish.type.${item.type.slug}" text="${item.type.name}" />
           </p>
         </div>
         <div class="rounded-xl bg-base-200 p-3">
@@ -131,7 +106,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             <spring:message code="publish.form.price.short" />
           </p>
           <p class="text-sm font-bold text-on-surface mt-1 mb-0">
-            $ <fmt:formatNumber value="${item.pricePerHour}" type="number" groupingUsed="true" maxFractionDigits="0" />
+            $ <fmt:formatNumber value="${item.price}" type="number" groupingUsed="true" maxFractionDigits="0" />
           </p>
         </div>
         <div class="rounded-xl bg-base-200 p-3">
@@ -143,7 +118,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
           <p class="text-sm font-bold text-on-surface mt-1 mb-0">
             <spring:message
               code="publish.capacity.people"
-              arguments="${item.capacityPeople}"
+              arguments="${item.capacity}"
             />
           </p>
         </div>
@@ -154,10 +129,10 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             <spring:message code="publish.form.location.label" />
           </p>
           <p class="text-sm font-bold text-on-surface mt-1 mb-0">
-            <c:out value="${item.location}" />
+            <c:out value="${item.location.name}" />
           </p>
         </div>
-        <c:if test="${not empty item.maxWeightKg}">
+        <c:if test="${item.weight > 0}">
           <div class="rounded-xl bg-base-200 p-3">
             <p
               class="text-[11px] uppercase tracking-wider font-bold text-outline m-0"
@@ -165,11 +140,11 @@ charset=UTF-8" pageEncoding="UTF-8" %>
               <spring:message code="publish.form.maxWeight.label" />
             </p>
             <p class="text-sm font-bold text-on-surface mt-1 mb-0">
-              <fmt:formatNumber value="${item.maxWeightKg}" type="number" groupingUsed="true" maxFractionDigits="0" /> kg
+              <fmt:formatNumber value="${item.weight}" type="number" groupingUsed="true" maxFractionDigits="0" /> kg
             </p>
           </div>
         </c:if>
-        <c:if test="${not empty item.difficultyLevel}">
+        <c:if test="${not empty item.difficulty}">
           <div class="rounded-xl bg-base-200 p-3">
             <p
               class="text-[11px] uppercase tracking-wider font-bold text-outline m-0"
@@ -177,7 +152,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
               <spring:message code="publish.form.difficulty.label" />
             </p>
             <p class="text-sm font-bold text-on-surface mt-1 mb-0">
-              <c:out value="${item.difficultyLevel}" /> / 5
+              <c:out value="${item.difficulty}" /> / 5
             </p>
           </div>
         </c:if>

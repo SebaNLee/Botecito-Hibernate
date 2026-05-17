@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
-import ar.edu.itba.paw.models.nuevo.UserModel;
-import ar.edu.itba.paw.services.nuevo.ItemInterface;
-import ar.edu.itba.paw.services.nuevo.UserService;
-import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
+import ar.edu.itba.paw.models.dto.MyBoatsItem;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -18,11 +18,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class MyBoatsActionsPresentation {
 
-    private final ItemInterface itemInterface;
+    private final ItemService itemInterface;
     private final UserService userService;
 
     public ModelAndView disablePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final UserModel currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -38,7 +38,7 @@ public class MyBoatsActionsPresentation {
     }
 
     public ModelAndView enablePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final UserModel currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -54,7 +54,7 @@ public class MyBoatsActionsPresentation {
     }
 
     public ModelAndView hardDeletePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final UserModel currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -78,11 +78,11 @@ public class MyBoatsActionsPresentation {
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
-    private Optional<MyBoatsItem> resolveOwnedItem(final UserModel currentUser, final int itemId) {
+    private Optional<MyBoatsItem> resolveOwnedItem(final Users currentUser, final int itemId) {
         return itemInterface.findMyBoatsItemByIdForOwner(itemId, currentUser.getId());
     }
 
-    private UserModel currentAuthenticatedUser() {
+    private Users currentAuthenticatedUser() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()

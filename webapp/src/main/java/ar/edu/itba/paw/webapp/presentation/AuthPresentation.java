@@ -1,12 +1,11 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.nuevo.UserModel;
-import ar.edu.itba.paw.services.nuevo.UserService;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
-import ar.edu.itba.paw.webapp.form.nuevo.LoginForm;
-import ar.edu.itba.paw.webapp.form.nuevo.PasswordRecoveryRequestForm;
-import ar.edu.itba.paw.webapp.form.nuevo.PasswordResetForm;
-import ar.edu.itba.paw.webapp.form.nuevo.RegisterForm;
+import ar.edu.itba.paw.webapp.form.LoginForm;
+import ar.edu.itba.paw.webapp.form.PasswordRecoveryRequestForm;
+import ar.edu.itba.paw.webapp.form.RegisterForm;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -19,11 +18,10 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class AuthPresentation {
 
-    private static final String REGISTER_VIEW = "nuevo/register";
-    private static final String PASSWORD_RECOVERY_RESET_VIEW = "nuevo/password-recovery-reset";
+    private static final String REGISTER_VIEW = "register";
+    private static final String PASSWORD_RECOVERY_RESET_VIEW = "password-recovery-reset";
 
     private final UserService userService;
-    private final AuthModelMapper authModelMapper;
     private final PostRegistrationAuthenticator postRegistrationAuthenticator;
 
     public ModelAndView login(final LoginForm form) {
@@ -63,13 +61,13 @@ public class AuthPresentation {
     }
 
     public ModelAndView registerSubmit(final RegisterForm form, final BindingResult errors) {
-        final UserModel user = authModelMapper.fromRegisterForm(form);
-        final String rawPassword = form.getPassword();
-        if (userService.register(user, rawPassword) != UserService.RegistrationResult.SUCCESS) {
-            errors.rejectValue("email", "register.validation.email.duplicate");
-            return new ModelAndView(REGISTER_VIEW);
-        }
-
+        userService.register(
+                trim(form.getGivenName()),
+                trim(form.getLastName()),
+                trim(form.getEmail()),
+                form.getPaymentAlias(),
+                languageFromInput(form.getPreferredLanguage()),
+                form.getPassword());
         return new ModelAndView("redirect:/login?verificationSent=true");
     }
 
@@ -82,43 +80,31 @@ public class AuthPresentation {
     }
 
     public ModelAndView passwordRecoveryRequestSubmit(final PasswordRecoveryRequestForm form) {
-        final UserModel user = authModelMapper.fromPasswordRecoveryRequestForm(form);
-        userService.requestPasswordRecovery(user);
+        final String email = form.getEmail() == null ? null : form.getEmail().trim();
+        userService.requestPasswordRecovery(email);
         return new ModelAndView("redirect:/password-recovery?sent=true");
     }
 
-    public ModelAndView passwordRecoveryResetForm(final PasswordResetForm form) {
-        final ModelAndView mav = new ModelAndView(PASSWORD_RECOVERY_RESET_VIEW);
-        mav.addObject("token", form.getToken());
-        mav.addObject(
-                "tokenValid",
-                userService.findByPasswordRecoveryToken(form.getToken()).isPresent());
-        if (form.getInvalid() != null) {
-            mav.addObject("tokenInvalidError", true);
-        }
-        return mav;
+    public ModelAndView passwordRecoveryResetForm(final String token) {
+        final Optional<Users> user = userService.findByPasswordRecoveryToken(token);
+        return user.isEmpty() || user.get().getMailTokenEmittedAt() != null
+                ? new ModelAndView("redirect:/password-recovery/" + token + "?invalid=true")
+                : new ModelAndView(PASSWORD_RECOVERY_RESET_VIEW)
+                        .addObject("token", token)
+                        .addObject("tokenValid", true);
     }
 
-    public ModelAndView passwordRecoveryResetWithErrors(final PasswordResetForm form) {
-        return new ModelAndView(PASSWORD_RECOVERY_RESET_VIEW)
-                .addObject("token", form.getToken())
-                .addObject("tokenValid", true);
-    }
-
-    public ModelAndView passwordRecoveryResetSubmit(final PasswordResetForm form) {
-        final UserModel user = authModelMapper.fromPasswordResetForm(form);
-        final String rawPassword = form.getPassword();
-        final boolean tokenValid = userService
-                .findByPasswordRecoveryToken(user.getPasswordRecoveryToken())
-                .isPresent();
+    public ModelAndView passwordRecoveryResetSubmit(final String token, final String rawPassword) {
+        final boolean tokenValid =
+                userService.findByPasswordRecoveryToken(token).isPresent();
         if (!tokenValid) {
             return new ModelAndView(PASSWORD_RECOVERY_RESET_VIEW)
-                    .addObject("token", user.getPasswordRecoveryToken())
+                    .addObject("token", token)
                     .addObject("tokenValid", false);
         }
 
-        if (userService.resetPassword(user, rawPassword) != UserService.PasswordRecoveryResult.SUCCESS) {
-            return new ModelAndView("redirect:/password-recovery/" + user.getPasswordRecoveryToken() + "?invalid=true");
+        if (!userService.resetPassword(token, rawPassword)) {
+            return new ModelAndView("redirect:/password-recovery/" + token + "?invalid=true");
         }
 
         return new ModelAndView("redirect:/login?passwordRecovered=true");
@@ -126,7 +112,7 @@ public class AuthPresentation {
 
     public ModelAndView verifyEmail(
             final String token, final HttpServletRequest request, final HttpServletResponse response) {
-        final Optional<UserModel> verifiedUser = userService.verifyEmail(token);
+        final Optional<Users> verifiedUser = userService.verifyEmail(token);
         if (verifiedUser.isPresent()) {
             postRegistrationAuthenticator.authenticateVerifiedUser(
                     verifiedUser.get().getEmail(), request, response);
@@ -137,5 +123,20 @@ public class AuthPresentation {
 
     public ModelAndView forbidden() {
         return new ModelAndView("403");
+    }
+
+    // TODO check this, should be bc of UserDetails SpringSecurity probs
+    private static String languageFromInput(final String preferredLanguage) {
+        if (preferredLanguage == null) {
+            return "ES";
+        }
+        return switch (preferredLanguage.trim().toUpperCase()) {
+            case "EN" -> "EN";
+            default -> "ES";
+        };
+    }
+
+    private static String trim(final String value) {
+        return value == null ? null : value.trim();
     }
 }

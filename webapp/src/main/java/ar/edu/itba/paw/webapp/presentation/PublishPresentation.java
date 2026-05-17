@@ -1,16 +1,13 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.nuevo.AvailabilityWindow;
-import ar.edu.itba.paw.models.nuevo.ImageUpload;
-import ar.edu.itba.paw.models.nuevo.ItemTypeModel;
-import ar.edu.itba.paw.models.nuevo.PublishContent;
-import ar.edu.itba.paw.models.nuevo.PublishItem;
-import ar.edu.itba.paw.models.nuevo.UserModel;
-import ar.edu.itba.paw.services.nuevo.PublishService;
-import ar.edu.itba.paw.services.nuevo.SelectorsInterface;
-import ar.edu.itba.paw.services.nuevo.UserService;
-import ar.edu.itba.paw.services.utils.TimeRange;
-import ar.edu.itba.paw.services.utils.TimeRangeList;
+import ar.edu.itba.paw.models.dto.AvailabilityWindow;
+import ar.edu.itba.paw.models.dto.ImageUpload;
+import ar.edu.itba.paw.models.entity.ItemType;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.models.entity.Version;
+import ar.edu.itba.paw.services.PublishService;
+import ar.edu.itba.paw.services.SelectorsService;
+import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -41,7 +38,7 @@ public class PublishPresentation {
 
     private final PublishService publishService;
     private final UserService userService;
-    private final SelectorsInterface selectorsInterface;
+    private final SelectorsService selectorsInterface;
     private final MessageSource messageSource;
 
     public ModelAndView publishStepOne(final PublishBoatForm form) {
@@ -105,7 +102,7 @@ public class PublishPresentation {
             final BindingResult errors,
             final Locale locale,
             final SessionStatus sessionStatus) {
-        final UserModel currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -122,8 +119,19 @@ public class PublishPresentation {
             return mav;
         }
 
-        final Optional<PublishItem> createdItem = publishService.create(toDraft(form), currentUser.getId());
-        if (createdItem.isEmpty()) {
+        final Optional<Version> createdVersion = publishService.create(
+                currentUser.getId(),
+                parseIntOrNull(form.getItemTypeId()),
+                form.getTitle() == null ? null : form.getTitle().trim(),
+                form.getDescription() == null ? "" : form.getDescription().trim(),
+                parseIntOrNull(form.getPricePerHour()),
+                parseIntOrNull(form.getCapacity()),
+                parseMaxWeight(form.getMaxWeight()),
+                form.getDifficultyLevel(),
+                parseIntOrNull(form.getLocationOptionId()),
+                buildAvailabilityWindows(form),
+                buildImageUploads(form));
+        if (createdVersion.isEmpty()) {
             final ModelAndView mav = new ModelAndView("publish-contact");
             errors.reject("publish.submit.persistenceError");
             addSummaryData(mav, form, locale);
@@ -131,36 +139,37 @@ public class PublishPresentation {
         }
 
         sessionStatus.setComplete();
-        return new ModelAndView(
-                "redirect:/publish/success?itemId=" + createdItem.get().getId());
+        return new ModelAndView("redirect:/publish/success?itemId="
+                + createdVersion.get().getItem().getId());
     }
 
     public ModelAndView publishSuccess(final HttpServletRequest request, final Integer itemId) {
-        final UserModel currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null || itemId == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<PublishItem> item = publishService.findById(itemId);
-        if (item.isEmpty()) {
+        final Optional<Version> version = publishService.findById(itemId);
+        if (version.isEmpty()) {
             return new ModelAndView("redirect:/publish");
         }
-        if (item.get().getOwnerId() != currentUser.getId()) {
+        if (!version.get().getItem().getHost().getId().equals(currentUser.getId())) {
             return new ModelAndView("redirect:/403");
         }
 
         final ModelAndView mav = new ModelAndView("publish-success");
-        mav.addObject("item", item.get());
-        mav.addObject("itemImageUrl", resolveImageUrl(item.get(), request.getContextPath()));
+        mav.addObject("item", version.get());
+        mav.addObject("itemImageUrl", resolveImageUrl(version.get(), request.getContextPath()));
         mav.addObject(
-                "availabilities", publishService.listAvailabilities(item.get().getId()));
+                "availabilities",
+                publishService.listAvailabilities(version.get().getItem().getId()));
         return mav;
     }
 
     public Map<String, String> buildItemTypeOptions() {
-        final List<ItemTypeModel> types = selectorsInterface.getItemTypeOptions();
+        final List<ItemType> types = selectorsInterface.getItemTypeOptions();
         final Map<String, String> options = new LinkedHashMap<>();
-        for (final ItemTypeModel type : types) {
+        for (final ItemType type : types) {
             final String id = type.getId() == null ? "" : String.valueOf(type.getId());
             final String name = type.getName() == null ? "" : type.getName();
             options.put(id, name);
@@ -232,22 +241,13 @@ public class PublishPresentation {
             final LocalTime start = parseLocalTimeOrNull(parts[1]);
             final LocalTime end = parseLocalTimeOrNull(parts[2]);
             if (start != null && end != null) {
-                form.getAvailabilityFor(weekday).add(TimeRange.of(start, end));
+                form.getAvailabilityFor(weekday).add(PublishBoatForm.TimeSlot.of(start, end));
             }
         }
     }
 
     private void applyDraftValidation(final PublishBoatForm form, final BindingResult errors, final Locale locale) {
-        final PublishContent draft = toDraft(form);
-        final Map<String, String> validationErrors = publishService.validate(draft);
-        for (final Map.Entry<String, String> entry : validationErrors.entrySet()) {
-            errors.rejectValue(entry.getKey(), entry.getValue(), new Object[] {dayLabel(locale, null)}, null);
-        }
-    }
-
-    private PublishContent toDraft(final PublishBoatForm form) {
-        return new PublishContent(
-                parseIntOrNull(form.getItemTypeId()),
+        final Map<String, String> validationErrors = publishService.validate(
                 form.getTitle() == null ? null : form.getTitle().trim(),
                 form.getDescription() == null ? "" : form.getDescription().trim(),
                 parseIntOrNull(form.getPricePerHour()),
@@ -257,6 +257,9 @@ public class PublishPresentation {
                 parseIntOrNull(form.getLocationOptionId()),
                 buildAvailabilityWindows(form),
                 buildImageUploads(form));
+        for (final Map.Entry<String, String> entry : validationErrors.entrySet()) {
+            errors.rejectValue(entry.getKey(), entry.getValue(), new Object[] {dayLabel(locale, null)}, null);
+        }
     }
 
     private static List<ImageUpload> buildImageUploads(final PublishBoatForm form) {
@@ -305,20 +308,17 @@ public class PublishPresentation {
 
     private static List<AvailabilityWindow> buildAvailabilityWindows(final PublishBoatForm form) {
         final List<AvailabilityWindow> availabilities = new ArrayList<>();
-        for (final Map.Entry<DayOfWeek, TimeRangeList> entry :
+        for (final Map.Entry<DayOfWeek, List<PublishBoatForm.TimeSlot>> entry :
                 form.getAvailabilityByWeekday().entrySet()) {
-            final TimeRangeList dayRanges = entry.getValue();
+            final List<PublishBoatForm.TimeSlot> dayRanges = entry.getValue();
             if (dayRanges == null || dayRanges.isEmpty()) {
                 continue;
             }
-            for (final TimeRange range : dayRanges) {
-                if (range.getStart() == null || range.getEnd() == null) {
-                    continue;
-                }
+            for (final PublishBoatForm.TimeSlot slot : dayRanges) {
                 final AvailabilityWindow window = new AvailabilityWindow();
                 window.setWeekday(entry.getKey());
-                window.setStartTime(range.getStart());
-                window.setEndTime(range.getEnd());
+                window.setStartTime(slot.getStart());
+                window.setEndTime(slot.getEnd());
                 availabilities.add(window);
             }
         }
@@ -348,12 +348,12 @@ public class PublishPresentation {
     private List<String> buildAvailabilitySummary(final PublishBoatForm form, final Locale locale) {
         final List<String> summary = new ArrayList<>();
         for (final DayOfWeek weekday : DayOfWeek.values()) {
-            final TimeRangeList daySlots = form.getAvailabilityFor(weekday);
+            final List<PublishBoatForm.TimeSlot> daySlots = form.getAvailabilityFor(weekday);
             if (daySlots == null || daySlots.isEmpty()) {
                 continue;
             }
-            final List<TimeRange> sortedSlots = new ArrayList<>(daySlots);
-            sortedSlots.sort(Comparator.comparing(TimeRange::getStart));
+            final List<PublishBoatForm.TimeSlot> sortedSlots = new ArrayList<>(daySlots);
+            sortedSlots.sort(Comparator.comparing(PublishBoatForm.TimeSlot::getStart));
 
             final StringBuilder sb = new StringBuilder(dayLabel(locale, weekday)).append(": ");
             for (int i = 0; i < sortedSlots.size(); i++) {
@@ -376,23 +376,20 @@ public class PublishPresentation {
         final StringBuilder sb = new StringBuilder("[");
         boolean first = true;
         for (final DayOfWeek weekday : DayOfWeek.values()) {
-            final TimeRangeList dayRanges = form.getAvailabilityFor(weekday);
+            final List<PublishBoatForm.TimeSlot> dayRanges = form.getAvailabilityFor(weekday);
             if (dayRanges == null || dayRanges.isEmpty()) {
                 continue;
             }
-            for (final TimeRange range : dayRanges) {
-                if (range.getStart() == null || range.getEnd() == null) {
-                    continue;
-                }
+            for (final PublishBoatForm.TimeSlot slot : dayRanges) {
                 if (!first) {
                     sb.append(",");
                 }
                 sb.append("{\"weekday\":\"")
                         .append(weekday.name())
                         .append("\",\"startTime\":\"")
-                        .append(formatTime(range.getStart()))
+                        .append(formatTime(slot.getStart()))
                         .append("\",\"endTime\":\"")
-                        .append(formatTime(range.getEnd()))
+                        .append(formatTime(slot.getEnd()))
                         .append("\"}");
                 first = false;
             }
@@ -424,7 +421,7 @@ public class PublishPresentation {
         };
     }
 
-    private UserModel currentAuthenticatedUser() {
+    private Users currentAuthenticatedUser() {
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()
@@ -434,11 +431,13 @@ public class PublishPresentation {
         return userService.findByEmail(authentication.getName()).orElse(null);
     }
 
-    private static String resolveImageUrl(final PublishItem item, final String contextPath) {
+    private static String resolveImageUrl(final Version version, final String contextPath) {
         final String prefix = contextPath == null ? "" : contextPath;
-        final Integer coverImageId = item.getCoverImageId();
-        if (coverImageId != null) {
-            return prefix + "/image/" + coverImageId;
+        if (version.getMedia() != null && !version.getMedia().isEmpty()) {
+            final Integer coverImageId = version.getMedia().get(0).getImage().getId();
+            if (coverImageId != null) {
+                return prefix + "/image/" + coverImageId;
+            }
         }
         return prefix + "/css/boat-placeholder.svg";
     }

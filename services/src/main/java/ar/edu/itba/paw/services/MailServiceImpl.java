@@ -1,15 +1,11 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.BookingRequest;
-import ar.edu.itba.paw.models.BookingState;
-import ar.edu.itba.paw.models.Item;
-import ar.edu.itba.paw.models.PreferredLanguage;
-import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.persistence.ItemDao;
-import ar.edu.itba.paw.persistence.UserDao;
+import ar.edu.itba.paw.models.mail.EmailVerificationMailModel;
+import ar.edu.itba.paw.models.mail.MailRecipientModel;
+import ar.edu.itba.paw.models.mail.PasswordRecoveryMailModel;
+import ar.edu.itba.paw.models.mail.PublishConfirmationMailModel;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.Properties;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -25,293 +21,117 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-@Service
+@Service("nuevoMailService")
+@SuppressFBWarnings(
+        value = {"CT_CONSTRUCTOR_THROW"},
+        justification =
+                "Spring injects singleton collaborators and constructor validation fails fast on missing mail configuration.")
 public class MailServiceImpl implements MailService {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(MailServiceImpl.class);
 
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
     private final MessageSource messageSource;
-    private final ItemDao itemDao;
-    private final UserDao userDao;
-    private final String reviewRecipient;
     private final String myBoatsBaseUrl;
-    private final String bookingsBaseUrl;
     private final String passwordRecoveryBaseUrl;
+    private final String emailVerificationBaseUrl;
 
-    @SuppressFBWarnings(
-            value = {"EI_EXPOSE_REP2", "CT_CONSTRUCTOR_THROW"},
-            justification = "Spring injects shared singleton collaborators here; constructor validation fails fast on"
-                    + " missing mail configuration and does not expose partially initialized state.")
     public MailServiceImpl(
             final JavaMailSender mailSender,
             final TemplateEngine templateEngine,
             final MessageSource messageSource,
-            final ItemDao itemDao,
-            final UserDao userDao,
             @Qualifier("credentialsProperties") final Properties credentialsProperties) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
         this.messageSource = messageSource;
-        this.itemDao = itemDao;
-        this.userDao = userDao;
         final String baseUrl = requireProperty(credentialsProperties, "app.baseUrl");
-        this.reviewRecipient = requireProperty(credentialsProperties, "mail.reviewRecipient");
         this.myBoatsBaseUrl = baseUrl + "/my-boats";
-        this.bookingsBaseUrl = baseUrl + "/bookings";
         this.passwordRecoveryBaseUrl = baseUrl + "/password-recovery";
-    }
-
-    @Override
-    public void sendTestConfirmationEmail(final String recipientEmail) {
-        final Locale locale = resolveLocale(recipientEmail);
-        sendHtmlEmail(
-                recipientEmail,
-                getMessage("mail.testConfirmation.subject", locale),
-                templateEngine.process("test-confirmation", new Context(locale)));
+        this.emailVerificationBaseUrl = baseUrl + "/verify-email";
     }
 
     @Override
     @Async("mailTaskExecutor")
-    public void sendPublishConfirmationEmail(
-            final String recipientEmail, final String ownerName, final String itemTitle) {
+    public void sendPublishConfirmationEmail(final PublishConfirmationMailModel mail) {
+        if (mail == null || !hasEmail(mail.getOwner())) {
+            return;
+        }
         try {
-            final Locale locale = resolveLocale(recipientEmail);
+            final Locale locale = resolveLocale(mail.getOwner());
             final Context context = new Context(locale);
-            context.setVariable("ownerName", ownerName);
-            context.setVariable("itemTitle", itemTitle);
+            context.setVariable("ownerName", mail.getOwner().getDisplayName());
+            context.setVariable("itemTitle", mail.getItemTitle());
             context.setVariable("profileUrl", myBoatsBaseUrl);
             sendHtmlEmail(
-                    recipientEmail,
-                    getMessage("mail.publishConfirmation.subject", locale, itemTitle),
+                    mail.getOwner().getEmail(),
+                    getMessage("mail.publishConfirmation.subject", locale, mail.getItemTitle()),
                     templateEngine.process("publish-confirmation", context));
         } catch (final RuntimeException e) {
-            LOGGER.error(
-                    "Could not send publish confirmation email to {} for item title '{}'.",
-                    recipientEmail,
-                    itemTitle,
-                    e);
+            LOGGER.error("Could not send publish confirmation email for item title '{}'.", mail.getItemTitle(), e);
         }
     }
 
     @Override
     @Async("mailTaskExecutor")
-    public void sendBookingReviewEmail(
-            final BookingRequest bookingRequest,
-            final String ownerEmail,
-            final String itemTitle,
-            final String location,
-            final String requestedDateLabel,
-            final String requestedTimeLabel) {
-        try {
-            final String recipientEmail;
-            if (ownerEmail != null && !ownerEmail.isBlank()) {
-                recipientEmail = ownerEmail;
-            } else {
-                recipientEmail = resolveBookingReviewRecipient(bookingRequest).orElse(reviewRecipient);
-            }
-            final Locale locale = resolveLocale(recipientEmail);
-            final Context context = new Context(locale);
-            context.setVariable("bookingRequest", bookingRequest);
-            context.setVariable("itemTitle", itemTitle);
-            context.setVariable("location", location);
-            context.setVariable("requestedDateLabel", requestedDateLabel);
-            context.setVariable("requestedTimeLabel", requestedTimeLabel);
-            final String message = bookingRequest.getDescription() == null
-                    ? ""
-                    : bookingRequest.getDescription().trim();
-            context.setVariable("hasRequestMessage", !message.isEmpty());
-            context.setVariable("requestMessage", message);
-            context.setVariable("profileUrl", myBoatsBaseUrl + "#received-booking-requests");
-            sendHtmlEmail(
-                    recipientEmail,
-                    getMessage("mail.requestReview.subject", locale, bookingRequest.getRequesterName()),
-                    templateEngine.process("booking-review", context));
-        } catch (final RuntimeException e) {
-            LOGGER.error(
-                    "Could not send booking review email for booking token {} and requester {}.",
-                    bookingRequest.getToken(),
-                    bookingRequest.getRequesterEmail(),
-                    e);
-        }
-    }
-
-    @Override
-    @Async("mailTaskExecutor")
-    public void sendBookingResolutionEmail(final BookingRequest bookingRequest) {
-        try {
-            final Locale locale = bookingRequest.getRequesterLocale();
-            final Context context = new Context(locale);
-            context.setVariable("bookingRequest", bookingRequest);
-            context.setVariable("statusLabel", getMessage(statusMessageCode(bookingRequest.getStatus()), locale));
-            context.setVariable("bookingUrl", bookingsBaseUrl + "#sent-booking-requests");
-            sendHtmlEmail(
-                    bookingRequest.getRequesterEmail(),
-                    getMessage(
-                            "mail.requestResolution.subject",
-                            locale,
-                            getMessage(statusMessageCode(bookingRequest.getStatus()), locale)),
-                    templateEngine.process("booking-resolution", context));
-        } catch (final RuntimeException e) {
-            LOGGER.error(
-                    "Could not send booking resolution email for booking token {} and requester {}.",
-                    bookingRequest.getToken(),
-                    bookingRequest.getRequesterEmail(),
-                    e);
-        }
-    }
-
-    @Override
-    @Async("mailTaskExecutor")
-    public void sendPaymentProofSubmittedEmail(
-            final String ownerEmail,
-            final String requesterName,
-            final String itemTitle,
-            final byte[] proofFileData,
-            final String proofContentType) {
-        if (ownerEmail == null || ownerEmail.isBlank()) {
+    public void sendPasswordRecoveryEmail(final PasswordRecoveryMailModel mail) {
+        if (mail == null || !hasEmail(mail.getRecipient()) || isBlank(mail.getRecoveryToken())) {
             return;
         }
         try {
-            final Locale locale = resolveLocale(ownerEmail);
+            final Locale locale = resolveLocale(mail.getRecipient());
             final Context context = new Context(locale);
-            context.setVariable("requesterName", requesterName);
-            context.setVariable("itemTitle", itemTitle);
-            context.setVariable("profileUrl", myBoatsBaseUrl + "#received-booking-requests");
-            final boolean hasProofImage = isInlineProofImage(proofFileData, proofContentType);
-            context.setVariable("hasProofImage", hasProofImage);
-            if (hasProofImage) {
-                context.setVariable("proofImageSrc", "cid:payment-proof-image");
-            }
-
-            final String htmlBody = templateEngine.process("payment-proof-submitted", context);
+            context.setVariable("recipientName", mail.getRecipient().getDisplayName());
+            context.setVariable("recoveryUrl", passwordRecoveryBaseUrl + "/" + mail.getRecoveryToken());
             sendHtmlEmail(
-                    ownerEmail,
-                    getMessage("mail.paymentProofSubmitted.subject", locale, requesterName),
-                    htmlBody,
-                    hasProofImage ? proofFileData : null,
-                    hasProofImage ? proofContentType : null,
-                    hasProofImage ? "payment-proof-image" : null);
-        } catch (final RuntimeException e) {
-            LOGGER.error("Could not send payment proof email to {}.", ownerEmail, e);
-        }
-    }
-
-    @Override
-    @Async("mailTaskExecutor")
-    public void sendPaymentReceivedEmail(
-            final String requesterEmail, final String requesterLocaleTag, final String itemTitle) {
-        if (requesterEmail == null || requesterEmail.isBlank()) {
-            return;
-        }
-        try {
-            final Locale locale = toSupportedLocale(requesterLocaleTag);
-            final Context context = new Context(locale);
-            context.setVariable("itemTitle", itemTitle);
-            context.setVariable("profileUrl", bookingsBaseUrl + "#sent-booking-requests");
-            sendHtmlEmail(
-                    requesterEmail,
-                    getMessage("mail.paymentReceived.subject", locale, itemTitle),
-                    templateEngine.process("payment-received", context));
-        } catch (final RuntimeException e) {
-            LOGGER.error("Could not send payment received email to {}.", requesterEmail, e);
-        }
-    }
-
-    @Override
-    @Async("mailTaskExecutor")
-    public void sendPaymentProofRefusedEmail(
-            final String requesterEmail,
-            final String requesterLocaleTag,
-            final String ownerName,
-            final String itemTitle,
-            final String reason) {
-        if (requesterEmail == null || requesterEmail.isBlank()) {
-            return;
-        }
-        try {
-            final Locale locale = toSupportedLocale(requesterLocaleTag);
-            final Context context = new Context(locale);
-            context.setVariable("ownerName", ownerName);
-            context.setVariable("itemTitle", itemTitle);
-            context.setVariable("reason", reason);
-            context.setVariable("profileUrl", bookingsBaseUrl + "#sent-booking-requests");
-            sendHtmlEmail(
-                    requesterEmail,
-                    getMessage("mail.paymentProofRefused.subject", locale, itemTitle),
-                    templateEngine.process("payment-proof-refused", context));
-        } catch (final RuntimeException e) {
-            LOGGER.error("Could not send payment proof refused email to {}.", requesterEmail, e);
-        }
-    }
-
-    @Override
-    @Async("mailTaskExecutor")
-    public void sendPasswordRecoveryEmail(
-            final String recipientEmail, final String recipientName, final String recoveryToken) {
-        if (recipientEmail == null || recipientEmail.isBlank() || recoveryToken == null || recoveryToken.isBlank()) {
-            return;
-        }
-        try {
-            final Locale locale = resolveLocale(recipientEmail);
-            final Context context = new Context(locale);
-            context.setVariable("recipientName", recipientName);
-            context.setVariable("recoveryUrl", passwordRecoveryBaseUrl + "/" + recoveryToken);
-            sendHtmlEmail(
-                    recipientEmail,
+                    mail.getRecipient().getEmail(),
                     getMessage("mail.passwordRecovery.subject", locale),
                     templateEngine.process("password-recovery", context));
         } catch (final RuntimeException e) {
-            LOGGER.error("Could not send password recovery email to {}.", recipientEmail, e);
+            LOGGER.error(
+                    "Could not send password recovery email to {}.",
+                    mail.getRecipient().getEmail(),
+                    e);
         }
     }
 
     @Override
-    public Locale resolveLocale(final String recipientIdentifier) {
-        final Optional<Locale> userLocale = userDao.findByEmail(recipientIdentifier)
-                .map(user -> localeFromPreferredLanguage(user.getPreferredLanguage()));
-        if (userLocale.isPresent()) {
-            return userLocale.get();
+    @Async("mailTaskExecutor")
+    public void sendEmailVerificationEmail(final EmailVerificationMailModel mail) {
+        if (mail == null || !hasEmail(mail.getRecipient()) || isBlank(mail.getVerificationToken())) {
+            return;
         }
-        return Locale.of("es");
+        try {
+            final Locale locale = resolveLocale(mail.getRecipient());
+            final Context context = new Context(locale);
+            context.setVariable("recipientName", mail.getRecipient().getDisplayName());
+            context.setVariable("verificationUrl", emailVerificationBaseUrl + "/" + mail.getVerificationToken());
+            sendHtmlEmail(
+                    mail.getRecipient().getEmail(),
+                    getMessage("mail.emailVerification.subject", locale),
+                    templateEngine.process("email-verification", context));
+        } catch (final RuntimeException e) {
+            LOGGER.error(
+                    "Could not send email verification to {}.",
+                    mail.getRecipient().getEmail(),
+                    e);
+        }
     }
 
-    private static Locale localeFromPreferredLanguage(final PreferredLanguage preferredLanguage) {
-        if (preferredLanguage == null) {
+    @Override
+    public Locale resolveLocale(final MailRecipientModel recipient) {
+        if (recipient == null || recipient.getPreferredLanguage() == null) {
             return Locale.of("es");
         }
-        return preferredLanguage.toLocale();
+        return recipient.getPreferredLanguage().toLocale();
     }
 
-    private static Locale toSupportedLocale(final String preferredLanguage) {
-        return localeFromPreferredLanguage(PreferredLanguage.fromPersistence(preferredLanguage));
+    private static boolean hasEmail(final MailRecipientModel recipient) {
+        return recipient != null && !isBlank(recipient.getEmail());
     }
 
-    private static boolean isInlineProofImage(final byte[] proofFileData, final String proofContentType) {
-        return proofFileData != null
-                && proofFileData.length > 0
-                && proofContentType != null
-                && proofContentType.toLowerCase(Locale.ROOT).startsWith("image/");
-    }
-
-    private Optional<String> resolveBookingReviewRecipient(final BookingRequest bookingRequest) {
-        if (bookingRequest.getItemId() == null) {
-            return Optional.empty();
-        }
-
-        final Optional<Item> item = itemDao.findItemById(bookingRequest.getItemId());
-        if (item.isEmpty()) {
-            return Optional.empty();
-        }
-
-        final Optional<User> owner = userDao.findById(item.get().getOwnerId());
-        if (owner.isEmpty()
-                || owner.get().getEmail() == null
-                || owner.get().getEmail().isBlank()) {
-            return Optional.empty();
-        }
-
-        return Optional.of(owner.get().getEmail());
+    private static boolean isBlank(final String value) {
+        return value == null || value.isBlank();
     }
 
     private void sendHtmlEmail(final String recipientEmail, final String subject, final String htmlBody) {
@@ -353,16 +173,5 @@ public class MailServiceImpl implements MailService {
             throw new IllegalStateException("Missing or blank '" + key + "' in credentials properties");
         }
         return value;
-    }
-
-    private String statusMessageCode(final BookingState status) {
-        return switch (status) {
-            case BOOKING_CONFIRMED -> "request.status.accepted";
-            case BOOKING_REJECTED -> "request.status.declined";
-            case BOOKING_PAYMENT_SUBMITTED -> "request.status.paymentSubmitted";
-            case BOOKING_PAID -> "request.status.paid";
-            case BOOKING_PAYMENT_REFUSED -> "request.status.paymentRefused";
-            default -> "request.status.updated";
-        };
     }
 }

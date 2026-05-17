@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.webapp.form;
 
-import ar.edu.itba.paw.services.utils.TimeRangeList;
 import ar.edu.itba.paw.webapp.form.validation.ImageGalleryUpload;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.Serializable;
 import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -67,7 +67,7 @@ public class PublishBoatForm {
     private final List<UploadedImage> uploadedImages = new ArrayList<>();
 
     @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Required for Spring indexed property binding")
-    private final Map<DayOfWeek, TimeRangeList> availabilityByWeekday = new EnumMap<>(DayOfWeek.class);
+    private final Map<DayOfWeek, List<TimeSlot>> availabilityByWeekday = new EnumMap<>(DayOfWeek.class);
 
     public void setFiles(final List<MultipartFile> files) {
         this.files = files == null ? new ArrayList<>() : files;
@@ -136,36 +136,62 @@ public class PublishBoatForm {
     public void setDayEnabled(final DayOfWeek weekday, final boolean enabled) {
         final DayOfWeek safeWeekday = Objects.requireNonNull(weekday);
         if (enabled) {
-            availabilityByWeekday.computeIfAbsent(safeWeekday, ignored -> new TimeRangeList());
+            availabilityByWeekday.computeIfAbsent(safeWeekday, ignored -> new ArrayList<>());
             return;
         }
         availabilityByWeekday.remove(safeWeekday);
     }
 
-    public TimeRangeList getAvailabilityFor(final DayOfWeek weekday) {
+    public List<TimeSlot> getAvailabilityFor(final DayOfWeek weekday) {
         return availabilityByWeekday.get(Objects.requireNonNull(weekday));
     }
 
-    public void setAvailabilityFor(final DayOfWeek weekday, final TimeRangeList ranges) {
+    public void setAvailabilityFor(final DayOfWeek weekday, final List<TimeSlot> ranges) {
         final DayOfWeek safeWeekday = Objects.requireNonNull(weekday);
         if (ranges == null) {
             availabilityByWeekday.remove(safeWeekday);
             return;
         }
 
-        final TimeRangeList copy = new TimeRangeList();
-        copy.addAll(ranges);
-        availabilityByWeekday.put(safeWeekday, copy);
+        availabilityByWeekday.put(safeWeekday, new ArrayList<>(ranges));
     }
 
-    public void setAvailabilityByWeekday(final Map<DayOfWeek, TimeRangeList> availabilityByWeekday) {
+    public void setAvailabilityByWeekday(final Map<DayOfWeek, List<TimeSlot>> availabilityByWeekday) {
         this.availabilityByWeekday.clear();
         if (availabilityByWeekday == null) {
             return;
         }
 
-        for (final Map.Entry<DayOfWeek, TimeRangeList> dayEntry : availabilityByWeekday.entrySet()) {
+        for (final Map.Entry<DayOfWeek, List<TimeSlot>> dayEntry : availabilityByWeekday.entrySet()) {
             setAvailabilityFor(dayEntry.getKey(), dayEntry.getValue());
+        }
+    }
+
+    public static final class TimeSlot {
+        private final LocalTime start;
+        private final LocalTime end;
+
+        private TimeSlot(final LocalTime start, final LocalTime end) {
+            if (start == null || end == null) {
+                throw new IllegalArgumentException("start and end times must not be null");
+            }
+            if (!end.isAfter(start)) {
+                throw new IllegalArgumentException("end time must be after start time");
+            }
+            this.start = start;
+            this.end = end;
+        }
+
+        public static TimeSlot of(final LocalTime start, final LocalTime end) {
+            return new TimeSlot(start, end);
+        }
+
+        public LocalTime getStart() {
+            return start;
+        }
+
+        public LocalTime getEnd() {
+            return end;
         }
     }
 

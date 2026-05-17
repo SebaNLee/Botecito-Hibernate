@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.auth;
 
-import ar.edu.itba.paw.models.nuevo.UserModel;
-import ar.edu.itba.paw.services.nuevo.UserService;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.services.UserService;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -17,7 +17,7 @@ public class UserAccountDetailsService implements org.springframework.security.c
 
     @Override
     public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
-        final UserModel user = userService
+        final Users user = userService
                 .findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("No user found with email " + username));
         if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
@@ -27,7 +27,7 @@ public class UserAccountDetailsService implements org.springframework.security.c
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPasswordHash(),
-                user.isVerified(),
+                user.getVerified() != null && user.getVerified(),
                 true,
                 true,
                 true,

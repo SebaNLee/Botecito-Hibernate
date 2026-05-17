@@ -244,9 +244,9 @@
                     <div class="flex-1">
                       <div class="flex items-center gap-2 mb-1">
                         <span class="badge badge-xs <c:out value='${badgeClass}'/> font-bold py-2"><spring:message code="booking.status.${b.status}" /></span>
-                        <span class="text-xs font-mono text-on-surface-variant bg-base-300 px-2 py-0.5 rounded-full">v<c:out value="${b.versionId}" /></span>
+                        <span class="text-xs font-mono text-on-surface-variant bg-base-300 px-2 py-0.5 rounded-full">v<c:out value="${b.version.id}" /></span>
                       </div>
-                      <h3 class="m-0 text-lg font-bold text-on-surface line-clamp-1"><c:out value="${b.versionTitle}" /></h3>
+                      <h3 class="m-0 text-lg font-bold text-on-surface line-clamp-1"><c:out value="${b.version.title}" /></h3>
                       <p class="m-0 text-xs font-semibold text-on-surface-variant flex items-center gap-1 mt-1">
                         <span class="material-symbols-outlined text-[14px]">calendar_today</span>
                         <c:out value="${fmtStart}" /> &rarr; <c:out value="${fmtEnd}" />
@@ -267,8 +267,8 @@
                       </p>
                       <p class="m-0 text-sm font-semibold text-on-surface">
                         <c:choose>
-                          <c:when test="${isIncoming}">Guest: #<c:out value="${b.guestId}" /></c:when>
-                          <c:otherwise><c:out value="${b.hostName}" /></c:otherwise>
+                          <c:when test="${isIncoming}">Guest: #<c:out value="${b.guest.id}" /></c:when>
+                          <c:otherwise><c:out value="${b.version.item.host.firstName}" /> <c:out value="${b.version.item.host.lastName}" /></c:otherwise>
                         </c:choose>
                       </p>
                     </div>
@@ -278,13 +278,13 @@
                     </div>
                   </div>
 
-                  <c:if test="${not isIncoming && (b.status.name() == 'ACCEPTED' || b.status.name() == 'REFUSED') && not empty b.alias}">
+                  <c:if test="${not isIncoming && (b.status.name() == 'ACCEPTED' || b.status.name() == 'REFUSED') && not empty b.version.item.host.alias}">
                     <div class="mt-1 bg-base-200/50 p-2 rounded flex items-center justify-between border border-outline-variant/10">
                       <div class="flex-1">
                          <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-outline">
                             <c:out value="${aliasLabel}" default="Payment Alias" />
                          </p>
-                         <p class="m-0 text-sm font-mono text-on-surface-variant select-all"><c:out value="${b.alias}" /></p>
+                          <p class="m-0 text-sm font-mono text-on-surface-variant select-all"><c:out value="${b.version.item.host.alias}" /></p>
                       </div>
                     </div>
                   </c:if>
@@ -357,7 +357,7 @@
                       <!-- View Proof Modal -->
                       <paw:detailsModal id="${detailModalId}-proof" title="${viewPaymentProofLabel}">
                         <jsp:body>
-                            <c:if test="${not empty b.proofRefuseMsg}">
+                            <c:if test="${not empty b.paymentProof.refuseMsg}">
                               <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error space-y-1 mb-4">
                                 <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error">
                                   <c:choose>
@@ -365,13 +365,13 @@
                                     <c:otherwise><spring:message code="payment.refusal.reason.label" /></c:otherwise>
                                   </c:choose>
                                 </p>
-                                <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${b.proofRefuseMsg}" /></p>
+                                <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${b.paymentProof.refuseMsg}" /></p>
                               </div>
                             </c:if>
-                            <c:if test="${not empty b.proofReplyMsg}">
+                            <c:if test="${not empty b.paymentProof.replyMsg}">
                               <div class="rounded-lg bg-base-100 p-3 border-l-4 border-primary space-y-1 mb-4">
                                 <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="payment.guestReply.display.label" /></p>
-                                <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${b.proofReplyMsg}" /></p>
+                                <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${b.paymentProof.replyMsg}" /></p>
                               </div>
                             </c:if>
                           <div class="overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">

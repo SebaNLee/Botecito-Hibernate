@@ -1,17 +1,15 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.User;
-import ar.edu.itba.paw.models.nuevo.Booking;
-import ar.edu.itba.paw.models.nuevo.ItemUpdateModel;
-import ar.edu.itba.paw.models.nuevo.MyBoatsItem;
-import ar.edu.itba.paw.models.nuevo.enums.BookingStatus;
+import ar.edu.itba.paw.models.dto.MyBoatsItem;
+import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.BookingStatusEnum;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.services.BookingService;
+import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
-import ar.edu.itba.paw.services.nuevo.BookingInterface;
-import ar.edu.itba.paw.services.nuevo.ItemInterface;
-import ar.edu.itba.paw.webapp.controller.support.ItemImageUtils;
-import ar.edu.itba.paw.webapp.controller.support.ToastSupport;
-import ar.edu.itba.paw.webapp.form.nuevo.EditPublicationForm;
-import java.io.IOException;
+import ar.edu.itba.paw.services.exceptions.VersionNotFoundException;
+import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.LinkedHashMap;
@@ -26,7 +24,6 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -34,14 +31,13 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class PublishActionPresentation {
 
-    private final ItemInterface itemInterface;
-    private final BookingInterface bookingInterface;
+    private final ItemService itemInterface;
+    private final BookingService bookingInterface;
     private final UserService userService;
-    private final ar.edu.itba.paw.services.ItemService itemService;
 
     public ModelAndView editPublicationForm(
             final int itemId, final HttpServletRequest request, final RedirectAttributes redirectAttributes) {
-        final User currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -52,29 +48,27 @@ public class PublishActionPresentation {
             return new ModelAndView("redirect:/my-boats");
         }
 
-        final EditPublicationForm form = new EditPublicationForm();
+        final PublishBoatForm form = new PublishBoatForm();
         form.setTitle(item.get().getTitle());
         form.setDescription(item.get().getDescription());
         form.setPricePerHour(
-                item.get().getPricePerHour() == null
+                item.get().getPrice() == null ? "" : String.valueOf(item.get().getPrice()));
+        form.setDifficultyLevel(item.get().getDifficulty());
+        form.setLocationOptionId(
+                item.get().getLocationId() == null
                         ? ""
-                        : String.valueOf(item.get().getPricePerHour()));
-        form.setDifficultyLevel(item.get().getDifficultyLevel());
-        form.setMarina(
-                item.get().getLocationOptionId() == null
-                        ? ""
-                        : String.valueOf(item.get().getLocationOptionId()));
+                        : String.valueOf(item.get().getLocationId()));
 
-        return editPublicationModelAndView(item.get(), request).addObject("editForm", form);
+        return editPublicationModelAndView(item.get(), request).addObject("publishForm", form);
     }
 
     public ModelAndView editPublicationSubmit(
             final int itemId,
-            final EditPublicationForm form,
+            final PublishBoatForm form,
             final BindingResult errors,
             final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
-        final User currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -85,11 +79,10 @@ public class PublishActionPresentation {
             return new ModelAndView("redirect:/my-boats");
         }
 
-        validateUploadedImage(form.getFile(), errors);
         final Integer parsedPrice =
                 parseIntegerField(form.getPricePerHour(), "pricePerHour", "publish.validation.price.numeric", errors);
-        final Integer parsedLocationOptionId =
-                parseIntegerField(form.getMarina(), "marina", "publish.validation.location.invalid", errors);
+        final Integer parsedLocationOptionId = parseIntegerField(
+                form.getLocationOptionId(), "locationOptionId", "publish.validation.location.invalid", errors);
 
         if (errors.hasErrors()) {
             return editPublicationModelAndView(item.get(), request);
@@ -99,10 +92,7 @@ public class PublishActionPresentation {
             return editPublicationModelAndView(item.get(), request);
         }
 
-        final boolean hasNewPrimaryImage =
-                form.getFile() != null && !form.getFile().isEmpty();
-
-        if (!hasPublicationChanges(item.get(), form, hasNewPrimaryImage)) {
+        if (!hasPublicationChanges(item.get(), form)) {
             ToastSupport.success(redirectAttributes, "profile.publications.updated");
             return new ModelAndView("redirect:/my-boats#my-publications");
         }
@@ -114,7 +104,11 @@ public class PublishActionPresentation {
         }
 
         final List<Booking> activeBookings = bookingInterface.getBookingsForVersion(versionId).stream()
-                .filter(b -> b.getStatus() != BookingStatus.REJECTED && b.getStatus() != BookingStatus.CANCELLED)
+                .filter(b -> {
+                    if (b.getStatus() == null) return false;
+                    final String name = b.getStatus().name();
+                    return !"REJECTED".equals(name) && !"CANCELLED".equals(name);
+                })
                 .toList();
 
         if (!activeBookings.isEmpty() && !isConfirmedSnapshotEdit(request)) {
@@ -127,36 +121,28 @@ public class PublishActionPresentation {
 
         resolvePendingBookings(activeBookings, currentUser.getId(), request);
 
-        final ItemUpdateModel update = new ItemUpdateModel();
-        update.setTitle(form.getTitle().trim());
-        update.setDescription(
-                form.getDescription() == null ? "" : form.getDescription().trim());
-        update.setPricePerHour(parsedPrice);
-        update.setDifficultyLevel(form.getDifficultyLevel());
-        update.setLocationOptionId(parsedLocationOptionId);
-
-        final int newVersionId = itemInterface.createPublicationVersion(itemId, currentUser.getId(), update);
-        if (newVersionId < 0) {
+        try {
+            itemInterface.createPublicationVersion(
+                    itemId,
+                    currentUser.getId(),
+                    form.getTitle().trim(),
+                    form.getDescription() == null ? "" : form.getDescription().trim(),
+                    parsedPrice,
+                    form.getDifficultyLevel(),
+                    parsedLocationOptionId);
+        } catch (final VersionNotFoundException e) {
             errors.reject("publish.submit.persistenceError");
             return editPublicationModelAndView(item.get(), request);
         }
 
-        if (hasNewPrimaryImage) {
-            final byte[] imageData = readPrimaryImageBytes(form.getFile(), errors);
-            if (errors.hasErrors()) {
-                return editPublicationModelAndView(item.get(), request);
-            }
-            if (imageData != null) {
-                itemInterface.replaceVersionPrimaryImage(newVersionId, imageData);
-            }
-        }
+        // TODO edit image handling
 
         ToastSupport.success(redirectAttributes, "profile.publications.updated");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
     public ModelAndView disablePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final User currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -172,7 +158,7 @@ public class PublishActionPresentation {
     }
 
     public ModelAndView enablePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final User currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -188,7 +174,7 @@ public class PublishActionPresentation {
     }
 
     public ModelAndView hardDeletePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final User currentUser = currentAuthenticatedUser();
+        final Users currentUser = currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -219,8 +205,11 @@ public class PublishActionPresentation {
         final List<Booking> activeBookings = versionId == null
                 ? List.of()
                 : bookingInterface.getBookingsForVersion(versionId).stream()
-                        .filter(b ->
-                                b.getStatus() != BookingStatus.REJECTED && b.getStatus() != BookingStatus.CANCELLED)
+                        .filter(b -> {
+                            if (b.getStatus() == null) return false;
+                            final String name = b.getStatus().name();
+                            return !"REJECTED".equals(name) && !"CANCELLED".equals(name);
+                        })
                         .toList();
 
         final Map<Integer, String> guestNames = new LinkedHashMap<>();
@@ -228,17 +217,19 @@ public class PublishActionPresentation {
         final Map<Integer, String> friendlyTimeRanges = new LinkedHashMap<>();
         final Map<Integer, String> friendlyPrices = new LinkedHashMap<>();
         final Map<Integer, String> statusCodes = new LinkedHashMap<>();
-        final Integer pricePerHour = item.getPricePerHour();
+        final Integer pricePerHour = item.getPrice();
 
         for (final Booking booking : activeBookings) {
             final int id = booking.getId();
+            final int guestId = booking.getGuest() != null ? booking.getGuest().getId() : 0;
 
-            if (booking.getGuestId() > 0) {
+            if (guestId > 0) {
                 guestNames.put(
                         id,
                         userService
-                                .findById(booking.getGuestId())
-                                .map(User::getName)
+                                .findById(guestId)
+                                .map(u -> (u.getFirstName() != null ? u.getFirstName() : "") + " "
+                                        + (u.getLastName() != null ? u.getLastName() : ""))
                                 .orElse(""));
             }
 
@@ -275,8 +266,13 @@ public class PublishActionPresentation {
         mav.addObject("editBookingFriendlyTimeRanges", friendlyTimeRanges);
         mav.addObject("editBookingFriendlyPrices", friendlyPrices);
         mav.addObject("editBookingStatusCodes", statusCodes);
-        mav.addObject(
-                "itemImageUrl", ItemImageUtils.resolveImageUrl(itemService, item.getId(), request.getContextPath()));
+        final String imageUrl;
+        if (item.getCoverImageId() != null) {
+            imageUrl = request.getContextPath() + "/image/" + item.getCoverImageId();
+        } else {
+            imageUrl = request.getContextPath() + "/css/boat-placeholder.svg";
+        }
+        mav.addObject("itemImageUrl", imageUrl);
         return mav;
     }
 
@@ -284,7 +280,7 @@ public class PublishActionPresentation {
             DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(Locale.ENGLISH);
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
-    private static String resolveStatusMessageCode(final BookingStatus status) {
+    private static String resolveStatusMessageCode(final BookingStatusEnum status) {
         if (status == null) {
             return "profile.sentBookings.status.unknown";
         }
@@ -300,11 +296,7 @@ public class PublishActionPresentation {
         };
     }
 
-    private static boolean hasPublicationChanges(
-            final MyBoatsItem item, final EditPublicationForm form, final boolean hasNewImage) {
-        if (hasNewImage) {
-            return true;
-        }
+    private static boolean hasPublicationChanges(final MyBoatsItem item, final PublishBoatForm form) {
         if (!Objects.equals(
                 item.getTitle(), form.getTitle() == null ? "" : form.getTitle().trim())) {
             return true;
@@ -314,15 +306,14 @@ public class PublishActionPresentation {
                 form.getDescription() == null ? "" : form.getDescription().trim())) {
             return true;
         }
-        if (item.getPricePerHour() == null
-                || !Objects.equals(String.valueOf(item.getPricePerHour()), form.getPricePerHour())) {
+        if (item.getPrice() == null || !Objects.equals(String.valueOf(item.getPrice()), form.getPricePerHour())) {
             return true;
         }
-        if (!Objects.equals(item.getDifficultyLevel(), form.getDifficultyLevel())) {
+        if (!Objects.equals(item.getDifficulty(), form.getDifficultyLevel())) {
             return true;
         }
-        if (item.getLocationOptionId() == null
-                || !Objects.equals(String.valueOf(item.getLocationOptionId()), form.getMarina())) {
+        if (item.getLocationId() == null
+                || !Objects.equals(String.valueOf(item.getLocationId()), form.getLocationOptionId())) {
             return true;
         }
         return false;
@@ -335,7 +326,9 @@ public class PublishActionPresentation {
     private static boolean allPendingBookingsHaveDecisions(
             final List<Booking> activeBookings, final HttpServletRequest request) {
         for (final Booking booking : activeBookings) {
-            if (booking.getStatus() != BookingStatus.PENDING) {
+            final String statusName =
+                    booking.getStatus() != null ? booking.getStatus().name() : "";
+            if (!"PENDING".equals(statusName)) {
                 continue;
             }
             final String decision = request.getParameter("bookingDecision_" + booking.getId());
@@ -349,7 +342,9 @@ public class PublishActionPresentation {
     private void resolvePendingBookings(
             final List<Booking> activeBookings, final int ownerId, final HttpServletRequest request) {
         for (final Booking booking : activeBookings) {
-            if (booking.getStatus() != BookingStatus.PENDING) {
+            final String statusName =
+                    booking.getStatus() != null ? booking.getStatus().name() : "";
+            if (!"PENDING".equals(statusName)) {
                 continue;
             }
             final String decision = request.getParameter("bookingDecision_" + booking.getId());
@@ -374,26 +369,7 @@ public class PublishActionPresentation {
         }
     }
 
-    private static void validateUploadedImage(final MultipartFile file, final BindingResult errors) {
-        if (file == null || file.isEmpty()) {
-            return;
-        }
-        final String contentType = file.getContentType();
-        if (contentType == null || !contentType.toLowerCase().startsWith("image/")) {
-            errors.rejectValue("file", "editPublication.validation.image.type");
-        }
-    }
-
-    private static byte[] readPrimaryImageBytes(final MultipartFile uploadedFile, final BindingResult errors) {
-        try {
-            return uploadedFile.getBytes();
-        } catch (final IOException e) {
-            errors.rejectValue("file", "editPublication.validation.image.read");
-            return null;
-        }
-    }
-
-    private User currentAuthenticatedUser() {
+    private Users currentAuthenticatedUser() {
         final var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
             return null;

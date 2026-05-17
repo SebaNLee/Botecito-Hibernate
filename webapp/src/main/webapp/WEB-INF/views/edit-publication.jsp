@@ -5,7 +5,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="profileUrl" value="/my-boats" />
-<c:url var="editActionUrl" value="/profile/item/${item.id}/edit" />
+<c:url var="editActionUrl" value="/my-boats/${item.id}/edit" />
 <c:url var="placeholderImageUrl" value="/css/boat-placeholder.svg" />
 <spring:message code="publish.form.title.label" var="publishTitleLabel" />
 <spring:message code="publish.form.title.placeholder" var="publishTitlePlaceholder" />
@@ -52,11 +52,10 @@
   <form:form
       action="${editActionUrl}"
       method="post"
-      modelAttribute="editForm"
-      enctype="multipart/form-data"
+      modelAttribute="publishForm"
       cssClass="space-y-8">
 
-    <spring:hasBindErrors name="editForm">
+    <spring:hasBindErrors name="publishForm">
       <c:if test="${not empty errors.globalErrors}">
         <c:forEach var="error" items="${errors.globalErrors}">
           <spring:message
@@ -95,13 +94,13 @@
           </fieldset>
           <div class="md:col-span-2">
             <paw:optionsPicker
-                id="marina"
-                name="marina"
+                id="locationOptionId"
+                name="locationOptionId"
                 label="${publishLocationLabel}"
-                value="${editForm.marina}"
+                value="${publishForm.locationOptionId}"
                 placeholder="${publishLocationPlaceholder}"
                 icon="location_on"
-                errorPath="marina"
+                errorPath="locationOptionId"
                 hostAccent="true" />
           </div>
         </div>
@@ -113,32 +112,13 @@
       <jsp:body>
         <div class="rounded-xl overflow-hidden border border-outline-variant/30 bg-base-200">
           <img
-              id="edit-file-preview"
               src="${not empty itemImageUrl ? itemImageUrl : placeholderImageUrl}"
               alt="<spring:message code='publish.image.previewAlt' />"
               class="w-full aspect-[16/10] object-cover" />
         </div>
 
-        <label class="border-2 border-dashed border-outline-variant rounded-xl p-10 flex flex-col items-center justify-center text-center hover:bg-base-200/60 transition-colors cursor-pointer group">
-          <input
-              type="file"
-              name="file"
-              accept="image/*"
-              class="hidden"
-              data-image-preview-input
-              data-image-preview-target-id="edit-file-preview"
-              data-image-preview-filename-id="edit-file-name-display"
-              data-image-preview-placeholder="${not empty itemImageUrl ? itemImageUrl : placeholderImageUrl}" />
-          <div class="w-16 h-16 bg-secondary/10 text-secondary rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-            <span class="material-symbols-outlined text-3xl">upload_file</span>
-          </div>
-          <span class="font-bold text-lg text-secondary"><spring:message code="publish.image.upload" /></span>
-          <span id="edit-file-name-display" class="text-sm text-outline mt-1"><spring:message code="publish.image.helper" /></span>
-          <form:errors path="file" cssClass="text-error text-xs mt-2" element="p" />
-        </label>
-
-        <div class="rounded-xl bg-base-200 p-4 text-sm text-on-surface-variant leading-relaxed">
-          <spring:message code="publish.image.note" />
+        <div class="rounded-xl bg-base-200 p-4 text-sm text-on-surface-variant leading-relaxed text-center">
+          <spring:message code="editPublication.image.todo" />
         </div>
       </jsp:body>
     </paw:sectionCard>

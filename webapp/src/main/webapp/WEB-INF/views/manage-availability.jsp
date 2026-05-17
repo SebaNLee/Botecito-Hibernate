@@ -3,13 +3,13 @@
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<c:url var="pageUrl" value="/profile/item/${item.id}/availability">
+<c:url var="pageUrl" value="/my-boats/${item.id}/availability">
   <c:if test="${not empty manageAvailabilityReturnPath}">
     <c:param name="return" value="${manageAvailabilityReturnPath}" />
   </c:if>
 </c:url>
-<c:url var="disableUrl" value="/profile/item/${item.id}/availability/disable" />
-<c:url var="enableUrl" value="/profile/item/${item.id}/availability/enable" />
+<c:url var="disableUrl" value="/my-boats/${item.id}/availability/disable" />
+<c:url var="enableUrl" value="/my-boats/${item.id}/availability/enable" />
 <c:url var="manageAvailabilityBackUrl" value="${manageAvailabilityBackPath}" />
 
 <spring:message code="manageAvailability.title" var="pageTitle" />

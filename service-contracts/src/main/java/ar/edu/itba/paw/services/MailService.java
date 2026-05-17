@@ -1,32 +1,43 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.BookingRequest;
+import ar.edu.itba.paw.models.mail.EmailVerificationMailModel;
+import ar.edu.itba.paw.models.mail.MailRecipientModel;
+import ar.edu.itba.paw.models.mail.PasswordRecoveryMailModel;
+import ar.edu.itba.paw.models.mail.PublishConfirmationMailModel;
 import java.util.Locale;
 
 public interface MailService {
-    void sendTestConfirmationEmail(String recipientEmail);
 
-    void sendPublishConfirmationEmail(String recipientEmail, String ownerName, String itemTitle);
+    void sendPublishConfirmationEmail(PublishConfirmationMailModel mail);
 
-    void sendBookingReviewEmail(
-            BookingRequest bookingRequest,
-            String ownerEmail,
-            String itemTitle,
-            String location,
-            String requestedDateLabel,
-            String requestedTimeLabel);
+    void sendPasswordRecoveryEmail(PasswordRecoveryMailModel mail);
 
-    void sendBookingResolutionEmail(BookingRequest bookingRequest);
+    void sendEmailVerificationEmail(EmailVerificationMailModel mail);
 
-    void sendPaymentProofSubmittedEmail(
-            String ownerEmail, String requesterName, String itemTitle, byte[] proofFileData, String proofContentType);
+    // Deberia ser privada, las otras no deberian pedir un Locale ya resuelto
+    Locale resolveLocale(MailRecipientModel recipient);
 
-    void sendPaymentReceivedEmail(String requesterEmail, String requesterLocaleTag, String itemTitle);
-
-    void sendPaymentProofRefusedEmail(
-            String requesterEmail, String requesterLocaleTag, String ownerName, String itemTitle, String reason);
-
-    void sendPasswordRecoveryEmail(String recipientEmail, String recipientName, String recoveryToken);
-
-    Locale resolveLocale(String recipientIdentifier);
+    /*
+     * ideal MailService contract:
+     *
+     * booking = entity de booking
+     *
+     * void sendPreBookingMail(booking)
+     * void sendAcceptMail(booking)
+     * void sendRejectMail(booking)
+     * void sendPaymentMail(booking)
+     * void sendRefusedPaymentMail(booking)
+     * void sendBookingConfirmedMail(booking)
+     * void sendBookingCancelledMail(booking)
+     * void sendBookingExpiredMail(booking) // Cuando el cron job auto-cancela por
+     * falta de anticipacion
+     * void sendBookingFinishedMail(booking) // Dice algo de que podes dejar una
+     * review
+     *
+     * subscribers = List<User>
+     * User = entity de user
+     *
+     * void sendSubscriptionNotification(subscribers) // itera los subscribers y
+     * manda el mismo mail a cada uno
+     */
 }

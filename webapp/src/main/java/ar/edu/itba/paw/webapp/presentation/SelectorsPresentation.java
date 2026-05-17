@@ -1,9 +1,9 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.nuevo.BookingStatusOptionModel;
-import ar.edu.itba.paw.models.nuevo.ItemTypeModel;
-import ar.edu.itba.paw.models.nuevo.Location;
-import ar.edu.itba.paw.services.nuevo.SelectorsInterface;
+import ar.edu.itba.paw.models.dto.BookingStatusOptionModel;
+import ar.edu.itba.paw.models.entity.ItemType;
+import ar.edu.itba.paw.models.entity.Location;
+import ar.edu.itba.paw.services.SelectorsService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -12,13 +12,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class SelectorsPresentation {
 
-    private final SelectorsInterface selectorsInterface;
+    private final SelectorsService selectorsInterface;
 
     public List<Location> getLocationOptions() {
         return selectorsInterface.getLocationOptions();
     }
 
-    public List<ItemTypeModel> getItemTypeOptions() {
+    public List<ItemType> getItemTypeOptions() {
         return selectorsInterface.getItemTypeOptions();
     }
 

@@ -1,23 +1,38 @@
 package ar.edu.itba.paw.webapp.form;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import javax.validation.constraints.AssertTrue;
+import javax.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
 public class BlockSlotForm {
 
-    @NotBlank
-    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}")
-    private String date;
+    @NotNull
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate date;
 
-    @NotBlank
-    @Pattern(regexp = "\\d{2}:\\d{2}")
-    private String startTime;
+    @NotNull
+    @DateTimeFormat(
+            iso = DateTimeFormat.ISO.TIME,
+            fallbackPatterns = {"H:mm", "HH:mm", "H:mm:ss", "HH:mm:ss"})
+    private LocalTime startTime;
 
-    @NotBlank
-    @Pattern(regexp = "\\d{2}:\\d{2}")
-    private String endTime;
+    @NotNull
+    @DateTimeFormat(
+            iso = DateTimeFormat.ISO.TIME,
+            fallbackPatterns = {"H:mm", "HH:mm", "H:mm:ss", "HH:mm:ss"})
+    private LocalTime endTime;
+
+    @AssertTrue(message = "{blockSlot.validation.timeOrder}")
+    public boolean isTimeRangeValid() {
+        if (startTime == null || endTime == null) {
+            return true;
+        }
+        return startTime.isBefore(endTime);
+    }
 }

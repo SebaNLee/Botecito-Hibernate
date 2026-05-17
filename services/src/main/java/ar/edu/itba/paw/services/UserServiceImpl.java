@@ -1,10 +1,13 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.PreferredLanguage;
-import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.models.exceptions.EmailAlreadyExistsException;
+import ar.edu.itba.paw.models.exceptions.MissingUserNamesException;
+import ar.edu.itba.paw.models.mail.EmailVerificationMailModel;
+import ar.edu.itba.paw.models.mail.MailRecipientModel;
+import ar.edu.itba.paw.models.mail.PasswordRecoveryMailModel;
 import ar.edu.itba.paw.persistence.UserDao;
-import ar.edu.itba.paw.services.utils.UserNameRules;
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -12,62 +15,74 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-@Service
+@Service("nuevoUserService")
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UserServiceImpl.class);
+
     private final UserDao userDao;
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
 
     @Override
-    public RegistrationResult register(
-            final String givenName,
+    @Transactional
+    public void register(
+            final String firstName,
             final String lastName,
             final String email,
-            final String rawPassword,
-            final String paymentAlias,
-            final String preferredLanguage) {
-        UserNameRules.requireBothLegalNames(givenName, lastName);
+            final String alias,
+            final String language,
+            final String rawPassword) {
+        requireBothLegalNames(firstName, lastName);
         final String normalizedEmail = email.trim().toLowerCase();
         final String passwordHash = passwordEncoder.encode(rawPassword);
-        final String normalizedPaymentAlias = normalizePaymentAlias(paymentAlias);
-        final String normalizedPreferredLanguage =
-                PreferredLanguage.fromInput(preferredLanguage).getPersistenceCode();
-        final Optional<User> existingUser = userDao.findByEmail(normalizedEmail);
+        final String verificationToken = UUID.randomUUID().toString();
+
+        final Optional<Users> existingUser = userDao.findByEmail(normalizedEmail);
         if (existingUser.isEmpty()) {
             LOGGER.info("Registering new user with email {}", normalizedEmail);
-            userDao.createUser(
-                    givenName,
-                    lastName,
-                    normalizedEmail,
-                    passwordHash,
-                    normalizedPaymentAlias,
-                    normalizedPreferredLanguage);
-            return RegistrationResult.SUCCESS;
+            final Users userToCreate = new Users();
+            userToCreate.setFirstName(firstName);
+            userToCreate.setLastName(lastName);
+            userToCreate.setEmail(normalizedEmail);
+            userToCreate.setPasswordHash(passwordHash);
+            userToCreate.setAlias(normalizeNullable(alias));
+            userToCreate.setLanguage(language != null ? language : "ES");
+            userToCreate.setVerified(false);
+            userToCreate.setMailToken(verificationToken);
+            userToCreate.setCreatedAt(LocalDateTime.now());
+            sendEmailVerificationEmail(userDao.createUser(userToCreate));
+            return;
         }
 
         if (existingUser.get().getPasswordHash() == null) {
             LOGGER.info("Claiming account for user with email {}", normalizedEmail);
-            userDao.claimUser(
-                            givenName,
-                            lastName,
-                            normalizedEmail,
-                            passwordHash,
-                            normalizedPaymentAlias,
-                            normalizedPreferredLanguage)
-                    .orElseThrow(() -> new IllegalStateException("Could not claim account for " + normalizedEmail));
-            return RegistrationResult.SUCCESS;
+            final Users existing = existingUser.get();
+            existing.setFirstName(firstName);
+            existing.setLastName(lastName);
+            existing.setLanguage(language != null ? language : "ES");
+            existing.setPasswordHash(passwordHash);
+            existing.setMailToken(verificationToken);
+            existing.setMailTokenEmittedAt(null);
+            existing.setVerified(false);
+            final String normalizedAlias = normalizeNullable(alias);
+            if (normalizedAlias != null) {
+                existing.setAlias(normalizedAlias);
+            }
+            sendEmailVerificationEmail(existing);
+            return;
         }
 
         LOGGER.warn("Attempted registration with existing email: {}", normalizedEmail);
-        return RegistrationResult.EMAIL_ALREADY_EXISTS;
+        throw new EmailAlreadyExistsException();
     }
 
     @Override
-    public Optional<User> findByEmail(final String email) {
+    @Transactional(readOnly = true)
+    public Optional<Users> findByEmail(final String email) {
         if (email == null || email.isBlank()) {
             return Optional.empty();
         }
@@ -75,24 +90,32 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Optional<User> findById(final int id) {
+    @Transactional(readOnly = true)
+    public Optional<Users> findById(final int id) {
         return userDao.findById(id);
     }
 
     @Override
-    public Optional<User> updateProfile(
+    @Transactional
+    public Optional<Users> updateProfile(
             final int userId,
-            final String givenName,
+            final String firstName,
             final String lastName,
             final String email,
             final String phone,
-            final String paymentAlias,
-            final String preferredLanguage) {
+            final String alias,
+            final String language) {
+
+        final Optional<Users> currentUser = userDao.findById(userId);
+        if (currentUser.isEmpty()) {
+            return Optional.empty();
+        }
+
         final String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
-        final Optional<User> emailOwner = userDao.findByEmail(normalizedEmail);
+        final Optional<Users> emailOwner = userDao.findByEmail(normalizedEmail);
         if (normalizedEmail.isBlank()
                 || emailOwner
-                        .filter(user -> user.getId() == null || user.getId() != userId)
+                        .filter(owner -> owner.getId() == null || !owner.getId().equals(userId))
                         .isPresent()) {
             LOGGER.warn(
                     "Attempt to update profile with email {} by user {} failed: email in use or invalid",
@@ -101,72 +124,104 @@ public class UserServiceImpl implements UserService {
             return Optional.empty();
         }
 
-        UserNameRules.requireBothLegalNames(givenName, lastName);
+        requireBothLegalNames(firstName, lastName);
+        final Users existing = currentUser.get();
+        final boolean emailChanged = !normalizedEmail.equalsIgnoreCase(existing.getEmail());
 
         LOGGER.info("Updating profile for user {}", userId);
-        return userDao.updateProfile(
-                userId,
-                givenName.trim(),
-                lastName.trim(),
-                normalizedEmail,
-                normalizeNullable(phone),
-                normalizePaymentAlias(paymentAlias),
-                PreferredLanguage.fromInput(preferredLanguage).getPersistenceCode());
+        existing.setFirstName(firstName.trim());
+        existing.setLastName(lastName.trim());
+        existing.setEmail(normalizedEmail);
+        existing.setPhone(normalizeNullable(phone));
+        existing.setAlias(normalizeNullable(alias));
+        existing.setLanguage(language);
+        if (emailChanged) {
+            existing.setVerified(false);
+            existing.setMailToken(UUID.randomUUID().toString());
+            existing.setMailTokenEmittedAt(null);
+            sendEmailVerificationEmail(existing);
+        } else {
+            existing.setVerified(existing.getVerified() != null && existing.getVerified());
+        }
+        return Optional.of(existing);
     }
 
     @Override
-    public Optional<User> requestPasswordRecovery(final String email) {
+    @Transactional
+    public Optional<Users> requestPasswordRecovery(final String email) {
         if (email == null || email.isBlank()) {
             return Optional.empty();
         }
 
-        final Optional<User> user = userDao.findByEmail(email.trim().toLowerCase());
-        if (user.isEmpty() || user.get().getPasswordHash() == null) {
+        final Optional<Users> existingUser = userDao.findByEmail(email.trim().toLowerCase());
+        if (existingUser.isEmpty()
+                || existingUser.get().getPasswordHash() == null
+                || !Boolean.TRUE.equals(existingUser.get().getVerified())) {
             LOGGER.warn("Password recovery requested for non-existent or unclaimable user: {}", email);
             return Optional.empty();
         }
 
-        LOGGER.info("Password recovery requested for user {}", user.get().getId());
-        final Optional<User> updatedUser = userDao.updatePasswordRecoveryToken(
-                user.get().getId(), UUID.randomUUID().toString());
-        updatedUser.ifPresent(this::sendPasswordRecoveryEmail);
-        return updatedUser;
+        final Users existing = existingUser.get();
+        LOGGER.info("Password recovery requested for user {}", existing.getId());
+        existing.setMailToken(UUID.randomUUID().toString());
+        existing.setMailTokenEmittedAt(null);
+        sendPasswordRecoveryEmail(existing);
+        return Optional.of(existing);
     }
 
     @Override
-    public Optional<User> findByPasswordRecoveryToken(final String token) {
+    @Transactional(readOnly = true)
+    public Optional<Users> findByPasswordRecoveryToken(final String token) {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
 
-        final Optional<User> user = userDao.findByPasswordRecoveryToken(token.trim());
-        if (user.isEmpty() || user.get().getPasswordRecoveryUsedAt() != null) {
+        final Optional<Users> user = userDao.findByPasswordRecoveryToken(token.trim());
+        if (user.isEmpty() || user.get().getMailTokenEmittedAt() != null) {
             return Optional.empty();
         }
         return user;
     }
 
     @Override
-    public PasswordRecoveryResult resetPassword(final String token, final String rawPassword) {
+    @Transactional
+    public boolean resetPassword(final String token, final String rawPassword) {
         if (token == null || token.isBlank() || rawPassword == null || rawPassword.isBlank()) {
-            return PasswordRecoveryResult.INVALID_TOKEN;
+            return false;
         }
 
         final String passwordHash = passwordEncoder.encode(rawPassword);
-        final boolean updated = userDao.resetPasswordByRecoveryToken(token.trim(), passwordHash, OffsetDateTime.now());
-
+        final boolean updated = userDao.resetPasswordByRecoveryToken(token.trim(), passwordHash, LocalDateTime.now());
         if (!updated) {
             LOGGER.warn("Failed password reset attempt with invalid token");
-            return PasswordRecoveryResult.INVALID_TOKEN;
+            return false;
         }
 
         LOGGER.info("Password successfully reset using recovery token");
-
-        return PasswordRecoveryResult.SUCCESS;
+        return true;
     }
 
-    private static String normalizePaymentAlias(final String paymentAlias) {
-        return normalizeNullable(paymentAlias);
+    @Override
+    @Transactional
+    public Optional<Users> verifyEmail(final String token) {
+        if (token == null || token.isBlank()) {
+            return Optional.empty();
+        }
+        final Optional<Users> user = userDao.findByEmailVerificationToken(token.trim());
+        if (user.isEmpty()) {
+            return Optional.empty();
+        }
+        final Users existing = user.get();
+        existing.setVerified(true);
+        existing.setMailToken(null);
+        existing.setMailTokenEmittedAt(null);
+        return Optional.of(existing);
+    }
+
+    private static void requireBothLegalNames(final String givenName, final String lastName) {
+        if (givenName == null || givenName.isBlank() || lastName == null || lastName.isBlank()) {
+            throw new MissingUserNamesException();
+        }
     }
 
     private static String normalizeNullable(final String value) {
@@ -177,14 +232,25 @@ public class UserServiceImpl implements UserService {
         return trimmedValue.isEmpty() ? null : trimmedValue;
     }
 
-    private void sendPasswordRecoveryEmail(final User user) {
+    private void sendPasswordRecoveryEmail(final Users user) {
         try {
-            mailService.sendPasswordRecoveryEmail(
-                    user.getEmail(),
-                    user.getName().isBlank() ? user.getEmail() : user.getName(),
-                    user.getPasswordRecoveryToken());
+            final PasswordRecoveryMailModel mail = new PasswordRecoveryMailModel();
+            mail.setRecipient(MailRecipientModel.fromUser(user));
+            mail.setRecoveryToken(user.getMailToken());
+            mailService.sendPasswordRecoveryEmail(mail);
         } catch (final RuntimeException e) {
             LOGGER.error("Could not trigger password recovery email for user {}.", user.getId(), e);
+        }
+    }
+
+    private void sendEmailVerificationEmail(final Users user) {
+        try {
+            final EmailVerificationMailModel mail = new EmailVerificationMailModel();
+            mail.setRecipient(MailRecipientModel.fromUser(user));
+            mail.setVerificationToken(user.getMailToken());
+            mailService.sendEmailVerificationEmail(mail);
+        } catch (final RuntimeException e) {
+            LOGGER.error("Could not trigger email verification for user {}.", user.getId(), e);
         }
     }
 }

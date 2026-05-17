@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.webapp.form.nuevo.MarketplaceSearchForm;
+import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import ar.edu.itba.paw.webapp.presentation.MarketplacePresentation;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;

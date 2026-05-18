@@ -49,6 +49,10 @@
 <spring:message code="profile.reviews.target.item" var="reviewItemLabel" />
 <spring:message code="profile.reviews.target.user" var="reviewUserLabel" />
 <spring:message code="profile.reviews.view" var="reviewViewLabel" />
+<spring:message code="profile.reviews.view.item" var="reviewViewItemLabel" />
+<spring:message code="profile.reviews.view.user" var="reviewViewUserLabel" />
+<spring:message code="profile.reviews.view.owner" var="reviewViewOwnerLabel" />
+<spring:message code="profile.reviews.target.owner" var="reviewOwnerLabel" />
 
 <c:url var="clearFiltersUrl" value="${formAction}">
   <c:if test="${sort != 'newest'}">
@@ -302,7 +306,7 @@
                 </div>
 
                 <!-- Actions Side -->
-                <div class="flex flex-col md:w-56 shrink-0 bg-base-200/50 p-4 border-t md:border-t-0 md:border-l border-outline-variant/20 gap-2 justify-center">
+                <div class="flex flex-col md:w-60 shrink-0 bg-base-200/50 p-4 border-t md:border-t-0 md:border-l border-outline-variant/20 gap-2 justify-center">
                   <c:if test="${isIncoming && b.status.name() == 'PENDING'}">
                     <form action="${incomingAcceptUrl}" method="post" class="w-full">
                       <paw:button type="submit" color="primary" cssClass="w-full" size="sm" text="${actionAcceptLabel}" submitLoading="true" />
@@ -390,75 +394,205 @@
                       </paw:detailsModal>
                   </c:if>
                   <c:if test="${b.status.name() == 'FINISHED'}">
-                    <c:set var="existingReview" value="${userReviews[b.id]}" />
+                    <c:set var="reviewsForBooking" value="${userReviews[b.id]}" />
+                    <c:set var="hasItemReview" value="${false}" />
+                    <c:set var="hasUserReview" value="${false}" />
+                    <c:set var="itemReview" value="null" />
+                    <c:set var="userReview" value="null" />
+                    <c:if test="${reviewsForBooking != null}">
+                      <c:forEach var="rev" items="${reviewsForBooking}">
+                        <c:if test="${rev.targetType.name() == 'ITEM'}">
+                          <c:set var="hasItemReview" value="${true}" />
+                          <c:set var="itemReview" value="${rev}" />
+                        </c:if>
+                        <c:if test="${rev.targetType.name() == 'USER'}">
+                          <c:set var="hasUserReview" value="${true}" />
+                          <c:set var="userReview" value="${rev}" />
+                        </c:if>
+                      </c:forEach>
+                    </c:if>
                     <c:choose>
-                      <c:when test="${existingReview != null}">
-                        <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review').showModal()">
-                          <span class="material-symbols-outlined text-sm">visibility</span> <c:out value="${reviewViewLabel}" />
-                        </button>
-                        <!-- View Review Modal -->
-                        <paw:detailsModal id="${detailModalId}-review" title="${reviewViewLabel}">
-                          <jsp:body>
-                            <div class="space-y-4">
-                              <c:set var="fullStars" value="${existingReview.rating ge 5 ? 5 : (existingReview.rating ge 4 ? 4 : (existingReview.rating ge 3 ? 3 : (existingReview.rating ge 2 ? 2 : (existingReview.rating ge 1 ? 1 : 0))))}" />
-                              <div class="flex items-center gap-1" aria-label="${existingReview.rating} of 5">
-                                <c:forEach var="starIndex" begin="1" end="5">
-                                  <c:choose>
-                                    <c:when test="${starIndex <= fullStars}">
-                                      <span class="material-symbols-outlined text-2xl leading-none text-warning">star</span>
-                                    </c:when>
-                                    <c:otherwise>
-                                      <span class="material-symbols-outlined text-2xl leading-none text-outline opacity-[0.35]">star</span>
-                                    </c:otherwise>
-                                  </c:choose>
-                                </c:forEach>
-                              </div>
-                              <c:if test="${not empty existingReview.comment}">
-                                <p class="m-0 text-sm text-on-surface-variant break-words whitespace-pre-line"><c:out value="${existingReview.comment}" /></p>
-                              </c:if>
-                              <p class="m-0 text-xs text-outline"><c:out value="${existingReview.createdAt}" /></p>
-                            </div>
-                          </jsp:body>
-                        </paw:detailsModal>
+                      <c:when test="${isIncoming}">
+                        <c:choose>
+                          <c:when test="${hasUserReview}">
+                            <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review').showModal()">
+                              <c:out value="${reviewViewUserLabel}" />
+                            </button>
+                            <paw:detailsModal id="${detailModalId}-review" title="${reviewViewLabel}">
+                              <jsp:body>
+                                <div class="space-y-4">
+                                  <c:set var="fullStars" value="${userReview.rating ge 5 ? 5 : (userReview.rating ge 4 ? 4 : (userReview.rating ge 3 ? 3 : (userReview.rating ge 2 ? 2 : (userReview.rating ge 1 ? 1 : 0))))}" />
+                                  <div class="flex items-center gap-1" aria-label="${userReview.rating} of 5">
+                                    <c:forEach var="starIndex" begin="1" end="5">
+                                      <c:choose>
+                                        <c:when test="${starIndex <= fullStars}">
+                                          <span class="material-symbols-outlined text-2xl leading-none text-warning">star</span>
+                                        </c:when>
+                                        <c:otherwise>
+                                          <span class="material-symbols-outlined text-2xl leading-none text-outline opacity-[0.35]">star</span>
+                                        </c:otherwise>
+                                      </c:choose>
+                                    </c:forEach>
+                                  </div>
+                                  <c:if test="${not empty userReview.comment}">
+                                    <p class="m-0 text-sm text-on-surface-variant break-words whitespace-pre-line"><c:out value="${userReview.comment}" /></p>
+                                  </c:if>
+                                  <p class="m-0 text-xs text-outline"><c:out value="${userReview.createdAt}" /></p>
+                                </div>
+                              </jsp:body>
+                            </paw:detailsModal>
+                          </c:when>
+                          <c:otherwise>
+                            <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review').showModal()">
+                              <c:out value="${reviewUserLabel}" />
+                            </button>
+                            <paw:detailsModal id="${detailModalId}-review" title="${reviewLeaveLabel}">
+                              <jsp:body>
+                                <form action="<c:url value='/reviews/booking/${b.id}' />" method="post" class="space-y-4">
+                                  <input type="hidden" name="returnTo" value="dashboardHosting" />
+                                  <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
+                                    <label class="text-xs font-bold uppercase tracking-wider text-outline" for="review-rating-${b.id}"><c:out value="${reviewRatingLabel}" /></label>
+                                    <div class="flex items-center gap-1" data-rating-stars>
+                                      <input id="review-rating-${b.id}" type="hidden" name="rating" value="" data-rating-value />
+                                      <c:forEach var="starIndex" begin="1" end="5">
+                                        <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${reviewRatingLabel} ${starIndex}">
+                                          <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
+                                        </button>
+                                      </c:forEach>
+                                    </div>
+                                  </div>
+                                  <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
+                                    <label class="text-xs font-bold uppercase tracking-wider text-outline pt-2" for="review-comment-${b.id}"><c:out value="${reviewCommentLabel}" /></label>
+                                    <textarea id="review-comment-${b.id}" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
+                                  </div>
+                                  <paw:button type="submit" color="primary" text="${reviewSubmitLabel}" submitLoading="true" />
+                                </form>
+                              </jsp:body>
+                            </paw:detailsModal>
+                          </c:otherwise>
+                        </c:choose>
                       </c:when>
                       <c:otherwise>
-                        <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review').showModal()">
+                        <div class="flex flex-col gap-2">
                           <c:choose>
-                            <c:when test="${isIncoming}"><c:out value="${reviewUserLabel}" /></c:when>
-                            <c:otherwise><c:out value="${reviewItemLabel}" /></c:otherwise>
+                            <c:when test="${hasItemReview}">
+                              <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-item').showModal()">
+                                <c:out value="${reviewViewItemLabel}" />
+                              </button>
+                              <paw:detailsModal id="${detailModalId}-review-item" title="${reviewViewLabel}">
+                                <jsp:body>
+                                  <div class="space-y-4">
+                                    <c:set var="fullStars" value="${itemReview.rating ge 5 ? 5 : (itemReview.rating ge 4 ? 4 : (itemReview.rating ge 3 ? 3 : (itemReview.rating ge 2 ? 2 : (itemReview.rating ge 1 ? 1 : 0))))}" />
+                                    <div class="flex items-center gap-1" aria-label="${itemReview.rating} of 5">
+                                      <c:forEach var="starIndex" begin="1" end="5">
+                                        <c:choose>
+                                          <c:when test="${starIndex <= fullStars}">
+                                            <span class="material-symbols-outlined text-2xl leading-none text-warning">star</span>
+                                          </c:when>
+                                          <c:otherwise>
+                                            <span class="material-symbols-outlined text-2xl leading-none text-outline opacity-[0.35]">star</span>
+                                          </c:otherwise>
+                                        </c:choose>
+                                      </c:forEach>
+                                    </div>
+                                    <c:if test="${not empty itemReview.comment}">
+                                      <p class="m-0 text-sm text-on-surface-variant break-words whitespace-pre-line"><c:out value="${itemReview.comment}" /></p>
+                                    </c:if>
+                                    <p class="m-0 text-xs text-outline"><c:out value="${itemReview.createdAt}" /></p>
+                                  </div>
+                                </jsp:body>
+                              </paw:detailsModal>
+                            </c:when>
+                            <c:otherwise>
+                              <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-item').showModal()">
+                                <c:out value="${reviewItemLabel}" />
+                              </button>
+                              <paw:detailsModal id="${detailModalId}-review-item" title="${reviewLeaveLabel}">
+                                <jsp:body>
+                                  <form action="<c:url value='/reviews/booking/${b.id}' />" method="post" class="space-y-4">
+                                    <input type="hidden" name="returnTo" value="outgoing" />
+                                    <input type="hidden" name="targetType" value="ITEM" />
+                                    <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
+                                      <label class="text-xs font-bold uppercase tracking-wider text-outline" for="review-rating-${b.id}"><c:out value="${reviewRatingLabel}" /></label>
+                                      <div class="flex items-center gap-1" data-rating-stars>
+                                        <input id="review-rating-${b.id}" type="hidden" name="rating" value="" data-rating-value />
+                                        <c:forEach var="starIndex" begin="1" end="5">
+                                          <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${reviewRatingLabel} ${starIndex}">
+                                            <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
+                                          </button>
+                                        </c:forEach>
+                                      </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
+                                      <label class="text-xs font-bold uppercase tracking-wider text-outline pt-2" for="review-comment-${b.id}"><c:out value="${reviewCommentLabel}" /></label>
+                                      <textarea id="review-comment-${b.id}" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
+                                    </div>
+                                    <paw:button type="submit" color="primary" text="${reviewSubmitLabel}" submitLoading="true" />
+                                  </form>
+                                </jsp:body>
+                              </paw:detailsModal>
+                            </c:otherwise>
                           </c:choose>
-                        </button>
-                        <!-- Review Modal -->
-                        <paw:detailsModal id="${detailModalId}-review" title="${reviewLeaveLabel}">
-                          <jsp:body>
-                            <form action="<c:url value='/reviews/booking/${b.id}' />" method="post" class="space-y-4">
-                              <c:choose>
-                                <c:when test="${isIncoming}">
-                                  <input type="hidden" name="returnTo" value="dashboardHosting" />
-                                </c:when>
-                                <c:otherwise>
-                                  <input type="hidden" name="returnTo" value="outgoing" />
-                                </c:otherwise>
-                              </c:choose>
-                              <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
-                                <label class="text-xs font-bold uppercase tracking-wider text-outline" for="review-rating-${b.id}"><c:out value="${reviewRatingLabel}" /></label>
-                                <div class="flex items-center gap-1" data-rating-stars>
-                                  <input id="review-rating-${b.id}" type="hidden" name="rating" value="" data-rating-value />
-                                  <c:forEach var="starIndex" begin="1" end="5">
-                                    <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${reviewRatingLabel} ${starIndex}">
-                                      <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
-                                    </button>
-                                  </c:forEach>
-                                </div>
-                              </div>
-                              <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
-                                <label class="text-xs font-bold uppercase tracking-wider text-outline pt-2" for="review-comment-${b.id}"><c:out value="${reviewCommentLabel}" /></label>
-                                <textarea id="review-comment-${b.id}" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
-                              </div>
-                              <paw:button type="submit" color="primary" text="${reviewSubmitLabel}" submitLoading="true" />
-                            </form>
-                          </jsp:body>
-                        </paw:detailsModal>
+                          <c:choose>
+                            <c:when test="${hasUserReview}">
+                              <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-user').showModal()">
+                                <c:out value="${reviewViewOwnerLabel}" />
+                              </button>
+                              <paw:detailsModal id="${detailModalId}-review-user" title="${reviewViewLabel}">
+                                <jsp:body>
+                                  <div class="space-y-4">
+                                    <c:set var="fullStars" value="${userReview.rating ge 5 ? 5 : (userReview.rating ge 4 ? 4 : (userReview.rating ge 3 ? 3 : (userReview.rating ge 2 ? 2 : (userReview.rating ge 1 ? 1 : 0))))}" />
+                                    <div class="flex items-center gap-1" aria-label="${userReview.rating} of 5">
+                                      <c:forEach var="starIndex" begin="1" end="5">
+                                        <c:choose>
+                                          <c:when test="${starIndex <= fullStars}">
+                                            <span class="material-symbols-outlined text-2xl leading-none text-warning">star</span>
+                                          </c:when>
+                                          <c:otherwise>
+                                            <span class="material-symbols-outlined text-2xl leading-none text-outline opacity-[0.35]">star</span>
+                                          </c:otherwise>
+                                        </c:choose>
+                                      </c:forEach>
+                                    </div>
+                                    <c:if test="${not empty userReview.comment}">
+                                      <p class="m-0 text-sm text-on-surface-variant break-words whitespace-pre-line"><c:out value="${userReview.comment}" /></p>
+                                    </c:if>
+                                    <p class="m-0 text-xs text-outline"><c:out value="${userReview.createdAt}" /></p>
+                                  </div>
+                                </jsp:body>
+                              </paw:detailsModal>
+                            </c:when>
+                            <c:otherwise>
+                              <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-user').showModal()">
+                                <c:out value="${reviewOwnerLabel}" />
+                              </button>
+                              <paw:detailsModal id="${detailModalId}-review-user" title="${reviewLeaveLabel}">
+                                <jsp:body>
+                                  <form action="<c:url value='/reviews/booking/${b.id}' />" method="post" class="space-y-4">
+                                    <input type="hidden" name="returnTo" value="outgoing" />
+                                    <input type="hidden" name="targetType" value="USER" />
+                                    <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
+                                      <label class="text-xs font-bold uppercase tracking-wider text-outline" for="review-rating-${b.id}"><c:out value="${reviewRatingLabel}" /></label>
+                                      <div class="flex items-center gap-1" data-rating-stars>
+                                        <input id="review-rating-${b.id}" type="hidden" name="rating" value="" data-rating-value />
+                                        <c:forEach var="starIndex" begin="1" end="5">
+                                          <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${reviewRatingLabel} ${starIndex}">
+                                            <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
+                                          </button>
+                                        </c:forEach>
+                                      </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
+                                      <label class="text-xs font-bold uppercase tracking-wider text-outline pt-2" for="review-comment-${b.id}"><c:out value="${reviewCommentLabel}" /></label>
+                                      <textarea id="review-comment-${b.id}" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
+                                    </div>
+                                    <paw:button type="submit" color="primary" text="${reviewSubmitLabel}" submitLoading="true" />
+                                  </form>
+                                </jsp:body>
+                              </paw:detailsModal>
+                            </c:otherwise>
+                          </c:choose>
+                        </div>
                       </c:otherwise>
                     </c:choose>
                   </c:if>

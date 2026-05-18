@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.entity.TargetEnum;
 import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ReviewForm;
@@ -41,8 +42,14 @@ public class ReviewController {
             return reviewRedirect(returnTo, itemId);
         }
 
+        final TargetEnum targetType;
+        if (form.getTargetType() != null && !form.getTargetType().isBlank()) {
+            targetType = TargetEnum.valueOf(form.getTargetType().trim());
+        } else {
+            targetType = null;
+        }
         final boolean created = reviewInterface
-                .createReviewForBooking(bookingId, user.getId(), form.getRating(), form.getComment())
+                .createReviewForBooking(bookingId, user.getId(), form.getRating(), form.getComment(), targetType)
                 .isPresent();
         if (created) {
             ToastSupport.success(redirectAttributes, "profile.reviews.created");

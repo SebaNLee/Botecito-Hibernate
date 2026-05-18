@@ -254,7 +254,7 @@ public class BookingPresentation {
     }
 
     private void addUserReviews(final ModelAndView mav, final int userId) {
-        final Map<Integer, Review> userReviews = reviewInterface.findReviewsByBookingIds(userId);
+        final Map<Integer, List<Review>> userReviews = reviewInterface.findReviewsByBookingIds(userId);
         mav.addObject("userReviews", userReviews.isEmpty() ? Collections.emptyMap() : userReviews);
     }
 

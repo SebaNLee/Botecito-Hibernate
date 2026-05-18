@@ -28,11 +28,7 @@ public class GalleryPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<MyBoatsItem> ownedItem = itemInterface.findMyBoatsItemByIdForOwner(itemId, currentUser.getId());
-        if (ownedItem.isEmpty()) {
-            return notOwnerView();
-        }
-
+        final MyBoatsItem ownedItem = itemInterface.requireOwnedItem(itemId, currentUser.getId());
         final List<Integer> imageIds = itemInterface.listImageIds(itemId);
         final List<String> imageUrls = new ArrayList<>(imageIds.size());
         final String contextPath = request.getContextPath();
@@ -41,7 +37,7 @@ public class GalleryPresentation {
         }
 
         final ModelAndView mav = new ModelAndView("item-gallery");
-        mav.addObject("item", ownedItem.get());
+        mav.addObject("item", ownedItem);
         mav.addObject("imageIds", imageIds);
         mav.addObject("imageUrls", imageUrls);
         mav.addObject("imageCount", imageIds.size());
@@ -56,11 +52,6 @@ public class GalleryPresentation {
         final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
-        }
-
-        final Optional<MyBoatsItem> ownedItem = itemInterface.findMyBoatsItemByIdForOwner(itemId, currentUser.getId());
-        if (ownedItem.isEmpty()) {
-            return notOwnerView();
         }
 
         if (files == null || files.isEmpty()) {
@@ -89,12 +80,7 @@ public class GalleryPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<MyBoatsItem> ownedItem = itemInterface.findMyBoatsItemByIdForOwner(itemId, currentUser.getId());
-        if (ownedItem.isEmpty()) {
-            return notOwnerView();
-        }
-
-        itemInterface.deleteImageFromGallery(imageId);
+        itemInterface.deleteImageFromGallery(itemId, imageId, currentUser.getId());
         return redirectToGallery(itemId);
     }
 
@@ -102,11 +88,6 @@ public class GalleryPresentation {
         final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
-        }
-
-        final Optional<MyBoatsItem> ownedItem = itemInterface.findMyBoatsItemByIdForOwner(itemId, currentUser.getId());
-        if (ownedItem.isEmpty()) {
-            return notOwnerView();
         }
 
         final List<Integer> parsed = parseGalleryImageOrderCsv(order);
@@ -119,10 +100,6 @@ public class GalleryPresentation {
         }
 
         return redirectToGallery(itemId);
-    }
-
-    private static ModelAndView notOwnerView() {
-        return new ModelAndView("redirect:/403");
     }
 
     private static ModelAndView redirectToGallery(final int itemId) {

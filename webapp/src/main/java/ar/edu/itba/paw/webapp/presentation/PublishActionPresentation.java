@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -42,24 +41,16 @@ public class PublishActionPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<MyBoatsItem> item = itemInterface.findMyBoatsItemByIdForOwner(itemId, currentUser.getId());
-        if (item.isEmpty()) {
-            ToastSupport.error(redirectAttributes, "profile.publications.error");
-            return new ModelAndView("redirect:/my-boats");
-        }
+        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, currentUser.getId());
 
         final PublishBoatForm form = new PublishBoatForm();
-        form.setTitle(item.get().getTitle());
-        form.setDescription(item.get().getDescription());
-        form.setPricePerHour(
-                item.get().getPrice() == null ? "" : String.valueOf(item.get().getPrice()));
-        form.setDifficultyLevel(item.get().getDifficulty());
-        form.setLocationOptionId(
-                item.get().getLocationId() == null
-                        ? ""
-                        : String.valueOf(item.get().getLocationId()));
+        form.setTitle(item.getTitle());
+        form.setDescription(item.getDescription());
+        form.setPricePerHour(item.getPrice() == null ? "" : String.valueOf(item.getPrice()));
+        form.setDifficultyLevel(item.getDifficulty());
+        form.setLocationOptionId(item.getLocationId() == null ? "" : String.valueOf(item.getLocationId()));
 
-        return editPublicationModelAndView(item.get(), request).addObject("publishForm", form);
+        return editPublicationModelAndView(item, request).addObject("publishForm", form);
     }
 
     public ModelAndView editPublicationSubmit(
@@ -73,11 +64,7 @@ public class PublishActionPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<MyBoatsItem> item = itemInterface.findMyBoatsItemByIdForOwner(itemId, currentUser.getId());
-        if (item.isEmpty()) {
-            ToastSupport.error(redirectAttributes, "profile.publications.error");
-            return new ModelAndView("redirect:/my-boats");
-        }
+        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, currentUser.getId());
 
         final Integer parsedPrice =
                 parseIntegerField(form.getPricePerHour(), "pricePerHour", "publish.validation.price.numeric", errors);
@@ -85,22 +72,22 @@ public class PublishActionPresentation {
                 form.getLocationOptionId(), "locationOptionId", "publish.validation.location.invalid", errors);
 
         if (errors.hasErrors()) {
-            return editPublicationModelAndView(item.get(), request);
+            return editPublicationModelAndView(item, request);
         }
         if (parsedPrice == null || parsedLocationOptionId == null) {
             errors.reject("publish.submit.persistenceError");
-            return editPublicationModelAndView(item.get(), request);
+            return editPublicationModelAndView(item, request);
         }
 
-        if (!hasPublicationChanges(item.get(), form)) {
+        if (!hasPublicationChanges(item, form)) {
             ToastSupport.success(redirectAttributes, "profile.publications.updated");
             return new ModelAndView("redirect:/my-boats#my-publications");
         }
 
-        final Integer versionId = item.get().getVersionId();
+        final Integer versionId = item.getVersionId();
         if (versionId == null) {
             errors.reject("publish.submit.persistenceError");
-            return editPublicationModelAndView(item.get(), request);
+            return editPublicationModelAndView(item, request);
         }
 
         final List<Booking> activeBookings = bookingInterface.getBookingsForVersion(versionId).stream()
@@ -112,11 +99,11 @@ public class PublishActionPresentation {
                 .toList();
 
         if (!activeBookings.isEmpty() && !isConfirmedSnapshotEdit(request)) {
-            return editPublicationModelAndView(item.get(), request).addObject("showEditConflictModal", true);
+            return editPublicationModelAndView(item, request).addObject("showEditConflictModal", true);
         }
         if (!allPendingBookingsHaveDecisions(activeBookings, request)) {
             errors.reject("editPublication.conflict.pending.required");
-            return editPublicationModelAndView(item.get(), request).addObject("showEditConflictModal", true);
+            return editPublicationModelAndView(item, request).addObject("showEditConflictModal", true);
         }
 
         resolvePendingBookings(activeBookings, currentUser.getId(), request);
@@ -132,7 +119,7 @@ public class PublishActionPresentation {
                     parsedLocationOptionId);
         } catch (final VersionNotFoundException e) {
             errors.reject("publish.submit.persistenceError");
-            return editPublicationModelAndView(item.get(), request);
+            return editPublicationModelAndView(item, request);
         }
 
         // TODO edit image handling
@@ -147,12 +134,7 @@ public class PublishActionPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<MyBoatsItem> item = itemInterface.findMyBoatsItemByIdForOwner(itemId, currentUser.getId());
-        if (item.isEmpty() || !itemInterface.setItemActiveForOwner(itemId, currentUser.getId(), false)) {
-            ToastSupport.error(redirectAttributes, "profile.publications.error");
-            return new ModelAndView("redirect:/my-boats#my-publications");
-        }
-
+        itemInterface.setItemActiveForOwner(itemId, currentUser.getId(), false);
         ToastSupport.success(redirectAttributes, "profile.publications.disabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
@@ -163,12 +145,7 @@ public class PublishActionPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<MyBoatsItem> item = itemInterface.findMyBoatsItemByIdForOwner(itemId, currentUser.getId());
-        if (item.isEmpty() || !itemInterface.setItemActiveForOwner(itemId, currentUser.getId(), true)) {
-            ToastSupport.error(redirectAttributes, "profile.publications.error");
-            return new ModelAndView("redirect:/my-boats#my-publications");
-        }
-
+        itemInterface.setItemActiveForOwner(itemId, currentUser.getId(), true);
         ToastSupport.success(redirectAttributes, "profile.publications.enabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
@@ -179,14 +156,10 @@ public class PublishActionPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<MyBoatsItem> item = itemInterface.findMyBoatsItemByIdForOwner(itemId, currentUser.getId());
-        if (item.isEmpty()) {
-            ToastSupport.error(redirectAttributes, "profile.publications.error");
-            return new ModelAndView("redirect:/my-boats#my-publications");
-        }
+        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, currentUser.getId());
 
         if (!itemInterface.deleteMyBoatsItem(itemId, currentUser.getId())) {
-            if (!Boolean.TRUE.equals(item.get().getActive())) {
+            if (!Boolean.TRUE.equals(item.getActive())) {
                 ToastSupport.error(redirectAttributes, "profile.publications.deleteBlockedByBookings");
                 return new ModelAndView("redirect:/my-boats#my-publications");
             }

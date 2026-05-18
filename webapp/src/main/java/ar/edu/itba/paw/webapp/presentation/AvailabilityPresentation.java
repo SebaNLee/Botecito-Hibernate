@@ -6,9 +6,7 @@ import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.BookingService;
-import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.webapp.form.BlockSlotForm;
-import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -43,7 +41,6 @@ public class AvailabilityPresentation {
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
 
     private final BookingService bookingInterface;
-    private final ItemService itemInterface;
     private final AuthenticatedUserResolver authenticatedUserResolver;
 
     public ModelAndView manageAvailabilityPage(
@@ -56,13 +53,9 @@ public class AvailabilityPresentation {
             return new ModelAndView("redirect:/login");
         }
         final String safeReturn = sanitizeReturnPath(returnParam);
-        return bookingInterface
-                .loadOwnerAvailabilityPage(itemId, currentUser.getId(), requestedDate)
-                .map(model -> buildManageAvailabilityView(model, safeReturn))
-                .orElseGet(() -> {
-                    ToastSupport.error(redirectAttributes, "profile.publications.error");
-                    return new ModelAndView("redirect:/my-boats");
-                });
+        final OwnerAvailabilityPage model =
+                bookingInterface.loadOwnerAvailabilityPage(itemId, currentUser.getId(), requestedDate);
+        return buildManageAvailabilityView(model, safeReturn);
     }
 
     public ModelAndView blockSlot(
@@ -76,21 +69,10 @@ public class AvailabilityPresentation {
             return new ModelAndView("redirect:/login");
         }
         final String safeReturn = sanitizeReturnPath(returnParam);
-        if (itemInterface
-                .findMyBoatsItemByIdForOwner(itemId, currentUser.getId())
-                .isEmpty()) {
-            ToastSupport.error(redirectAttributes, "profile.publications.error");
-            return new ModelAndView("redirect:/my-boats");
-        }
         if (errors.hasErrors()) {
-            return bookingInterface
-                    .loadOwnerAvailabilityPage(
-                            itemId, currentUser.getId(), form.getDate().toString())
-                    .map(model -> buildManageAvailabilityView(model, safeReturn))
-                    .orElseGet(() -> {
-                        ToastSupport.error(redirectAttributes, "profile.publications.error");
-                        return new ModelAndView("redirect:/my-boats");
-                    });
+            final OwnerAvailabilityPage model = bookingInterface.loadOwnerAvailabilityPage(
+                    itemId, currentUser.getId(), form.getDate().toString());
+            return buildManageAvailabilityView(model, safeReturn);
         }
         final String dateStr = form.getDate().toString();
         final String startStr = form.getStartTime().format(TIME_FMT);
@@ -110,12 +92,6 @@ public class AvailabilityPresentation {
         final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
-        }
-        if (itemInterface
-                .findMyBoatsItemByIdForOwner(itemId, currentUser.getId())
-                .isEmpty()) {
-            ToastSupport.error(redirectAttributes, "profile.publications.error");
-            return new ModelAndView("redirect:/my-boats");
         }
         final String safeReturn = sanitizeReturnPath(returnParam);
         final boolean removed = bookingInterface.removeOwnerSelfBlock(blockBookingId, currentUser.getId());

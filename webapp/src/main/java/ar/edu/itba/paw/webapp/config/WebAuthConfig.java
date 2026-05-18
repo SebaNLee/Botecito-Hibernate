@@ -52,8 +52,7 @@ public class WebAuthConfig {
                                 antMatcher(HttpMethod.GET, "/marketplace"),
                                 antMatcher(HttpMethod.GET, "/location-options"),
                                 antMatcher(HttpMethod.GET, "/item-type-options"),
-                                antMatcher(HttpMethod.GET, "/errors"),
-                                antMatcher(HttpMethod.GET, "/403"))
+                                antMatcher(HttpMethod.GET, "/errors"))
                         .permitAll()
                         .requestMatchers(antMatcher("/password-recovery/**"))
                         .permitAll()
@@ -81,7 +80,7 @@ public class WebAuthConfig {
                         .key("botecito-remember-me-secret")
                         .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(30)))
                 .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/login?logout=true"))
-                .exceptionHandling(ex -> ex.accessDeniedPage("/403"))
+                .exceptionHandling(ex -> ex.accessDeniedPage("/errors?status=403"))
                 .csrf(csrf -> csrf.disable());
         return http.build();
     }

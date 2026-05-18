@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.dto.MyBoatsItem;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.Version;
+import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.persistence.ItemDao;
 import ar.edu.itba.paw.services.exceptions.VersionNotFoundException;
 import java.math.BigDecimal;
@@ -39,11 +40,17 @@ public class ItemImpl implements ItemService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public MyBoatsItem requireOwnedItem(final int itemId, final int callerId) {
+        return findMyBoatsItemByIdForOwner(itemId, callerId).orElseThrow(ForbiddenOperationException::new);
+    }
+
+    @Override
     @Transactional
     public boolean deleteMyBoatsItem(final int itemId, final int ownerId) {
         final Optional<Item> item = itemDao.findItemByIdAndOwner(itemId, ownerId);
         if (item.isEmpty()) {
-            return false;
+            throw new ForbiddenOperationException();
         }
 
         if (itemDao.hasActiveOrFutureBookings(itemId)) {
@@ -68,6 +75,8 @@ public class ItemImpl implements ItemService {
             final int pricePerHour,
             final Integer difficultyLevel,
             final int locationOptionId) {
+        requireOwnedItem(itemId, ownerId);
+
         final Optional<Version> current = itemDao.findCurrentVersionByItemId(itemId);
         if (current.isEmpty()) {
             throw new VersionNotFoundException(itemId);
@@ -111,8 +120,10 @@ public class ItemImpl implements ItemService {
 
     @Override
     @Transactional
-    public boolean setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
-        return itemDao.setItemActiveForOwner(itemId, ownerId, active);
+    public void setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
+        if (!itemDao.setItemActiveForOwner(itemId, ownerId, active)) {
+            throw new ForbiddenOperationException();
+        }
     }
 
     @Override
@@ -130,18 +141,21 @@ public class ItemImpl implements ItemService {
     @Override
     @Transactional
     public Optional<Integer> uploadGalleryImage(final int itemId, final int ownerId, final byte[] imageData) {
+        requireOwnedItem(itemId, ownerId);
         return itemDao.uploadGalleryImage(itemId, imageData);
     }
 
     @Override
     @Transactional
-    public boolean deleteImageFromGallery(final int imageId) {
-        return itemDao.deleteImageFromGallery(imageId);
+    public void deleteImageFromGallery(final int itemId, final int imageId, final int callerId) {
+        requireOwnedItem(itemId, callerId);
+        itemDao.deleteImageFromGallery(imageId);
     }
 
     @Override
     @Transactional
     public boolean reorderGallery(final int itemId, final int ownerId, final List<Integer> imageIdsInOrder) {
+        requireOwnedItem(itemId, ownerId);
         return itemDao.reorderGallery(itemId, imageIdsInOrder);
     }
 }

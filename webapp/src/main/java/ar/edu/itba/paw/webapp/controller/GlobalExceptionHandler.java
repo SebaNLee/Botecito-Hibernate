@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.exceptions.BookingCollisionException;
 import ar.edu.itba.paw.models.exceptions.EmailAlreadyExistsException;
+import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.models.exceptions.IllegalBookingOperationException;
 import ar.edu.itba.paw.models.exceptions.InvalidBookingStatusException;
 import ar.edu.itba.paw.models.exceptions.InvalidDateFormatException;
@@ -33,16 +34,24 @@ public class GlobalExceptionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(ForbiddenOperationException.class)
+    public ModelAndView handleForbiddenOperation() {
+        return new ModelAndView("redirect:/errors?status=403");
+    }
+
     @ExceptionHandler(NoHandlerFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ModelAndView handleNotFound(final HttpServletRequest request) {
         request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
-        return new ModelAndView("forward:/404");
+        return new ModelAndView("forward:/errors");
     }
 
     @ExceptionHandler(ResponseStatusException.class)
-    public ModelAndView handleResponseStatus(final ResponseStatusException exception) {
-        return new ModelAndView("forward:/" + exception.getStatus().value());
+    public ModelAndView handleResponseStatus(
+            final HttpServletRequest request, final ResponseStatusException exception) {
+        request.setAttribute(
+                RequestDispatcher.ERROR_STATUS_CODE, exception.getStatus().value());
+        return new ModelAndView("forward:/errors");
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -52,33 +61,36 @@ public class GlobalExceptionHandler {
         if (requestUri != null && requestUri.contains("/publish")) {
             return new ModelAndView("redirect:/publish/availability?availabilityAction=invalidMethod");
         }
-        return new ModelAndView("forward:/400");
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 405);
+        return new ModelAndView("forward:/errors");
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-    public ModelAndView handleUnsupportedMediaType() {
-        return new ModelAndView("forward:/400");
+    public ModelAndView handleUnsupportedMediaType(final HttpServletRequest request) {
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 415);
+        return new ModelAndView("forward:/errors");
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
     public ModelAndView handleMaxUploadSize(final HttpServletRequest request) {
         LOGGER.debug("Max upload size exceeded");
-        request.setAttribute("maxUploadSizeExceeded", true);
-        return new ModelAndView("forward:/400");
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 413);
+        return new ModelAndView("forward:/errors");
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ModelAndView handleAccessDenied() {
-        return new ModelAndView("redirect:/403");
+        return new ModelAndView("redirect:/errors?status=403");
     }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ModelAndView handleUnexpected(final Exception exception) {
+    public ModelAndView handleUnexpected(final HttpServletRequest request, final Exception exception) {
         LOGGER.error("Unhandled exception", exception);
-        return new ModelAndView("forward:/500");
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
+        return new ModelAndView("forward:/errors");
     }
 
     @ExceptionHandler(NoAnticipationException.class)

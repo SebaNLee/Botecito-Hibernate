@@ -5,7 +5,6 @@ import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -27,12 +26,7 @@ public class MyBoatsActionsPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<MyBoatsItem> item = resolveOwnedItem(currentUser, itemId);
-        if (item.isEmpty() || !itemInterface.setItemActiveForOwner(itemId, currentUser.getId(), false)) {
-            ToastSupport.error(redirectAttributes, "profile.publications.error");
-            return new ModelAndView("redirect:/my-boats#my-publications");
-        }
-
+        itemInterface.setItemActiveForOwner(itemId, currentUser.getId(), false);
         ToastSupport.success(redirectAttributes, "profile.publications.disabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
@@ -43,12 +37,7 @@ public class MyBoatsActionsPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<MyBoatsItem> item = resolveOwnedItem(currentUser, itemId);
-        if (item.isEmpty() || !itemInterface.setItemActiveForOwner(itemId, currentUser.getId(), true)) {
-            ToastSupport.error(redirectAttributes, "profile.publications.error");
-            return new ModelAndView("redirect:/my-boats#my-publications");
-        }
-
+        itemInterface.setItemActiveForOwner(itemId, currentUser.getId(), true);
         ToastSupport.success(redirectAttributes, "profile.publications.enabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
@@ -59,14 +48,9 @@ public class MyBoatsActionsPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<MyBoatsItem> item = resolveOwnedItem(currentUser, itemId);
-        if (item.isEmpty()) {
-            ToastSupport.error(redirectAttributes, "profile.publications.error");
-            return new ModelAndView("redirect:/my-boats#my-publications");
-        }
-
+        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, currentUser.getId());
         if (!itemInterface.deleteMyBoatsItem(itemId, currentUser.getId())) {
-            if (!Boolean.TRUE.equals(item.get().getActive())) {
+            if (!Boolean.TRUE.equals(item.getActive())) {
                 ToastSupport.error(redirectAttributes, "profile.publications.deleteBlockedByBookings");
                 return new ModelAndView("redirect:/my-boats#my-publications");
             }
@@ -76,10 +60,6 @@ public class MyBoatsActionsPresentation {
 
         ToastSupport.success(redirectAttributes, "profile.publications.deleted");
         return new ModelAndView("redirect:/my-boats#my-publications");
-    }
-
-    private Optional<MyBoatsItem> resolveOwnedItem(final Users currentUser, final int itemId) {
-        return itemInterface.findMyBoatsItemByIdForOwner(itemId, currentUser.getId());
     }
 
     private Users currentAuthenticatedUser() {

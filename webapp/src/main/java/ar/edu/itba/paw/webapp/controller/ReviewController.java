@@ -59,6 +59,9 @@ public class ReviewController {
         if ("dashboardHosting".equals(returnTo)) {
             return new ModelAndView("redirect:/requests/incoming");
         }
+        if ("outgoing".equals(returnTo)) {
+            return new ModelAndView("redirect:/requests/outgoing");
+        }
         return new ModelAndView("redirect:/bookings#sent-booking-requests");
     }
 }

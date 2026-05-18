@@ -42,6 +42,12 @@
 <spring:message code="payment.reply.placeholder" var="guestReplyPlaceholder" />
 <spring:message code="payment.refusal.reason.label" var="rejectPaymentReasonLabel" />
 <spring:message code="profile.sentBookings.paymentProof.view" var="viewPaymentProofLabel" />
+<spring:message code="itemDetail.reviews.leave" var="reviewLeaveLabel" />
+<spring:message code="itemDetail.reviews.rating" var="reviewRatingLabel" />
+<spring:message code="itemDetail.reviews.comment" var="reviewCommentLabel" />
+<spring:message code="profile.reviews.submit" var="reviewSubmitLabel" />
+<spring:message code="profile.reviews.target.item" var="reviewItemLabel" />
+<spring:message code="profile.reviews.target.user" var="reviewUserLabel" />
 
 <c:url var="clearFiltersUrl" value="${formAction}">
   <c:if test="${sort != 'newest'}">
@@ -381,6 +387,45 @@
                           </div>
                         </jsp:body>
                       </paw:detailsModal>
+                  </c:if>
+                  <c:if test="${b.status.name() == 'FINISHED'}">
+                    <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review').showModal()">
+                      <c:choose>
+                        <c:when test="${isIncoming}"><c:out value="${reviewUserLabel}" /></c:when>
+                        <c:otherwise><c:out value="${reviewItemLabel}" /></c:otherwise>
+                      </c:choose>
+                    </button>
+                    <!-- Review Modal -->
+                    <paw:detailsModal id="${detailModalId}-review" title="${reviewLeaveLabel}">
+                      <jsp:body>
+                        <form action="<c:url value='/reviews/booking/${b.id}' />" method="post" class="space-y-4">
+                          <c:choose>
+                            <c:when test="${isIncoming}">
+                              <input type="hidden" name="returnTo" value="dashboardHosting" />
+                            </c:when>
+                            <c:otherwise>
+                              <input type="hidden" name="returnTo" value="outgoing" />
+                            </c:otherwise>
+                          </c:choose>
+                          <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
+                            <label class="text-xs font-bold uppercase tracking-wider text-outline" for="review-rating-${b.id}"><c:out value="${reviewRatingLabel}" /></label>
+                            <div class="flex items-center gap-1" data-rating-stars>
+                              <input id="review-rating-${b.id}" type="hidden" name="rating" value="" data-rating-value />
+                              <c:forEach var="starIndex" begin="1" end="5">
+                                <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${reviewRatingLabel} ${starIndex}">
+                                  <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
+                                </button>
+                              </c:forEach>
+                            </div>
+                          </div>
+                          <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
+                            <label class="text-xs font-bold uppercase tracking-wider text-outline pt-2" for="review-comment-${b.id}"><c:out value="${reviewCommentLabel}" /></label>
+                            <textarea id="review-comment-${b.id}" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
+                          </div>
+                          <paw:button type="submit" color="primary" text="${reviewSubmitLabel}" submitLoading="true" />
+                        </form>
+                      </jsp:body>
+                    </paw:detailsModal>
                   </c:if>
                 </div>
               </div>

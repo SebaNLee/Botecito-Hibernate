@@ -7,6 +7,7 @@ import ar.edu.itba.paw.models.entity.TargetEnum;
 import ar.edu.itba.paw.persistence.BookingDao;
 import ar.edu.itba.paw.persistence.ReviewDao;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -79,7 +80,7 @@ public final class ReviewImpl implements ReviewService {
             return false;
         }
         return isBookingEligibleForPostStayReview(booking.getStatus())
-                && booking.getEnd().isBefore(LocalDateTime.now());
+                && booking.getEnd().isBefore(LocalDateTime.now(ZoneOffset.UTC));
     }
 
     private static boolean isBookingEligibleForPostStayReview(final BookingStatusEnum status) {

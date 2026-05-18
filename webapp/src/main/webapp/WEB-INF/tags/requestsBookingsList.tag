@@ -278,7 +278,7 @@
                       </p>
                       <p class="m-0 text-sm font-semibold text-on-surface">
                         <c:choose>
-                          <c:when test="${isIncoming}">Guest: #<c:out value="${b.guest.id}" /></c:when>
+                          <c:when test="${isIncoming}"><c:out value="${b.guest.firstName}" /> <c:out value="${b.guest.lastName}" /></c:when>
                           <c:otherwise><c:out value="${b.version.item.host.firstName}" /> <c:out value="${b.version.item.host.lastName}" /></c:otherwise>
                         </c:choose>
                       </p>

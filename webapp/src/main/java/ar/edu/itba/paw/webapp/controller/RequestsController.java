@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.BookingSearchForm;
 import ar.edu.itba.paw.webapp.form.PaymentProofForm;
 import ar.edu.itba.paw.webapp.presentation.BookingPresentation;
@@ -8,6 +9,7 @@ import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,20 +22,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * Guest booking requests (nuevo stack). Does not use {@link
- * ar.edu.itba.paw.webapp.controller.support.BookingDashboardMvcSupport}.
- */
 @Controller
 @RequiredArgsConstructor
 public class RequestsController {
 
     private final BookingPresentation bookingPresentation;
 
-    /**
-     * Defaults for GET {@code /requests/outgoing} and {@code /requests/incoming}
-     * before binding; omitted query params keep these values.
-     */
     @ModelAttribute("bookingSearch")
     public BookingSearchForm defaultBookingSearch() {
         final BookingSearchForm form = new BookingSearchForm();
@@ -50,65 +44,78 @@ public class RequestsController {
 
     @RequestMapping(value = "/requests/outgoing", method = RequestMethod.GET)
     public ModelAndView outgoing(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             final HttpServletRequest request,
             @Valid @ModelAttribute("bookingSearch") final BookingSearchForm search,
             final BindingResult errors) {
         if (errors.hasErrors()) {
-            return bookingPresentation.outgoingBookingsErrors(request, search, errors);
+            return bookingPresentation.outgoingBookingsErrors(user, request, search, errors);
         }
-        return bookingPresentation.outgoingBookingsGet(request, search);
+        return bookingPresentation.outgoingBookingsGet(user, request, search);
     }
 
     @RequestMapping(value = "/requests/incoming", method = RequestMethod.GET)
     public ModelAndView incoming(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             final HttpServletRequest request,
             @Valid @ModelAttribute("bookingSearch") final BookingSearchForm search,
             final BindingResult errors) {
         if (errors.hasErrors()) {
-            return bookingPresentation.incomingBookingsErrors(request, search, errors);
+            return bookingPresentation.incomingBookingsErrors(user, request, search, errors);
         }
-        return bookingPresentation.incomingBookingsGet(request, search);
+        return bookingPresentation.incomingBookingsGet(user, request, search);
     }
 
     @GetMapping("/requests/bookings/{bookingId}/payment-proof")
-    public ResponseEntity<byte[]> downloadPaymentProof(@PathVariable("bookingId") final int bookingId) {
-        return bookingPresentation.downloadPaymentProof(bookingId);
+    public ResponseEntity<byte[]> downloadPaymentProof(
+            @AuthenticationPrincipal final BotecitoUserDetails user, @PathVariable("bookingId") final int bookingId) {
+        return bookingPresentation.downloadPaymentProof(user, bookingId);
     }
 
     @PostMapping("/requests/incoming/{bookingId}/accept")
     public ModelAndView acceptIncoming(
-            @PathVariable("bookingId") final int bookingId, final RedirectAttributes redirectAttributes) {
-        return bookingPresentation.acceptIncomingBooking(bookingId, redirectAttributes);
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            @PathVariable("bookingId") final int bookingId,
+            final RedirectAttributes redirectAttributes) {
+        return bookingPresentation.acceptIncomingBooking(user, bookingId, redirectAttributes);
     }
 
     @PostMapping("/requests/incoming/{bookingId}/reject")
     public ModelAndView rejectIncoming(
-            @PathVariable("bookingId") final int bookingId, final RedirectAttributes redirectAttributes) {
-        return bookingPresentation.rejectIncomingBooking(bookingId, redirectAttributes);
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            @PathVariable("bookingId") final int bookingId,
+            final RedirectAttributes redirectAttributes) {
+        return bookingPresentation.rejectIncomingBooking(user, bookingId, redirectAttributes);
     }
 
     @PostMapping("/requests/incoming/{bookingId}/confirm-payment")
     public ModelAndView confirmIncomingPayment(
-            @PathVariable("bookingId") final int bookingId, final RedirectAttributes redirectAttributes) {
-        return bookingPresentation.confirmIncomingPayment(bookingId, redirectAttributes);
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            @PathVariable("bookingId") final int bookingId,
+            final RedirectAttributes redirectAttributes) {
+        return bookingPresentation.confirmIncomingPayment(user, bookingId, redirectAttributes);
     }
 
     @PostMapping("/requests/incoming/{bookingId}/reject-payment")
     public ModelAndView rejectIncomingPayment(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("bookingId") final int bookingId,
             @RequestParam(name = "reason", required = false) final String reason,
             final RedirectAttributes redirectAttributes) {
-        return bookingPresentation.rejectIncomingPayment(bookingId, reason, redirectAttributes);
+        return bookingPresentation.rejectIncomingPayment(user, bookingId, reason, redirectAttributes);
     }
 
     @PostMapping("/requests/outgoing/{bookingId}/cancel")
     public ModelAndView cancelOutgoing(
-            @PathVariable("bookingId") final int bookingId, final RedirectAttributes redirectAttributes) {
-        return bookingPresentation.cancelOutgoingBooking(bookingId, redirectAttributes);
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            @PathVariable("bookingId") final int bookingId,
+            final RedirectAttributes redirectAttributes) {
+        return bookingPresentation.cancelOutgoingBooking(user, bookingId, redirectAttributes);
     }
 
     @PostMapping(value = "/requests/outgoing/{bookingId}/payment", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ModelAndView submitOutgoingPayment(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("bookingId") final int bookingId,
             @Valid @ModelAttribute("paymentProof") final PaymentProofForm paymentProof,
             final BindingResult bindingResult,
@@ -116,6 +123,6 @@ public class RequestsController {
         if (bindingResult.hasErrors()) {
             return bookingPresentation.submitOutgoingPaymentValidationErrors(redirectAttributes);
         }
-        return bookingPresentation.submitOutgoingPayment(bookingId, paymentProof, redirectAttributes);
+        return bookingPresentation.submitOutgoingPayment(user, bookingId, paymentProof, redirectAttributes);
     }
 }

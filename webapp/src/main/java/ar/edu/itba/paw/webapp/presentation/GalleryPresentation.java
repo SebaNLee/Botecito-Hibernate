@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -20,15 +20,17 @@ public class GalleryPresentation {
     private static final int MAX_GALLERY_IMAGES = 5;
 
     private final ItemService itemInterface;
-    private final AuthenticatedUserResolver authenticatedUserResolver;
 
-    public ModelAndView galleryPage(final int itemId, final String error, final HttpServletRequest request) {
-        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
-        if (currentUser == null) {
+    public ModelAndView galleryPage(
+            final BotecitoUserDetails principal,
+            final int itemId,
+            final String error,
+            final HttpServletRequest request) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        final MyBoatsItem ownedItem = itemInterface.requireOwnedItem(itemId, currentUser.getId());
+        final MyBoatsItem ownedItem = itemInterface.requireOwnedItem(itemId, principal.getId());
         final List<Integer> imageIds = itemInterface.listImageIds(itemId);
         final List<String> imageUrls = new ArrayList<>(imageIds.size());
         final String contextPath = request.getContextPath();
@@ -48,9 +50,9 @@ public class GalleryPresentation {
         return mav;
     }
 
-    public ModelAndView uploadGallery(final int itemId, final List<MultipartFile> files) {
-        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
-        if (currentUser == null) {
+    public ModelAndView uploadGallery(
+            final BotecitoUserDetails principal, final int itemId, final List<MultipartFile> files) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
 
@@ -66,7 +68,7 @@ public class GalleryPresentation {
             if (bytes == null) {
                 return redirectToGallery(itemId, "read");
             }
-            final Optional<Integer> newId = itemInterface.uploadGalleryImage(itemId, currentUser.getId(), bytes);
+            final Optional<Integer> newId = itemInterface.uploadGalleryImage(itemId, principal.getId(), bytes);
             if (newId.isEmpty()) {
                 return redirectToGallery(itemId, "count");
             }
@@ -74,19 +76,17 @@ public class GalleryPresentation {
         return redirectToGallery(itemId);
     }
 
-    public ModelAndView deleteGalleryImage(final int itemId, final int imageId) {
-        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
-        if (currentUser == null) {
+    public ModelAndView deleteGalleryImage(final BotecitoUserDetails principal, final int itemId, final int imageId) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        itemInterface.deleteImageFromGallery(itemId, imageId, currentUser.getId());
+        itemInterface.deleteImageFromGallery(itemId, imageId, principal.getId());
         return redirectToGallery(itemId);
     }
 
-    public ModelAndView reorderGallery(final int itemId, final String order) {
-        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
-        if (currentUser == null) {
+    public ModelAndView reorderGallery(final BotecitoUserDetails principal, final int itemId, final String order) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
 
@@ -95,7 +95,7 @@ public class GalleryPresentation {
             return redirectToGallery(itemId);
         }
 
-        if (!itemInterface.reorderGallery(itemId, currentUser.getId(), parsed)) {
+        if (!itemInterface.reorderGallery(itemId, principal.getId(), parsed)) {
             return redirectToGallery(itemId, "reorder");
         }
 

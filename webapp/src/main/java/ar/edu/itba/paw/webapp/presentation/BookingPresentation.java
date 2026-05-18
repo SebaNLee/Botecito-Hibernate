@@ -4,8 +4,8 @@ import ar.edu.itba.paw.models.dto.BookingSearchResult;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.PaymentProof;
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.BookingService;
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.BookingSearchForm;
 import ar.edu.itba.paw.webapp.form.PaymentProofForm;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
@@ -34,11 +34,11 @@ public class BookingPresentation {
     private static final String REDIRECT_OUTGOING = "redirect:/requests/outgoing";
 
     private final BookingService bookingInterface;
-    private final AuthenticatedUserResolver authenticatedUserResolver;
     private final ToastPresentation toastPresentation;
 
-    public ModelAndView outgoingBookingsGet(final HttpServletRequest request, final BookingSearchForm search) {
-        return currentUserId()
+    public ModelAndView outgoingBookingsGet(
+            final BotecitoUserDetails principal, final HttpServletRequest request, final BookingSearchForm search) {
+        return callerId(principal)
                 .map(userId -> {
                     final BookingSearchResult result = bookingInterface.searchBookings(
                             userId,
@@ -59,8 +59,11 @@ public class BookingPresentation {
     }
 
     public ModelAndView outgoingBookingsErrors(
-            final HttpServletRequest request, final BookingSearchForm search, final BindingResult errors) {
-        if (currentUserId().isEmpty()) {
+            final BotecitoUserDetails principal,
+            final HttpServletRequest request,
+            final BookingSearchForm search,
+            final BindingResult errors) {
+        if (callerId(principal).isEmpty()) {
             return new ModelAndView("redirect:/login");
         }
         final List<Booking> bookings = List.of();
@@ -72,8 +75,9 @@ public class BookingPresentation {
         return mav;
     }
 
-    public ModelAndView incomingBookingsGet(final HttpServletRequest request, final BookingSearchForm search) {
-        return currentUserId()
+    public ModelAndView incomingBookingsGet(
+            final BotecitoUserDetails principal, final HttpServletRequest request, final BookingSearchForm search) {
+        return callerId(principal)
                 .map(userId -> {
                     final BookingSearchResult result = bookingInterface.searchBookings(
                             userId,
@@ -94,8 +98,11 @@ public class BookingPresentation {
     }
 
     public ModelAndView incomingBookingsErrors(
-            final HttpServletRequest request, final BookingSearchForm search, final BindingResult errors) {
-        if (currentUserId().isEmpty()) {
+            final BotecitoUserDetails principal,
+            final HttpServletRequest request,
+            final BookingSearchForm search,
+            final BindingResult errors) {
+        if (callerId(principal).isEmpty()) {
             return new ModelAndView("redirect:/login");
         }
         final List<Booking> bookings = List.of();
@@ -107,40 +114,46 @@ public class BookingPresentation {
         return mav;
     }
 
-    public ModelAndView acceptIncomingBooking(final int bookingId, final RedirectAttributes redirectAttributes) {
-        final Optional<Integer> callerId = currentUserId();
-        if (callerId.isEmpty()) {
+    public ModelAndView acceptIncomingBooking(
+            final BotecitoUserDetails principal, final int bookingId, final RedirectAttributes redirectAttributes) {
+        final Optional<Integer> userId = callerId(principal);
+        if (userId.isEmpty()) {
             return new ModelAndView("redirect:/login");
         }
-        bookingInterface.acceptBooking(bookingId, callerId.get());
+        bookingInterface.acceptBooking(bookingId, userId.get());
         ToastSupport.success(redirectAttributes, "requests.booking.accepted");
         return new ModelAndView(REDIRECT_INCOMING);
     }
 
-    public ModelAndView rejectIncomingBooking(final int bookingId, final RedirectAttributes redirectAttributes) {
-        final Optional<Integer> callerId = currentUserId();
-        if (callerId.isEmpty()) {
+    public ModelAndView rejectIncomingBooking(
+            final BotecitoUserDetails principal, final int bookingId, final RedirectAttributes redirectAttributes) {
+        final Optional<Integer> userId = callerId(principal);
+        if (userId.isEmpty()) {
             return new ModelAndView("redirect:/login");
         }
-        bookingInterface.rejectBooking(bookingId, callerId.get());
+        bookingInterface.rejectBooking(bookingId, userId.get());
         ToastSupport.warning(redirectAttributes, "requests.booking.rejected");
         return new ModelAndView(REDIRECT_INCOMING);
     }
 
-    public ModelAndView confirmIncomingPayment(final int bookingId, final RedirectAttributes redirectAttributes) {
-        final Optional<Integer> callerId = currentUserId();
-        if (callerId.isEmpty()) {
+    public ModelAndView confirmIncomingPayment(
+            final BotecitoUserDetails principal, final int bookingId, final RedirectAttributes redirectAttributes) {
+        final Optional<Integer> userId = callerId(principal);
+        if (userId.isEmpty()) {
             return new ModelAndView("redirect:/login");
         }
-        bookingInterface.confirmPayment(bookingId, callerId.get());
+        bookingInterface.confirmPayment(bookingId, userId.get());
         ToastSupport.success(redirectAttributes, "requests.booking.paymentConfirmed");
         return new ModelAndView(REDIRECT_INCOMING);
     }
 
     public ModelAndView rejectIncomingPayment(
-            final int bookingId, final String reason, final RedirectAttributes redirectAttributes) {
-        final Optional<Integer> callerId = currentUserId();
-        if (callerId.isEmpty()) {
+            final BotecitoUserDetails principal,
+            final int bookingId,
+            final String reason,
+            final RedirectAttributes redirectAttributes) {
+        final Optional<Integer> userId = callerId(principal);
+        if (userId.isEmpty()) {
             return new ModelAndView("redirect:/login");
         }
         final String trimmed = reason != null ? reason.trim() : "";
@@ -149,25 +162,29 @@ public class BookingPresentation {
             return new ModelAndView(REDIRECT_INCOMING);
         }
         final String bounded = trimmed.length() > 255 ? trimmed.substring(0, 255) : trimmed;
-        bookingInterface.rejectPayment(bookingId, callerId.get(), bounded);
+        bookingInterface.rejectPayment(bookingId, userId.get(), bounded);
         ToastSupport.success(redirectAttributes, "requests.booking.paymentRefused");
         return new ModelAndView(REDIRECT_INCOMING);
     }
 
-    public ModelAndView cancelOutgoingBooking(final int bookingId, final RedirectAttributes redirectAttributes) {
-        final Optional<Integer> callerId = currentUserId();
-        if (callerId.isEmpty()) {
+    public ModelAndView cancelOutgoingBooking(
+            final BotecitoUserDetails principal, final int bookingId, final RedirectAttributes redirectAttributes) {
+        final Optional<Integer> userId = callerId(principal);
+        if (userId.isEmpty()) {
             return new ModelAndView("redirect:/login");
         }
-        bookingInterface.cancelBooking(bookingId, callerId.get());
+        bookingInterface.cancelBooking(bookingId, userId.get());
         ToastSupport.success(redirectAttributes, "requests.booking.cancelled");
         return new ModelAndView(REDIRECT_OUTGOING);
     }
 
     public ModelAndView submitOutgoingPayment(
-            final int bookingId, final PaymentProofForm form, final RedirectAttributes redirectAttributes) {
-        final Optional<Integer> callerId = currentUserId();
-        if (callerId.isEmpty()) {
+            final BotecitoUserDetails principal,
+            final int bookingId,
+            final PaymentProofForm form,
+            final RedirectAttributes redirectAttributes) {
+        final Optional<Integer> userId = callerId(principal);
+        if (userId.isEmpty()) {
             return new ModelAndView("redirect:/login");
         }
         final MultipartFile file = form != null ? form.getFile() : null;
@@ -195,7 +212,7 @@ public class BookingPresentation {
                 .fileData(fileData)
                 .replyMsg(guestReply)
                 .build();
-        bookingInterface.submitPayment(bookingId, proof, callerId.get());
+        bookingInterface.submitPayment(bookingId, proof, userId.get());
         ToastSupport.success(redirectAttributes, "requests.booking.paymentSubmitted");
         return new ModelAndView(REDIRECT_OUTGOING);
     }
@@ -205,12 +222,12 @@ public class BookingPresentation {
         return new ModelAndView(REDIRECT_OUTGOING);
     }
 
-    public ResponseEntity<byte[]> downloadPaymentProof(final int bookingId) {
-        final Optional<Integer> callerId = currentUserId();
-        if (callerId.isEmpty()) {
+    public ResponseEntity<byte[]> downloadPaymentProof(final BotecitoUserDetails principal, final int bookingId) {
+        final Optional<Integer> userId = callerId(principal);
+        if (userId.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        final Optional<PaymentProof> proof = bookingInterface.getPaymentProofForParticipant(bookingId, callerId.get());
+        final Optional<PaymentProof> proof = bookingInterface.getPaymentProofForParticipant(bookingId, userId.get());
         if (proof.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -229,6 +246,10 @@ public class BookingPresentation {
                 .body(p.getFileData());
     }
 
+    private static Optional<Integer> callerId(final BotecitoUserDetails principal) {
+        return principal == null ? Optional.empty() : Optional.of(principal.getId());
+    }
+
     private void addListingModelObjects(
             final ModelAndView mav, final BookingSearchForm search, final List<Booking> bookings, final long total) {
         final int page = search.getPage() == null ? 1 : search.getPage();
@@ -244,10 +265,5 @@ public class BookingPresentation {
             return "newest";
         }
         return sortBy;
-    }
-
-    private Optional<Integer> currentUserId() {
-        final Users user = authenticatedUserResolver.currentAuthenticatedUser();
-        return user == null ? Optional.empty() : Optional.ofNullable(user.getId());
     }
 }

@@ -3,11 +3,11 @@ package ar.edu.itba.paw.webapp.presentation;
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.BookingService;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.services.exceptions.VersionNotFoundException;
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.time.format.DateTimeFormatter;
@@ -19,8 +19,6 @@ import java.util.Map;
 import java.util.Objects;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
@@ -35,13 +33,15 @@ public class PublishActionPresentation {
     private final UserService userService;
 
     public ModelAndView editPublicationForm(
-            final int itemId, final HttpServletRequest request, final RedirectAttributes redirectAttributes) {
-        final Users currentUser = currentAuthenticatedUser();
-        if (currentUser == null) {
+            final BotecitoUserDetails principal,
+            final int itemId,
+            final HttpServletRequest request,
+            final RedirectAttributes redirectAttributes) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, currentUser.getId());
+        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, principal.getId());
 
         final PublishBoatForm form = new PublishBoatForm();
         form.setTitle(item.getTitle());
@@ -54,17 +54,17 @@ public class PublishActionPresentation {
     }
 
     public ModelAndView editPublicationSubmit(
+            final BotecitoUserDetails principal,
             final int itemId,
             final PublishBoatForm form,
             final BindingResult errors,
             final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
-        final Users currentUser = currentAuthenticatedUser();
-        if (currentUser == null) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, currentUser.getId());
+        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, principal.getId());
 
         final Integer parsedPrice =
                 parseIntegerField(form.getPricePerHour(), "pricePerHour", "publish.validation.price.numeric", errors);
@@ -106,12 +106,12 @@ public class PublishActionPresentation {
             return editPublicationModelAndView(item, request).addObject("showEditConflictModal", true);
         }
 
-        resolvePendingBookings(activeBookings, currentUser.getId(), request);
+        resolvePendingBookings(activeBookings, principal.getId(), request);
 
         try {
             itemInterface.createPublicationVersion(
                     itemId,
-                    currentUser.getId(),
+                    principal.getId(),
                     form.getTitle().trim(),
                     form.getDescription() == null ? "" : form.getDescription().trim(),
                     parsedPrice,
@@ -128,37 +128,37 @@ public class PublishActionPresentation {
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
-    public ModelAndView disablePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final Users currentUser = currentAuthenticatedUser();
-        if (currentUser == null) {
+    public ModelAndView disablePublication(
+            final BotecitoUserDetails principal, final int itemId, final RedirectAttributes redirectAttributes) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        itemInterface.setItemActiveForOwner(itemId, currentUser.getId(), false);
+        itemInterface.setItemActiveForOwner(itemId, principal.getId(), false);
         ToastSupport.success(redirectAttributes, "profile.publications.disabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
-    public ModelAndView enablePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final Users currentUser = currentAuthenticatedUser();
-        if (currentUser == null) {
+    public ModelAndView enablePublication(
+            final BotecitoUserDetails principal, final int itemId, final RedirectAttributes redirectAttributes) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        itemInterface.setItemActiveForOwner(itemId, currentUser.getId(), true);
+        itemInterface.setItemActiveForOwner(itemId, principal.getId(), true);
         ToastSupport.success(redirectAttributes, "profile.publications.enabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
-    public ModelAndView hardDeletePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final Users currentUser = currentAuthenticatedUser();
-        if (currentUser == null) {
+    public ModelAndView hardDeletePublication(
+            final BotecitoUserDetails principal, final int itemId, final RedirectAttributes redirectAttributes) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, currentUser.getId());
+        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, principal.getId());
 
-        if (!itemInterface.deleteMyBoatsItem(itemId, currentUser.getId())) {
+        if (!itemInterface.deleteMyBoatsItem(itemId, principal.getId())) {
             if (!Boolean.TRUE.equals(item.getActive())) {
                 ToastSupport.error(redirectAttributes, "profile.publications.deleteBlockedByBookings");
                 return new ModelAndView("redirect:/my-boats#my-publications");
@@ -340,13 +340,5 @@ public class PublishActionPresentation {
             errors.rejectValue(fieldName, errorCode);
             return null;
         }
-    }
-
-    private Users currentAuthenticatedUser() {
-        final var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
-            return null;
-        }
-        return userService.findByEmail(auth.getName()).orElse(null);
     }
 }

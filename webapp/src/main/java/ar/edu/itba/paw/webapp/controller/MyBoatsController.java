@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.BlockSlotForm;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import ar.edu.itba.paw.webapp.presentation.AvailabilityPresentation;
@@ -9,6 +10,7 @@ import ar.edu.itba.paw.webapp.presentation.PublishActionPresentation;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -35,75 +37,88 @@ public class MyBoatsController {
 
     @RequestMapping(value = "/my-boats", method = RequestMethod.GET)
     public ModelAndView myBoats(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             final HttpServletRequest request,
             @RequestParam(value = "page", defaultValue = "1") final int page,
             @RequestParam(value = "pageSize", defaultValue = "12") final int pageSize) {
-        return myBoatsPresentation.myBoats(request, page, pageSize);
+        return myBoatsPresentation.myBoats(user, request, page, pageSize);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/edit", method = RequestMethod.GET)
     public ModelAndView editPublicationForm(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
             final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
-        return publishActionPresentation.editPublicationForm(itemId, request, redirectAttributes);
+        return publishActionPresentation.editPublicationForm(user, itemId, request, redirectAttributes);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/edit", method = RequestMethod.POST)
     public ModelAndView editPublicationSubmit(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
             @ModelAttribute("publishForm") final PublishBoatForm form,
             final BindingResult errors,
             final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
-        return publishActionPresentation.editPublicationSubmit(itemId, form, errors, request, redirectAttributes);
+        return publishActionPresentation.editPublicationSubmit(user, itemId, form, errors, request, redirectAttributes);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/disable", method = RequestMethod.POST)
     public ModelAndView disablePublication(
-            @PathVariable("id") final int itemId, final RedirectAttributes redirectAttributes) {
-        return myBoatsActionsPresentation.disablePublication(itemId, redirectAttributes);
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            @PathVariable("id") final int itemId,
+            final RedirectAttributes redirectAttributes) {
+        return myBoatsActionsPresentation.disablePublication(user, itemId, redirectAttributes);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/enable", method = RequestMethod.POST)
     public ModelAndView enablePublication(
-            @PathVariable("id") final int itemId, final RedirectAttributes redirectAttributes) {
-        return myBoatsActionsPresentation.enablePublication(itemId, redirectAttributes);
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            @PathVariable("id") final int itemId,
+            final RedirectAttributes redirectAttributes) {
+        return myBoatsActionsPresentation.enablePublication(user, itemId, redirectAttributes);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/delete", method = RequestMethod.POST)
     public ModelAndView hardDeletePublication(
-            @PathVariable("id") final int itemId, final RedirectAttributes redirectAttributes) {
-        return myBoatsActionsPresentation.hardDeletePublication(itemId, redirectAttributes);
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            @PathVariable("id") final int itemId,
+            final RedirectAttributes redirectAttributes) {
+        return myBoatsActionsPresentation.hardDeletePublication(user, itemId, redirectAttributes);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/availability", method = RequestMethod.GET)
     public ModelAndView manageAvailability(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "return", required = false) final String returnParam,
             final RedirectAttributes redirectAttributes) {
-        return availabilityPresentation.manageAvailabilityPage(itemId, requestedDate, returnParam, redirectAttributes);
+        return availabilityPresentation.manageAvailabilityPage(
+                user, itemId, requestedDate, returnParam, redirectAttributes);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/availability/disable", method = RequestMethod.POST)
     public ModelAndView blockSlot(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
             @RequestParam(value = "return", required = false) final String returnParam,
             @Valid @ModelAttribute final BlockSlotForm blockSlotForm,
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
-        return availabilityPresentation.blockSlot(itemId, returnParam, blockSlotForm, errors, redirectAttributes);
+        return availabilityPresentation.blockSlot(user, itemId, returnParam, blockSlotForm, errors, redirectAttributes);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/availability/enable", method = RequestMethod.POST)
     public ModelAndView unblockSlot(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
             @RequestParam("blockBookingId") final int blockBookingId,
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "return", required = false) final String returnParam,
             final RedirectAttributes redirectAttributes) {
         return availabilityPresentation.unblockSlot(
-                itemId, blockBookingId, requestedDate, returnParam, redirectAttributes);
+                user, itemId, blockBookingId, requestedDate, returnParam, redirectAttributes);
     }
 }

@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.dto.ImageUpload;
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
+import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.models.mail.MailRecipientModel;
 import ar.edu.itba.paw.models.mail.PublishConfirmationMailModel;
 import ar.edu.itba.paw.persistence.PublishDao;
@@ -81,6 +82,22 @@ public class PublishServiceImpl implements PublishService {
     @Transactional(readOnly = true)
     public Optional<Version> findById(final int itemId) {
         return publishDao.findById(itemId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Version> findByIdForHost(final int itemId, final int callerId) {
+        final Optional<Version> version = publishDao.findById(itemId);
+        if (version.isEmpty()) {
+            return Optional.empty();
+        }
+        final Version found = version.get();
+        if (found.getItem() == null
+                || found.getItem().getHost() == null
+                || found.getItem().getHost().getId() != callerId) {
+            throw new ForbiddenOperationException();
+        }
+        return version;
     }
 
     @Override

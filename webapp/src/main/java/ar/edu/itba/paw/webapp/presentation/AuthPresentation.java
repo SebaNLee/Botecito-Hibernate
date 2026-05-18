@@ -121,10 +121,6 @@ public class AuthPresentation {
         return new ModelAndView("redirect:/login?verificationInvalid=true");
     }
 
-    public ModelAndView forbidden() {
-        return new ModelAndView("403");
-    }
-
     // TODO check this, should be bc of UserDetails SpringSecurity probs
     private static String languageFromInput(final String preferredLanguage) {
         if (preferredLanguage == null) {

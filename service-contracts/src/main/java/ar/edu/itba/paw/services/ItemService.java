@@ -11,6 +11,8 @@ public interface ItemService {
 
     Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(int itemId, int ownerId);
 
+    MyBoatsItem requireOwnedItem(int itemId, int callerId);
+
     boolean deleteMyBoatsItem(int itemId, int ownerId);
 
     int createPublicationVersion(
@@ -22,7 +24,7 @@ public interface ItemService {
             Integer difficultyLevel,
             int locationOptionId);
 
-    boolean setItemActiveForOwner(int itemId, int ownerId, boolean active);
+    void setItemActiveForOwner(int itemId, int ownerId, boolean active);
 
     Optional<byte[]> findImageDataById(int imageId);
 
@@ -30,7 +32,7 @@ public interface ItemService {
 
     Optional<Integer> uploadGalleryImage(int itemId, int ownerId, byte[] imageData);
 
-    boolean deleteImageFromGallery(int imageId);
+    void deleteImageFromGallery(int itemId, int imageId, int callerId);
 
     boolean reorderGallery(int itemId, int ownerId, List<Integer> imageIdsInOrder);
 

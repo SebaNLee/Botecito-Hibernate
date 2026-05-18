@@ -10,6 +10,7 @@ import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import ar.edu.itba.paw.models.exceptions.BookingCollisionException;
+import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.models.exceptions.IllegalBookingOperationException;
 import ar.edu.itba.paw.models.exceptions.InvalidBookingStatusException;
 import ar.edu.itba.paw.models.exceptions.InvalidDateFormatException;
@@ -287,13 +288,9 @@ public class BookingImpl implements BookingService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<OwnerAvailabilityPage> loadOwnerAvailabilityPage(
+    public OwnerAvailabilityPage loadOwnerAvailabilityPage(
             final int itemId, final int ownerId, final String requestedDate) {
-        final Optional<MyBoatsItem> itemOpt = itemInterface.findMyBoatsItemByIdForOwner(itemId, ownerId);
-        if (itemOpt.isEmpty()) {
-            return Optional.empty();
-        }
-        final MyBoatsItem item = itemOpt.get();
+        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, ownerId);
         final int versionId = item.getVersionId();
 
         final String timezone = bookingDao.findVersionTimezone(versionId).orElse("UTC");
@@ -317,8 +314,8 @@ public class BookingImpl implements BookingService {
                         ? requestedDate
                         : (offeredDates.isEmpty() ? null : offeredDates.get(0));
 
-        return Optional.of(new OwnerAvailabilityPage(
-                item, availabilities, bookings, selfBlocks, offeredDates, blockedDates, selectedDate, timezone));
+        return new OwnerAvailabilityPage(
+                item, availabilities, bookings, selfBlocks, offeredDates, blockedDates, selectedDate, timezone);
     }
 
     @Override
@@ -341,11 +338,7 @@ public class BookingImpl implements BookingService {
         if (parsedDate.isBefore(LocalDate.now())) {
             throw new PastSlotException();
         }
-        final Optional<MyBoatsItem> itemOpt = itemInterface.findMyBoatsItemByIdForOwner(itemId, ownerId);
-        if (itemOpt.isEmpty()) {
-            throw new InvalidSlotException();
-        }
-        final MyBoatsItem item = itemOpt.get();
+        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, ownerId);
         final int versionId = item.getVersionId();
 
         final String timezone = bookingDao.findVersionTimezone(versionId).orElse(null);
@@ -378,7 +371,7 @@ public class BookingImpl implements BookingService {
         }
         final Booking booking = bookingOpt.get();
         if (booking.getGuest() == null || !booking.getGuest().getId().equals(ownerId)) {
-            return false;
+            throw new ForbiddenOperationException();
         }
         return bookingDao.deleteOwnerSelfBlock(bookingId, ownerId);
     }

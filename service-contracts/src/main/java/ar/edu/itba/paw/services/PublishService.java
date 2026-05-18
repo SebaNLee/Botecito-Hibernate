@@ -27,6 +27,12 @@ public interface PublishService {
 
     Optional<Version> findById(int itemId);
 
+    /**
+     * Empty when the publication does not exist; throws {@link
+     * ar.edu.itba.paw.models.exceptions.ForbiddenOperationException} when it exists but the caller is not the host.
+     */
+    Optional<Version> findByIdForHost(int itemId, int callerId);
+
     List<Availability> listAvailabilities(int itemId);
 
     Map<String, String> validate(

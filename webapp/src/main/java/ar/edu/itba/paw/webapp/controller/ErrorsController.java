@@ -1,42 +1,42 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpStatus;
+import javax.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 public class ErrorsController {
 
-    // TODO impl feedback: do not give user info about missing/existent resources
-
-    @RequestMapping("/500")
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ModelAndView error500() {
-        return errorModelAndView(500);
+    @RequestMapping("/errors")
+    public ModelAndView errors(
+            final HttpServletRequest request,
+            final HttpServletResponse response,
+            @RequestParam(value = "status", required = false) final String statusParam) {
+        final int status = resolveStatus(request, statusParam);
+        response.setStatus(status);
+        return errorModelAndView(status);
     }
 
-    @RequestMapping("/403")
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ModelAndView error403() {
-        return errorModelAndView(403);
-    }
-
-    @RequestMapping("/404")
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ModelAndView error404() {
-        return errorModelAndView(404);
-    }
-
-    @RequestMapping("/400")
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ModelAndView error400(final HttpServletRequest request) {
-        ModelAndView mav = errorModelAndView(400);
-        Object maxUpload = request.getAttribute("maxUploadSizeExceeded");
-        mav.addObject("maxUploadSizeExceeded", Boolean.TRUE.equals(maxUpload));
-        return mav;
+    private static int resolveStatus(final HttpServletRequest request, final String statusParam) {
+        final Object errorStatus = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
+        if (errorStatus instanceof Integer code) {
+            return code;
+        }
+        if (errorStatus instanceof Number number) {
+            return number.intValue();
+        }
+        if (statusParam != null && !statusParam.isBlank()) {
+            try {
+                return Integer.parseInt(statusParam.trim());
+            } catch (final NumberFormatException ignored) {
+                // fall through to default
+            }
+        }
+        return 404;
     }
 
     private static ModelAndView errorModelAndView(final int status) {
@@ -49,7 +49,6 @@ public class ErrorsController {
 
     private static String titleMessageCode(final int status) {
         return switch (status) {
-            case 400 -> "error.400.title";
             case 403 -> "error.403.title";
             case 404 -> "error.404.title";
             case 405 -> "error.405.title";
@@ -68,7 +67,6 @@ public class ErrorsController {
 
     private static String bodyMessageCode(final int status) {
         return switch (status) {
-            case 400 -> "error.400.message";
             case 403 -> "error.403.message";
             case 404 -> "error.404.message";
             case 405 -> "error.405.message";

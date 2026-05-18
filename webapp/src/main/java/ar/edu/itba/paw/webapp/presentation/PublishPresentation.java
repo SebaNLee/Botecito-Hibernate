@@ -149,12 +149,9 @@ public class PublishPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<Version> version = publishService.findById(itemId);
+        final Optional<Version> version = publishService.findByIdForHost(itemId, currentUser.getId());
         if (version.isEmpty()) {
             return new ModelAndView("redirect:/publish");
-        }
-        if (!version.get().getItem().getHost().getId().equals(currentUser.getId())) {
-            return new ModelAndView("redirect:/403");
         }
 
         final ModelAndView mav = new ModelAndView("publish-success");

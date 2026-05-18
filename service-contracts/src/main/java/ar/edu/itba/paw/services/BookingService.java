@@ -40,7 +40,7 @@ public interface BookingService {
 
     void cancelBooking(int bookingId, int callerId);
 
-    Optional<OwnerAvailabilityPage> loadOwnerAvailabilityPage(int itemId, int ownerId, String requestedDate);
+    OwnerAvailabilityPage loadOwnerAvailabilityPage(int itemId, int ownerId, String requestedDate);
 
     void blockSlotForOwner(int itemId, int ownerId, String date, String startTime, String endTime);
 

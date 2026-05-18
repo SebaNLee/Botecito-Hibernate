@@ -3,11 +3,10 @@ package ar.edu.itba.paw.webapp.presentation;
 import ar.edu.itba.paw.models.dto.AvailabilityWindow;
 import ar.edu.itba.paw.models.dto.ImageUpload;
 import ar.edu.itba.paw.models.entity.ItemType;
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.services.PublishService;
 import ar.edu.itba.paw.services.SelectorsService;
-import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -23,9 +22,6 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
@@ -37,7 +33,6 @@ import org.springframework.web.servlet.ModelAndView;
 public class PublishPresentation {
 
     private final PublishService publishService;
-    private final UserService userService;
     private final SelectorsService selectorsInterface;
     private final MessageSource messageSource;
 
@@ -98,12 +93,12 @@ public class PublishPresentation {
     }
 
     public ModelAndView publishStepThreeSubmit(
+            final BotecitoUserDetails principal,
             final PublishBoatForm form,
             final BindingResult errors,
             final Locale locale,
             final SessionStatus sessionStatus) {
-        final Users currentUser = currentAuthenticatedUser();
-        if (currentUser == null) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
 
@@ -120,7 +115,7 @@ public class PublishPresentation {
         }
 
         final Optional<Version> createdVersion = publishService.create(
-                currentUser.getId(),
+                principal.getId(),
                 parseIntOrNull(form.getItemTypeId()),
                 form.getTitle() == null ? null : form.getTitle().trim(),
                 form.getDescription() == null ? "" : form.getDescription().trim(),
@@ -143,13 +138,13 @@ public class PublishPresentation {
                 + createdVersion.get().getItem().getId());
     }
 
-    public ModelAndView publishSuccess(final HttpServletRequest request, final Integer itemId) {
-        final Users currentUser = currentAuthenticatedUser();
-        if (currentUser == null || itemId == null) {
+    public ModelAndView publishSuccess(
+            final BotecitoUserDetails principal, final HttpServletRequest request, final Integer itemId) {
+        if (principal == null || itemId == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        final Optional<Version> version = publishService.findByIdForHost(itemId, currentUser.getId());
+        final Optional<Version> version = publishService.findByIdForHost(itemId, principal.getId());
         if (version.isEmpty()) {
             return new ModelAndView("redirect:/publish");
         }
@@ -416,16 +411,6 @@ public class PublishPresentation {
             case SATURDAY -> messageSource.getMessage("weekday.saturday", null, locale);
             case SUNDAY -> messageSource.getMessage("weekday.sunday", null, locale);
         };
-    }
-
-    private Users currentAuthenticatedUser() {
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            return null;
-        }
-        return userService.findByEmail(authentication.getName()).orElse(null);
     }
 
     private static String resolveImageUrl(final Version version, final String contextPath) {

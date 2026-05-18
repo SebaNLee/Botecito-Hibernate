@@ -4,8 +4,8 @@ import ar.edu.itba.paw.models.dto.OwnerAvailabilityPage;
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.BookingService;
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.BlockSlotForm;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -41,60 +41,59 @@ public class AvailabilityPresentation {
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
 
     private final BookingService bookingInterface;
-    private final AuthenticatedUserResolver authenticatedUserResolver;
 
     public ModelAndView manageAvailabilityPage(
+            final BotecitoUserDetails principal,
             final int itemId,
             final String requestedDate,
             final String returnParam,
             final RedirectAttributes redirectAttributes) {
-        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
-        if (currentUser == null) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
         final String safeReturn = sanitizeReturnPath(returnParam);
         final OwnerAvailabilityPage model =
-                bookingInterface.loadOwnerAvailabilityPage(itemId, currentUser.getId(), requestedDate);
+                bookingInterface.loadOwnerAvailabilityPage(itemId, principal.getId(), requestedDate);
         return buildManageAvailabilityView(model, safeReturn);
     }
 
     public ModelAndView blockSlot(
+            final BotecitoUserDetails principal,
             final int itemId,
             final String returnParam,
             final BlockSlotForm form,
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
-        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
-        if (currentUser == null) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
         final String safeReturn = sanitizeReturnPath(returnParam);
         if (errors.hasErrors()) {
             final OwnerAvailabilityPage model = bookingInterface.loadOwnerAvailabilityPage(
-                    itemId, currentUser.getId(), form.getDate().toString());
+                    itemId, principal.getId(), form.getDate().toString());
             return buildManageAvailabilityView(model, safeReturn);
         }
         final String dateStr = form.getDate().toString();
         final String startStr = form.getStartTime().format(TIME_FMT);
         final String endStr = form.getEndTime().format(TIME_FMT);
         final String redirectBase = "redirect:/my-boats/" + itemId + "/availability";
-        bookingInterface.blockSlotForOwner(itemId, currentUser.getId(), dateStr, startStr, endStr);
+        bookingInterface.blockSlotForOwner(itemId, principal.getId(), dateStr, startStr, endStr);
         return new ModelAndView(
                 appendReturnQuery(redirectBase + "?date=" + dateStr + "&availabilityAction=blocked", safeReturn));
     }
 
     public ModelAndView unblockSlot(
+            final BotecitoUserDetails principal,
             final int itemId,
             final int blockBookingId,
             final String requestedDate,
             final String returnParam,
             final RedirectAttributes redirectAttributes) {
-        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
-        if (currentUser == null) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
         final String safeReturn = sanitizeReturnPath(returnParam);
-        final boolean removed = bookingInterface.removeOwnerSelfBlock(blockBookingId, currentUser.getId());
+        final boolean removed = bookingInterface.removeOwnerSelfBlock(blockBookingId, principal.getId());
         final String redirectDate = requestedDate == null || requestedDate.isBlank() ? "" : "&date=" + requestedDate;
         return new ModelAndView(appendReturnQuery(
                 "redirect:/my-boats/" + itemId + "/availability?availabilityAction="

@@ -9,6 +9,7 @@ import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.BookingService;
 import ar.edu.itba.paw.services.DetailService;
 import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PreBookingForm;
 import ar.edu.itba.paw.webapp.util.AvailabilityJsonHelper;
 import ar.edu.itba.paw.webapp.util.DetailAvailabilityPicker;
@@ -22,9 +23,6 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.server.ResponseStatusException;
@@ -52,13 +50,15 @@ public class DetailPresentation {
      *         version.
      */
     public Object detailPage(
-            final int itemId, final HttpServletRequest request, final Optional<Long> pathSnapshotVersionId) {
+            final int itemId,
+            final BotecitoUserDetails user,
+            final HttpServletRequest request,
+            final Optional<Long> pathSnapshotVersionId) {
         final String marketplaceBackHref = MarketplaceReturnUrl.marketplaceBackHref(request, null);
-        final Users viewer = currentAuthenticatedUserOrNull();
 
         final Optional<ItemDetail> nuevoDetail;
-        if (viewer != null && pathSnapshotVersionId.isPresent()) {
-            nuevoDetail = detailInterface.getItemDetail(itemId, viewer.getId(), pathSnapshotVersionId.get());
+        if (user != null && pathSnapshotVersionId.isPresent()) {
+            nuevoDetail = detailInterface.getItemDetail(itemId, user.getId(), pathSnapshotVersionId.get());
         } else {
             nuevoDetail = detailInterface.getItemDetail(itemId);
         }
@@ -86,9 +86,8 @@ public class DetailPresentation {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         }
         final boolean viewingNonCurrentVersion = displayPair.getVersionId() != currentVersionId;
-        final List<Long> visibleVersionIds = viewer != null
-                ? detailInterface.getVisibleVersionIds(itemId, viewer.getId())
-                : List.of(currentVersionId);
+        final List<Long> visibleVersionIds =
+                user != null ? detailInterface.getVisibleVersionIds(itemId, user.getId()) : List.of(currentVersionId);
         return buildNuevoItemDetailView(
                 itemId,
                 itemDetail,
@@ -96,19 +95,21 @@ public class DetailPresentation {
                 currentVersionId,
                 viewingNonCurrentVersion,
                 visibleVersionIds,
-                viewer,
+                user,
                 request,
                 marketplaceBackHref);
     }
 
     /**
-     * Same as {@link #detailPage(int, HttpServletRequest, Optional)} for canonical
-     * item URL, plus
-     * validation error toasts for the pre-booking form.
+     * Same as {@link #detailPage(int, BotecitoUserDetails, HttpServletRequest, Optional)}
+     * for canonical item URL, plus validation error toasts for the pre-booking form.
      */
     public Object detailPageWithPreBookingValidationErrors(
-            final int itemId, final HttpServletRequest request, final BindingResult errors) {
-        final Object page = detailPage(itemId, request, Optional.empty());
+            final int itemId,
+            final BotecitoUserDetails user,
+            final HttpServletRequest request,
+            final BindingResult errors) {
+        final Object page = detailPage(itemId, user, request, Optional.empty());
         if (!(page instanceof ModelAndView)) {
             return page;
         }
@@ -121,18 +122,18 @@ public class DetailPresentation {
     }
 
     public Object submitPreBooking(
+            final BotecitoUserDetails user,
             final HttpServletRequest request,
             final int itemId,
             final PreBookingForm form,
             final RedirectAttributes redirectAttributes) {
-        final Users viewer = currentAuthenticatedUserOrNull();
-        if (viewer == null) {
+        if (user == null) {
             ToastSupport.error(redirectAttributes, "detail.preBooking.loginRequired");
             return contextRelativeRedirect("/login");
         }
         if (form.getVersionId() == null
                 || !isVersionVisibleForViewer(
-                        itemId, viewer.getId(), form.getVersionId().intValue())) {
+                        itemId, user.getId(), form.getVersionId().intValue())) {
             ToastSupport.error(redirectAttributes, "detail.preBooking.invalidVersion");
             return redirectToItem(itemId);
         }
@@ -143,7 +144,7 @@ public class DetailPresentation {
                 form.getStartTime(),
                 form.getEndTime(),
                 form.getMessage(),
-                viewer.getId());
+                user.getId());
         ToastSupport.success(redirectAttributes, "detail.preBooking.success");
         return redirectToItem(itemId);
     }
@@ -200,7 +201,7 @@ public class DetailPresentation {
             final long currentVersionId,
             final boolean viewingNonCurrentVersion,
             final List<Long> visibleVersionIds,
-            final Users viewer,
+            final BotecitoUserDetails viewer,
             final HttpServletRequest request,
             final String marketplaceBackHref) {
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
@@ -315,15 +316,5 @@ public class DetailPresentation {
             return path;
         }
         return path.startsWith("/") ? contextPath + path : contextPath + "/" + path;
-    }
-
-    private Users currentAuthenticatedUserOrNull() {
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            return null;
-        }
-        return userService.findByEmail(authentication.getName()).orElse(null);
     }
 }

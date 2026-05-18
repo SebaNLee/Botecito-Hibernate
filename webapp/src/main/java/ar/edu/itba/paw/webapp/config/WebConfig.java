@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.config;
 
-import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.presentation.AuthenticatedUserResolver;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -122,8 +122,8 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public LocaleResolver localeResolver(final UserService userService) {
-        return new UserLocaleResolver(userService);
+    public LocaleResolver localeResolver(final AuthenticatedUserResolver authenticatedUserResolver) {
+        return new UserLocaleResolver(authenticatedUserResolver);
     }
 
     private static CredentialsSelection resolveCredentialsSelection() {

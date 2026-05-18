@@ -7,6 +7,7 @@ import ar.edu.itba.paw.models.entity.Users;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -48,5 +49,14 @@ public class ReviewJpaDao implements ReviewDao {
         q.setParameter("senderId", senderUserId);
         q.setParameter("targetType", targetType);
         return q.getResultStream().findFirst();
+    }
+
+    @Override
+    public List<Review> findReviewsBySender(final int senderUserId) {
+        return entityManager
+                .createQuery(
+                        "SELECT r FROM Review r JOIN FETCH r.booking WHERE r.sender.id = :senderId", Review.class)
+                .setParameter("senderId", senderUserId)
+                .getResultList();
     }
 }

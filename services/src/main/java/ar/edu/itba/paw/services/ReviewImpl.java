@@ -8,7 +8,9 @@ import ar.edu.itba.paw.persistence.BookingDao;
 import ar.edu.itba.paw.persistence.ReviewDao;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,6 +75,14 @@ public final class ReviewImpl implements ReviewService {
         }
         final String trimmed = comment.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Integer, Review> findReviewsByBookingIds(final int reviewerUserId) {
+        return reviewDao.findReviewsBySender(reviewerUserId)
+                .stream()
+                .collect(Collectors.toMap(r -> r.getBooking().getId(), r -> r));
     }
 
     private static boolean isReviewWindowOpen(final Booking booking) {

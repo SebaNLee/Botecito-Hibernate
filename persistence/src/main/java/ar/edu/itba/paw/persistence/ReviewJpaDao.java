@@ -54,8 +54,7 @@ public class ReviewJpaDao implements ReviewDao {
     @Override
     public List<Review> findReviewsBySender(final int senderUserId) {
         return entityManager
-                .createQuery(
-                        "SELECT r FROM Review r JOIN FETCH r.booking WHERE r.sender.id = :senderId", Review.class)
+                .createQuery("SELECT r FROM Review r JOIN FETCH r.booking WHERE r.sender.id = :senderId", Review.class)
                 .setParameter("senderId", senderUserId)
                 .getResultList();
     }

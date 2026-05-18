@@ -80,8 +80,7 @@ public final class ReviewImpl implements ReviewService {
     @Override
     @Transactional(readOnly = true)
     public Map<Integer, Review> findReviewsByBookingIds(final int reviewerUserId) {
-        return reviewDao.findReviewsBySender(reviewerUserId)
-                .stream()
+        return reviewDao.findReviewsBySender(reviewerUserId).stream()
                 .collect(Collectors.toMap(r -> r.getBooking().getId(), r -> r));
     }
 

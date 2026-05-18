@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import ar.edu.itba.paw.webapp.presentation.PublishImagePresentation;
 import ar.edu.itba.paw.webapp.presentation.PublishPresentation;
@@ -9,6 +10,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
@@ -119,11 +121,12 @@ public class PublishController {
 
     @RequestMapping(value = "/publish/contact", method = RequestMethod.POST)
     public ModelAndView publishStepThreeSubmit(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             @Validated(PublishBoatForm.Step3.class) @ModelAttribute("publishForm") final PublishBoatForm form,
             final BindingResult errors,
             final Locale locale,
             final SessionStatus sessionStatus) {
-        final ModelAndView mav = publishPresentation.publishStepThreeSubmit(form, errors, locale, sessionStatus);
+        final ModelAndView mav = publishPresentation.publishStepThreeSubmit(user, form, errors, locale, sessionStatus);
         if ("publish-contact".equals(mav.getViewName())) {
             mav.addObject("uploadedImagePreviewUrls", publishImagePresentation.buildUploadedImagePreviewUrls(form));
         }
@@ -132,7 +135,9 @@ public class PublishController {
 
     @RequestMapping(value = "/publish/success", method = RequestMethod.GET)
     public ModelAndView publishSuccess(
-            final HttpServletRequest request, @RequestParam(value = "itemId", required = false) final Integer itemId) {
-        return publishPresentation.publishSuccess(request, itemId);
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            final HttpServletRequest request,
+            @RequestParam(value = "itemId", required = false) final Integer itemId) {
+        return publishPresentation.publishSuccess(user, request, itemId);
     }
 }

@@ -1,14 +1,10 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -18,38 +14,37 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class MyBoatsActionsPresentation {
 
     private final ItemService itemInterface;
-    private final UserService userService;
 
-    public ModelAndView disablePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final Users currentUser = currentAuthenticatedUser();
-        if (currentUser == null) {
+    public ModelAndView disablePublication(
+            final BotecitoUserDetails principal, final int itemId, final RedirectAttributes redirectAttributes) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        itemInterface.setItemActiveForOwner(itemId, currentUser.getId(), false);
+        itemInterface.setItemActiveForOwner(itemId, principal.getId(), false);
         ToastSupport.success(redirectAttributes, "profile.publications.disabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
-    public ModelAndView enablePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final Users currentUser = currentAuthenticatedUser();
-        if (currentUser == null) {
+    public ModelAndView enablePublication(
+            final BotecitoUserDetails principal, final int itemId, final RedirectAttributes redirectAttributes) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        itemInterface.setItemActiveForOwner(itemId, currentUser.getId(), true);
+        itemInterface.setItemActiveForOwner(itemId, principal.getId(), true);
         ToastSupport.success(redirectAttributes, "profile.publications.enabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
-    public ModelAndView hardDeletePublication(final int itemId, final RedirectAttributes redirectAttributes) {
-        final Users currentUser = currentAuthenticatedUser();
-        if (currentUser == null) {
+    public ModelAndView hardDeletePublication(
+            final BotecitoUserDetails principal, final int itemId, final RedirectAttributes redirectAttributes) {
+        if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
 
-        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, currentUser.getId());
-        if (!itemInterface.deleteMyBoatsItem(itemId, currentUser.getId())) {
+        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, principal.getId());
+        if (!itemInterface.deleteMyBoatsItem(itemId, principal.getId())) {
             if (!Boolean.TRUE.equals(item.getActive())) {
                 ToastSupport.error(redirectAttributes, "profile.publications.deleteBlockedByBookings");
                 return new ModelAndView("redirect:/my-boats#my-publications");
@@ -60,15 +55,5 @@ public class MyBoatsActionsPresentation {
 
         ToastSupport.success(redirectAttributes, "profile.publications.deleted");
         return new ModelAndView("redirect:/my-boats#my-publications");
-    }
-
-    private Users currentAuthenticatedUser() {
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            return null;
-        }
-        return userService.findByEmail(authentication.getName()).orElse(null);
     }
 }

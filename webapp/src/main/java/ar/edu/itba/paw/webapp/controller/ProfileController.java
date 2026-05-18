@@ -1,9 +1,11 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ProfileForm;
 import ar.edu.itba.paw.webapp.presentation.ProfilePresentation;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -19,23 +21,26 @@ public class ProfileController {
     private final ProfilePresentation profilePresentation;
 
     @RequestMapping(value = "/profile/password-recovery", method = RequestMethod.POST)
-    public ModelAndView profilePasswordRecoveryRequest() {
-        return profilePresentation.profilePasswordRecoveryRequest();
+    public ModelAndView profilePasswordRecoveryRequest(@AuthenticationPrincipal final BotecitoUserDetails user) {
+        return profilePresentation.profilePasswordRecoveryRequest(user);
     }
 
     @RequestMapping(value = "/profile", method = RequestMethod.GET)
     public ModelAndView profile(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             @RequestParam(value = "edit", defaultValue = "false") final boolean edit,
             @ModelAttribute("profileForm") final ProfileForm form) {
-        return profilePresentation.profile(edit, form);
+        return profilePresentation.profile(user, edit, form);
     }
 
     @RequestMapping(value = "/profile", method = RequestMethod.POST)
     public ModelAndView profileSubmit(
-            @Valid @ModelAttribute("profileForm") final ProfileForm form, final BindingResult errors) {
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            @Valid @ModelAttribute("profileForm") final ProfileForm form,
+            final BindingResult errors) {
         if (errors.hasErrors()) {
-            return profilePresentation.profileSubmit(form, errors);
+            return profilePresentation.profileSubmit(user, form, errors);
         }
-        return profilePresentation.profileSubmit(form, errors);
+        return profilePresentation.profileSubmit(user, form, errors);
     }
 }

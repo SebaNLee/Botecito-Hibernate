@@ -81,15 +81,6 @@ public class BookingImpl implements BookingService {
         return bookingDao.startsAfter(bookingId, minStartTime);
     }
 
-    private void finalizeBookings() {
-        bookingDao.finalizeBookingsBefore(currentDateTime());
-    }
-
-    private void expireDueBookings() {
-        LocalDateTime minStartTime = currentMinimumStart();
-        bookingDao.expireBookingsBefore(minStartTime);
-    }
-
     private void verifyAnticipation(int bookingId) {
         if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
     }
@@ -185,8 +176,9 @@ public class BookingImpl implements BookingService {
     @Transactional
     @Scheduled(cron = "0 0,30 * * * *")
     public void bookingResolutionRoutine() {
-        finalizeBookings();
-        expireDueBookings();
+        final LocalDateTime now = currentDateTime();
+        bookingDao.finalizeBookingsBefore(now);
+        bookingDao.expireBookingsBefore(now.plusMinutes(MIN_ANTICIPATION_MINUTES));
     }
 
     @Override

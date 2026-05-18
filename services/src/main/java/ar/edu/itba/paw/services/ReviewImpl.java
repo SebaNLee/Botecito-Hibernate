@@ -83,9 +83,6 @@ public final class ReviewImpl implements ReviewService {
     }
 
     private static boolean isBookingEligibleForPostStayReview(final BookingStatusEnum status) {
-        return switch (status) {
-            case CONFIRMED, PAID, FINISHED -> true;
-            default -> false;
-        };
+        return status == BookingStatusEnum.FINISHED;
     }
 }

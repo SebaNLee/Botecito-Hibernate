@@ -1,11 +1,11 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.dto.PreferredLanguageModel;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
-import ar.edu.itba.paw.models.mail.MailRecipientModel;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -64,14 +64,14 @@ public class MailServiceImpl implements MailService {
     @Override
     @Async("mailTaskExecutor")
     public void sendPublishConfirmationEmail(final Version version) {
-        final MailRecipientModel owner = publishOwnerRecipient(version);
+        final Users owner = publishOwner(version);
         if (version == null || !hasEmail(owner)) {
             return;
         }
         try {
             final Locale locale = resolveLocale(owner);
             final Context context = new Context(locale);
-            context.setVariable("ownerName", owner.getDisplayName());
+            context.setVariable("ownerName", displayName(owner));
             context.setVariable("itemTitle", version.getTitle());
             context.setVariable("profileUrl", myBoatsBaseUrl);
             sendHtmlEmail(
@@ -86,109 +86,106 @@ public class MailServiceImpl implements MailService {
     @Override
     @Async("mailTaskExecutor")
     public void sendPasswordRecoveryEmail(final Users user) {
-        final MailRecipientModel recipient = MailRecipientModel.fromUser(user);
-        if (user == null || !hasEmail(recipient) || isBlank(user.getMailToken())) {
+        if (user == null || !hasEmail(user) || isBlank(user.getMailToken())) {
             return;
         }
         try {
-            final Locale locale = resolveLocale(recipient);
+            final Locale locale = resolveLocale(user);
             final Context context = new Context(locale);
-            context.setVariable("recipientName", recipient.getDisplayName());
+            context.setVariable("recipientName", displayName(user));
             context.setVariable("recoveryUrl", passwordRecoveryBaseUrl + "/" + user.getMailToken());
             sendHtmlEmail(
-                    recipient.getEmail(),
+                    user.getEmail(),
                     getMessage("mail.passwordRecovery.subject", locale),
                     templateEngine.process("password-recovery", context));
         } catch (final RuntimeException e) {
-            LOGGER.error("Could not send password recovery email to {}.", recipient.getEmail(), e);
+            LOGGER.error("Could not send password recovery email to {}.", user.getEmail(), e);
         }
     }
 
     @Override
     @Async("mailTaskExecutor")
     public void sendEmailVerificationEmail(final Users user) {
-        final MailRecipientModel recipient = MailRecipientModel.fromUser(user);
-        if (user == null || !hasEmail(recipient) || isBlank(user.getMailToken())) {
+        if (user == null || !hasEmail(user) || isBlank(user.getMailToken())) {
             return;
         }
         try {
-            final Locale locale = resolveLocale(recipient);
+            final Locale locale = resolveLocale(user);
             final Context context = new Context(locale);
-            context.setVariable("recipientName", recipient.getDisplayName());
+            context.setVariable("recipientName", displayName(user));
             context.setVariable("verificationUrl", emailVerificationBaseUrl + "/" + user.getMailToken());
             sendHtmlEmail(
-                    recipient.getEmail(),
+                    user.getEmail(),
                     getMessage("mail.emailVerification.subject", locale),
                     templateEngine.process("email-verification", context));
         } catch (final RuntimeException e) {
-            LOGGER.error("Could not send email verification to {}.", recipient.getEmail(), e);
+            LOGGER.error("Could not send email verification to {}.", user.getEmail(), e);
         }
     }
 
     @Override
     @Async("mailTaskExecutor")
     public void sendPreBookingMail(final Booking booking) {
-        sendBookingEmail(booking, hostRecipient(booking), "mail.booking.preBooking", incomingBookingsBaseUrl);
+        sendBookingEmail(booking, host(booking), "mail.booking.preBooking", incomingBookingsBaseUrl);
     }
 
     @Override
     @Async("mailTaskExecutor")
     public void sendAcceptMail(final Booking booking) {
-        sendBookingEmail(booking, guestRecipient(booking), "mail.booking.accepted", outgoingBookingsBaseUrl);
+        sendBookingEmail(booking, guest(booking), "mail.booking.accepted", outgoingBookingsBaseUrl);
     }
 
     @Override
     @Async("mailTaskExecutor")
     public void sendRejectMail(final Booking booking) {
-        sendBookingEmail(booking, guestRecipient(booking), "mail.booking.rejected", outgoingBookingsBaseUrl);
+        sendBookingEmail(booking, guest(booking), "mail.booking.rejected", outgoingBookingsBaseUrl);
     }
 
     @Override
     @Async("mailTaskExecutor")
     public void sendPaymentMail(final Booking booking) {
-        sendBookingEmail(booking, hostRecipient(booking), "mail.booking.payment", incomingBookingsBaseUrl);
+        sendBookingEmail(booking, host(booking), "mail.booking.payment", incomingBookingsBaseUrl);
     }
 
     @Override
     @Async("mailTaskExecutor")
     public void sendRefusedPaymentMail(final Booking booking) {
-        sendBookingEmail(booking, guestRecipient(booking), "mail.booking.paymentRefused", outgoingBookingsBaseUrl);
+        sendBookingEmail(booking, guest(booking), "mail.booking.paymentRefused", outgoingBookingsBaseUrl);
     }
 
     @Override
     @Async("mailTaskExecutor")
     public void sendBookingConfirmedMail(final Booking booking) {
-        sendBookingEmail(booking, guestRecipient(booking), "mail.booking.confirmed", outgoingBookingsBaseUrl);
+        sendBookingEmail(booking, guest(booking), "mail.booking.confirmed", outgoingBookingsBaseUrl);
     }
 
     @Override
     @Async("mailTaskExecutor")
     public void sendBookingCancelledMail(final Booking booking) {
-        sendBookingEmail(booking, hostRecipient(booking), "mail.booking.cancelled", incomingBookingsBaseUrl);
+        sendBookingEmail(booking, host(booking), "mail.booking.cancelled", incomingBookingsBaseUrl);
     }
 
     @Override
     @Async("mailTaskExecutor")
     public void sendBookingExpiredMail(final Booking booking) {
-        sendBookingEmail(booking, guestRecipient(booking), "mail.booking.expired", outgoingBookingsBaseUrl);
+        sendBookingEmail(booking, guest(booking), "mail.booking.expired", outgoingBookingsBaseUrl);
     }
 
     @Override
     @Async("mailTaskExecutor")
     public void sendBookingFinishedMail(final Booking booking) {
-        sendBookingEmail(booking, guestRecipient(booking), "mail.booking.finished", outgoingBookingsBaseUrl);
-        sendBookingEmail(booking, hostRecipient(booking), "mail.booking.finished", incomingBookingsBaseUrl);
+        sendBookingEmail(booking, guest(booking), "mail.booking.finished", outgoingBookingsBaseUrl);
+        sendBookingEmail(booking, host(booking), "mail.booking.finished", incomingBookingsBaseUrl);
     }
 
-    public Locale resolveLocale(final MailRecipientModel recipient) {
-        if (recipient == null || recipient.getPreferredLanguage() == null) {
-            return Locale.of("es");
-        }
-        return recipient.getPreferredLanguage().toLocale();
+    public Locale resolveLocale(final Users user) {
+        return user == null
+                ? Locale.of("es")
+                : PreferredLanguageModel.fromPersistence(user.getLanguage()).toLocale();
     }
 
-    private static boolean hasEmail(final MailRecipientModel recipient) {
-        return recipient != null && !isBlank(recipient.getEmail());
+    private static boolean hasEmail(final Users user) {
+        return user != null && !isBlank(user.getEmail());
     }
 
     private static boolean isBlank(final String value) {
@@ -196,7 +193,7 @@ public class MailServiceImpl implements MailService {
     }
 
     private void sendBookingEmail(
-            final Booking booking, final MailRecipientModel recipient, final String messagePrefix, final String url) {
+            final Booking booking, final Users recipient, final String messagePrefix, final String url) {
         if (booking == null || !hasEmail(recipient)) {
             return;
         }
@@ -207,7 +204,7 @@ public class MailServiceImpl implements MailService {
             final String timezone = timezone(booking);
             final String bookingDate = formatBookingRange(booking.getStart(), booking.getEnd(), timezone, locale);
             final Context context = new Context(locale);
-            context.setVariable("recipientName", recipient.getDisplayName());
+            context.setVariable("recipientName", displayName(recipient));
             context.setVariable("itemTitle", version.getTitle());
             context.setVariable("bookingId", booking.getId());
             context.setVariable("bookingDate", bookingDate);
@@ -234,25 +231,34 @@ public class MailServiceImpl implements MailService {
         }
     }
 
-    private static MailRecipientModel guestRecipient(final Booking booking) {
-        return booking == null ? null : MailRecipientModel.fromUser(booking.getGuest());
+    private static Users guest(final Booking booking) {
+        return booking == null ? null : booking.getGuest();
     }
 
-    private static MailRecipientModel hostRecipient(final Booking booking) {
+    private static Users host(final Booking booking) {
         if (booking == null) {
             return null;
         }
         final Version version = booking.getVersion();
         final Item item = version == null ? null : version.getItem();
-        final Users host = item == null ? null : item.getHost();
-        return MailRecipientModel.fromUser(host);
+        return item == null ? null : item.getHost();
     }
 
-    private static MailRecipientModel publishOwnerRecipient(final Version version) {
+    private static Users publishOwner(final Version version) {
         if (version == null || version.getItem() == null) {
             return null;
         }
-        return MailRecipientModel.fromUser(version.getItem().getHost());
+        return version.getItem().getHost();
+    }
+
+    private static String displayName(final Users user) {
+        if (user == null) {
+            return null;
+        }
+        final String fullName = (user.getFirstName() != null ? user.getFirstName() : "") + " "
+                + (user.getLastName() != null ? user.getLastName() : "");
+        final String trimmed = fullName.trim();
+        return trimmed.isBlank() ? user.getEmail() : trimmed;
     }
 
     private static String timezone(final Booking booking) {

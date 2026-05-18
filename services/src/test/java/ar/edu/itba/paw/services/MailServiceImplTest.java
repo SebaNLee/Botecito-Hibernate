@@ -1,12 +1,10 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.PreferredLanguageModel;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
-import ar.edu.itba.paw.models.mail.MailRecipientModel;
 import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.Properties;
@@ -47,16 +45,16 @@ public class MailServiceImplTest {
 
     @Test
     public void testResolveEnglishLocaleFromRecipientModel() {
-        final Locale result = mailService.resolveLocale(recipient("a@a.com", "A A", PreferredLanguageModel.EN));
+        final Locale result = mailService.resolveLocale(user("a@a.com", "A", "A", "en"));
 
         Assertions.assertEquals(Locale.ENGLISH, result);
     }
 
     @Test
     public void testResolveLocaleDefaultsToSpanish() {
-        final MailRecipientModel recipient = recipient("a@a.com", "A A", null);
+        final Users user = user("a@a.com", "A", "A", null);
 
-        final Locale result = mailService.resolveLocale(recipient);
+        final Locale result = mailService.resolveLocale(user);
 
         Assertions.assertEquals(Locale.of("es"), result);
     }
@@ -165,15 +163,6 @@ public class MailServiceImplTest {
 
     private void stubMimeMessage() {
         Mockito.when(mailSender.createMimeMessage()).thenReturn(Mockito.mock(MimeMessage.class));
-    }
-
-    private static MailRecipientModel recipient(
-            final String email, final String displayName, final PreferredLanguageModel preferredLanguage) {
-        final MailRecipientModel recipient = new MailRecipientModel();
-        recipient.setEmail(email);
-        recipient.setDisplayName(displayName);
-        recipient.setPreferredLanguage(preferredLanguage);
-        return recipient;
     }
 
     private static Booking booking() {

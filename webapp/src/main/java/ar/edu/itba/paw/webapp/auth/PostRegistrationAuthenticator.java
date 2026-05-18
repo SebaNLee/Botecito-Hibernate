@@ -10,8 +10,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
@@ -25,7 +23,7 @@ public class PostRegistrationAuthenticator {
             new HttpSessionSecurityContextRepository();
 
     private final AuthenticationManager authenticationManager;
-    private final UserDetailsService userDetailsService;
+    private final UserAccountDetailsService userAccountDetailsService;
 
     public boolean authenticate(
             final String email,
@@ -58,7 +56,7 @@ public class PostRegistrationAuthenticator {
 
     public void authenticateVerifiedUser(
             final String email, final HttpServletRequest request, final HttpServletResponse response) {
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        final BotecitoUserDetails userDetails = userAccountDetailsService.loadUserByEmail(email);
         final UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 userDetails, userDetails.getPassword(), userDetails.getAuthorities());
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

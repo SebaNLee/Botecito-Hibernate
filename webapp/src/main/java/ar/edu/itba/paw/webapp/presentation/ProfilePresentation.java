@@ -2,13 +2,11 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ProfileForm;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
@@ -20,8 +18,11 @@ public class ProfilePresentation {
     private final UserService userService;
     private final AuthenticatedUserResolver authenticatedUserResolver;
 
-    public ModelAndView profilePasswordRecoveryRequest() {
-        final Users user = authenticatedUserResolver.currentAuthenticatedUser();
+    public ModelAndView profilePasswordRecoveryRequest(final BotecitoUserDetails principal) {
+        if (principal == null) {
+            return new ModelAndView("redirect:/login");
+        }
+        final Users user = authenticatedUserResolver.loadUser(principal);
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -30,8 +31,11 @@ public class ProfilePresentation {
         return new ModelAndView("redirect:/profile?passwordRecovery=sent");
     }
 
-    public ModelAndView profile(final boolean edit, final ProfileForm form) {
-        final Users user = authenticatedUserResolver.currentAuthenticatedUser();
+    public ModelAndView profile(final BotecitoUserDetails principal, final boolean edit, final ProfileForm form) {
+        if (principal == null) {
+            return new ModelAndView("redirect:/login");
+        }
+        final Users user = authenticatedUserResolver.loadUser(principal);
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -47,8 +51,12 @@ public class ProfilePresentation {
         return buildProfileView(user, edit);
     }
 
-    public ModelAndView profileSubmit(final ProfileForm form, final BindingResult errors) {
-        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
+    public ModelAndView profileSubmit(
+            final BotecitoUserDetails principal, final ProfileForm form, final BindingResult errors) {
+        if (principal == null) {
+            return new ModelAndView("redirect:/login");
+        }
+        final Users currentUser = authenticatedUserResolver.loadUser(principal);
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -72,7 +80,7 @@ public class ProfilePresentation {
             return buildProfileView(currentUser, true);
         }
 
-        refreshAuthenticatedPrincipal(updatedUser);
+        authenticatedUserResolver.refreshPrincipal(updatedUser.getEmail());
         if (updatedUser.getVerified() == null || !updatedUser.getVerified()) {
             return new ModelAndView("redirect:/profile?profileAction=verificationSent");
         }
@@ -87,18 +95,6 @@ public class ProfilePresentation {
         return mav;
     }
 
-    private static void refreshAuthenticatedPrincipal(final Users user) {
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || user == null || user.getEmail() == null) {
-            return;
-        }
-
-        final UsernamePasswordAuthenticationToken refreshed = new UsernamePasswordAuthenticationToken(
-                user.getEmail(), authentication.getCredentials(), authentication.getAuthorities());
-        refreshed.setDetails(authentication.getDetails());
-        SecurityContextHolder.getContext().setAuthentication(refreshed);
-    }
-
     private static String formatMemberSince(final LocalDateTime dateTime) {
         if (dateTime == null) {
             return "";
@@ -106,7 +102,6 @@ public class ProfilePresentation {
         return dateTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     }
 
-    // TODO check this, should be bc of UserDetails SpringSecurity probs
     private static String languageFromInput(final String preferredLanguage) {
         if (preferredLanguage == null) {
             return "ES";

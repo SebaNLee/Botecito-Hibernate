@@ -1,12 +1,12 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.ReviewService;
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ReviewForm;
-import ar.edu.itba.paw.webapp.presentation.AuthenticatedUserResolver;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -22,18 +22,17 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class ReviewController {
 
     private final ReviewService reviewInterface;
-    private final AuthenticatedUserResolver authenticatedUserResolver;
 
     @RequestMapping(value = "/reviews/booking/{bookingId:[0-9]+}", method = RequestMethod.POST)
     public ModelAndView createReview(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("bookingId") final int bookingId,
             @Valid @ModelAttribute("reviewForm") final ReviewForm form,
             final BindingResult errors,
             @RequestParam(value = "returnTo", required = false, defaultValue = "dashboard") final String returnTo,
             @RequestParam(value = "itemId", required = false) final Integer itemId,
             final RedirectAttributes redirectAttributes) {
-        final Users currentUser = authenticatedUserResolver.currentAuthenticatedUser();
-        if (currentUser == null) {
+        if (user == null) {
             return new ModelAndView("redirect:/login");
         }
 
@@ -43,7 +42,7 @@ public class ReviewController {
         }
 
         final boolean created = reviewInterface
-                .createReviewForBooking(bookingId, currentUser.getId(), form.getRating(), form.getComment())
+                .createReviewForBooking(bookingId, user.getId(), form.getRating(), form.getComment())
                 .isPresent();
         if (created) {
             ToastSupport.success(redirectAttributes, "profile.reviews.created");

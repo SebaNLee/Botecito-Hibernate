@@ -3,11 +3,8 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.dto.AvailabilityWindow;
 import ar.edu.itba.paw.models.dto.ImageUpload;
 import ar.edu.itba.paw.models.entity.Availability;
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
-import ar.edu.itba.paw.models.mail.MailRecipientModel;
-import ar.edu.itba.paw.models.mail.PublishConfirmationMailModel;
 import ar.edu.itba.paw.persistence.PublishDao;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -36,7 +33,6 @@ public class PublishServiceImpl implements PublishService {
     private static final String DEFAULT_TIMEZONE = "America/Argentina/Buenos_Aires"; // TODO hardcode default timezone
 
     private final PublishDao publishDao;
-    private final UserService userService;
     private final MailService mailService;
 
     @Override
@@ -161,19 +157,10 @@ public class PublishServiceImpl implements PublishService {
     }
 
     private void sendConfirmationEmail(final Version version) {
-        final int ownerId = version.getItem().getHost().getId();
-        final Optional<Users> owner = userService.findById(ownerId);
-        if (owner.isEmpty()) {
-            LOGGER.warn("Cannot send confirmation email: user {} not found", ownerId);
-            return;
-        }
-        final PublishConfirmationMailModel mail = new PublishConfirmationMailModel();
-        mail.setOwner(MailRecipientModel.fromUser(owner.get()));
-        mail.setItemTitle(version.getTitle());
         try {
-            mailService.sendPublishConfirmationEmail(mail);
+            mailService.sendPublishConfirmationEmail(version);
         } catch (final RuntimeException e) {
-            LOGGER.error("Failed to send confirmation email for item {} to user {}", version.getTitle(), ownerId, e);
+            LOGGER.error("Failed to send confirmation email for item {}.", version.getTitle(), e);
         }
     }
 

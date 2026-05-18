@@ -50,6 +50,10 @@ public interface BookingDao {
 
     void expireBookingsBefore(LocalDateTime minStartTime);
 
+    List<Booking> findBookingsToFinalizeBefore(LocalDateTime maxEndTime);
+
+    List<Booking> findBookingsToExpireBefore(LocalDateTime minStartTime);
+
     boolean startsAfter(int bookingId, LocalDateTime requestedStart);
 
     Optional<String> findVersionTimezone(int versionId);

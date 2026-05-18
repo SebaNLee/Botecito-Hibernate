@@ -27,6 +27,7 @@ public class PublishJpaDao implements PublishDao {
 
     private static final String HQL_FIND_LATEST_VERSION = "SELECT v FROM Version v"
             + " JOIN FETCH v.item i"
+            + " JOIN FETCH i.host"
             + " JOIN FETCH v.type"
             + " JOIN FETCH v.location"
             + " LEFT JOIN FETCH v.media m LEFT JOIN FETCH m.image"

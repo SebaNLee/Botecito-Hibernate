@@ -35,6 +35,10 @@ public class BookingJpaDao implements BookingDao {
     private static final String HQL_BOOKINGS_FOR_VERSION =
             "SELECT b FROM Booking b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof WHERE b.version.id = :versionId ORDER BY b.start ASC";
 
+    private static final String HQL_BOOKING_MAIL_FETCH =
+            "SELECT b FROM Booking b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof "
+                    + "INNER JOIN FETCH b.version v INNER JOIN FETCH v.item i LEFT JOIN FETCH i.host ";
+
     private static final String INSERT_WITH_OVERLAP_CHECK =
             "INSERT INTO booking (version_id, guest_id, start, \"end\", status, msg, created_at, updated_at) "
                     + "SELECT :versionId, :guestId, :utcStart, :utcEnd, "
@@ -152,7 +156,11 @@ public class BookingJpaDao implements BookingDao {
 
     @Override
     public Optional<Booking> findById(final int bookingId) {
-        return Optional.ofNullable(entityManager.find(Booking.class, bookingId));
+        final List<Booking> rows = entityManager
+                .createQuery(HQL_BOOKING_MAIL_FETCH + "WHERE b.id = :bookingId", Booking.class)
+                .setParameter("bookingId", bookingId)
+                .getResultList();
+        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
     @Override
@@ -313,6 +321,29 @@ public class BookingJpaDao implements BookingDao {
                 .setParameter("startTime", minStartTime)
                 .setParameter("excluded", NON_AUTO_CANCEL_STATES)
                 .executeUpdate();
+    }
+
+    @Override
+    public List<Booking> findBookingsToFinalizeBefore(final LocalDateTime maxEndTime) {
+        return entityManager
+                .createQuery(
+                        HQL_BOOKING_MAIL_FETCH
+                                + "WHERE b.end < :endTime AND b.status = :confirmed AND i.host.id <> b.guest.id",
+                        Booking.class)
+                .setParameter("endTime", maxEndTime)
+                .setParameter("confirmed", BookingStatusEnum.CONFIRMED)
+                .getResultList();
+    }
+
+    @Override
+    public List<Booking> findBookingsToExpireBefore(final LocalDateTime minStartTime) {
+        return entityManager
+                .createQuery(
+                        HQL_BOOKING_MAIL_FETCH + "WHERE b.start < :startTime AND b.status NOT IN :excluded",
+                        Booking.class)
+                .setParameter("startTime", minStartTime)
+                .setParameter("excluded", NON_AUTO_CANCEL_STATES)
+                .getResultList();
     }
 
     private long countMatching(

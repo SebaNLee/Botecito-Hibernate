@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.dto.MarketplaceCardItem;
 import ar.edu.itba.paw.models.dto.MarketplaceSearchResult;
 import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.services.MarketplaceService;
 import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import java.util.List;
@@ -24,7 +24,7 @@ public class MarketplacePresentation {
     public ModelAndView marketplace(
             final HttpServletRequest request, final MarketplaceSearchForm form, final BindingResult errors) {
         final ModelAndView mav = new ModelAndView("marketplace", "marketplaceSearch", form);
-        List<MarketplaceCardItem> items = List.of();
+        List<Version> items = List.of();
         long totalCount = 0;
 
         if (!errors.hasErrors()) {
@@ -54,10 +54,7 @@ public class MarketplacePresentation {
     }
 
     private void addListingModelObjects(
-            final ModelAndView mav,
-            final MarketplaceSearchForm search,
-            final List<MarketplaceCardItem> items,
-            final long total) {
+            final ModelAndView mav, final MarketplaceSearchForm search, final List<Version> items, final long total) {
         final int page = search.getPage() == null ? 1 : search.getPage();
         final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
         final int totalItems = total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;

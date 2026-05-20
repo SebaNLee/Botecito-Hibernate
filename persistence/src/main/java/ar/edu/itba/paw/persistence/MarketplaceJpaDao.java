@@ -1,19 +1,16 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.dto.MarketplaceCardItem;
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
 import ar.edu.itba.paw.models.dto.MarketplaceSearchResult;
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.TargetEnum;
-import ar.edu.itba.paw.models.entity.WeekdayEnum;
-import ar.edu.itba.paw.persistence.projections.MarketplaceRow;
-import java.util.HashMap;
+import ar.edu.itba.paw.models.entity.Version;
 import java.util.List;
-import java.util.Map;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import org.springframework.stereotype.Repository;
 
@@ -23,134 +20,113 @@ public class MarketplaceJpaDao implements MarketplaceDao {
     private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_PAGE_SIZE = 12;
 
-    private static final String MARKETPLACE_LISTING =
-            "SELECT NEW ar.edu.itba.paw.persistence.projections.MarketplaceRow("
-                    + "i.id, i.host.id, v.id,"
-                    + " v.title, v.description, v.price, v.capacity, v.weight, v.difficulty,"
-                    + " v.location.id, v.location.name, v.type.name, "
-                    + "(SELECT MIN(m.image.id) FROM Media m"
-                    + " WHERE m.version = v AND m.id.index = ("
-                    + "   SELECT MIN(m2.id.index) FROM Media m2 WHERE m2.version = v"
-                    + " )),"
-                    + "(SELECT COALESCE(AVG(r.rating), 0) FROM Review r"
-                    + " WHERE r.targetType = :itemTargetType AND r.booking.version.item = i),"
-                    + "(SELECT COUNT(r) FROM Review r"
-                    + " WHERE r.targetType = :itemTargetType AND r.booking.version.item = i)"
-                    + ") "
-                    + "FROM Item i JOIN Version v ON v.item = i"
-                    + "  AND v.id = (SELECT MAX(v2.id) FROM Version v2 WHERE v2.item = i)";
-
-    private static final String ITEM_LISTING_COUNT = "SELECT COUNT(i) FROM Item i"
-            + " JOIN Version v ON v.item = i"
-            + "  AND v.id = (SELECT MAX(v2.id) FROM Version v2 WHERE v2.item = i)";
-
     @PersistenceContext
     private EntityManager entityManager;
 
     @Override
     public MarketplaceSearchResult searchMarketplace(final MarketplaceQueryModel query) {
-        final Map<String, Object> params = new HashMap<>();
+        final String marketplaceFilter = marketplaceFilter(query);
+        final TypedQuery<Long> countQuery =
+                entityManager.createQuery("SELECT COUNT(v) FROM Version v" + marketplaceFilter, Long.class);
+        setMarketplaceParams(countQuery, query);
+        final long totalCount = countQuery.getSingleResult();
+
+        final TypedQuery<Version> queryResult = entityManager.createQuery(
+                "SELECT v FROM Version v" + marketplaceFilter + orderBy(query), Version.class);
+        setMarketplaceParams(queryResult, query);
+
         final int pageSize = resolvePageSize(query);
         final int offset = (resolvePage(query) - 1) * pageSize;
-        params.put("itemTargetType", TargetEnum.ITEM);
-
-        final String hql = MARKETPLACE_LISTING + whereClause(query, params) + orderBy(query);
-        final TypedQuery<MarketplaceRow> queryResult = entityManager.createQuery(hql, MarketplaceRow.class);
-        bindParams(queryResult, params);
         queryResult.setFirstResult(offset);
         queryResult.setMaxResults(pageSize);
 
-        final List<MarketplaceCardItem> items = queryResult.getResultList().stream()
-                .map(MarketplaceRow::toCardItem)
-                .toList();
-        return new MarketplaceSearchResult(items, countMatching(query));
+        final List<Version> results = queryResult.getResultList();
+
+        return new MarketplaceSearchResult(results, totalCount);
     }
 
-    private long countMatching(final MarketplaceQueryModel query) {
-        final Map<String, Object> params = new HashMap<>();
-        final String countHql = ITEM_LISTING_COUNT + whereClause(query, params);
-        final TypedQuery<Long> countQuery = entityManager.createQuery(countHql, Long.class);
-        bindParams(countQuery, params);
-        return toLong(countQuery.getSingleResult());
-    }
+    private static String marketplaceFilter(final MarketplaceQueryModel query) {
+        final StringBuilder jpql = new StringBuilder(
+                " WHERE v.createdAt = (SELECT MAX(v2.createdAt) FROM Version v2 WHERE v2.item = v.item)"
+                        + " AND v.item.status = :active");
 
-    private static void bindParams(final javax.persistence.Query query, final Map<String, Object> params) {
-        for (final Map.Entry<String, Object> entry : params.entrySet()) {
-            query.setParameter(entry.getKey(), entry.getValue());
-        }
-    }
-
-    private static String whereClause(final MarketplaceQueryModel query, final Map<String, Object> params) {
-        final StringBuilder sql = new StringBuilder(" WHERE i.status = :activeStatus");
-        params.put("activeStatus", ItemStatusEnum.ACTIVE);
-        if (query == null) {
-            return sql.toString();
-        }
-        if (hasText(query.getSearchQuery())) {
-            sql.append(" AND LOWER(v.title) LIKE :searchQuery ESCAPE '!'");
-            params.put("searchQuery", setupSearchQuery(query.getSearchQuery()));
-        }
-        if (hasText(query.getLocationSlug())) {
-            sql.append(" AND v.location.slug = :locationSlug");
-            params.put("locationSlug", query.getLocationSlug().trim());
-        }
-        if (hasText(query.getItemTypeSlug())) {
-            sql.append(" AND v.type.slug = :itemTypeSlug");
-            params.put("itemTypeSlug", query.getItemTypeSlug().trim());
+        if (!isEmpty(query.getSearchQuery())) {
+            jpql.append(" AND LOWER(v.title) LIKE LOWER(:searchQuery) ESCAPE '!'");
         }
         if (query.getCapacity() != null) {
-            sql.append(" AND v.capacity >= :capacity");
-            params.put("capacity", query.getCapacity());
+            jpql.append(" AND v.capacity >= :capacity");
         }
         if (query.getWeight() != null) {
-            sql.append(" AND v.weight >= :weight");
-            params.put("weight", query.getWeight());
+            jpql.append(" AND v.weight >= :weight");
         }
         if (query.getDifficulty() != null) {
-            sql.append(" AND v.difficulty = :difficulty");
-            params.put("difficulty", query.getDifficulty());
+            jpql.append(" AND v.difficulty = :difficulty");
         }
         if (query.getMinAvgRating() != null) {
-            sql.append(" AND (SELECT COALESCE(AVG(rm.rating), 0) FROM Review rm WHERE rm.targetType = :itemTargetType"
-                    + " AND rm.booking.version.item = i) >= :minAvgRating");
-            params.put("itemTargetType", TargetEnum.ITEM);
-            params.put("minAvgRating", query.getMinAvgRating());
+            jpql.append(" AND (SELECT COALESCE(AVG(r.rating), 0) FROM Review r"
+                    + " WHERE r.targetType = :itemTargetType AND r.booking.version.item = v.item) >= :minAvgRating");
         }
-        appendAvailabilityFilter(query, sql, params);
-        return sql.toString();
+        if (query.getLocationSlug() != null) {
+            jpql.append(" AND v.location.slug = :location");
+        }
+        if (query.getItemTypeSlug() != null) {
+            jpql.append(" AND v.type.slug = :type");
+        }
+        if (queryFiltersDay(query)) {
+            jpql.append(" AND EXISTS (SELECT a.id FROM Availability a"
+                    + " WHERE a.version = v AND a.weekday = :weekday"
+                    + " AND a.startTime <= :requestedStart AND a.endTime >= :requestedEnd)");
+        }
+        return jpql.toString();
     }
 
-    private static void appendAvailabilityFilter(
-            final MarketplaceQueryModel query, final StringBuilder sql, final Map<String, Object> params) {
-        if (query.getWeekday() == null && query.getStartTime() == null && query.getEndTime() == null) {
-            return;
+    private static void setMarketplaceParams(final Query queryResult, final MarketplaceQueryModel query) {
+        queryResult.setParameter("active", ItemStatusEnum.ACTIVE);
+
+        if (!isEmpty(query.getSearchQuery())) {
+            queryResult.setParameter("searchQuery", setupSearchQuery(query.getSearchQuery()));
         }
-        sql.append(" AND EXISTS (SELECT 1 FROM Availability af WHERE af.version = v");
-        if (query.getWeekday() != null) {
-            sql.append(" AND af.weekday = :weekday");
-            params.put("weekday", WeekdayEnum.valueOf(query.getWeekday().name()));
+        if (query.getCapacity() != null) {
+            queryResult.setParameter("capacity", query.getCapacity());
         }
-        if (query.getStartTime() != null) {
-            sql.append(" AND af.startTime <= :startTime");
-            params.put("startTime", query.getStartTime());
+        if (query.getWeight() != null) {
+            queryResult.setParameter("weight", query.getWeight());
         }
-        if (query.getEndTime() != null) {
-            sql.append(" AND af.endTime >= :endTime");
-            params.put("endTime", query.getEndTime());
+        if (query.getDifficulty() != null) {
+            queryResult.setParameter("difficulty", query.getDifficulty());
         }
-        sql.append(")");
+        if (query.getMinAvgRating() != null) {
+            queryResult.setParameter("itemTargetType", TargetEnum.ITEM);
+            queryResult.setParameter("minAvgRating", query.getMinAvgRating());
+        }
+        if (query.getLocationSlug() != null) {
+            queryResult.setParameter("location", query.getLocationSlug());
+        }
+        if (query.getItemTypeSlug() != null) {
+            queryResult.setParameter("type", query.getItemTypeSlug());
+        }
+        if (queryFiltersDay(query)) {
+            queryResult.setParameter("weekday", query.getWeekday());
+            queryResult.setParameter("requestedStart", query.getStartTime());
+            queryResult.setParameter("requestedEnd", query.getEndTime());
+        }
+    }
+
+    private static boolean queryFiltersDay(final MarketplaceQueryModel query) {
+        return query.getWeekday() != null && query.getStartTime() != null && query.getEndTime() != null;
     }
 
     private static String orderBy(final MarketplaceQueryModel query) {
+        String defaultOrder = " ORDER BY v.item.createdAt DESC, v.id DESC";
         if (query == null || query.getSortBy() == null) {
-            return " ORDER BY i.createdAt DESC, i.id DESC";
+            return defaultOrder;
         }
         return switch (query.getSortBy()) {
-            case "oldest" -> " ORDER BY i.createdAt ASC, i.id ASC";
-            case "price_asc" -> " ORDER BY v.price ASC, i.id ASC";
-            case "price_desc" -> " ORDER BY v.price DESC, i.id ASC";
-            case "newest" -> " ORDER BY i.createdAt DESC, i.id DESC";
-            default -> " ORDER BY i.createdAt DESC, i.id DESC";
+            case "oldest" -> " ORDER BY v.item.createdAt ASC, v.id ASC";
+            case "price_asc" -> " ORDER BY v.price ASC, v.id ASC";
+            case "price_desc" -> " ORDER BY v.price DESC, v.id ASC";
+            case "newest" -> " ORDER BY v.item.createdAt DESC, v.id DESC";
+            default -> defaultOrder;
         };
     }
 
@@ -183,8 +159,8 @@ public class MarketplaceJpaDao implements MarketplaceDao {
         return "%" + queryWithWildcards + "%";
     }
 
-    private static boolean hasText(final String value) {
-        return value != null && !value.isBlank();
+    private static boolean isEmpty(final String value) {
+        return value == null || value.isBlank();
     }
 
     @Override
@@ -201,15 +177,5 @@ public class MarketplaceJpaDao implements MarketplaceDao {
                         "SELECT b FROM Booking b WHERE b.guest IS NOT NULL AND b.guest.id <> b.version.item.host.id",
                         Booking.class)
                 .getResultList();
-    }
-
-    private static long toLong(final Object value) {
-        if (value == null) {
-            return 0L;
-        }
-        if (value instanceof Number number) {
-            return number.longValue();
-        }
-        return Long.parseLong(value.toString());
     }
 }

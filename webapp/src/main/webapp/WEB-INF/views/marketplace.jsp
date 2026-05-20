@@ -302,10 +302,10 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <c:forEach items="${items}" var="item">
-        <c:url var="itemUrl" value="/item/${item.itemId}" />
+        <c:url var="itemUrl" value="/item/${item.item.id}" />
         <a href="${itemUrl}" data-marketplace-item-link class="group card min-w-0 bg-base-100 shadow-sm overflow-hidden no-underline text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <figure class="aspect-[4/3] overflow-hidden">
-            <c:url var="itemCoverSrc" value="${item.images[0]}" />
+            <c:url var="itemCoverSrc" value="/css/boat-placeholder.svg" />
             <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${item.title}" src="${itemCoverSrc}"/>
           </figure>
           <div class="card-body min-w-0 p-4 gap-3">
@@ -318,17 +318,11 @@
             </div>
             <div class="flex items-center gap-1 text-sm font-semibold text-on-surface-variant">
               <span class="material-symbols-outlined text-base text-warning">star</span>
-              <c:choose>
-                <c:when test="${item.totalReviews > 0}">
-                  <fmt:formatNumber value="${item.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
-                  <span class="text-outline">(<c:out value="${item.totalReviews}" />)</span>
-                </c:when>
-                <c:otherwise><c:out value="${reviewsEmptyShortLabel}" /></c:otherwise>
-              </c:choose>
+              <c:out value="${reviewsEmptyShortLabel}" />
             </div>
             <div class="flex min-w-0 items-center text-on-surface-variant text-sm gap-1">
               <span class="material-symbols-outlined shrink-0 text-primary text-lg">location_on</span>
-              <span class="min-w-0 truncate"><c:out value="${item.location}" /></span>
+              <span class="min-w-0 truncate"><c:out value="${item.location.name}" /></span>
             </div>
             <div class="pt-3 border-t border-outline-variant/15 flex flex-col gap-3">
               <div class="flex flex-wrap items-center gap-3">

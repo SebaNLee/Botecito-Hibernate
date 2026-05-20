@@ -17,4 +17,6 @@ public class ReviewForm {
 
     @Size(max = 1000, message = "{review.validation.comment.max}")
     private String comment;
+
+    private String targetType;
 }

@@ -197,30 +197,6 @@
               </p>
             </div>
 
-            <c:if test="${pendingItemReviewAction != null}">
-              <c:url var="createItemReviewUrl" value="/reviews/booking/${pendingItemReviewAction.bookingId}" />
-              <form action="${createItemReviewUrl}" method="post" class="rounded-2xl bg-base-200 p-4 space-y-3">
-                <input type="hidden" name="returnTo" value="item" />
-                <input type="hidden" name="itemId" value="${item.itemId}" />
-                <h3 class="m-0 text-sm font-bold text-on-surface"><c:out value="${itemReviewLeaveLabel}" /></h3>
-                <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
-                  <label class="text-xs font-bold uppercase tracking-wider text-outline" for="item-review-rating"><c:out value="${itemReviewRatingLabel}" /></label>
-                  <div class="flex items-center gap-1" data-rating-stars>
-                    <input id="item-review-rating" type="hidden" name="rating" value="" data-rating-value />
-                    <c:forEach var="starIndex" begin="1" end="5">
-                      <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${itemReviewRatingLabel} ${starIndex}">
-                        <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
-                      </button>
-                    </c:forEach>
-                  </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
-                  <label class="text-xs font-bold uppercase tracking-wider text-outline pt-2" for="item-review-comment"><c:out value="${itemReviewCommentLabel}" /></label>
-                  <textarea id="item-review-comment" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
-                </div>
-                <paw:button type="submit" color="primary" size="sm" text="${itemReviewLeaveLabel}" />
-              </form>
-            </c:if>
 
             <c:choose>
               <c:when test="${not empty versionReviews}">

@@ -7,7 +7,11 @@ import ar.edu.itba.paw.models.entity.TargetEnum;
 import ar.edu.itba.paw.persistence.BookingDao;
 import ar.edu.itba.paw.persistence.ReviewDao;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +27,17 @@ public final class ReviewImpl implements ReviewService {
     @Transactional
     public Optional<Review> createReviewForBooking(
             final int bookingId, final int reviewerUserId, final int rating, final String comment) {
+        return createReviewForBooking(bookingId, reviewerUserId, rating, comment, null);
+    }
+
+    @Override
+    @Transactional
+    public Optional<Review> createReviewForBooking(
+            final int bookingId,
+            final int reviewerUserId,
+            final int rating,
+            final String comment,
+            final TargetEnum targetType) {
         if (rating < 1 || rating > 5) {
             return Optional.empty();
         }
@@ -37,34 +52,40 @@ public final class ReviewImpl implements ReviewService {
             return Optional.empty();
         }
 
-        final ReviewDescriptor descriptor = resolveReviewDescriptor(booking.get(), ownerId.get(), reviewerUserId);
-        if (descriptor == null) {
+        final TargetEnum resolved = resolveTarget(booking.get(), ownerId.get(), reviewerUserId, targetType);
+        if (resolved == null) {
             return Optional.empty();
         }
 
         if (reviewDao
-                .findReviewByBookingSenderAndTargetType(bookingId, reviewerUserId, descriptor.targetType)
+                .findReviewByBookingSenderAndTargetType(bookingId, reviewerUserId, resolved)
                 .isPresent()) {
             return Optional.empty();
         }
 
-        return reviewDao.createReview(
-                bookingId, reviewerUserId, descriptor.targetType, rating, normalizeComment(comment));
+        return reviewDao.createReview(bookingId, reviewerUserId, resolved, rating, normalizeComment(comment));
     }
 
-    private static ReviewDescriptor resolveReviewDescriptor(
-            final Booking booking, final int ownerId, final int reviewerUserId) {
+    private static TargetEnum resolveTarget(
+            final Booking booking, final int ownerId, final int reviewerUserId, final TargetEnum explicit) {
         final int guestId = booking.getGuest() != null ? booking.getGuest().getId() : 0;
+        if (explicit != null) {
+            if (explicit == TargetEnum.ITEM && guestId == reviewerUserId) {
+                return explicit;
+            }
+            if (explicit == TargetEnum.USER && (guestId == reviewerUserId || ownerId == reviewerUserId)) {
+                return explicit;
+            }
+            return null;
+        }
         if (guestId == reviewerUserId && ownerId != reviewerUserId) {
-            return new ReviewDescriptor(TargetEnum.ITEM);
+            return TargetEnum.ITEM;
         }
         if (ownerId == reviewerUserId && guestId != reviewerUserId) {
-            return new ReviewDescriptor(TargetEnum.USER);
+            return TargetEnum.USER;
         }
         return null;
     }
-
-    private record ReviewDescriptor(TargetEnum targetType) {}
 
     private static String normalizeComment(final String comment) {
         if (comment == null) {
@@ -74,18 +95,22 @@ public final class ReviewImpl implements ReviewService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Integer, List<Review>> findReviewsByBookingIds(final int reviewerUserId) {
+        return reviewDao.findReviewsBySender(reviewerUserId).stream()
+                .collect(Collectors.groupingBy(r -> r.getBooking().getId()));
+    }
+
     private static boolean isReviewWindowOpen(final Booking booking) {
         if (booking == null || booking.getStatus() == null || booking.getEnd() == null) {
             return false;
         }
         return isBookingEligibleForPostStayReview(booking.getStatus())
-                && booking.getEnd().isBefore(LocalDateTime.now());
+                && booking.getEnd().isBefore(LocalDateTime.now(ZoneOffset.UTC));
     }
 
     private static boolean isBookingEligibleForPostStayReview(final BookingStatusEnum status) {
-        return switch (status) {
-            case CONFIRMED, PAID, FINISHED -> true;
-            default -> false;
-        };
+        return status == BookingStatusEnum.FINISHED;
     }
 }

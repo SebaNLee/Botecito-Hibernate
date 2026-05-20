@@ -303,9 +303,7 @@ public class BookingJpaDao implements BookingDao {
     @Override
     public void finalizeBookingsBefore(LocalDateTime maxEndTime) {
         entityManager
-                .createQuery("UPDATE Booking b SET b.status = :status WHERE b.id IN ("
-                        + "SELECT b2.id FROM Booking b2 INNER JOIN b2.version v INNER JOIN v.item i INNER JOIN i.host h "
-                        + "WHERE b2.end < :endTime AND b2.status = :confirmed AND h.id <> b2.guest.id)")
+                .createQuery("UPDATE Booking b SET b.status = :status WHERE b.end < :endTime AND b.status = :confirmed")
                 .setParameter("status", BookingStatusEnum.FINISHED)
                 .setParameter("endTime", maxEndTime)
                 .setParameter("confirmed", BookingStatusEnum.CONFIRMED)

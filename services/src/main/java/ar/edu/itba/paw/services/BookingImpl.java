@@ -82,26 +82,6 @@ public class BookingImpl implements BookingService {
         return bookingDao.startsAfter(bookingId, minStartTime);
     }
 
-    private void finalizeBookings() {
-        final LocalDateTime now = currentDateTime();
-        // Future cron-mail hook: fetch these bookings before the bulk update and
-        // sendBookingFinishedMail after commit. Disabled until the cron job owner
-        // defines the final scheduling and delivery semantics.
-        // final List<Booking> mails = bookingDao.findBookingsToFinalizeBefore(now);
-        bookingDao.finalizeBookingsBefore(now);
-        // mails.forEach(mailService::sendBookingFinishedMail);
-    }
-
-    private void expireDueBookings() {
-        LocalDateTime minStartTime = currentMinimumStart();
-        // Future cron-mail hook: fetch these bookings before the bulk update and
-        // sendBookingExpiredMail after commit. Disabled until the cron job owner
-        // defines the final scheduling and delivery semantics.
-        // final List<Booking> mails = bookingDao.findBookingsToExpireBefore(minStartTime);
-        bookingDao.expireBookingsBefore(minStartTime);
-        // mails.forEach(mailService::sendBookingExpiredMail);
-    }
-
     private void verifyAnticipation(int bookingId) {
         if (!hasEnoughAnticipation(bookingId)) throw new NoAnticipationException();
     }
@@ -205,8 +185,12 @@ public class BookingImpl implements BookingService {
     @Transactional
     @Scheduled(cron = "0 0,30 * * * *")
     public void bookingResolutionRoutine() {
-        finalizeBookings();
-        expireDueBookings();
+        final LocalDateTime now = currentDateTime();
+        bookingDao.finalizeBookingsBefore(now);
+        bookingDao.expireBookingsBefore(now.plusMinutes(MIN_ANTICIPATION_MINUTES));
+        // TODO if we want mails notification for cron job updates
+        // mails.forEach(mailService::sendBookingFinishedMail);
+        // mails.forEach(mailService::sendBookingExpiredMail);
     }
 
     @Override

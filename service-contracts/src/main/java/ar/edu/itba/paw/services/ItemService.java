@@ -21,7 +21,7 @@ public interface ItemService {
             String title,
             String description,
             int pricePerHour,
-            Integer difficultyLevel,
+            Integer difficulty,
             int locationOptionId);
 
     void setItemActiveForOwner(int itemId, int ownerId, boolean active);

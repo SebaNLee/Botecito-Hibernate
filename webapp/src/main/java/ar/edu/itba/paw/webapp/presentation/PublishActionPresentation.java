@@ -47,7 +47,7 @@ public class PublishActionPresentation {
         form.setTitle(item.getTitle());
         form.setDescription(item.getDescription());
         form.setPricePerHour(item.getPrice() == null ? "" : String.valueOf(item.getPrice()));
-        form.setDifficultyLevel(item.getDifficulty());
+        form.setDifficulty(item.getDifficulty());
         form.setLocationOptionId(item.getLocationId() == null ? "" : String.valueOf(item.getLocationId()));
 
         return editPublicationModelAndView(item, request).addObject("publishForm", form);
@@ -115,7 +115,7 @@ public class PublishActionPresentation {
                     form.getTitle().trim(),
                     form.getDescription() == null ? "" : form.getDescription().trim(),
                     parsedPrice,
-                    form.getDifficultyLevel(),
+                    form.getDifficulty(),
                     parsedLocationOptionId);
         } catch (final VersionNotFoundException e) {
             errors.reject("publish.submit.persistenceError");
@@ -282,7 +282,7 @@ public class PublishActionPresentation {
         if (item.getPrice() == null || !Objects.equals(String.valueOf(item.getPrice()), form.getPricePerHour())) {
             return true;
         }
-        if (!Objects.equals(item.getDifficulty(), form.getDifficultyLevel())) {
+        if (!Objects.equals(item.getDifficulty(), form.getDifficulty())) {
             return true;
         }
         if (item.getLocationId() == null

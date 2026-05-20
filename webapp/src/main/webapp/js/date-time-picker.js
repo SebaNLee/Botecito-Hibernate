@@ -179,7 +179,9 @@
       return "";
     }
 
-    const date = civilCalendar ? isoToUtcCivilDate(isoDate) : isoToDate(isoDate);
+    const date = civilCalendar
+      ? isoToUtcCivilDate(isoDate)
+      : isoToDate(isoDate);
     const longFmt = civilCalendar ? DATE_FORMATTER_UTC : DATE_FORMATTER;
     const shortFmt = civilCalendar
       ? DATE_TRIGGER_SHORT_WEEKDAY_UTC
@@ -526,8 +528,8 @@
       "location",
       "itemType",
       "capacity",
-      "maxWeight",
-      "difficultyLevel",
+      "weight",
+      "difficulty",
       "minAvgRating",
       "sortBy",
       "pageSize",

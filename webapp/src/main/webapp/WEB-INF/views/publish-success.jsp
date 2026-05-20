@@ -1,6 +1,6 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %> <%@ taglib
-prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %> <%@ taglib
-prefix="paw" tagdir="/WEB-INF/tags" %> <%@ taglib prefix="spring"
+prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %> <%@ taglib prefix="paw"
+tagdir="/WEB-INF/tags" %> <%@ taglib prefix="spring"
 uri="http://www.springframework.org/tags" %> <%@ page contentType="text/html;
 charset=UTF-8" pageEncoding="UTF-8" %>
 
@@ -96,7 +96,10 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             <spring:message code="publish.form.type.label" />
           </p>
           <p class="text-sm font-bold text-on-surface mt-1 mb-0">
-            <spring:message code="publish.type.${item.type.slug}" text="${item.type.name}" />
+            <spring:message
+              code="publish.type.${item.type.slug}"
+              text="${item.type.name}"
+            />
           </p>
         </div>
         <div class="rounded-xl bg-base-200 p-3">
@@ -106,7 +109,13 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             <spring:message code="publish.form.price.short" />
           </p>
           <p class="text-sm font-bold text-on-surface mt-1 mb-0">
-            $ <fmt:formatNumber value="${item.price}" type="number" groupingUsed="true" maxFractionDigits="0" />
+            $
+            <fmt:formatNumber
+              value="${item.price}"
+              type="number"
+              groupingUsed="true"
+              maxFractionDigits="0"
+            />
           </p>
         </div>
         <div class="rounded-xl bg-base-200 p-3">
@@ -137,10 +146,16 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             <p
               class="text-[11px] uppercase tracking-wider font-bold text-outline m-0"
             >
-              <spring:message code="publish.form.maxWeight.label" />
+              <spring:message code="publish.form.weight.label" />
             </p>
             <p class="text-sm font-bold text-on-surface mt-1 mb-0">
-              <fmt:formatNumber value="${item.weight}" type="number" groupingUsed="true" maxFractionDigits="0" /> kg
+              <fmt:formatNumber
+                value="${item.weight}"
+                type="number"
+                groupingUsed="true"
+                maxFractionDigits="0"
+              />
+              kg
             </p>
           </div>
         </c:if>

@@ -55,10 +55,10 @@ public class PublishBoatForm {
     @NotNull(groups = Step1.class, message = "{publish.validation.difficulty.required}")
     @Min(value = 1, groups = Step1.class, message = "{publish.validation.difficulty.min}")
     @Max(value = 5, groups = Step1.class, message = "{publish.validation.difficulty.max}")
-    private Integer difficultyLevel;
+    private Integer difficulty;
 
-    @Pattern(regexp = "^$|\\d+(\\.\\d{1,2})?", groups = Step1.class, message = "{publish.validation.maxWeight.numeric}")
-    private String maxWeight;
+    @Pattern(regexp = "^$|\\d+(\\.\\d{1,2})?", groups = Step1.class, message = "{publish.validation.weight.numeric}")
+    private String weight;
 
     @ImageGalleryUpload(groups = Step1.class)
     @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Spring multipart binding")

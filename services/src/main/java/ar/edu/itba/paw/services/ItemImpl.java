@@ -73,7 +73,7 @@ public class ItemImpl implements ItemService {
             final String title,
             final String description,
             final int pricePerHour,
-            final Integer difficultyLevel,
+            final Integer difficulty,
             final int locationOptionId) {
         requireOwnedItem(itemId, ownerId);
 
@@ -90,9 +90,7 @@ public class ItemImpl implements ItemService {
             current.get().setPrice(BigDecimal.valueOf(pricePerHour));
             current.get()
                     .setDifficulty(
-                            difficultyLevel != null
-                                    ? difficultyLevel
-                                    : current.get().getDifficulty());
+                            difficulty != null ? difficulty : current.get().getDifficulty());
             current.get().setLocation(itemDao.getLocationReference(locationOptionId));
             current.get().setCreatedAt(LocalDateTime.now());
             return current.get().getId();
@@ -106,8 +104,7 @@ public class ItemImpl implements ItemService {
         next.setPrice(BigDecimal.valueOf(pricePerHour));
         next.setCapacity(current.get().getCapacity());
         next.setWeight(current.get().getWeight());
-        next.setDifficulty(
-                difficultyLevel != null ? difficultyLevel : current.get().getDifficulty());
+        next.setDifficulty(difficulty != null ? difficulty : current.get().getDifficulty());
         next.setLocation(itemDao.getLocationReference(locationOptionId));
         next.setTimezone(current.get().getTimezone());
         next.setCreatedAt(LocalDateTime.now());

@@ -11,7 +11,8 @@ import java.util.Optional;
 
 public interface PublishService {
 
-    // TODO Eventualmente que sea create or update, reciben la misma info (parte de usar misma form ya esta hecho)
+    // TODO Eventualmente que sea create or update, reciben la misma info (parte de
+    // usar misma form ya esta hecho)
     Optional<Version> create(
             int ownerId,
             int typeId,
@@ -19,8 +20,8 @@ public interface PublishService {
             String description,
             int pricePerHour,
             int capacityPeople,
-            BigDecimal maxWeightKg,
-            Integer difficultyLevel,
+            BigDecimal weight,
+            Integer difficulty,
             int locationOptionId,
             List<AvailabilityWindow> availabilities,
             List<ImageUpload> images);
@@ -29,7 +30,8 @@ public interface PublishService {
 
     /**
      * Empty when the publication does not exist; throws {@link
-     * ar.edu.itba.paw.models.exceptions.ForbiddenOperationException} when it exists but the caller is not the host.
+     * ar.edu.itba.paw.models.exceptions.ForbiddenOperationException} when it exists
+     * but the caller is not the host.
      */
     Optional<Version> findByIdForHost(int itemId, int callerId);
 
@@ -40,8 +42,8 @@ public interface PublishService {
             String description,
             int pricePerHour,
             int capacityPeople,
-            BigDecimal maxWeightKg,
-            Integer difficultyLevel,
+            BigDecimal weight,
+            Integer difficulty,
             int locationOptionId,
             List<AvailabilityWindow> availabilities,
             List<ImageUpload> images);

@@ -25,8 +25,10 @@ public class DetailJpaDao implements DetailDao {
     private static final String HQL_VERSION_TIMEZONE = "SELECT v.timezone FROM Version v WHERE v.id = :versionId";
 
     /**
-     * Item-scoped reviews (matches aggregate subqueries on {@code r.booking.version.item}),
-     * so detail ratings and listed reviews stay consistent when a booking was made on an older
+     * Item-scoped reviews (matches aggregate subqueries on
+     * {@code r.booking.version.item}),
+     * so detail ratings and listed reviews stay consistent when a booking was made
+     * on an older
      * listing version.
      */
     private static final String HQL_REVIEWS_FOR_ITEM =

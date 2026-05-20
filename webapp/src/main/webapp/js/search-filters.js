@@ -7,8 +7,8 @@
     "startTime",
     "endTime",
     "capacity",
-    "maxWeight",
-    "difficultyLevel",
+    "weight",
+    "difficulty",
     "minAvgRating",
   ];
 
@@ -406,12 +406,11 @@
         form.querySelector("[data-people-input]")?.value ||
         form.querySelector('[name="capacity"]')?.value ||
         "",
-      maxWeight:
+      weight:
         form.querySelector("[data-weight-value-input]")?.value ||
-        form.querySelector('[name="maxWeight"]')?.value ||
+        form.querySelector('[name="weight"]')?.value ||
         "",
-      difficultyLevel:
-        form.querySelector('[name="difficultyLevel"]')?.value || "",
+      difficulty: form.querySelector('[name="difficulty"]')?.value || "",
       minAvgRating:
         form.querySelector("[data-min-rating-value-input]")?.value ||
         form.querySelector('[name="minAvgRating"]')?.value ||
@@ -1097,16 +1096,16 @@
     });
 
     form.querySelectorAll("[data-weight-slider]").forEach((root) => {
-      root.__weightSlider?.setValue(normalized.maxWeight);
+      root.__weightSlider?.setValue(normalized.weight);
     });
 
     form.querySelectorAll("[data-min-rating-picker]").forEach((root) => {
       root.__minAvgRatingPicker?.setValue(normalized.minAvgRating);
     });
 
-    const difficultySelect = form.querySelector('[name="difficultyLevel"]');
+    const difficultySelect = form.querySelector('[name="difficulty"]');
     if (difficultySelect) {
-      difficultySelect.value = normalized.difficultyLevel || "";
+      difficultySelect.value = normalized.difficulty || "";
     }
 
     setDateTimeState(form, normalized);
@@ -1136,7 +1135,7 @@
 
     form
       .querySelectorAll(
-        '[data-option-value], [data-people-input], [data-weight-input], [data-min-rating-value-input], [name="difficultyLevel"]',
+        '[data-option-value], [data-people-input], [data-weight-input], [data-min-rating-value-input], [name="difficulty"]',
       )
       .forEach((input) => {
         input.addEventListener("change", persistDraft);
@@ -1300,8 +1299,8 @@
     );
     const itemLocationSlug = alertRoot.dataset.itemLocationSlug || "";
     const itemCapacity = parseInteger(alertRoot.dataset.itemCapacity);
-    const itemMaxWeight = parseInteger(alertRoot.dataset.itemMaxWeight);
-    const itemDifficulty = parseInteger(alertRoot.dataset.itemDifficultyLevel);
+    const itemweight = parseInteger(alertRoot.dataset.itemweight);
+    const itemDifficulty = parseInteger(alertRoot.dataset.itemdifficulty);
     const mismatchPrefix =
       alertRoot.dataset.mismatchPrefix ||
       "This item does not match the saved filters for";
@@ -1321,8 +1320,8 @@
     const controls = getDateTimeControls(document);
     const mismatchReasons = [];
     const requestedCapacity = parseInteger(appliedState.capacity);
-    const requestedWeight = parseInteger(appliedState.maxWeight);
-    const requestedDifficulty = parseInteger(appliedState.difficultyLevel);
+    const requestedWeight = parseInteger(appliedState.weight);
+    const requestedDifficulty = parseInteger(appliedState.difficulty);
 
     if (
       appliedState.location &&
@@ -1341,8 +1340,8 @@
 
     if (
       requestedWeight != null &&
-      itemMaxWeight != null &&
-      itemMaxWeight < requestedWeight
+      itemweight != null &&
+      itemweight < requestedWeight
     ) {
       mismatchReasons.push(mismatchWeight);
     }

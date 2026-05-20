@@ -49,8 +49,8 @@ public class PublishJpaDao implements PublishDao {
             final String description,
             final int pricePerHour,
             final int capacityPeople,
-            final BigDecimal maxWeightKg,
-            final Integer difficultyLevel,
+            final BigDecimal weight,
+            final Integer difficulty,
             final int locationOptionId,
             final String timezone,
             final String status,
@@ -72,8 +72,8 @@ public class PublishJpaDao implements PublishDao {
                 .description(description)
                 .price(BigDecimal.valueOf(pricePerHour))
                 .capacity(capacityPeople)
-                .weight(maxWeightKg.intValue())
-                .difficulty(difficultyLevel)
+                .weight(weight.intValue())
+                .difficulty(difficulty)
                 .location(entityManager.getReference(Location.class, locationOptionId))
                 .timezone(timezone)
                 .createdAt(now)

@@ -20,8 +20,8 @@
 <spring:message code="filters.itemType.placeholder" var="itemTypePlaceholder" />
 <spring:message code="filters.itemType.panel" var="itemTypePanelCaption" />
 <spring:message code="filters.itemType.noMatch" var="itemTypeNoMatchCaption" />
-<spring:message code="filters.maxWeight" var="maxWeightLabel" />
-<spring:message code="filters.maxWeight.helper" var="maxWeightHelper" />
+<spring:message code="filters.weight" var="weightLabel" />
+<spring:message code="filters.weight.helper" var="weightHelper" />
 <spring:message code="filters.difficulty" var="difficultyFilterLabel" />
 <spring:message code="filters.difficulty.any" var="difficultyAnyLabel" />
 <spring:message code="filters.minAvgRating" var="minAvgRatingFilterLabel" />
@@ -63,11 +63,11 @@
     <c:if test="${not empty param.capacity}">
       <c:param name="capacity" value="${param.capacity}" />
     </c:if>
-    <c:if test="${not empty param.maxWeight}">
-      <c:param name="maxWeight" value="${param.maxWeight}" />
+    <c:if test="${not empty param.weight}">
+      <c:param name="weight" value="${param.weight}" />
     </c:if>
-    <c:if test="${not empty param.difficultyLevel}">
-      <c:param name="difficultyLevel" value="${param.difficultyLevel}" />
+    <c:if test="${not empty param.difficulty}">
+      <c:param name="difficulty" value="${param.difficulty}" />
     </c:if>
     <c:if test="${not empty param.minAvgRating}">
       <c:param name="minAvgRating" value="${param.minAvgRating}" />
@@ -100,11 +100,11 @@
     <c:if test="${not empty param.capacity}">
       <c:param name="capacity" value="${param.capacity}" />
     </c:if>
-    <c:if test="${not empty param.maxWeight}">
-      <c:param name="maxWeight" value="${param.maxWeight}" />
+    <c:if test="${not empty param.weight}">
+      <c:param name="weight" value="${param.weight}" />
     </c:if>
-    <c:if test="${not empty param.difficultyLevel}">
-      <c:param name="difficultyLevel" value="${param.difficultyLevel}" />
+    <c:if test="${not empty param.difficulty}">
+      <c:param name="difficulty" value="${param.difficulty}" />
     </c:if>
     <c:if test="${not empty param.minAvgRating}">
       <c:param name="minAvgRating" value="${param.minAvgRating}" />
@@ -185,26 +185,26 @@
               <label for="marketplace-difficulty" class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 block">
                 <c:out value="${difficultyFilterLabel}" />
               </label>
-              <select id="marketplace-difficulty" name="difficultyLevel" class="select select-bordered w-full font-semibold text-on-surface">
-                <option value="" ${empty param.difficultyLevel ? 'selected="selected"' : ''}><c:out value="${difficultyAnyLabel}" /></option>
-                <option value="1" ${param.difficultyLevel == '1' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.1" /></option>
-                <option value="2" ${param.difficultyLevel == '2' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.2" /></option>
-                <option value="3" ${param.difficultyLevel == '3' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.3" /></option>
-                <option value="4" ${param.difficultyLevel == '4' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.4" /></option>
-                <option value="5" ${param.difficultyLevel == '5' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.5" /></option>
+              <select id="marketplace-difficulty" name="difficulty" class="select select-bordered w-full font-semibold text-on-surface">
+                <option value="" ${empty param.difficulty ? 'selected="selected"' : ''}><c:out value="${difficultyAnyLabel}" /></option>
+                <option value="1" ${param.difficulty == '1' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.1" /></option>
+                <option value="2" ${param.difficulty == '2' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.2" /></option>
+                <option value="3" ${param.difficulty == '3' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.3" /></option>
+                <option value="4" ${param.difficulty == '4' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.4" /></option>
+                <option value="5" ${param.difficulty == '5' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.5" /></option>
               </select>
             </div>
 
             <div class="pt-4 border-t border-outline-variant/15 space-y-6">
               <paw:weightCapacitySlider
                   id="marketplace-max-weight"
-                  name="maxWeight"
-                  label="${maxWeightLabel}"
-                  value="${param.maxWeight}"
+                  name="weight"
+                  label="${weightLabel}"
+                  value="${param.weight}"
                   min="100"
                   max="2000"
                   step="50"
-                  helper="${maxWeightHelper}" />
+                  helper="${weightHelper}" />
               <paw:minAvgRatingStarPicker
                   id="marketplace-min-rating"
                   name="minAvgRating"
@@ -264,8 +264,8 @@
         <input type="hidden" name="startTime" value="${param.startTime}" data-applied-filter-mirror />
         <input type="hidden" name="endTime" value="${param.endTime}" data-applied-filter-mirror />
         <input type="hidden" name="capacity" value="${param.capacity}" data-applied-filter-mirror />
-        <input type="hidden" name="maxWeight" value="${param.maxWeight}" data-applied-filter-mirror />
-        <input type="hidden" name="difficultyLevel" value="${param.difficultyLevel}" data-applied-filter-mirror />
+        <input type="hidden" name="weight" value="${param.weight}" data-applied-filter-mirror />
+        <input type="hidden" name="difficulty" value="${param.difficulty}" data-applied-filter-mirror />
         <input type="hidden" name="minAvgRating" value="${marketplaceSearch.minAvgRating}" data-applied-filter-mirror />
         <label for="marketplace-sort" class="shrink-0"><spring:message code="marketplace.sort.label" /></label>
         <select id="marketplace-sort" name="sortBy" class="select select-sm font-bold text-primary">

@@ -121,8 +121,8 @@ public class PublishPresentation {
                 form.getDescription() == null ? "" : form.getDescription().trim(),
                 parseIntOrNull(form.getPricePerHour()),
                 parseIntOrNull(form.getCapacity()),
-                parseMaxWeight(form.getMaxWeight()),
-                form.getDifficultyLevel(),
+                parseWeight(form.getWeight()),
+                form.getDifficulty(),
                 parseIntOrNull(form.getLocationOptionId()),
                 buildAvailabilityWindows(form),
                 buildImageUploads(form));
@@ -181,11 +181,11 @@ public class PublishPresentation {
                 && StringUtils.hasText(form.getPricePerHour());
     }
 
-    private static BigDecimal parseMaxWeight(final String maxWeight) {
-        if (!StringUtils.hasText(maxWeight)) {
+    private static BigDecimal parseWeight(final String weight) {
+        if (!StringUtils.hasText(weight)) {
             return null;
         }
-        return new BigDecimal(maxWeight.trim());
+        return new BigDecimal(weight.trim());
     }
 
     private static void addAvailabilityEditorData(final ModelAndView mav, final PublishBoatForm form) {
@@ -244,8 +244,8 @@ public class PublishPresentation {
                 form.getDescription() == null ? "" : form.getDescription().trim(),
                 parseIntOrNull(form.getPricePerHour()),
                 parseIntOrNull(form.getCapacity()),
-                parseMaxWeight(form.getMaxWeight()),
-                form.getDifficultyLevel(),
+                parseWeight(form.getWeight()),
+                form.getDifficulty(),
                 parseIntOrNull(form.getLocationOptionId()),
                 buildAvailabilityWindows(form),
                 buildImageUploads(form));

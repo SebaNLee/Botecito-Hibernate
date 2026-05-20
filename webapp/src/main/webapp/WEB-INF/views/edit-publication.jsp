@@ -79,10 +79,10 @@
           </div>
           <paw:formField path="pricePerHour" type="number" label="${publishPriceLabel}" placeholder="${publishPricePlaceholder}" />
           <fieldset class="fieldset">
-            <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="difficultyLevel">
+            <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="difficulty">
               <c:out value="${publishDifficultyLabel}" />
             </legend>
-            <form:select path="difficultyLevel" id="difficultyLevel" cssClass="select w-full" cssErrorClass="select w-full select-error">
+            <form:select path="difficulty" id="difficulty" cssClass="select w-full" cssErrorClass="select w-full select-error">
               <form:option value="" label="${publishDifficultyPlaceholder}" />
               <form:option value="1" label="${publishDifficulty1}" />
               <form:option value="2" label="${publishDifficulty2}" />
@@ -90,7 +90,7 @@
               <form:option value="4" label="${publishDifficulty4}" />
               <form:option value="5" label="${publishDifficulty5}" />
             </form:select>
-            <form:errors path="difficultyLevel" cssClass="text-error text-xs mt-1" element="p" />
+            <form:errors path="difficulty" cssClass="text-error text-xs mt-1" element="p" />
           </fieldset>
           <div class="md:col-span-2">
             <paw:optionsPicker

@@ -30,8 +30,8 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 />
 <spring:message code="publish.form.capacity.label" var="publishCapacityLabel" />
 <spring:message
-  code="publish.form.maxWeight.placeholder"
-  var="publishMaxWeightPlaceholder"
+  code="publish.form.weight.placeholder"
+  var="publishWeightPlaceholder"
 />
 <spring:message
   code="publish.form.difficulty.placeholder"
@@ -44,10 +44,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 />
 <spring:message code="publish.form.type.label" var="publishTypeLabel" />
 <spring:message code="publish.form.price.label" var="publishPriceLabel" />
-<spring:message
-  code="publish.form.maxWeight.label"
-  var="publishMaxWeightLabel"
-/>
+<spring:message code="publish.form.weight.label" var="publishWeightLabel" />
 <spring:message
   code="publish.form.difficulty.label"
   var="publishDifficultyLabel"
@@ -119,9 +116,16 @@ charset=UTF-8" pageEncoding="UTF-8" %>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
-    <form:form action="${publishUrl}" method="post" modelAttribute="publishForm" class="space-y-8 lg:col-span-3">
+    <form:form
+      action="${publishUrl}"
+      method="post"
+      modelAttribute="publishForm"
+      class="space-y-8 lg:col-span-3"
+    >
       <paw:sectionCard icon="directions_boat" hostAccent="true">
-        <jsp:attribute name="title"><spring:message code="publish.step1.section.base" /></jsp:attribute>
+        <jsp:attribute name="title"
+          ><spring:message code="publish.step1.section.base"
+        /></jsp:attribute>
         <jsp:body>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="md:col-span-2">
@@ -211,31 +215,31 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             <fieldset class="fieldset">
               <legend
                 class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
-                for="maxWeight"
+                for="weight"
               >
-                <c:out value="${publishMaxWeightLabel}" />
+                <c:out value="${publishWeightLabel}" />
                 <span class="text-error" aria-hidden="true">*</span>
               </legend>
-              <spring:bind path="publishForm.maxWeight">
+              <spring:bind path="publishForm.weight">
                 <label
                   class="input w-full ${status.error ? 'input-error' : ''}"
                 >
                   <form:input
-                    path="maxWeight"
-                    id="maxWeight"
+                    path="weight"
+                    id="weight"
                     type="number"
                     min="50"
                     max="15000"
                     step="1"
                     required="required"
                     cssClass="grow bg-transparent border-none outline-none focus:outline-none focus:ring-0 shadow-none p-0"
-                    placeholder="${publishMaxWeightPlaceholder}"
+                    placeholder="${publishWeightPlaceholder}"
                   />
                   <span class="text-outline text-sm font-bold">KG</span>
                 </label>
               </spring:bind>
               <form:errors
-                path="maxWeight"
+                path="weight"
                 cssClass="text-error text-xs mt-1"
                 element="p"
               />
@@ -243,14 +247,14 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             <fieldset class="fieldset md:col-span-2">
               <legend
                 class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
-                for="difficultyLevel"
+                for="difficulty"
               >
                 <c:out value="${publishDifficultyLabel}" />
                 <span class="text-error" aria-hidden="true">*</span>
               </legend>
               <form:select
-                path="difficultyLevel"
-                id="difficultyLevel"
+                path="difficulty"
+                id="difficulty"
                 required="required"
                 cssClass="select w-full"
                 cssErrorClass="select w-full select-error"
@@ -263,7 +267,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                 <form:option value="5" label="${publishDifficulty5}" />
               </form:select>
               <form:errors
-                path="difficultyLevel"
+                path="difficulty"
                 cssClass="text-error text-xs mt-1"
                 element="p"
               />
@@ -272,24 +276,44 @@ charset=UTF-8" pageEncoding="UTF-8" %>
         </jsp:body>
       </paw:sectionCard>
 
-      <div class="flex flex-col sm:flex-row sm:justify-end items-center gap-4 pt-2">
-        <paw:button type="submit" color="secondary" size="lg" icon="arrow_forward" iconTrailing="true" cssClass="w-full sm:w-auto" text="${publishContinueAvailabilityLabel}" />
+      <div
+        class="flex flex-col sm:flex-row sm:justify-end items-center gap-4 pt-2"
+      >
+        <paw:button
+          type="submit"
+          color="secondary"
+          size="lg"
+          icon="arrow_forward"
+          iconTrailing="true"
+          cssClass="w-full sm:w-auto"
+          text="${publishContinueAvailabilityLabel}"
+        />
       </div>
     </form:form>
 
-    <paw:sectionCard element="aside" cssClass="lg:col-span-2" icon="add_a_photo" hostAccent="true">
-      <jsp:attribute name="title"><spring:message code="publish.step1.section.photo" /></jsp:attribute>
+    <paw:sectionCard
+      element="aside"
+      cssClass="lg:col-span-2"
+      icon="add_a_photo"
+      hostAccent="true"
+    >
+      <jsp:attribute name="title"
+        ><spring:message code="publish.step1.section.photo"
+      /></jsp:attribute>
       <jsp:body>
         <paw:imageGalleryEditor
-            imageUrls="${uploadedImagePreviewUrls}"
-            uploadUrl="${publishImagesUploadUrl}"
-            removeUrl="${publishImagesRemoveUrl}"
-            reorderUrl="${publishImagesReorderUrl}"
-            maxImages="${maxGalleryImages}"
-            errorMessage="${filesError}"
-            displayMode="modal"
-            hostAccent="true" />
-        <div class="rounded-xl bg-base-200 p-4 text-sm text-on-surface-variant leading-relaxed">
+          imageUrls="${uploadedImagePreviewUrls}"
+          uploadUrl="${publishImagesUploadUrl}"
+          removeUrl="${publishImagesRemoveUrl}"
+          reorderUrl="${publishImagesReorderUrl}"
+          maxImages="${maxGalleryImages}"
+          errorMessage="${filesError}"
+          displayMode="modal"
+          hostAccent="true"
+        />
+        <div
+          class="rounded-xl bg-base-200 p-4 text-sm text-on-surface-variant leading-relaxed"
+        >
           <spring:message code="publish.image.note" />
         </div>
       </jsp:body>

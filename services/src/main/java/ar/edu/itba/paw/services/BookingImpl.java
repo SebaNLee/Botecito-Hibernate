@@ -48,6 +48,7 @@ public class BookingImpl implements BookingService {
 
     private final BookingDao bookingDao;
     private final ItemService itemInterface;
+    private final MailService mailService;
 
     private static final int MIN_ANTICIPATION_MINUTES = 120;
 
@@ -123,9 +124,17 @@ public class BookingImpl implements BookingService {
         final boolean isOwner = guestId == ownerId;
         final BookingStatusEnum status = isOwner ? BookingStatusEnum.CONFIRMED : BookingStatusEnum.PENDING;
 
-        return bookingDao
+        final int bookingId = bookingDao
                 .insertBooking(versionId, guestId, utcStart, utcEnd, status, message)
                 .orElseThrow(BookingCollisionException::new);
+        bookingDao.findById(bookingId).ifPresent(booking -> {
+            if (isOwner) {
+                mailService.sendBookingConfirmedMail(booking);
+            } else {
+                mailService.sendPreBookingMail(booking);
+            }
+        });
+        return bookingId;
     }
 
     @Override
@@ -179,6 +188,9 @@ public class BookingImpl implements BookingService {
         final LocalDateTime now = currentDateTime();
         bookingDao.finalizeBookingsBefore(now);
         bookingDao.expireBookingsBefore(now.plusMinutes(MIN_ANTICIPATION_MINUTES));
+        // TODO if we want mails notification for cron job updates
+        // mails.forEach(mailService::sendBookingFinishedMail);
+        // mails.forEach(mailService::sendBookingExpiredMail);
     }
 
     @Override
@@ -191,7 +203,9 @@ public class BookingImpl implements BookingService {
         }
         bookingDao
                 .updateStatusIncoming(bookingId, callerId, BookingStatusEnum.ACCEPTED)
-                .orElseThrow(IllegalBookingOperationException::new);
+                .ifPresentOrElse(mailService::sendAcceptMail, () -> {
+                    throw new IllegalBookingOperationException();
+                });
     }
 
     @Override
@@ -204,7 +218,9 @@ public class BookingImpl implements BookingService {
         }
         bookingDao
                 .updateStatusIncoming(bookingId, callerId, BookingStatusEnum.REJECTED)
-                .orElseThrow(IllegalBookingOperationException::new);
+                .ifPresentOrElse(mailService::sendRejectMail, () -> {
+                    throw new IllegalBookingOperationException();
+                });
     }
 
     @Override
@@ -230,6 +246,8 @@ public class BookingImpl implements BookingService {
         }
         payment.setBooking(booking);
         bookingDao.uploadPayment(payment).orElseThrow(IllegalBookingOperationException::new);
+        booking.setPaymentProof(payment);
+        mailService.sendPaymentMail(booking);
     }
 
     @Override
@@ -248,7 +266,9 @@ public class BookingImpl implements BookingService {
         }
         bookingDao
                 .updateStatusIncoming(bookingId, callerId, BookingStatusEnum.CONFIRMED)
-                .orElseThrow(IllegalBookingOperationException::new);
+                .ifPresentOrElse(mailService::sendBookingConfirmedMail, () -> {
+                    throw new IllegalBookingOperationException();
+                });
     }
 
     @Override
@@ -263,7 +283,18 @@ public class BookingImpl implements BookingService {
         bookingDao
                 .updateStatusIncoming(bookingId, callerId, BookingStatusEnum.REFUSED)
                 .orElseThrow(IllegalBookingOperationException::new);
-        bookingDao.refusePayment(bookingId, reason, now).orElseThrow(IllegalBookingOperationException::new);
+        bookingDao
+                .refusePayment(bookingId, reason, now)
+                .ifPresentOrElse(
+                        refusedBooking -> {
+                            if (refusedBooking.getPaymentProof() != null) {
+                                refusedBooking.getPaymentProof().setRefuseMsg(reason);
+                            }
+                            mailService.sendRefusedPaymentMail(refusedBooking);
+                        },
+                        () -> {
+                            throw new IllegalBookingOperationException();
+                        });
     }
 
     @Override
@@ -275,7 +306,9 @@ public class BookingImpl implements BookingService {
         }
         bookingDao
                 .updateStatusOutgoing(bookingId, callerId, BookingStatusEnum.CANCELLED)
-                .orElseThrow(IllegalBookingOperationException::new);
+                .ifPresentOrElse(mailService::sendBookingCancelledMail, () -> {
+                    throw new IllegalBookingOperationException();
+                });
     }
 
     @Override

@@ -3,9 +3,6 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.exceptions.EmailAlreadyExistsException;
 import ar.edu.itba.paw.models.exceptions.MissingUserNamesException;
-import ar.edu.itba.paw.models.mail.EmailVerificationMailModel;
-import ar.edu.itba.paw.models.mail.MailRecipientModel;
-import ar.edu.itba.paw.models.mail.PasswordRecoveryMailModel;
 import ar.edu.itba.paw.persistence.UserDao;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -234,10 +231,7 @@ public class UserServiceImpl implements UserService {
 
     private void sendPasswordRecoveryEmail(final Users user) {
         try {
-            final PasswordRecoveryMailModel mail = new PasswordRecoveryMailModel();
-            mail.setRecipient(MailRecipientModel.fromUser(user));
-            mail.setRecoveryToken(user.getMailToken());
-            mailService.sendPasswordRecoveryEmail(mail);
+            mailService.sendPasswordRecoveryEmail(user);
         } catch (final RuntimeException e) {
             LOGGER.error("Could not trigger password recovery email for user {}.", user.getId(), e);
         }
@@ -245,10 +239,7 @@ public class UserServiceImpl implements UserService {
 
     private void sendEmailVerificationEmail(final Users user) {
         try {
-            final EmailVerificationMailModel mail = new EmailVerificationMailModel();
-            mail.setRecipient(MailRecipientModel.fromUser(user));
-            mail.setVerificationToken(user.getMailToken());
-            mailService.sendEmailVerificationEmail(mail);
+            mailService.sendEmailVerificationEmail(user);
         } catch (final RuntimeException e) {
             LOGGER.error("Could not trigger email verification for user {}.", user.getId(), e);
         }

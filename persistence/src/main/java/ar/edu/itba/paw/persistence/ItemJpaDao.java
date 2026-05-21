@@ -110,7 +110,10 @@ public class ItemJpaDao implements ItemDao {
     @Override
     public Optional<Version> findCurrentVersionByItemId(final int itemId) {
         final List<Version> rows = entityManager
-                .createQuery("FROM Version v WHERE v.item.id = :itemId ORDER BY v.id DESC", Version.class)
+                .createQuery(
+                        "FROM Version v WHERE v.item.id = :itemId"
+                                + " AND v.createdAt = (SELECT MAX(v2.createdAt) FROM Version v2 WHERE v2.item.id = :itemId)",
+                        Version.class)
                 .setParameter("itemId", itemId)
                 .setMaxResults(1)
                 .getResultList();

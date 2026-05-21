@@ -271,8 +271,8 @@
         <select id="marketplace-sort" name="sortBy" class="select select-sm font-bold text-primary">
           <option value="newest" ${empty marketplaceSearch.sortBy || marketplaceSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.newest" /></option>
           <option value="oldest" ${marketplaceSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.oldest" /></option>
-          <option value="price_asc" ${marketplaceSearch.sortBy == 'price_asc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceAsc" /></option>
-          <option value="price_desc" ${marketplaceSearch.sortBy == 'price_desc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceDesc" /></option>
+          <option value="priceAsc" ${marketplaceSearch.sortBy == 'priceAsc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceAsc" /></option>
+          <option value="priceDesc" ${marketplaceSearch.sortBy == 'priceDesc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceDesc" /></option>
         </select>
         <label for="marketplace-page-size" class="shrink-0 ml-2">Páginas:</label>
         <select id="marketplace-page-size" name="pageSize" class="select select-sm w-20 font-bold text-primary">

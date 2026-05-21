@@ -174,8 +174,8 @@ public class MarketplaceJpaDao implements MarketplaceDao {
     private static String nativeOrderByClause(final MarketplaceQueryModel query) {
         return switch (resolveSortBy(query)) {
             case "oldest" -> "i.created_at ASC, v.id ASC";
-            case "price_asc" -> "v.price ASC, v.id ASC";
-            case "price_desc" -> "v.price DESC, v.id ASC";
+            case "priceAsc" -> "v.price ASC, v.id ASC";
+            case "priceDesc" -> "v.price DESC, v.id ASC";
             case "newest" -> "i.created_at DESC, v.id DESC";
             default -> "i.created_at DESC, v.id DESC";
         };
@@ -184,8 +184,8 @@ public class MarketplaceJpaDao implements MarketplaceDao {
     private static String jpqlOrderBy(final MarketplaceQueryModel query) {
         return switch (resolveSortBy(query)) {
             case "oldest" -> "v.item.createdAt ASC, v.id ASC";
-            case "price_asc" -> "v.price ASC, v.id ASC";
-            case "price_desc" -> "v.price DESC, v.id ASC";
+            case "priceAsc" -> "v.price ASC, v.id ASC";
+            case "priceDesc" -> "v.price DESC, v.id ASC";
             case "newest" -> "v.item.createdAt DESC, v.id DESC";
             default -> null;
         };

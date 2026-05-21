@@ -2,12 +2,15 @@ package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
 import ar.edu.itba.paw.models.dto.MarketplaceSearchResult;
-import ar.edu.itba.paw.models.entity.Availability;
-import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.TargetEnum;
 import ar.edu.itba.paw.models.entity.Version;
+import ar.edu.itba.paw.persistence.utils.Paging;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
@@ -17,137 +20,199 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class MarketplaceJpaDao implements MarketplaceDao {
 
-    private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_PAGE_SIZE = 12;
 
+    private static final String VERSION_FETCH_JPQL = "SELECT DISTINCT v FROM Version v "
+            + "JOIN FETCH v.item JOIN FETCH v.location JOIN FETCH v.type "
+            + "LEFT JOIN FETCH v.media m LEFT JOIN FETCH m.image "
+            + "WHERE v.id IN :ids";
+
     @PersistenceContext
-    private EntityManager entityManager;
+    private EntityManager em;
 
     @Override
     public MarketplaceSearchResult searchMarketplace(final MarketplaceQueryModel query) {
-        final String marketplaceFilter = marketplaceFilter(query);
-        final TypedQuery<Long> countQuery =
-                entityManager.createQuery("SELECT COUNT(v) FROM Version v" + marketplaceFilter, Long.class);
-        setMarketplaceParams(countQuery, query);
-        final long totalCount = countQuery.getSingleResult();
+        // Total matching rows (ignoring page limits) for pagination UI.
+        final long totalCount = countMarketplaceResults(query);
 
-        final TypedQuery<Version> queryResult = entityManager.createQuery(
-                "SELECT v FROM Version v" + marketplaceFilter + orderBy(query), Version.class);
-        setMarketplaceParams(queryResult, query);
+        // Phase 1 (native SQL): filter, sort, and paginate in the DB; fetch only version IDs.
+        final Map<String, Object> parameters = new HashMap<>();
+        final List<String> whereClauses = new ArrayList<>();
+
+        String sql = "SELECT v.id FROM version v ";
+        sql = getSqlForFilter(query, parameters, whereClauses, sql);
+        sql += nativeOrderBy(query);
+
+        final Query nativeQuery = em.createNativeQuery(sql);
+        for (final Map.Entry<String, Object> entry : parameters.entrySet()) {
+            nativeQuery.setParameter(entry.getKey(), entry.getValue());
+        }
 
         final int pageSize = resolvePageSize(query);
-        final int offset = (resolvePage(query) - 1) * pageSize;
-        queryResult.setFirstResult(offset);
-        queryResult.setMaxResults(pageSize);
+        final int page = resolvePage(query);
+        Paging.apply(nativeQuery, page, pageSize);
 
-        final List<Version> results = queryResult.getResultList();
+        final List<Integer> idList = Paging.toIntegerIds(nativeQuery.getResultList());
 
-        return new MarketplaceSearchResult(results, totalCount);
+        if (idList.isEmpty()) {
+            return new MarketplaceSearchResult(List.of(), totalCount);
+        }
+
+        // Phase 2 (JPQL): load full entities for this page only (one row per item, already latest).
+        final String jpqlOrderBy = jpqlOrderBy(query);
+        final TypedQuery<Version> versionQuery;
+        if (jpqlOrderBy != null) {
+            versionQuery = em.createQuery(VERSION_FETCH_JPQL + " ORDER BY " + jpqlOrderBy, Version.class);
+        } else {
+            versionQuery =
+                    em.createQuery(VERSION_FETCH_JPQL + " ORDER BY v.item.createdAt DESC, v.id DESC", Version.class);
+        }
+        versionQuery.setParameter("ids", idList);
+
+        final List<Version> versions = versionQuery.getResultList();
+
+        // Map page rows to Item; each version is already the latest for its item (see getSqlForFilter).
+        // Loop size = page size, not total versions in the DB.
+        final List<Item> items = new ArrayList<>(versions.size());
+        for (final Version version : versions) {
+            final Item item = version.getItem();
+            item.setLatestVersion(version);
+            items.add(item);
+        }
+
+        return new MarketplaceSearchResult(items, totalCount);
     }
 
-    private static String marketplaceFilter(final MarketplaceQueryModel query) {
-        final StringBuilder jpql = new StringBuilder(
-                " WHERE v.createdAt = (SELECT MAX(v2.createdAt) FROM Version v2 WHERE v2.item = v.item)"
-                        + " AND v.item.status = :active");
+    private long countMarketplaceResults(final MarketplaceQueryModel query) {
+        final Map<String, Object> parameters = new HashMap<>();
+        final List<String> whereClauses = new ArrayList<>();
+
+        String sql = "SELECT COUNT(v.id) FROM version v ";
+        sql = getSqlForFilter(query, parameters, whereClauses, sql);
+
+        final Query countQuery = em.createNativeQuery(sql);
+        for (final Map.Entry<String, Object> entry : parameters.entrySet()) {
+            countQuery.setParameter(entry.getKey(), entry.getValue());
+        }
+
+        return ((Number) countQuery.getSingleResult()).longValue();
+    }
+
+    private static String getSqlForFilter(
+            final MarketplaceQueryModel query,
+            final Map<String, Object> parameters,
+            final List<String> whereClauses,
+            String sql) {
+
+        sql += "INNER JOIN item i ON v.item_id = i.id ";
+
+        // One row per item: only its latest version (filtering done in SQL, not in Java).
+        whereClauses.add("v.created_at = (SELECT MAX(v2.created_at) FROM version v2 WHERE v2.item_id = v.item_id)");
+        whereClauses.add("i.status = CAST(:active AS item_status_enum)");
+        parameters.put("active", ItemStatusEnum.ACTIVE.name());
 
         if (!isEmpty(query.getSearchQuery())) {
-            jpql.append(" AND LOWER(v.title) LIKE LOWER(:searchQuery) ESCAPE '!'");
+            whereClauses.add("LOWER(v.title) LIKE LOWER(:searchQuery) ESCAPE '!'");
+            parameters.put("searchQuery", setupSearchQuery(query.getSearchQuery()));
         }
         if (query.getCapacity() != null) {
-            jpql.append(" AND v.capacity >= :capacity");
+            whereClauses.add("v.capacity >= :capacity");
+            parameters.put("capacity", query.getCapacity());
         }
         if (query.getWeight() != null) {
-            jpql.append(" AND v.weight >= :weight");
+            whereClauses.add("v.weight >= :weight");
+            parameters.put("weight", query.getWeight());
         }
         if (query.getDifficulty() != null) {
-            jpql.append(" AND v.difficulty = :difficulty");
+            whereClauses.add("v.difficulty = :difficulty");
+            parameters.put("difficulty", query.getDifficulty());
         }
         if (query.getMinAvgRating() != null) {
-            jpql.append(" AND (SELECT COALESCE(AVG(r.rating), 0) FROM Review r"
-                    + " WHERE r.targetType = :itemTargetType AND r.booking.version.item = v.item) >= :minAvgRating");
+            whereClauses.add("(SELECT COALESCE(AVG(r.rating), 0) FROM review r"
+                    + " INNER JOIN booking b ON r.booking_id = b.id"
+                    + " INNER JOIN version v2 ON b.version_id = v2.id"
+                    + " WHERE r.target_type = CAST(:itemTargetType AS target_enum) AND v2.item_id = v.item_id)"
+                    + " >= :minAvgRating");
+            parameters.put("itemTargetType", TargetEnum.ITEM.name());
+            parameters.put("minAvgRating", query.getMinAvgRating());
         }
         if (query.getLocationSlug() != null) {
-            jpql.append(" AND v.location.slug = :location");
+            whereClauses.add("EXISTS (SELECT 1 FROM location l WHERE l.id = v.location_id AND l.slug = :location)");
+            parameters.put("location", query.getLocationSlug());
         }
         if (query.getItemTypeSlug() != null) {
-            jpql.append(" AND v.type.slug = :type");
+            whereClauses.add("EXISTS (SELECT 1 FROM item_type t WHERE t.id = v.type_id AND t.slug = :type)");
+            parameters.put("type", query.getItemTypeSlug());
         }
-        if (queryFiltersDay(query)) {
-            jpql.append(" AND EXISTS (SELECT a.id FROM Availability a"
-                    + " WHERE a.version = v AND a.weekday = :weekday"
-                    + " AND a.startTime <= :requestedStart AND a.endTime >= :requestedEnd)");
+        if (query.getWeekday() != null) {
+            final StringBuilder availabilityClause =
+                    new StringBuilder("EXISTS (SELECT 1 FROM availability a WHERE a.version_id = v.id"
+                            + " AND a.weekday = CAST(:weekday AS weekday_enum)");
+            parameters.put("weekday", query.getWeekday().name());
+            if (query.getStartTime() != null && query.getEndTime() != null) {
+                availabilityClause.append(" AND a.start_time <= :requestedStart AND a.end_time >= :requestedEnd");
+                parameters.put("requestedStart", query.getStartTime());
+                parameters.put("requestedEnd", query.getEndTime());
+            }
+            whereClauses.add(availabilityClause.append(')').toString());
         }
-        return jpql.toString();
+
+        if (!whereClauses.isEmpty()) {
+            sql += "WHERE " + String.join(" AND ", whereClauses);
+        }
+        return sql;
     }
 
-    private static void setMarketplaceParams(final Query queryResult, final MarketplaceQueryModel query) {
-        queryResult.setParameter("active", ItemStatusEnum.ACTIVE);
-
-        if (!isEmpty(query.getSearchQuery())) {
-            queryResult.setParameter("searchQuery", setupSearchQuery(query.getSearchQuery()));
+    // Native ORDER BY for phase 1 (IDs). JPQL re-applies the same sort in phase 2 (IN clause is unordered).
+    private static String nativeOrderBy(final MarketplaceQueryModel query) {
+        if (resolveSortBy(query) != null) {
+            return " ORDER BY " + nativeOrderByClause(query) + " ";
         }
-        if (query.getCapacity() != null) {
-            queryResult.setParameter("capacity", query.getCapacity());
-        }
-        if (query.getWeight() != null) {
-            queryResult.setParameter("weight", query.getWeight());
-        }
-        if (query.getDifficulty() != null) {
-            queryResult.setParameter("difficulty", query.getDifficulty());
-        }
-        if (query.getMinAvgRating() != null) {
-            queryResult.setParameter("itemTargetType", TargetEnum.ITEM);
-            queryResult.setParameter("minAvgRating", query.getMinAvgRating());
-        }
-        if (query.getLocationSlug() != null) {
-            queryResult.setParameter("location", query.getLocationSlug());
-        }
-        if (query.getItemTypeSlug() != null) {
-            queryResult.setParameter("type", query.getItemTypeSlug());
-        }
-        if (queryFiltersDay(query)) {
-            queryResult.setParameter("weekday", query.getWeekday());
-            queryResult.setParameter("requestedStart", query.getStartTime());
-            queryResult.setParameter("requestedEnd", query.getEndTime());
-        }
+        return " ORDER BY i.created_at DESC, v.id DESC";
     }
 
-    private static boolean queryFiltersDay(final MarketplaceQueryModel query) {
-        return query.getWeekday() != null && query.getStartTime() != null && query.getEndTime() != null;
-    }
-
-    private static String orderBy(final MarketplaceQueryModel query) {
-        String defaultOrder = " ORDER BY v.item.createdAt DESC, v.id DESC";
-        if (query == null || query.getSortBy() == null) {
-            return defaultOrder;
-        }
-        return switch (query.getSortBy()) {
-            case "oldest" -> " ORDER BY v.item.createdAt ASC, v.id ASC";
-            case "price_asc" -> " ORDER BY v.price ASC, v.id ASC";
-            case "price_desc" -> " ORDER BY v.price DESC, v.id ASC";
-            case "newest" -> " ORDER BY v.item.createdAt DESC, v.id DESC";
-            default -> defaultOrder;
+    private static String nativeOrderByClause(final MarketplaceQueryModel query) {
+        return switch (resolveSortBy(query)) {
+            case "oldest" -> "i.created_at ASC, v.id ASC";
+            case "price_asc" -> "v.price ASC, v.id ASC";
+            case "price_desc" -> "v.price DESC, v.id ASC";
+            case "newest" -> "i.created_at DESC, v.id DESC";
+            default -> "i.created_at DESC, v.id DESC";
         };
     }
 
-    private static int resolvePage(final MarketplaceQueryModel query) {
-        if (query == null || query.getPage() == null || query.getPage() < 1) {
-            return DEFAULT_PAGE;
+    private static String jpqlOrderBy(final MarketplaceQueryModel query) {
+        return switch (resolveSortBy(query)) {
+            case "oldest" -> "v.item.createdAt ASC, v.id ASC";
+            case "price_asc" -> "v.price ASC, v.id ASC";
+            case "price_desc" -> "v.price DESC, v.id ASC";
+            case "newest" -> "v.item.createdAt DESC, v.id DESC";
+            default -> null;
+        };
+    }
+
+    private static String resolveSortBy(final MarketplaceQueryModel query) {
+        if (query == null || query.getSortBy() == null) {
+            return null;
         }
-        return query.getPage();
+        return query.getSortBy();
+    }
+
+    private static int resolvePage(final MarketplaceQueryModel query) {
+        if (query == null) {
+            return Paging.DEFAULT_PAGE;
+        }
+        return Paging.resolvePage(query.getPage());
     }
 
     private static int resolvePageSize(final MarketplaceQueryModel query) {
-        if (query == null || query.getPageSize() == null) {
+        if (query == null) {
             return DEFAULT_PAGE_SIZE;
         }
-        final int pageSize = query.getPageSize();
-        if (pageSize == 6 || pageSize == 12 || pageSize == 18) {
-            return pageSize;
-        }
-        return DEFAULT_PAGE_SIZE;
+        return Paging.resolvePageSize(query.getPageSize(), DEFAULT_PAGE_SIZE, 6, 12, 18);
     }
 
+    // Escape LIKE wildcards and turn spaces into % so "foo bar" matches titles containing both words.
     private static String setupSearchQuery(final String searchQuery) {
         final String queryWithWildcards = searchQuery
                 .trim()
@@ -161,21 +226,5 @@ public class MarketplaceJpaDao implements MarketplaceDao {
 
     private static boolean isEmpty(final String value) {
         return value == null || value.isBlank();
-    }
-
-    @Override
-    public List<Availability> getAllAvailabilities() {
-        return entityManager
-                .createQuery("FROM Availability", Availability.class)
-                .getResultList();
-    }
-
-    @Override
-    public List<Booking> getAllBlockingBookings() {
-        return entityManager
-                .createQuery(
-                        "SELECT b FROM Booking b WHERE b.guest IS NOT NULL AND b.guest.id <> b.version.item.host.id",
-                        Booking.class)
-                .getResultList();
     }
 }

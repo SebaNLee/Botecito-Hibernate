@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
+import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.Version;
@@ -125,8 +126,8 @@ public class ItemImpl implements ItemService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<byte[]> findImageDataById(final int imageId) {
-        return itemDao.findImageDataById(imageId);
+    public Optional<Image> findImageWithDataById(final int imageId) {
+        return itemDao.findImageWithDataById(imageId);
     }
 
     @Override

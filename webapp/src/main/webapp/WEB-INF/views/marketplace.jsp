@@ -302,17 +302,20 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <c:forEach items="${items}" var="item">
-        <c:url var="itemUrl" value="/item/${item.item.id}" />
+        <c:url var="itemUrl" value="/item/${item.id}" />
         <a href="${itemUrl}" data-marketplace-item-link class="group card min-w-0 bg-base-100 shadow-sm overflow-hidden no-underline text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <figure class="aspect-[4/3] overflow-hidden">
-            <c:url var="itemCoverSrc" value="/css/boat-placeholder.svg" />
-            <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${item.title}" src="${itemCoverSrc}"/>
+            <c:set var="itemCoverSrc" value="${imageUrlsByItemId[item.id]}" />
+            <c:if test="${empty itemCoverSrc}">
+              <c:url var="itemCoverSrc" value="/css/boat-placeholder.svg" />
+            </c:if>
+            <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${item.latestVersion.title}" src="${itemCoverSrc}"/>
           </figure>
           <div class="card-body min-w-0 p-4 gap-3">
             <div class="flex justify-between items-start gap-3">
-              <h3 class="card-title min-w-0 text-lg font-bold text-on-background leading-tight m-0 line-clamp-2 break-words"><c:out value="${item.title}" /></h3>
+              <h3 class="card-title min-w-0 text-lg font-bold text-on-background leading-tight m-0 line-clamp-2 break-words"><c:out value="${item.latestVersion.title}" /></h3>
               <div class="shrink-0 text-right">
-                <span class="block text-xl font-black text-primary">$<fmt:formatNumber value="${item.price}" type="number" groupingUsed="true" maxFractionDigits="0" /></span>
+                <span class="block text-xl font-black text-primary">$<fmt:formatNumber value="${item.latestVersion.price}" type="number" groupingUsed="true" maxFractionDigits="0" /></span>
                 <span class="text-[10px] font-bold uppercase tracking-tighter text-outline"><spring:message code="marketplace.card.perHour" /></span>
               </div>
             </div>
@@ -322,18 +325,18 @@
             </div>
             <div class="flex min-w-0 items-center text-on-surface-variant text-sm gap-1">
               <span class="material-symbols-outlined shrink-0 text-primary text-lg">location_on</span>
-              <span class="min-w-0 truncate"><c:out value="${item.location.name}" /></span>
+              <span class="min-w-0 truncate"><c:out value="${item.latestVersion.location.name}" /></span>
             </div>
             <div class="pt-3 border-t border-outline-variant/15 flex flex-col gap-3">
               <div class="flex flex-wrap items-center gap-3">
                 <div class="flex items-center gap-1.5">
                   <span class="material-symbols-outlined text-outline text-lg">groups</span>
-                  <span class="text-sm font-semibold"><spring:message code="marketplace.card.people" arguments="${item.capacity}" /></span>
+                  <span class="text-sm font-semibold"><spring:message code="marketplace.card.people" arguments="${item.latestVersion.capacity}" /></span>
                 </div>
                 <div class="flex items-center gap-1.5">
                   <span class="material-symbols-outlined text-outline text-lg">weight</span>
                   <span class="text-sm font-semibold">
-                    <spring:message code="marketplace.card.weight" arguments="${item.weight}" />
+                    <spring:message code="marketplace.card.weight" arguments="${item.latestVersion.weight}" />
                   </span>
                 </div>
               </div>

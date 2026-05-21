@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
+import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Location;
 import ar.edu.itba.paw.models.entity.Version;
@@ -32,7 +33,7 @@ public interface ItemDao {
 
     Location getLocationReference(int locationId);
 
-    Optional<byte[]> findImageDataById(int imageId);
+    Optional<Image> findImageWithDataById(int imageId);
 
     List<Integer> listImageIds(int itemId);
 

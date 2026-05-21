@@ -1,7 +1,9 @@
 package ar.edu.itba.paw.models.entity;
 
+import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -24,6 +26,7 @@ public class Image {
     @SequenceGenerator(name = "image_id_seq", sequenceName = "image_id_seq", allocationSize = 1)
     private Integer id;
 
+    @Basic(fetch = FetchType.LAZY)
     @Type(type = "org.hibernate.type.BinaryType")
     @Column(name = "data", nullable = false)
     private byte[] data;

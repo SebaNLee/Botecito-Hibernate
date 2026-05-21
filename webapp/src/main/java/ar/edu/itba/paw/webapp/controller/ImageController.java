@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.services.ItemService;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,8 @@ public class ImageController {
     @RequestMapping("/{id:[0-9]+}")
     public ResponseEntity<byte[]> imageById(@PathVariable("id") final int imageId) {
         return itemInterface
-                .findImageDataById(imageId)
+                .findImageWithDataById(imageId)
+                .map(Image::getData)
                 .filter(data -> data.length > 0)
                 .map(ImageController::okCachedImage)
                 .orElse(ResponseEntity.notFound().build());

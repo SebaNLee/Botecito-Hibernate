@@ -217,8 +217,8 @@ public class ItemJpaDao implements ItemDao {
     }
 
     @Override
-    public Optional<byte[]> findImageDataById(final int imageId) {
-        return Optional.ofNullable(entityManager.find(Image.class, imageId)).map(Image::getData);
+    public Optional<Image> findImageWithDataById(final int imageId) {
+        return Optional.ofNullable(entityManager.find(Image.class, imageId));
     }
 
     @Override

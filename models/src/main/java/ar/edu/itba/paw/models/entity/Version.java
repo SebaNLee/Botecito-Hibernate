@@ -77,7 +77,4 @@ public class Version {
 
     @OneToMany(mappedBy = "version", fetch = FetchType.EAGER)
     private List<Availability> availabilities;
-
-    @OneToMany(mappedBy = "version", fetch = FetchType.LAZY)
-    private List<Booking> bookings;
 }

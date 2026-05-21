@@ -23,7 +23,7 @@ import java.util.TreeSet;
 
 /**
  * Builds {@link AvailabilityPickerBuilder.Data} for the nuevo item detail pre-booking UI from all
- * {@link AvailabilityWindow} rows for the version (merged) and version-scoped bookings (UTC) converted to the
+ * {@link AvailabilityWindow} rows for the version (merged) and item-scoped bookings across all versions (UTC) converted to the
  * version timezone, including the same 30-minute clearance as {@code BookingHibernateDao}. Date keys and
  * weekday matching use {@code ZonedDateTime.now(listingZone).toLocalDate()} through the picker horizon so the grid
  * matches the listing calendar day, not the app server default zone.

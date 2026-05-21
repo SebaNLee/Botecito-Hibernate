@@ -6,8 +6,6 @@
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<%-- Nuevo item detail: model includes item when loaded; when itemListingMissing is true, only itemId and marketplaceBackHref are required. --%>
-
 <fmt:setLocale value="es_AR" />
 <c:url var="publishUrl" value="/publish" />
 <spring:message code="itemDetail.unavailable.mismatchPrefix" var="unavailableMismatchPrefix" />
@@ -52,20 +50,6 @@
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8">
   <paw:toastNotifier />
-  <c:choose>
-    <c:when test="${itemListingMissing}">
-      <c:url var="marketplaceUrlFallback" value="/marketplace" />
-      <div class="w-full">
-        <a href="<c:choose><c:when test="${not empty marketplaceBackHref}"><c:out value="${marketplaceBackHref}" /></c:when><c:otherwise>${marketplaceUrlFallback}</c:otherwise></c:choose>" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
-          <span class="material-symbols-outlined">arrow_back</span>
-          <span><spring:message code="common.back" /></span>
-        </a>
-      </div>
-      <div class="w-full max-w-2xl">
-        <paw:alertMessage type="warning"><spring:message code="detail.item.missingBody" /></paw:alertMessage>
-      </div>
-    </c:when>
-    <c:otherwise>
       <div class="w-full">
         <a href="<c:out value="${marketplaceBackHref}" />" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
           <span class="material-symbols-outlined">arrow_back</span>
@@ -500,6 +484,4 @@
       <button aria-label="${unavailableBackLabel}">close</button>
     </form>
   </dialog>
-    </c:otherwise>
-  </c:choose>
 </paw:layout>

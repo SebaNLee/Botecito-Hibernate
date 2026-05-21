@@ -22,7 +22,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -51,15 +50,8 @@ public class DetailPresentation {
             final HttpServletRequest request,
             final int reviewPage) {
         final String marketplaceBackHref = MarketplaceReturnUrl.marketplaceBackHref(request);
-        try {
-            final Item item = detailService.getItemDetail(itemId, reviewPage);
-            if (item.getLatestVersion() == null) {
-                return missingListingView(itemId, marketplaceBackHref);
-            }
-            return buildDetailView(item, viewer, request, marketplaceBackHref);
-        } catch (final EntityNotFoundException ex) {
-            return missingListingView(itemId, marketplaceBackHref);
-        }
+        final Item item = detailService.getItemDetail(itemId, reviewPage);
+        return buildDetailView(item, viewer, request, marketplaceBackHref);
     }
 
     /** POST validation failed: re-render detail with field toasts instead of redirecting. */
@@ -70,9 +62,7 @@ public class DetailPresentation {
             final BindingResult errors,
             final int reviewPage) {
         final ModelAndView mav = detailPage(itemId, viewer, request, reviewPage);
-        if (!Boolean.TRUE.equals(mav.getModel().get("itemListingMissing"))) {
-            mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
-        }
+        mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
         return mav;
     }
 
@@ -88,19 +78,8 @@ public class DetailPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Item item;
-        try {
-            item = detailService.getItemDetail(itemId, 1);
-        } catch (final EntityNotFoundException ex) {
-            ToastSupport.error(redirectAttributes, MESSAGE_PREFIX + ".item.notFound");
-            return itemRedirect(itemId, request);
-        }
-
+        final Item item = detailService.getItemDetail(itemId, 1);
         final Version version = item.getLatestVersion();
-        if (version == null) {
-            ToastSupport.error(redirectAttributes, MESSAGE_PREFIX + ".item.notFound");
-            return itemRedirect(itemId, request);
-        }
 
         bookingService.createBooking(
                 version.getId(),
@@ -111,16 +90,6 @@ public class DetailPresentation {
                 viewer.getId());
         ToastSupport.success(redirectAttributes, MESSAGE_PREFIX + ".preBooking.success");
         return itemRedirect(itemId, request);
-    }
-
-    // Same JSP as a loaded listing, but itemListingMissing drives the empty state.
-    private ModelAndView missingListingView(final int itemId, final String marketplaceBackHref) {
-        final ModelAndView mav = new ModelAndView(VIEW_NAME);
-        mav.addObject("itemListingMissing", true);
-        mav.addObject("itemId", itemId);
-        mav.addObject("marketplaceBackHref", marketplaceBackHref);
-        mav.addObject("toasts", toastPresentation.errorCodeToasts(MESSAGE_PREFIX + ".item.notFound"));
-        return mav;
     }
 
     private ModelAndView buildDetailView(
@@ -134,7 +103,6 @@ public class DetailPresentation {
         final boolean isActive = item.getStatus() == ItemStatusEnum.ACTIVE;
 
         final ModelAndView mav = new ModelAndView(VIEW_NAME);
-        mav.addObject("itemListingMissing", false);
         mav.addObject("item", item);
         mav.addObject("version", version);
         mav.addObject("viewer", viewer);

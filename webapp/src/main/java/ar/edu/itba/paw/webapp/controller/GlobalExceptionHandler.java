@@ -7,6 +7,7 @@ import ar.edu.itba.paw.models.exceptions.IllegalBookingOperationException;
 import ar.edu.itba.paw.models.exceptions.InvalidBookingStatusException;
 import ar.edu.itba.paw.models.exceptions.InvalidDateFormatException;
 import ar.edu.itba.paw.models.exceptions.InvalidSlotException;
+import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
 import ar.edu.itba.paw.models.exceptions.NoAnticipationException;
 import ar.edu.itba.paw.models.exceptions.OutsideAvailabilityException;
 import ar.edu.itba.paw.models.exceptions.PastSlotException;
@@ -42,6 +43,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoHandlerFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ModelAndView handleNotFound(final HttpServletRequest request) {
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
+        return new ModelAndView("forward:/errors");
+    }
+
+    @ExceptionHandler(ItemNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ModelAndView handleItemNotFound(final HttpServletRequest request) {
         request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
         return new ModelAndView("forward:/errors");
     }

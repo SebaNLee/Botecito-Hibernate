@@ -48,3 +48,21 @@ Rules:
   checks, presentation delegation, and `ModelAndView` returns only.
 - Presentation owns form-to-model mapping and JSP-ready model preparation.
 - Services receive domain models, not web forms.
+
+
+## What we implemented
+
+- Added user subscriptions as a follow relationship between users.
+- Users can subscribe/unsubscribe from the item detail owner card.
+- The profile page now shows the people the user follows, with pagination and
+  unsubscribe actions.
+- Publishing now notifies verified followers by email after the publish
+  transaction commits.
+- The publisher confirmation email still sends, but it now also runs after the
+  transaction commits.
+- Subscription listing code was kept paginated only; the old unpaged service
+  path was removed.
+- The item detail page was adjusted so everything scrolls normally with the
+  document. No sticky right panel and no internal sidebar scrolling.
+- The host/contact card was moved under the right-side item panel.
+- The old direct "send email" mailto button was removed from the host card.

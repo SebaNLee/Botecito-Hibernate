@@ -13,6 +13,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -90,6 +91,8 @@ public class DetailJpaDao implements DetailDao {
             throw new IllegalStateException("Version not found: " + versionId);
         }
         final Version version = versions.get(0);
+        // Init while the persistence context is open (detail uses this collection after the service returns).
+        Hibernate.initialize(version.getAvailabilities());
         final Item item = version.getItem();
         item.setLatestVersion(version);
         return item;

@@ -75,6 +75,6 @@ public class Version {
     @OrderBy("id.index ASC")
     private List<Media> media;
 
-    @OneToMany(mappedBy = "version", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "version", fetch = FetchType.LAZY)
     private List<Availability> availabilities;
 }

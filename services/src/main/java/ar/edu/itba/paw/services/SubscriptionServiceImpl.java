@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.persistence.SubscriptionDao;
 import java.util.List;
@@ -44,8 +45,15 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Users> listSubscriptions(final int subscriberId) {
-        return subscriptionDao.listSubscriptions(subscriberId);
+    public PageModel<Users> listSubscriptions(final int subscriberId, final int page, final int pageSize) {
+        final int safePage = Math.max(1, page);
+        final int safePageSize = Math.max(1, pageSize);
+        final int totalItems = subscriptionDao.countSubscriptions(subscriberId);
+        return new PageModel<>(
+                subscriptionDao.listSubscriptions(subscriberId, safePage, safePageSize),
+                safePage,
+                safePageSize,
+                totalItems);
     }
 
     @Override

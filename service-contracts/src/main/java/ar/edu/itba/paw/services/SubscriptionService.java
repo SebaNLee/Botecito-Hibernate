@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Users;
 import java.util.List;
 
@@ -11,7 +12,7 @@ public interface SubscriptionService {
 
     boolean isSubscribed(int subscriberId, int subscribedToId);
 
-    List<Users> listSubscriptions(int subscriberId);
+    PageModel<Users> listSubscriptions(int subscriberId, int page, int pageSize);
 
     List<Users> listVerifiedSubscribersForPublisher(int publisherId);
 }

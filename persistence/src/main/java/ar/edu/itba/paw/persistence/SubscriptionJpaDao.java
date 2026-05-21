@@ -47,7 +47,9 @@ public class SubscriptionJpaDao implements SubscriptionDao {
     }
 
     @Override
-    public List<Users> listSubscriptions(final int subscriberId) {
+    public List<Users> listSubscriptions(final int subscriberId, final int page, final int pageSize) {
+        final int safePage = Math.max(1, page);
+        final int safePageSize = Math.max(1, pageSize);
         return entityManager
                 .createQuery(
                         "SELECT s.subscribedTo FROM Subscription s"
@@ -55,7 +57,18 @@ public class SubscriptionJpaDao implements SubscriptionDao {
                                 + " ORDER BY LOWER(s.subscribedTo.firstName), LOWER(s.subscribedTo.lastName), LOWER(s.subscribedTo.email)",
                         Users.class)
                 .setParameter("subscriberId", subscriberId)
+                .setFirstResult((safePage - 1) * safePageSize)
+                .setMaxResults(safePageSize)
                 .getResultList();
+    }
+
+    @Override
+    public int countSubscriptions(final int subscriberId) {
+        return entityManager
+                .createQuery("SELECT COUNT(s) FROM Subscription s WHERE s.subscriber.id = :subscriberId", Long.class)
+                .setParameter("subscriberId", subscriberId)
+                .getSingleResult()
+                .intValue();
     }
 
     @Override

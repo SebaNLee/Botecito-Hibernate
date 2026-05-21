@@ -11,7 +11,9 @@ public interface SubscriptionDao {
 
     boolean exists(int subscriberId, int subscribedToId);
 
-    List<Users> listSubscriptions(int subscriberId);
+    List<Users> listSubscriptions(int subscriberId, int page, int pageSize);
+
+    int countSubscriptions(int subscriberId);
 
     List<Users> listVerifiedSubscribersForPublisher(int publisherId);
 }

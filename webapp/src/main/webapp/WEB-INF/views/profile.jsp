@@ -154,6 +154,55 @@
                     </div>
                   </c:forEach>
                 </div>
+                <c:if test="${subscriptionsPage.totalPages > 1}">
+                  <c:url var="subscriptionsPreviousPageUrl" value="/profile">
+                    <c:param name="subscriptionsPage" value="${subscriptionsPage.previousPage}" />
+                    <c:param name="subscriptionsPageSize" value="${subscriptionsPage.pageSize}" />
+                    <c:if test="${profileEdit}">
+                      <c:param name="edit" value="true" />
+                    </c:if>
+                  </c:url>
+                  <c:url var="subscriptionsNextPageUrl" value="/profile">
+                    <c:param name="subscriptionsPage" value="${subscriptionsPage.nextPage}" />
+                    <c:param name="subscriptionsPageSize" value="${subscriptionsPage.pageSize}" />
+                    <c:if test="${profileEdit}">
+                      <c:param name="edit" value="true" />
+                    </c:if>
+                  </c:url>
+                  <nav class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
+                    <c:choose>
+                      <c:when test="${subscriptionsPage.hasPrevious}">
+                        <a href="${subscriptionsPreviousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
+                          <span class="material-symbols-outlined text-sm">arrow_back</span>
+                          <spring:message code="marketplace.pagination.previous" />
+                        </a>
+                      </c:when>
+                      <c:otherwise>
+                        <span class="btn btn-outline btn-sm btn-disabled gap-2">
+                          <span class="material-symbols-outlined text-sm">arrow_back</span>
+                          <spring:message code="marketplace.pagination.previous" />
+                        </span>
+                      </c:otherwise>
+                    </c:choose>
+                    <span>
+                      <spring:message code="marketplace.pagination.page" arguments="${subscriptionsPage.page},${subscriptionsPage.totalPages}" />
+                    </span>
+                    <c:choose>
+                      <c:when test="${subscriptionsPage.hasNext}">
+                        <a href="${subscriptionsNextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
+                          <spring:message code="marketplace.pagination.next" />
+                          <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </a>
+                      </c:when>
+                      <c:otherwise>
+                        <span class="btn btn-outline btn-sm btn-disabled gap-2">
+                          <spring:message code="marketplace.pagination.next" />
+                          <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </span>
+                      </c:otherwise>
+                    </c:choose>
+                  </nav>
+                </c:if>
               </c:otherwise>
             </c:choose>
           </section>

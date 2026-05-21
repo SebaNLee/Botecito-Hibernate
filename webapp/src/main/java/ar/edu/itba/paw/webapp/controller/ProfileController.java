@@ -29,8 +29,10 @@ public class ProfileController {
     public ModelAndView profile(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @RequestParam(value = "edit", defaultValue = "false") final boolean edit,
+            @RequestParam(value = "subscriptionsPage", defaultValue = "1") final int subscriptionsPage,
+            @RequestParam(value = "subscriptionsPageSize", defaultValue = "6") final int subscriptionsPageSize,
             @ModelAttribute("profileForm") final ProfileForm form) {
-        return profilePresentation.profile(user, edit, form);
+        return profilePresentation.profile(user, edit, subscriptionsPage, subscriptionsPageSize, form);
     }
 
     @RequestMapping(value = "/profile", method = RequestMethod.POST)

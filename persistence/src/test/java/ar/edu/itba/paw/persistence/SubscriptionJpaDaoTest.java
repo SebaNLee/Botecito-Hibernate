@@ -48,9 +48,16 @@ public class SubscriptionJpaDaoTest {
         assertTrue(subscriptionDao.create(subscriber.getId(), publisher.getId()));
         assertTrue(subscriptionDao.exists(subscriber.getId(), publisher.getId()));
 
-        final List<Users> subscriptions = subscriptionDao.listSubscriptions(subscriber.getId());
+        final List<Users> subscriptions = subscriptionDao.listSubscriptions(subscriber.getId(), 1, 10);
         assertEquals(1, subscriptions.size());
         assertEquals(publisher.getId(), subscriptions.get(0).getId());
+        assertEquals(1, subscriptionDao.countSubscriptions(subscriber.getId()));
+        assertEquals(
+                publisher.getId(),
+                subscriptionDao
+                        .listSubscriptions(subscriber.getId(), 1, 1)
+                        .get(0)
+                        .getId());
 
         final List<Users> subscribers = subscriptionDao.listVerifiedSubscribersForPublisher(publisher.getId());
         assertEquals(1, subscribers.size());

@@ -29,7 +29,10 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/** Builds the item detail view and handles pre-booking POST (PRG back to {@code /item/{id}}). */
+/**
+ * Builds the item detail view and handles pre-booking POST (PRG back to
+ * {@code /item/{id}}).
+ */
 @Component
 @RequiredArgsConstructor
 public class DetailPresentation {
@@ -43,7 +46,9 @@ public class DetailPresentation {
     private final BookingService bookingService;
     private final ToastPresentation toastPresentation;
 
-    /** GET: load listing by item id (always uses latest version from the service). */
+    /**
+     * GET: load listing by item id (always uses latest version from the service).
+     */
     public ModelAndView detailPage(
             final int itemId,
             final BotecitoUserDetails viewer,
@@ -54,7 +59,10 @@ public class DetailPresentation {
         return buildDetailView(item, viewer, request, marketplaceBackHref);
     }
 
-    /** POST validation failed: re-render detail with field toasts instead of redirecting. */
+    /**
+     * POST validation failed: re-render detail with field toasts instead of
+     * redirecting.
+     */
     public ModelAndView detailPageWithPreBookingValidationErrors(
             final int itemId,
             final BotecitoUserDetails viewer,
@@ -66,7 +74,10 @@ public class DetailPresentation {
         return mav;
     }
 
-    /** POST success path: book against latest version, flash toast, redirect to detail. */
+    /**
+     * POST success path: book against latest version, flash toast, redirect to
+     * detail.
+     */
     public ModelAndView submitPreBooking(
             final BotecitoUserDetails viewer,
             final int itemId,
@@ -110,8 +121,8 @@ public class DetailPresentation {
         mav.addObject("itemOwner", itemOwner);
         mav.addObject("itemImageUrls", imageUrls(version, contextPath));
         mav.addObject("itemOwnerDisplayName", ownerDisplayName(itemOwner));
-        mav.addObject("ownerInitial", ownerInitial(itemOwner));
-        mav.addObject("itemLocationSlug", locationSlug(version));
+        mav.addObject("ownerInitials", ownerInitials(itemOwner));
+        mav.addObject("itemLocationSlug", version.getLocation().getSlug());
         mav.addObject("marketplaceBackHref", marketplaceBackHref);
         mav.addObject("reviewPage", item.getReviewPage());
         mav.addObject("totalReviews", item.getTotalReviews());
@@ -122,12 +133,13 @@ public class DetailPresentation {
         mav.addObject("preBookingForm", preBookingForm);
 
         addAvailabilityModel(mav, item, version);
-        mav.addObject("showPreBookingPanel", isActive && hasBookableAvailability(version.getAvailabilities()));
+        mav.addObject("showPreBookingPanel", isActive);
 
         return mav;
     }
 
-    // Date/time picker JSON and calendar bounds; occupied slots use all item bookings (every version).
+    // Date/time picker JSON and calendar bounds; occupied slots use all item
+    // bookings (every version).
     private void addAvailabilityModel(final ModelAndView mav, final Item item, final Version version) {
         final List<Availability> availabilityWindows =
                 version.getAvailabilities() == null ? List.of() : version.getAvailabilities();
@@ -172,46 +184,15 @@ public class DetailPresentation {
     }
 
     private static String ownerDisplayName(final Users itemOwner) {
-        if (itemOwner == null) {
-            return "";
-        }
-        final String ownerName = ((itemOwner.getFirstName() == null
-                                ? ""
-                                : itemOwner.getFirstName().trim())
-                        + " "
-                        + (itemOwner.getLastName() == null
-                                ? ""
-                                : itemOwner.getLastName().trim()))
-                .trim();
-        if (!ownerName.isBlank()) {
-            return ownerName;
-        }
-        return itemOwner.getEmail() == null ? "" : itemOwner.getEmail();
+        // non-null, non-blank firstName and lastName.
+        return itemOwner.getFirstName().trim() + " " + itemOwner.getLastName().trim();
     }
 
-    private static String ownerInitial(final Users itemOwner) {
-        final String displayName = ownerDisplayName(itemOwner);
-        return displayName.isEmpty() ? "I" : displayName.substring(0, 1).toUpperCase();
-    }
-
-    private static String locationSlug(final Version version) {
-        if (version.getLocation() == null || version.getLocation().getSlug() == null) {
-            return "";
-        }
-        return version.getLocation().getSlug();
-    }
-
-    private static boolean hasBookableAvailability(final List<Availability> windows) {
-        if (windows == null) {
-            return false;
-        }
-        return windows.stream().anyMatch(DetailPresentation::isCompleteAvailabilityWindow);
-    }
-
-    private static boolean isCompleteAvailabilityWindow(final Availability w) {
-        return w.getWeekday() != null
-                && w.getStartTime() != null
-                && w.getEndTime() != null
-                && w.getEndTime().isAfter(w.getStartTime());
+    private static String ownerInitials(final Users itemOwner) {
+        // Uses first character of the owner's first name and first character of the
+        // last name.
+        return (itemOwner.getFirstName().trim().substring(0, 1)
+                        + itemOwner.getLastName().trim().substring(0, 1))
+                .toUpperCase();
     }
 }

@@ -129,7 +129,7 @@
             <div class="flex min-w-0 items-center gap-4">
               <div class="avatar placeholder shrink-0">
                 <div class="bg-primary/10 text-primary rounded-full w-14 h-14 flex items-center justify-center">
-                  <span class="font-extrabold text-xl"><c:out value="${ownerInitial}" /></span>
+                  <span class="font-extrabold text-xl"><c:out value="${ownerInitials}" /></span>
                 </div>
               </div>
               <div class="min-w-0">

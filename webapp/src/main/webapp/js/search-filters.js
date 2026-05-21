@@ -160,6 +160,14 @@
     return Number.isFinite(parsed) ? parsed : null;
   }
 
+  const ITEM_DETAIL_QUERY_KEYS = [
+    ...FILTER_KEYS,
+    ...MARKETPLACE_TOOLBAR_KEYS,
+    "page",
+    "reviewPage",
+    "returnTo",
+  ];
+
   function buildUrlWithFilters(baseUrl, state) {
     const url = new URL(baseUrl, window.location.origin);
     const normalized = normalizeState(state);
@@ -184,6 +192,50 @@
     });
 
     return url.toString();
+  }
+
+  function buildMarketplaceReturnPath(state) {
+    const url = new URL("/marketplace", window.location.origin);
+    const normalized = normalizeState(state);
+
+    FILTER_KEYS.forEach((key) => {
+      if (normalized[key]) {
+        url.searchParams.set(key, normalized[key]);
+      }
+    });
+
+    MARKETPLACE_TOOLBAR_KEYS.forEach((key) => {
+      if (
+        Object.prototype.hasOwnProperty.call(normalized, key) &&
+        normalized[key]
+      ) {
+        url.searchParams.set(key, normalized[key]);
+      }
+    });
+
+    const pageInput = document.querySelector(
+      '[data-marketplace-toolbar-form] input[name="page"]',
+    );
+    const pageValue =
+      pageInput?.value ||
+      new URLSearchParams(window.location.search).get("page") ||
+      "";
+    if (pageValue) {
+      url.searchParams.set("page", pageValue);
+    }
+
+    return url.pathname + url.search;
+  }
+
+  function buildItemDetailHref(baseHref, state) {
+    const url = new URL(baseHref, window.location.origin);
+
+    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
+      url.searchParams.delete(key);
+    });
+
+    url.searchParams.set("returnTo", buildMarketplaceReturnPath(state));
+    return url.pathname + url.search;
   }
 
   function readUrlState() {
@@ -436,7 +488,7 @@
 
         link.setAttribute(
           "href",
-          buildUrlWithFilters(link.dataset.baseHref, normalized),
+          buildItemDetailHref(link.dataset.baseHref, normalized),
         );
       });
 

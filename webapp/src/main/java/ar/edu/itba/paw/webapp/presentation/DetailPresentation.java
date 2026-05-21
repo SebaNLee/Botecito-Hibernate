@@ -16,6 +16,8 @@ import ar.edu.itba.paw.webapp.util.AvailabilityJsonHelper;
 import ar.edu.itba.paw.webapp.util.DetailAvailabilityPicker;
 import ar.edu.itba.paw.webapp.util.MarketplaceReturnUrl;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
@@ -48,7 +50,7 @@ public class DetailPresentation {
             final BotecitoUserDetails viewer,
             final HttpServletRequest request,
             final int reviewPage) {
-        final String marketplaceBackHref = MarketplaceReturnUrl.marketplaceBackHref(request, null);
+        final String marketplaceBackHref = MarketplaceReturnUrl.marketplaceBackHref(request);
         try {
             final Item item = detailService.getItemDetail(itemId, reviewPage);
             if (item.getLatestVersion() == null) {
@@ -79,6 +81,7 @@ public class DetailPresentation {
             final BotecitoUserDetails viewer,
             final int itemId,
             final PreBookingForm form,
+            final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
         if (viewer == null) {
             ToastSupport.error(redirectAttributes, MESSAGE_PREFIX + ".preBooking.loginRequired");
@@ -90,13 +93,13 @@ public class DetailPresentation {
             item = detailService.getItemDetail(itemId, 1);
         } catch (final EntityNotFoundException ex) {
             ToastSupport.error(redirectAttributes, MESSAGE_PREFIX + ".item.notFound");
-            return itemRedirect(itemId);
+            return itemRedirect(itemId, request);
         }
 
         final Version version = item.getLatestVersion();
         if (version == null) {
             ToastSupport.error(redirectAttributes, MESSAGE_PREFIX + ".item.notFound");
-            return itemRedirect(itemId);
+            return itemRedirect(itemId, request);
         }
 
         bookingService.createBooking(
@@ -107,7 +110,7 @@ public class DetailPresentation {
                 form.getMessage(),
                 viewer.getId());
         ToastSupport.success(redirectAttributes, MESSAGE_PREFIX + ".preBooking.success");
-        return itemRedirect(itemId);
+        return itemRedirect(itemId, request);
     }
 
     // Same JSP as a loaded listing, but itemListingMissing drives the empty state.
@@ -179,8 +182,13 @@ public class DetailPresentation {
                         .format(DateTimeFormatter.ISO_LOCAL_DATE));
     }
 
-    private static ModelAndView itemRedirect(final int itemId) {
-        return new ModelAndView("redirect:/item/" + itemId);
+    private static ModelAndView itemRedirect(final int itemId, final HttpServletRequest request) {
+        final String returnTo = MarketplaceReturnUrl.relativeReturnTo(request.getParameter("returnTo"));
+        if ("/marketplace".equals(returnTo)) {
+            return new ModelAndView("redirect:/item/" + itemId);
+        }
+        return new ModelAndView(
+                "redirect:/item/" + itemId + "?returnTo=" + URLEncoder.encode(returnTo, StandardCharsets.UTF_8));
     }
 
     private static List<String> imageUrls(final Version version, final String contextPath) {

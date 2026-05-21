@@ -263,9 +263,15 @@
               <div class="flex items-center justify-between gap-3 pt-2">
                 <c:url var="reviewPrevUrl" value="/item/${item.id}">
                   <c:param name="reviewPage" value="${reviewPage.previousPage}" />
+                  <c:if test="${not empty param.returnTo}">
+                    <c:param name="returnTo" value="${param.returnTo}" />
+                  </c:if>
                 </c:url>
                 <c:url var="reviewNextUrl" value="/item/${item.id}">
                   <c:param name="reviewPage" value="${reviewPage.nextPage}" />
+                  <c:if test="${not empty param.returnTo}">
+                    <c:param name="returnTo" value="${param.returnTo}" />
+                  </c:if>
                 </c:url>
                 <c:choose>
                   <c:when test="${reviewPage.hasPrevious}">
@@ -363,6 +369,9 @@
                     </p>
                   </c:if>
                   <form:hidden path="versionId" />
+                  <c:if test="${not empty param.returnTo}">
+                    <input type="hidden" name="returnTo" value="<c:out value="${param.returnTo}" />" />
+                  </c:if>
                   <paw:datePicker
                       id="detail-prebook-date"
                       dateFieldName="date"

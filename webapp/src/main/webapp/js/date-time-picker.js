@@ -520,6 +520,24 @@
     }
   }
 
+  const ITEM_DETAIL_QUERY_KEYS = [
+    "searchQuery",
+    "location",
+    "itemType",
+    "date",
+    "startTime",
+    "endTime",
+    "capacity",
+    "weight",
+    "difficulty",
+    "minAvgRating",
+    "sortBy",
+    "pageSize",
+    "page",
+    "reviewPage",
+    "returnTo",
+  ];
+
   function buildUrlWithFilters(baseUrl, state) {
     const url = new URL(baseUrl, window.location.origin);
     const stored = readStoredFilters() || {};
@@ -557,6 +575,61 @@
     return url.toString();
   }
 
+  function buildMarketplaceReturnPath(state) {
+    const url = new URL("/marketplace", window.location.origin);
+    const stored = readStoredFilters() || {};
+    const preservedKeys = [
+      "searchQuery",
+      "location",
+      "itemType",
+      "capacity",
+      "weight",
+      "difficulty",
+      "minAvgRating",
+      "sortBy",
+      "pageSize",
+    ];
+    preservedKeys.forEach((key) => {
+      let value = stored[key];
+      if (key === "location" || key === "itemType") {
+        value = sanitizeMarketplaceLocationParam(value);
+      }
+      if (value != null && String(value).trim() !== "") {
+        url.searchParams.set(key, String(value));
+      }
+    });
+
+    ["date", "startTime", "endTime"].forEach((key) => {
+      if (state && state[key]) {
+        url.searchParams.set(key, state[key]);
+      }
+    });
+
+    const pageInput = document.querySelector(
+      '[data-marketplace-toolbar-form] input[name="page"]',
+    );
+    const pageValue =
+      pageInput?.value ||
+      new URLSearchParams(window.location.search).get("page") ||
+      "";
+    if (pageValue) {
+      url.searchParams.set("page", pageValue);
+    }
+
+    return url.pathname + url.search;
+  }
+
+  function buildItemDetailHref(baseHref, state) {
+    const url = new URL(baseHref, window.location.origin);
+
+    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
+      url.searchParams.delete(key);
+    });
+
+    url.searchParams.set("returnTo", buildMarketplaceReturnPath(state));
+    return url.pathname + url.search;
+  }
+
   function stripAvailabilityFilters(baseUrl) {
     return buildUrlWithFilters(baseUrl, {});
   }
@@ -591,7 +664,7 @@
 
         link.setAttribute(
           "href",
-          buildUrlWithFilters(link.dataset.baseHref, state),
+          buildItemDetailHref(link.dataset.baseHref, state),
         );
       });
   }

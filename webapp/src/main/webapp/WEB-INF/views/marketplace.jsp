@@ -300,9 +300,16 @@
       </div>
     </c:if>
 
+    <c:set var="marketplaceReturnTo" value="/marketplace" />
+    <c:if test="${not empty pageContext.request.queryString}">
+      <c:set var="marketplaceReturnTo" value="/marketplace?${pageContext.request.queryString}" />
+    </c:if>
+
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <c:forEach items="${items}" var="item">
-        <c:url var="itemUrl" value="/item/${item.id}" />
+        <c:url var="itemUrl" value="/item/${item.id}">
+          <c:param name="returnTo" value="${marketplaceReturnTo}" />
+        </c:url>
         <a href="${itemUrl}" data-marketplace-item-link class="group card min-w-0 bg-base-100 shadow-sm overflow-hidden no-underline text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
           <figure class="aspect-[4/3] overflow-hidden">
             <c:set var="itemCoverSrc" value="${imageUrlsByItemId[item.id]}" />

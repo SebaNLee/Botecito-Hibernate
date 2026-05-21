@@ -43,6 +43,6 @@ public class DetailController {
         if (errors.hasErrors()) {
             return detailPresentation.detailPageWithPreBookingValidationErrors(itemId, user, request, errors, 1);
         }
-        return detailPresentation.submitPreBooking(user, itemId, form, redirectAttributes);
+        return detailPresentation.submitPreBooking(user, itemId, form, request, redirectAttributes);
     }
 }

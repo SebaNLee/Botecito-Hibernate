@@ -3,6 +3,7 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.dto.AvailabilityWindow;
 import ar.edu.itba.paw.models.dto.ImageUpload;
 import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.persistence.PublishDao;
@@ -34,6 +35,7 @@ public class PublishServiceImpl implements PublishService {
 
     private final PublishDao publishDao;
     private final MailService mailService;
+    private final SubscriptionService subscriptionService;
 
     @Override
     @Transactional
@@ -69,7 +71,7 @@ public class PublishServiceImpl implements PublishService {
 
         final Optional<Version> created = publishDao.findById(itemId);
         if (created.isPresent()) {
-            sendConfirmationEmail(created.get());
+            runAfterCommit(() -> sendPublishEmails(created.get()));
         }
         return created;
     }
@@ -156,12 +158,47 @@ public class PublishServiceImpl implements PublishService {
         return errors;
     }
 
+    private void sendPublishEmails(final Version version) {
+        sendConfirmationEmail(version);
+        final Integer ownerId = version.getItem() == null || version.getItem().getHost() == null
+                ? null
+                : version.getItem().getHost().getId();
+        if (ownerId == null) {
+            return;
+        }
+        for (final Users subscriber : subscriptionService.listVerifiedSubscribersForPublisher(ownerId)) {
+            sendFollowerPublishNotificationEmail(subscriber, version);
+        }
+    }
+
     private void sendConfirmationEmail(final Version version) {
         try {
             mailService.sendPublishConfirmationEmail(version);
         } catch (final RuntimeException e) {
             LOGGER.error("Failed to send confirmation email for item {}.", version.getTitle(), e);
         }
+    }
+
+    private void sendFollowerPublishNotificationEmail(final Users subscriber, final Version version) {
+        try {
+            mailService.sendFollowerPublishNotificationEmail(subscriber, version);
+        } catch (final RuntimeException e) {
+            LOGGER.error("Failed to send follower publish notification for item {}.", version.getTitle(), e);
+        }
+    }
+
+    private static void runAfterCommit(final Runnable task) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            task.run();
+                        }
+                    });
+            return;
+        }
+        task.run();
     }
 
     private static List<AvailabilityWindow> filterAvailabilities(final List<AvailabilityWindow> windows) {

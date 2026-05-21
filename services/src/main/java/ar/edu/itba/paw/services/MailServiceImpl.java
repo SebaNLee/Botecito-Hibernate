@@ -39,6 +39,7 @@ public class MailServiceImpl implements MailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
     private final MessageSource messageSource;
+    private final String appBaseUrl;
     private final String myBoatsBaseUrl;
     private final String incomingBookingsBaseUrl;
     private final String outgoingBookingsBaseUrl;
@@ -54,6 +55,7 @@ public class MailServiceImpl implements MailService {
         this.templateEngine = templateEngine;
         this.messageSource = messageSource;
         final String baseUrl = requireProperty(credentialsProperties, "app.baseUrl");
+        this.appBaseUrl = baseUrl;
         this.myBoatsBaseUrl = baseUrl + "/my-boats";
         this.incomingBookingsBaseUrl = baseUrl + "/requests/incoming";
         this.outgoingBookingsBaseUrl = baseUrl + "/requests/outgoing";
@@ -80,6 +82,33 @@ public class MailServiceImpl implements MailService {
                     templateEngine.process("publish-confirmation", context));
         } catch (final RuntimeException e) {
             LOGGER.error("Could not send publish confirmation email for item title '{}'.", version.getTitle(), e);
+        }
+    }
+
+    @Override
+    @Async("mailTaskExecutor")
+    public void sendFollowerPublishNotificationEmail(final Users subscriber, final Version version) {
+        final Users owner = publishOwner(version);
+        if (version == null || owner == null || !hasEmail(subscriber)) {
+            return;
+        }
+        try {
+            final Locale locale = resolveLocale(subscriber);
+            final Context context = new Context(locale);
+            context.setVariable("recipientName", displayName(subscriber));
+            context.setVariable("ownerName", displayName(owner));
+            context.setVariable("itemTitle", version.getTitle());
+            context.setVariable("itemUrl", itemUrl(version));
+            sendHtmlEmail(
+                    subscriber.getEmail(),
+                    getMessage("mail.followerPublish.subject", locale, displayName(owner), version.getTitle()),
+                    templateEngine.process("follower-publish-notification", context));
+        } catch (final RuntimeException e) {
+            LOGGER.error(
+                    "Could not send follower publish notification for item title '{}' to {}.",
+                    version.getTitle(),
+                    subscriber.getEmail(),
+                    e);
         }
     }
 
@@ -249,6 +278,13 @@ public class MailServiceImpl implements MailService {
             return null;
         }
         return version.getItem().getHost();
+    }
+
+    private String itemUrl(final Version version) {
+        if (version == null || version.getItem() == null || version.getItem().getId() == null) {
+            return appBaseUrl + "/marketplace";
+        }
+        return appBaseUrl + "/item/" + version.getItem().getId();
     }
 
     private static String displayName(final Users user) {

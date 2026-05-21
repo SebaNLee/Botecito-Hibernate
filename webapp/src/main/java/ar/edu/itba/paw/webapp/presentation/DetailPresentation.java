@@ -8,6 +8,7 @@ import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.BookingService;
 import ar.edu.itba.paw.services.DetailService;
+import ar.edu.itba.paw.services.SubscriptionService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PreBookingForm;
@@ -37,6 +38,7 @@ public class DetailPresentation {
     private final DetailService detailInterface;
     private final BookingService bookingInterface;
     private final UserService userService;
+    private final SubscriptionService subscriptionService;
     private final ToastPresentation toastPresentation;
 
     /**
@@ -211,6 +213,9 @@ public class DetailPresentation {
 
         final Users itemOwner =
                 ownerId <= 0 ? null : userService.findById(ownerId).orElse(null);
+        final boolean canSubscribeToOwner = itemOwner != null && !isOwner;
+        final boolean subscribedToOwner =
+                canSubscribeToOwner && viewer != null && subscriptionService.isSubscribed(viewer.getId(), ownerId);
 
         final List<Review> versionReviews = displayPair.getReviews() == null ? List.of() : displayPair.getReviews();
 
@@ -230,6 +235,9 @@ public class DetailPresentation {
         mav.addObject("hideListingLiveVersionNavigation", viewingNonCurrentVersion && !isActive && !isOwner);
         mav.addObject("listingInactiveNotice", !isActive);
         mav.addObject("itemOwner", itemOwner);
+        mav.addObject("canSubscribeToOwner", canSubscribeToOwner);
+        mav.addObject("subscribedToOwner", subscribedToOwner);
+        mav.addObject("detailReturnPath", currentRequestPath(request));
         mav.addObject("versionReviews", versionReviews);
         mav.addObject("itemImageUrl", primaryImageUrl(displayPair.getImages(), contextPath));
         mav.addObject("itemImageUrls", prefixImagePaths(displayPair.getImages(), contextPath));
@@ -285,6 +293,19 @@ public class DetailPresentation {
         mav.addObject("showPreBookingPanel", showPreBookingPanel);
 
         return mav;
+    }
+
+    private static String currentRequestPath(final HttpServletRequest request) {
+        if (request == null) {
+            return "/marketplace";
+        }
+        final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
+        String path = request.getRequestURI() == null ? "/marketplace" : request.getRequestURI();
+        if (!contextPath.isEmpty() && path.startsWith(contextPath)) {
+            path = path.substring(contextPath.length());
+        }
+        final String query = request.getQueryString();
+        return query == null || query.isBlank() ? path : path + "?" + query;
     }
 
     private boolean isCompleteAvailabilityWindow(final Availability w) {

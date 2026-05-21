@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.services.SubscriptionService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ProfileForm;
@@ -16,6 +17,7 @@ import org.springframework.web.servlet.ModelAndView;
 public class ProfilePresentation {
 
     private final UserService userService;
+    private final SubscriptionService subscriptionService;
     private final AuthenticatedUserResolver authenticatedUserResolver;
 
     public ModelAndView profilePasswordRecoveryRequest(final BotecitoUserDetails principal) {
@@ -90,6 +92,7 @@ public class ProfilePresentation {
     private ModelAndView buildProfileView(final Users user, final boolean profileEdit) {
         final ModelAndView mav = new ModelAndView("profile");
         mav.addObject("user", user);
+        mav.addObject("subscriptions", subscriptionService.listSubscriptions(user.getId()));
         mav.addObject("memberSinceDisplay", formatMemberSince(user.getCreatedAt()));
         mav.addObject("profileEdit", profileEdit);
         return mav;

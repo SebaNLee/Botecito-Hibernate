@@ -8,6 +8,8 @@ public interface MailService {
 
     void sendPublishConfirmationEmail(Version version);
 
+    void sendFollowerPublishNotificationEmail(Users subscriber, Version version);
+
     void sendPasswordRecoveryEmail(Users user);
 
     void sendEmailVerificationEmail(Users user);

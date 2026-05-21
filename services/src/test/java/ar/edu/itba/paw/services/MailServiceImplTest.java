@@ -93,6 +93,7 @@ public class MailServiceImplTest {
     @Test
     public void testSendPublishConfirmationEmailUsesOwnerModel() {
         final Version version = version("Boat", user("owner@a.com", "Owner", "User", "es"));
+        version.getItem().setId(44);
         stubMessage("mail.publishConfirmation.subject", "Published");
         stubTemplate("publish-confirmation");
         stubMimeMessage();
@@ -104,6 +105,27 @@ public class MailServiceImplTest {
         Mockito.verify(templateEngine).process(Mockito.eq("publish-confirmation"), contextCaptor.capture());
         Assertions.assertEquals(
                 "http://localhost:8080/my-boats", contextCaptor.getValue().getVariable("profileUrl"));
+    }
+
+    @Test
+    public void testSendFollowerPublishNotificationEmailUsesSubscriberAndVersionModel() {
+        final Users subscriber = user("subscriber@a.com", "Sub", "User", "en");
+        final Version version = version("Boat", user("owner@a.com", "Owner", "User", "es"));
+        version.getItem().setId(44);
+        stubMessage("mail.followerPublish.subject", "New publication");
+        stubTemplate("follower-publish-notification");
+        stubMimeMessage();
+
+        Assertions.assertDoesNotThrow(() -> mailService.sendFollowerPublishNotificationEmail(subscriber, version));
+
+        Mockito.verify(mailSender).send(Mockito.any(MimeMessage.class));
+        final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
+        Mockito.verify(templateEngine).process(Mockito.eq("follower-publish-notification"), contextCaptor.capture());
+        Assertions.assertEquals("Sub User", contextCaptor.getValue().getVariable("recipientName"));
+        Assertions.assertEquals("Owner User", contextCaptor.getValue().getVariable("ownerName"));
+        Assertions.assertEquals("Boat", contextCaptor.getValue().getVariable("itemTitle"));
+        Assertions.assertEquals(
+                "http://localhost:8080/item/44", contextCaptor.getValue().getVariable("itemUrl"));
     }
 
     @Test

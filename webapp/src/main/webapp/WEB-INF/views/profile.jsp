@@ -21,6 +21,9 @@
 <spring:message code="profile.paymentAlias" var="paymentAliasLabel" />
 <spring:message code="profile.preferredLanguage.es" var="spanishLabel" />
 <spring:message code="profile.preferredLanguage.en" var="englishLabel" />
+<spring:message code="profile.subscriptions.title" var="subscriptionsTitle" />
+<spring:message code="profile.subscriptions.empty" var="subscriptionsEmptyLabel" />
+<spring:message code="subscription.unsubscribe" var="subscriptionUnsubscribeLabel" />
 
 <c:set var="initials" value="" />
 <c:if test="${not empty user.firstName}">
@@ -107,6 +110,53 @@
               </c:if>
             </div>
           </form:form>
+
+          <div class="border-b border-outline-variant/20"></div>
+
+          <section class="space-y-4">
+            <div class="flex min-w-0 items-center justify-between gap-3">
+              <h2 class="text-xl font-extrabold tracking-tight text-on-background m-0 break-words">
+                <c:out value="${subscriptionsTitle}" />
+              </h2>
+            </div>
+            <c:choose>
+              <c:when test="${empty subscriptions}">
+                <p class="m-0 rounded-xl border border-dashed border-outline-variant/40 bg-base-200/45 px-4 py-3 text-sm text-on-surface-variant">
+                  <c:out value="${subscriptionsEmptyLabel}" />
+                </p>
+              </c:when>
+              <c:otherwise>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <c:forEach items="${subscriptions}" var="subscriptionUser">
+                    <c:set var="subscriptionFirstName" value="${subscriptionUser.firstName != null ? subscriptionUser.firstName : ''}" />
+                    <c:set var="subscriptionLastName" value="${subscriptionUser.lastName != null ? subscriptionUser.lastName : ''}" />
+                    <c:set var="subscriptionFirstNameTrimmed" value="${fn:trim(subscriptionFirstName)}" />
+                    <c:set var="subscriptionLastNameTrimmed" value="${fn:trim(subscriptionLastName)}" />
+                    <div class="rounded-xl bg-base-200 p-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div class="min-w-0">
+                        <p class="m-0 font-bold text-on-surface break-words">
+                          <c:choose>
+                            <c:when test="${not empty subscriptionFirstNameTrimmed or not empty subscriptionLastNameTrimmed}">
+                              <c:out value="${subscriptionFirstNameTrimmed}" />
+                              <c:if test="${not empty subscriptionFirstNameTrimmed and not empty subscriptionLastNameTrimmed}"> </c:if>
+                              <c:out value="${subscriptionLastNameTrimmed}" />
+                            </c:when>
+                            <c:otherwise><c:out value="${subscriptionUser.email}" /></c:otherwise>
+                          </c:choose>
+                        </p>
+                        <p class="m-0 mt-1 text-xs text-on-surface-variant break-all"><c:out value="${subscriptionUser.email}" /></p>
+                      </div>
+                      <c:url var="unsubscribeProfileUrl" value="/users/${subscriptionUser.id}/unsubscribe" />
+                      <form action="${unsubscribeProfileUrl}" method="post" class="m-0 shrink-0">
+                        <input type="hidden" name="return" value="/profile" />
+                        <paw:button type="submit" color="outline" icon="notifications_off" text="${subscriptionUnsubscribeLabel}" cssClass="w-full sm:w-auto" />
+                      </form>
+                    </div>
+                  </c:forEach>
+                </div>
+              </c:otherwise>
+            </c:choose>
+          </section>
 
           <div class="border-b border-outline-variant/20"></div>
 

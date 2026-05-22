@@ -1,16 +1,13 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.dto.BookingQueryModel;
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.PaymentProof;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -52,33 +49,10 @@ public class NewBookingJpaDao {
         em.persist(proof);
     }
 
-    public BookingSearchResult searchBookings(
-            final int userId,
-            final boolean asHost,
-            final String searchQuery,
-            final LocalDate date,
-            final BookingStatusEnum status,
-            final Integer page,
-            final Integer pageSize,
-            final String sortBy) {
-        final Map<String, Object> params = new HashMap<>();
-        final int resolvedPageSize = resolvePageSize(pageSize);
-        final int offset = (resolvePage(page) - 1) * resolvedPageSize;
-
-        final StringBuilder hql = new StringBuilder(
-                "SELECT b FROM Booking b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof INNER JOIN FETCH b.version v "
-                        + "INNER JOIN FETCH v.item i LEFT JOIN FETCH i.host h ");
-        appendUserFilters(hql, userId, asHost, searchQuery, date, status, params);
-        hql.append(orderByBookings(sortBy));
-
-        final TypedQuery<Booking> query = em.createQuery(hql.toString(), Booking.class);
-        bindParams(query, params);
-        query.setFirstResult(offset);
-        query.setMaxResults(resolvedPageSize);
-
-        final List<Booking> rows = query.getResultList();
-        final long total = countMatching(userId, asHost, searchQuery, date, status);
-        return new BookingSearchResult(rows, total);
+    public BookingSearchResult searchBookings(final BookingQueryModel query) {
+        // final Map<String, Object> params = new HashMap<>();
+        // TODO
+        return null;
     }
 
     public Optional<PaymentProof> findPaymentProofForParticipant(final int bookingId, final int userId) {
@@ -112,58 +86,6 @@ public class NewBookingJpaDao {
                 .executeUpdate();
     }
 
-    private long countMatching(
-            final int userId,
-            final boolean isHost,
-            final String searchQuery,
-            final LocalDate date,
-            final BookingStatusEnum status) {
-        final Map<String, Object> params = new HashMap<>();
-        final StringBuilder hql = new StringBuilder("SELECT COUNT(b) FROM Booking b INNER JOIN b.version ");
-        appendUserFilters(hql, userId, isHost, searchQuery, date, status, params);
-        final TypedQuery<Long> countQuery = em.createQuery(hql.toString(), Long.class);
-        bindParams(countQuery, params);
-        return toLong(countQuery.getSingleResult());
-    }
-
-    private static void appendUserFilters(
-            final StringBuilder hql,
-            final int userId,
-            final boolean isHost,
-            final String searchQuery,
-            final LocalDate date,
-            final BookingStatusEnum status,
-            final Map<String, Object> params) {
-        if (isHost) {
-            hql.append("WHERE b.version.item.host.id = :userId AND b.guest IS NOT NULL AND b.guest.id <> :userId");
-        } else {
-            hql.append("WHERE b.guest IS NOT NULL AND b.guest.id = :userId AND b.version.item.host.id <> :userId");
-        }
-        params.put("userId", userId);
-        appendSharedBookingSearchFilters(hql, searchQuery, date, status, params);
-    }
-
-    private static void appendSharedBookingSearchFilters(
-            final StringBuilder hql,
-            final String searchQuery,
-            final LocalDate date,
-            final BookingStatusEnum status,
-            final Map<String, Object> params) {
-        if (hasText(searchQuery)) {
-            hql.append(" AND LOWER(b.version.title) LIKE :searchQuery ESCAPE '!'");
-            params.put("searchQuery", setupSearchQuery(searchQuery));
-        }
-        if (status != null) {
-            hql.append(" AND b.status = :status");
-            params.put("status", status);
-        }
-        if (date != null) {
-            hql.append(" AND b.start < :dayEnd AND b.end > :dayStart");
-            params.put("dayStart", date.atStartOfDay(ZoneOffset.UTC).toLocalDateTime());
-            params.put("dayEnd", date.plusDays(1).atStartOfDay(ZoneOffset.UTC).toLocalDateTime());
-        }
-    }
-
     private static long toLong(final Object value) {
         if (value == null) {
             return 0L;
@@ -172,25 +94,6 @@ public class NewBookingJpaDao {
             return number.longValue();
         }
         return Long.parseLong(value.toString());
-    }
-
-    private static void bindParams(final javax.persistence.Query query, final Map<String, Object> params) {
-        for (final Map.Entry<String, Object> entry : params.entrySet()) {
-            query.setParameter(entry.getKey(), entry.getValue());
-        }
-    }
-
-    private static String orderByBookings(final String sortBy) {
-        if (sortBy == null) {
-            return " ORDER BY b.createdAt DESC, b.id DESC";
-        }
-        return switch (sortBy) {
-            case "oldest" -> " ORDER BY b.createdAt ASC, b.id ASC";
-            case "start_asc" -> " ORDER BY b.start ASC, b.id ASC";
-            case "start_desc" -> " ORDER BY b.start DESC, b.id DESC";
-            case "newest" -> " ORDER BY b.createdAt DESC, b.id DESC";
-            default -> " ORDER BY b.createdAt DESC, b.id DESC";
-        };
     }
 
     private static int resolvePage(final Integer page) {
@@ -208,6 +111,35 @@ public class NewBookingJpaDao {
             return pageSize;
         }
         return DEFAULT_PAGE_SIZE;
+    }
+
+    private static String nativeOrderBy(final BookingQueryModel query) {
+        return " ORDER BY " + nativeOrderByClause(query) + " ";
+    }
+
+    private static String nativeOrderByClause(final BookingQueryModel query) {
+        return switch (resolveSortBy(query)) {
+            case "oldest" -> " b.created_at ASC, b.id ASC";
+            case "start_asc" -> " b.start ASC, b.id ASC";
+            case "start_desc" -> " b.start DESC, b.id DESC";
+            default -> " b.created_at DESC, b.id DESC";
+        };
+    }
+
+    private static String jpqlOrderBy(final BookingQueryModel query) {
+        return switch (resolveSortBy(query)) {
+            case "oldest" -> " b.createdAt ASC, b.id ASC";
+            case "start_asc" -> " b.start ASC, b.id ASC";
+            case "start_desc" -> " b.start DESC, b.id DESC";
+            default -> " b.createdAt DESC, b.id DESC";
+        };
+    }
+
+    private static String resolveSortBy(final BookingQueryModel query) {
+        if (query == null || query.getSortBy() == null) {
+            return null;
+        }
+        return query.getSortBy();
     }
 
     private static String setupSearchQuery(final String searchQuery) {

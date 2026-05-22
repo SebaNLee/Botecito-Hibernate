@@ -12,7 +12,7 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 public class BookingQueryModel {
-    private int userId;
+    private int callerId;
     private boolean asHost;
     private String searchQuery;
     private LocalDate date;

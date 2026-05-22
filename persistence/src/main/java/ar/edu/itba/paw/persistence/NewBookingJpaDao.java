@@ -5,9 +5,14 @@ import ar.edu.itba.paw.models.dto.BookingSearchResult;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.PaymentProof;
+import ar.edu.itba.paw.persistence.utils.Paging;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -17,8 +22,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class NewBookingJpaDao {
 
-    private static final int DEFAULT_PAGE = 1;
     private static final int DEFAULT_PAGE_SIZE = 12;
+
+    private static final String NATIVE_JOIN =
+            "booking b JOIN version v ON b.version_id = v.id JOIN item i ON v.item_id = i.id ";
 
     // Mejor pedir por parametro el complemento de este set
     private static final EnumSet<BookingStatusEnum> NON_AUTO_CANCEL_STATES = EnumSet.of(
@@ -50,9 +57,81 @@ public class NewBookingJpaDao {
     }
 
     public BookingSearchResult searchBookings(final BookingQueryModel query) {
-        // final Map<String, Object> params = new HashMap<>();
-        // TODO
+        long totalCount = countBookings(query);
+
+        final Map<String, Object> params = new HashMap<>();
+
+        StringBuilder sql = new StringBuilder("SELECT b.id FROM ");
+        sql.append(NATIVE_JOIN);
+        sql.append(getFilter(query, params)).append(nativeOrderBy(query));
+
+        var nativeQuery = em.createNativeQuery(sql.toString());
+        for (final Map.Entry<String, Object> entry : params.entrySet()) {
+            nativeQuery.setParameter(entry.getKey(), entry.getValue());
+        }
+
+        final int pageSize = resolvePageSize(query);
+        final int page = resolvePage(query);
+        Paging.apply(nativeQuery, page, pageSize);
+        final List<Integer> ids = Paging.toIntegerIds(nativeQuery.getResultList());
+
+        if (ids.isEmpty()) {
+            return new BookingSearchResult(List.of(), totalCount);
+        }
+
         return null;
+    }
+
+    // Using b = booking, v = b.version, i = b.version.item
+    private static String getFilter(BookingQueryModel query, Map<String, Object> params) {
+        List<String> clauses = new ArrayList<>();
+
+        if (query.isAsHost()) {
+            // Host query, host must be the caller and not be the guest
+            clauses.add("i.host_id = :callerId AND b.guest_id IS NOT NULL AND b.guest_id <> :callerId");
+        } else {
+            // Guest query, guest must be the caller and not the host
+            clauses.add("b.guest_id = :callerId AND i.host_id <> :callerId");
+        }
+        params.put("callerId", query.getCallerId());
+
+        if (hasText(query.getSearchQuery())) {
+            clauses.add("v.title ILIKE :searchQuery ESCAPE '!'");
+            params.put("searchQuery", setupSearchQuery(query.getSearchQuery()));
+        }
+
+        if (query.getDate() != null) {
+            clauses.add("b.end > :dayStart AND b.start < :dayEnd");
+
+            var dayStart = query.getDate().atStartOfDay(ZoneOffset.UTC).toLocalDateTime();
+            params.put("dayStart", dayStart);
+            params.put("dayEnd", dayStart.plusDays(1));
+        }
+
+        if (query.getStatus() != null) {
+            clauses.add("b.status = CAST(:status AS booking_status_enum)");
+            params.put("status", query.getStatus());
+        }
+
+        if (!clauses.isEmpty()) {
+            return "WHERE " + String.join(" AND ", clauses);
+        }
+        return "";
+    }
+
+    private long countBookings(final BookingQueryModel query) {
+        final Map<String, Object> params = new HashMap<>();
+
+        StringBuilder sql = new StringBuilder("SELECT b.id FROM ");
+        sql.append(NATIVE_JOIN);
+        sql.append(getFilter(query, params)).append(nativeOrderBy(query));
+
+        var countQuery = em.createNativeQuery(sql.toString());
+        for (final Map.Entry<String, Object> entry : params.entrySet()) {
+            countQuery.setParameter(entry.getKey(), entry.getValue());
+        }
+
+        return ((Number) countQuery.getSingleResult()).longValue();
     }
 
     public Optional<PaymentProof> findPaymentProofForParticipant(final int bookingId, final int userId) {
@@ -86,31 +165,18 @@ public class NewBookingJpaDao {
                 .executeUpdate();
     }
 
-    private static long toLong(final Object value) {
-        if (value == null) {
-            return 0L;
+    private static int resolvePage(final BookingQueryModel query) {
+        if (query == null) {
+            return Paging.DEFAULT_PAGE;
         }
-        if (value instanceof Number number) {
-            return number.longValue();
-        }
-        return Long.parseLong(value.toString());
+        return Paging.resolvePage(query.getPage());
     }
 
-    private static int resolvePage(final Integer page) {
-        if (page == null || page < 1) {
-            return DEFAULT_PAGE;
-        }
-        return page;
-    }
-
-    private static int resolvePageSize(final Integer pageSize) {
-        if (pageSize == null) {
+    private static int resolvePageSize(final BookingQueryModel query) {
+        if (query == null) {
             return DEFAULT_PAGE_SIZE;
         }
-        if (pageSize == 6 || pageSize == 12 || pageSize == 18) {
-            return pageSize;
-        }
-        return DEFAULT_PAGE_SIZE;
+        return Paging.resolvePageSize(query.getPageSize(), DEFAULT_PAGE_SIZE, 6, 12, 18);
     }
 
     private static String nativeOrderBy(final BookingQueryModel query) {

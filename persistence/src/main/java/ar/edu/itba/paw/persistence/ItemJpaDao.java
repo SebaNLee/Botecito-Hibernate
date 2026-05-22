@@ -1,15 +1,10 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
-import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
-import ar.edu.itba.paw.models.entity.Location;
-import ar.edu.itba.paw.models.entity.Media;
-import ar.edu.itba.paw.models.entity.MediaId;
-import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.persistence.projections.MyBoatsRow;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -105,73 +100,6 @@ public class ItemJpaDao implements ItemDao {
     @Override
     public void deleteItem(final Item item) {
         entityManager.remove(item);
-    }
-
-    @Override
-    public Optional<Version> findCurrentVersionByItemId(final int itemId) {
-        final List<Version> rows = entityManager
-                .createQuery(
-                        "FROM Version v WHERE v.item.id = :itemId"
-                                + " AND v.createdAt = (SELECT MAX(v2.createdAt) FROM Version v2 WHERE v2.item.id = :itemId)",
-                        Version.class)
-                .setParameter("itemId", itemId)
-                .setMaxResults(1)
-                .getResultList();
-        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
-    }
-
-    @Override
-    public boolean hasBookingReferencesByVersionId(final int versionId) {
-        final Long count = entityManager
-                .createQuery("SELECT COUNT(b) FROM Booking b WHERE b.version.id = :versionId", Long.class)
-                .setParameter("versionId", versionId)
-                .getSingleResult();
-        return count != null && count > 0;
-    }
-
-    @Override
-    public void persistVersion(final Version version) {
-        entityManager.persist(version);
-    }
-
-    @Override
-    public void copyVersionContent(final int sourceVersionId, final Version targetVersion) {
-        copyAvailabilities(sourceVersionId, targetVersion);
-        copyMedia(sourceVersionId, targetVersion);
-    }
-
-    @Override
-    public Location getLocationReference(final int locationId) {
-        return entityManager.getReference(Location.class, locationId);
-    }
-
-    private void copyAvailabilities(final int sourceVersionId, final Version targetVersion) {
-        final List<Availability> availabilities = entityManager
-                .createQuery("FROM Availability a WHERE a.version.id = :versionId", Availability.class)
-                .setParameter("versionId", sourceVersionId)
-                .getResultList();
-        for (final Availability a : availabilities) {
-            final Availability copy = new Availability();
-            copy.setVersion(targetVersion);
-            copy.setWeekday(a.getWeekday());
-            copy.setStartTime(a.getStartTime());
-            copy.setEndTime(a.getEndTime());
-            entityManager.persist(copy);
-        }
-    }
-
-    private void copyMedia(final int sourceVersionId, final Version targetVersion) {
-        final List<Media> mediaList = entityManager
-                .createQuery("FROM Media m WHERE m.version.id = :versionId", Media.class)
-                .setParameter("versionId", sourceVersionId)
-                .getResultList();
-        for (final Media m : mediaList) {
-            final Media copy = new Media();
-            copy.setId(new MediaId(targetVersion.getId(), m.getId().getIndex()));
-            copy.setVersion(targetVersion);
-            copy.setImage(m.getImage());
-            entityManager.persist(copy);
-        }
     }
 
     private static String baseMyBoatsQuery() {

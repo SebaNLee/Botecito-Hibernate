@@ -16,15 +16,6 @@ public interface ItemService {
 
     boolean deleteMyBoatsItem(int itemId, int ownerId);
 
-    int createPublicationVersion(
-            int itemId,
-            int ownerId,
-            String title,
-            String description,
-            int pricePerHour,
-            Integer difficulty,
-            int locationOptionId);
-
     void setItemActiveForOwner(int itemId, int ownerId, boolean active);
 
     Optional<Image> findImageWithDataById(int imageId);

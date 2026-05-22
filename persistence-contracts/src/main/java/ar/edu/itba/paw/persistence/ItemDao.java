@@ -3,8 +3,6 @@ package ar.edu.itba.paw.persistence;
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
-import ar.edu.itba.paw.models.entity.Location;
-import ar.edu.itba.paw.models.entity.Version;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,16 +20,6 @@ public interface ItemDao {
     boolean hasActiveOrFutureBookings(int itemId);
 
     void deleteItem(Item item);
-
-    Optional<Version> findCurrentVersionByItemId(int itemId);
-
-    boolean hasBookingReferencesByVersionId(int versionId);
-
-    void persistVersion(Version version);
-
-    void copyVersionContent(int sourceVersionId, Version targetVersion);
-
-    Location getLocationReference(int locationId);
 
     Optional<Image> findImageWithDataById(int imageId);
 }

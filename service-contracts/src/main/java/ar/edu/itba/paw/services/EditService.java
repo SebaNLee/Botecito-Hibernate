@@ -7,7 +7,8 @@ import java.util.List;
 public interface EditService {
 
     /**
-     * @return {@code true} if the publication was updated, {@code false} if nothing changed
+     * @return {@code true} if the publication was updated, {@code false} if nothing
+     *         changed
      */
     boolean edit(
             int itemId,

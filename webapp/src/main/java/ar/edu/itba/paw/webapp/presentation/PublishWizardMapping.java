@@ -95,20 +95,6 @@ public final class PublishWizardMapping {
         return images;
     }
 
-    public static int countGallerySlots(final PublishBoatForm form) {
-        final String galleryOrder = form.getGalleryOrder();
-        if (galleryOrder == null || galleryOrder.isBlank()) {
-            return 0;
-        }
-        int count = 0;
-        for (final String token : galleryOrder.split(",")) {
-            if (!token.trim().isEmpty()) {
-                count++;
-            }
-        }
-        return count;
-    }
-
     public static void addAvailabilityEditorData(final ModelAndView mav, final PublishBoatForm form) {
         mav.addObject("existingSlotsJson", toExistingSlotsJson(form));
         mav.addObject("enabledWeekdays", buildEnabledWeekdaysModel(form));

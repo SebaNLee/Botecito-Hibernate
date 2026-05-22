@@ -59,9 +59,11 @@ public class NewBookingJpaDao {
     public BookingSearchResult searchBookings(final BookingQueryModel query) {
         long totalCount = countBookings(query);
 
+        // Get IDs of the bookings that will be returned in THIS page
+
         final Map<String, Object> params = new HashMap<>();
 
-        StringBuilder sql = new StringBuilder("SELECT b.id FROM ");
+        StringBuilder sql = new StringBuilder("SELECT DISTINCT b.id FROM ");
         sql.append(NATIVE_JOIN);
         sql.append(getFilter(query, params)).append(nativeOrderBy(query));
 
@@ -79,7 +81,16 @@ public class NewBookingJpaDao {
             return new BookingSearchResult(List.of(), totalCount);
         }
 
-        return null;
+        // Fetch the rest of the data
+
+        String jpql =
+                "SELECT DISTINCT b FROM Booking b JOIN FETCH b.guest JOIN FETCH b.version v JOIN FETCH v.item i JOIN FETCH i.host WHERE b.id IN :ids"
+                        + jpqlOrderBy(query);
+        var dataQuery = em.createQuery(jpql, Booking.class).setParameter("ids", ids);
+
+        List<Booking> results = dataQuery.getResultList();
+
+        return new BookingSearchResult(results, totalCount);
     }
 
     // Using b = booking, v = b.version, i = b.version.item
@@ -122,7 +133,7 @@ public class NewBookingJpaDao {
     private long countBookings(final BookingQueryModel query) {
         final Map<String, Object> params = new HashMap<>();
 
-        StringBuilder sql = new StringBuilder("SELECT b.id FROM ");
+        StringBuilder sql = new StringBuilder("SELECT DISTINCT b.id FROM ");
         sql.append(NATIVE_JOIN);
         sql.append(getFilter(query, params)).append(nativeOrderBy(query));
 

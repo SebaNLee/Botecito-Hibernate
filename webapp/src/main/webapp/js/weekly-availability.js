@@ -48,6 +48,7 @@
 
     this.loadExisting();
     this.cacheDayDom();
+    this.applyTimelineTickPositions();
     this.bindToggles();
     this.bindGlobalDragging();
     this.renderAll();
@@ -82,7 +83,12 @@
       var key = WEEKDAYS[j].key;
       var toggle = this.root.querySelector('[data-day-toggle="' + key + '"]');
       if (toggle) {
-        this.days[key].enabled = toggle.checked;
+        if (this.days[key].ranges.length > 0) {
+          toggle.checked = true;
+          this.days[key].enabled = true;
+        } else {
+          this.days[key].enabled = toggle.checked;
+        }
       }
 
       this.days[key].ranges.sort(function (a, b) {
@@ -714,18 +720,18 @@
         return a.start - b.start;
       });
 
+      var rangeIndex = 0;
       for (var j = 0; j < sorted.length; j++) {
         var range = sorted[j];
+        var prefix = "availabilityRanges[" + rangeIndex + "].";
+        this.hiddenContainer.appendChild(hiddenInput(prefix + "weekday", key));
         this.hiddenContainer.appendChild(
-          hiddenInput(
-            "availabilityRanges",
-            key +
-              "|" +
-              serializeStep(range.start) +
-              "|" +
-              serializeStep(range.end)
-          )
+          hiddenInput(prefix + "startTime", serializeStep(range.start))
         );
+        this.hiddenContainer.appendChild(
+          hiddenInput(prefix + "endTime", serializeStep(range.end))
+        );
+        rangeIndex += 1;
       }
     }
   };
@@ -798,6 +804,15 @@
 
     return best;
   }
+
+  WeeklyAvailabilityGrid.prototype.applyTimelineTickPositions = function () {
+    this.root.querySelectorAll("[data-tick-left-pct]").forEach(function (tick) {
+      var left = tick.getAttribute("data-tick-left-pct");
+      if (left != null && left !== "") {
+        tick.style.left = left + "%";
+      }
+    });
+  };
 
   function percent(step) {
     return (step / TOTAL_STEPS) * 100;

@@ -59,7 +59,7 @@
     <multipart-config>
         <location>/tmp</location>
         <max-file-size>5242880</max-file-size>
-        <max-request-size>10485760</max-request-size>
+        <max-request-size>20971520</max-request-size>
         <file-size-threshold>2621440</file-size-threshold>
     </multipart-config>
     <init-param>

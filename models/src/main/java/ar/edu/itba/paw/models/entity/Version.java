@@ -43,10 +43,10 @@ public class Version {
     @JoinColumn(name = "type_id", nullable = false)
     private ItemType type;
 
-    @Column(name = "title", nullable = false, length = 1000)
+    @Column(name = "title", nullable = false, length = 100)
     private String title;
 
-    @Column(name = "description", length = 100)
+    @Column(name = "description", length = 1000)
     private String description;
 
     @Column(name = "price", nullable = false, precision = 12, scale = 2)

@@ -38,6 +38,7 @@
 <spring:message code="gallery.manage" var="galleryManageLabel" />
 <spring:message code="gallery.modal.title" var="galleryModalTitle" />
 <spring:message code="gallery.modal.close" var="galleryModalClose" />
+<spring:message code="gallery.count.label" var="galleryCountMessageTemplate" />
 
 <c:if test="${resolvedDisplayMode == 'modal'}">
   <div class="space-y-3" data-image-gallery-trigger>
@@ -83,9 +84,18 @@
       <h3 class="font-extrabold text-2xl tracking-tight m-0 mb-4"><c:out value="${galleryModalTitle}" /></h3>
 </c:if>
 
-<div class="space-y-4 ${resolvedDisplayMode == 'modal' ? '' : ''}" data-image-gallery data-display-mode="${resolvedDisplayMode}">
+<div class="space-y-4 ${resolvedDisplayMode == 'modal' ? '' : ''}"
+     data-image-gallery
+     data-display-mode="${resolvedDisplayMode}"
+     data-max-images="${maxImages}"
+     data-gallery-count-template="<c:out value='${galleryCountMessageTemplate}' />"
+     data-gallery-cover-badge="<c:out value='${galleryCoverBadge}' />"
+     data-gallery-badge-class="${gaBadgeClass}"
+     data-gallery-remove-label="<c:out value='${galleryRemoveLabel}' />"
+     data-gallery-move-left-label="<c:out value='${galleryMoveLeftLabel}' />"
+     data-gallery-move-right-label="<c:out value='${galleryMoveRightLabel}' />">
   <div class="flex items-center justify-between gap-3">
-    <p class="m-0 text-xs uppercase tracking-wider font-bold text-outline"><c:out value="${galleryCountLabel}" /></p>
+    <p class="m-0 text-xs uppercase tracking-wider font-bold text-outline" data-gallery-count><c:out value="${galleryCountLabel}" /></p>
   </div>
 
   <c:if test="${not empty errorMessage}">
@@ -94,9 +104,10 @@
 
   <c:choose>
     <c:when test="${imageCount == 0}">
-      <div class="rounded-xl bg-base-200 p-6 text-center text-sm text-on-surface-variant">
+      <div data-gallery-empty class="rounded-xl bg-base-200 p-6 text-center text-sm text-on-surface-variant">
         <c:out value="${galleryEmptyLabel}" />
       </div>
+      <ul data-gallery-local-preview data-gallery-sortable class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 list-none p-0 m-0"></ul>
     </c:when>
     <c:otherwise>
       <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3 list-none p-0 m-0"

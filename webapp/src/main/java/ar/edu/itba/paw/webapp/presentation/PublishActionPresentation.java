@@ -46,9 +46,9 @@ public class PublishActionPresentation {
         final PublishBoatForm form = new PublishBoatForm();
         form.setTitle(item.getTitle());
         form.setDescription(item.getDescription());
-        form.setPricePerHour(item.getPrice() == null ? "" : String.valueOf(item.getPrice()));
+        form.setPricePerHour(item.getPrice());
         form.setDifficulty(item.getDifficulty());
-        form.setLocationOptionId(item.getLocationId() == null ? "" : String.valueOf(item.getLocationId()));
+        form.setLocationOptionId(item.getLocationId());
 
         return editPublicationModelAndView(item, request).addObject("publishForm", form);
     }
@@ -66,15 +66,10 @@ public class PublishActionPresentation {
 
         final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, principal.getId());
 
-        final Integer parsedPrice =
-                parseIntegerField(form.getPricePerHour(), "pricePerHour", "publish.validation.price.numeric", errors);
-        final Integer parsedLocationOptionId = parseIntegerField(
-                form.getLocationOptionId(), "locationOptionId", "publish.validation.location.invalid", errors);
-
         if (errors.hasErrors()) {
             return editPublicationModelAndView(item, request);
         }
-        if (parsedPrice == null || parsedLocationOptionId == null) {
+        if (form.getPricePerHour() == null || form.getLocationOptionId() == null) {
             errors.reject("publish.submit.persistenceError");
             return editPublicationModelAndView(item, request);
         }
@@ -114,9 +109,9 @@ public class PublishActionPresentation {
                     principal.getId(),
                     form.getTitle().trim(),
                     form.getDescription() == null ? "" : form.getDescription().trim(),
-                    parsedPrice,
+                    form.getPricePerHour(),
                     form.getDifficulty(),
-                    parsedLocationOptionId);
+                    form.getLocationOptionId());
         } catch (final VersionNotFoundException e) {
             errors.reject("publish.submit.persistenceError");
             return editPublicationModelAndView(item, request);
@@ -279,14 +274,13 @@ public class PublishActionPresentation {
                 form.getDescription() == null ? "" : form.getDescription().trim())) {
             return true;
         }
-        if (item.getPrice() == null || !Objects.equals(String.valueOf(item.getPrice()), form.getPricePerHour())) {
+        if (!Objects.equals(item.getPrice(), form.getPricePerHour())) {
             return true;
         }
         if (!Objects.equals(item.getDifficulty(), form.getDifficulty())) {
             return true;
         }
-        if (item.getLocationId() == null
-                || !Objects.equals(String.valueOf(item.getLocationId()), form.getLocationOptionId())) {
+        if (!Objects.equals(item.getLocationId(), form.getLocationOptionId())) {
             return true;
         }
         return false;
@@ -326,19 +320,6 @@ public class PublishActionPresentation {
             } else if ("decline".equals(decision)) {
                 bookingInterface.rejectBooking(booking.getId(), ownerId);
             }
-        }
-    }
-
-    private static Integer parseIntegerField(
-            final String rawValue, final String fieldName, final String errorCode, final BindingResult errors) {
-        if (rawValue == null) {
-            return null;
-        }
-        try {
-            return Integer.parseInt(rawValue.trim());
-        } catch (final NumberFormatException e) {
-            errors.rejectValue(fieldName, errorCode);
-            return null;
         }
     }
 }

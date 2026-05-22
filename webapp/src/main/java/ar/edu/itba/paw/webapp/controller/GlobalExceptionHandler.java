@@ -67,6 +67,9 @@ public class GlobalExceptionHandler {
     public ModelAndView handleMethodNotAllowed(final HttpServletRequest request) {
         final String requestUri = request == null ? null : request.getRequestURI();
         if (requestUri != null && requestUri.contains("/publish")) {
+            if (requestUri.contains("/publish/images")) {
+                return new ModelAndView("redirect:/publish/images?availabilityAction=invalidMethod");
+            }
             return new ModelAndView("redirect:/publish/availability?availabilityAction=invalidMethod");
         }
         request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 405);
@@ -82,8 +85,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
-    public ModelAndView handleMaxUploadSize(final HttpServletRequest request) {
+    public ModelAndView handleMaxUploadSize(
+            final HttpServletRequest request, final RedirectAttributes redirectAttributes) {
         LOGGER.debug("Max upload size exceeded");
+        final String requestUri = request == null ? null : request.getRequestURI();
+        if (requestUri != null && requestUri.contains("/publish/images")) {
+            ToastSupport.error(redirectAttributes, "publish.validation.images.size");
+            return new ModelAndView("redirect:/publish/images");
+        }
         request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 413);
         return new ModelAndView("forward:/errors");
     }

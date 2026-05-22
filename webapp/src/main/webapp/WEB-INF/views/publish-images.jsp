@@ -1,0 +1,136 @@
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+
+<c:url var="stepTwoUrl" value="/publish/availability" />
+<c:url var="stepThreeUrl" value="/publish/images" />
+<spring:message code="publish.actions.submit" var="publishSubmitLabel" />
+<spring:message code="publish.back.imagesLost" var="publishBackImagesLostMsg" />
+<spring:bind path="publishForm.files">
+  <c:set var="filesError" value="${status.errorMessage}" />
+</spring:bind>
+
+<paw:layout
+  title="Botecito"
+  mainClass="pt-24 pb-14 max-w-3xl mx-auto px-6"
+  headerCtaMessageCode="nav.rent"
+  headerCtaHref="/marketplace"
+  headerCtaVariant="rent"
+>
+  <div
+    data-publish-wizard-root="step3"
+    data-availability-url="/publish/availability"
+    data-images-lost-message="${publishBackImagesLostMsg}"
+  >
+    <div class="mb-8">
+      <a
+        href="${stepTwoUrl}"
+        data-publish-wizard-back
+        class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit"
+      >
+        <span class="material-symbols-outlined">arrow_back</span>
+        <span><spring:message code="common.back" /></span>
+      </a>
+    </div>
+
+    <div class="mb-10">
+      <div
+        class="flex items-center justify-between gap-4 text-sm font-bold text-outline uppercase tracking-wider"
+      >
+        <span><spring:message code="publish.step3.progress" /></span>
+        <span><spring:message code="publish.step3.badge" /></span>
+      </div>
+      <progress
+        class="progress progress-secondary mt-3 w-full"
+        value="66"
+        max="100"
+      ></progress>
+      <h1
+        class="mt-6 text-4xl font-extrabold tracking-tight text-on-background m-0"
+      >
+        <spring:message code="publish.step3.title" />
+      </h1>
+      <p class="text-on-surface-variant mt-2 text-lg m-0">
+        <spring:message code="publish.step3.subtitle" />
+      </p>
+      <p class="mt-4 text-base font-bold text-on-surface m-0">
+        <span data-publish-wizard-title></span>
+      </p>
+    </div>
+
+    <spring:hasBindErrors name="publishForm">
+      <c:forEach var="error" items="${errors.globalErrors}">
+        <paw:alertMessage type="error" cssClass="mb-4">
+          <spring:message
+            code="${error.codes[0]}"
+            arguments="${error.arguments}"
+          />
+        </paw:alertMessage>
+      </c:forEach>
+    </spring:hasBindErrors>
+
+    <form:form
+      action="${stepThreeUrl}"
+      method="post"
+      modelAttribute="publishForm"
+      enctype="multipart/form-data"
+      class="space-y-8"
+      data-submit-loading-form="true"
+    >
+      <div data-publish-wizard-hidden-fields></div>
+
+      <paw:sectionCard icon="add_a_photo" hostAccent="true">
+        <jsp:attribute name="title"
+          ><spring:message code="publish.step3.section.photos"
+        /></jsp:attribute>
+        <jsp:body>
+          <paw:imageGalleryEditor
+            imageUrls="${galleryPreviewUrls}"
+            maxImages="${maxGalleryImages}"
+            errorMessage="${filesError}"
+            displayMode="inline"
+            inlineUpload="true"
+            hostAccent="true"
+          />
+          <form:errors path="files" cssClass="text-error text-xs mt-2" element="p" />
+          <div
+            class="rounded-xl bg-base-200 p-4 text-sm text-on-surface-variant leading-relaxed mt-4"
+          >
+            <spring:message code="publish.image.note" />
+          </div>
+        </jsp:body>
+      </paw:sectionCard>
+
+      <paw:sectionCard icon="check_circle" hostAccent="true">
+        <jsp:body>
+          <div
+            class="flex flex-col sm:flex-row sm:justify-end items-center gap-4"
+          >
+            <button
+              type="submit"
+              class="btn btn-secondary btn-lg w-full sm:w-auto"
+              data-submit-loading-button
+            >
+              <span
+                class="flex items-center justify-center gap-2"
+                data-submit-loading-content
+              >
+                <c:out value="${publishSubmitLabel}" />
+                <span class="material-symbols-outlined text-sm">check_circle</span>
+              </span>
+              <span
+                class="pointer-events-none absolute inset-0 hidden items-center justify-center"
+                aria-hidden="true"
+                data-submit-loading-spinner
+              >
+                <span class="loading loading-spinner loading-sm"></span>
+              </span>
+            </button>
+          </div>
+        </jsp:body>
+      </paw:sectionCard>
+    </form:form>
+  </div>
+</paw:layout>

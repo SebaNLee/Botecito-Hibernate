@@ -16,5 +16,6 @@ public class LoginForm {
     private String unverified;
     private String legacyToken;
     private String passwordRecovered;
+    private String sessionExpired;
     private String next;
 }

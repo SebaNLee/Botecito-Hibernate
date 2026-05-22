@@ -30,10 +30,8 @@ public class UserLocaleResolver implements LocaleResolver {
         if (!(principal instanceof BotecitoUserDetails details)) {
             return request.getLocale();
         }
-        final Users user = userService.findById(details.getId()).orElse(null);
-        return user != null
-                ? PreferredLanguageModel.fromPersistence(user.getLanguage()).toLocale()
-                : request.getLocale();
+        final Users user = userService.findById(details.getId()).orElseThrow();
+        return PreferredLanguageModel.fromPersistence(user.getLanguage()).toLocale();
     }
 
     @Override

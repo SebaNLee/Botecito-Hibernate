@@ -53,6 +53,9 @@ public class AuthPresentation {
         if (form.getPasswordRecovered() != null) {
             mav.addObject("passwordRecoveredSuccess", true);
         }
+        if (form.getSessionExpired() != null) {
+            mav.addObject("sessionExpiredWarning", true);
+        }
         return mav;
     }
 

@@ -52,6 +52,9 @@
         <c:if test="${passwordRecoveredSuccess}">
           <paw:alertMessage type="success"><spring:message code="login.passwordRecovered" /></paw:alertMessage>
         </c:if>
+        <c:if test="${sessionExpiredWarning}">
+          <paw:alertMessage type="warning"><spring:message code="login.sessionExpired" /></paw:alertMessage>
+        </c:if>
 
         <form action="${loginUrl}" method="post" class="space-y-4">
           <fieldset class="fieldset">

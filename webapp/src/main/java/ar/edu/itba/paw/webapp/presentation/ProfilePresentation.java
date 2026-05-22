@@ -19,26 +19,12 @@ public class ProfilePresentation {
     private final SecurityContextRefresher securityContextRefresher;
 
     public ModelAndView profilePasswordRecoveryRequest(final BotecitoUserDetails principal) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        final Users user = userService.findById(principal.getId()).orElse(null);
-        if (user == null) {
-            return new ModelAndView("redirect:/login");
-        }
-
-        userService.requestPasswordRecovery(user.getEmail());
+        userService.requestPasswordRecovery(principal.getEmail());
         return new ModelAndView("redirect:/profile?passwordRecovery=sent");
     }
 
     public ModelAndView profile(final BotecitoUserDetails principal, final boolean edit, final ProfileForm form) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        final Users user = userService.findById(principal.getId()).orElse(null);
-        if (user == null) {
-            return new ModelAndView("redirect:/login");
-        }
+        final Users user = userService.findById(principal.getId()).orElseThrow();
 
         if (form.getEmail() == null) {
             form.setGivenName(user.getFirstName());
@@ -53,13 +39,7 @@ public class ProfilePresentation {
 
     public ModelAndView profileSubmit(
             final BotecitoUserDetails principal, final ProfileForm form, final BindingResult errors) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        final Users currentUser = userService.findById(principal.getId()).orElse(null);
-        if (currentUser == null) {
-            return new ModelAndView("redirect:/login");
-        }
+        final Users currentUser = userService.findById(principal.getId()).orElseThrow();
 
         if (errors.hasErrors()) {
             return buildProfileView(currentUser, true);

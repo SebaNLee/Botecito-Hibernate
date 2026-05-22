@@ -2,9 +2,7 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
 import ar.edu.itba.paw.models.dto.PageModel;
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -18,23 +16,13 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class MyBoatsPresentation {
 
-    private static final int DEFAULT_PAGE_SIZE = 12;
     private static final String IMAGE_PATH_PREFIX = "/image/";
     private static final String PLACEHOLDER_IMAGE_PATH = "/css/boat-placeholder.svg";
 
     private final ItemService itemInterface;
-    private final UserService userService;
 
     public ModelAndView myBoats(
             final BotecitoUserDetails principal, final HttpServletRequest request, final int page, final int pageSize) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        final Users currentUser = userService.findById(principal.getId()).orElse(null);
-        if (currentUser == null) {
-            return new ModelAndView("redirect:/login");
-        }
-
         final int safePage = Math.max(1, page);
         final int safePageSize = Math.max(1, pageSize);
         final int totalItems = itemInterface.countMyBoatsItemsByOwnerId(principal.getId());
@@ -62,7 +50,6 @@ public class MyBoatsPresentation {
         }
 
         final ModelAndView mav = new ModelAndView("my-boats");
-        mav.addObject("user", currentUser);
         mav.addObject("ownedItems", ownedItems);
         mav.addObject("publicationCoverImageIdsByItemId", publicationCoverImageIdsByItemId);
         mav.addObject("imageUrlsByItemId", imageUrlsByItemId);

@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.dto.MyBoatsItem;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,14 +23,14 @@ public class MyBoatsPresentation {
     private static final String PLACEHOLDER_IMAGE_PATH = "/css/boat-placeholder.svg";
 
     private final ItemService itemInterface;
-    private final AuthenticatedUserResolver authenticatedUserResolver;
+    private final UserService userService;
 
     public ModelAndView myBoats(
             final BotecitoUserDetails principal, final HttpServletRequest request, final int page, final int pageSize) {
         if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
-        final Users currentUser = authenticatedUserResolver.loadUser(principal);
+        final Users currentUser = userService.findById(principal.getId()).orElse(null);
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }

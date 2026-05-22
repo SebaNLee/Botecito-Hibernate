@@ -3,8 +3,8 @@ package ar.edu.itba.paw.webapp.presentation;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
+import ar.edu.itba.paw.webapp.auth.SecurityContextRefresher;
 import ar.edu.itba.paw.webapp.form.ProfileForm;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,13 +16,13 @@ import org.springframework.web.servlet.ModelAndView;
 public class ProfilePresentation {
 
     private final UserService userService;
-    private final AuthenticatedUserResolver authenticatedUserResolver;
+    private final SecurityContextRefresher securityContextRefresher;
 
     public ModelAndView profilePasswordRecoveryRequest(final BotecitoUserDetails principal) {
         if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
-        final Users user = authenticatedUserResolver.loadUser(principal);
+        final Users user = userService.findById(principal.getId()).orElse(null);
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -35,7 +35,7 @@ public class ProfilePresentation {
         if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
-        final Users user = authenticatedUserResolver.loadUser(principal);
+        final Users user = userService.findById(principal.getId()).orElse(null);
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -56,7 +56,7 @@ public class ProfilePresentation {
         if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
-        final Users currentUser = authenticatedUserResolver.loadUser(principal);
+        final Users currentUser = userService.findById(principal.getId()).orElse(null);
         if (currentUser == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -68,19 +68,21 @@ public class ProfilePresentation {
         final Users updatedUser = userService
                 .updateProfile(
                         currentUser.getId(),
-                        trim(form.getGivenName()),
-                        trim(form.getLastName()),
-                        trim(form.getEmail()),
+                        form.getGivenName(),
+                        form.getLastName(),
+                        form.getEmail(),
                         form.getPhone(),
                         form.getPaymentAlias(),
-                        languageFromInput(form.getPreferredLanguage()))
+                        form.getPreferredLanguage())
                 .orElse(null);
         if (updatedUser == null) {
             errors.rejectValue("email", "profile.validation.email.duplicate");
             return buildProfileView(currentUser, true);
         }
 
-        authenticatedUserResolver.refreshPrincipal(updatedUser.getEmail());
+        if (!updatedUser.getEmail().equalsIgnoreCase(currentUser.getEmail())) {
+            securityContextRefresher.refreshPrincipal(updatedUser.getEmail());
+        }
         if (updatedUser.getVerified() == null || !updatedUser.getVerified()) {
             return new ModelAndView("redirect:/profile?profileAction=verificationSent");
         }
@@ -90,29 +92,8 @@ public class ProfilePresentation {
     private ModelAndView buildProfileView(final Users user, final boolean profileEdit) {
         final ModelAndView mav = new ModelAndView("profile");
         mav.addObject("user", user);
-        mav.addObject("memberSinceDisplay", formatMemberSince(user.getCreatedAt()));
+        mav.addObject("memberSinceDisplay", user.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         mav.addObject("profileEdit", profileEdit);
         return mav;
-    }
-
-    private static String formatMemberSince(final LocalDateTime dateTime) {
-        if (dateTime == null) {
-            return "";
-        }
-        return dateTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-    }
-
-    private static String languageFromInput(final String preferredLanguage) {
-        if (preferredLanguage == null) {
-            return "ES";
-        }
-        return switch (preferredLanguage.trim().toUpperCase()) {
-            case "EN" -> "EN";
-            default -> "ES";
-        };
-    }
-
-    private static String trim(final String value) {
-        return value == null ? null : value.trim();
     }
 }

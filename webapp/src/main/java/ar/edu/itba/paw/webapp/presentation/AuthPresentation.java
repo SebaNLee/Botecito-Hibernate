@@ -62,9 +62,9 @@ public class AuthPresentation {
 
     public ModelAndView registerSubmit(final RegisterForm form, final BindingResult errors) {
         userService.register(
-                trim(form.getGivenName()),
-                trim(form.getLastName()),
-                trim(form.getEmail()),
+                form.getGivenName(),
+                form.getLastName(),
+                form.getEmail(),
                 form.getPaymentAlias(),
                 languageFromInput(form.getPreferredLanguage()),
                 form.getPassword());
@@ -80,8 +80,7 @@ public class AuthPresentation {
     }
 
     public ModelAndView passwordRecoveryRequestSubmit(final PasswordRecoveryRequestForm form) {
-        final String email = form.getEmail() == null ? null : form.getEmail().trim();
-        userService.requestPasswordRecovery(email);
+        userService.requestPasswordRecovery(form.getEmail());
         return new ModelAndView("redirect:/password-recovery?sent=true");
     }
 
@@ -130,9 +129,5 @@ public class AuthPresentation {
             case "EN" -> "EN";
             default -> "ES";
         };
-    }
-
-    private static String trim(final String value) {
-        return value == null ? null : value.trim();
     }
 }

@@ -29,13 +29,5 @@ public interface ItemService {
 
     Optional<Image> findImageWithDataById(int imageId);
 
-    List<Integer> listImageIds(int itemId);
-
-    Optional<Integer> uploadGalleryImage(int itemId, int ownerId, byte[] imageData);
-
-    void deleteImageFromGallery(int itemId, int imageId, int callerId);
-
-    boolean reorderGallery(int itemId, int ownerId, List<Integer> imageIdsInOrder);
-
     // TODO: Soft delete item method
 }

@@ -34,12 +34,4 @@ public interface ItemDao {
     Location getLocationReference(int locationId);
 
     Optional<Image> findImageWithDataById(int imageId);
-
-    List<Integer> listImageIds(int itemId);
-
-    Optional<Integer> uploadGalleryImage(int itemId, byte[] imageData);
-
-    boolean deleteImageFromGallery(int imageId);
-
-    boolean reorderGallery(int itemId, List<Integer> imageIdsInOrder);
 }

@@ -129,31 +129,4 @@ public class ItemImpl implements ItemService {
     public Optional<Image> findImageWithDataById(final int imageId) {
         return itemDao.findImageWithDataById(imageId);
     }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Integer> listImageIds(final int itemId) {
-        return itemDao.listImageIds(itemId);
-    }
-
-    @Override
-    @Transactional
-    public Optional<Integer> uploadGalleryImage(final int itemId, final int ownerId, final byte[] imageData) {
-        requireOwnedItem(itemId, ownerId);
-        return itemDao.uploadGalleryImage(itemId, imageData);
-    }
-
-    @Override
-    @Transactional
-    public void deleteImageFromGallery(final int itemId, final int imageId, final int callerId) {
-        requireOwnedItem(itemId, callerId);
-        itemDao.deleteImageFromGallery(imageId);
-    }
-
-    @Override
-    @Transactional
-    public boolean reorderGallery(final int itemId, final int ownerId, final List<Integer> imageIdsInOrder) {
-        requireOwnedItem(itemId, ownerId);
-        return itemDao.reorderGallery(itemId, imageIdsInOrder);
-    }
 }

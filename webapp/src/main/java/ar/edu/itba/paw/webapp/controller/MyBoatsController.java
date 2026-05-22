@@ -2,11 +2,9 @@ package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.BlockSlotForm;
-import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import ar.edu.itba.paw.webapp.presentation.AvailabilityPresentation;
 import ar.edu.itba.paw.webapp.presentation.MyBoatsActionsPresentation;
 import ar.edu.itba.paw.webapp.presentation.MyBoatsPresentation;
-import ar.edu.itba.paw.webapp.presentation.PublishActionPresentation;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,13 +25,7 @@ public class MyBoatsController {
 
     private final MyBoatsPresentation myBoatsPresentation;
     private final MyBoatsActionsPresentation myBoatsActionsPresentation;
-    private final PublishActionPresentation publishActionPresentation;
     private final AvailabilityPresentation availabilityPresentation;
-
-    @ModelAttribute("publishForm")
-    public PublishBoatForm publishForm() {
-        return new PublishBoatForm();
-    }
 
     @RequestMapping(value = "/my-boats", method = RequestMethod.GET)
     public ModelAndView myBoats(
@@ -42,26 +34,6 @@ public class MyBoatsController {
             @RequestParam(value = "page", defaultValue = "1") final int page,
             @RequestParam(value = "pageSize", defaultValue = "12") final int pageSize) {
         return myBoatsPresentation.myBoats(user, request, page, pageSize);
-    }
-
-    @RequestMapping(value = "/my-boats/{id:[0-9]+}/edit", method = RequestMethod.GET)
-    public ModelAndView editPublicationForm(
-            @AuthenticationPrincipal final BotecitoUserDetails user,
-            @PathVariable("id") final int itemId,
-            final HttpServletRequest request,
-            final RedirectAttributes redirectAttributes) {
-        return publishActionPresentation.editPublicationForm(user, itemId, request, redirectAttributes);
-    }
-
-    @RequestMapping(value = "/my-boats/{id:[0-9]+}/edit", method = RequestMethod.POST)
-    public ModelAndView editPublicationSubmit(
-            @AuthenticationPrincipal final BotecitoUserDetails user,
-            @PathVariable("id") final int itemId,
-            @ModelAttribute("publishForm") final PublishBoatForm form,
-            final BindingResult errors,
-            final HttpServletRequest request,
-            final RedirectAttributes redirectAttributes) {
-        return publishActionPresentation.editPublicationSubmit(user, itemId, form, errors, request, redirectAttributes);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/disable", method = RequestMethod.POST)

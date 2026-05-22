@@ -24,6 +24,7 @@
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6">
   <span data-publish-wizard-clear hidden="hidden"></span>
+  <span data-edit-wizard-clear hidden="hidden"></span>
   <paw:toastNotifier />
   <section class="min-w-0 space-y-6">
       <div class="flex flex-col">
@@ -54,7 +55,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
                   <c:forEach var="item" items="${ownedItems}">
                     <c:url var="itemDetailUrl" value="/item/${item.id}" />
-                    <c:url var="editItemUrl" value="/my-boats/${item.id}/edit" />
+                    <c:url var="editItemUrl" value="/edit/${item.id}" />
                     <c:url var="manageAvailabilityItemUrl" value="/my-boats/${item.id}/availability">
                       <c:param name="return" value="/my-boats" />
                     </c:url>

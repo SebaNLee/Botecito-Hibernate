@@ -40,6 +40,8 @@ public class PublishBoatForm {
 
     public interface Step3 {}
 
+    public interface Step3Edit {}
+
     @NotBlank(groups = Step1.class, message = "{publish.validation.title.required}")
     @Size(max = 100, groups = Step1.class, message = "{publish.validation.title.max}")
     private String title;
@@ -71,9 +73,13 @@ public class PublishBoatForm {
     @Min(value = 1, groups = Step1.class, message = "{publish.validation.weight.min}")
     private Integer weight;
 
-    @ImageGalleryUpload(groups = Step3.class, maxFiles = MAX_GALLERY_IMAGES)
+    @ImageGalleryUpload(
+            groups = {Step3.class, Step3Edit.class},
+            maxFiles = MAX_GALLERY_IMAGES)
     @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Spring multipart binding")
     private List<MultipartFile> files = new ArrayList<>();
+
+    private String galleryOrder;
 
     private List<DayOfWeek> enabledDays = new ArrayList<>();
 
@@ -92,14 +98,14 @@ public class PublishBoatForm {
     }
 
     @AssertTrue(
-            groups = {Step2.class, Step3.class},
+            groups = {Step2.class, Step3.class, Step3Edit.class},
             message = "{publish.availability.required}")
     public boolean isAvailabilityPresent() {
         return !completeRanges().isEmpty();
     }
 
     @AssertTrue(
-            groups = {Step2.class, Step3.class},
+            groups = {Step2.class, Step3.class, Step3Edit.class},
             message = "{publish.availability.format.invalid}")
     public boolean isAvailabilityFormatValid() {
         if (availabilityRanges == null) {
@@ -117,7 +123,7 @@ public class PublishBoatForm {
     }
 
     @AssertTrue(
-            groups = {Step2.class, Step3.class},
+            groups = {Step2.class, Step3.class, Step3Edit.class},
             message = "{publish.availability.end.invalid}")
     public boolean isAvailabilityEndAfterStart() {
         for (final AvailabilityRangeBinding range : completeRanges()) {
@@ -129,7 +135,7 @@ public class PublishBoatForm {
     }
 
     @AssertTrue(
-            groups = {Step2.class, Step3.class},
+            groups = {Step2.class, Step3.class, Step3Edit.class},
             message = "{publish.availability.min.duration}")
     public boolean isAvailabilityMinDuration() {
         for (final AvailabilityRangeBinding range : completeRanges()) {
@@ -141,7 +147,7 @@ public class PublishBoatForm {
     }
 
     @AssertTrue(
-            groups = {Step2.class, Step3.class},
+            groups = {Step2.class, Step3.class, Step3Edit.class},
             message = "{publish.availability.overlap}")
     public boolean isAvailabilityWithoutOverlap() {
         for (final List<AvailabilityRangeBinding> dayRanges : rangesByWeekday().values()) {
@@ -153,7 +159,7 @@ public class PublishBoatForm {
     }
 
     @AssertTrue(
-            groups = {Step2.class, Step3.class},
+            groups = {Step2.class, Step3.class, Step3Edit.class},
             message = "{publish.availability.min.separation}")
     public boolean isAvailabilityMinSeparation() {
         for (final List<AvailabilityRangeBinding> dayRanges : rangesByWeekday().values()) {
@@ -162,6 +168,24 @@ public class PublishBoatForm {
             }
         }
         return true;
+    }
+
+    @AssertTrue(groups = Step3Edit.class, message = "{publish.validation.gallery.maxCount}")
+    public boolean isEditGalleryWithinLimit() {
+        return countGallerySlots() <= MAX_GALLERY_IMAGES;
+    }
+
+    private int countGallerySlots() {
+        if (galleryOrder == null || galleryOrder.isBlank()) {
+            return 0;
+        }
+        int count = 0;
+        for (final String token : galleryOrder.split(",")) {
+            if (!token.trim().isEmpty()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private List<AvailabilityRangeBinding> completeRanges() {

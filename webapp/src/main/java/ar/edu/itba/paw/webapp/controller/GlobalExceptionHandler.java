@@ -13,6 +13,8 @@ import ar.edu.itba.paw.models.exceptions.OutsideAvailabilityException;
 import ar.edu.itba.paw.models.exceptions.PastSlotException;
 import ar.edu.itba.paw.models.exceptions.SlotOverlapException;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -34,6 +36,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class GlobalExceptionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Pattern EDIT_IMAGES_URI = Pattern.compile("/edit/(\\d+)/images");
 
     @ExceptionHandler(ForbiddenOperationException.class)
     public ModelAndView handleForbiddenOperation() {
@@ -92,6 +95,13 @@ public class GlobalExceptionHandler {
         if (requestUri != null && requestUri.contains("/publish/images")) {
             ToastSupport.error(redirectAttributes, "publish.validation.images.size");
             return new ModelAndView("redirect:/publish/images");
+        }
+        if (requestUri != null) {
+            final Matcher editImages = EDIT_IMAGES_URI.matcher(requestUri);
+            if (editImages.find()) {
+                ToastSupport.error(redirectAttributes, "publish.validation.images.size");
+                return new ModelAndView("redirect:/edit/" + editImages.group(1) + "/images");
+            }
         }
         request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 413);
         return new ModelAndView("forward:/errors");

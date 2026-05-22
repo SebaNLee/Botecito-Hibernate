@@ -37,6 +37,7 @@
     <script src="<c:url value='/js/search-filters.js' />"></script>
     <script src="<c:url value='/js/pre-booking-draft.js' />"></script>
     <script src="<c:url value='/js/publish-wizard.js?v=4' />"></script>
+    <script src="<c:url value='/js/edit-wizard.js?v=2' />"></script>
     <script src="<c:url value='/js/form-submit-state.js' />"></script>
     <script src="<c:url value='/js/weekly-availability.js?v=2' />"></script>
     <script src="<c:url value='/js/image-upload-preview.js' />"></script>

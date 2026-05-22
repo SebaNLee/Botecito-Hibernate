@@ -18,6 +18,7 @@
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"
   headerCtaVariant="rent"
+  scripts="publish-wizard,image-gallery,form-submit"
 >
   <div
     data-publish-wizard-root="step3"
@@ -90,8 +91,6 @@
             imageUrls="${galleryPreviewUrls}"
             maxImages="${maxGalleryImages}"
             errorMessage="${filesError}"
-            displayMode="inline"
-            inlineUpload="true"
             hostAccent="true"
           />
           <form:errors path="files" cssClass="text-error text-xs mt-2" element="p" />

@@ -48,7 +48,7 @@
 <spring:message code="itemDetail.price.hours" var="itemDetailPriceHoursLabel" />
 <spring:message code="detail.reviews.anonymous" var="detailReviewAnonymousLabel" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8">
+<paw:layout title="Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8" scripts="toast,search-filters,date-time,form-submit,pre-booking-draft,image-carousel,rating-stars">
   <paw:toastNotifier />
       <div class="w-full">
         <a href="<c:out value="${marketplaceBackHref}" />" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">

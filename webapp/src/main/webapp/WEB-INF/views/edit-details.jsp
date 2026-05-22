@@ -74,7 +74,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"
   headerCtaVariant="rent"
->
+  scripts="search-filters,edit-wizard">
   <div
     data-edit-wizard-root="step1"
     data-edit-wizard-step1-form="true"

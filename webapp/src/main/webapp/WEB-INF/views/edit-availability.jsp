@@ -17,7 +17,8 @@
   mainClass="pt-24 pb-14 max-w-6xl mx-auto px-6"
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"
-  headerCtaVariant="rent">
+  headerCtaVariant="rent"
+  scripts="edit-wizard,weekly-availability">
   <div
     data-edit-wizard-root="step2"
     data-edit-details-url="${editDetailsUrl}"

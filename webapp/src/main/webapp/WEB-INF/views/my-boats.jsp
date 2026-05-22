@@ -22,7 +22,7 @@
 <spring:message code="profile.publications.viewDetail" var="publicationViewDetailLabel" />
 
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6">
+<paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6" scripts="toast,publish-wizard,edit-wizard">
   <span data-publish-wizard-clear hidden="hidden"></span>
   <span data-edit-wizard-clear hidden="hidden"></span>
   <paw:toastNotifier />

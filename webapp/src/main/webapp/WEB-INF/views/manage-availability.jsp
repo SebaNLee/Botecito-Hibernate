@@ -45,7 +45,8 @@
     mainClass="pt-24 pb-14 max-w-4xl mx-auto px-6"
     headerCtaMessageCode="nav.rent"
     headerCtaHref="/marketplace"
-    headerCtaVariant="rent">
+    headerCtaVariant="rent"
+    scripts="date-time,manage-availability">
 
   <div class="mb-8">
     <a href="${manageAvailabilityBackUrl}" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
@@ -287,7 +288,4 @@
       </c:choose>
     </jsp:body>
   </paw:sectionCard>
-
-  <script src="<c:url value='/js/manage-availability-date.js' />"></script>
-  <script src="<c:url value='/js/manage-availability-block-range.js' />"></script>
 </paw:layout>

@@ -18,6 +18,7 @@
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"
   headerCtaVariant="rent"
+  scripts="edit-wizard,form-submit"
 >
   <div
     data-edit-wizard-root="step3"
@@ -92,8 +93,6 @@
             imageUrls="${galleryPreviewUrls}"
             maxImages="${maxGalleryImages}"
             errorMessage="${filesError}"
-            displayMode="inline"
-            inlineUpload="true"
             hostAccent="true"
           />
           <form:errors path="editGalleryWithinLimit" cssClass="text-error text-xs mt-2" element="p" />

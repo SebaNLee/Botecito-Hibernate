@@ -4,7 +4,7 @@
 
 <c:url var="incomingFormAction" value="/requests/incoming" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6">
+<paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6" scripts="toast,search-filters,date-time,form-submit">
   <paw:requestsBookingsList
       formAction="${incomingFormAction}"
       sidebarActive="incoming"

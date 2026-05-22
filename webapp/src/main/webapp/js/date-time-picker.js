@@ -448,31 +448,24 @@
     return Boolean(state && state.date && state.startTime && state.endTime);
   }
 
-  /** Marketplace slug params must not be legacy numeric-only ids. */
-  function sanitizeMarketplaceLocationParam(value) {
-    const s = (value == null ? "" : String(value)).trim();
-    if (!s || /^\d+$/.test(s)) {
-      return "";
-    }
-    return s;
+  function trimStoredParam(value) {
+    return (value == null ? "" : String(value)).trim();
   }
 
   function readStoredFilters() {
     try {
       const raw =
         parseJson(sessionStorage.getItem(FILTER_STORAGE_KEY), {}) || {};
-      if (raw.locationSlug && !raw.location) {
-        raw.location = raw.locationSlug;
-      }
-      raw.location = sanitizeMarketplaceLocationParam(raw.location);
-      if (!raw.location) {
+      const location = trimStoredParam(raw.location);
+      if (location) {
+        raw.location = location;
+      } else {
         delete raw.location;
       }
-      if (raw.itemTypeSlug && !raw.itemType) {
-        raw.itemType = raw.itemTypeSlug;
-      }
-      raw.itemType = sanitizeMarketplaceLocationParam(raw.itemType);
-      if (!raw.itemType) {
+      const itemType = trimStoredParam(raw.itemType);
+      if (itemType) {
+        raw.itemType = itemType;
+      } else {
         delete raw.itemType;
       }
       return raw;
@@ -490,11 +483,11 @@
         startTime: state.startTime || "",
         endTime: state.endTime || "",
       };
-      merged.location = sanitizeMarketplaceLocationParam(merged.location);
+      merged.location = trimStoredParam(merged.location);
       if (!merged.location) {
         delete merged.location;
       }
-      merged.itemType = sanitizeMarketplaceLocationParam(merged.itemType);
+      merged.itemType = trimStoredParam(merged.itemType);
       if (!merged.itemType) {
         delete merged.itemType;
       }
@@ -553,10 +546,7 @@
       "pageSize",
     ];
     preservedKeys.forEach((key) => {
-      let value = stored[key];
-      if (key === "location" || key === "itemType") {
-        value = sanitizeMarketplaceLocationParam(value);
-      }
+      const value = stored[key];
       if (value != null && String(value).trim() !== "") {
         url.searchParams.set(key, String(value));
       } else if (key === "location" || key === "itemType") {
@@ -590,10 +580,7 @@
       "pageSize",
     ];
     preservedKeys.forEach((key) => {
-      let value = stored[key];
-      if (key === "location" || key === "itemType") {
-        value = sanitizeMarketplaceLocationParam(value);
-      }
+      const value = stored[key];
       if (value != null && String(value).trim() !== "") {
         url.searchParams.set(key, String(value));
       }

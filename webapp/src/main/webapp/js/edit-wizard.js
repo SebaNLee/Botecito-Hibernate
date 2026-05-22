@@ -516,6 +516,21 @@
       return button;
     }
 
+    function reorderEntriesFromDom() {
+      var ordered = [];
+      previewList.querySelectorAll("[data-gallery-item]").forEach(function (node) {
+        var key = node.getAttribute("data-gallery-key");
+        var entry = entries.find(function (candidate) {
+          return candidate.key === key;
+        });
+        if (entry) {
+          ordered.push(entry);
+        }
+      });
+      entries = ordered;
+      render();
+    }
+
     function render() {
       previewList.innerHTML = "";
       entries.forEach(function (entry, index) {
@@ -540,7 +555,7 @@
 
         var controls = document.createElement("div");
         controls.className =
-          "absolute inset-x-0 bottom-0 p-2 flex items-center justify-between gap-2 bg-gradient-to-t from-black/60 to-transparent opacity-100 pointer-events-auto";
+          "absolute inset-x-0 bottom-0 p-2 flex items-center justify-between gap-2 bg-gradient-to-t from-black/60 to-transparent opacity-100 pointer-events-auto transition-opacity duration-150 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-hover:pointer-events-auto [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-focus-within:pointer-events-auto";
 
         var moveGroup = document.createElement("div");
         moveGroup.className = "flex gap-1";
@@ -617,18 +632,7 @@
           } else {
             previewList.insertBefore(sibling, item);
           }
-          var ordered = [];
-          previewList.querySelectorAll("[data-gallery-item]").forEach(function (node) {
-            var key = node.getAttribute("data-gallery-key");
-            var entry = entries.find(function (candidate) {
-              return candidate.key === key;
-            });
-            if (entry) {
-              ordered.push(entry);
-            }
-          });
-          entries = ordered;
-          render();
+          reorderEntriesFromDom();
         });
       });
 
@@ -640,6 +644,46 @@
             return entry.key !== key;
           });
           render();
+        });
+      });
+
+      var draggedItem = null;
+      previewList.querySelectorAll("[data-gallery-item]").forEach(function (item) {
+        item.setAttribute("draggable", "true");
+        item.addEventListener("dragstart", function (event) {
+          draggedItem = item;
+          if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", item.getAttribute("data-gallery-key") || "");
+          }
+          item.classList.add("opacity-50");
+        });
+        item.addEventListener("dragend", function () {
+          item.classList.remove("opacity-50");
+          draggedItem = null;
+        });
+        item.addEventListener("dragover", function (event) {
+          event.preventDefault();
+          if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = "move";
+          }
+        });
+        item.addEventListener("drop", function (event) {
+          event.preventDefault();
+          if (!draggedItem || draggedItem === item) {
+            return;
+          }
+          var items = Array.prototype.slice.call(
+            previewList.querySelectorAll("[data-gallery-item]"),
+          );
+          var draggedIndex = items.indexOf(draggedItem);
+          var targetIndex = items.indexOf(item);
+          if (draggedIndex < targetIndex) {
+            previewList.insertBefore(draggedItem, item.nextElementSibling);
+          } else {
+            previewList.insertBefore(draggedItem, item);
+          }
+          reorderEntriesFromDom();
         });
       });
     }

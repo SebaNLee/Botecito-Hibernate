@@ -31,16 +31,8 @@
     return (value || "").toString().trim().toLowerCase();
   }
 
-  /** Marketplace `location` must be a slug; strip legacy numeric-only ids from URL/session. */
-  function normalizeMarketplaceLocation(value) {
-    const raw = (value || "").toString().trim();
-    if (!raw) {
-      return "";
-    }
-    if (/^\d+$/.test(raw)) {
-      return "";
-    }
-    return raw;
+  function trimParam(value) {
+    return (value || "").toString().trim();
   }
 
   function openUnavailableAlert(alertRoot) {
@@ -79,8 +71,6 @@
     FILTER_KEYS.forEach((key) => {
       normalized[key] = state && state[key] ? String(state[key]).trim() : "";
     });
-    normalized.location = normalizeMarketplaceLocation(normalized.location);
-    normalized.itemType = normalizeMarketplaceLocation(normalized.itemType);
 
     MARKETPLACE_TOOLBAR_KEYS.forEach((key) => {
       if (!state || !Object.prototype.hasOwnProperty.call(state, key)) {
@@ -113,12 +103,6 @@
   function readStoredState(storageKey) {
     try {
       const raw = parseJson(sessionStorage.getItem(storageKey), {}) || {};
-      if (raw.locationSlug && !raw.location) {
-        raw.location = raw.locationSlug;
-      }
-      if (raw.itemTypeSlug && !raw.itemType) {
-        raw.itemType = raw.itemTypeSlug;
-      }
       return normalizeState(raw);
     } catch (error) {
       return normalizeState({});
@@ -244,12 +228,6 @@
       acc[key] = params.get(key) || "";
       return acc;
     }, {});
-    if (!state.location && params.get("locationSlug")) {
-      state.location = params.get("locationSlug") || "";
-    }
-    if (!state.itemType && params.get("itemTypeSlug")) {
-      state.itemType = params.get("itemTypeSlug") || "";
-    }
     MARKETPLACE_TOOLBAR_KEYS.forEach((key) => {
       if (params.has(key)) {
         state[key] = params.get(key) || "";
@@ -596,9 +574,7 @@
           this.hiddenInput.name === "location" ||
           this.hiddenInput.name === "itemType"
         ) {
-          this.hiddenInput.value = normalizeMarketplaceLocation(
-            this.hiddenInput.value,
-          );
+          this.hiddenInput.value = trimParam(this.hiddenInput.value);
         }
         const msg = (this.root.dataset.requiredMessage || "").trim();
         if (msg && !String(this.hiddenInput.value || "").trim()) {
@@ -698,12 +674,7 @@
     }
 
     setSelectedValue(value) {
-      const slugMode =
-        this.hiddenInput.name === "location" ||
-        this.hiddenInput.name === "itemType";
-      const normalized = slugMode
-        ? normalizeMarketplaceLocation(value)
-        : (value || "").toString().trim();
+      const normalized = trimParam(value);
       this.hiddenInput.value = normalized;
       const selected = this.options.find(
         (option) => String(option.value) === String(normalized || ""),
@@ -722,14 +693,9 @@
     }
 
     prepareForSubmit() {
-      const slugMode =
-        this.hiddenInput.name === "location" ||
-        this.hiddenInput.name === "itemType";
       const exactMatch = this.findExact(this.queryInput.value);
       const raw = exactMatch ? exactMatch.value : "";
-      this.hiddenInput.value = slugMode
-        ? normalizeMarketplaceLocation(raw)
-        : raw;
+      this.hiddenInput.value = trimParam(raw);
       this.queryInput.value = exactMatch
         ? exactMatch.name
         : this.queryInput.value || "";

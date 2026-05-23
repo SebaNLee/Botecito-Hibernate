@@ -2,8 +2,6 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.MyBoatsItem;
 import ar.edu.itba.paw.models.entity.Image;
-import ar.edu.itba.paw.models.entity.Item;
-import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.util.List;
@@ -40,34 +38,6 @@ public class ItemImpl implements ItemService {
     @Transactional(readOnly = true)
     public MyBoatsItem requireOwnedItem(final int itemId, final int callerId) {
         return findMyBoatsItemByIdForOwner(itemId, callerId).orElseThrow(ForbiddenOperationException::new);
-    }
-
-    @Override
-    @Transactional
-    public boolean deleteMyBoatsItem(final int itemId, final int ownerId) {
-        final Optional<Item> item = itemDao.findItemByIdAndOwner(itemId, ownerId);
-        if (item.isEmpty()) {
-            throw new ForbiddenOperationException();
-        }
-
-        if (itemDao.hasActiveOrFutureBookings(itemId)) {
-            if (item.get().getStatus() == ItemStatusEnum.ACTIVE) {
-                item.get().setStatus(ItemStatusEnum.INACTIVE);
-                return true;
-            }
-            return false;
-        }
-
-        itemDao.deleteItem(item.get());
-        return true;
-    }
-
-    @Override
-    @Transactional
-    public void setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
-        if (!itemDao.setItemActiveForOwner(itemId, ownerId, active)) {
-            throw new ForbiddenOperationException();
-        }
     }
 
     @Override

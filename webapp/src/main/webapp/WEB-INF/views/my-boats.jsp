@@ -15,10 +15,8 @@
 <spring:message code="profile.publications.delete" var="deleteLabel" />
 <spring:message code="profile.publications.delete.confirm.title" var="deleteConfirmTitle" />
 <spring:message code="profile.publications.delete.confirm.message" var="deleteConfirmMessage" />
-<spring:message code="profile.publications.delete.confirm.deactivateMessage" var="deleteDeactivateConfirmMessage" />
 <spring:message code="profile.publications.delete.confirm.confirm" var="deleteConfirmConfirm" />
 <spring:message code="profile.publications.delete.confirm.cancel" var="deleteConfirmCancel" />
-<spring:message code="profile.publications.delete.disabled.futureBookings" var="deleteDisabledFutureBookingsLabel" />
 <spring:message code="profile.publications.viewDetail" var="publicationViewDetailLabel" />
 
 
@@ -65,12 +63,6 @@
                     <c:set var="publicationImageUrl" value="${imageUrlsByItemId[item.id]}" />
                     <c:set var="detailsModalId" value="publication-details-modal-${item.id}" />
                     <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
-                    <c:set var="pubDeleteDeactivates" value="${publicationDeleteDeactivatesByItemId[item.id]}" />
-                    <c:set var="deleteModalMessage" value="${pubDeleteDeactivates ? deleteDeactivateConfirmMessage : deleteConfirmMessage}" />
-                    <c:set var="deleteModalConfirmText" value="${pubDeleteDeactivates ? disableLabel : deleteConfirmConfirm}" />
-                    <c:set var="deleteModalConfirmColor" value="${pubDeleteDeactivates ? 'secondary' : 'danger'}" />
-                    <c:set var="deleteModalIcon" value="${pubDeleteDeactivates ? 'visibility_off' : 'delete_forever'}" />
-                    <c:set var="deleteDisabled" value="${publicationDeleteDisabledByItemId[item.id]}" />
                     <button type="button" class="flex h-full w-full max-w-sm flex-col gap-2 rounded-xl bg-base-200 p-2 text-left transition hover:bg-base-300 sm:p-3 ${item.active ? '' : 'opacity-75'}" onclick="document.getElementById('${detailsModalId}').showModal()">
                       <div class="h-24 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:h-32">
                         <img src="${publicationImageUrl}" alt="${item.title}" class="h-full w-full object-cover" loading="lazy" />
@@ -151,29 +143,17 @@
                             </form>
                           </c:otherwise>
                         </c:choose>
-                        <c:choose>
-                          <c:when test="${deleteDisabled}">
-                            <button type="button" class="btn btn-outline btn-sm cursor-not-allowed text-error opacity-50" disabled="disabled" title="${deleteDisabledFutureBookingsLabel}">
-                              <span class="material-symbols-outlined text-base">delete</span>
-                              <c:out value="${deleteLabel}" />
-                            </button>
-                          </c:when>
-                          <c:otherwise>
-                            <button type="button" class="btn btn-outline btn-sm text-error" onclick="document.getElementById('${deleteModalId}').showModal()">
-                              <span class="material-symbols-outlined text-base">delete</span>
-                              <c:out value="${deleteLabel}" />
-                            </button>
-                          </c:otherwise>
-                        </c:choose>
+                        <button type="button" class="btn btn-outline btn-sm text-error" onclick="document.getElementById('${deleteModalId}').showModal()">
+                          <span class="material-symbols-outlined text-base">delete</span>
+                          <c:out value="${deleteLabel}" />
+                        </button>
                       </div>
                     </paw:detailsModal>
-                    <c:if test="${!deleteDisabled}">
-                      <paw:confirmModal id="${deleteModalId}" title="${deleteConfirmTitle}" message="${deleteModalMessage}" confirmText="${deleteModalConfirmText}" cancelText="${deleteConfirmCancel}" confirmColor="${deleteModalConfirmColor}" icon="${deleteModalIcon}">
-                        <form action="${deleteItemUrl}" method="post" class="m-0">
-                          <paw:button type="submit" color="${deleteModalConfirmColor}" cssClass="w-full sm:w-auto" text="${deleteModalConfirmText}" />
-                        </form>
-                      </paw:confirmModal>
-                    </c:if>
+                    <paw:confirmModal id="${deleteModalId}" title="${deleteConfirmTitle}" message="${deleteConfirmMessage}" confirmText="${deleteConfirmConfirm}" cancelText="${deleteConfirmCancel}" confirmColor="danger" icon="delete_forever">
+                      <form action="${deleteItemUrl}" method="post" class="m-0">
+                        <paw:button type="submit" color="danger" cssClass="w-full sm:w-auto" text="${deleteConfirmConfirm}" />
+                      </form>
+                    </paw:confirmModal>
                   </c:forEach>
                 </div>
               </c:when>

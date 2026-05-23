@@ -32,8 +32,6 @@ public class MyBoatsPresentation {
 
         final Map<Integer, Integer> publicationCoverImageIdsByItemId = new LinkedHashMap<>();
         final Map<Integer, String> imageUrlsByItemId = new LinkedHashMap<>();
-        final Map<Integer, Boolean> publicationDeleteDeactivatesByItemId = new LinkedHashMap<>();
-        final Map<Integer, Boolean> publicationDeleteDisabledByItemId = new LinkedHashMap<>();
 
         for (final MyBoatsItem item : ownedItems) {
             if (item == null || item.getId() == null) {
@@ -45,16 +43,12 @@ public class MyBoatsPresentation {
             } else {
                 imageUrlsByItemId.put(item.getId(), contextPath + PLACEHOLDER_IMAGE_PATH);
             }
-            publicationDeleteDeactivatesByItemId.put(item.getId(), Boolean.TRUE.equals(item.getDeleteDeactivates()));
-            publicationDeleteDisabledByItemId.put(item.getId(), Boolean.TRUE.equals(item.getDeleteDisabled()));
         }
 
         final ModelAndView mav = new ModelAndView("my-boats");
         mav.addObject("ownedItems", ownedItems);
         mav.addObject("publicationCoverImageIdsByItemId", publicationCoverImageIdsByItemId);
         mav.addObject("imageUrlsByItemId", imageUrlsByItemId);
-        mav.addObject("publicationDeleteDeactivatesByItemId", publicationDeleteDeactivatesByItemId);
-        mav.addObject("publicationDeleteDisabledByItemId", publicationDeleteDisabledByItemId);
         mav.addObject("itemPage", new PageModel<>(ownedItems, safePage, safePageSize, totalItems));
         return mav;
     }

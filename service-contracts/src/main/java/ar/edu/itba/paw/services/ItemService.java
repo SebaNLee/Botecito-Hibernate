@@ -14,11 +14,5 @@ public interface ItemService {
 
     MyBoatsItem requireOwnedItem(int itemId, int callerId);
 
-    boolean deleteMyBoatsItem(int itemId, int ownerId);
-
-    void setItemActiveForOwner(int itemId, int ownerId, boolean active);
-
     Optional<Image> findImageWithDataById(int imageId);
-
-    // TODO: Soft delete item method
 }

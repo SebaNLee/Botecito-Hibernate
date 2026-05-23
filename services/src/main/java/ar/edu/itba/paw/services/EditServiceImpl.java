@@ -4,12 +4,20 @@ import ar.edu.itba.paw.models.dto.AvailabilityWindow;
 import ar.edu.itba.paw.models.dto.ImageUpload;
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Image;
+import ar.edu.itba.paw.models.entity.ItemType;
+import ar.edu.itba.paw.models.entity.Location;
 import ar.edu.itba.paw.models.entity.Media;
+import ar.edu.itba.paw.models.entity.MediaId;
 import ar.edu.itba.paw.models.entity.Version;
+import ar.edu.itba.paw.models.entity.WeekdayEnum;
 import ar.edu.itba.paw.persistence.EditDao;
+import ar.edu.itba.paw.persistence.PublishDao;
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -23,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class EditServiceImpl implements EditService {
 
     private final EditDao editDao;
+    private final PublishDao publishDao;
     private final DetailService detailService;
 
     @Override
@@ -60,20 +69,20 @@ public class EditServiceImpl implements EditService {
         }
 
         if (editDao.itemHasBookings(itemId)) {
-            editDao.edit(
-                    itemId,
+            createNewVersion(
+                    current,
                     typeId,
                     title,
                     description,
                     pricePerHour,
                     capacityPeople,
                     weight,
-                    difficulty,
+                    Objects.requireNonNull(difficulty),
                     locationOptionId,
                     filteredAvailabilities,
                     filteredImages);
         } else {
-            editDao.overwrite(
+            overwriteVersion(
                     current.getId(),
                     typeId,
                     title,
@@ -81,12 +90,197 @@ public class EditServiceImpl implements EditService {
                     pricePerHour,
                     capacityPeople,
                     weight,
-                    difficulty,
+                    Objects.requireNonNull(difficulty),
                     locationOptionId,
                     filteredAvailabilities,
                     filteredImages);
         }
         return true;
+    }
+
+    private void createNewVersion(
+            final Version current,
+            final int typeId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final int capacityPeople,
+            final int weight,
+            final Integer difficulty,
+            final int locationOptionId,
+            final List<AvailabilityWindow> availabilities,
+            final List<ImageUpload> images) {
+        final Version version = publishDao.persistVersion(buildNewVersion(
+                current,
+                typeId,
+                title,
+                description,
+                pricePerHour,
+                capacityPeople,
+                weight,
+                difficulty,
+                locationOptionId,
+                LocalDateTime.now()));
+        publishDao.flush();
+        persistAvailabilities(version, availabilities);
+        persistMedia(version, images, allowedExistingImageIds(current));
+    }
+
+    private void overwriteVersion(
+            final int versionId,
+            final int typeId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final int capacityPeople,
+            final int weight,
+            final Integer difficulty,
+            final int locationOptionId,
+            final List<AvailabilityWindow> availabilities,
+            final List<ImageUpload> images) {
+        final Version version = editDao.findVersionById(versionId)
+                .orElseThrow(() -> new IllegalStateException("Version not found: " + versionId));
+
+        applyVersionFields(
+                version,
+                typeId,
+                title,
+                description,
+                pricePerHour,
+                capacityPeople,
+                weight,
+                difficulty,
+                locationOptionId);
+
+        editDao.removeVersionChildren(version);
+        publishDao.flush();
+
+        persistAvailabilities(version, availabilities);
+        persistMedia(version, images, Set.of());
+    }
+
+    private void persistAvailabilities(final Version version, final List<AvailabilityWindow> availabilities) {
+        for (final AvailabilityWindow window : availabilities) {
+            publishDao.persistAvailability(buildAvailability(version, window));
+        }
+    }
+
+    private void persistMedia(
+            final Version version, final List<ImageUpload> images, final Set<Integer> allowedExistingImageIds) {
+        for (int idx = 0; idx < images.size(); idx++) {
+            final ImageUpload upload = images.get(idx);
+            final Image image;
+            if (upload.isExisting()) {
+                if (!allowedExistingImageIds.isEmpty()
+                        && !allowedExistingImageIds.contains(upload.getExistingImageId())) {
+                    continue;
+                }
+                image = imageReference(upload.getExistingImageId());
+            } else {
+                image = publishDao.persistImage(buildNewImage(upload));
+            }
+            publishDao.persistMedia(buildMedia(version, image, idx));
+        }
+    }
+
+    private static Version buildNewVersion(
+            final Version current,
+            final int typeId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final int capacityPeople,
+            final int weight,
+            final Integer difficulty,
+            final int locationOptionId,
+            final LocalDateTime createdAt) {
+        return Version.builder()
+                .item(current.getItem())
+                .type(itemTypeReference(typeId))
+                .title(title)
+                .description(description)
+                .price(BigDecimal.valueOf(pricePerHour))
+                .capacity(capacityPeople)
+                .weight(weight)
+                .difficulty(difficulty)
+                .location(locationReference(locationOptionId))
+                .timezone(current.getTimezone())
+                .createdAt(createdAt)
+                .build();
+    }
+
+    private static void applyVersionFields(
+            final Version version,
+            final int typeId,
+            final String title,
+            final String description,
+            final int pricePerHour,
+            final int capacityPeople,
+            final int weight,
+            final Integer difficulty,
+            final int locationOptionId) {
+        version.setType(itemTypeReference(typeId));
+        version.setTitle(title);
+        version.setDescription(description);
+        version.setPrice(BigDecimal.valueOf(pricePerHour));
+        version.setCapacity(capacityPeople);
+        version.setWeight(weight);
+        version.setDifficulty(difficulty);
+        version.setLocation(locationReference(locationOptionId));
+    }
+
+    private static Availability buildAvailability(final Version version, final AvailabilityWindow window) {
+        final Availability availability = new Availability();
+        availability.setVersion(version);
+        availability.setWeekday(WeekdayEnum.valueOf(window.getWeekday().name()));
+        availability.setStartTime(window.getStartTime());
+        availability.setEndTime(window.getEndTime());
+        return availability;
+    }
+
+    private static Image buildNewImage(final ImageUpload upload) {
+        final Image image = new Image();
+        image.setData(upload.getData());
+        return image;
+    }
+
+    private static Media buildMedia(final Version version, final Image image, final int index) {
+        final Media media = new Media();
+        media.setId(new MediaId(version.getId(), index));
+        media.setVersion(version);
+        media.setImage(image);
+        return media;
+    }
+
+    private static ItemType itemTypeReference(final int typeId) {
+        final ItemType type = new ItemType();
+        type.setId(typeId);
+        return type;
+    }
+
+    private static Location locationReference(final int locationId) {
+        final Location location = new Location();
+        location.setId(locationId);
+        return location;
+    }
+
+    private static Image imageReference(final int imageId) {
+        final Image image = new Image();
+        image.setId(imageId);
+        return image;
+    }
+
+    private static Set<Integer> allowedExistingImageIds(final Version version) {
+        final Set<Integer> allowed = new HashSet<>();
+        if (version.getMedia() == null) {
+            return allowed;
+        }
+        for (final Media media : version.getMedia()) {
+            if (media.getImage() != null && media.getImage().getId() != null) {
+                allowed.add(media.getImage().getId());
+            }
+        }
+        return allowed;
     }
 
     private static boolean hasChanges(

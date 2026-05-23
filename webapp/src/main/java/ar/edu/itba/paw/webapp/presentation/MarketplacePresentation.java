@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.dto.MarketplaceSearchResult;
+import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Media;
@@ -35,7 +35,7 @@ public class MarketplacePresentation {
         long totalCount = 0;
 
         if (!errors.hasErrors()) {
-            final MarketplaceSearchResult result = marketplaceInterface.searchMarketplace(
+            final ItemSearchResult result = marketplaceInterface.searchMarketplace(
                     form.getSearchQuery(),
                     form.getDate(),
                     form.getStartTime(),

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public final class MarketplaceSearchResult {
+public final class ItemSearchResult {
     private final List<Item> items;
     private final long totalCount;
 }

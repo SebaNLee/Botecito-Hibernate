@@ -20,7 +20,7 @@ public interface BookingDao {
             BookingStatusEnum status,
             String msg);
 
-    // TODO: Revisar si realmente hace falta esto, capaz puede ser atributo de Version?
+    // Innecesario, nunca es hace falta saber las reservas de una version en especifico
     List<Booking> getBookingsForVersion(int versionId);
 
     Optional<Booking> findById(int bookingId);
@@ -47,9 +47,10 @@ public interface BookingDao {
     // Upsert es raro, va a pasar a ser insert. Para updates, hacer un get del booking
     Optional<PaymentProof> uploadPayment(PaymentProof paymentProof);
 
+    // Redundante, se puede buscar el booking y leer booking.paymentProof
     Optional<PaymentProof> findPaymentProofForParticipant(int bookingId, int userId);
 
-    // Single update
+    // Single update, pasa a service
     Optional<Booking> refusePayment(int bookingId, String message, LocalDateTime refuseTime);
 
     void finalizeBookingsBefore(LocalDateTime maxEndTime);

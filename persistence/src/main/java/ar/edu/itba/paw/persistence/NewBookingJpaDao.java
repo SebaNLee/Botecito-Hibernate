@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.persistence.TypedQuery;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -39,6 +38,18 @@ public class NewBookingJpaDao {
 
     public void insertBooking(final Booking booking) {
         em.persist(booking);
+    }
+
+    private boolean wouldCollide(final Booking booking) {
+        var query = em.createQuery(
+                "SELECT COUNT(b) > 0 FROM Booking b WHERE b.start <= :requestedEnd AND :requestedStart <= b.end",
+                Boolean.class);
+        query.setParameter(":requestedStart", booking.getStart()).setParameter(":requestedEnd", booking.getEnd());
+        return query.getSingleResult();
+    }
+
+    public boolean canInsertBooking(final Booking booking) {
+        return !wouldCollide(booking);
     }
 
     public boolean deleteBooking(final int id) {
@@ -99,10 +110,10 @@ public class NewBookingJpaDao {
 
         if (query.isAsHost()) {
             // Host query, host must be the caller and not be the guest
-            clauses.add("i.host_id = :callerId AND b.guest_id IS NOT NULL AND b.guest_id <> :callerId");
+            clauses.add("i.host_id = :callerId AND (b.guest_id IS NULL OR b.guest_id <> :callerId)");
         } else {
             // Guest query, guest must be the caller and not the host
-            clauses.add("b.guest_id = :callerId AND i.host_id <> :callerId");
+            clauses.add("b.guest_id = :callerId AND (i.host_id IS NULL OR i.host_id <> :callerId)");
         }
         params.put("callerId", query.getCallerId());
 
@@ -143,18 +154,6 @@ public class NewBookingJpaDao {
         }
 
         return ((Number) countQuery.getSingleResult()).longValue();
-    }
-
-    public Optional<PaymentProof> findPaymentProofForParticipant(final int bookingId, final int userId) {
-        final TypedQuery<PaymentProof> query = em.createQuery(
-                "SELECT p FROM PaymentProof p INNER JOIN p.booking b LEFT JOIN b.guest g "
-                        + "INNER JOIN b.version v INNER JOIN v.item i LEFT JOIN i.host h "
-                        + "WHERE b.id = :bookingId AND (g.id = :userId OR h.id = :userId)",
-                PaymentProof.class);
-        query.setParameter("bookingId", bookingId);
-        query.setParameter("userId", userId);
-        final List<PaymentProof> rows = query.getResultList();
-        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
     public void finalizeBookingsBefore(LocalDateTime maxEndTime) {

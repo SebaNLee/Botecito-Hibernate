@@ -62,6 +62,9 @@ public class BookingImpl implements BookingService {
             entry(BookingStatusEnum.REFUSED, EnumSet.of(BookingStatusEnum.PAID, BookingStatusEnum.CANCELLED)),
             entry(BookingStatusEnum.CONFIRMED, EnumSet.of(BookingStatusEnum.FINISHED, BookingStatusEnum.CANCELLED)));
 
+    private static final EnumSet<BookingStatusEnum> AUTO_CANCEL_STATES = EnumSet.of(
+            BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED, BookingStatusEnum.PAID, BookingStatusEnum.REFUSED);
+
     private static boolean isValidTransition(BookingStatusEnum source, BookingStatusEnum target) {
         var targets = VALID_TRANSITIONS.getOrDefault(source, EnumSet.noneOf(BookingStatusEnum.class));
         return targets.contains(target);

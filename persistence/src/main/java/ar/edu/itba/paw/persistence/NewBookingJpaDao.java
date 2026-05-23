@@ -26,13 +26,6 @@ public class NewBookingJpaDao {
     private static final String NATIVE_JOIN =
             "booking b JOIN version v ON b.version_id = v.id JOIN item i ON v.item_id = i.id ";
 
-    // Mejor pedir por parametro el complemento de este set
-    private static final EnumSet<BookingStatusEnum> NON_AUTO_CANCEL_STATES = EnumSet.of(
-            BookingStatusEnum.CONFIRMED,
-            BookingStatusEnum.CANCELLED,
-            BookingStatusEnum.FINISHED,
-            BookingStatusEnum.REJECTED);
-
     @PersistenceContext
     private EntityManager em;
 
@@ -166,12 +159,12 @@ public class NewBookingJpaDao {
                 .executeUpdate();
     }
 
-    public void expireBookingsBefore(LocalDateTime minStartTime) {
+    public void expireBookingsBefore(LocalDateTime minStartTime, EnumSet<BookingStatusEnum> cancellableStates) {
         em.createQuery(
-                        "UPDATE Booking b SET b.status = :status WHERE b.start < :startTime AND b.status NOT IN :excluded")
+                        "UPDATE Booking b SET b.status = :status WHERE b.start < :startTime AND b.status NOT IN :cancellable")
                 .setParameter("status", BookingStatusEnum.CANCELLED)
                 .setParameter("startTime", minStartTime)
-                .setParameter("excluded", NON_AUTO_CANCEL_STATES)
+                .setParameter("cancellable", cancellableStates)
                 .executeUpdate();
     }
 

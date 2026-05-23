@@ -3,6 +3,7 @@ package ar.edu.itba.paw.webapp.controller;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ProfileForm;
 import ar.edu.itba.paw.webapp.presentation.ProfilePresentation;
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -37,7 +38,9 @@ public class ProfileController {
     public ModelAndView profileSubmit(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @Valid @ModelAttribute("profileForm") final ProfileForm form,
-            final BindingResult errors) {
+            final BindingResult errors,
+            final HttpServletRequest request) {
+        request.getSession().removeAttribute("userLocale");
         if (errors.hasErrors()) {
             return profilePresentation.profileSubmit(user, form, errors);
         }

@@ -7,6 +7,7 @@ import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,6 +21,7 @@ public class UserLocaleResolver implements LocaleResolver {
 
     @Override
     public Locale resolveLocale(final HttpServletRequest request) {
+        final HttpSession session = request.getSession(false);
         final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()
@@ -27,11 +29,18 @@ public class UserLocaleResolver implements LocaleResolver {
             return request.getLocale();
         }
         final Object principal = authentication.getPrincipal();
-        if (!(principal instanceof BotecitoUserDetails details)) {
+        if (!(principal instanceof BotecitoUserDetails details) || session == null) {
             return request.getLocale();
         }
-        final Users user = userService.findById(details.getId()).orElseThrow();
-        return PreferredLanguageModel.fromPersistence(user.getLanguage()).toLocale();
+
+        Locale locale = (Locale) session.getAttribute("userLocale");
+        if (locale == null) {
+            final Users user = userService.findById(details.getId()).orElseThrow();
+            locale = PreferredLanguageModel.fromPersistence(user.getLanguage()).toLocale();
+            session.setAttribute("userLocale", locale);
+        }
+
+        return locale;
     }
 
     @Override

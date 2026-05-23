@@ -2,6 +2,7 @@ package ar.edu.itba.paw.models.dto;
 
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.Item;
 import java.util.List;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public final class OwnerAvailabilityPage {
-    private final MyBoatsItem item;
+    private final Item item;
     private final List<Availability> availabilityWindows;
     private final List<Booking> activeBookings;
     private final List<Booking> ownerSelfBlocks;

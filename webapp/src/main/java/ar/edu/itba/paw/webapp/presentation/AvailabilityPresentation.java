@@ -12,9 +12,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -111,7 +111,11 @@ public class AvailabilityPresentation {
         final Set<Integer> selfBlockIds =
                 model.getOwnerSelfBlocks().stream().map(Booking::getId).collect(Collectors.toSet());
         final List<SlotRow> slots = buildSlotGrid(
-                model.getSelectedDate(), model.getAvailabilityWindows(), model.getActiveBookings(), selfBlockIds);
+                model.getSelectedDate(),
+                model.getAvailabilityWindows(),
+                model.getActiveBookings(),
+                selfBlockIds,
+                model.getTimezone());
         mav.addObject("slots", slots);
         mav.addObject("slotsStateJson", slotsToJson(slots));
         mav.addObject("personalBlockRows", toPersonalBlockRows(model.getOwnerSelfBlocks(), model.getTimezone()));
@@ -126,11 +130,13 @@ public class AvailabilityPresentation {
             final String selectedDate,
             final List<Availability> availabilities,
             final List<Booking> bookings,
-            final Set<Integer> selfBlockBookingIds) {
+            final Set<Integer> selfBlockBookingIds,
+            final String timezone) {
         if (selectedDate == null || selectedDate.isBlank()) {
             return List.of();
         }
         final LocalDate day = LocalDate.parse(selectedDate);
+        final ZoneId zone = timezone == null || timezone.isBlank() ? ZoneOffset.UTC : ZoneId.of(timezone.trim());
         final TreeSet<String> scheduled = new TreeSet<>();
         for (final Availability availability : availabilities) {
             if (availability.getWeekday().name().equals(day.getDayOfWeek().name())) {
@@ -152,13 +158,11 @@ public class AvailabilityPresentation {
             if (booking.getStart() == null || booking.getEnd() == null) {
                 continue;
             }
-            OffsetDateTime cursor =
-                    booking.getStart().atZone(ZoneOffset.UTC).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
-            final OffsetDateTime end =
-                    booking.getEnd().atZone(ZoneOffset.UTC).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
+            ZonedDateTime cursor = booking.getStart().atZone(ZoneOffset.UTC).withZoneSameInstant(zone);
+            final ZonedDateTime end = booking.getEnd().atZone(ZoneOffset.UTC).withZoneSameInstant(zone);
             while (cursor.isBefore(end)) {
                 if (day.equals(cursor.toLocalDate())) {
-                    final String key = cursor.toLocalTime().toString().substring(0, 5);
+                    final String key = cursor.toLocalTime().format(TIME_FMT);
                     if (booking.getId() != null && selfBlockBookingIds.contains(booking.getId())) {
                         ownerBlocks.put(key, booking.getId());
                     } else {

@@ -1,74 +1,29 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.dto.BookingQueryModel;
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
-import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.PaymentProof;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.EnumSet;
 import java.util.Optional;
 
 public interface BookingDao {
 
-    Optional<Integer> insertBooking(
-            int versionId,
-            int guestId,
-            LocalDateTime utcStart,
-            LocalDateTime utcEnd,
-            BookingStatusEnum status,
-            String msg);
+    void insertBooking(final Booking booking);
 
-    // Innecesario, nunca es hace falta saber las reservas de una version en especifico
-    List<Booking> getBookingsForVersion(int versionId);
+    boolean canInsertBooking(final Booking booking, EnumSet<BookingStatusEnum> blockingStates);
+
+    boolean deleteBooking(final int id);
 
     Optional<Booking> findById(int bookingId);
 
-    // Redundante, se puede buscar el booking y leer version.item.host
-    Optional<Integer> findOwnerIdForBookingId(int bookingId);
+    BookingSearchResult searchBookings(final BookingQueryModel query);
 
-    BookingSearchResult searchBookings(
-            int userId,
-            boolean asHost,
-            String searchQuery,
-            LocalDate date,
-            BookingStatusEnum status,
-            Integer page,
-            Integer pageSize,
-            String sortBy);
-
-    // Single update, pasa a service
-    Optional<Booking> updateStatusIncoming(int id, int callerId, BookingStatusEnum status);
-
-    // Idem ^
-    Optional<Booking> updateStatusOutgoing(int id, int callerId, BookingStatusEnum status);
-
-    // Upsert es raro, va a pasar a ser insert. Para updates, hacer un get del booking
-    Optional<PaymentProof> uploadPayment(PaymentProof paymentProof);
-
-    // Redundante, se puede buscar el booking y leer booking.paymentProof
-    Optional<PaymentProof> findPaymentProofForParticipant(int bookingId, int userId);
-
-    // Single update, pasa a service
-    Optional<Booking> refusePayment(int bookingId, String message, LocalDateTime refuseTime);
+    void uploadPayment(PaymentProof paymentProof);
 
     void finalizeBookingsBefore(LocalDateTime maxEndTime);
 
-    void expireBookingsBefore(LocalDateTime minStartTime);
-
-    // Single entity check, pasa a service
-    boolean startsAfter(int bookingId, LocalDateTime requestedStart);
-
-    // TODO: mover estos 3, no le corresponden a bookings
-    // -------------
-    Optional<String> findVersionTimezone(int versionId);
-
-    Optional<Integer> findOwnerIdForVersion(int versionId);
-
-    List<Availability> listAvailabilitiesForVersion(int versionId);
-    // -------------
-
-    // Owner check pasa a service
-    boolean deleteOwnerSelfBlock(int bookingId, int ownerId);
+    void expireBookingsBefore(LocalDateTime minStartTime, EnumSet<BookingStatusEnum> cancellableStates);
 }

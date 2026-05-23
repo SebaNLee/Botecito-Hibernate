@@ -2,19 +2,14 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
 import ar.edu.itba.paw.models.dto.OwnerAvailabilityPage;
-import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
 import java.util.Optional;
 
 public interface BookingService {
 
-    int createBooking(
-            int versionId, LocalDate date, LocalTime startTime, LocalTime endTime, String message, int guestId);
-
-    List<Booking> getBookingsForVersion(int versionId);
+    void createBooking(int itemId, LocalDate date, LocalTime startTime, LocalTime endTime, String message, int guestId);
 
     BookingSearchResult searchBookings(
             int userId,
@@ -30,7 +25,21 @@ public interface BookingService {
 
     void rejectBooking(int bookingId, int callerId);
 
-    void submitPayment(int bookingId, PaymentProof payment, int callerId);
+    // Actualiza si replyMsg != null, si no llama a submitPayment
+    void updatePayment(
+            final int bookingId,
+            final String fileName,
+            final String contentType,
+            final byte[] fileData,
+            final String replyMsg,
+            final int callerId);
+
+    void submitPayment(
+            final int bookingId,
+            final String fileName,
+            final String contentType,
+            final byte[] fileData,
+            final int callerId);
 
     Optional<PaymentProof> getPaymentProofForParticipant(int bookingId, int callerId);
 

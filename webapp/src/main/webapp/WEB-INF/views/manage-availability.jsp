@@ -60,7 +60,7 @@
       <c:out value="${pageTitle}" />
     </h1>
     <p class="text-on-surface-variant mt-2 m-0 text-lg">
-      <c:out value="${item.title}" />
+      <c:out value="${item.latestVersion.title}" />
     </p>
     <p class="text-on-surface-variant mt-1 m-0 text-sm">
       <c:out value="${pageSubtitle}" />

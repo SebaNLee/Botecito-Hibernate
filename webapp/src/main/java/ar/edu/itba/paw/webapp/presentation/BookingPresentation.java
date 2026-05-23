@@ -206,13 +206,9 @@ public class BookingPresentation {
         final String guestReply = form != null && StringUtils.hasText(form.getGuestReply())
                 ? form.getGuestReply().trim()
                 : null;
-        final PaymentProof proof = PaymentProof.builder()
-                .filename(fileName)
-                .contentType(contentType)
-                .fileData(fileData)
-                .replyMsg(guestReply)
-                .build();
-        bookingInterface.submitPayment(bookingId, proof, userId.get());
+
+        bookingInterface.updatePayment(bookingId, fileName, contentType, fileData, guestReply, userId.get());
+
         ToastSupport.success(redirectAttributes, "requests.booking.paymentSubmitted");
         return new ModelAndView(REDIRECT_OUTGOING);
     }

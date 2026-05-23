@@ -423,14 +423,12 @@ public class BookingImpl implements BookingService {
         insertBooking(itemId, parsedDate, parsedStart, parsedEnd, "", callerId, false);
     }
 
-    // TODO: make void
     @Override
     @Transactional
     public boolean removeOwnerSelfBlock(final int bookingId, final int callerId) {
         Booking booking = findById(bookingId);
         var ownerId = booking.getVersion().getItem().getHost().getId().intValue();
-        if (ownerId != callerId || ownerId != booking.getGuest().getId().intValue())
-            throw new ForbiddenOperationException();
+        if (ownerId != callerId || ownerId != booking.getGuest().getId().intValue()) return false;
         bookingDao.deleteBooking(bookingId);
         return true;
     }

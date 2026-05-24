@@ -134,11 +134,6 @@ public class BookingImpl implements BookingService {
             final String message,
             final int guestId,
             final boolean checkAnticipation) {
-        final LocalDateTime start = LocalDateTime.of(date, startTime);
-        final LocalDateTime now = currentDateTime();
-        if (start.isBefore(now)) throw new PastSlotException();
-        if (checkAnticipation && start.isBefore(currentMinimumStart())) throw new NoAnticipationException();
-
         Users guest = userService.findById(guestId).orElseThrow(ForbiddenOperationException::new);
 
         Item item = itemService.findItemById(itemId);
@@ -165,6 +160,10 @@ public class BookingImpl implements BookingService {
         final ZonedDateTime zonedEnd = localEnd.atZone(zoneId);
         final LocalDateTime utcStart = LocalDateTime.ofInstant(zonedStart.toInstant(), ZoneOffset.UTC);
         final LocalDateTime utcEnd = LocalDateTime.ofInstant(zonedEnd.toInstant(), ZoneOffset.UTC);
+
+        final LocalDateTime now = currentDateTime();
+        if (utcStart.isBefore(now)) throw new PastSlotException();
+        if (checkAnticipation && utcStart.isBefore(currentMinimumStart())) throw new NoAnticipationException();
 
         final Integer ownerId = item.getHost().getId();
         final boolean isOwner = guestId == ownerId;
@@ -356,7 +355,13 @@ public class BookingImpl implements BookingService {
     @Override
     @Transactional(readOnly = true)
     public Optional<PaymentProof> getPaymentProofForParticipant(final int bookingId, final int callerId) {
-        return Optional.ofNullable(findById(bookingId).getPaymentProof());
+        final Booking booking = findById(bookingId);
+        final int hostId = booking.getVersion().getItem().getHost().getId().intValue();
+        final int guestId = booking.getGuest().getId().intValue();
+        if (callerId != hostId && callerId != guestId) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(booking.getPaymentProof());
     }
 
     @Override
@@ -506,9 +511,6 @@ public class BookingImpl implements BookingService {
         final String timezone = version.getTimezone();
         final ZoneId zoneId = ZoneId.of(timezone.trim());
         final LocalDateTime localStart = LocalDateTime.of(parsedDate, parsedStart);
-        if (localStart.isBefore(currentDateTime())) {
-            throw new PastSlotException();
-        }
 
         final DayOfWeek dayOfWeek = localStart.getDayOfWeek();
         final List<Availability> availabilities = version.getAvailabilities();
@@ -524,6 +526,9 @@ public class BookingImpl implements BookingService {
         final ZonedDateTime zonedEnd = LocalDateTime.of(parsedDate, parsedEnd).atZone(zoneId);
         final LocalDateTime utcStart = LocalDateTime.ofInstant(zonedStart.toInstant(), ZoneOffset.UTC);
         final LocalDateTime utcEnd = LocalDateTime.ofInstant(zonedEnd.toInstant(), ZoneOffset.UTC);
+        if (utcStart.isBefore(currentDateTime())) {
+            throw new PastSlotException();
+        }
 
         final Booking probe =
                 Booking.builder().version(version).start(utcStart).end(utcEnd).build();

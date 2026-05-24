@@ -207,7 +207,7 @@ public class BookingJpaDao implements BookingDao {
     @Override
     public void expireBookingsBefore(LocalDateTime minStartTime, EnumSet<BookingStatusEnum> cancellableStates) {
         em.createQuery(
-                        "UPDATE Booking b SET b.status = :status WHERE b.start < :startTime AND b.status NOT IN :cancellable")
+                        "UPDATE Booking b SET b.status = :status WHERE b.start < :startTime AND b.status IN :cancellable")
                 .setParameter("status", BookingStatusEnum.CANCELLED)
                 .setParameter("startTime", minStartTime)
                 .setParameter("cancellable", cancellableStates)

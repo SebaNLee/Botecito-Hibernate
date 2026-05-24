@@ -1317,8 +1317,8 @@
     );
     const itemLocationSlug = alertRoot.dataset.itemLocationSlug || "";
     const itemCapacity = parseInteger(alertRoot.dataset.itemCapacity);
-    const itemweight = parseInteger(alertRoot.dataset.itemweight);
-    const itemDifficulty = parseInteger(alertRoot.dataset.itemdifficulty);
+    const itemWeight = parseInteger(alertRoot.dataset.itemWeight);
+    const itemDifficulty = parseInteger(alertRoot.dataset.itemDifficulty);
     const mismatchPrefix =
       alertRoot.dataset.mismatchPrefix ||
       "This item does not match the saved filters for";
@@ -1358,15 +1358,16 @@
 
     if (
       requestedWeight != null &&
-      itemweight != null &&
-      itemweight < requestedWeight
+      itemWeight != null &&
+      itemWeight < requestedWeight
     ) {
       mismatchReasons.push(mismatchWeight);
     }
 
     if (
       requestedDifficulty != null &&
-      (itemDifficulty == null || itemDifficulty !== requestedDifficulty)
+      itemDifficulty != null &&
+      itemDifficulty !== requestedDifficulty
     ) {
       mismatchReasons.push(mismatchDifficulty);
     }

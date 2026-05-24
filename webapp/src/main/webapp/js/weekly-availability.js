@@ -711,6 +711,7 @@
     if (!this.hiddenContainer) return;
     this.hiddenContainer.innerHTML = "";
 
+    var rangeIndex = 0;
     for (var i = 0; i < WEEKDAYS.length; i++) {
       var key = WEEKDAYS[i].key;
       var day = this.days[key];
@@ -720,7 +721,6 @@
         return a.start - b.start;
       });
 
-      var rangeIndex = 0;
       for (var j = 0; j < sorted.length; j++) {
         var range = sorted[j];
         var prefix = "availabilityRanges[" + rangeIndex + "].";

@@ -33,7 +33,8 @@ public class ItemJpaDao implements ItemDao {
         // Get item IDs for this page
 
         var nativeQuery = em.createNativeQuery(
-                        "SELECT i.id FROM item i WHERE i.host_id = :ownerId AND i.status <> CAST(:deleted AS item_status_enum)")
+                        "SELECT i.id FROM item i WHERE i.host_id = :ownerId AND i.status <> CAST(:deleted AS item_status_enum) "
+                                + "ORDER BY i.created_at DESC, i.id DESC")
                 .setParameter("ownerId", ownerId)
                 .setParameter("deleted", ItemStatusEnum.DELETED.name());
 
@@ -47,7 +48,9 @@ public class ItemJpaDao implements ItemDao {
 
         // Fetch item entities
 
-        List<Item> items = em.createQuery("SELECT DISTINCT i FROM Item i WHERE i.id IN :ids", Item.class)
+        List<Item> items = em.createQuery(
+                        "SELECT DISTINCT i FROM Item i WHERE i.id IN :ids ORDER BY i.createdAt DESC, i.id DESC",
+                        Item.class)
                 .setParameter("ids", ids)
                 .getResultList();
 

@@ -440,6 +440,49 @@
     range.end = snappedEnd;
   };
 
+  function appendHiddenField(container, name, value) {
+    if (value === null || value === undefined || value === "") {
+      return;
+    }
+    var input = document.createElement("input");
+    input.type = "hidden";
+    input.name = name;
+    input.value = String(value);
+    container.appendChild(input);
+  }
+
+  ManageAvailabilityTimeline.prototype.injectSaveFormFields = function () {
+    var container = this.saveForm
+      ? this.saveForm.querySelector("[data-timeline-save-hidden-fields]")
+      : null;
+    if (!container) {
+      return;
+    }
+    container.innerHTML = "";
+    var payload = this.buildChangesPayload();
+    var i;
+
+    for (i = 0; i < payload.deletes.length; i++) {
+      appendHiddenField(container, "deletedBlockIds[" + i + "]", payload.deletes[i]);
+    }
+    for (i = 0; i < payload.updates.length; i++) {
+      var update = payload.updates[i];
+      appendHiddenField(container, "blockUpdates[" + i + "].bookingId", update.id);
+      appendHiddenField(container, "blockUpdates[" + i + "].startTime", update.startTime);
+      appendHiddenField(container, "blockUpdates[" + i + "].endTime", update.endTime);
+    }
+    for (i = 0; i < payload.creates.length; i++) {
+      var create = payload.creates[i];
+      appendHiddenField(container, "blockCreates[" + i + "].startTime", create.startTime);
+      appendHiddenField(container, "blockCreates[" + i + "].endTime", create.endTime);
+    }
+    for (i = 0; i < payload.blocks.length; i++) {
+      var block = payload.blocks[i];
+      appendHiddenField(container, "blocks[" + i + "].startTime", block.startTime);
+      appendHiddenField(container, "blocks[" + i + "].endTime", block.endTime);
+    }
+  };
+
   ManageAvailabilityTimeline.prototype.bindSaveForm = function () {
     var self = this;
     if (!this.saveForm) {
@@ -452,10 +495,7 @@
       }
       self.saving = true;
       self.updateSaveButtonState();
-      var changesInput = self.saveForm.querySelector('[name="changesJson"]');
-      if (changesInput) {
-        changesInput.value = JSON.stringify(self.buildChangesPayload());
-      }
+      self.injectSaveFormFields();
     });
   };
 

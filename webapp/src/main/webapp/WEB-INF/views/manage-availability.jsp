@@ -166,7 +166,7 @@
                     <input type="hidden" name="return" value="<c:out value='${manageAvailabilityReturnPath}' />" />
                   </c:if>
                   <input type="hidden" name="date" value="${selectedDate}" />
-                  <input type="hidden" name="changesJson" value="" />
+                  <div data-timeline-save-hidden-fields></div>
                   <paw:button
                       type="submit"
                       color="secondary"

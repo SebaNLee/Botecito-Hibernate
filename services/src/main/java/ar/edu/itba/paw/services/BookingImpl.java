@@ -187,9 +187,7 @@ public class BookingImpl implements BookingService {
 
         if (canInsert) {
             bookingDao.insertBooking(booking);
-            if (isOwner) {
-                mailService.sendBookingConfirmedMail(booking);
-            } else {
+            if (!isOwner) {
                 mailService.sendPreBookingMail(booking);
             }
         } else throw new BookingCollisionException();

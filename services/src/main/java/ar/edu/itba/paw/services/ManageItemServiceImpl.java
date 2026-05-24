@@ -2,7 +2,6 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
-import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.persistence.BookingDao;
 import ar.edu.itba.paw.persistence.EditDao;
 import ar.edu.itba.paw.persistence.ManageItemDao;
@@ -15,13 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class ManageItemServiceImpl implements ManageItemService {
 
     private final ManageItemDao manageItemDao;
+    private final ItemService itemService;
     private final EditDao editDao;
     private final BookingDao bookingDao;
 
     @Override
     @Transactional
     public void deleteItem(final int itemId, final int ownerId) {
-        final Item item = requireOwnedItem(itemId, ownerId);
+        final Item item = itemService.requireOwnedItem(itemId, ownerId);
 
         bookingDao.deleteAllSelfBlocks(item);
 
@@ -40,16 +40,8 @@ public class ManageItemServiceImpl implements ManageItemService {
     @Override
     @Transactional
     public void setEnabled(final int itemId, final int ownerId, final boolean enabled) {
-        final Item item = requireOwnedItem(itemId, ownerId);
+        final Item item = itemService.requireOwnedItem(itemId, ownerId);
         item.setStatus(enabled ? ItemStatusEnum.ACTIVE : ItemStatusEnum.INACTIVE);
-    }
-
-    private Item requireOwnedItem(final int itemId, final int ownerId) {
-        final Item item = manageItemDao.findItemById(itemId).orElseThrow(ForbiddenOperationException::new);
-        if (item.getHost() == null || item.getHost().getId() != ownerId) {
-            throw new ForbiddenOperationException();
-        }
-        return item;
     }
 
     private void applySoftDelete(final Item item) {

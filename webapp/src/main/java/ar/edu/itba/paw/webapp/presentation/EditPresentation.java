@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.entity.Availability;
-import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.services.EditService;
 import ar.edu.itba.paw.services.ItemService;
@@ -38,9 +37,9 @@ public class EditPresentation {
     public ModelAndView bootstrapEdit(
             final BotecitoUserDetails principal, final int itemId, final HttpServletRequest request) {
 
-        final Item item = itemService.requireOwnedItem(itemId, principal.getId());
+        final Version version = itemService.requireOwnedFullData(itemId, principal.getId());
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
-        final Map<String, Object> draft = buildDraftPayload(item, itemId, contextPath);
+        final Map<String, Object> draft = buildDraftPayload(version, itemId, contextPath);
 
         final ModelAndView mav = new ModelAndView("edit-bootstrap");
         mav.addObject("itemId", itemId);
@@ -152,8 +151,8 @@ public class EditPresentation {
         return new ModelAndView(redirectView);
     }
 
-    private static Map<String, Object> buildDraftPayload(final Item item, final int itemId, final String contextPath) {
-        final Version version = item.getLatestVersion();
+    private static Map<String, Object> buildDraftPayload(
+            final Version version, final int itemId, final String contextPath) {
         final Map<String, Object> draft = new LinkedHashMap<>();
         draft.put("v", 1);
         draft.put("itemId", itemId);

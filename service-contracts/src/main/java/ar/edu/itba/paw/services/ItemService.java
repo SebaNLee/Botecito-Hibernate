@@ -3,6 +3,7 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.models.entity.Version;
 import java.util.Optional;
 
 public interface ItemService {
@@ -18,4 +19,7 @@ public interface ItemService {
     boolean userOwnsItem(int itemId, int userId);
 
     Item requireOwnedItem(int itemId, int userId);
+
+    // Rellena todos los datos que puede necesitar una version
+    Version requireOwnedFullData(int itemId, int userId);
 }

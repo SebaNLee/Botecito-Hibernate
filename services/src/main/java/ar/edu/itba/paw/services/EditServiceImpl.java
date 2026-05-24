@@ -49,7 +49,7 @@ public class EditServiceImpl implements EditService {
             final int locationOptionId,
             final List<AvailabilityWindow> availabilities,
             final List<ImageUpload> images) {
-        final Version current = itemService.requireOwnedItem(itemId, ownerId).getLatestVersion();
+        final Version current = itemService.requireOwnedFullData(itemId, ownerId);
         final List<AvailabilityWindow> filteredAvailabilities = filterAvailabilities(availabilities);
         final List<ImageUpload> filteredImages = filterImages(images);
 

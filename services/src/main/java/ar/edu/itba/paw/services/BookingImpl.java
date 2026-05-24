@@ -180,7 +180,11 @@ public class BookingImpl implements BookingService {
                 .updatedAt(now)
                 .build();
 
-        if (bookingDao.canInsertBooking(booking, BLOCKING_STATES)) {
+        boolean canInsert = isOwner
+                ? bookingDao.canInsertConsecutive(booking, BLOCKING_STATES)
+                : bookingDao.canInsertBooking(booking, BLOCKING_STATES);
+
+        if (canInsert) {
             bookingDao.insertBooking(booking);
         } else throw new BookingCollisionException();
     }

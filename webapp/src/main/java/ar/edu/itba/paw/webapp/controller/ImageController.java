@@ -23,7 +23,7 @@ public class ImageController {
     @RequestMapping("/{id:[0-9]+}")
     public ResponseEntity<byte[]> imageById(@PathVariable("id") final int imageId) {
         return itemInterface
-                .findImageWithDataById(imageId)
+                .findImageById(imageId)
                 .map(Image::getData)
                 .filter(data -> data.length > 0)
                 .map(ImageController::okCachedImage)

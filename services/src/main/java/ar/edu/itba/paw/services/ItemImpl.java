@@ -1,10 +1,11 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.MyBoatsItem;
+import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.entity.Image;
+import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
+import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
 import ar.edu.itba.paw.persistence.ItemDao;
-import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,31 +19,51 @@ public class ItemImpl implements ItemService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId, final int page, final int pageSize) {
-        return itemDao.listMyBoatsItemsByOwnerId(ownerId, page, pageSize);
+    public ItemSearchResult listOwnerItems(int ownerId, int page, int pageSize) {
+        var result = itemDao.listOwnerItems(ownerId, page, pageSize);
+
+        // This loop is safe, result is bounded
+        for (Item item : result.getItems()) {
+            // Fetch latest version and the cover image
+            @SuppressWarnings("unused")
+            var image = item.getLatestVersion().getMedia().get(0).getImage();
+        }
+
+        return result;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public int countMyBoatsItemsByOwnerId(final int ownerId) {
-        return itemDao.countMyBoatsItemsByOwnerId(ownerId);
+    public Optional<Item> findItemById(int id) {
+        return itemDao.findItemById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(final int itemId, final int ownerId) {
-        return itemDao.findMyBoatsItemByIdForOwner(itemId, ownerId);
+    public Optional<Image> findImageById(int id) {
+        var image = itemDao.findImageById(id);
+        image.ifPresent(Image::getData);
+        return image;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public MyBoatsItem requireOwnedItem(final int itemId, final int callerId) {
-        return findMyBoatsItemByIdForOwner(itemId, callerId).orElseThrow(ForbiddenOperationException::new);
+    public boolean userOwnsItem(Item item, int userId) {
+        return item.getHost().getId().equals(userId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Image> findImageWithDataById(final int imageId) {
-        return itemDao.findImageWithDataById(imageId);
+    public boolean userOwnsItem(int itemId, int userId) {
+        var item = findItemById(itemId).orElseThrow(ItemNotFoundException::new);
+        return userOwnsItem(item, userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Item requireOwnedItem(int itemId, int userId) {
+        var item = findItemById(itemId).orElseThrow(ItemNotFoundException::new);
+        if (!userOwnsItem(item, userId)) throw new ForbiddenOperationException();
+        return item;
     }
 }

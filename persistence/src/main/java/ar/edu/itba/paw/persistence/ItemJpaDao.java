@@ -1,100 +1,66 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.dto.MyBoatsItem;
+import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.entity.Image;
+import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
-import ar.edu.itba.paw.persistence.projections.MyBoatsRow;
-import java.math.BigDecimal;
-import java.util.ArrayList;
+import ar.edu.itba.paw.persistence.utils.Paging;
 import java.util.List;
 import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Primary
 public class ItemJpaDao implements ItemDao {
 
     @PersistenceContext
-    private EntityManager entityManager;
+    private EntityManager em;
 
-    @Override
-    public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId, final int page, final int pageSize) {
-        final String hql = baseMyBoatsQuery()
-                + " WHERE i.host.id = :ownerId AND i.status <> :deletedStatus"
-                + " ORDER BY i.createdAt DESC, i.id DESC";
-        final List<MyBoatsRow> rows = entityManager
-                .createQuery(hql, MyBoatsRow.class)
+    private long countOwnerItems(int ownerId) {
+        var query = em.createNativeQuery(
+                        "SELECT COUNT(DISTINCT i.id) FROM item i WHERE i.host_id = :ownerId AND i.status <> CAST(:deleted AS item_status_enum)")
                 .setParameter("ownerId", ownerId)
-                .setParameter("deletedStatus", ItemStatusEnum.DELETED)
-                .setFirstResult((page - 1) * pageSize)
-                .setMaxResults(pageSize)
-                .getResultList();
-        return toDomainItems(rows);
+                .setParameter("deleted", ItemStatusEnum.DELETED.name());
+
+        return ((Number) query.getSingleResult()).longValue();
     }
 
     @Override
-    public int countMyBoatsItemsByOwnerId(final int ownerId) {
-        final Number count = (Number) entityManager
-                .createQuery("SELECT COUNT(i) FROM Item i WHERE i.host.id = :ownerId AND i.status <> :deletedStatus")
+    public ItemSearchResult listOwnerItems(int ownerId, int page, int pageSize) {
+        final long totalCount = countOwnerItems(ownerId);
+
+        // Get item IDs for this page
+
+        var nativeQuery = em.createNativeQuery(
+                        "SELECT i.id FROM item i WHERE i.host_id = :ownerId AND i.status <> CAST(:deleted AS item_status_enum)")
                 .setParameter("ownerId", ownerId)
-                .setParameter("deletedStatus", ItemStatusEnum.DELETED)
-                .getSingleResult();
-        return count == null ? 0 : count.intValue();
-    }
+                .setParameter("deleted", ItemStatusEnum.DELETED.name());
 
-    @Override
-    public Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(final int itemId, final int ownerId) {
-        final String hql =
-                baseMyBoatsQuery() + " WHERE i.id = :itemId AND i.host.id = :ownerId AND i.status <> :deletedStatus";
-        final List<MyBoatsRow> rows = entityManager
-                .createQuery(hql, MyBoatsRow.class)
-                .setParameter("itemId", itemId)
-                .setParameter("ownerId", ownerId)
-                .setParameter("deletedStatus", ItemStatusEnum.DELETED)
-                .setMaxResults(1)
-                .getResultList();
-        final List<MyBoatsItem> items = toDomainItems(rows);
-        return items.isEmpty() ? Optional.empty() : Optional.of(items.get(0));
-    }
+        Paging.apply(nativeQuery, page, pageSize);
+        final List<Integer> ids = Paging.toIntegerIds(nativeQuery.getResultList());
 
-    private static String baseMyBoatsQuery() {
-        return "SELECT NEW ar.edu.itba.paw.persistence.projections.MyBoatsRow("
-                + "i.id, v.id, v.title, v.description, v.price, v.difficulty, v.location.id,"
-                + " v.capacity, v.location.name, i.status,"
-                + " (SELECT m.image.id FROM Media m"
-                + " WHERE m.version = v"
-                + " AND m.id.index = (SELECT MIN(m2.id.index) FROM Media m2 WHERE m2.version = v)))"
-                + " FROM Item i"
-                + " JOIN Version v ON v.item = i"
-                + " AND v.createdAt = (SELECT MAX(v2.createdAt) FROM Version v2 WHERE v2.item = i)";
-    }
-
-    static List<MyBoatsItem> toDomainItems(final List<MyBoatsRow> projections) {
-        final List<MyBoatsItem> items = new ArrayList<>(projections.size());
-        for (final MyBoatsRow p : projections) {
-            final MyBoatsItem item = new MyBoatsItem();
-            item.setId(p.getItemId());
-            item.setVersionId(p.getVersionId());
-            item.setTitle(p.getTitle());
-            item.setDescription(p.getDescription());
-            final BigDecimal price = p.getPrice();
-            item.setPrice(price == null ? null : price.intValue());
-            item.setDifficulty(p.getDifficulty());
-            item.setLocationId(p.getLocationId());
-            item.setCapacity(p.getCapacity());
-            item.setLocation(p.getLocationName());
-            item.setActive(ItemStatusEnum.ACTIVE.equals(p.getStatus()));
-            item.setCoverImageId(p.getCoverImageId());
-            items.add(item);
+        // Empty page failsafe
+        if (ids.isEmpty()) {
+            return new ItemSearchResult(List.of(), totalCount);
         }
-        return items;
+
+        // Fetch item entities
+
+        List<Item> items = em.createQuery("SELECT DISTINCT i FROM Item i WHERE i.id IN :ids", Item.class)
+                .setParameter("ids", ids)
+                .getResultList();
+
+        return new ItemSearchResult(items, totalCount);
     }
 
     @Override
-    public Optional<Image> findImageWithDataById(final int imageId) {
-        return Optional.ofNullable(entityManager.find(Image.class, imageId));
+    public Optional<Item> findItemById(int id) {
+        return Optional.ofNullable(em.find(Item.class, id));
+    }
+
+    @Override
+    public Optional<Image> findImageById(int id) {
+        return Optional.ofNullable(em.find(Image.class, id));
     }
 }

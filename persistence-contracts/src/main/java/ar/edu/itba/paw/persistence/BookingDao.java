@@ -27,9 +27,13 @@ public interface BookingDao {
 
     void uploadPayment(PaymentProof paymentProof);
 
-    void finalizeBookingsBefore(LocalDateTime maxEndTime);
+    void finalizeBookingsBefore(LocalDateTime minEndTime);
 
     void expireBookingsBefore(LocalDateTime minStartTime, EnumSet<BookingStatusEnum> cancellableStates);
+
+    void deleteSelfBlocksBefore(LocalDateTime minEndTime);
+
+    void deleteAllSelfBlocks(Item item);
 
     List<Booking> getUpcomingBookings(Item item, LocalDateTime minDate, LocalDateTime maxDate);
 }

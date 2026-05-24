@@ -179,12 +179,12 @@ public class BookingJpaDao implements BookingDao {
     }
 
     @Override
-    public void finalizeBookingsBefore(LocalDateTime maxEndTime) {
+    public void finalizeBookingsBefore(LocalDateTime minEndTime) {
         em.createQuery("UPDATE Booking b SET b.status = :status WHERE b.id IN ("
                         + "SELECT b2.id FROM Booking b2 INNER JOIN b2.version v INNER JOIN v.item i INNER JOIN i.host h "
                         + "WHERE b2.end < :endTime AND b2.status = :confirmed AND h.id <> b2.guest.id)")
                 .setParameter("status", BookingStatusEnum.FINISHED)
-                .setParameter("endTime", maxEndTime)
+                .setParameter("endTime", minEndTime)
                 .setParameter("confirmed", BookingStatusEnum.CONFIRMED)
                 .executeUpdate();
     }
@@ -196,6 +196,22 @@ public class BookingJpaDao implements BookingDao {
                 .setParameter("status", BookingStatusEnum.CANCELLED)
                 .setParameter("startTime", minStartTime)
                 .setParameter("cancellable", cancellableStates)
+                .executeUpdate();
+    }
+
+    @Override
+    public void deleteSelfBlocksBefore(LocalDateTime minEndTime) {
+        em.createQuery(
+                        "DELETE FROM Booking b WHERE b.end < :endTime AND b.id IN (SELECT b2.id FROM Booking b2 INNER JOIN b2.version v INNER JOIN v.item i WHERE b2.guest = i.host)")
+                .setParameter("endTime", minEndTime)
+                .executeUpdate();
+    }
+
+    @Override
+    public void deleteAllSelfBlocks(Item item) {
+        em.createQuery(
+                        "DELETE FROM Booking b WHERE b.id IN (SELECT b2.id FROM Booking b2 INNER JOIN b2.version v INNER JOIN v.item i WHERE b2.guest = i.host AND i = :item)")
+                .setParameter("item", item)
                 .executeUpdate();
     }
 

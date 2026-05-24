@@ -96,8 +96,7 @@ public class BookingImpl implements BookingService {
     }
 
     private boolean hasEnoughAnticipation(Booking booking) {
-        LocalDateTime minStartTime = currentMinimumStart();
-        return startsAfter(booking, minStartTime);
+        return startsAfter(booking, currentMinimumStart());
     }
 
     private void finalizeBookings() {
@@ -105,8 +104,11 @@ public class BookingImpl implements BookingService {
     }
 
     private void expireDueBookings() {
-        LocalDateTime minStartTime = currentMinimumStart();
-        bookingDao.expireBookingsBefore(minStartTime, AUTO_CANCEL_STATES);
+        bookingDao.expireBookingsBefore(currentMinimumStart(), AUTO_CANCEL_STATES);
+    }
+
+    private void deleteOldSelfBlocks() {
+        bookingDao.deleteSelfBlocksBefore(currentDateTime());
     }
 
     private void verifyAnticipation(Booking booking) {
@@ -249,6 +251,7 @@ public class BookingImpl implements BookingService {
     public void bookingResolutionRoutine() {
         finalizeBookings();
         expireDueBookings();
+        deleteOldSelfBlocks();
     }
 
     // Lanza excepcion si falta anticipacion, si al caller no le corresponde actuar, o si la transicion de estado no es

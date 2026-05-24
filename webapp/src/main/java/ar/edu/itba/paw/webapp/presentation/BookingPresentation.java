@@ -207,7 +207,7 @@ public class BookingPresentation {
                 ? form.getGuestReply().trim()
                 : null;
 
-        bookingInterface.updatePayment(bookingId, fileName, contentType, fileData, guestReply, userId.get());
+        bookingInterface.submitPayment(bookingId, fileName, contentType, fileData, guestReply, userId.get());
 
         ToastSupport.success(redirectAttributes, "requests.booking.paymentSubmitted");
         return new ModelAndView(REDIRECT_OUTGOING);

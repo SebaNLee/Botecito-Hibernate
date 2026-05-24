@@ -25,20 +25,13 @@ public interface BookingService {
 
     void rejectBooking(int bookingId, int callerId);
 
-    // Actualiza si replyMsg != null, si no llama a submitPayment
-    void updatePayment(
-            final int bookingId,
-            final String fileName,
-            final String contentType,
-            final byte[] fileData,
-            final String replyMsg,
-            final int callerId);
-
+    // Inserta si no hay un pago cargado, si no actualiza
     void submitPayment(
             final int bookingId,
             final String fileName,
             final String contentType,
             final byte[] fileData,
+            final String guestMsg,
             final int callerId);
 
     Optional<PaymentProof> getPaymentProofForParticipant(int bookingId, int callerId);

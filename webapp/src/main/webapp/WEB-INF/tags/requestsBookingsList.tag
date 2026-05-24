@@ -244,16 +244,12 @@
                     <div class="flex-1">
                       <div class="flex items-center gap-2 mb-1">
                         <span class="badge badge-xs <c:out value='${badgeClass}'/> font-bold py-2"><spring:message code="booking.status.${b.status}" /></span>
-                        <span class="text-xs font-mono text-on-surface-variant bg-base-300 px-2 py-0.5 rounded-full">v<c:out value="${b.version.id}" /></span>
                       </div>
                       <h3 class="m-0 text-lg font-bold text-on-surface line-clamp-1"><c:out value="${b.version.title}" /></h3>
                       <p class="m-0 text-xs font-semibold text-on-surface-variant flex items-center gap-1 mt-1">
                         <span class="material-symbols-outlined text-[14px]">calendar_today</span>
                         <c:out value="${fmtStart}" /> &rarr; <c:out value="${fmtEnd}" />
                       </p>
-                    </div>
-                    <div class="text-left sm:text-right shrink-0">
-                      <p class="m-0 font-mono text-sm font-bold text-on-surface">#<c:out value="${b.id}" /></p>
                     </div>
                   </div>
 
@@ -267,7 +263,7 @@
                       </p>
                       <p class="m-0 text-sm font-semibold text-on-surface">
                         <c:choose>
-                          <c:when test="${isIncoming}">Guest: #<c:out value="${b.guest.id}" /></c:when>
+                          <c:when test="${isIncoming}"><c:out value="${b.guest.firstName}" /> <c:out value="${b.guest.lastName}" /></c:when>
                           <c:otherwise><c:out value="${b.version.item.host.firstName}" /> <c:out value="${b.version.item.host.lastName}" /></c:otherwise>
                         </c:choose>
                       </p>

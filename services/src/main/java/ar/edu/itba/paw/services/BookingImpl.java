@@ -285,48 +285,56 @@ public class BookingImpl implements BookingService {
         updateStatus(bookingId, callerId, true, BookingStatusEnum.REJECTED);
     }
 
-    @Override
+    @Transactional
+    public void insertPayment(
+            final int bookingId,
+            final String fileName,
+            final String contentType,
+            final byte[] fileData,
+            final String guestMsg,
+            final int callerId) {
+        Booking booking = findById(bookingId);
+        updateStatus(booking, callerId, false, BookingStatusEnum.PAID);
+        final LocalDateTime now = currentDateTime();
+
+        var builder = PaymentProof.builder()
+                .createdAt(now)
+                .booking(booking)
+                .filename(fileName)
+                .contentType(contentType)
+                .fileData(fileData);
+
+        if (guestMsg != null) {
+            builder.replyMsg(guestMsg).repliedAt(now);
+        }
+
+        var payment = builder.build();
+        bookingDao.uploadPayment(payment);
+    }
+
     @Transactional
     public void submitPayment(
             final int bookingId,
             final String fileName,
             final String contentType,
             final byte[] fileData,
-            final int callerId) {
-        Booking booking = findById(bookingId);
-        updateStatus(booking, callerId, false, BookingStatusEnum.PAID);
-
-        var payment = PaymentProof.builder()
-                .createdAt(currentDateTime())
-                .booking(booking)
-                .filename(fileName)
-                .contentType(contentType)
-                .fileData(fileData)
-                .build();
-
-        bookingDao.uploadPayment(payment);
-    }
-
-    @Override
-    @Transactional
-    public void updatePayment(
-            final int bookingId,
-            final String fileName,
-            final String contentType,
-            final byte[] fileData,
-            final String replyMsg,
+            final String guestMsg,
             final int callerId) {
         PaymentProof payment = findById(bookingId).getPaymentProof();
+
         if (payment == null) {
-            // Failsafe
-            submitPayment(bookingId, fileName, contentType, fileData, callerId);
+            // First upload -> insert
+            insertPayment(bookingId, fileName, contentType, fileData, guestMsg, callerId);
             return;
         }
+
+        // Already uploaded -> update
+        updateStatus(payment.getBooking(), callerId, false, BookingStatusEnum.PAID);
 
         payment.setFilename(fileName);
         payment.setContentType(contentType);
         payment.setFileData(fileData);
-        payment.setReplyMsg(replyMsg);
+        payment.setReplyMsg(guestMsg);
         payment.setRepliedAt(currentDateTime());
     }
 

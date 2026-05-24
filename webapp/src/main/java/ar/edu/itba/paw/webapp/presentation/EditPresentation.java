@@ -3,8 +3,8 @@ package ar.edu.itba.paw.webapp.presentation;
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Version;
-import ar.edu.itba.paw.services.DetailService;
 import ar.edu.itba.paw.services.EditService;
+import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.SelectorsService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
@@ -32,13 +32,13 @@ public class EditPresentation {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final EditService editService;
-    private final DetailService detailService;
+    private final ItemService itemService;
     private final SelectorsService selectorsInterface;
 
     public ModelAndView bootstrapEdit(
             final BotecitoUserDetails principal, final int itemId, final HttpServletRequest request) {
 
-        final Item item = detailService.getItemDetail(itemId, 1, principal.getId());
+        final Item item = itemService.requireOwnedItem(itemId, principal.getId());
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
         final Map<String, Object> draft = buildDraftPayload(item, itemId, contextPath);
 

@@ -10,6 +10,7 @@ import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.services.BookingService;
 import ar.edu.itba.paw.services.DetailService;
+import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PreBookingForm;
 import ar.edu.itba.paw.webapp.util.AvailabilityJsonHelper;
@@ -42,6 +43,7 @@ public class DetailPresentation {
     private static final String IMAGE_PATH_PREFIX = "/image/";
     private static final String PLACEHOLDER_IMAGE_PATH = "/css/boat-placeholder.svg";
 
+    private final ItemService itemService;
     private final DetailService detailService;
     private final BookingService bookingService;
     private final ToastPresentation toastPresentation;
@@ -89,7 +91,7 @@ public class DetailPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Item item = detailService.getItemDetail(itemId, 1);
+        final Item item = itemService.findItemById(itemId);
         final Version version = item.getLatestVersion();
 
         bookingService.createBooking(

@@ -142,7 +142,7 @@ public class BookingImpl implements BookingService {
 
         Users guest = userService.findById(guestId).orElseThrow(ForbiddenOperationException::new);
 
-        Item item = itemService.findItemById(itemId).orElseThrow(ItemNotFoundException::new);
+        Item item = itemService.findItemById(itemId);
         if (item.getStatus() != ItemStatusEnum.ACTIVE) throw new ItemNotFoundException();
 
         Version version = item.getLatestVersion();

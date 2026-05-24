@@ -38,8 +38,8 @@ public class ItemImpl implements ItemService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Item> findItemById(int id) {
-        return itemDao.findItemById(id);
+    public Item findItemById(int id) {
+        return itemDao.findItemById(id).orElseThrow(ItemNotFoundException::new);
     }
 
     @Override
@@ -59,14 +59,14 @@ public class ItemImpl implements ItemService {
     @Override
     @Transactional(readOnly = true)
     public boolean userOwnsItem(int itemId, int userId) {
-        var item = findItemById(itemId).orElseThrow(ItemNotFoundException::new);
+        var item = findItemById(itemId);
         return userOwnsItem(item, userId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Item requireOwnedItem(int itemId, int userId) {
-        var item = findItemById(itemId).orElseThrow(ItemNotFoundException::new);
+        var item = findItemById(itemId);
         if (!userOwnsItem(item, userId)) throw new ForbiddenOperationException();
         return item;
     }

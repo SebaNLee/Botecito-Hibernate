@@ -9,7 +9,7 @@ public interface ItemService {
 
     ItemSearchResult listOwnerItems(int ownerId, int page, int pageSize);
 
-    Optional<Item> findItemById(int id);
+    Item findItemById(int id);
 
     Optional<Image> findImageById(int id);
 

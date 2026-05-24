@@ -32,7 +32,7 @@ public class EditServiceImpl implements EditService {
 
     private final EditDao editDao;
     private final PublishDao publishDao;
-    private final DetailService detailService;
+    private final ItemService itemService;
 
     @Override
     @Transactional
@@ -49,7 +49,7 @@ public class EditServiceImpl implements EditService {
             final int locationOptionId,
             final List<AvailabilityWindow> availabilities,
             final List<ImageUpload> images) {
-        final Version current = detailService.getItemDetail(itemId, 1, ownerId).getLatestVersion();
+        final Version current = itemService.requireOwnedItem(itemId, ownerId).getLatestVersion();
         final List<AvailabilityWindow> filteredAvailabilities = filterAvailabilities(availabilities);
         final List<ImageUpload> filteredImages = filterImages(images);
 

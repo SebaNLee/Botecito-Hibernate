@@ -37,8 +37,11 @@ public class MyBoatsPresentation {
             if (item == null || item.getId() == null) {
                 continue;
             }
+
+            var media = item.getLatestVersion().getMedia();
             Integer coverImageId =
-                    item.getLatestVersion().getMedia().get(0).getImage().getId();
+                    media != null && media.size() > 0 ? media.get(0).getImage().getId() : null;
+
             if (coverImageId != null) {
                 publicationCoverImageIdsByItemId.put(item.getId(), coverImageId);
                 imageUrlsByItemId.put(item.getId(), contextPath + IMAGE_PATH_PREFIX + coverImageId);

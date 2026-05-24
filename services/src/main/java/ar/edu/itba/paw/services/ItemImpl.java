@@ -25,8 +25,12 @@ public class ItemImpl implements ItemService {
         // This loop is safe, result is bounded
         for (Item item : result.getItems()) {
             // Fetch latest version and the cover image
-            @SuppressWarnings("unused")
-            var image = item.getLatestVersion().getMedia().get(0).getImage();
+            var media = item.getLatestVersion().getMedia();
+
+            if (media != null && media.size() > 0) {
+                @SuppressWarnings("unused")
+                var image = media.get(0).getImage();
+            }
         }
 
         return result;

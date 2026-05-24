@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
-import ar.edu.itba.paw.models.dto.OwnerAvailabilityPage;
+import ar.edu.itba.paw.models.dto.SelfBookingData;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -42,7 +42,7 @@ public interface BookingService {
 
     void cancelBooking(int bookingId, int callerId);
 
-    OwnerAvailabilityPage loadOwnerAvailabilityPage(int itemId, int ownerId, String requestedDate);
+    SelfBookingData getSelfBlocks(int itemId, int ownerId, LocalDate requestedDate);
 
     void blockSlotForOwner(int itemId, int ownerId, String date, String startTime, String endTime);
 

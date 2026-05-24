@@ -4,7 +4,7 @@ import static java.util.Map.entry;
 
 import ar.edu.itba.paw.models.dto.BookingQueryModel;
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
-import ar.edu.itba.paw.models.dto.OwnerAvailabilityPage;
+import ar.edu.itba.paw.models.dto.SelfBookingData;
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
@@ -24,7 +24,6 @@ import ar.edu.itba.paw.models.exceptions.NoAnticipationException;
 import ar.edu.itba.paw.models.exceptions.OutsideAvailabilityException;
 import ar.edu.itba.paw.models.exceptions.PastSlotException;
 import ar.edu.itba.paw.persistence.BookingDao;
-import ar.edu.itba.paw.persistence.DetailDao;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -51,7 +50,7 @@ public class BookingImpl implements BookingService {
     private static final Logger LOGGER = LoggerFactory.getLogger(BookingImpl.class);
 
     private final BookingDao bookingDao;
-    private final DetailDao detailDao; // TODO: temporal hasta nuevo item service
+    private final ItemService itemService;
     private final UserService userService;
 
     private static final int MIN_ANTICIPATION_MINUTES = 120;
@@ -140,7 +139,7 @@ public class BookingImpl implements BookingService {
 
         Users guest = userService.findById(guestId).orElseThrow(ForbiddenOperationException::new);
 
-        Item item = detailDao.getItemDetail(itemId, 1).orElseThrow(ItemNotFoundException::new);
+        Item item = itemService.findItemById(itemId).orElseThrow(ItemNotFoundException::new);
         if (item.getStatus() != ItemStatusEnum.ACTIVE) throw new ItemNotFoundException();
 
         Version version = item.getLatestVersion();
@@ -367,44 +366,38 @@ public class BookingImpl implements BookingService {
         updateStatus(findById(bookingId), callerId, false, BookingStatusEnum.CANCELLED, false);
     }
 
-    // TODO: full remake, remove temp fix
     @Override
     @Transactional(readOnly = true)
-    public OwnerAvailabilityPage loadOwnerAvailabilityPage(
-            final int itemId, final int callerId, final String requestedDate) {
+    public SelfBookingData getSelfBlocks(final int itemId, final int callerId, final LocalDate requestedDate) {
 
-        Item item = detailDao.getItemDetail(itemId, 1).orElseThrow(ItemNotFoundException::new);
-        if (item.getHost().getId() != callerId) throw new ForbiddenOperationException();
+        Item item = itemService.requireOwnedItem(itemId, callerId);
         Version version = item.getLatestVersion();
 
         final String timezone = version.getTimezone();
         final List<Availability> availabilities = version.getAvailabilities();
         final List<Booking> bookings = item.getBookings();
 
-        final List<String> offeredDates = buildOfferedDates(availabilities, timezone);
+        final List<LocalDate> offeredDates = buildOfferedDates(availabilities, timezone);
         final List<Booking> selfBlocks = bookings.stream()
                 .filter(b -> b.getGuest() != null && b.getGuest().getId().equals(callerId))
                 .filter(b ->
                         b.getStatus() == BookingStatusEnum.CONFIRMED || b.getStatus() == BookingStatusEnum.ACCEPTED)
                 .toList();
         final ZoneId zone = ZoneId.of(timezone);
-        final List<String> blockedDates = selfBlocks.stream()
+        final List<LocalDate> blockedDates = selfBlocks.stream()
                 .map(b -> b.getStart()
                         .atZone(ZoneOffset.UTC)
                         .withZoneSameInstant(zone)
-                        .toLocalDate()
-                        .toString())
+                        .toLocalDate())
                 .distinct()
                 .sorted()
                 .toList();
 
-        final String selectedDate =
-                requestedDate != null && !requestedDate.isBlank() && offeredDates.contains(requestedDate)
-                        ? requestedDate
-                        : (offeredDates.isEmpty() ? null : offeredDates.get(0));
+        final LocalDate selectedDate = requestedDate != null && offeredDates.contains(requestedDate)
+                ? requestedDate
+                : (offeredDates.isEmpty() ? null : offeredDates.get(0));
 
-        return new OwnerAvailabilityPage(
-                item, availabilities, bookings, selfBlocks, offeredDates, blockedDates, selectedDate, timezone);
+        return new SelfBookingData(item, bookings, selfBlocks, offeredDates, blockedDates, selectedDate, timezone);
     }
 
     @Override
@@ -425,8 +418,7 @@ public class BookingImpl implements BookingService {
             throw new InvalidSlotException();
         }
 
-        Item item = detailDao.getItemDetail(itemId, 1).orElseThrow(ItemNotFoundException::new);
-        if (item.getHost().getId() != callerId) throw new ForbiddenOperationException();
+        itemService.requireOwnedItem(itemId, callerId);
 
         insertBooking(itemId, parsedDate, parsedStart, parsedEnd, "", callerId, false);
     }
@@ -441,18 +433,18 @@ public class BookingImpl implements BookingService {
         return true;
     }
 
-    private static List<String> buildOfferedDates(final List<Availability> availabilities, final String timezone) {
+    private static List<LocalDate> buildOfferedDates(final List<Availability> availabilities, final String timezone) {
         final ZoneId zone = ZoneId.of(timezone);
         final LocalDate today = LocalDate.now(zone);
         final LocalDate end = today.plusDays(60);
-        final List<String> dates = new ArrayList<>();
+        final List<LocalDate> dates = new ArrayList<>();
         LocalDate cursor = today;
         while (!cursor.isAfter(end)) {
             final DayOfWeek dow = cursor.getDayOfWeek();
             final boolean hasAvailability =
                     availabilities.stream().anyMatch(a -> a.getWeekday().name().equals(dow.name()));
             if (hasAvailability) {
-                dates.add(cursor.toString());
+                dates.add(cursor);
             }
             cursor = cursor.plusDays(1);
         }

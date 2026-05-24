@@ -1,9 +1,10 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.dto.OwnerAvailabilityPage;
+import ar.edu.itba.paw.models.dto.SelfBookingData;
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
+import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.services.BookingService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.BlockSlotForm;
@@ -52,8 +53,8 @@ public class AvailabilityPresentation {
             return new ModelAndView("redirect:/login");
         }
         final String safeReturn = sanitizeReturnPath(returnParam);
-        final OwnerAvailabilityPage model =
-                bookingInterface.loadOwnerAvailabilityPage(itemId, principal.getId(), requestedDate);
+        final SelfBookingData model =
+                bookingInterface.getSelfBlocks(itemId, principal.getId(), parseRequestedDate(requestedDate));
         return buildManageAvailabilityView(model, safeReturn);
     }
 
@@ -69,8 +70,7 @@ public class AvailabilityPresentation {
         }
         final String safeReturn = sanitizeReturnPath(returnParam);
         if (errors.hasErrors()) {
-            final OwnerAvailabilityPage model = bookingInterface.loadOwnerAvailabilityPage(
-                    itemId, principal.getId(), form.getDate().toString());
+            final SelfBookingData model = bookingInterface.getSelfBlocks(itemId, principal.getId(), form.getDate());
             return buildManageAvailabilityView(model, safeReturn);
         }
         final String dateStr = form.getDate().toString();
@@ -101,18 +101,20 @@ public class AvailabilityPresentation {
                 safeReturn));
     }
 
-    private ModelAndView buildManageAvailabilityView(
-            final OwnerAvailabilityPage model, final String sanitizedReturnPath) {
+    private ModelAndView buildManageAvailabilityView(final SelfBookingData model, final String sanitizedReturnPath) {
         final ModelAndView mav = new ModelAndView("manage-availability");
         mav.addObject("item", model.getItem());
         mav.addObject("offeredDatesJson", toJsonArray(model.getOfferedDates()));
         mav.addObject("blockedDatesJson", toJsonArray(model.getBlockedDates()));
         mav.addObject("selectedDate", model.getSelectedDate());
+        final Version version = model.getItem().getLatestVersion();
+        final List<Availability> availabilityWindows =
+                version == null || version.getAvailabilities() == null ? List.of() : version.getAvailabilities();
         final Set<Integer> selfBlockIds =
                 model.getOwnerSelfBlocks().stream().map(Booking::getId).collect(Collectors.toSet());
         final List<SlotRow> slots = buildSlotGrid(
                 model.getSelectedDate(),
-                model.getAvailabilityWindows(),
+                availabilityWindows,
                 model.getActiveBookings(),
                 selfBlockIds,
                 model.getTimezone());
@@ -127,15 +129,15 @@ public class AvailabilityPresentation {
     }
 
     static List<SlotRow> buildSlotGrid(
-            final String selectedDate,
+            final LocalDate selectedDate,
             final List<Availability> availabilities,
             final List<Booking> bookings,
             final Set<Integer> selfBlockBookingIds,
             final String timezone) {
-        if (selectedDate == null || selectedDate.isBlank()) {
+        if (selectedDate == null) {
             return List.of();
         }
-        final LocalDate day = LocalDate.parse(selectedDate);
+        final LocalDate day = selectedDate;
         final ZoneId zone = timezone == null || timezone.isBlank() ? ZoneOffset.UTC : ZoneId.of(timezone.trim());
         final TreeSet<String> scheduled = new TreeSet<>();
         for (final Availability availability : availabilities) {
@@ -246,6 +248,17 @@ public class AvailabilityPresentation {
         return candidate;
     }
 
+    private static LocalDate parseRequestedDate(final String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(raw.trim());
+        } catch (final Exception ignored) {
+            return null;
+        }
+    }
+
     private static String appendReturnQuery(final String redirectUrl, final String sanitizedReturnPath) {
         if (sanitizedReturnPath == null) {
             return redirectUrl;
@@ -255,13 +268,15 @@ public class AvailabilityPresentation {
         return redirectUrl + sep + "return=" + URLEncoder.encode(sanitizedReturnPath, StandardCharsets.UTF_8);
     }
 
-    private static String toJsonArray(final List<String> values) {
+    private static String toJsonArray(final List<?> values) {
         final StringBuilder json = new StringBuilder("[");
         for (int i = 0; i < values.size(); i++) {
             if (i > 0) {
                 json.append(',');
             }
-            json.append('"').append(values.get(i).replace("\"", "\\\"")).append('"');
+            json.append('"')
+                    .append(String.valueOf(values.get(i)).replace("\"", "\\\""))
+                    .append('"');
         }
         return json.append(']').toString();
     }

@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.dto.BookingQueryModel;
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
+import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import ar.edu.itba.paw.persistence.utils.Paging;
 import java.time.LocalDateTime;
@@ -60,6 +61,17 @@ public class BookingJpaDao implements BookingDao {
     @Override
     public Optional<Booking> findById(final int bookingId) {
         return Optional.ofNullable(em.find(Booking.class, bookingId));
+    }
+
+    @Override
+    public List<Booking> getUpcomingBookings(Item item, LocalDateTime minDate, LocalDateTime maxDate) {
+        var query = em.createQuery(
+                        "SELECT b FROM Booking b JOIN FETCH b.version v JOIN FETCH v.item i WHERE i = :item AND b.start >= :minDate AND b.end <= :maxDate",
+                        Booking.class)
+                .setParameter("item", item)
+                .setParameter("minDate", minDate)
+                .setParameter("maxDate", maxDate);
+        return query.getResultList();
     }
 
     @Override

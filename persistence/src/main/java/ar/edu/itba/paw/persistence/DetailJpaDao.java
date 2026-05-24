@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.PageModel;
-import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.TargetEnum;
@@ -52,10 +51,6 @@ public class DetailJpaDao implements DetailDao {
             "FROM Review r JOIN FETCH r.booking b LEFT JOIN FETCH r.sender WHERE r.id IN :ids "
                     + "ORDER BY r.createdAt DESC";
 
-    private static final String HQL_BOOKINGS_FOR_ITEM =
-            "SELECT b FROM Booking b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof "
-                    + "WHERE b.version.item.id = :itemId ORDER BY b.start ASC";
-
     @PersistenceContext
     private EntityManager em;
 
@@ -67,7 +62,6 @@ public class DetailJpaDao implements DetailDao {
         }
 
         final Item item = loadItemViaVersionFetch(versionId);
-        item.setBookings(loadBookingsForItem(itemId));
         populateReviewTransients(item, itemId, reviewPage);
         return Optional.of(item);
     }
@@ -121,12 +115,6 @@ public class DetailJpaDao implements DetailDao {
         avgQuery.setParameter("itemId", itemId);
         avgQuery.setParameter("itemTargetType", TargetEnum.ITEM.name());
         return ((Number) avgQuery.getSingleResult()).doubleValue();
-    }
-
-    private List<Booking> loadBookingsForItem(final int itemId) {
-        return em.createQuery(HQL_BOOKINGS_FOR_ITEM, Booking.class)
-                .setParameter("itemId", itemId)
-                .getResultList();
     }
 
     private List<Review> loadReviewsPage(final int itemId, final int page) {

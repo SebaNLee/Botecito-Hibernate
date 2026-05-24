@@ -24,6 +24,7 @@ import ar.edu.itba.paw.models.exceptions.NoAnticipationException;
 import ar.edu.itba.paw.models.exceptions.OutsideAvailabilityException;
 import ar.edu.itba.paw.models.exceptions.PastSlotException;
 import ar.edu.itba.paw.persistence.BookingDao;
+import ar.edu.itba.paw.services.util.DateTimeUtils;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -54,6 +55,7 @@ public class BookingImpl implements BookingService {
     private final UserService userService;
 
     private static final int MIN_ANTICIPATION_MINUTES = 120;
+    private static final int BOOKING_LOOKAHEAD_DAYS = 60;
 
     private static final Map<BookingStatusEnum, EnumSet<BookingStatusEnum>> VALID_TRANSITIONS = Map.ofEntries(
             entry(
@@ -81,9 +83,8 @@ public class BookingImpl implements BookingService {
         return targets.contains(target);
     }
 
-    // TODO: move current times to utils
     private LocalDateTime currentDateTime() {
-        return LocalDateTime.now(ZoneOffset.UTC);
+        return DateTimeUtils.getCurrent();
     }
 
     private LocalDateTime currentMinimumStart() {
@@ -234,6 +235,11 @@ public class BookingImpl implements BookingService {
         }
     }
 
+    public List<Booking> getUpcomingBookings(Item item) {
+        LocalDateTime now = currentDateTime();
+        return bookingDao.getUpcomingBookings(item, now, now.plusDays(BOOKING_LOOKAHEAD_DAYS));
+    }
+
     @Transactional
     @Scheduled(cron = "0 0,30 * * * *")
     public void bookingResolutionRoutine() {
@@ -375,7 +381,7 @@ public class BookingImpl implements BookingService {
 
         final String timezone = version.getTimezone();
         final List<Availability> availabilities = version.getAvailabilities();
-        final List<Booking> bookings = item.getBookings();
+        final List<Booking> bookings = getUpcomingBookings(item);
 
         final List<LocalDate> offeredDates = buildOfferedDates(availabilities, timezone);
         final List<Booking> selfBlocks = bookings.stream()
@@ -383,12 +389,8 @@ public class BookingImpl implements BookingService {
                 .filter(b ->
                         b.getStatus() == BookingStatusEnum.CONFIRMED || b.getStatus() == BookingStatusEnum.ACCEPTED)
                 .toList();
-        final ZoneId zone = ZoneId.of(timezone);
         final List<LocalDate> blockedDates = selfBlocks.stream()
-                .map(b -> b.getStart()
-                        .atZone(ZoneOffset.UTC)
-                        .withZoneSameInstant(zone)
-                        .toLocalDate())
+                .map(b -> DateTimeUtils.inTimezone(b.getStart(), timezone).toLocalDate())
                 .distinct()
                 .sorted()
                 .toList();
@@ -402,7 +404,7 @@ public class BookingImpl implements BookingService {
 
     @Override
     @Transactional
-    public void blockSlotForOwner(
+    public void insertSelfBlock(
             final int itemId, final int callerId, final String date, final String startTime, final String endTime) {
         if (date == null || startTime == null || endTime == null) {
             throw new InvalidSlotException();
@@ -425,7 +427,7 @@ public class BookingImpl implements BookingService {
 
     @Override
     @Transactional
-    public boolean removeOwnerSelfBlock(final int bookingId, final int callerId) {
+    public boolean removeSelfBlock(final int bookingId, final int callerId) {
         Booking booking = findById(bookingId);
         var ownerId = booking.getVersion().getItem().getHost().getId().intValue();
         if (ownerId != callerId || ownerId != booking.getGuest().getId().intValue()) return false;
@@ -436,7 +438,7 @@ public class BookingImpl implements BookingService {
     private static List<LocalDate> buildOfferedDates(final List<Availability> availabilities, final String timezone) {
         final ZoneId zone = ZoneId.of(timezone);
         final LocalDate today = LocalDate.now(zone);
-        final LocalDate end = today.plusDays(60);
+        final LocalDate end = today.plusDays(BOOKING_LOOKAHEAD_DAYS);
         final List<LocalDate> dates = new ArrayList<>();
         LocalDate cursor = today;
         while (!cursor.isAfter(end)) {

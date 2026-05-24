@@ -2,9 +2,12 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
 import ar.edu.itba.paw.models.dto.SelfBookingData;
+import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 
 public interface BookingService {
@@ -20,6 +23,8 @@ public interface BookingService {
             Integer page,
             Integer pageSize,
             String sortBy);
+
+    List<Booking> getUpcomingBookings(Item item);
 
     void acceptBooking(int bookingId, int callerId);
 
@@ -44,9 +49,9 @@ public interface BookingService {
 
     SelfBookingData getSelfBlocks(int itemId, int ownerId, LocalDate requestedDate);
 
-    void blockSlotForOwner(int itemId, int ownerId, String date, String startTime, String endTime);
+    void insertSelfBlock(int itemId, int ownerId, String date, String startTime, String endTime);
 
-    boolean removeOwnerSelfBlock(int bookingId, int ownerId);
+    boolean removeSelfBlock(int bookingId, int ownerId);
 
     // cron job
     void bookingResolutionRoutine();

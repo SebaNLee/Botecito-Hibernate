@@ -77,7 +77,7 @@ public class AvailabilityPresentation {
         final String startStr = form.getStartTime().format(TIME_FMT);
         final String endStr = form.getEndTime().format(TIME_FMT);
         final String redirectBase = "redirect:/my-boats/" + itemId + "/availability";
-        bookingInterface.blockSlotForOwner(itemId, principal.getId(), dateStr, startStr, endStr);
+        bookingInterface.insertSelfBlock(itemId, principal.getId(), dateStr, startStr, endStr);
         return new ModelAndView(
                 appendReturnQuery(redirectBase + "?date=" + dateStr + "&availabilityAction=blocked", safeReturn));
     }
@@ -93,7 +93,7 @@ public class AvailabilityPresentation {
             return new ModelAndView("redirect:/login");
         }
         final String safeReturn = sanitizeReturnPath(returnParam);
-        final boolean removed = bookingInterface.removeOwnerSelfBlock(blockBookingId, principal.getId());
+        final boolean removed = bookingInterface.removeSelfBlock(blockBookingId, principal.getId());
         final String redirectDate = requestedDate == null || requestedDate.isBlank() ? "" : "&date=" + requestedDate;
         return new ModelAndView(appendReturnQuery(
                 "redirect:/my-boats/" + itemId + "/availability?availabilityAction="

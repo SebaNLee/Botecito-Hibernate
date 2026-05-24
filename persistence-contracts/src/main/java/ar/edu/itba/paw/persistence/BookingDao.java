@@ -4,9 +4,11 @@ import ar.edu.itba.paw.models.dto.BookingQueryModel;
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
+import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Optional;
 
 public interface BookingDao {
@@ -26,4 +28,6 @@ public interface BookingDao {
     void finalizeBookingsBefore(LocalDateTime maxEndTime);
 
     void expireBookingsBefore(LocalDateTime minStartTime, EnumSet<BookingStatusEnum> cancellableStates);
+
+    List<Booking> getUpcomingBookings(Item item, LocalDateTime minDate, LocalDateTime maxDate);
 }

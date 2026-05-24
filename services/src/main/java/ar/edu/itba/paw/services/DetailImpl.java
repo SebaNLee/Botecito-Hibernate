@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DetailImpl implements DetailService {
 
     private final DetailDao detailDao;
+    private final BookingService bookingService;
 
     @Override
     @Transactional(readOnly = true)
@@ -35,6 +36,10 @@ public class DetailImpl implements DetailService {
         if (item.getLatestVersion() == null) {
             throw new ItemNotFoundException();
         }
+
+        // Fetch transient
+        item.setBookings(bookingService.getUpcomingBookings(item));
+
         return item;
     }
 }

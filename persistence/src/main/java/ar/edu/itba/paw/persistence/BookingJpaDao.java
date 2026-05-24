@@ -45,11 +45,9 @@ public class BookingJpaDao implements BookingDao {
         em.persist(booking);
     }
 
-    private boolean wouldCollide(
-            final Booking booking, final EnumSet<BookingStatusEnum> blockingStates, boolean allowConsecutive) {
-        String operator = allowConsecutive ? "<" : "<=";
-        String jpql = "SELECT COUNT(b) > 0 FROM Booking b WHERE b.version.item = :item AND b.start " + operator
-                + " :requestedEnd AND :requestedStart " + operator + " b.end AND b.status IN :blockingStates";
+    private boolean wouldCollide(final Booking booking, final EnumSet<BookingStatusEnum> blockingStates) {
+        String jpql =
+                "SELECT COUNT(b) > 0 FROM Booking b WHERE b.version.item = :item AND b.start <= :requestedEnd AND :requestedStart <= b.end AND b.status IN :blockingStates";
 
         var query = em.createQuery(jpql, Boolean.class);
         query.setParameter("item", booking.getVersion().getItem())
@@ -61,20 +59,14 @@ public class BookingJpaDao implements BookingDao {
 
     @Override
     public boolean canInsertBooking(final Booking booking, EnumSet<BookingStatusEnum> blockingStates) {
-        return !wouldCollide(booking, blockingStates, false);
+        return !wouldCollide(booking, blockingStates);
     }
 
     @Override
-    public boolean canInsertConsecutive(final Booking booking, EnumSet<BookingStatusEnum> blockingStates) {
-        return !wouldCollide(booking, blockingStates, true);
-    }
-
-    @Override
-    public boolean canUpdateConsecutive(
+    public boolean canUpdate(
             final Booking booking, final int excludeBookingId, final EnumSet<BookingStatusEnum> blockingStates) {
-        String operator = "<";
         String jpql = "SELECT COUNT(b) > 0 FROM Booking b WHERE b.version.item = :item AND b.id <> :excludeId"
-                + " AND b.start " + operator + " :requestedEnd AND :requestedStart " + operator + " b.end"
+                + " AND b.start <= :requestedEnd AND :requestedStart <= b.end"
                 + " AND b.status IN :blockingStates";
 
         var query = em.createQuery(jpql, Boolean.class);

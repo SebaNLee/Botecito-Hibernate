@@ -181,9 +181,7 @@ public class BookingImpl implements BookingService {
                 .updatedAt(now)
                 .build();
 
-        boolean canInsert = isOwner
-                ? bookingDao.canInsertConsecutive(booking, BLOCKING_STATES)
-                : bookingDao.canInsertBooking(booking, BLOCKING_STATES);
+        boolean canInsert = bookingDao.canInsertBooking(booking, BLOCKING_STATES);
 
         if (canInsert) {
             bookingDao.insertBooking(booking);
@@ -529,7 +527,7 @@ public class BookingImpl implements BookingService {
 
         final Booking probe =
                 Booking.builder().version(version).start(utcStart).end(utcEnd).build();
-        if (!bookingDao.canUpdateConsecutive(probe, bookingId, BLOCKING_STATES)) {
+        if (!bookingDao.canUpdate(probe, bookingId, BLOCKING_STATES)) {
             throw new BookingCollisionException();
         }
 

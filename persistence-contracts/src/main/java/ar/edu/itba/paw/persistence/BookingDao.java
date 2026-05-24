@@ -17,10 +17,7 @@ public interface BookingDao {
 
     boolean canInsertBooking(final Booking booking, EnumSet<BookingStatusEnum> blockingStates);
 
-    boolean canInsertConsecutive(final Booking booking, EnumSet<BookingStatusEnum> blockingStates);
-
-    boolean canUpdateConsecutive(
-            final Booking booking, int excludeBookingId, EnumSet<BookingStatusEnum> blockingStates);
+    boolean canUpdate(final Booking booking, int excludeBookingId, EnumSet<BookingStatusEnum> blockingStates);
 
     boolean deleteBooking(final int id);
 

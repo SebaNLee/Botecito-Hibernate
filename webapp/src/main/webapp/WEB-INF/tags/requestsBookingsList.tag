@@ -42,6 +42,17 @@
 <spring:message code="payment.reply.placeholder" var="guestReplyPlaceholder" />
 <spring:message code="payment.refusal.reason.label" var="rejectPaymentReasonLabel" />
 <spring:message code="profile.sentBookings.paymentProof.view" var="viewPaymentProofLabel" />
+<spring:message code="itemDetail.reviews.leave" var="reviewLeaveLabel" />
+<spring:message code="itemDetail.reviews.rating" var="reviewRatingLabel" />
+<spring:message code="itemDetail.reviews.comment" var="reviewCommentLabel" />
+<spring:message code="profile.reviews.submit" var="reviewSubmitLabel" />
+<spring:message code="profile.reviews.target.item" var="reviewItemLabel" />
+<spring:message code="profile.reviews.target.user" var="reviewUserLabel" />
+<spring:message code="profile.reviews.view" var="reviewViewLabel" />
+<spring:message code="profile.reviews.view.item" var="reviewViewItemLabel" />
+<spring:message code="profile.reviews.view.user" var="reviewViewUserLabel" />
+<spring:message code="profile.reviews.view.owner" var="reviewViewOwnerLabel" />
+<spring:message code="profile.reviews.target.owner" var="reviewOwnerLabel" />
 
 <c:url var="clearFiltersUrl" value="${formAction}">
   <c:if test="${sort != 'newest'}">
@@ -291,7 +302,7 @@
                 </div>
 
                 <!-- Actions Side -->
-                <div class="flex flex-col md:w-56 shrink-0 bg-base-200/50 p-4 border-t md:border-t-0 md:border-l border-outline-variant/20 gap-2 justify-center">
+                <div class="flex flex-col md:w-60 shrink-0 bg-base-200/50 p-4 border-t md:border-t-0 md:border-l border-outline-variant/20 gap-2 justify-center">
                   <c:if test="${isIncoming && b.status.name() == 'PENDING'}">
                     <form action="${incomingAcceptUrl}" method="post" class="w-full">
                       <paw:button type="submit" color="primary" cssClass="w-full" size="sm" text="${actionAcceptLabel}" submitLoading="true" />
@@ -377,6 +388,75 @@
                           </div>
                         </jsp:body>
                       </paw:detailsModal>
+                  </c:if>
+                  <c:if test="${b.status.name() == 'FINISHED'}">
+                    <c:set var="reviewsForBooking" value="${userReviews[b.id]}" />
+                    <c:set var="hasItemReview" value="${false}" />
+                    <c:set var="hasUserReview" value="${false}" />
+                    <c:set var="itemReview" value="null" />
+                    <c:set var="userReview" value="null" />
+                    <c:if test="${reviewsForBooking != null}">
+                      <c:forEach var="rev" items="${reviewsForBooking}">
+                        <c:if test="${rev.targetType.name() == 'ITEM'}">
+                          <c:set var="hasItemReview" value="${true}" />
+                          <c:set var="itemReview" value="${rev}" />
+                        </c:if>
+                        <c:if test="${rev.targetType.name() == 'USER'}">
+                          <c:set var="hasUserReview" value="${true}" />
+                          <c:set var="userReview" value="${rev}" />
+                        </c:if>
+                      </c:forEach>
+                    </c:if>
+                    <c:choose>
+                      <c:when test="${isIncoming}">
+                        <c:choose>
+                          <c:when test="${hasUserReview}">
+                            <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review').showModal()">
+                              <span class="material-symbols-outlined text-sm">visibility</span> <c:out value="${reviewViewUserLabel}" />
+                            </button>
+                            <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review" returnTo="dashboardHosting" existingReview="${userReview}" />
+                          </c:when>
+                          <c:otherwise>
+                            <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review').showModal()">
+                              <c:out value="${reviewUserLabel}" />
+                            </button>
+                            <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review" returnTo="dashboardHosting" />
+                          </c:otherwise>
+                        </c:choose>
+                      </c:when>
+                      <c:otherwise>
+                        <div class="flex flex-col gap-2">
+                          <c:choose>
+                            <c:when test="${hasItemReview}">
+                              <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-item').showModal()">
+                                <span class="material-symbols-outlined text-sm">visibility</span> <c:out value="${reviewViewItemLabel}" />
+                              </button>
+                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-item" returnTo="outgoing" existingReview="${itemReview}" />
+                            </c:when>
+                            <c:otherwise>
+                              <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-item').showModal()">
+                                <c:out value="${reviewItemLabel}" />
+                              </button>
+                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-item" returnTo="outgoing" targetType="ITEM" />
+                            </c:otherwise>
+                          </c:choose>
+                          <c:choose>
+                            <c:when test="${hasUserReview}">
+                              <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-user').showModal()">
+                                <span class="material-symbols-outlined text-sm">visibility</span> <c:out value="${reviewViewOwnerLabel}" />
+                              </button>
+                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-user" returnTo="outgoing" existingReview="${userReview}" />
+                            </c:when>
+                            <c:otherwise>
+                              <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-user').showModal()">
+                                <c:out value="${reviewOwnerLabel}" />
+                              </button>
+                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-user" returnTo="outgoing" targetType="USER" />
+                            </c:otherwise>
+                          </c:choose>
+                        </div>
+                      </c:otherwise>
+                    </c:choose>
                   </c:if>
                 </div>
               </div>

@@ -4,13 +4,17 @@ import ar.edu.itba.paw.models.dto.BookingSearchResult;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.PaymentProof;
+import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.services.BookingService;
+import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.BookingSearchForm;
 import ar.edu.itba.paw.webapp.form.PaymentProofForm;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +38,7 @@ public class BookingPresentation {
     private static final String REDIRECT_OUTGOING = "redirect:/requests/outgoing";
 
     private final BookingService bookingInterface;
+    private final ReviewService reviewInterface;
     private final ToastPresentation toastPresentation;
 
     public ModelAndView outgoingBookingsGet(
@@ -53,6 +58,7 @@ public class BookingPresentation {
                     final ModelAndView mav = new ModelAndView("requests-outgoing", "bookingSearch", search);
                     mav.addObject("bookings", bookings);
                     addListingModelObjects(mav, search, bookings, result.getTotalCount());
+                    addUserReviews(mav, userId);
                     return mav;
                 })
                 .orElseGet(() -> new ModelAndView("redirect:/login"));
@@ -92,6 +98,7 @@ public class BookingPresentation {
                     final ModelAndView mav = new ModelAndView("requests-incoming", "bookingSearch", search);
                     mav.addObject("bookings", bookings);
                     addListingModelObjects(mav, search, bookings, result.getTotalCount());
+                    addUserReviews(mav, userId);
                     return mav;
                 })
                 .orElseGet(() -> new ModelAndView("redirect:/login"));
@@ -240,6 +247,11 @@ public class BookingPresentation {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
                 .contentLength(p.getFileData().length)
                 .body(p.getFileData());
+    }
+
+    private void addUserReviews(final ModelAndView mav, final int userId) {
+        final Map<Integer, List<Review>> userReviews = reviewInterface.findReviewsByBookingIds(userId);
+        mav.addObject("userReviews", userReviews.isEmpty() ? Collections.emptyMap() : userReviews);
     }
 
     private static Optional<Integer> callerId(final BotecitoUserDetails principal) {

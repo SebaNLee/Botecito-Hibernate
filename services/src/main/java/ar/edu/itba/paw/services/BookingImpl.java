@@ -38,8 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,11 +46,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class BookingImpl implements BookingService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BookingImpl.class);
-
     private final BookingDao bookingDao;
     private final ItemService itemService;
     private final UserService userService;
+    private final MailService mailService;
 
     private static final int MIN_ANTICIPATION_MINUTES = 120;
     private static final int BOOKING_LOOKAHEAD_DAYS = 60;
@@ -188,6 +185,11 @@ public class BookingImpl implements BookingService {
 
         if (canInsert) {
             bookingDao.insertBooking(booking);
+            if (isOwner) {
+                mailService.sendBookingConfirmedMail(booking);
+            } else {
+                mailService.sendPreBookingMail(booking);
+            }
         } else throw new BookingCollisionException();
     }
 
@@ -249,14 +251,15 @@ public class BookingImpl implements BookingService {
     @Transactional
     @Scheduled(cron = "0 0,30 * * * *")
     public void bookingResolutionRoutine() {
+        final LocalDateTime now = currentDateTime();
+        final LocalDateTime expireThreshold = currentMinimumStart();
+        bookingDao.findBookingsToFinalizeBefore(now).forEach(mailService::sendBookingFinishedMail);
+        bookingDao.findBookingsToExpireBefore(expireThreshold).forEach(mailService::sendBookingExpiredMail);
         finalizeBookings();
         expireDueBookings();
         deleteOldSelfBlocks();
     }
 
-    // Lanza excepcion si falta anticipacion, si al caller no le corresponde actuar, o si la transicion de estado no es
-    // posible
-    // asHost == false se interpreta como "as guest"
     private void updateStatus(
             Booking booking, int callerId, boolean asHost, BookingStatusEnum newStatus, boolean checkAnticipation) {
         if (checkAnticipation) verifyAnticipation(booking);
@@ -277,10 +280,6 @@ public class BookingImpl implements BookingService {
         updateStatus(booking, callerId, asHost, newStatus, true);
     }
 
-    private void updateStatus(int bookingId, int callerId, boolean asHost, BookingStatusEnum newStatus) {
-        updateStatus(findById(bookingId), callerId, asHost, newStatus);
-    }
-
     private Booking findById(int bookingId) {
         return bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
     }
@@ -288,13 +287,17 @@ public class BookingImpl implements BookingService {
     @Override
     @Transactional
     public void acceptBooking(int bookingId, int callerId) {
-        updateStatus(bookingId, callerId, true, BookingStatusEnum.ACCEPTED);
+        Booking booking = findById(bookingId);
+        updateStatus(booking, callerId, true, BookingStatusEnum.ACCEPTED);
+        mailService.sendAcceptMail(booking);
     }
 
     @Override
     @Transactional
     public void rejectBooking(int bookingId, int callerId) {
-        updateStatus(bookingId, callerId, true, BookingStatusEnum.REJECTED);
+        Booking booking = findById(bookingId);
+        updateStatus(booking, callerId, true, BookingStatusEnum.REJECTED);
+        mailService.sendRejectMail(booking);
     }
 
     @Transactional
@@ -322,6 +325,8 @@ public class BookingImpl implements BookingService {
 
         var payment = builder.build();
         bookingDao.uploadPayment(payment);
+        booking.setPaymentProof(payment);
+        mailService.sendPaymentMail(booking);
     }
 
     @Transactional
@@ -335,19 +340,19 @@ public class BookingImpl implements BookingService {
         PaymentProof payment = findById(bookingId).getPaymentProof();
 
         if (payment == null) {
-            // First upload -> insert
             insertPayment(bookingId, fileName, contentType, fileData, guestMsg, callerId);
             return;
         }
 
-        // Already uploaded -> update
-        updateStatus(payment.getBooking(), callerId, false, BookingStatusEnum.PAID);
+        Booking booking = payment.getBooking();
+        updateStatus(booking, callerId, false, BookingStatusEnum.PAID);
 
         payment.setFilename(fileName);
         payment.setContentType(contentType);
         payment.setFileData(fileData);
         payment.setReplyMsg(guestMsg);
         payment.setRepliedAt(currentDateTime());
+        mailService.sendPaymentMail(booking);
     }
 
     @Override
@@ -359,7 +364,9 @@ public class BookingImpl implements BookingService {
     @Override
     @Transactional
     public void confirmPayment(int bookingId, int callerId) {
-        updateStatus(bookingId, callerId, true, BookingStatusEnum.CONFIRMED);
+        Booking booking = findById(bookingId);
+        updateStatus(booking, callerId, true, BookingStatusEnum.CONFIRMED);
+        mailService.sendBookingConfirmedMail(booking);
     }
 
     @Override
@@ -371,12 +378,15 @@ public class BookingImpl implements BookingService {
 
         payment.setRefuseMsg(reason);
         payment.setRefusedAt(currentDateTime());
+        mailService.sendRefusedPaymentMail(booking);
     }
 
     @Override
     @Transactional
     public void cancelBooking(int bookingId, int callerId) {
-        updateStatus(findById(bookingId), callerId, false, BookingStatusEnum.CANCELLED, false);
+        Booking booking = findById(bookingId);
+        updateStatus(booking, callerId, false, BookingStatusEnum.CANCELLED, false);
+        mailService.sendBookingCancelledMail(booking);
     }
 
     @Override

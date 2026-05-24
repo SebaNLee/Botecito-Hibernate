@@ -2,6 +2,7 @@ package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.TargetEnum;
+import java.util.List;
 import java.util.Optional;
 
 public interface ReviewDao {
@@ -10,4 +11,6 @@ public interface ReviewDao {
             int bookingId, int senderUserId, TargetEnum targetType, double rating, String reviewComment);
 
     Optional<Review> findReviewByBookingSenderAndTargetType(int bookingId, int senderUserId, TargetEnum targetType);
+
+    List<Review> findReviewsBySender(int senderUserId);
 }

@@ -36,4 +36,8 @@ public interface BookingDao {
     void deleteAllSelfBlocks(Item item);
 
     List<Booking> getUpcomingBookings(Item item, LocalDateTime minDate, LocalDateTime maxDate);
+
+    List<Booking> findBookingsToFinalizeBefore(LocalDateTime maxEndTime);
+
+    List<Booking> findBookingsToExpireBefore(LocalDateTime minStartTime);
 }

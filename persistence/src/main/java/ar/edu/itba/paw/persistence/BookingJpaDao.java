@@ -27,6 +27,16 @@ public class BookingJpaDao implements BookingDao {
     private static final String NATIVE_JOIN =
             "booking b JOIN version v ON b.version_id = v.id JOIN item i ON v.item_id = i.id ";
 
+    private static final String HQL_BOOKING_MAIL_FETCH =
+            "SELECT b FROM Booking b LEFT JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof "
+                    + "INNER JOIN FETCH b.version v INNER JOIN FETCH v.item i LEFT JOIN FETCH i.host ";
+
+    private static final EnumSet<BookingStatusEnum> NON_AUTO_CANCEL_STATES = EnumSet.of(
+            BookingStatusEnum.CONFIRMED,
+            BookingStatusEnum.CANCELLED,
+            BookingStatusEnum.FINISHED,
+            BookingStatusEnum.REJECTED);
+
     @PersistenceContext
     private EntityManager em;
 
@@ -69,7 +79,10 @@ public class BookingJpaDao implements BookingDao {
 
     @Override
     public Optional<Booking> findById(final int bookingId) {
-        return Optional.ofNullable(em.find(Booking.class, bookingId));
+        final List<Booking> rows = em.createQuery(HQL_BOOKING_MAIL_FETCH + "WHERE b.id = :bookingId", Booking.class)
+                .setParameter("bookingId", bookingId)
+                .getResultList();
+        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
     }
 
     @Override
@@ -92,8 +105,6 @@ public class BookingJpaDao implements BookingDao {
     public BookingSearchResult searchBookings(final BookingQueryModel query) {
         long totalCount = countBookings(query);
 
-        // Get IDs of the bookings that will be returned in THIS page
-
         final Map<String, Object> params = new HashMap<>();
 
         StringBuilder sql = new StringBuilder("SELECT b.id FROM ");
@@ -114,8 +125,6 @@ public class BookingJpaDao implements BookingDao {
             return new BookingSearchResult(List.of(), totalCount);
         }
 
-        // Fetch the rest of the data
-
         String jpql =
                 "SELECT DISTINCT b FROM Booking b JOIN FETCH b.guest JOIN FETCH b.version v JOIN FETCH v.item i JOIN FETCH i.host WHERE b.id IN :ids"
                         + jpqlOrderBy(query);
@@ -126,15 +135,12 @@ public class BookingJpaDao implements BookingDao {
         return new BookingSearchResult(results, totalCount);
     }
 
-    // Using b = booking, v = b.version, i = b.version.item
     private static String getFilter(BookingQueryModel query, Map<String, Object> params) {
         List<String> clauses = new ArrayList<>();
 
         if (query.isAsHost()) {
-            // Host query, host must be the caller and not be the guest
             clauses.add("i.host_id = :callerId AND (b.guest_id IS NULL OR b.guest_id <> :callerId)");
         } else {
-            // Guest query, guest must be the caller and not the host
             clauses.add("b.guest_id = :callerId AND (i.host_id IS NULL OR i.host_id <> :callerId)");
         }
         params.put("callerId", query.getCallerId());
@@ -205,6 +211,27 @@ public class BookingJpaDao implements BookingDao {
                         "DELETE FROM Booking b WHERE b.end < :endTime AND b.id IN (SELECT b2.id FROM Booking b2 INNER JOIN b2.version v INNER JOIN v.item i WHERE b2.guest = i.host)")
                 .setParameter("endTime", minEndTime)
                 .executeUpdate();
+    }
+
+    @Override
+    public List<Booking> findBookingsToFinalizeBefore(final LocalDateTime maxEndTime) {
+        return em.createQuery(
+                        HQL_BOOKING_MAIL_FETCH
+                                + "WHERE b.end < :endTime AND b.status = :confirmed AND i.host.id <> b.guest.id",
+                        Booking.class)
+                .setParameter("endTime", maxEndTime)
+                .setParameter("confirmed", BookingStatusEnum.CONFIRMED)
+                .getResultList();
+    }
+
+    @Override
+    public List<Booking> findBookingsToExpireBefore(final LocalDateTime minStartTime) {
+        return em.createQuery(
+                        HQL_BOOKING_MAIL_FETCH + "WHERE b.start < :startTime AND b.status NOT IN :excluded",
+                        Booking.class)
+                .setParameter("startTime", minStartTime)
+                .setParameter("excluded", NON_AUTO_CANCEL_STATES)
+                .getResultList();
     }
 
     @Override

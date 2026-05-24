@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
-import ar.edu.itba.paw.webapp.form.BlockSlotForm;
+import ar.edu.itba.paw.webapp.form.SaveSelfBlocksForm;
 import ar.edu.itba.paw.webapp.presentation.AvailabilityPresentation;
 import ar.edu.itba.paw.webapp.presentation.MyBoatsActionsPresentation;
 import ar.edu.itba.paw.webapp.presentation.MyBoatsPresentation;
@@ -66,31 +66,21 @@ public class MyBoatsController {
             @PathVariable("id") final int itemId,
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "return", required = false) final String returnParam,
+            final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
         return availabilityPresentation.manageAvailabilityPage(
-                user, itemId, requestedDate, returnParam, redirectAttributes);
+                user, itemId, requestedDate, returnParam, request, redirectAttributes);
     }
 
-    @RequestMapping(value = "/my-boats/{id:[0-9]+}/availability/disable", method = RequestMethod.POST)
-    public ModelAndView blockSlot(
+    @RequestMapping(value = "/my-boats/{id:[0-9]+}/availability/save", method = RequestMethod.POST)
+    public ModelAndView saveSelfBlocks(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
             @RequestParam(value = "return", required = false) final String returnParam,
-            @Valid @ModelAttribute final BlockSlotForm blockSlotForm,
+            @Valid @ModelAttribute final SaveSelfBlocksForm saveSelfBlocksForm,
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
-        return availabilityPresentation.blockSlot(user, itemId, returnParam, blockSlotForm, errors, redirectAttributes);
-    }
-
-    @RequestMapping(value = "/my-boats/{id:[0-9]+}/availability/enable", method = RequestMethod.POST)
-    public ModelAndView unblockSlot(
-            @AuthenticationPrincipal final BotecitoUserDetails user,
-            @PathVariable("id") final int itemId,
-            @RequestParam("blockBookingId") final int blockBookingId,
-            @RequestParam(value = "date", required = false) final String requestedDate,
-            @RequestParam(value = "return", required = false) final String returnParam,
-            final RedirectAttributes redirectAttributes) {
-        return availabilityPresentation.unblockSlot(
-                user, itemId, blockBookingId, requestedDate, returnParam, redirectAttributes);
+        return availabilityPresentation.saveSelfBlocks(
+                user, itemId, returnParam, saveSelfBlocksForm, errors, redirectAttributes);
     }
 }

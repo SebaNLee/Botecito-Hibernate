@@ -1,6 +1,8 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
+import ar.edu.itba.paw.models.dto.SelfBlockCreate;
+import ar.edu.itba.paw.models.dto.SelfBlockUpdate;
 import ar.edu.itba.paw.models.dto.SelfBookingData;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.Item;
@@ -49,9 +51,13 @@ public interface BookingService {
 
     SelfBookingData getSelfBlocks(int itemId, int ownerId, LocalDate requestedDate);
 
-    void insertSelfBlock(int itemId, int ownerId, String date, String startTime, String endTime);
-
-    boolean removeSelfBlock(int bookingId, int ownerId);
+    void saveSelfBlockChanges(
+            int itemId,
+            int ownerId,
+            LocalDate date,
+            List<Integer> deletedBlockIds,
+            List<SelfBlockUpdate> updates,
+            List<SelfBlockCreate> creates);
 
     // cron job
     void bookingResolutionRoutine();

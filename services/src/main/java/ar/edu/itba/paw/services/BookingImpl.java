@@ -4,6 +4,8 @@ import static java.util.Map.entry;
 
 import ar.edu.itba.paw.models.dto.BookingQueryModel;
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
+import ar.edu.itba.paw.models.dto.SelfBlockCreate;
+import ar.edu.itba.paw.models.dto.SelfBlockUpdate;
 import ar.edu.itba.paw.models.dto.SelfBookingData;
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Booking;
@@ -421,7 +423,41 @@ public class BookingImpl implements BookingService {
 
     @Override
     @Transactional
-    public void insertSelfBlock(
+    public void saveSelfBlockChanges(
+            final int itemId,
+            final int callerId,
+            final LocalDate date,
+            final List<Integer> deletedBlockIds,
+            final List<SelfBlockUpdate> updates,
+            final List<SelfBlockCreate> creates) {
+        itemService.requireOwnedItem(itemId, callerId);
+        final String dateStr = date.toString();
+        if (deletedBlockIds != null) {
+            for (final Integer blockId : deletedBlockIds) {
+                if (blockId != null) {
+                    removeSelfBlock(blockId, callerId);
+                }
+            }
+        }
+        if (updates != null) {
+            for (final SelfBlockUpdate update : updates) {
+                if (update == null) {
+                    continue;
+                }
+                updateSelfBlock(update.getBookingId(), callerId, dateStr, update.getStartTime(), update.getEndTime());
+            }
+        }
+        if (creates != null) {
+            for (final SelfBlockCreate create : creates) {
+                if (create == null) {
+                    continue;
+                }
+                insertSelfBlock(itemId, callerId, dateStr, create.getStartTime(), create.getEndTime());
+            }
+        }
+    }
+
+    private void insertSelfBlock(
             final int itemId, final int callerId, final String date, final String startTime, final String endTime) {
         if (date == null || startTime == null || endTime == null) {
             throw new InvalidSlotException();
@@ -437,19 +473,71 @@ public class BookingImpl implements BookingService {
             throw new InvalidSlotException();
         }
 
-        itemService.requireOwnedItem(itemId, callerId);
-
         insertBooking(itemId, parsedDate, parsedStart, parsedEnd, "", callerId, false);
     }
 
-    @Override
-    @Transactional
-    public boolean removeSelfBlock(final int bookingId, final int callerId) {
+    private boolean removeSelfBlock(final int bookingId, final int callerId) {
         Booking booking = findById(bookingId);
         var ownerId = booking.getVersion().getItem().getHost().getId().intValue();
         if (ownerId != callerId || ownerId != booking.getGuest().getId().intValue()) return false;
         bookingDao.deleteBooking(bookingId);
         return true;
+    }
+
+    private void updateSelfBlock(
+            final int bookingId, final int callerId, final String date, final String startTime, final String endTime) {
+        final LocalDate parsedDate;
+        final LocalTime parsedStart;
+        final LocalTime parsedEnd;
+        try {
+            parsedDate = LocalDate.parse(date);
+            parsedStart = LocalTime.parse(startTime);
+            parsedEnd = LocalTime.parse(endTime);
+        } catch (final Exception e) {
+            throw new InvalidSlotException();
+        }
+        if (!parsedStart.isBefore(parsedEnd)) {
+            throw new InvalidSlotException();
+        }
+
+        final Booking booking = findById(bookingId);
+        final int ownerId = booking.getVersion().getItem().getHost().getId().intValue();
+        if (ownerId != callerId || ownerId != booking.getGuest().getId().intValue()) {
+            throw new IllegalBookingOperationException();
+        }
+
+        final Version version = booking.getVersion();
+        final String timezone = version.getTimezone();
+        final ZoneId zoneId = ZoneId.of(timezone.trim());
+        final LocalDateTime localStart = LocalDateTime.of(parsedDate, parsedStart);
+        if (localStart.isBefore(currentDateTime())) {
+            throw new PastSlotException();
+        }
+
+        final DayOfWeek dayOfWeek = localStart.getDayOfWeek();
+        final List<Availability> availabilities = version.getAvailabilities();
+        final boolean withinAvailability = availabilities.stream()
+                .anyMatch(a -> a.getWeekday().name().equals(dayOfWeek.name())
+                        && !a.getStartTime().isAfter(parsedStart)
+                        && !a.getEndTime().isBefore(parsedEnd));
+        if (!withinAvailability) {
+            throw new OutsideAvailabilityException();
+        }
+
+        final ZonedDateTime zonedStart = localStart.atZone(zoneId);
+        final ZonedDateTime zonedEnd = LocalDateTime.of(parsedDate, parsedEnd).atZone(zoneId);
+        final LocalDateTime utcStart = LocalDateTime.ofInstant(zonedStart.toInstant(), ZoneOffset.UTC);
+        final LocalDateTime utcEnd = LocalDateTime.ofInstant(zonedEnd.toInstant(), ZoneOffset.UTC);
+
+        final Booking probe =
+                Booking.builder().version(version).start(utcStart).end(utcEnd).build();
+        if (!bookingDao.canUpdateConsecutive(probe, bookingId, BLOCKING_STATES)) {
+            throw new BookingCollisionException();
+        }
+
+        booking.setStart(utcStart);
+        booking.setEnd(utcEnd);
+        booking.setUpdatedAt(currentDateTime());
     }
 
     private static List<LocalDate> buildOfferedDates(final List<Availability> availabilities, final String timezone) {

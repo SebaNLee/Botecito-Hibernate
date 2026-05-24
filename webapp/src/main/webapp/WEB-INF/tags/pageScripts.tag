@@ -43,5 +43,5 @@
 </c:if>
 <c:if test="${fn:contains(resolvedBundles, ',manage-availability,')}">
   <script src="<c:url value='/js/manage-availability-date.js' />"></script>
-  <script src="<c:url value='/js/manage-availability-block-range.js' />"></script>
+  <script src="<c:url value='/js/manage-availability-timeline.js' />"></script>
 </c:if>

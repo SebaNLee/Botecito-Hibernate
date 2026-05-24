@@ -70,6 +70,23 @@ public class BookingJpaDao implements BookingDao {
     }
 
     @Override
+    public boolean canUpdateConsecutive(
+            final Booking booking, final int excludeBookingId, final EnumSet<BookingStatusEnum> blockingStates) {
+        String operator = "<";
+        String jpql = "SELECT COUNT(b) > 0 FROM Booking b WHERE b.version.item = :item AND b.id <> :excludeId"
+                + " AND b.start " + operator + " :requestedEnd AND :requestedStart " + operator + " b.end"
+                + " AND b.status IN :blockingStates";
+
+        var query = em.createQuery(jpql, Boolean.class);
+        query.setParameter("item", booking.getVersion().getItem())
+                .setParameter("excludeId", excludeBookingId)
+                .setParameter("requestedStart", booking.getStart())
+                .setParameter("requestedEnd", booking.getEnd())
+                .setParameter("blockingStates", blockingStates);
+        return !query.getSingleResult();
+    }
+
+    @Override
     public boolean deleteBooking(final int id) {
         final Booking booking = em.find(Booking.class, id);
         if (booking == null) return false;

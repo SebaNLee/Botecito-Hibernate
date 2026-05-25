@@ -16,4 +16,8 @@ public class PasswordRecoveryRequestForm {
     private String email;
 
     private String sent;
+
+    public void setEmail(final String email) {
+        this.email = email == null ? null : email.trim();
+    }
 }

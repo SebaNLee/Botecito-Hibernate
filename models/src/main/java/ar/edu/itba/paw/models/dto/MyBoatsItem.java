@@ -21,6 +21,4 @@ public class MyBoatsItem {
     private String location;
     private Boolean active;
     private Integer coverImageId;
-    private Boolean deleteDeactivates;
-    private Boolean deleteDisabled;
 }

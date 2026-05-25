@@ -7,11 +7,14 @@ import ar.edu.itba.paw.models.exceptions.IllegalBookingOperationException;
 import ar.edu.itba.paw.models.exceptions.InvalidBookingStatusException;
 import ar.edu.itba.paw.models.exceptions.InvalidDateFormatException;
 import ar.edu.itba.paw.models.exceptions.InvalidSlotException;
+import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
 import ar.edu.itba.paw.models.exceptions.NoAnticipationException;
 import ar.edu.itba.paw.models.exceptions.OutsideAvailabilityException;
 import ar.edu.itba.paw.models.exceptions.PastSlotException;
 import ar.edu.itba.paw.models.exceptions.SlotOverlapException;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -33,6 +36,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class GlobalExceptionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Pattern EDIT_IMAGES_URI = Pattern.compile("/edit/(\\d+)/images");
 
     @ExceptionHandler(ForbiddenOperationException.class)
     public ModelAndView handleForbiddenOperation() {
@@ -42,6 +46,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoHandlerFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ModelAndView handleNotFound(final HttpServletRequest request) {
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
+        return new ModelAndView("forward:/errors");
+    }
+
+    @ExceptionHandler(ItemNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ModelAndView handleItemNotFound(final HttpServletRequest request) {
         request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
         return new ModelAndView("forward:/errors");
     }
@@ -59,6 +70,9 @@ public class GlobalExceptionHandler {
     public ModelAndView handleMethodNotAllowed(final HttpServletRequest request) {
         final String requestUri = request == null ? null : request.getRequestURI();
         if (requestUri != null && requestUri.contains("/publish")) {
+            if (requestUri.contains("/publish/images")) {
+                return new ModelAndView("redirect:/publish/images?availabilityAction=invalidMethod");
+            }
             return new ModelAndView("redirect:/publish/availability?availabilityAction=invalidMethod");
         }
         request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 405);
@@ -74,8 +88,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
-    public ModelAndView handleMaxUploadSize(final HttpServletRequest request) {
+    public ModelAndView handleMaxUploadSize(
+            final HttpServletRequest request, final RedirectAttributes redirectAttributes) {
         LOGGER.debug("Max upload size exceeded");
+        final String requestUri = request == null ? null : request.getRequestURI();
+        if (requestUri != null && requestUri.contains("/publish/images")) {
+            ToastSupport.error(redirectAttributes, "publish.validation.images.size");
+            return new ModelAndView("redirect:/publish/images");
+        }
+        if (requestUri != null) {
+            final Matcher editImages = EDIT_IMAGES_URI.matcher(requestUri);
+            if (editImages.find()) {
+                ToastSupport.error(redirectAttributes, "publish.validation.images.size");
+                return new ModelAndView("redirect:/edit/" + editImages.group(1) + "/images");
+            }
+        }
         request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 413);
         return new ModelAndView("forward:/errors");
     }

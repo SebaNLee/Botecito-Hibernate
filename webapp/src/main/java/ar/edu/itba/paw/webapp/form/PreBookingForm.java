@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.form;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import lombok.Getter;
@@ -29,4 +30,19 @@ public class PreBookingForm {
 
     @Size(max = 255, message = "{prebooking.validation.message.max}")
     private String message;
+
+    @AssertTrue
+    public boolean hasTwoHourGap() {
+        return !endTime.isBefore(startTime.plusHours(2));
+    }
+
+    private boolean isOnHalfHour(LocalTime time) {
+        var minutes = time.getMinute();
+        return minutes == 0 || minutes == 30;
+    }
+
+    @AssertTrue
+    public boolean landsOnHalfHour() {
+        return isOnHalfHour(startTime) && isOnHalfHour(endTime);
+    }
 }

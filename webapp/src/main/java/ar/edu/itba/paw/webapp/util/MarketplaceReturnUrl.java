@@ -18,9 +18,18 @@ public final class MarketplaceReturnUrl {
      * Full href for "back to marketplace" including context path. Only allows {@code /marketplace}
      * with an optional query string (no open redirects).
      */
+    public static String marketplaceBackHref(final HttpServletRequest request) {
+        return marketplaceBackHref(request, request.getParameter("returnTo"));
+    }
+
     public static String marketplaceBackHref(final HttpServletRequest request, final String returnToParam) {
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
-        return contextPath + sanitizeRelativePath(returnToParam);
+        return contextPath + relativeReturnTo(returnToParam);
+    }
+
+    /** Sanitized {@code /marketplace} path with optional query (no context path). */
+    public static String relativeReturnTo(final String returnToParam) {
+        return sanitizeRelativePath(returnToParam);
     }
 
     private static String sanitizeRelativePath(final String returnToParam) {

@@ -1,10 +1,8 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.AvailabilityData;
+import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
-import ar.edu.itba.paw.models.dto.MarketplaceSearchResult;
 import ar.edu.itba.paw.persistence.MarketplaceDao;
-import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -20,7 +18,7 @@ public final class MarketplaceImpl implements MarketplaceService {
 
     @Override
     @Transactional(readOnly = true)
-    public MarketplaceSearchResult searchMarketplace(
+    public ItemSearchResult searchMarketplace(
             final String searchQuery,
             final LocalDate date,
             final LocalTime startTime,
@@ -50,19 +48,5 @@ public final class MarketplaceImpl implements MarketplaceService {
         query.setPageSize(pageSize);
         query.setSortBy(sortBy);
         return marketplaceDao.searchMarketplace(query);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public AvailabilityData buildHomeAvailabilityData() {
-        final var availabilities = marketplaceDao.getAllAvailabilities();
-        final var bookings = marketplaceDao.getAllBlockingBookings();
-        final var builderData = AvailabilityPickerBuilder.buildFromEntities(availabilities, bookings);
-        return toAvailabilityData(builderData);
-    }
-
-    private static AvailabilityData toAvailabilityData(final AvailabilityPickerBuilder.Data data) {
-        return new AvailabilityData(
-                data.offeredDates(), data.occupiedDates(), data.offeredTimesByDate(), data.occupiedTimesByDate());
     }
 }

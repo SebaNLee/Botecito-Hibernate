@@ -47,7 +47,8 @@ public final class ReviewImpl implements ReviewService {
             return Optional.empty();
         }
 
-        final Optional<Integer> ownerId = bookingDao.findOwnerIdForBookingId(bookingId);
+        final Optional<Integer> ownerId =
+                booking.map(b -> b.getVersion().getItem().getHost().getId());
         if (ownerId.isEmpty()) {
             return Optional.empty();
         }

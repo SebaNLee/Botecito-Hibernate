@@ -11,7 +11,7 @@
 <spring:message code="login.email.label" var="emailLabel" />
 <spring:message code="login.password.label" var="passwordLabel" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen">
+<paw:layout title="Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen" scripts="toast">
   <paw:toastNotifier />
   <div class="w-full max-w-md px-6">
     <div class="card bg-base-100 shadow-sm border border-outline-variant/20">
@@ -51,6 +51,9 @@
         </c:if>
         <c:if test="${passwordRecoveredSuccess}">
           <paw:alertMessage type="success"><spring:message code="login.passwordRecovered" /></paw:alertMessage>
+        </c:if>
+        <c:if test="${sessionExpiredWarning}">
+          <paw:alertMessage type="warning"><spring:message code="login.sessionExpired" /></paw:alertMessage>
         </c:if>
 
         <form action="${loginUrl}" method="post" class="space-y-4">

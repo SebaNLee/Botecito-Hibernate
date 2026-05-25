@@ -179,7 +179,9 @@
       return "";
     }
 
-    const date = civilCalendar ? isoToUtcCivilDate(isoDate) : isoToDate(isoDate);
+    const date = civilCalendar
+      ? isoToUtcCivilDate(isoDate)
+      : isoToDate(isoDate);
     const longFmt = civilCalendar ? DATE_FORMATTER_UTC : DATE_FORMATTER;
     const shortFmt = civilCalendar
       ? DATE_TRIGGER_SHORT_WEEKDAY_UTC
@@ -446,31 +448,24 @@
     return Boolean(state && state.date && state.startTime && state.endTime);
   }
 
-  /** Marketplace slug params must not be legacy numeric-only ids. */
-  function sanitizeMarketplaceLocationParam(value) {
-    const s = (value == null ? "" : String(value)).trim();
-    if (!s || /^\d+$/.test(s)) {
-      return "";
-    }
-    return s;
+  function trimStoredParam(value) {
+    return (value == null ? "" : String(value)).trim();
   }
 
   function readStoredFilters() {
     try {
       const raw =
         parseJson(sessionStorage.getItem(FILTER_STORAGE_KEY), {}) || {};
-      if (raw.locationSlug && !raw.location) {
-        raw.location = raw.locationSlug;
-      }
-      raw.location = sanitizeMarketplaceLocationParam(raw.location);
-      if (!raw.location) {
+      const location = trimStoredParam(raw.location);
+      if (location) {
+        raw.location = location;
+      } else {
         delete raw.location;
       }
-      if (raw.itemTypeSlug && !raw.itemType) {
-        raw.itemType = raw.itemTypeSlug;
-      }
-      raw.itemType = sanitizeMarketplaceLocationParam(raw.itemType);
-      if (!raw.itemType) {
+      const itemType = trimStoredParam(raw.itemType);
+      if (itemType) {
+        raw.itemType = itemType;
+      } else {
         delete raw.itemType;
       }
       return raw;
@@ -488,11 +483,11 @@
         startTime: state.startTime || "",
         endTime: state.endTime || "",
       };
-      merged.location = sanitizeMarketplaceLocationParam(merged.location);
+      merged.location = trimStoredParam(merged.location);
       if (!merged.location) {
         delete merged.location;
       }
-      merged.itemType = sanitizeMarketplaceLocationParam(merged.itemType);
+      merged.itemType = trimStoredParam(merged.itemType);
       if (!merged.itemType) {
         delete merged.itemType;
       }
@@ -518,6 +513,24 @@
     }
   }
 
+  const ITEM_DETAIL_QUERY_KEYS = [
+    "searchQuery",
+    "location",
+    "itemType",
+    "date",
+    "startTime",
+    "endTime",
+    "capacity",
+    "weight",
+    "difficulty",
+    "minAvgRating",
+    "sortBy",
+    "pageSize",
+    "page",
+    "reviewPage",
+    "returnTo",
+  ];
+
   function buildUrlWithFilters(baseUrl, state) {
     const url = new URL(baseUrl, window.location.origin);
     const stored = readStoredFilters() || {};
@@ -526,17 +539,14 @@
       "location",
       "itemType",
       "capacity",
-      "maxWeight",
-      "difficultyLevel",
+      "weight",
+      "difficulty",
       "minAvgRating",
       "sortBy",
       "pageSize",
     ];
     preservedKeys.forEach((key) => {
-      let value = stored[key];
-      if (key === "location" || key === "itemType") {
-        value = sanitizeMarketplaceLocationParam(value);
-      }
+      const value = stored[key];
       if (value != null && String(value).trim() !== "") {
         url.searchParams.set(key, String(value));
       } else if (key === "location" || key === "itemType") {
@@ -553,6 +563,58 @@
     });
 
     return url.toString();
+  }
+
+  function buildMarketplaceReturnPath(state) {
+    const url = new URL("/marketplace", window.location.origin);
+    const stored = readStoredFilters() || {};
+    const preservedKeys = [
+      "searchQuery",
+      "location",
+      "itemType",
+      "capacity",
+      "weight",
+      "difficulty",
+      "minAvgRating",
+      "sortBy",
+      "pageSize",
+    ];
+    preservedKeys.forEach((key) => {
+      const value = stored[key];
+      if (value != null && String(value).trim() !== "") {
+        url.searchParams.set(key, String(value));
+      }
+    });
+
+    ["date", "startTime", "endTime"].forEach((key) => {
+      if (state && state[key]) {
+        url.searchParams.set(key, state[key]);
+      }
+    });
+
+    const pageInput = document.querySelector(
+      '[data-marketplace-toolbar-form] input[name="page"]',
+    );
+    const pageValue =
+      pageInput?.value ||
+      new URLSearchParams(window.location.search).get("page") ||
+      "";
+    if (pageValue) {
+      url.searchParams.set("page", pageValue);
+    }
+
+    return url.pathname + url.search;
+  }
+
+  function buildItemDetailHref(baseHref, state) {
+    const url = new URL(baseHref, window.location.origin);
+
+    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
+      url.searchParams.delete(key);
+    });
+
+    url.searchParams.set("returnTo", buildMarketplaceReturnPath(state));
+    return url.pathname + url.search;
   }
 
   function stripAvailabilityFilters(baseUrl) {
@@ -589,7 +651,7 @@
 
         link.setAttribute(
           "href",
-          buildUrlWithFilters(link.dataset.baseHref, state),
+          buildItemDetailHref(link.dataset.baseHref, state),
         );
       });
   }

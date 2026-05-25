@@ -1,12 +1,10 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
-import ar.edu.itba.paw.webapp.form.BlockSlotForm;
-import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import ar.edu.itba.paw.webapp.form.SaveSelfBlocksForm;
 import ar.edu.itba.paw.webapp.presentation.AvailabilityPresentation;
 import ar.edu.itba.paw.webapp.presentation.MyBoatsActionsPresentation;
 import ar.edu.itba.paw.webapp.presentation.MyBoatsPresentation;
-import ar.edu.itba.paw.webapp.presentation.PublishActionPresentation;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,13 +25,7 @@ public class MyBoatsController {
 
     private final MyBoatsPresentation myBoatsPresentation;
     private final MyBoatsActionsPresentation myBoatsActionsPresentation;
-    private final PublishActionPresentation publishActionPresentation;
     private final AvailabilityPresentation availabilityPresentation;
-
-    @ModelAttribute("publishForm")
-    public PublishBoatForm publishForm() {
-        return new PublishBoatForm();
-    }
 
     @RequestMapping(value = "/my-boats", method = RequestMethod.GET)
     public ModelAndView myBoats(
@@ -42,26 +34,6 @@ public class MyBoatsController {
             @RequestParam(value = "page", defaultValue = "1") final int page,
             @RequestParam(value = "pageSize", defaultValue = "12") final int pageSize) {
         return myBoatsPresentation.myBoats(user, request, page, pageSize);
-    }
-
-    @RequestMapping(value = "/my-boats/{id:[0-9]+}/edit", method = RequestMethod.GET)
-    public ModelAndView editPublicationForm(
-            @AuthenticationPrincipal final BotecitoUserDetails user,
-            @PathVariable("id") final int itemId,
-            final HttpServletRequest request,
-            final RedirectAttributes redirectAttributes) {
-        return publishActionPresentation.editPublicationForm(user, itemId, request, redirectAttributes);
-    }
-
-    @RequestMapping(value = "/my-boats/{id:[0-9]+}/edit", method = RequestMethod.POST)
-    public ModelAndView editPublicationSubmit(
-            @AuthenticationPrincipal final BotecitoUserDetails user,
-            @PathVariable("id") final int itemId,
-            @ModelAttribute("publishForm") final PublishBoatForm form,
-            final BindingResult errors,
-            final HttpServletRequest request,
-            final RedirectAttributes redirectAttributes) {
-        return publishActionPresentation.editPublicationSubmit(user, itemId, form, errors, request, redirectAttributes);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/disable", method = RequestMethod.POST)
@@ -94,31 +66,21 @@ public class MyBoatsController {
             @PathVariable("id") final int itemId,
             @RequestParam(value = "date", required = false) final String requestedDate,
             @RequestParam(value = "return", required = false) final String returnParam,
+            final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
         return availabilityPresentation.manageAvailabilityPage(
-                user, itemId, requestedDate, returnParam, redirectAttributes);
+                user, itemId, requestedDate, returnParam, request, redirectAttributes);
     }
 
-    @RequestMapping(value = "/my-boats/{id:[0-9]+}/availability/disable", method = RequestMethod.POST)
-    public ModelAndView blockSlot(
+    @RequestMapping(value = "/my-boats/{id:[0-9]+}/availability/save", method = RequestMethod.POST)
+    public ModelAndView saveSelfBlocks(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
             @RequestParam(value = "return", required = false) final String returnParam,
-            @Valid @ModelAttribute final BlockSlotForm blockSlotForm,
+            @Valid @ModelAttribute final SaveSelfBlocksForm saveSelfBlocksForm,
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
-        return availabilityPresentation.blockSlot(user, itemId, returnParam, blockSlotForm, errors, redirectAttributes);
-    }
-
-    @RequestMapping(value = "/my-boats/{id:[0-9]+}/availability/enable", method = RequestMethod.POST)
-    public ModelAndView unblockSlot(
-            @AuthenticationPrincipal final BotecitoUserDetails user,
-            @PathVariable("id") final int itemId,
-            @RequestParam("blockBookingId") final int blockBookingId,
-            @RequestParam(value = "date", required = false) final String requestedDate,
-            @RequestParam(value = "return", required = false) final String returnParam,
-            final RedirectAttributes redirectAttributes) {
-        return availabilityPresentation.unblockSlot(
-                user, itemId, blockBookingId, requestedDate, returnParam, redirectAttributes);
+        return availabilityPresentation.saveSelfBlocks(
+                user, itemId, returnParam, saveSelfBlocksForm, errors, redirectAttributes);
     }
 }

@@ -1,8 +1,11 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.BookingSearchResult;
-import ar.edu.itba.paw.models.dto.OwnerAvailabilityPage;
+import ar.edu.itba.paw.models.dto.SelfBlockCreate;
+import ar.edu.itba.paw.models.dto.SelfBlockUpdate;
+import ar.edu.itba.paw.models.dto.SelfBookingData;
 import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -11,10 +14,7 @@ import java.util.Optional;
 
 public interface BookingService {
 
-    int createBooking(
-            int versionId, LocalDate date, LocalTime startTime, LocalTime endTime, String message, int guestId);
-
-    List<Booking> getBookingsForVersion(int versionId);
+    void createBooking(int itemId, LocalDate date, LocalTime startTime, LocalTime endTime, String message, int guestId);
 
     BookingSearchResult searchBookings(
             int userId,
@@ -26,11 +26,20 @@ public interface BookingService {
             Integer pageSize,
             String sortBy);
 
+    List<Booking> getUpcomingBookings(Item item);
+
     void acceptBooking(int bookingId, int callerId);
 
     void rejectBooking(int bookingId, int callerId);
 
-    void submitPayment(int bookingId, PaymentProof payment, int callerId);
+    // Inserta si no hay un pago cargado, si no actualiza
+    void submitPayment(
+            final int bookingId,
+            final String fileName,
+            final String contentType,
+            final byte[] fileData,
+            final String guestMsg,
+            final int callerId);
 
     Optional<PaymentProof> getPaymentProofForParticipant(int bookingId, int callerId);
 
@@ -40,11 +49,15 @@ public interface BookingService {
 
     void cancelBooking(int bookingId, int callerId);
 
-    OwnerAvailabilityPage loadOwnerAvailabilityPage(int itemId, int ownerId, String requestedDate);
+    SelfBookingData getSelfBlocks(int itemId, int ownerId, LocalDate requestedDate);
 
-    void blockSlotForOwner(int itemId, int ownerId, String date, String startTime, String endTime);
-
-    boolean removeOwnerSelfBlock(int bookingId, int ownerId);
+    void saveSelfBlockChanges(
+            int itemId,
+            int ownerId,
+            LocalDate date,
+            List<Integer> deletedBlockIds,
+            List<SelfBlockUpdate> updates,
+            List<SelfBlockCreate> creates);
 
     // cron job
     void bookingResolutionRoutine();

@@ -30,6 +30,27 @@ public class ProfileForm {
     @Size(max = 120, message = "{profile.validation.paymentAlias.max}")
     private String paymentAlias;
 
+    @NotBlank(message = "{profile.validation.preferredLanguage.required}")
     @Pattern(regexp = "es|en", message = "{profile.validation.preferredLanguage.invalid}")
     private String preferredLanguage = "es";
+
+    public void setGivenName(final String givenName) {
+        this.givenName = givenName == null ? null : givenName.trim();
+    }
+
+    public void setLastName(final String lastName) {
+        this.lastName = lastName == null ? null : lastName.trim();
+    }
+
+    public void setEmail(final String email) {
+        this.email = email == null ? null : email.trim();
+    }
+
+    public void setPhone(final String phone) {
+        this.phone = phone == null ? null : phone.trim();
+    }
+
+    public void setPaymentAlias(final String paymentAlias) {
+        this.paymentAlias = paymentAlias == null ? null : paymentAlias.trim();
+    }
 }

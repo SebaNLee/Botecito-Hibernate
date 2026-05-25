@@ -7,8 +7,8 @@
     "startTime",
     "endTime",
     "capacity",
-    "maxWeight",
-    "difficultyLevel",
+    "weight",
+    "difficulty",
     "minAvgRating",
   ];
 
@@ -31,16 +31,8 @@
     return (value || "").toString().trim().toLowerCase();
   }
 
-  /** Marketplace `location` must be a slug; strip legacy numeric-only ids from URL/session. */
-  function normalizeMarketplaceLocation(value) {
-    const raw = (value || "").toString().trim();
-    if (!raw) {
-      return "";
-    }
-    if (/^\d+$/.test(raw)) {
-      return "";
-    }
-    return raw;
+  function trimParam(value) {
+    return (value || "").toString().trim();
   }
 
   function openUnavailableAlert(alertRoot) {
@@ -79,8 +71,6 @@
     FILTER_KEYS.forEach((key) => {
       normalized[key] = state && state[key] ? String(state[key]).trim() : "";
     });
-    normalized.location = normalizeMarketplaceLocation(normalized.location);
-    normalized.itemType = normalizeMarketplaceLocation(normalized.itemType);
 
     MARKETPLACE_TOOLBAR_KEYS.forEach((key) => {
       if (!state || !Object.prototype.hasOwnProperty.call(state, key)) {
@@ -113,12 +103,6 @@
   function readStoredState(storageKey) {
     try {
       const raw = parseJson(sessionStorage.getItem(storageKey), {}) || {};
-      if (raw.locationSlug && !raw.location) {
-        raw.location = raw.locationSlug;
-      }
-      if (raw.itemTypeSlug && !raw.itemType) {
-        raw.itemType = raw.itemTypeSlug;
-      }
       return normalizeState(raw);
     } catch (error) {
       return normalizeState({});
@@ -160,6 +144,14 @@
     return Number.isFinite(parsed) ? parsed : null;
   }
 
+  const ITEM_DETAIL_QUERY_KEYS = [
+    ...FILTER_KEYS,
+    ...MARKETPLACE_TOOLBAR_KEYS,
+    "page",
+    "reviewPage",
+    "returnTo",
+  ];
+
   function buildUrlWithFilters(baseUrl, state) {
     const url = new URL(baseUrl, window.location.origin);
     const normalized = normalizeState(state);
@@ -186,18 +178,56 @@
     return url.toString();
   }
 
+  function buildMarketplaceReturnPath(state) {
+    const url = new URL("/marketplace", window.location.origin);
+    const normalized = normalizeState(state);
+
+    FILTER_KEYS.forEach((key) => {
+      if (normalized[key]) {
+        url.searchParams.set(key, normalized[key]);
+      }
+    });
+
+    MARKETPLACE_TOOLBAR_KEYS.forEach((key) => {
+      if (
+        Object.prototype.hasOwnProperty.call(normalized, key) &&
+        normalized[key]
+      ) {
+        url.searchParams.set(key, normalized[key]);
+      }
+    });
+
+    const pageInput = document.querySelector(
+      '[data-marketplace-toolbar-form] input[name="page"]',
+    );
+    const pageValue =
+      pageInput?.value ||
+      new URLSearchParams(window.location.search).get("page") ||
+      "";
+    if (pageValue) {
+      url.searchParams.set("page", pageValue);
+    }
+
+    return url.pathname + url.search;
+  }
+
+  function buildItemDetailHref(baseHref, state) {
+    const url = new URL(baseHref, window.location.origin);
+
+    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
+      url.searchParams.delete(key);
+    });
+
+    url.searchParams.set("returnTo", buildMarketplaceReturnPath(state));
+    return url.pathname + url.search;
+  }
+
   function readUrlState() {
     const params = new URLSearchParams(window.location.search);
     const state = FILTER_KEYS.reduce((acc, key) => {
       acc[key] = params.get(key) || "";
       return acc;
     }, {});
-    if (!state.location && params.get("locationSlug")) {
-      state.location = params.get("locationSlug") || "";
-    }
-    if (!state.itemType && params.get("itemTypeSlug")) {
-      state.itemType = params.get("itemTypeSlug") || "";
-    }
     MARKETPLACE_TOOLBAR_KEYS.forEach((key) => {
       if (params.has(key)) {
         state[key] = params.get(key) || "";
@@ -406,12 +436,11 @@
         form.querySelector("[data-people-input]")?.value ||
         form.querySelector('[name="capacity"]')?.value ||
         "",
-      maxWeight:
+      weight:
         form.querySelector("[data-weight-value-input]")?.value ||
-        form.querySelector('[name="maxWeight"]')?.value ||
+        form.querySelector('[name="weight"]')?.value ||
         "",
-      difficultyLevel:
-        form.querySelector('[name="difficultyLevel"]')?.value || "",
+      difficulty: form.querySelector('[name="difficulty"]')?.value || "",
       minAvgRating:
         form.querySelector("[data-min-rating-value-input]")?.value ||
         form.querySelector('[name="minAvgRating"]')?.value ||
@@ -437,7 +466,7 @@
 
         link.setAttribute(
           "href",
-          buildUrlWithFilters(link.dataset.baseHref, normalized),
+          buildItemDetailHref(link.dataset.baseHref, normalized),
         );
       });
 
@@ -545,9 +574,7 @@
           this.hiddenInput.name === "location" ||
           this.hiddenInput.name === "itemType"
         ) {
-          this.hiddenInput.value = normalizeMarketplaceLocation(
-            this.hiddenInput.value,
-          );
+          this.hiddenInput.value = trimParam(this.hiddenInput.value);
         }
         const msg = (this.root.dataset.requiredMessage || "").trim();
         if (msg && !String(this.hiddenInput.value || "").trim()) {
@@ -647,12 +674,7 @@
     }
 
     setSelectedValue(value) {
-      const slugMode =
-        this.hiddenInput.name === "location" ||
-        this.hiddenInput.name === "itemType";
-      const normalized = slugMode
-        ? normalizeMarketplaceLocation(value)
-        : (value || "").toString().trim();
+      const normalized = trimParam(value);
       this.hiddenInput.value = normalized;
       const selected = this.options.find(
         (option) => String(option.value) === String(normalized || ""),
@@ -671,14 +693,9 @@
     }
 
     prepareForSubmit() {
-      const slugMode =
-        this.hiddenInput.name === "location" ||
-        this.hiddenInput.name === "itemType";
       const exactMatch = this.findExact(this.queryInput.value);
       const raw = exactMatch ? exactMatch.value : "";
-      this.hiddenInput.value = slugMode
-        ? normalizeMarketplaceLocation(raw)
-        : raw;
+      this.hiddenInput.value = trimParam(raw);
       this.queryInput.value = exactMatch
         ? exactMatch.name
         : this.queryInput.value || "";
@@ -1097,16 +1114,16 @@
     });
 
     form.querySelectorAll("[data-weight-slider]").forEach((root) => {
-      root.__weightSlider?.setValue(normalized.maxWeight);
+      root.__weightSlider?.setValue(normalized.weight);
     });
 
     form.querySelectorAll("[data-min-rating-picker]").forEach((root) => {
       root.__minAvgRatingPicker?.setValue(normalized.minAvgRating);
     });
 
-    const difficultySelect = form.querySelector('[name="difficultyLevel"]');
+    const difficultySelect = form.querySelector('[name="difficulty"]');
     if (difficultySelect) {
-      difficultySelect.value = normalized.difficultyLevel || "";
+      difficultySelect.value = normalized.difficulty || "";
     }
 
     setDateTimeState(form, normalized);
@@ -1136,7 +1153,7 @@
 
     form
       .querySelectorAll(
-        '[data-option-value], [data-people-input], [data-weight-input], [data-min-rating-value-input], [name="difficultyLevel"]',
+        '[data-option-value], [data-people-input], [data-weight-input], [data-min-rating-value-input], [name="difficulty"]',
       )
       .forEach((input) => {
         input.addEventListener("change", persistDraft);
@@ -1300,8 +1317,8 @@
     );
     const itemLocationSlug = alertRoot.dataset.itemLocationSlug || "";
     const itemCapacity = parseInteger(alertRoot.dataset.itemCapacity);
-    const itemMaxWeight = parseInteger(alertRoot.dataset.itemMaxWeight);
-    const itemDifficulty = parseInteger(alertRoot.dataset.itemDifficultyLevel);
+    const itemWeight = parseInteger(alertRoot.dataset.itemWeight);
+    const itemDifficulty = parseInteger(alertRoot.dataset.itemDifficulty);
     const mismatchPrefix =
       alertRoot.dataset.mismatchPrefix ||
       "This item does not match the saved filters for";
@@ -1321,8 +1338,8 @@
     const controls = getDateTimeControls(document);
     const mismatchReasons = [];
     const requestedCapacity = parseInteger(appliedState.capacity);
-    const requestedWeight = parseInteger(appliedState.maxWeight);
-    const requestedDifficulty = parseInteger(appliedState.difficultyLevel);
+    const requestedWeight = parseInteger(appliedState.weight);
+    const requestedDifficulty = parseInteger(appliedState.difficulty);
 
     if (
       appliedState.location &&
@@ -1341,15 +1358,16 @@
 
     if (
       requestedWeight != null &&
-      itemMaxWeight != null &&
-      itemMaxWeight < requestedWeight
+      itemWeight != null &&
+      itemWeight < requestedWeight
     ) {
       mismatchReasons.push(mismatchWeight);
     }
 
     if (
       requestedDifficulty != null &&
-      (itemDifficulty == null || itemDifficulty !== requestedDifficulty)
+      itemDifficulty != null &&
+      itemDifficulty !== requestedDifficulty
     ) {
       mismatchReasons.push(mismatchDifficulty);
     }

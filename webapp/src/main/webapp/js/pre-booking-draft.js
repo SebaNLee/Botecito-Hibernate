@@ -96,13 +96,6 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("[data-prebook-draft-clear-host]").forEach(function (node) {
-      const id = node.getAttribute("data-item-id");
-      if (id) {
-        clearDraft(id);
-      }
-    });
-
     const root = document.querySelector("[data-prebook-draft-root]");
     if (!root) {
       return;

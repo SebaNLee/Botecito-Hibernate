@@ -43,4 +43,20 @@ public class RegisterForm {
         }
         return password.equals(confirmPassword);
     }
+
+    public void setGivenName(final String givenName) {
+        this.givenName = givenName == null ? null : givenName.trim();
+    }
+
+    public void setLastName(final String lastName) {
+        this.lastName = lastName == null ? null : lastName.trim();
+    }
+
+    public void setEmail(final String email) {
+        this.email = email == null ? null : email.trim();
+    }
+
+    public void setPaymentAlias(final String paymentAlias) {
+        this.paymentAlias = paymentAlias == null ? null : paymentAlias.trim();
+    }
 }

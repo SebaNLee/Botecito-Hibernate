@@ -30,8 +30,10 @@ public class ProfileController {
     public ModelAndView profile(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @RequestParam(value = "edit", defaultValue = "false") final boolean edit,
+            @RequestParam(value = "subscriptionsPage", defaultValue = "1") final int subscriptionsPage,
+            @RequestParam(value = "subscriptionsPageSize", defaultValue = "6") final int subscriptionsPageSize,
             @ModelAttribute("profileForm") final ProfileForm form) {
-        return profilePresentation.profile(user, edit, form);
+        return profilePresentation.profile(user, edit, subscriptionsPage, subscriptionsPageSize, form);
     }
 
     @RequestMapping(value = "/profile", method = RequestMethod.POST)
@@ -39,11 +41,10 @@ public class ProfileController {
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @Valid @ModelAttribute("profileForm") final ProfileForm form,
             final BindingResult errors,
+            @RequestParam(value = "subscriptionsPage", defaultValue = "1") final int subscriptionsPage,
+            @RequestParam(value = "subscriptionsPageSize", defaultValue = "6") final int subscriptionsPageSize,
             final HttpServletRequest request) {
         request.getSession().removeAttribute("userLocale");
-        if (errors.hasErrors()) {
-            return profilePresentation.profileSubmit(user, form, errors);
-        }
-        return profilePresentation.profileSubmit(user, form, errors);
+        return profilePresentation.profileSubmit(user, form, errors, subscriptionsPage, subscriptionsPageSize);
     }
 }

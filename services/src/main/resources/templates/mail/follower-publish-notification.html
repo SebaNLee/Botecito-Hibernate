@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="#{mail.followerPublish.title}">New publication</title>
+</head>
+
+<body
+  style="margin: 0; padding: 0; background-color: #0b1c32; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0"
+    style="background-color: #0b1c32;">
+    <tr>
+      <td align="center" style="padding: 60px 24px;">
+        <div
+          style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 24px 48px rgba(0,0,0,0.15);">
+          <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0"
+            style="border-collapse: collapse;">
+            <tr>
+              <td style="height: 6px; background-color: #005da7;"></td>
+            </tr>
+            <tr>
+              <td style="padding: 40px;">
+                <p
+                  style="margin: 0 0 12px; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #005da7;">
+                  <span th:text="#{mail.brand.name}">Botecito</span></p>
+                <h1
+                  style="margin: 0 0 16px; font-size: 28px; font-weight: 800; line-height: 1.2; color: #0b1c32;">
+                  <span th:text="#{mail.followerPublish.heading}">A host you follow published a new item</span></h1>
+                <p style="margin: 0 0 12px; font-size: 16px; line-height: 1.6; color: #334155;"
+                  th:text="#{mail.followerPublish.greeting(${recipientName})}">Hello,</p>
+                <p style="margin: 0 0 18px; font-size: 15px; line-height: 1.6; color: #475569;"
+                  th:text="#{mail.followerPublish.body(${ownerName}, ${itemTitle})}">
+                  A host you follow has a new publication.
+                </p>
+                <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td>
+                      <a th:href="${itemUrl}"
+                        style="display: inline-block; padding: 14px 28px; border-radius: 9999px; background-color: #005da7; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700;"
+                        th:text="#{mail.followerPublish.action}">View publication</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin: 24px 0 0; font-size: 13px; line-height: 1.6; color: #64748b;"
+                  th:text="#{mail.followerPublish.note}">
+                  You receive this because you follow this host.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+
+</html>

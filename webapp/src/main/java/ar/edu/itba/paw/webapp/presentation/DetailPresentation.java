@@ -10,7 +10,7 @@ import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.services.BookingService;
 import ar.edu.itba.paw.services.DetailService;
-import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.SubscriptionService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PreBookingForm;
 import ar.edu.itba.paw.webapp.util.AvailabilityJsonHelper;
@@ -43,9 +43,9 @@ public class DetailPresentation {
     private static final String IMAGE_PATH_PREFIX = "/image/";
     private static final String PLACEHOLDER_IMAGE_PATH = "/css/boat-placeholder.svg";
 
-    private final ItemService itemService;
     private final DetailService detailService;
     private final BookingService bookingService;
+    private final SubscriptionService subscriptionService;
     private final ToastPresentation toastPresentation;
 
     /**
@@ -107,15 +107,25 @@ public class DetailPresentation {
         final Users itemOwner = item.getHost();
         final boolean isActive = item.getStatus() == ItemStatusEnum.ACTIVE;
 
+        final boolean isOwner = viewer != null && itemOwner != null && itemOwner.getId() == viewer.getId();
+        final boolean canSubscribeToOwner = itemOwner != null && !isOwner;
+        final boolean subscribedToOwner = canSubscribeToOwner
+                && viewer != null
+                && subscriptionService.isSubscribed(viewer.getId(), itemOwner.getId());
+
         final ModelAndView mav = new ModelAndView(VIEW_NAME);
         mav.addObject("item", item);
         mav.addObject("version", version);
         mav.addObject("viewer", viewer);
         mav.addObject("listingInactiveNotice", !isActive);
         mav.addObject("itemOwner", itemOwner);
+        mav.addObject("isOwner", isOwner);
+        mav.addObject("canSubscribeToOwner", canSubscribeToOwner);
+        mav.addObject("subscribedToOwner", subscribedToOwner);
+        mav.addObject("detailReturnPath", currentRequestPath(request));
         mav.addObject("itemImageUrls", imageUrls(version, contextPath));
-        mav.addObject("itemOwnerDisplayName", ownerDisplayName(itemOwner));
-        mav.addObject("ownerInitials", ownerInitials(itemOwner));
+        mav.addObject("itemOwnerDisplayName", itemOwner != null ? ownerDisplayName(itemOwner) : "");
+        mav.addObject("ownerInitials", itemOwner != null ? ownerInitials(itemOwner) : "");
         mav.addObject("itemLocationSlug", version.getLocation().getSlug());
         mav.addObject("marketplaceBackHref", marketplaceBackHref);
         mav.addObject("reviewPage", item.getReviewPage());
@@ -154,6 +164,19 @@ public class DetailPresentation {
                 "detailListingMaxDateIso",
                 DetailAvailabilityPicker.listingCalendarMaxInclusive(listingTz)
                         .format(DateTimeFormatter.ISO_LOCAL_DATE));
+    }
+
+    private static String currentRequestPath(final HttpServletRequest request) {
+        if (request == null) {
+            return "/marketplace";
+        }
+        final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
+        String path = request.getRequestURI() == null ? "/marketplace" : request.getRequestURI();
+        if (!contextPath.isEmpty() && path.startsWith(contextPath)) {
+            path = path.substring(contextPath.length());
+        }
+        final String query = request.getQueryString();
+        return query == null || query.isBlank() ? path : path + "?" + query;
     }
 
     private static ModelAndView itemRedirect(final int itemId, final HttpServletRequest request) {

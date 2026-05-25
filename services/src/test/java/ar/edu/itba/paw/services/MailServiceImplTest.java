@@ -93,6 +93,7 @@ public class MailServiceImplTest {
     @Test
     public void testSendPublishConfirmationEmailUsesOwnerModel() {
         final Version version = version("Boat", user("owner@a.com", "Owner", "User", "es"));
+        version.getItem().setId(44);
         stubMessage("mail.publishConfirmation.subject", "Published");
         stubTemplate("publish-confirmation");
         stubMimeMessage();

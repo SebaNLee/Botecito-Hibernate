@@ -19,8 +19,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,13 +26,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PublishServiceImpl implements PublishService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublishServiceImpl.class);
-
     private static final String DEFAULT_STATUS = "ACTIVE";
     private static final String DEFAULT_TIMEZONE = "America/Argentina/Buenos_Aires"; // TODO hardcode default timezone
 
     private final PublishDao publishDao;
     private final MailService mailService;
+    private final SubscriptionService subscriptionService;
 
     @Override
     @Transactional
@@ -77,7 +74,7 @@ public class PublishServiceImpl implements PublishService {
             publishDao.persistMedia(buildMedia(version, image, idx));
         }
 
-        sendConfirmationEmail(version);
+        sendPublishEmails(version);
     }
 
     private static Item buildItem(final int ownerId, final LocalDateTime createdAt) {
@@ -155,11 +152,16 @@ public class PublishServiceImpl implements PublishService {
         return location;
     }
 
-    private void sendConfirmationEmail(final Version version) {
-        try {
-            mailService.sendPublishConfirmationEmail(version);
-        } catch (final RuntimeException e) {
-            LOGGER.error("Failed to send confirmation email for item {}.", version.getTitle(), e);
+    private void sendPublishEmails(final Version version) {
+        mailService.sendPublishConfirmationEmail(version);
+        final Integer ownerId = version.getItem() == null || version.getItem().getHost() == null
+                ? null
+                : version.getItem().getHost().getId();
+        if (ownerId == null) {
+            return;
+        }
+        for (final Users subscriber : subscriptionService.listVerifiedSubscribersForPublisher(ownerId)) {
+            mailService.sendFollowerPublishNotificationEmail(subscriber, version);
         }
     }
 

@@ -19,16 +19,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class PublishServiceImpl implements PublishService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublishServiceImpl.class);
 
     private static final String DEFAULT_STATUS = "ACTIVE";
     private static final String DEFAULT_TIMEZONE = "America/Argentina/Buenos_Aires"; // TODO hardcode default timezone
@@ -71,7 +67,7 @@ public class PublishServiceImpl implements PublishService {
 
         final Optional<Version> created = publishDao.findById(itemId);
         if (created.isPresent()) {
-            runAfterCommit(() -> sendPublishEmails(created.get()));
+            sendPublishEmails(created.get());
         }
         return created;
     }
@@ -159,7 +155,7 @@ public class PublishServiceImpl implements PublishService {
     }
 
     private void sendPublishEmails(final Version version) {
-        sendConfirmationEmail(version);
+        mailService.sendPublishConfirmationEmail(version);
         final Integer ownerId = version.getItem() == null || version.getItem().getHost() == null
                 ? null
                 : version.getItem().getHost().getId();
@@ -167,30 +163,8 @@ public class PublishServiceImpl implements PublishService {
             return;
         }
         for (final Users subscriber : subscriptionService.listVerifiedSubscribersForPublisher(ownerId)) {
-            sendFollowerPublishNotificationEmail(subscriber, version);
+            mailService.sendFollowerPublishNotificationEmail(subscriber, version);
         }
-    }
-
-    private void sendConfirmationEmail(final Version version) {
-        mailService.sendPublishConfirmationEmail(version);
-    }
-
-    private void sendFollowerPublishNotificationEmail(final Users subscriber, final Version version) {
-        mailService.sendFollowerPublishNotificationEmail(subscriber, version);
-    }
-
-    private static void runAfterCommit(final Runnable task) {
-        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
-            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
-                    new org.springframework.transaction.support.TransactionSynchronization() {
-                        @Override
-                        public void afterCommit() {
-                            task.run();
-                        }
-                    });
-            return;
-        }
-        task.run();
     }
 
     private static List<AvailabilityWindow> filterAvailabilities(final List<AvailabilityWindow> windows) {

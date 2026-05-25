@@ -8,16 +8,16 @@
 <c:url var="myBoatsUrl" value="/my-boats" />
 <c:url var="publishUrl" value="/publish" />
 <spring:message code="nav.publishCta" var="publishCtaLabel" />
-<spring:message code="profile.publications.edit" var="editLabel" />
-<spring:message code="profile.publications.manageAvailability" var="manageAvailabilityLabel" />
-<spring:message code="profile.publications.enable" var="enableLabel" />
-<spring:message code="profile.publications.disable" var="disableLabel" />
-<spring:message code="profile.publications.delete" var="deleteLabel" />
-<spring:message code="profile.publications.delete.confirm.title" var="deleteConfirmTitle" />
-<spring:message code="profile.publications.delete.confirm.message" var="deleteConfirmMessage" />
-<spring:message code="profile.publications.delete.confirm.confirm" var="deleteConfirmConfirm" />
-<spring:message code="profile.publications.delete.confirm.cancel" var="deleteConfirmCancel" />
-<spring:message code="profile.publications.viewDetail" var="publicationViewDetailLabel" />
+<spring:message code="settings.publications.edit" var="editLabel" />
+<spring:message code="settings.publications.manageAvailability" var="manageAvailabilityLabel" />
+<spring:message code="settings.publications.enable" var="enableLabel" />
+<spring:message code="settings.publications.disable" var="disableLabel" />
+<spring:message code="settings.publications.delete" var="deleteLabel" />
+<spring:message code="settings.publications.delete.confirm.title" var="deleteConfirmTitle" />
+<spring:message code="settings.publications.delete.confirm.message" var="deleteConfirmMessage" />
+<spring:message code="settings.publications.delete.confirm.confirm" var="deleteConfirmConfirm" />
+<spring:message code="settings.publications.delete.confirm.cancel" var="deleteConfirmCancel" />
+<spring:message code="settings.publications.viewDetail" var="publicationViewDetailLabel" />
 
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6" scripts="toast,publish-wizard,edit-wizard">
@@ -75,7 +75,7 @@
                             <c:out value="${version.title}" />
                           </p>
                           <span class="badge ${itemActive ? 'badge-success' : 'badge-ghost'} badge-xs shrink-0 font-bold">
-                            <spring:message code="${itemActive ? 'profile.publications.status.active' : 'profile.publications.status.inactive'}" />
+                            <spring:message code="${itemActive ? 'settings.publications.status.active' : 'settings.publications.status.inactive'}" />
                           </span>
                         </div>
                         <p class="m-0 mt-auto text-[11px] font-bold text-on-surface sm:text-xs">
@@ -90,7 +90,7 @@
                       </div>
                       <div class="flex flex-wrap items-center gap-2">
                         <span class="badge ${itemActive ? 'badge-success' : 'badge-ghost'} font-bold">
-                          <spring:message code="${itemActive ? 'profile.publications.status.active' : 'profile.publications.status.inactive'}" />
+                          <spring:message code="${itemActive ? 'settings.publications.status.active' : 'settings.publications.status.inactive'}" />
                         </span>
                       </div>
                       <c:if test="${not empty version.location}">
@@ -108,7 +108,7 @@
                           </p>
                         </div>
                         <div class="rounded-lg bg-base-100 p-3 space-y-1">
-                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.publications.pricePerHour.label" /></p>
+                          <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="settings.publications.pricePerHour.label" /></p>
                           <p class="m-0 text-sm font-bold">
                             $<fmt:formatNumber value="${version.price}" type="number" groupingUsed="true" maxFractionDigits="0" />
                           </p>
@@ -161,7 +161,7 @@
               </c:when>
               <c:otherwise>
                 <div class="mx-1 rounded-xl bg-base-200 px-4 py-6 text-center sm:mx-3">
-                  <p class="m-0 text-sm text-on-surface-variant"><spring:message code="profile.publications.empty" /></p>
+                  <p class="m-0 text-sm text-on-surface-variant"><spring:message code="settings.publications.empty" /></p>
                 </div>
               </c:otherwise>
             </c:choose>

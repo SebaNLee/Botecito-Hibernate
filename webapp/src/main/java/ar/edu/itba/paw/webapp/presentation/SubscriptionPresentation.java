@@ -52,14 +52,14 @@ public class SubscriptionPresentation {
 
     private static String safeRelativePath(final String returnPath) {
         if (returnPath == null || returnPath.isBlank()) {
-            return "/profile";
+            return "/settings";
         }
         final String trimmed = returnPath.trim();
         if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed.contains("://")) {
-            return "/profile";
+            return "/settings";
         }
         if (trimmed.contains("\r") || trimmed.contains("\n")) {
-            return "/profile";
+            return "/settings";
         }
         return trimmed;
     }

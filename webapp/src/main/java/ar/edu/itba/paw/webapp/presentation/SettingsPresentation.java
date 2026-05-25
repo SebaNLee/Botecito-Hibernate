@@ -82,7 +82,10 @@ public class SettingsPresentation {
     }
 
     private ModelAndView buildSettingsView(
-            final Users user, final boolean settingsEdit, final int subscriptionsPage, final int subscriptionsPageSize) {
+            final Users user,
+            final boolean settingsEdit,
+            final int subscriptionsPage,
+            final int subscriptionsPageSize) {
         final ModelAndView mav = new ModelAndView("settings");
         final int safeSubscriptionsPage = Math.max(1, subscriptionsPage);
         final int safeSubscriptionsPageSize = Math.max(1, subscriptionsPageSize);

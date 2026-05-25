@@ -38,7 +38,7 @@ public class ReviewController {
         }
 
         if (errors.hasErrors()) {
-            ToastSupport.error(redirectAttributes, "profile.reviews.validationError");
+            ToastSupport.error(redirectAttributes, "settings.reviews.validationError");
             return reviewRedirect(returnTo, itemId);
         }
 
@@ -52,9 +52,9 @@ public class ReviewController {
                 .createReviewForBooking(bookingId, user.getId(), form.getRating(), form.getComment(), targetType)
                 .isPresent();
         if (created) {
-            ToastSupport.success(redirectAttributes, "profile.reviews.created");
+            ToastSupport.success(redirectAttributes, "settings.reviews.created");
         } else {
-            ToastSupport.error(redirectAttributes, "profile.reviews.error");
+            ToastSupport.error(redirectAttributes, "settings.reviews.error");
         }
         return reviewRedirect(returnTo, itemId);
     }

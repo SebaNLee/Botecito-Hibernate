@@ -86,7 +86,7 @@ public class PublishPresentation {
                 PublishWizardMapping.toAvailabilityWindows(form),
                 PublishWizardMapping.toPublishImageUploads(form));
 
-        ToastSupport.success(redirectAttributes, "profile.publications.created");
+        ToastSupport.success(redirectAttributes, "settings.publications.created");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
 

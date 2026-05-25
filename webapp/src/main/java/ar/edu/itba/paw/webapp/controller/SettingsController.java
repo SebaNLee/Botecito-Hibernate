@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
-import ar.edu.itba.paw.webapp.form.ProfileForm;
-import ar.edu.itba.paw.webapp.presentation.ProfilePresentation;
+import ar.edu.itba.paw.webapp.form.SettingsForm;
+import ar.edu.itba.paw.webapp.presentation.SettingsPresentation;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,34 +17,34 @@ import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 @RequiredArgsConstructor
-public class ProfileController {
+public class SettingsController {
 
-    private final ProfilePresentation profilePresentation;
+    private final SettingsPresentation settingsPresentation;
 
-    @RequestMapping(value = "/profile/password-recovery", method = RequestMethod.POST)
-    public ModelAndView profilePasswordRecoveryRequest(@AuthenticationPrincipal final BotecitoUserDetails user) {
-        return profilePresentation.profilePasswordRecoveryRequest(user);
+    @RequestMapping(value = "/settings/password-recovery", method = RequestMethod.POST)
+    public ModelAndView settingsPasswordRecoveryRequest(@AuthenticationPrincipal final BotecitoUserDetails user) {
+        return settingsPresentation.settingsPasswordRecoveryRequest(user);
     }
 
-    @RequestMapping(value = "/profile", method = RequestMethod.GET)
-    public ModelAndView profile(
+    @RequestMapping(value = "/settings", method = RequestMethod.GET)
+    public ModelAndView settings(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @RequestParam(value = "edit", defaultValue = "false") final boolean edit,
             @RequestParam(value = "subscriptionsPage", defaultValue = "1") final int subscriptionsPage,
             @RequestParam(value = "subscriptionsPageSize", defaultValue = "6") final int subscriptionsPageSize,
-            @ModelAttribute("profileForm") final ProfileForm form) {
-        return profilePresentation.profile(user, edit, subscriptionsPage, subscriptionsPageSize, form);
+            @ModelAttribute("settingsForm") final SettingsForm form) {
+        return settingsPresentation.settings(user, edit, subscriptionsPage, subscriptionsPageSize, form);
     }
 
-    @RequestMapping(value = "/profile", method = RequestMethod.POST)
-    public ModelAndView profileSubmit(
+    @RequestMapping(value = "/settings", method = RequestMethod.POST)
+    public ModelAndView settingsSubmit(
             @AuthenticationPrincipal final BotecitoUserDetails user,
-            @Valid @ModelAttribute("profileForm") final ProfileForm form,
+            @Valid @ModelAttribute("settingsForm") final SettingsForm form,
             final BindingResult errors,
             @RequestParam(value = "subscriptionsPage", defaultValue = "1") final int subscriptionsPage,
             @RequestParam(value = "subscriptionsPageSize", defaultValue = "6") final int subscriptionsPageSize,
             final HttpServletRequest request) {
         request.getSession().removeAttribute("userLocale");
-        return profilePresentation.profileSubmit(user, form, errors, subscriptionsPage, subscriptionsPageSize);
+        return settingsPresentation.settingsSubmit(user, form, errors, subscriptionsPage, subscriptionsPageSize);
     }
 }

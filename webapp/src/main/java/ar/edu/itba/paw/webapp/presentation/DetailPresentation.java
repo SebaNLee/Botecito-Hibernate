@@ -91,16 +91,8 @@ public class DetailPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final Item item = itemService.findItemById(itemId);
-        final Version version = item.getLatestVersion();
-
         bookingService.createBooking(
-                version.getId(),
-                form.getDate(),
-                form.getStartTime(),
-                form.getEndTime(),
-                form.getMessage(),
-                viewer.getId());
+                itemId, form.getDate(), form.getStartTime(), form.getEndTime(), form.getMessage(), viewer.getId());
         ToastSupport.success(redirectAttributes, MESSAGE_PREFIX + ".preBooking.success");
         return itemRedirect(itemId, request);
     }

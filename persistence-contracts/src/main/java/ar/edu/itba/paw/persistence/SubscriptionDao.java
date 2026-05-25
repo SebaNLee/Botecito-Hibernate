@@ -15,5 +15,7 @@ public interface SubscriptionDao {
 
     int countSubscriptions(int subscriberId);
 
+    int countFollowers(int userId);
+
     List<Users> listVerifiedSubscribersForPublisher(int publisherId);
 }

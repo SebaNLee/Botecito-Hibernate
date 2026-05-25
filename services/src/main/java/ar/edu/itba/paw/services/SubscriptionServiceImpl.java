@@ -54,6 +54,12 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional(readOnly = true)
+    public int countFollowers(final int userId) {
+        return subscriptionDao.countFollowers(userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Users> listVerifiedSubscribersForPublisher(final int publisherId) {
         return subscriptionDao.listVerifiedSubscribersForPublisher(publisherId);
     }

@@ -72,6 +72,15 @@ public class SubscriptionJpaDao implements SubscriptionDao {
     }
 
     @Override
+    public int countFollowers(final int userId) {
+        return entityManager
+                .createQuery("SELECT COUNT(s) FROM Subscription s WHERE s.subscribedTo.id = :userId", Long.class)
+                .setParameter("userId", userId)
+                .getSingleResult()
+                .intValue();
+    }
+
+    @Override
     public List<Users> listVerifiedSubscribersForPublisher(final int publisherId) {
         return entityManager
                 .createQuery(

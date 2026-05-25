@@ -14,5 +14,8 @@ public interface SubscriptionService {
 
     PageModel<Users> listSubscriptions(int subscriberId, int page, int pageSize);
 
+    // TODO followers count for public profiles
+    int countFollowers(int userId);
+
     List<Users> listVerifiedSubscribersForPublisher(int publisherId);
 }

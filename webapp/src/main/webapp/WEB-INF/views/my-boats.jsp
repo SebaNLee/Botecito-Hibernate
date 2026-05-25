@@ -15,14 +15,14 @@
 <spring:message code="profile.publications.delete" var="deleteLabel" />
 <spring:message code="profile.publications.delete.confirm.title" var="deleteConfirmTitle" />
 <spring:message code="profile.publications.delete.confirm.message" var="deleteConfirmMessage" />
-<spring:message code="profile.publications.delete.confirm.deactivateMessage" var="deleteDeactivateConfirmMessage" />
 <spring:message code="profile.publications.delete.confirm.confirm" var="deleteConfirmConfirm" />
 <spring:message code="profile.publications.delete.confirm.cancel" var="deleteConfirmCancel" />
-<spring:message code="profile.publications.delete.disabled.futureBookings" var="deleteDisabledFutureBookingsLabel" />
 <spring:message code="profile.publications.viewDetail" var="publicationViewDetailLabel" />
 
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6">
+<paw:layout title="Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6" scripts="toast,publish-wizard,edit-wizard">
+  <span data-publish-wizard-clear hidden="hidden"></span>
+  <span data-edit-wizard-clear hidden="hidden"></span>
   <paw:toastNotifier />
   <section class="min-w-0 space-y-6">
       <div class="flex flex-col">
@@ -38,7 +38,7 @@
         </div>
         <form action="${myBoatsUrl}" method="get" class="flex items-center justify-end gap-3 text-sm font-medium text-on-surface-variant">
           <input type="hidden" name="page" value="1" />
-          <label for="my-boats-page-size" class="shrink-0">Páginas:</label>
+          <label for="my-boats-page-size" class="shrink-0"><spring:message code="myBoats.pageSize" /></label>
           <select id="my-boats-page-size" name="pageSize" class="select select-sm w-20 font-bold text-primary" onchange="this.form.submit()">
             <option value="6" ${param.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
             <option value="12" ${empty param.pageSize || param.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
@@ -52,8 +52,10 @@
               <c:when test="${not empty ownedItems}">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
                   <c:forEach var="item" items="${ownedItems}">
+                    <c:set var="version" value="${item.latestVersion}" />
+                    <c:set var="itemActive" value="${item.status == 'ACTIVE'}" />
                     <c:url var="itemDetailUrl" value="/item/${item.id}" />
-                    <c:url var="editItemUrl" value="/my-boats/${item.id}/edit" />
+                    <c:url var="editItemUrl" value="/edit/${item.id}" />
                     <c:url var="manageAvailabilityItemUrl" value="/my-boats/${item.id}/availability">
                       <c:param name="return" value="/my-boats" />
                     </c:url>
@@ -63,44 +65,38 @@
                     <c:set var="publicationImageUrl" value="${imageUrlsByItemId[item.id]}" />
                     <c:set var="detailsModalId" value="publication-details-modal-${item.id}" />
                     <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
-                    <c:set var="pubDeleteDeactivates" value="${publicationDeleteDeactivatesByItemId[item.id]}" />
-                    <c:set var="deleteModalMessage" value="${pubDeleteDeactivates ? deleteDeactivateConfirmMessage : deleteConfirmMessage}" />
-                    <c:set var="deleteModalConfirmText" value="${pubDeleteDeactivates ? disableLabel : deleteConfirmConfirm}" />
-                    <c:set var="deleteModalConfirmColor" value="${pubDeleteDeactivates ? 'secondary' : 'danger'}" />
-                    <c:set var="deleteModalIcon" value="${pubDeleteDeactivates ? 'visibility_off' : 'delete_forever'}" />
-                    <c:set var="deleteDisabled" value="${publicationDeleteDisabledByItemId[item.id]}" />
-                    <button type="button" class="flex h-full w-full max-w-sm flex-col gap-2 rounded-xl bg-base-200 p-2 text-left transition hover:bg-base-300 sm:p-3 ${item.active ? '' : 'opacity-75'}" onclick="document.getElementById('${detailsModalId}').showModal()">
+                    <button type="button" class="flex h-full w-full max-w-sm flex-col gap-2 rounded-xl bg-base-200 p-2 text-left transition hover:bg-base-300 sm:p-3 ${itemActive ? '' : 'opacity-75'}" onclick="document.getElementById('${detailsModalId}').showModal()">
                       <div class="h-24 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:h-32">
-                        <img src="${publicationImageUrl}" alt="${item.title}" class="h-full w-full object-cover" loading="lazy" />
+                        <img src="${publicationImageUrl}" alt="${version.title}" class="h-full w-full object-cover" loading="lazy" />
                       </div>
                       <div class="flex min-w-0 flex-1 flex-col gap-1">
                         <div class="flex min-w-0 items-start gap-1.5">
                           <p class="m-0 min-w-0 flex-1 break-words text-xs font-extrabold text-on-surface line-clamp-2 sm:text-sm">
-                            <c:out value="${item.title}" />
+                            <c:out value="${version.title}" />
                           </p>
-                          <span class="badge ${item.active ? 'badge-success' : 'badge-ghost'} badge-xs shrink-0 font-bold">
-                            <spring:message code="${item.active ? 'profile.publications.status.active' : 'profile.publications.status.inactive'}" />
+                          <span class="badge ${itemActive ? 'badge-success' : 'badge-ghost'} badge-xs shrink-0 font-bold">
+                            <spring:message code="${itemActive ? 'profile.publications.status.active' : 'profile.publications.status.inactive'}" />
                           </span>
                         </div>
                         <p class="m-0 mt-auto text-[11px] font-bold text-on-surface sm:text-xs">
-                          $<fmt:formatNumber value="${item.price}" type="number" groupingUsed="true" maxFractionDigits="0" />
+                          $<fmt:formatNumber value="${version.price}" type="number" groupingUsed="true" maxFractionDigits="0" />
                           <span class="font-normal text-on-surface-variant"> · <spring:message code="marketplace.card.perHour" /></span>
                         </p>
                       </div>
                     </button>
-                    <paw:detailsModal id="${detailsModalId}" title="${item.title}">
+                    <paw:detailsModal id="${detailsModalId}" title="${version.title}">
                       <div class="overflow-hidden rounded-lg bg-base-100">
-                        <img src="${publicationImageUrl}" alt="${item.title}" class="h-56 w-full object-cover" loading="lazy" />
+                        <img src="${publicationImageUrl}" alt="${version.title}" class="h-56 w-full object-cover" loading="lazy" />
                       </div>
                       <div class="flex flex-wrap items-center gap-2">
-                        <span class="badge ${item.active ? 'badge-success' : 'badge-ghost'} font-bold">
-                          <spring:message code="${item.active ? 'profile.publications.status.active' : 'profile.publications.status.inactive'}" />
+                        <span class="badge ${itemActive ? 'badge-success' : 'badge-ghost'} font-bold">
+                          <spring:message code="${itemActive ? 'profile.publications.status.active' : 'profile.publications.status.inactive'}" />
                         </span>
                       </div>
-                      <c:if test="${not empty item.location}">
+                      <c:if test="${not empty version.location}">
                         <p class="m-0 flex items-center gap-1.5 text-sm text-on-surface-variant">
                           <span class="material-symbols-outlined text-base leading-none text-primary">location_on</span>
-                          <span class="break-words"><c:out value="${item.location}" /></span>
+                          <span class="break-words"><c:out value="${version.location.name}" /></span>
                         </p>
                       </c:if>
                       <div class="grid grid-cols-2 gap-2">
@@ -108,13 +104,13 @@
                           <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="item.capacityPeople" /></p>
                           <p class="m-0 flex items-center gap-1 text-sm font-bold text-on-surface">
                             <span class="material-symbols-outlined text-base leading-none text-primary">groups</span>
-                            <spring:message code="marketplace.card.people" arguments="${item.capacity}" />
+                            <spring:message code="marketplace.card.people" arguments="${version.capacity}" />
                           </p>
                         </div>
                         <div class="rounded-lg bg-base-100 p-3 space-y-1">
                           <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="profile.publications.pricePerHour.label" /></p>
                           <p class="m-0 text-sm font-bold">
-                            $<fmt:formatNumber value="${item.price}" type="number" groupingUsed="true" maxFractionDigits="0" />
+                            $<fmt:formatNumber value="${version.price}" type="number" groupingUsed="true" maxFractionDigits="0" />
                           </p>
                         </div>
                       </div>
@@ -132,7 +128,7 @@
                           <c:out value="${manageAvailabilityLabel}" />
                         </a>
                         <c:choose>
-                          <c:when test="${item.active}">
+                          <c:when test="${itemActive}">
                             <form action="${disableItemUrl}" method="post" class="m-0">
                               <button type="submit" class="btn btn-outline btn-sm">
                                 <span class="material-symbols-outlined text-base">visibility_off</span>
@@ -149,29 +145,17 @@
                             </form>
                           </c:otherwise>
                         </c:choose>
-                        <c:choose>
-                          <c:when test="${deleteDisabled}">
-                            <button type="button" class="btn btn-outline btn-sm cursor-not-allowed text-error opacity-50" disabled="disabled" title="${deleteDisabledFutureBookingsLabel}">
-                              <span class="material-symbols-outlined text-base">delete</span>
-                              <c:out value="${deleteLabel}" />
-                            </button>
-                          </c:when>
-                          <c:otherwise>
-                            <button type="button" class="btn btn-outline btn-sm text-error" onclick="document.getElementById('${deleteModalId}').showModal()">
-                              <span class="material-symbols-outlined text-base">delete</span>
-                              <c:out value="${deleteLabel}" />
-                            </button>
-                          </c:otherwise>
-                        </c:choose>
+                        <button type="button" class="btn btn-outline btn-sm text-error" onclick="document.getElementById('${deleteModalId}').showModal()">
+                          <span class="material-symbols-outlined text-base">delete</span>
+                          <c:out value="${deleteLabel}" />
+                        </button>
                       </div>
                     </paw:detailsModal>
-                    <c:if test="${!deleteDisabled}">
-                      <paw:confirmModal id="${deleteModalId}" title="${deleteConfirmTitle}" message="${deleteModalMessage}" confirmText="${deleteModalConfirmText}" cancelText="${deleteConfirmCancel}" confirmColor="${deleteModalConfirmColor}" icon="${deleteModalIcon}">
-                        <form action="${deleteItemUrl}" method="post" class="m-0">
-                          <paw:button type="submit" color="${deleteModalConfirmColor}" cssClass="w-full sm:w-auto" text="${deleteModalConfirmText}" />
-                        </form>
-                      </paw:confirmModal>
-                    </c:if>
+                    <paw:confirmModal id="${deleteModalId}" title="${deleteConfirmTitle}" message="${deleteConfirmMessage}" confirmText="${deleteConfirmConfirm}" cancelText="${deleteConfirmCancel}" confirmColor="danger" icon="delete_forever">
+                      <form action="${deleteItemUrl}" method="post" class="m-0">
+                        <paw:button type="submit" color="danger" cssClass="w-full sm:w-auto" text="${deleteConfirmConfirm}" />
+                      </form>
+                    </paw:confirmModal>
                   </c:forEach>
                 </div>
               </c:when>

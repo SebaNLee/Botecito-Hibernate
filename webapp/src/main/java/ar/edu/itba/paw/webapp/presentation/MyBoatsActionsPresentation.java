@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.dto.MyBoatsItem;
-import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.ManageItemService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +12,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class MyBoatsActionsPresentation {
 
-    private final ItemService itemInterface;
+    private final ManageItemService manageItemService;
 
     public ModelAndView disablePublication(
             final BotecitoUserDetails principal, final int itemId, final RedirectAttributes redirectAttributes) {
@@ -21,7 +20,7 @@ public class MyBoatsActionsPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        itemInterface.setItemActiveForOwner(itemId, principal.getId(), false);
+        manageItemService.setEnabled(itemId, principal.getId(), false);
         ToastSupport.success(redirectAttributes, "profile.publications.disabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
@@ -32,7 +31,7 @@ public class MyBoatsActionsPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        itemInterface.setItemActiveForOwner(itemId, principal.getId(), true);
+        manageItemService.setEnabled(itemId, principal.getId(), true);
         ToastSupport.success(redirectAttributes, "profile.publications.enabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
@@ -43,16 +42,7 @@ public class MyBoatsActionsPresentation {
             return new ModelAndView("redirect:/login");
         }
 
-        final MyBoatsItem item = itemInterface.requireOwnedItem(itemId, principal.getId());
-        if (!itemInterface.deleteMyBoatsItem(itemId, principal.getId())) {
-            if (!Boolean.TRUE.equals(item.getActive())) {
-                ToastSupport.error(redirectAttributes, "profile.publications.deleteBlockedByBookings");
-                return new ModelAndView("redirect:/my-boats#my-publications");
-            }
-            ToastSupport.error(redirectAttributes, "profile.publications.error");
-            return new ModelAndView("redirect:/my-boats#my-publications");
-        }
-
+        manageItemService.deleteItem(itemId, principal.getId());
         ToastSupport.success(redirectAttributes, "profile.publications.deleted");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }

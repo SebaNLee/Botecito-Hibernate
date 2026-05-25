@@ -1,28 +1,22 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.dto.AvailabilityWindow;
 import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Image;
+import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.models.entity.Media;
 import ar.edu.itba.paw.models.entity.Version;
-import java.util.List;
-import java.util.Optional;
 
 public interface PublishDao {
-    int create(
-            int ownerId,
-            int typeId,
-            String title,
-            String description,
-            int pricePerHour,
-            int capacityPeople,
-            java.math.BigDecimal maxWeightKg,
-            Integer difficultyLevel,
-            int locationOptionId,
-            String timezone,
-            String status,
-            List<AvailabilityWindow> availabilities,
-            List<ar.edu.itba.paw.models.dto.ImageUpload> images);
 
-    Optional<Version> findById(int itemId);
+    Item persistItem(Item item);
 
-    List<Availability> listAvailabilities(int itemId);
+    Version persistVersion(Version version);
+
+    Availability persistAvailability(Availability availability);
+
+    Image persistImage(Image image);
+
+    Media persistMedia(Media media);
+
+    void flush();
 }

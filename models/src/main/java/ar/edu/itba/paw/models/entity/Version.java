@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -42,10 +43,10 @@ public class Version {
     @JoinColumn(name = "type_id", nullable = false)
     private ItemType type;
 
-    @Column(name = "title", nullable = false, length = 1000)
+    @Column(name = "title", nullable = false, length = 100)
     private String title;
 
-    @Column(name = "description", length = 100)
+    @Column(name = "description", length = 1000)
     private String description;
 
     @Column(name = "price", nullable = false, precision = 12, scale = 2)
@@ -73,4 +74,7 @@ public class Version {
     @OneToMany(mappedBy = "version")
     @OrderBy("id.index ASC")
     private List<Media> media;
+
+    @OneToMany(mappedBy = "version", fetch = FetchType.LAZY)
+    private List<Availability> availabilities;
 }

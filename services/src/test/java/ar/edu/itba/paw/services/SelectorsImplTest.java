@@ -23,7 +23,7 @@ class SelectorsImplTest {
     private MessageSource messageSource;
 
     @Test
-    void testGetDifficultyOptionsReturnsFiveLevels() {
+    void testgetDifficultyOptionsReturnsFiveLevels() {
         var options = selectors.getDifficultyOptions();
 
         assertEquals(5, options.size());

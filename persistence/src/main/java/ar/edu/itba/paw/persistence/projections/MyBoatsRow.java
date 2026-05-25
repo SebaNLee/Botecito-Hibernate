@@ -19,6 +19,4 @@ public class MyBoatsRow {
     private final String locationName;
     private final ItemStatusEnum status;
     private final Integer coverImageId;
-    private final Boolean hasBlockingBookings;
-    private final Boolean hasFutureBlockingBookings;
 }

@@ -1,32 +1,30 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.dto.OwnerAvailabilityPage;
+import ar.edu.itba.paw.models.dto.SelfBookingData;
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
+import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.services.BookingService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
-import ar.edu.itba.paw.webapp.form.BlockSlotForm;
+import ar.edu.itba.paw.webapp.form.SaveSelfBlocksForm;
+import ar.edu.itba.paw.webapp.util.DetailAvailabilityPicker;
+import ar.edu.itba.paw.webapp.util.ToastSupport;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
@@ -37,146 +35,188 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AvailabilityPresentation {
 
     private static final int MAX_RETURN_PATH_LENGTH = 512;
-    private static final String DEFAULT_AVAILABILITY_BACK_PATH = "/profile";
+    private static final String DEFAULT_AVAILABILITY_BACK_PATH = "/my-boats";
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private final BookingService bookingInterface;
+    private final ToastPresentation toastPresentation;
 
     public ModelAndView manageAvailabilityPage(
             final BotecitoUserDetails principal,
             final int itemId,
             final String requestedDate,
             final String returnParam,
+            final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
         if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
-        final String safeReturn = sanitizeReturnPath(returnParam);
-        final OwnerAvailabilityPage model =
-                bookingInterface.loadOwnerAvailabilityPage(itemId, principal.getId(), requestedDate);
-        return buildManageAvailabilityView(model, safeReturn);
+        final String backPath = resolveBackPath(request, returnParam);
+        final SelfBookingData model =
+                bookingInterface.getSelfBlocks(itemId, principal.getId(), parseRequestedDate(requestedDate));
+        return buildManageAvailabilityView(model, backPath);
     }
 
-    public ModelAndView blockSlot(
+    public ModelAndView saveSelfBlocks(
             final BotecitoUserDetails principal,
             final int itemId,
             final String returnParam,
-            final BlockSlotForm form,
+            final SaveSelfBlocksForm form,
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
         if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
-        final String safeReturn = sanitizeReturnPath(returnParam);
+        final String backPath = sanitizeReturnPath(returnParam);
         if (errors.hasErrors()) {
-            final OwnerAvailabilityPage model = bookingInterface.loadOwnerAvailabilityPage(
-                    itemId, principal.getId(), form.getDate().toString());
-            return buildManageAvailabilityView(model, safeReturn);
+            final SelfBookingData model = bookingInterface.getSelfBlocks(itemId, principal.getId(), form.getDate());
+            final ModelAndView mav = buildManageAvailabilityView(model, backPath);
+            mav.addObject("toasts", toastPresentation.validationToasts(errors, "saveSelfBlocks"));
+            return mav;
         }
-        final String dateStr = form.getDate().toString();
-        final String startStr = form.getStartTime().format(TIME_FMT);
-        final String endStr = form.getEndTime().format(TIME_FMT);
-        final String redirectBase = "redirect:/my-boats/" + itemId + "/availability";
-        bookingInterface.blockSlotForOwner(itemId, principal.getId(), dateStr, startStr, endStr);
-        return new ModelAndView(
-                appendReturnQuery(redirectBase + "?date=" + dateStr + "&availabilityAction=blocked", safeReturn));
+        bookingInterface.saveSelfBlockChanges(
+                itemId, principal.getId(), form.getDate(), form.deletedBlockIds(), form.updates(), form.creates());
+        ToastSupport.success(redirectAttributes, "manageAvailability.msg.saved");
+        return availabilityRedirect(itemId, form.getDate().toString(), backPath);
     }
 
-    public ModelAndView unblockSlot(
-            final BotecitoUserDetails principal,
-            final int itemId,
-            final int blockBookingId,
-            final String requestedDate,
-            final String returnParam,
-            final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
+    private ModelAndView availabilityRedirect(
+            final int itemId, final String dateStr, final String sanitizedReturnPath) {
+        final StringBuilder url =
+                new StringBuilder("redirect:/my-boats/").append(itemId).append("/availability");
+        if (dateStr != null && !dateStr.isBlank()) {
+            url.append("?date=").append(dateStr);
         }
-        final String safeReturn = sanitizeReturnPath(returnParam);
-        final boolean removed = bookingInterface.removeOwnerSelfBlock(blockBookingId, principal.getId());
-        final String redirectDate = requestedDate == null || requestedDate.isBlank() ? "" : "&date=" + requestedDate;
-        return new ModelAndView(appendReturnQuery(
-                "redirect:/my-boats/" + itemId + "/availability?availabilityAction="
-                        + (removed ? "enabled" : "notFound") + redirectDate,
-                safeReturn));
+        return new ModelAndView(appendReturnQuery(url.toString(), sanitizedReturnPath));
     }
 
-    private ModelAndView buildManageAvailabilityView(
-            final OwnerAvailabilityPage model, final String sanitizedReturnPath) {
+    private ModelAndView buildManageAvailabilityView(final SelfBookingData model, final String backPath) {
         final ModelAndView mav = new ModelAndView("manage-availability");
+        final String timezone = model.getTimezone();
         mav.addObject("item", model.getItem());
         mav.addObject("offeredDatesJson", toJsonArray(model.getOfferedDates()));
-        mav.addObject("blockedDatesJson", toJsonArray(model.getBlockedDates()));
         mav.addObject("selectedDate", model.getSelectedDate());
+        mav.addObject(
+                "manageAvailabilityTodayIso",
+                DetailAvailabilityPicker.listingCalendarToday(timezone).format(ISO_DATE));
+        mav.addObject(
+                "manageAvailabilityMaxDateIso",
+                DetailAvailabilityPicker.listingCalendarMaxInclusive(timezone).format(ISO_DATE));
+        final Version version = model.getItem().getLatestVersion();
+        final List<Availability> availabilityWindows =
+                version == null || version.getAvailabilities() == null ? List.of() : version.getAvailabilities();
         final Set<Integer> selfBlockIds =
                 model.getOwnerSelfBlocks().stream().map(Booking::getId).collect(Collectors.toSet());
-        final List<SlotRow> slots = buildSlotGrid(
-                model.getSelectedDate(), model.getAvailabilityWindows(), model.getActiveBookings(), selfBlockIds);
-        mav.addObject("slots", slots);
-        mav.addObject("slotsStateJson", slotsToJson(slots));
-        mav.addObject("personalBlockRows", toPersonalBlockRows(model.getOwnerSelfBlocks(), model.getTimezone()));
-        mav.addObject("manageAvailabilityReturnPath", sanitizedReturnPath);
         mav.addObject(
-                "manageAvailabilityBackPath",
-                sanitizedReturnPath != null ? sanitizedReturnPath : DEFAULT_AVAILABILITY_BACK_PATH);
+                "dayTimelineJson",
+                buildDayTimelineJson(
+                        model.getSelectedDate(),
+                        availabilityWindows,
+                        model.getActiveBookings(),
+                        model.getOwnerSelfBlocks(),
+                        selfBlockIds,
+                        timezone));
+        mav.addObject(
+                "hasTimelineAvailability", hasAvailabilityWindowsForDate(model.getSelectedDate(), availabilityWindows));
+        mav.addObject("manageAvailabilityReturnPath", backPath);
+        mav.addObject("manageAvailabilityBackPath", backPath != null ? backPath : DEFAULT_AVAILABILITY_BACK_PATH);
         return mav;
     }
 
-    static List<SlotRow> buildSlotGrid(
-            final String selectedDate,
+    static boolean hasAvailabilityWindowsForDate(
+            final LocalDate selectedDate, final List<Availability> availabilities) {
+        if (selectedDate == null || availabilities == null) {
+            return false;
+        }
+        return availabilities.stream()
+                .anyMatch(a -> a.getWeekday() != null
+                        && a.getWeekday()
+                                .name()
+                                .equals(selectedDate.getDayOfWeek().name())
+                        && a.getStartTime() != null
+                        && a.getEndTime() != null
+                        && a.getEndTime().isAfter(a.getStartTime()));
+    }
+
+    static String buildDayTimelineJson(
+            final LocalDate selectedDate,
             final List<Availability> availabilities,
             final List<Booking> bookings,
-            final Set<Integer> selfBlockBookingIds) {
-        if (selectedDate == null || selectedDate.isBlank()) {
-            return List.of();
+            final List<Booking> ownerSelfBlocks,
+            final Set<Integer> selfBlockBookingIds,
+            final String timezone) {
+        if (selectedDate == null) {
+            return "{\"availableRanges\":[],\"bookedRanges\":[],\"selfBlocks\":[]}";
         }
-        final LocalDate day = LocalDate.parse(selectedDate);
-        final TreeSet<String> scheduled = new TreeSet<>();
+        final ZoneId zone = DetailAvailabilityPicker.listingZoneOrUtc(timezone);
+        final List<TimeRangeRow> availableRanges = new ArrayList<>();
         for (final Availability availability : availabilities) {
-            if (availability.getWeekday().name().equals(day.getDayOfWeek().name())) {
-                final int startMinute = availability.getStartTime().toSecondOfDay() / 60;
-                final int endMinute = availability.getEndTime().toSecondOfDay() / 60;
-                for (int minute = startMinute; minute < endMinute; minute += 30) {
-                    scheduled.add(LocalTime.ofSecondOfDay((long) minute * 60)
-                            .toString()
-                            .substring(0, 5));
-                }
+            if (availability
+                            .getWeekday()
+                            .name()
+                            .equals(selectedDate.getDayOfWeek().name())
+                    && availability.getStartTime() != null
+                    && availability.getEndTime() != null
+                    && availability.getEndTime().isAfter(availability.getStartTime())) {
+                availableRanges.add(new TimeRangeRow(
+                        availability.getStartTime().format(TIME_FMT),
+                        availability.getEndTime().format(TIME_FMT)));
             }
         }
-        final Set<String> guestBooked = new HashSet<>();
-        final Map<String, Integer> ownerBlocks = new HashMap<>();
+        final List<TimeRangeRow> bookedRanges = new ArrayList<>();
         for (final Booking booking : bookings) {
-            if (!isBlockingState(booking.getStatus())) {
+            if (!isBlockingState(booking.getStatus())
+                    || booking.getStart() == null
+                    || booking.getEnd() == null
+                    || booking.getId() != null && selfBlockBookingIds.contains(booking.getId())) {
                 continue;
             }
-            if (booking.getStart() == null || booking.getEnd() == null) {
+            final LocalDate bookingDate = booking.getStart()
+                    .atZone(ZoneOffset.UTC)
+                    .withZoneSameInstant(zone)
+                    .toLocalDate();
+            if (!selectedDate.equals(bookingDate)) {
                 continue;
             }
-            OffsetDateTime cursor =
-                    booking.getStart().atZone(ZoneOffset.UTC).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
-            final OffsetDateTime end =
-                    booking.getEnd().atZone(ZoneOffset.UTC).toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
-            while (cursor.isBefore(end)) {
-                if (day.equals(cursor.toLocalDate())) {
-                    final String key = cursor.toLocalTime().toString().substring(0, 5);
-                    if (booking.getId() != null && selfBlockBookingIds.contains(booking.getId())) {
-                        ownerBlocks.put(key, booking.getId());
-                    } else {
-                        guestBooked.add(key);
-                    }
-                }
-                cursor = cursor.plusMinutes(30);
+            bookedRanges.add(new TimeRangeRow(
+                    booking.getStart()
+                            .atZone(ZoneOffset.UTC)
+                            .withZoneSameInstant(zone)
+                            .toLocalTime()
+                            .format(TIME_FMT),
+                    booking.getEnd()
+                            .atZone(ZoneOffset.UTC)
+                            .withZoneSameInstant(zone)
+                            .toLocalTime()
+                            .format(TIME_FMT)));
+        }
+        final List<SelfBlockRow> selfBlocks = new ArrayList<>();
+        for (final Booking block : ownerSelfBlocks) {
+            if (block.getId() == null || block.getStart() == null || block.getEnd() == null) {
+                continue;
             }
+            final LocalDate blockDate = block.getStart()
+                    .atZone(ZoneOffset.UTC)
+                    .withZoneSameInstant(zone)
+                    .toLocalDate();
+            if (!selectedDate.equals(blockDate)) {
+                continue;
+            }
+            selfBlocks.add(new SelfBlockRow(
+                    block.getId(),
+                    block.getStart()
+                            .atZone(ZoneOffset.UTC)
+                            .withZoneSameInstant(zone)
+                            .toLocalTime()
+                            .format(TIME_FMT),
+                    block.getEnd()
+                            .atZone(ZoneOffset.UTC)
+                            .withZoneSameInstant(zone)
+                            .toLocalTime()
+                            .format(TIME_FMT)));
         }
-        final List<SlotRow> slots = new ArrayList<>();
-        for (final String time : scheduled) {
-            final LocalTime start = LocalTime.parse(time);
-            final String end = start.plusMinutes(30).toString().substring(0, 5);
-            final Integer blockId = ownerBlocks.get(time);
-            final String state = blockId != null ? "BLOCKED" : (guestBooked.contains(time) ? "BOOKED" : "AVAILABLE");
-            slots.add(new SlotRow(time, end, state, blockId, time.replace(":", "")));
-        }
-        return slots;
+        return toDayTimelineJson(availableRanges, bookedRanges, selfBlocks);
     }
 
     private static boolean isBlockingState(final BookingStatusEnum status) {
@@ -186,31 +226,34 @@ public class AvailabilityPresentation {
                 || status == BookingStatusEnum.CONFIRMED;
     }
 
-    private static List<PersonalBlockRow> toPersonalBlockRows(final List<Booking> selfBlocks, final String timezone) {
-        final ZoneId zone = ZoneId.of(timezone);
-        return selfBlocks.stream()
-                .filter(b -> b.getId() != null && b.getStart() != null && b.getEnd() != null)
-                .sorted((a, b) -> a.getStart().compareTo(b.getStart()))
-                .map(b -> {
-                    final LocalDate date = b.getStart()
-                            .atZone(ZoneOffset.UTC)
-                            .withZoneSameInstant(zone)
-                            .toLocalDate();
-                    final String startLocal = b.getStart()
-                            .atZone(ZoneOffset.UTC)
-                            .withZoneSameInstant(zone)
-                            .toLocalTime()
-                            .toString()
-                            .substring(0, 5);
-                    final String endLocal = b.getEnd()
-                            .atZone(ZoneOffset.UTC)
-                            .withZoneSameInstant(zone)
-                            .toLocalTime()
-                            .toString()
-                            .substring(0, 5);
-                    return new PersonalBlockRow(b.getId(), date.toString(), startLocal, endLocal);
-                })
-                .toList();
+    static String resolveBackPath(final HttpServletRequest request, final String returnParam) {
+        final String safeReturn = sanitizeReturnPath(returnParam);
+        if (safeReturn != null) {
+            return safeReturn;
+        }
+        final String referer = request.getHeader("Referer");
+        if (referer != null && !referer.isBlank()) {
+            try {
+                final URI uri = URI.create(referer.trim());
+                final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
+                String path = uri.getPath() == null ? "" : uri.getPath();
+                if (!contextPath.isEmpty() && path.startsWith(contextPath)) {
+                    path = path.substring(contextPath.length());
+                }
+                if (path.isEmpty()) {
+                    path = "/";
+                }
+                final String query = uri.getQuery();
+                final String candidate = query == null || query.isBlank() ? path : path + "?" + query;
+                final String fromReferer = sanitizeReturnPath(candidate);
+                if (fromReferer != null) {
+                    return fromReferer;
+                }
+            } catch (final IllegalArgumentException ignored) {
+                // ignore malformed referer
+            }
+        }
+        return DEFAULT_AVAILABILITY_BACK_PATH;
     }
 
     static String sanitizeReturnPath(final String raw) {
@@ -242,6 +285,17 @@ public class AvailabilityPresentation {
         return candidate;
     }
 
+    private static LocalDate parseRequestedDate(final String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(raw.trim());
+        } catch (final Exception ignored) {
+            return null;
+        }
+    }
+
     private static String appendReturnQuery(final String redirectUrl, final String sanitizedReturnPath) {
         if (sanitizedReturnPath == null) {
             return redirectUrl;
@@ -251,52 +305,73 @@ public class AvailabilityPresentation {
         return redirectUrl + sep + "return=" + URLEncoder.encode(sanitizedReturnPath, StandardCharsets.UTF_8);
     }
 
-    private static String toJsonArray(final List<String> values) {
+    private static String toJsonArray(final List<?> values) {
         final StringBuilder json = new StringBuilder("[");
         for (int i = 0; i < values.size(); i++) {
             if (i > 0) {
                 json.append(',');
             }
-            json.append('"').append(values.get(i).replace("\"", "\\\"")).append('"');
+            json.append('"')
+                    .append(String.valueOf(values.get(i)).replace("\"", "\\\""))
+                    .append('"');
         }
         return json.append(']').toString();
     }
 
-    private static String slotsToJson(final List<SlotRow> slots) {
-        final StringBuilder json = new StringBuilder("[");
-        for (int i = 0; i < slots.size(); i++) {
+    private static String toDayTimelineJson(
+            final List<TimeRangeRow> availableRanges,
+            final List<TimeRangeRow> bookedRanges,
+            final List<SelfBlockRow> selfBlocks) {
+        final StringBuilder json = new StringBuilder("{\"availableRanges\":[");
+        appendTimeRangeRows(json, availableRanges);
+        json.append("],\"bookedRanges\":[");
+        appendTimeRangeRows(json, bookedRanges);
+        json.append("],\"selfBlocks\":[");
+        for (int i = 0; i < selfBlocks.size(); i++) {
             if (i > 0) {
                 json.append(',');
             }
-            final SlotRow slot = slots.get(i);
-            json.append("{\"start\":\"")
-                    .append(slot.getStartTime())
-                    .append("\",\"end\":\"")
-                    .append(slot.getEndTime())
-                    .append("\",\"state\":\"")
-                    .append(slot.getState())
+            final SelfBlockRow block = selfBlocks.get(i);
+            json.append("{\"id\":")
+                    .append(block.getId())
+                    .append(",\"startTime\":\"")
+                    .append(escapeJson(block.getStartTime()))
+                    .append("\",\"endTime\":\"")
+                    .append(escapeJson(block.getEndTime()))
                     .append("\"}");
         }
-        return json.append(']').toString();
+        return json.append("]}").toString();
+    }
+
+    private static void appendTimeRangeRows(final StringBuilder json, final List<TimeRangeRow> rows) {
+        for (int i = 0; i < rows.size(); i++) {
+            if (i > 0) {
+                json.append(',');
+            }
+            final TimeRangeRow row = rows.get(i);
+            json.append("{\"startTime\":\"")
+                    .append(escapeJson(row.getStartTime()))
+                    .append("\",\"endTime\":\"")
+                    .append(escapeJson(row.getEndTime()))
+                    .append("\"}");
+        }
+    }
+
+    private static String escapeJson(final String value) {
+        return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     @Getter
-    @Setter
     @RequiredArgsConstructor
-    public static class SlotRow {
+    public static class TimeRangeRow {
         private final String startTime;
         private final String endTime;
-        private final String state;
-        private final Integer blockBookingId;
-        private final String modalIdSuffix;
     }
 
     @Getter
-    @Setter
     @RequiredArgsConstructor
-    public static class PersonalBlockRow {
-        private final int bookingId;
-        private final String dateIso;
+    public static class SelfBlockRow {
+        private final int id;
         private final String startTime;
         private final String endTime;
     }

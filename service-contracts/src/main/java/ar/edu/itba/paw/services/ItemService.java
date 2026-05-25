@@ -1,40 +1,25 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.MyBoatsItem;
-import java.util.List;
+import ar.edu.itba.paw.models.dto.ItemSearchResult;
+import ar.edu.itba.paw.models.entity.Image;
+import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.models.entity.Version;
 import java.util.Optional;
 
 public interface ItemService {
-    List<MyBoatsItem> listMyBoatsItemsByOwnerId(int ownerId, int page, int pageSize);
 
-    int countMyBoatsItemsByOwnerId(int ownerId);
+    ItemSearchResult listOwnerItems(int ownerId, int page, int pageSize);
 
-    Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(int itemId, int ownerId);
+    Item findItemById(int id);
 
-    MyBoatsItem requireOwnedItem(int itemId, int callerId);
+    Optional<Image> findImageById(int id);
 
-    boolean deleteMyBoatsItem(int itemId, int ownerId);
+    boolean userOwnsItem(Item item, int userId);
 
-    int createPublicationVersion(
-            int itemId,
-            int ownerId,
-            String title,
-            String description,
-            int pricePerHour,
-            Integer difficultyLevel,
-            int locationOptionId);
+    boolean userOwnsItem(int itemId, int userId);
 
-    void setItemActiveForOwner(int itemId, int ownerId, boolean active);
+    Item requireOwnedItem(int itemId, int userId);
 
-    Optional<byte[]> findImageDataById(int imageId);
-
-    List<Integer> listImageIds(int itemId);
-
-    Optional<Integer> uploadGalleryImage(int itemId, int ownerId, byte[] imageData);
-
-    void deleteImageFromGallery(int itemId, int imageId, int callerId);
-
-    boolean reorderGallery(int itemId, int ownerId, List<Integer> imageIdsInOrder);
-
-    // TODO: Soft delete item method
+    // Rellena todos los datos que puede necesitar una version
+    Version requireOwnedFullData(int itemId, int userId);
 }

@@ -17,7 +17,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "user_subscription")
+@Table(name = "subscriptons")
 public class Subscription {
 
     @EmbeddedId

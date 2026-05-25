@@ -10,14 +10,19 @@
 <spring:message code="publish.availability.noRanges" var="publishNoRangesLabel" />
 <spring:message code="publish.step2.deleteRange" var="publishDeleteRangeLabel" />
 <spring:message code="publish.availability.day.empty.client" var="publishMissingRangeLabel" />
-<spring:message code="publish.actions.continueContact" var="publishContinueContactLabel" />
+<spring:message code="publish.actions.continueImages" var="publishContinueImagesLabel" />
 
 <paw:layout
   title="Botecito"
   mainClass="pt-24 pb-14 max-w-6xl mx-auto px-6"
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"
-  headerCtaVariant="rent">
+  headerCtaVariant="rent"
+  scripts="publish-wizard,weekly-availability">
+  <div
+    data-publish-wizard-root="step2"
+    data-publish-url="/publish"
+  >
   <div class="mb-8">
     <a href="${stepOneUrl}" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
       <span class="material-symbols-outlined">arrow_back</span>
@@ -36,6 +41,7 @@
   </div>
 
   <form:form action="${stepTwoUrl}" method="post" modelAttribute="publishForm" class="space-y-8">
+    <div data-publish-wizard-step1-hidden="true"></div>
     <paw:sectionCard icon="schedule" hostAccent="true">
       <jsp:attribute name="title"><spring:message code="publish.step2.section.slots" /></jsp:attribute>
       <jsp:body>
@@ -54,7 +60,7 @@
 
           <p class="text-xs text-outline m-0"><spring:message code="publish.step2.instructions" /></p>
 
-          <form:errors path="availabilityByWeekday" cssClass="mt-2" element="div" />
+          <form:errors cssClass="mt-2" element="div" />
           <spring:hasBindErrors name="publishForm">
             <c:forEach var="error" items="${errors.globalErrors}">
               <paw:alertMessage type="error" cssClass="mt-2">
@@ -88,8 +94,9 @@
                         <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 pointer-events-none" data-timeline-ticks>
                           <c:forEach var="tickHour" begin="0" end="23">
                             <c:set var="tickStep" value="${tickHour * 2}" />
+                            <c:set var="tickLeft" value="${(tickStep * 100.0) / 47}" />
                             <c:set var="tickClass" value="${tickStep % 4 == 0 ? 'bg-outline-variant/45' : 'bg-outline-variant/25'}" />
-                            <span class="absolute top-0 h-8 w-px ${tickClass}" style="left:${(tickStep * 100.0) / 47}%"></span>
+                            <span class="absolute top-0 h-8 w-px ${tickClass}" data-tick-left-pct="${tickLeft}"></span>
                           </c:forEach>
                         </div>
                         <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 pointer-events-none">
@@ -128,7 +135,8 @@
     </paw:sectionCard>
 
     <div class="flex flex-col sm:flex-row sm:justify-end items-center gap-4 pt-2">
-      <paw:button type="submit" color="secondary" size="lg" icon="arrow_forward" iconTrailing="true" cssClass="w-full sm:w-auto" text="${publishContinueContactLabel}" />
+      <paw:button type="submit" color="secondary" size="lg" icon="arrow_forward" iconTrailing="true" cssClass="w-full sm:w-auto" text="${publishContinueImagesLabel}" />
     </div>
   </form:form>
+  </div>
 </paw:layout>

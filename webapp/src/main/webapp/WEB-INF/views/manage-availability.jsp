@@ -1,4 +1,5 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
@@ -8,8 +9,7 @@
     <c:param name="return" value="${manageAvailabilityReturnPath}" />
   </c:if>
 </c:url>
-<c:url var="disableUrl" value="/my-boats/${item.id}/availability/disable" />
-<c:url var="enableUrl" value="/my-boats/${item.id}/availability/enable" />
+<c:url var="saveUrl" value="/my-boats/${item.id}/availability/save" />
 <c:url var="manageAvailabilityBackUrl" value="${manageAvailabilityBackPath}" />
 
 <spring:message code="manageAvailability.title" var="pageTitle" />
@@ -21,31 +21,22 @@
 <spring:message code="manageAvailability.slots.empty" var="slotsEmpty" />
 <spring:message code="manageAvailability.slots.noDate" var="slotsNoDate" />
 <spring:message code="manageAvailability.legend.available" var="legendAvailable" />
-<spring:message code="manageAvailability.legend.disabled" var="legendDisabled" />
 <spring:message code="manageAvailability.legend.booked" var="legendBooked" />
-<spring:message code="manageAvailability.disable.title" var="disableModalTitle" />
-<spring:message code="manageAvailability.disable.confirm" var="disableConfirmLabel" />
-<spring:message code="manageAvailability.disable.cancel" var="disableCancelLabel" />
-<spring:message code="manageAvailability.disable.message" var="disableMessage" />
-<spring:message code="manageAvailability.enable.title" var="enableModalTitle" />
-<spring:message code="manageAvailability.enable.confirm" var="enableConfirmLabel" />
-<spring:message code="manageAvailability.enable.cancel" var="enableCancelLabel" />
-<spring:message code="manageAvailability.enable.message" var="enableMessage" />
-<spring:message code="manageAvailability.list.title" var="listTitle" />
-<spring:message code="manageAvailability.list.empty" var="listEmpty" />
-<spring:message code="manageAvailability.list.delete" var="listDeleteLabel" />
-<spring:message code="manageAvailability.blockRange.pickStart" var="blockRangePickStart" />
-<spring:message code="manageAvailability.blockRange.pickEnd" var="blockRangePickEnd" />
-<spring:message code="manageAvailability.blockRange.confirm" var="blockRangeConfirm" />
-<spring:message code="manageAvailability.blockRange.clear" var="blockRangeClear" />
-<spring:message code="manageAvailability.blockRange.invalid" var="blockRangeInvalid" />
+<spring:message code="manageAvailability.legend.selfBlocked" var="legendSelfBlocked" />
+<spring:message code="manageAvailability.timeline.instructions" var="timelineInstructions" />
+<spring:message code="manageAvailability.save" var="saveChangesLabel" />
+<spring:message code="manageAvailability.unsavedConfirm" var="unsavedConfirmLabel" />
+<spring:message code="publish.step2.deleteRange" var="deleteRangeLabel" />
 
 <paw:layout
     title="Botecito"
     mainClass="pt-24 pb-14 max-w-4xl mx-auto px-6"
     headerCtaMessageCode="nav.rent"
     headerCtaHref="/marketplace"
-    headerCtaVariant="rent">
+    headerCtaVariant="rent"
+    scripts="toast,date-time,manage-availability">
+
+  <paw:toastNotifier />
 
   <div class="mb-8">
     <a href="${manageAvailabilityBackUrl}" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
@@ -59,28 +50,12 @@
       <c:out value="${pageTitle}" />
     </h1>
     <p class="text-on-surface-variant mt-2 m-0 text-lg">
-      <c:out value="${item.title}" />
+      <c:out value="${item.latestVersion.title}" />
     </p>
     <p class="text-on-surface-variant mt-1 m-0 text-sm">
       <c:out value="${pageSubtitle}" />
     </p>
   </div>
-
-  <c:if test="${param.availabilityAction == 'blocked'}">
-    <paw:alertMessage type="success"><spring:message code="manageAvailability.msg.blocked" /></paw:alertMessage>
-  </c:if>
-  <c:if test="${param.availabilityAction == 'enabled'}">
-    <paw:alertMessage type="success"><spring:message code="manageAvailability.msg.enabled" /></paw:alertMessage>
-  </c:if>
-  <c:if test="${param.availabilityAction == 'pastDate' || param.availabilityAction == 'invalid'}">
-    <paw:alertMessage type="error"><spring:message code="manageAvailability.msg.invalid" /></paw:alertMessage>
-  </c:if>
-  <c:if test="${param.availabilityAction == 'hasBookings'}">
-    <paw:alertMessage type="error"><spring:message code="manageAvailability.msg.hasBookings" /></paw:alertMessage>
-  </c:if>
-  <c:if test="${param.availabilityAction == 'notFound'}">
-    <paw:alertMessage type="warning"><spring:message code="manageAvailability.msg.notFound" /></paw:alertMessage>
-  </c:if>
 
   <paw:sectionCard icon="calendar_month" hostAccent="true">
     <jsp:attribute name="title"><c:out value="${calendarTitle}" /></jsp:attribute>
@@ -92,10 +67,11 @@
             id="manageAvailabilityDate"
             dateFieldName="date"
             offeredDatesJson="${offeredDatesJson}"
-            occupiedDatesJson="${blockedDatesJson}"
+            occupiedDatesJson="[]"
             label="${datePickerLabel}"
             value="${selectedDate}"
-            restrictToAvailability="false" />
+            anchorTodayIso="${manageAvailabilityTodayIso}"
+            anchorMaxDateIso="${manageAvailabilityMaxDateIso}" />
         <noscript>
           <div class="mt-3">
             <paw:button type="submit" color="secondary" size="sm" text="${calendarTitle}" />
@@ -110,184 +86,99 @@
         <c:otherwise>
           <div class="mb-4 flex flex-wrap gap-4 text-xs text-on-surface-variant">
             <span class="inline-flex items-center gap-2">
-              <span class="inline-block h-3 w-3 rounded bg-surface-container-low border border-outline/20"></span>
+              <span class="inline-block h-3 w-8 rounded bg-primary/20 border border-primary/30"></span>
               <c:out value="${legendAvailable}" />
             </span>
             <span class="inline-flex items-center gap-2">
-              <span class="inline-block h-3 w-3 rounded bg-error/40"></span>
-              <c:out value="${legendDisabled}" />
-            </span>
-            <span class="inline-flex items-center gap-2">
-              <span class="inline-block h-3 w-3 rounded bg-surface-container-highest/50"></span>
+              <span class="inline-block h-3 w-8 rounded bg-error/25 border border-error/35"></span>
               <c:out value="${legendBooked}" />
             </span>
+            <span class="inline-flex items-center gap-2">
+              <span class="inline-block h-3 w-8 rounded bg-gradient-to-r from-warning to-warning/80"></span>
+              <c:out value="${legendSelfBlocked}" />
+            </span>
           </div>
+
           <h3 class="text-base font-bold m-0 mb-3">
             <c:out value="${slotsTitle}" /> &mdash; <c:out value="${selectedDate}" />
           </h3>
+
           <c:choose>
-            <c:when test="${empty slots}">
+            <c:when test="${not hasTimelineAvailability}">
               <p class="text-sm text-on-surface-variant m-0"><c:out value="${slotsEmpty}" /></p>
             </c:when>
             <c:otherwise>
               <div
                   class="space-y-4"
-                  data-personal-block-root
+                  data-manage-availability-timeline
                   data-selected-date="${selectedDate}"
-                  data-hint-pick-end="<c:out value='${blockRangePickEnd}' />"
-                  data-hint-invalid="<c:out value='${blockRangeInvalid}' />">
-                <p class="m-0 mb-2 text-xs leading-snug text-on-surface-variant">
-                  <c:out value="${blockRangePickStart}" />
-                </p>
-                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                  <c:forEach var="slot" items="${slots}" varStatus="st">
-                    <c:set var="enableModalId" value="enable-slot-${slot.modalIdSuffix}" />
-                    <c:choose>
-                      <c:when test="${slot.state == 'AVAILABLE'}">
-                        <button
-                            type="button"
-                            class="personal-block-slot-btn min-h-9 rounded-lg border border-transparent bg-surface-container-low text-on-surface text-xs font-bold cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-sm"
-                            data-personal-block-slot
-                            data-slot-index="${st.index}"
-                            data-slot-start="${slot.startTime}"
-                            data-slot-end="${slot.endTime}">
-                          <c:out value="${slot.startTime}" />
-                        </button>
-                      </c:when>
+                  data-min-duration="120"
+                  data-min-separation="30"
+                  data-delete-text="${deleteRangeLabel}"
+                  data-unsaved-confirm="${unsavedConfirmLabel}">
 
-                      <c:when test="${slot.state == 'BLOCKED'}">
-                        <button
-                            type="button"
-                            class="min-h-9 rounded-lg border border-error/30 bg-error/25 text-error text-xs font-bold cursor-pointer hover:bg-error/35 transition-colors"
-                            onclick="document.getElementById('${enableModalId}').showModal()">
-                          <c:out value="${slot.startTime}" />
-                        </button>
+                <script type="application/json" id="manage-day-timeline-json">${dayTimelineJson}</script>
 
-                        <paw:confirmModal
-                            id="${enableModalId}"
-                            title="${enableModalTitle}"
-                            message="${enableMessage}"
-                            confirmText="${enableConfirmLabel}"
-                            cancelText="${enableCancelLabel}"
-                            confirmColor="success"
-                            icon="event_available">
-                          <form action="${enableUrl}" method="post" class="m-0">
-                            <c:if test="${not empty manageAvailabilityReturnPath}">
-                              <input type="hidden" name="return" value="<c:out value='${manageAvailabilityReturnPath}' />" />
-                            </c:if>
-                            <input type="hidden" name="blockBookingId" value="${slot.blockBookingId}" />
-                            <input type="hidden" name="date" value="${selectedDate}" />
-                            <paw:button type="submit" color="success" cssClass="whitespace-nowrap" text="${enableConfirmLabel}" />
-                          </form>
-                        </paw:confirmModal>
-                      </c:when>
+                <p class="text-xs text-outline m-0"><c:out value="${timelineInstructions}" /></p>
 
-                      <c:otherwise>
-                        <span class="min-h-9 flex items-center justify-center rounded-lg bg-surface-container-highest/50 text-outline/60 text-xs font-bold cursor-not-allowed">
-                          <c:out value="${slot.startTime}" />
-                        </span>
-                      </c:otherwise>
-                    </c:choose>
-                  </c:forEach>
-                </div>
-
-                <div data-personal-block-toolbar class="hidden rounded-xl border border-outline-variant/25 bg-base-200/60 px-4 py-3">
-                  <p class="m-0 text-sm text-on-surface-variant" data-personal-block-hint></p>
-                  <div class="mt-3 flex flex-row flex-wrap items-center justify-end gap-2">
-                    <button type="button" class="btn btn-ghost btn-sm shrink-0" data-personal-block-clear>
-                      <c:out value="${blockRangeClear}" />
-                    </button>
-                    <button type="button" class="btn btn-primary btn-sm shrink-0" disabled data-personal-block-open>
-                      <c:out value="${blockRangeConfirm}" />
-                    </button>
+                <div class="relative pt-1 pb-8">
+                  <div class="absolute inset-x-0 bottom-0 flex items-center justify-between text-[11px] font-bold text-outline">
+                    <span>00:00h</span>
+                    <span>23:30h</span>
                   </div>
-                </div>
-
-                <script type="application/json" id="manage-availability-slots-json">${slotsStateJson}</script>
-              </div>
-
-              <dialog id="personal-block-confirm-dialog" class="modal">
-                <div class="modal-box max-w-lg">
-                  <div class="flex items-start gap-4">
-                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-error/15 text-error">
-                      <span class="material-symbols-outlined">block</span>
+                  <div class="relative h-12 rounded-xl border border-outline-variant/30 bg-surface-container-high/40 overflow-visible touch-none" data-timeline-track>
+                    <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 rounded-lg border border-outline-variant/25 bg-base-200/80" data-timeline-hover-zone></div>
+                    <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 pointer-events-none" data-timeline-available></div>
+                    <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 pointer-events-none" data-timeline-booked></div>
+                    <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 pointer-events-none" data-timeline-ticks>
+                      <c:forEach var="tickHour" begin="0" end="23">
+                        <c:set var="tickStep" value="${tickHour * 2}" />
+                        <c:set var="tickLeft" value="${(tickStep * 100.0) / 47}" />
+                        <c:set var="tickClass" value="${tickStep % 4 == 0 ? 'bg-outline-variant/45' : 'bg-outline-variant/25'}" />
+                        <span class="absolute top-0 h-8 w-px ${tickClass}" data-tick-left-pct="${tickLeft}"></span>
+                      </c:forEach>
                     </div>
-                    <div class="min-w-0 flex-1 space-y-2">
-                      <h3 class="m-0 text-xl font-extrabold tracking-tight">
-                        <c:out value="${disableModalTitle}" />
-                      </h3>
-                      <p id="personal-block-summary" class="m-0 text-sm leading-relaxed text-on-surface-variant"></p>
-                      <p class="m-0 text-sm leading-relaxed text-on-surface-variant">
-                        <c:out value="${disableMessage}" />
-                      </p>
+                    <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 pointer-events-none">
+                      <div data-timeline-preview class="absolute top-0 h-8 rounded-md border border-warning/60 bg-warning/20 hidden pointer-events-none">
+                        <div data-timeline-preview-label class="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-warning/35 bg-surface px-2 py-0.5 text-[10px] font-bold text-warning"></div>
+                      </div>
                     </div>
-                  </div>
-                  <div class="mt-6 flex flex-row flex-nowrap items-center justify-end gap-3 border-t border-outline-variant/20 pt-4">
-                    <form method="dialog" class="m-0 shrink-0">
-                      <button type="submit" class="btn btn-outline min-h-11 whitespace-nowrap px-5">
-                        <c:out value="${disableCancelLabel}" />
-                      </button>
-                    </form>
-                    <form id="personal-block-submit-form" action="${disableUrl}" method="post" class="m-0 shrink-0">
-                      <c:if test="${not empty manageAvailabilityReturnPath}">
-                        <input type="hidden" name="return" value="<c:out value='${manageAvailabilityReturnPath}' />" />
-                      </c:if>
-                      <input type="hidden" name="date" value="${selectedDate}" />
-                      <input type="hidden" name="startTime" id="personal-block-input-start" value="" />
-                      <input type="hidden" name="endTime" id="personal-block-input-end" value="" />
-                      <button type="submit" class="btn btn-error min-h-11 whitespace-nowrap px-5">
-                        <c:out value="${disableConfirmLabel}" />
-                      </button>
-                    </form>
+                    <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2" data-timeline-blocks></div>
                   </div>
                 </div>
-                <form method="dialog" class="modal-backdrop">
-                  <button type="submit" aria-label="<c:out value='${disableCancelLabel}' />">close</button>
+
+                <template data-availability-block-template>
+                  <div data-role="availability-block" class="absolute top-0 h-8 rounded-md bg-gradient-to-r from-secondary to-secondary-container text-on-secondary shadow-[0_8px_16px_rgba(174,49,35,0.28)] cursor-grab active:cursor-grabbing">
+                    <button type="button" data-role="left-handle" class="absolute top-0 h-8 w-4 -translate-x-1/2 cursor-ew-resize touch-none" style="left:0%">
+                      <span class="absolute left-1/2 top-0 h-8 w-[3px] -translate-x-1/2 rounded-full bg-on-secondary"></span>
+                      <span data-role="left-label" class="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-outline-variant/30 bg-surface px-2 py-0.5 text-[10px] font-bold text-on-surface"></span>
+                    </button>
+                    <button type="button" data-role="right-handle" class="absolute top-0 h-8 w-4 -translate-x-1/2 cursor-ew-resize touch-none" style="left:100%">
+                      <span class="absolute left-1/2 top-0 h-8 w-[3px] -translate-x-1/2 rounded-full bg-on-secondary"></span>
+                      <span data-role="right-label" class="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-outline-variant/30 bg-surface px-2 py-0.5 text-[10px] font-bold text-on-surface"></span>
+                    </button>
+                    <button type="button" data-role="delete-button" class="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-error/40 bg-error/15 px-2 py-0.5 text-[10px] font-bold text-error hover:bg-error/25 transition-colors"></button>
+                  </div>
+                </template>
+
+                <form action="${saveUrl}" method="post" data-timeline-save-form class="mt-6 flex justify-end">
+                  <c:if test="${not empty manageAvailabilityReturnPath}">
+                    <input type="hidden" name="return" value="<c:out value='${manageAvailabilityReturnPath}' />" />
+                  </c:if>
+                  <input type="hidden" name="date" value="${selectedDate}" />
+                  <div data-timeline-save-hidden-fields></div>
+                  <paw:button
+                      type="submit"
+                      color="secondary"
+                      size="md"
+                      text="${saveChangesLabel}"
+                      disabled="${true}" />
                 </form>
-              </dialog>
+              </div>
             </c:otherwise>
           </c:choose>
         </c:otherwise>
       </c:choose>
     </jsp:body>
   </paw:sectionCard>
-
-  <paw:sectionCard icon="event_busy" hostAccent="true">
-    <jsp:attribute name="title"><c:out value="${listTitle}" /></jsp:attribute>
-    <jsp:body>
-      <c:choose>
-        <c:when test="${empty personalBlockRows}">
-          <p class="text-sm text-on-surface-variant m-0"><c:out value="${listEmpty}" /></p>
-        </c:when>
-        <c:otherwise>
-          <ul class="m-0 p-0 list-none space-y-2">
-            <c:forEach var="row" items="${personalBlockRows}">
-              <li class="flex items-center justify-between gap-3 rounded-lg bg-base-200 px-4 py-2">
-                <div class="text-sm">
-                  <span class="font-bold"><c:out value="${row.dateIso}" /></span>
-                  <span class="text-on-surface-variant">
-                    &middot; <c:out value="${row.startTime}" /> &ndash; <c:out value="${row.endTime}" />
-                  </span>
-                </div>
-                <form action="${enableUrl}" method="post" class="m-0">
-                  <c:if test="${not empty manageAvailabilityReturnPath}">
-                    <input type="hidden" name="return" value="<c:out value='${manageAvailabilityReturnPath}' />" />
-                  </c:if>
-                  <input type="hidden" name="blockBookingId" value="${row.bookingId}" />
-                  <input type="hidden" name="date" value="${selectedDate}" />
-                  <button type="submit" class="btn btn-sm btn-ghost text-error" aria-label="<c:out value='${listDeleteLabel}' />">
-                    <span class="material-symbols-outlined text-base">delete</span>
-                    <c:out value="${listDeleteLabel}" />
-                  </button>
-                </form>
-              </li>
-            </c:forEach>
-          </ul>
-        </c:otherwise>
-      </c:choose>
-    </jsp:body>
-  </paw:sectionCard>
-
-  <script src="<c:url value='/js/manage-availability-date.js' />"></script>
-  <script src="<c:url value='/js/manage-availability-block-range.js' />"></script>
 </paw:layout>

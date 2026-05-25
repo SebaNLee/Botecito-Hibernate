@@ -1,17 +1,16 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.MyBoatsItem;
+import ar.edu.itba.paw.models.dto.ItemSearchResult;
+import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
-import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
+import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
 import ar.edu.itba.paw.persistence.ItemDao;
-import ar.edu.itba.paw.services.exceptions.VersionNotFoundException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,143 +18,74 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ItemImpl implements ItemService {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ItemImpl.class);
+
     private final ItemDao itemDao;
 
     @Override
     @Transactional(readOnly = true)
-    public List<MyBoatsItem> listMyBoatsItemsByOwnerId(final int ownerId, final int page, final int pageSize) {
-        return itemDao.listMyBoatsItemsByOwnerId(ownerId, page, pageSize);
-    }
+    public ItemSearchResult listOwnerItems(int ownerId, int page, int pageSize) {
+        var result = itemDao.listOwnerItems(ownerId, page, pageSize);
 
-    @Override
-    @Transactional(readOnly = true)
-    public int countMyBoatsItemsByOwnerId(final int ownerId) {
-        return itemDao.countMyBoatsItemsByOwnerId(ownerId);
-    }
+        // This loop is safe, result is bounded
+        for (Item item : result.getItems()) {
+            // Fetch latest version and the cover image
+            var media = item.getLatestVersion().getMedia();
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<MyBoatsItem> findMyBoatsItemByIdForOwner(final int itemId, final int ownerId) {
-        return itemDao.findMyBoatsItemByIdForOwner(itemId, ownerId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public MyBoatsItem requireOwnedItem(final int itemId, final int callerId) {
-        return findMyBoatsItemByIdForOwner(itemId, callerId).orElseThrow(ForbiddenOperationException::new);
-    }
-
-    @Override
-    @Transactional
-    public boolean deleteMyBoatsItem(final int itemId, final int ownerId) {
-        final Optional<Item> item = itemDao.findItemByIdAndOwner(itemId, ownerId);
-        if (item.isEmpty()) {
-            throw new ForbiddenOperationException();
-        }
-
-        if (itemDao.hasActiveOrFutureBookings(itemId)) {
-            if (item.get().getStatus() == ItemStatusEnum.ACTIVE) {
-                item.get().setStatus(ItemStatusEnum.INACTIVE);
-                return true;
+            if (media != null && media.size() > 0) {
+                @SuppressWarnings("unused")
+                var image = media.get(0).getImage();
             }
-            return false;
         }
 
-        itemDao.deleteItem(item.get());
-        return true;
-    }
-
-    @Override
-    @Transactional
-    public int createPublicationVersion(
-            final int itemId,
-            final int ownerId,
-            final String title,
-            final String description,
-            final int pricePerHour,
-            final Integer difficultyLevel,
-            final int locationOptionId) {
-        requireOwnedItem(itemId, ownerId);
-
-        final Optional<Version> current = itemDao.findCurrentVersionByItemId(itemId);
-        if (current.isEmpty()) {
-            throw new VersionNotFoundException(itemId);
-        }
-
-        final boolean hasBookings =
-                itemDao.hasBookingReferencesByVersionId(current.get().getId());
-        if (!hasBookings) {
-            current.get().setTitle(title);
-            current.get().setDescription(description);
-            current.get().setPrice(BigDecimal.valueOf(pricePerHour));
-            current.get()
-                    .setDifficulty(
-                            difficultyLevel != null
-                                    ? difficultyLevel
-                                    : current.get().getDifficulty());
-            current.get().setLocation(itemDao.getLocationReference(locationOptionId));
-            current.get().setCreatedAt(LocalDateTime.now());
-            return current.get().getId();
-        }
-
-        final Version next = new Version();
-        next.setItem(current.get().getItem());
-        next.setType(current.get().getType());
-        next.setTitle(title);
-        next.setDescription(description);
-        next.setPrice(BigDecimal.valueOf(pricePerHour));
-        next.setCapacity(current.get().getCapacity());
-        next.setWeight(current.get().getWeight());
-        next.setDifficulty(
-                difficultyLevel != null ? difficultyLevel : current.get().getDifficulty());
-        next.setLocation(itemDao.getLocationReference(locationOptionId));
-        next.setTimezone(current.get().getTimezone());
-        next.setCreatedAt(LocalDateTime.now());
-        itemDao.persistVersion(next);
-
-        itemDao.copyVersionContent(current.get().getId(), next);
-
-        return next.getId();
-    }
-
-    @Override
-    @Transactional
-    public void setItemActiveForOwner(final int itemId, final int ownerId, final boolean active) {
-        if (!itemDao.setItemActiveForOwner(itemId, ownerId, active)) {
-            throw new ForbiddenOperationException();
-        }
+        return result;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<byte[]> findImageDataById(final int imageId) {
-        return itemDao.findImageDataById(imageId);
+    public Item findItemById(int id) {
+        return itemDao.findItemById(id).orElseThrow(ItemNotFoundException::new);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Integer> listImageIds(final int itemId) {
-        return itemDao.listImageIds(itemId);
+    public Optional<Image> findImageById(int id) {
+        var image = itemDao.findImageById(id);
+        image.ifPresent(Image::getData);
+        return image;
     }
 
     @Override
-    @Transactional
-    public Optional<Integer> uploadGalleryImage(final int itemId, final int ownerId, final byte[] imageData) {
-        requireOwnedItem(itemId, ownerId);
-        return itemDao.uploadGalleryImage(itemId, imageData);
+    @Transactional(readOnly = true)
+    public boolean userOwnsItem(Item item, int userId) {
+        return item.getHost().getId().equals(userId);
     }
 
     @Override
-    @Transactional
-    public void deleteImageFromGallery(final int itemId, final int imageId, final int callerId) {
-        requireOwnedItem(itemId, callerId);
-        itemDao.deleteImageFromGallery(imageId);
+    @Transactional(readOnly = true)
+    public boolean userOwnsItem(int itemId, int userId) {
+        var item = findItemById(itemId);
+        return userOwnsItem(item, userId);
     }
 
     @Override
-    @Transactional
-    public boolean reorderGallery(final int itemId, final int ownerId, final List<Integer> imageIdsInOrder) {
-        requireOwnedItem(itemId, ownerId);
-        return itemDao.reorderGallery(itemId, imageIdsInOrder);
+    @Transactional(readOnly = true)
+    public Item requireOwnedItem(int itemId, int userId) {
+        var item = findItemById(itemId);
+        if (!userOwnsItem(item, userId)) throw new ForbiddenOperationException();
+        return item;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Version requireOwnedFullData(int itemId, int userId) {
+        var version = requireOwnedItem(itemId, userId).getLatestVersion();
+        var avail = version.getAvailabilities();
+        var media = version.getMedia();
+
+        // Force hibernate to load the contents of collections
+        LOGGER.debug("Force-loading {} availabilities and {} media references.", avail.size(), media.size());
+
+        return version;
     }
 }

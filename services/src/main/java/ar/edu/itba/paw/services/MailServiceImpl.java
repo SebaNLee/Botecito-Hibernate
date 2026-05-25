@@ -75,7 +75,7 @@ public class MailServiceImpl implements MailService {
             final Context context = new Context(locale);
             context.setVariable("ownerName", displayName(owner));
             context.setVariable("itemTitle", version.getTitle());
-            context.setVariable("profileUrl", myBoatsBaseUrl);
+            context.setVariable("myBoatsUrl", myBoatsBaseUrl);
             sendHtmlEmail(
                     owner.getEmail(),
                     getMessage("mail.publishConfirmation.subject", locale, version.getTitle()),

@@ -41,18 +41,18 @@
 <spring:message code="payment.guestReply.input.label" var="guestReplyLabel" />
 <spring:message code="payment.reply.placeholder" var="guestReplyPlaceholder" />
 <spring:message code="payment.refusal.reason.label" var="rejectPaymentReasonLabel" />
-<spring:message code="profile.sentBookings.paymentProof.view" var="viewPaymentProofLabel" />
+<spring:message code="settings.sentBookings.paymentProof.view" var="viewPaymentProofLabel" />
 <spring:message code="itemDetail.reviews.leave" var="reviewLeaveLabel" />
 <spring:message code="itemDetail.reviews.rating" var="reviewRatingLabel" />
 <spring:message code="itemDetail.reviews.comment" var="reviewCommentLabel" />
-<spring:message code="profile.reviews.submit" var="reviewSubmitLabel" />
-<spring:message code="profile.reviews.target.item" var="reviewItemLabel" />
-<spring:message code="profile.reviews.target.user" var="reviewUserLabel" />
-<spring:message code="profile.reviews.view" var="reviewViewLabel" />
-<spring:message code="profile.reviews.view.item" var="reviewViewItemLabel" />
-<spring:message code="profile.reviews.view.user" var="reviewViewUserLabel" />
-<spring:message code="profile.reviews.view.owner" var="reviewViewOwnerLabel" />
-<spring:message code="profile.reviews.target.owner" var="reviewOwnerLabel" />
+<spring:message code="settings.reviews.submit" var="reviewSubmitLabel" />
+<spring:message code="settings.reviews.target.item" var="reviewItemLabel" />
+<spring:message code="settings.reviews.target.user" var="reviewUserLabel" />
+<spring:message code="settings.reviews.view" var="reviewViewLabel" />
+<spring:message code="settings.reviews.view.item" var="reviewViewItemLabel" />
+<spring:message code="settings.reviews.view.user" var="reviewViewUserLabel" />
+<spring:message code="settings.reviews.view.owner" var="reviewViewOwnerLabel" />
+<spring:message code="settings.reviews.target.owner" var="reviewOwnerLabel" />
 
 <c:url var="clearFiltersUrl" value="${formAction}">
   <c:if test="${sort != 'newest'}">
@@ -193,8 +193,8 @@
         </p>
         <h2 class="text-2xl font-extrabold tracking-tight text-on-background m-0 mt-6 break-words md:text-4xl">
           <c:choose>
-            <c:when test="${isIncoming}"><spring:message code="profile.bookings.title" /></c:when>
-            <c:otherwise><spring:message code="profile.sentBookings.title" /></c:otherwise>
+            <c:when test="${isIncoming}"><spring:message code="settings.bookings.title" /></c:when>
+            <c:otherwise><spring:message code="settings.sentBookings.title" /></c:otherwise>
           </c:choose>
         </h2>
         <p class="text-on-surface-variant mt-2 m-0">
@@ -383,7 +383,7 @@
                             </c:if>
                           <div class="overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
                             <object data="${nuevoPaymentProofUrl}" type="application/pdf" class="block h-[60vh] w-full bg-base-100">
-                              <img src="${nuevoPaymentProofUrl}" alt="<spring:message code='profile.sentBookings.paymentProof.view' />" class="max-h-[60vh] w-full object-contain" loading="lazy" />
+                              <img src="${nuevoPaymentProofUrl}" alt="<spring:message code='settings.sentBookings.paymentProof.view' />" class="max-h-[60vh] w-full object-contain" loading="lazy" />
                             </object>
                           </div>
                         </jsp:body>
@@ -479,7 +479,7 @@
               <p class="m-0 max-w-lg text-on-surface-variant">
                 <c:choose>
                   <c:when test="${isIncoming}"><spring:message code="requests.incoming.empty" /></c:when>
-                  <c:otherwise><spring:message code="profile.sentBookings.empty" /></c:otherwise>
+                  <c:otherwise><spring:message code="settings.sentBookings.empty" /></c:otherwise>
                 </c:choose>
               </p>
               <a href="${clearFiltersUrl}" class="btn btn-primary btn-sm no-underline">

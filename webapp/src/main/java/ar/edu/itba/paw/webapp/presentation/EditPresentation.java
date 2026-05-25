@@ -122,9 +122,9 @@ public class EditPresentation {
                 PublishWizardMapping.toAvailabilityWindows(form),
                 PublishWizardMapping.toEditImageUploads(form));
         if (updated) {
-            ToastSupport.success(redirectAttributes, "profile.publications.updated");
+            ToastSupport.success(redirectAttributes, "settings.publications.updated");
         } else {
-            ToastSupport.info(redirectAttributes, "profile.publications.noChanges");
+            ToastSupport.info(redirectAttributes, "settings.publications.noChanges");
         }
 
         return new ModelAndView("redirect:/my-boats");

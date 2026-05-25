@@ -9,10 +9,10 @@
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 
 <spring:message code="itemDetail.reviews.leave" var="reviewLeaveLabel" />
-<spring:message code="profile.reviews.view" var="reviewViewLabel" />
+<spring:message code="settings.reviews.view" var="reviewViewLabel" />
 <spring:message code="itemDetail.reviews.rating" var="reviewRatingLabel" />
 <spring:message code="itemDetail.reviews.comment" var="reviewCommentLabel" />
-<spring:message code="profile.reviews.submit" var="reviewSubmitLabel" />
+<spring:message code="settings.reviews.submit" var="reviewSubmitLabel" />
 
 <c:choose>
   <c:when test="${existingReview != null}">

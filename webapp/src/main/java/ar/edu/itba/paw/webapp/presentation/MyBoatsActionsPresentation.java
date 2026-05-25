@@ -21,7 +21,7 @@ public class MyBoatsActionsPresentation {
         }
 
         manageItemService.setEnabled(itemId, principal.getId(), false);
-        ToastSupport.success(redirectAttributes, "profile.publications.disabled");
+        ToastSupport.success(redirectAttributes, "settings.publications.disabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
@@ -32,7 +32,7 @@ public class MyBoatsActionsPresentation {
         }
 
         manageItemService.setEnabled(itemId, principal.getId(), true);
-        ToastSupport.success(redirectAttributes, "profile.publications.enabled");
+        ToastSupport.success(redirectAttributes, "settings.publications.enabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
@@ -43,7 +43,7 @@ public class MyBoatsActionsPresentation {
         }
 
         manageItemService.deleteItem(itemId, principal.getId());
-        ToastSupport.success(redirectAttributes, "profile.publications.deleted");
+        ToastSupport.success(redirectAttributes, "settings.publications.deleted");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
 }

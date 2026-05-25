@@ -9,29 +9,29 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ProfileForm {
+public class SettingsForm {
 
-    @NotBlank(message = "{profile.validation.givenName.required}")
-    @Size(max = 100, message = "{profile.validation.givenName.max}")
+    @NotBlank(message = "{settings.validation.givenName.required}")
+    @Size(max = 100, message = "{settings.validation.givenName.max}")
     private String givenName;
 
-    @NotBlank(message = "{profile.validation.lastName.required}")
-    @Size(max = 100, message = "{profile.validation.lastName.max}")
+    @NotBlank(message = "{settings.validation.lastName.required}")
+    @Size(max = 100, message = "{settings.validation.lastName.max}")
     private String lastName;
 
-    @NotBlank(message = "{profile.validation.email.required}")
-    @Email(message = "{profile.validation.email.invalid}")
-    @Size(max = 150, message = "{profile.validation.email.max}")
+    @NotBlank(message = "{settings.validation.email.required}")
+    @Email(message = "{settings.validation.email.invalid}")
+    @Size(max = 150, message = "{settings.validation.email.max}")
     private String email;
 
-    @Size(max = 30, message = "{profile.validation.phone.max}")
+    @Size(max = 30, message = "{settings.validation.phone.max}")
     private String phone;
 
-    @Size(max = 120, message = "{profile.validation.paymentAlias.max}")
+    @Size(max = 120, message = "{settings.validation.paymentAlias.max}")
     private String paymentAlias;
 
-    @NotBlank(message = "{profile.validation.preferredLanguage.required}")
-    @Pattern(regexp = "es|en", message = "{profile.validation.preferredLanguage.invalid}")
+    @NotBlank(message = "{settings.validation.preferredLanguage.required}")
+    @Pattern(regexp = "es|en", message = "{settings.validation.preferredLanguage.invalid}")
     private String preferredLanguage = "es";
 
     public void setGivenName(final String givenName) {

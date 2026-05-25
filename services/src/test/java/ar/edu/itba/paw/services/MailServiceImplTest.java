@@ -104,7 +104,7 @@ public class MailServiceImplTest {
         final ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
         Mockito.verify(templateEngine).process(Mockito.eq("publish-confirmation"), contextCaptor.capture());
         Assertions.assertEquals(
-                "http://localhost:8080/my-boats", contextCaptor.getValue().getVariable("profileUrl"));
+                "http://localhost:8080/my-boats", contextCaptor.getValue().getVariable("myBoatsUrl"));
     }
 
     @Test

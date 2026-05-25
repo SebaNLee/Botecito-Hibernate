@@ -60,7 +60,11 @@ public class ProfilePresentation {
     }
 
     public ModelAndView profileSubmit(
-            final BotecitoUserDetails principal, final ProfileForm form, final BindingResult errors) {
+            final BotecitoUserDetails principal,
+            final ProfileForm form,
+            final BindingResult errors,
+            final int subscriptionsPage,
+            final int subscriptionsPageSize) {
         if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
@@ -70,7 +74,7 @@ public class ProfilePresentation {
         }
 
         if (errors.hasErrors()) {
-            return buildProfileView(currentUser, true, 1, 6);
+            return buildProfileView(currentUser, true, subscriptionsPage, subscriptionsPageSize);
         }
 
         final Users updatedUser = userService
@@ -85,7 +89,7 @@ public class ProfilePresentation {
                 .orElse(null);
         if (updatedUser == null) {
             errors.rejectValue("email", "profile.validation.email.duplicate");
-            return buildProfileView(currentUser, true, 1, 6);
+            return buildProfileView(currentUser, true, subscriptionsPage, subscriptionsPageSize);
         }
 
         authenticatedUserResolver.refreshPrincipal(updatedUser.getEmail());

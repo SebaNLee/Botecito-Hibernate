@@ -172,19 +172,11 @@ public class PublishServiceImpl implements PublishService {
     }
 
     private void sendConfirmationEmail(final Version version) {
-        try {
-            mailService.sendPublishConfirmationEmail(version);
-        } catch (final RuntimeException e) {
-            LOGGER.error("Failed to send confirmation email for item {}.", version.getTitle(), e);
-        }
+        mailService.sendPublishConfirmationEmail(version);
     }
 
     private void sendFollowerPublishNotificationEmail(final Users subscriber, final Version version) {
-        try {
-            mailService.sendFollowerPublishNotificationEmail(subscriber, version);
-        } catch (final RuntimeException e) {
-            LOGGER.error("Failed to send follower publish notification for item {}.", version.getTitle(), e);
-        }
+        mailService.sendFollowerPublishNotificationEmail(subscriber, version);
     }
 
     private static void runAfterCommit(final Runnable task) {

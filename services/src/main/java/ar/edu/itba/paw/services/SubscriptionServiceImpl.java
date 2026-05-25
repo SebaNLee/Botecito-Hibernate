@@ -20,11 +20,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         if (subscriberId == subscribedToId) {
             return false;
         }
-        if (subscriptionDao.exists(subscriberId, subscribedToId)) {
-            return true;
-        }
-        subscriptionDao.create(subscriberId, subscribedToId);
-        return true;
+        return subscriptionDao.create(subscriberId, subscribedToId);
     }
 
     @Override

@@ -39,10 +39,9 @@ public class ProfileController {
     public ModelAndView profileSubmit(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @Valid @ModelAttribute("profileForm") final ProfileForm form,
-            final BindingResult errors) {
-        if (errors.hasErrors()) {
-            return profilePresentation.profileSubmit(user, form, errors);
-        }
-        return profilePresentation.profileSubmit(user, form, errors);
+            final BindingResult errors,
+            @RequestParam(value = "subscriptionsPage", defaultValue = "1") final int subscriptionsPage,
+            @RequestParam(value = "subscriptionsPageSize", defaultValue = "6") final int subscriptionsPageSize) {
+        return profilePresentation.profileSubmit(user, form, errors, subscriptionsPage, subscriptionsPageSize);
     }
 }

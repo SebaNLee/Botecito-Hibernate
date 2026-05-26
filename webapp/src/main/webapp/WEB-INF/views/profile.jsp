@@ -242,8 +242,7 @@
                           <p class="m-0 text-sm text-on-surface-variant break-words"><c:out value="${review.comment}" /></p>
                         </c:if>
                         <p class="m-0 text-xs text-outline">
-                          <fmt:parseDate value="${review.createdAt}" pattern="yyyy-MM-dd'T'HH:mm:ss" var="reviewDate" type="both" />
-                          <fmt:formatDate value="${reviewDate}" pattern="dd/MM/yyyy" />
+                          <c:out value="${reviewDatesById[review.id]}" />
                         </p>
                       </div>
                     </c:forEach>

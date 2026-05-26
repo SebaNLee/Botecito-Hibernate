@@ -1,32 +1,34 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.BookingRequest;
-import java.util.Locale;
+import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.models.entity.Version;
 
 public interface MailService {
-    void sendTestConfirmationEmail(String recipientEmail);
 
-    void sendPublishConfirmationEmail(String recipientEmail, String ownerName, String itemTitle);
+    void sendPublishConfirmationEmail(Version version);
 
-    void sendBookingReviewEmail(
-            BookingRequest bookingRequest,
-            String ownerEmail,
-            String itemTitle,
-            String location,
-            String requestedDateLabel,
-            String requestedTimeLabel);
+    void sendFollowerPublishNotificationEmail(Users subscriber, Version version);
 
-    void sendBookingResolutionEmail(BookingRequest bookingRequest);
+    void sendPasswordRecoveryEmail(Users user);
 
-    void sendPaymentProofSubmittedEmail(
-            String ownerEmail, String requesterName, String itemTitle, byte[] proofFileData, String proofContentType);
+    void sendEmailVerificationEmail(Users user);
 
-    void sendPaymentReceivedEmail(String requesterEmail, String requesterLocaleTag, String itemTitle);
+    void sendPreBookingMail(Booking booking);
 
-    void sendPaymentProofRefusedEmail(
-            String requesterEmail, String requesterLocaleTag, String ownerName, String itemTitle, String reason);
+    void sendAcceptMail(Booking booking);
 
-    void sendPasswordRecoveryEmail(String recipientEmail, String recipientName, String recoveryToken);
+    void sendRejectMail(Booking booking);
 
-    Locale resolveLocale(String recipientIdentifier);
+    void sendPaymentMail(Booking booking);
+
+    void sendRefusedPaymentMail(Booking booking);
+
+    void sendBookingConfirmedMail(Booking booking);
+
+    void sendBookingCancelledMail(Booking booking);
+
+    void sendBookingExpiredMail(Booking booking);
+
+    void sendBookingFinishedMail(Booking booking);
 }

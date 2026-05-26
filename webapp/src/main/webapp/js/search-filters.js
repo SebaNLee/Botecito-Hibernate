@@ -1,17 +1,23 @@
 (function () {
   const FILTER_KEYS = [
     "searchQuery",
-    "locationOptionId",
+    "location",
+    "itemType",
     "date",
     "startTime",
     "endTime",
     "capacity",
-    "maxWeight",
-    "difficultyLevel",
+    "weight",
+    "difficulty",
+    "minAvgRating",
   ];
+
+  /** Query params restored with marketplace listing (sidebar + toolbar). */
+  const MARKETPLACE_TOOLBAR_KEYS = ["sortBy", "pageSize"];
   const APPLIED_FILTERS_KEY = "paw.marketplaceFilters";
   const DRAFT_FILTERS_KEY = "paw.marketplaceFilterDraft";
-  let locationOptionsPromise = null;
+  /** @type {Map<string, Promise<Array<{ value: string, name: string }>>>} */
+  const selectableOptionsByUrl = new Map();
 
   function parseJson(value, fallback) {
     try {
@@ -23,6 +29,10 @@
 
   function normalizeText(value) {
     return (value || "").toString().trim().toLowerCase();
+  }
+
+  function trimParam(value) {
+    return (value || "").toString().trim();
   }
 
   function openUnavailableAlert(alertRoot) {
@@ -62,6 +72,16 @@
       normalized[key] = state && state[key] ? String(state[key]).trim() : "";
     });
 
+    MARKETPLACE_TOOLBAR_KEYS.forEach((key) => {
+      if (!state || !Object.prototype.hasOwnProperty.call(state, key)) {
+        return;
+      }
+      normalized[key] =
+        state[key] != null && String(state[key]).trim() !== ""
+          ? String(state[key]).trim()
+          : "";
+    });
+
     return normalized;
   }
 
@@ -69,21 +89,38 @@
     return FILTER_KEYS.some((key) => normalizeText(state[key]));
   }
 
+  function hasPersistableMarketplaceDraft(normalized) {
+    if (hasAnyFilter(normalized)) {
+      return true;
+    }
+    return MARKETPLACE_TOOLBAR_KEYS.some(
+      (key) =>
+        Object.prototype.hasOwnProperty.call(normalized, key) &&
+        normalizeText(normalized[key]),
+    );
+  }
+
   function readStoredState(storageKey) {
     try {
-      return normalizeState(
-        parseJson(sessionStorage.getItem(storageKey), {}) || {},
-      );
+      const raw = parseJson(sessionStorage.getItem(storageKey), {}) || {};
+      return normalizeState(raw);
     } catch (error) {
       return normalizeState({});
     }
   }
 
   function writeStoredState(storageKey, state) {
-    const normalized = normalizeState(state);
+    let merged = {};
+    try {
+      merged = parseJson(sessionStorage.getItem(storageKey), {}) || {};
+    } catch (error) {
+      merged = {};
+    }
+    merged = { ...merged, ...state };
+    const normalized = normalizeState(merged);
 
     try {
-      if (hasAnyFilter(normalized)) {
+      if (hasPersistableMarketplaceDraft(normalized)) {
         sessionStorage.setItem(storageKey, JSON.stringify(normalized));
       } else {
         sessionStorage.removeItem(storageKey);
@@ -107,6 +144,14 @@
     return Number.isFinite(parsed) ? parsed : null;
   }
 
+  const ITEM_DETAIL_QUERY_KEYS = [
+    ...FILTER_KEYS,
+    ...MARKETPLACE_TOOLBAR_KEYS,
+    "page",
+    "reviewPage",
+    "returnTo",
+  ];
+
   function buildUrlWithFilters(baseUrl, state) {
     const url = new URL(baseUrl, window.location.origin);
     const normalized = normalizeState(state);
@@ -119,17 +164,76 @@
       }
     });
 
+    MARKETPLACE_TOOLBAR_KEYS.forEach((key) => {
+      if (
+        Object.prototype.hasOwnProperty.call(normalized, key) &&
+        normalized[key]
+      ) {
+        url.searchParams.set(key, normalized[key]);
+      } else {
+        url.searchParams.delete(key);
+      }
+    });
+
     return url.toString();
+  }
+
+  function buildMarketplaceReturnPath(state) {
+    const url = new URL("/marketplace", window.location.origin);
+    const normalized = normalizeState(state);
+
+    FILTER_KEYS.forEach((key) => {
+      if (normalized[key]) {
+        url.searchParams.set(key, normalized[key]);
+      }
+    });
+
+    MARKETPLACE_TOOLBAR_KEYS.forEach((key) => {
+      if (
+        Object.prototype.hasOwnProperty.call(normalized, key) &&
+        normalized[key]
+      ) {
+        url.searchParams.set(key, normalized[key]);
+      }
+    });
+
+    const pageInput = document.querySelector(
+      '[data-marketplace-toolbar-form] input[name="page"]',
+    );
+    const pageValue =
+      pageInput?.value ||
+      new URLSearchParams(window.location.search).get("page") ||
+      "";
+    if (pageValue) {
+      url.searchParams.set("page", pageValue);
+    }
+
+    return url.pathname + url.search;
+  }
+
+  function buildItemDetailHref(baseHref, state) {
+    const url = new URL(baseHref, window.location.origin);
+
+    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
+      url.searchParams.delete(key);
+    });
+
+    url.searchParams.set("returnTo", buildMarketplaceReturnPath(state));
+    return url.pathname + url.search;
   }
 
   function readUrlState() {
     const params = new URLSearchParams(window.location.search);
-    return normalizeState(
-      FILTER_KEYS.reduce((state, key) => {
+    const state = FILTER_KEYS.reduce((acc, key) => {
+      acc[key] = params.get(key) || "";
+      return acc;
+    }, {});
+    MARKETPLACE_TOOLBAR_KEYS.forEach((key) => {
+      if (params.has(key)) {
         state[key] = params.get(key) || "";
-        return state;
-      }, {}),
-    );
+      }
+    });
+    return normalizeState(state);
   }
 
   function getDateTimeControls(scope) {
@@ -202,6 +306,98 @@
       });
   }
 
+  function readMarketplacePersistSnapshot() {
+    const filterForm = document.querySelector(
+      '[data-filter-form="marketplace"]',
+    );
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
+    if (!filterForm && !toolbarForm) {
+      return normalizeState({});
+    }
+    const filters = filterForm
+      ? readFilterStateFromForm(filterForm)
+      : normalizeState({});
+    const params = new URLSearchParams(window.location.search);
+    const sortBy =
+      toolbarForm?.querySelector('[name="sortBy"]')?.value?.trim() ||
+      (params.has("sortBy") ? String(params.get("sortBy") || "").trim() : "");
+    const pageSize =
+      toolbarForm?.querySelector('[name="pageSize"]')?.value?.trim() ||
+      filterForm?.querySelector('[name="pageSize"]')?.value?.trim() ||
+      (params.has("pageSize")
+        ? String(params.get("pageSize") || "").trim()
+        : "");
+    const extra = {};
+    if (sortBy) {
+      extra.sortBy = sortBy;
+    }
+    if (pageSize) {
+      extra.pageSize = pageSize;
+    }
+    return normalizeState({ ...filters, ...extra });
+  }
+
+  function hydrateMarketplaceToolbar(toolbarForm, state) {
+    if (!toolbarForm || !state) {
+      return;
+    }
+    const sortEl = toolbarForm.querySelector('[name="sortBy"]');
+    if (
+      sortEl &&
+      Object.prototype.hasOwnProperty.call(state, "sortBy") &&
+      state.sortBy
+    ) {
+      sortEl.value = String(state.sortBy);
+    }
+    const pageSizeEl = toolbarForm.querySelector('[name="pageSize"]');
+    if (
+      pageSizeEl &&
+      Object.prototype.hasOwnProperty.call(state, "pageSize") &&
+      state.pageSize
+    ) {
+      pageSizeEl.value = String(state.pageSize);
+    }
+  }
+
+  function navigateMarketplaceToolbar(toolbarForm) {
+    const snapshot = readMarketplacePersistSnapshot();
+    writeStoredState(DRAFT_FILTERS_KEY, snapshot);
+    writeStoredState(APPLIED_FILTERS_KEY, snapshot);
+    reflectAppliedState(snapshot);
+    const action = toolbarForm.getAttribute("action") || "/marketplace";
+    const merged = new URL(
+      buildUrlWithFilters(action, snapshot),
+      window.location.origin,
+    );
+    merged.searchParams.set("page", "1");
+    window.location.assign(merged.toString());
+  }
+
+  function bindMarketplaceToolbarForm(toolbarForm) {
+    if (!toolbarForm) {
+      return;
+    }
+
+    toolbarForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      navigateMarketplaceToolbar(toolbarForm);
+    });
+
+    toolbarForm
+      .querySelectorAll('[name="sortBy"], [name="pageSize"]')
+      .forEach((el) => {
+        el.addEventListener("change", () => {
+          if (typeof toolbarForm.requestSubmit === "function") {
+            toolbarForm.requestSubmit();
+          } else {
+            navigateMarketplaceToolbar(toolbarForm);
+          }
+        });
+      });
+  }
+
   function readFilterStateFromForm(form) {
     if (!form) {
       return normalizeState({});
@@ -216,9 +412,13 @@
             '"]',
         )?.value ||
         "",
-      locationOptionId:
-        form.querySelector("[data-location-value]")?.value ||
-        form.querySelector('[name="locationOptionId"]')?.value ||
+      location:
+        form.querySelector('[data-option-value][name="location"]')?.value ||
+        form.querySelector('[name="location"]')?.value ||
+        "",
+      itemType:
+        form.querySelector('[data-option-value][name="itemType"]')?.value ||
+        form.querySelector('[name="itemType"]')?.value ||
         "",
       date:
         form.querySelector("[data-picker-input]")?.value ||
@@ -236,12 +436,15 @@
         form.querySelector("[data-people-input]")?.value ||
         form.querySelector('[name="capacity"]')?.value ||
         "",
-      maxWeight:
+      weight:
         form.querySelector("[data-weight-value-input]")?.value ||
-        form.querySelector('[name="maxWeight"]')?.value ||
+        form.querySelector('[name="weight"]')?.value ||
         "",
-      difficultyLevel:
-        form.querySelector('[name="difficultyLevel"]')?.value || "",
+      difficulty: form.querySelector('[name="difficulty"]')?.value || "",
+      minAvgRating:
+        form.querySelector("[data-min-rating-value-input]")?.value ||
+        form.querySelector('[name="minAvgRating"]')?.value ||
+        "",
     });
   }
 
@@ -263,9 +466,14 @@
 
         link.setAttribute(
           "href",
-          buildUrlWithFilters(link.dataset.baseHref, normalized),
+          buildItemDetailHref(link.dataset.baseHref, normalized),
         );
       });
+
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
+    hydrateMarketplaceToolbar(toolbarForm, normalized);
   }
 
   function formatMismatchReasons(reasons, conjunction) {
@@ -287,44 +495,67 @@
     );
   }
 
-  function fetchLocationOptions(url) {
-    if (!locationOptionsPromise) {
-      locationOptionsPromise = fetch(url)
-        .then((response) => (response.ok ? response.json() : []))
-        .catch(() => [])
-        .then((options) =>
-          Array.isArray(options)
-            ? options
+  function fetchSelectableOptions(url, slugMode) {
+    const resolved = (url || "/location-options").trim() || "/location-options";
+    const baseKey = new URL(resolved, window.location.origin).href;
+    const cacheKey = baseKey + (slugMode ? "#slug" : "#id");
+    if (!selectableOptionsByUrl.has(cacheKey)) {
+      selectableOptionsByUrl.set(
+        cacheKey,
+        fetch(resolved)
+          .then((response) => (response.ok ? response.json() : []))
+          .catch(() => [])
+          .then((options) => {
+            if (!Array.isArray(options)) {
+              return [];
+            }
+            if (slugMode) {
+              return options
                 .filter(
                   (option) =>
                     option &&
-                    Object.prototype.hasOwnProperty.call(option, "id") &&
-                    typeof option.name === "string",
+                    typeof option.name === "string" &&
+                    typeof option.slug === "string" &&
+                    option.slug.trim() !== "",
                 )
                 .map((option) => ({
-                  id: String(option.id),
+                  value: String(option.slug).trim(),
                   name: option.name,
-                }))
-            : [],
-        );
+                }));
+            }
+            return options
+              .filter(
+                (option) =>
+                  option &&
+                  typeof option.name === "string" &&
+                  Object.prototype.hasOwnProperty.call(option, "id") &&
+                  option.id != null &&
+                  String(option.id).trim() !== "",
+              )
+              .map((option) => ({
+                value: String(option.id).trim(),
+                name: option.name,
+              }));
+          }),
+      );
     }
 
-    return locationOptionsPromise;
+    return selectableOptionsByUrl.get(cacheKey);
   }
 
-  class LocationPicker {
+  class OptionsPicker {
     constructor(root) {
       this.root = root;
-      this.hiddenInput = root.querySelector("[data-location-value]");
-      this.queryInput = root.querySelector("[data-location-query]");
-      this.trigger = root.querySelector("[data-location-trigger]");
-      this.clearButton = root.querySelector("[data-location-clear]");
-      this.chevron = root.querySelector("[data-location-chevron]");
-      this.panel = root.querySelector("[data-location-panel]");
-      this.optionsContainer = root.querySelector("[data-location-options]");
-      this.emptyState = root.querySelector("[data-location-empty]");
+      this.hiddenInput = root.querySelector("[data-option-value]");
+      this.queryInput = root.querySelector("[data-option-query]");
+      this.trigger = root.querySelector("[data-option-trigger]");
+      this.clearButton = root.querySelector("[data-option-clear]");
+      this.chevron = root.querySelector("[data-option-chevron]");
+      this.panel = root.querySelector("[data-option-panel]");
+      this.optionsContainer = root.querySelector("[data-option-options]");
+      this.emptyState = root.querySelector("[data-option-empty]");
       this.options = [];
-      this.root.__locationPicker = this;
+      this.root.__optionsPicker = this;
       this.bind();
       this.bindSubmitToForm();
       this.loadOptions();
@@ -339,7 +570,13 @@
 
       this._formSubmitListener = (event) => {
         this.prepareForSubmit();
-        const msg = (this.root.dataset.locationRequiredMessage || "").trim();
+        if (
+          this.hiddenInput.name === "location" ||
+          this.hiddenInput.name === "itemType"
+        ) {
+          this.hiddenInput.value = trimParam(this.hiddenInput.value);
+        }
+        const msg = (this.root.dataset.requiredMessage || "").trim();
         if (msg && !String(this.hiddenInput.value || "").trim()) {
           event.preventDefault();
           this.queryInput.setCustomValidity(msg);
@@ -354,7 +591,7 @@
     bind() {
       if (this.trigger) {
         this.trigger.addEventListener("click", (event) => {
-          if (event.target.closest("[data-location-clear]")) {
+          if (event.target.closest("[data-option-clear]")) {
             return;
           }
 
@@ -376,7 +613,7 @@
 
       this.queryInput.addEventListener("input", () => {
         const exactMatch = this.findExact(this.queryInput.value);
-        this.hiddenInput.value = exactMatch ? exactMatch.id : "";
+        this.hiddenInput.value = exactMatch ? exactMatch.value : "";
         this.hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
         this.open();
         this.render();
@@ -397,15 +634,19 @@
       }
 
       document.addEventListener("click", (event) => {
-        if (!event.target.closest("[data-location-picker]")) {
+        if (!event.target.closest("[data-options-picker]")) {
           this.close();
         }
       });
     }
 
     loadOptions() {
-      fetchLocationOptions(
+      const slugMode =
+        this.hiddenInput.name === "location" ||
+        this.hiddenInput.name === "itemType";
+      fetchSelectableOptions(
         this.root.dataset.optionsUrl || "/location-options",
+        slugMode,
       ).then((options) => {
         this.options = options;
         this.setSelectedValue(this.hiddenInput.value);
@@ -433,9 +674,10 @@
     }
 
     setSelectedValue(value) {
-      this.hiddenInput.value = value || "";
+      const normalized = trimParam(value);
+      this.hiddenInput.value = normalized;
       const selected = this.options.find(
-        (option) => String(option.id) === String(value || ""),
+        (option) => String(option.value) === String(normalized || ""),
       );
       this.queryInput.value = selected ? selected.name : "";
       this.render();
@@ -452,7 +694,8 @@
 
     prepareForSubmit() {
       const exactMatch = this.findExact(this.queryInput.value);
-      this.hiddenInput.value = exactMatch ? exactMatch.id : "";
+      const raw = exactMatch ? exactMatch.value : "";
+      this.hiddenInput.value = trimParam(raw);
       this.queryInput.value = exactMatch
         ? exactMatch.name
         : this.queryInput.value || "";
@@ -473,12 +716,12 @@
     }
 
     selectOption(option) {
-      if (String(option.id) === String(this.hiddenInput.value)) {
+      if (String(option.value) === String(this.hiddenInput.value)) {
         this.clear();
         return;
       }
 
-      this.hiddenInput.value = String(option.id);
+      this.hiddenInput.value = String(option.value);
       this.queryInput.value = option.name;
       this.hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
       this.close();
@@ -495,7 +738,8 @@
 
       filteredOptions.forEach((option) => {
         const button = document.createElement("button");
-        const isSelected = String(option.id) === String(this.hiddenInput.value);
+        const isSelected =
+          String(option.value) === String(this.hiddenInput.value);
         button.type = "button";
         button.className =
           "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-on-surface transition-all hover:bg-primary/10 hover:text-primary active:bg-primary/14";
@@ -648,6 +892,146 @@
     }
   }
 
+  const MIN_RATING_STEPS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+
+  function normalizeminAvgRatingString(raw) {
+    const trimmed = raw == null ? "" : String(raw).trim();
+    if (!trimmed) {
+      return "";
+    }
+    const n = Number.parseFloat(trimmed);
+    if (!Number.isFinite(n)) {
+      return "";
+    }
+    const match = MIN_RATING_STEPS.find((step) => Math.abs(step - n) < 1e-6);
+    if (match == null) {
+      return "";
+    }
+    if (Math.abs(match - Math.trunc(match)) < 1e-6) {
+      return String(Math.trunc(match));
+    }
+    return String(match);
+  }
+
+  class minAvgRatingPicker {
+    constructor(root) {
+      this.root = root;
+      this.hiddenInput = root.querySelector("[data-min-rating-value-input]");
+      this.starsContainer = root.querySelector("[data-min-rating-stars]");
+      this.clearBtn = root.querySelector("[data-min-rating-clear]");
+      this.hoverValue = null;
+      this.root.__minAvgRatingPicker = this;
+      this.bind();
+      this.render();
+    }
+
+    parseValue(raw) {
+      const normalized = normalizeminAvgRatingString(raw);
+      if (!normalized) {
+        return null;
+      }
+      return Number.parseFloat(normalized);
+    }
+
+    bind() {
+      this.root.querySelectorAll("[data-min-rating-step]").forEach((btn) => {
+        btn.addEventListener("click", (event) => {
+          event.preventDefault();
+          const step = Number.parseFloat(
+            btn.getAttribute("data-min-rating-step") || "",
+          );
+          if (!Number.isFinite(step)) {
+            return;
+          }
+          const current = this.parseValue(this.hiddenInput.value);
+          if (current != null && Math.abs(current - step) < 1e-6) {
+            this.setValue("");
+            return;
+          }
+          this.setValue(String(step));
+        });
+
+        btn.addEventListener("mouseenter", () => {
+          const step = Number.parseFloat(
+            btn.getAttribute("data-min-rating-step") || "",
+          );
+          if (!Number.isFinite(step)) {
+            return;
+          }
+          this.hoverValue = step;
+          this.render();
+        });
+      });
+
+      if (this.starsContainer) {
+        this.starsContainer.addEventListener("mouseleave", () => {
+          this.hoverValue = null;
+          this.render();
+        });
+      }
+
+      if (this.clearBtn) {
+        this.clearBtn.addEventListener("click", (event) => {
+          event.preventDefault();
+          this.setValue("");
+        });
+      }
+    }
+
+    effectiveValue() {
+      if (this.hoverValue != null) {
+        return this.hoverValue;
+      }
+      return this.parseValue(this.hiddenInput.value);
+    }
+
+    render() {
+      const v = this.effectiveValue();
+      const baseIcon =
+        "material-symbols-outlined text-3xl leading-none transition-colors duration-150";
+      for (let star = 1; star <= 5; star += 1) {
+        const icon = this.root.querySelector(
+          `[data-min-rating-icon="${star}"]`,
+        );
+        if (!icon) {
+          continue;
+        }
+        let symbol = "star";
+        let filled = false;
+        if (v != null) {
+          if (v >= star - 1e-6) {
+            symbol = "star";
+            filled = true;
+          } else if (v + 1e-6 >= star - 0.5) {
+            symbol = "star_half";
+            filled = true;
+          }
+        }
+        icon.textContent = symbol;
+        if (filled) {
+          icon.className = `${baseIcon} text-warning opacity-100`;
+          icon.style.fontVariationSettings =
+            '"FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24';
+        } else {
+          icon.className = `${baseIcon} text-outline opacity-35`;
+          icon.style.fontVariationSettings =
+            '"FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24';
+        }
+      }
+    }
+
+    setValue(raw) {
+      const normalized = normalizeminAvgRatingString(raw);
+      this.hiddenInput.value = normalized;
+      this.hoverValue = null;
+      this.hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
+      this.root.dispatchEvent(
+        new CustomEvent("paw:min-rating-change", { bubbles: true }),
+      );
+      this.render();
+    }
+  }
+
   class WeightSlider {
     constructor(root) {
       this.root = root;
@@ -688,6 +1072,31 @@
     }
   }
 
+  function hydrateOptionsPickers(form, normalized) {
+    if (!form || !normalized) {
+      return;
+    }
+    form.querySelectorAll("[data-options-picker]").forEach((root) => {
+      const hidden = root.querySelector("[data-option-value]");
+      const picker = root.__optionsPicker;
+      if (!hidden || !picker) {
+        return;
+      }
+      const key = hidden.name;
+      let next = "";
+      if (
+        Object.prototype.hasOwnProperty.call(normalized, key) &&
+        normalized[key] != null &&
+        String(normalized[key]).trim() !== ""
+      ) {
+        next = String(normalized[key]);
+      } else if (hidden.value) {
+        next = hidden.value;
+      }
+      picker.setSelectedValue(next);
+    });
+  }
+
   function hydrateForm(form, state) {
     const normalized = normalizeState(state);
     const searchInput = document.querySelector(
@@ -698,28 +1107,39 @@
       searchInput.value = normalized.searchQuery;
     }
 
-    form.querySelectorAll("[data-location-picker]").forEach((root) => {
-      root.__locationPicker?.setSelectedValue(normalized.locationOptionId);
-    });
+    hydrateOptionsPickers(form, normalized);
 
     form.querySelectorAll("[data-people-count]").forEach((root) => {
       root.__peopleCount?.setValue(normalized.capacity || "");
     });
 
     form.querySelectorAll("[data-weight-slider]").forEach((root) => {
-      root.__weightSlider?.setValue(normalized.maxWeight);
+      root.__weightSlider?.setValue(normalized.weight);
     });
 
-    const difficultySelect = form.querySelector('[name="difficultyLevel"]');
+    form.querySelectorAll("[data-min-rating-picker]").forEach((root) => {
+      root.__minAvgRatingPicker?.setValue(normalized.minAvgRating);
+    });
+
+    const difficultySelect = form.querySelector('[name="difficulty"]');
     if (difficultySelect) {
-      difficultySelect.value = normalized.difficultyLevel || "";
+      difficultySelect.value = normalized.difficulty || "";
     }
 
     setDateTimeState(form, normalized);
+
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
+    hydrateMarketplaceToolbar(toolbarForm, normalized);
   }
 
   function bindDraftPersistence(form) {
     const persistDraft = () => {
+      if (form.getAttribute("data-filter-form") === "marketplace") {
+        writeStoredState(DRAFT_FILTERS_KEY, readMarketplacePersistSnapshot());
+        return;
+      }
       writeStoredState(DRAFT_FILTERS_KEY, readFilterStateFromForm(form));
     };
     const searchInput = document.querySelector(
@@ -733,14 +1153,29 @@
 
     form
       .querySelectorAll(
-        '[data-location-value], [data-people-input], [data-weight-input], [name="difficultyLevel"]',
+        '[data-option-value], [data-people-input], [data-weight-input], [data-min-rating-value-input], [name="difficulty"]',
       )
       .forEach((input) => {
         input.addEventListener("change", persistDraft);
         input.addEventListener("input", persistDraft);
       });
 
+    form.querySelectorAll("[data-min-rating-picker]").forEach((root) => {
+      root.addEventListener("paw:min-rating-change", persistDraft);
+    });
+
     bindDateTimeDraftPersistence(form, persistDraft);
+
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
+    if (toolbarForm) {
+      toolbarForm
+        .querySelectorAll('[name="sortBy"], [name="pageSize"]')
+        .forEach((el) => {
+          el.addEventListener("change", persistDraft);
+        });
+    }
   }
 
   function bindMarketplaceReset(control) {
@@ -757,6 +1192,21 @@
     });
   }
 
+  function syncMarketplaceOptionsPickersFromDom(form) {
+    const domState = readFilterStateFromForm(form);
+    form.querySelectorAll("[data-options-picker]").forEach((root) => {
+      const hidden = root.querySelector("[data-option-value]");
+      if (!hidden) {
+        return;
+      }
+      if (hidden.name === "location") {
+        root.__optionsPicker?.setSelectedValue(domState.location);
+      } else if (hidden.name === "itemType") {
+        root.__optionsPicker?.setSelectedValue(domState.itemType);
+      }
+    });
+  }
+
   function initializeLandingFilters() {
     const form = document.querySelector('[data-filter-form="landing"]');
     if (!form) {
@@ -767,16 +1217,28 @@
     if (hasAnyFilter(draftState)) {
       hydrateForm(form, draftState);
     }
+    syncMarketplaceOptionsPickersFromDom(form);
 
     bindDraftPersistence(form);
-    form.addEventListener("submit", () => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      form.querySelectorAll("[data-options-picker]").forEach((root) => {
+        root.__optionsPicker?.prepareForSubmit();
+      });
       const nextState = readFilterStateFromForm(form);
       writeStoredState(DRAFT_FILTERS_KEY, nextState);
       writeStoredState(APPLIED_FILTERS_KEY, nextState);
+      const action = form.getAttribute("action") || "/marketplace";
+      window.location.assign(buildUrlWithFilters(action, nextState));
     });
   }
 
   function initializeMarketplaceFilters() {
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
+    bindMarketplaceToolbarForm(toolbarForm);
+
     const form = document.querySelector('[data-filter-form="marketplace"]');
     if (!form) {
       return;
@@ -785,29 +1247,52 @@
       "[data-clear-marketplace-filters]",
     );
 
-    const pageState = readFilterStateFromForm(form);
+    const snapshot = readMarketplacePersistSnapshot();
     const draftState = readStoredState(DRAFT_FILTERS_KEY);
 
-    if (hasAnyFilter(pageState)) {
-      hydrateForm(form, pageState);
-      writeStoredState(DRAFT_FILTERS_KEY, pageState);
-      writeStoredState(APPLIED_FILTERS_KEY, pageState);
-      reflectAppliedState(pageState);
-    } else {
+    if (hasAnyFilter(snapshot)) {
+      hydrateForm(form, snapshot);
+      writeStoredState(DRAFT_FILTERS_KEY, snapshot);
+      writeStoredState(APPLIED_FILTERS_KEY, snapshot);
+      reflectAppliedState(snapshot);
+    } else if (hasPersistableMarketplaceDraft(draftState)) {
       if (hasAnyFilter(draftState)) {
         hydrateForm(form, draftState);
       }
-      writeStoredState(APPLIED_FILTERS_KEY, {});
-      reflectAppliedState({});
+      hydrateMarketplaceToolbar(toolbarForm, draftState);
+      writeStoredState(APPLIED_FILTERS_KEY, draftState);
+      reflectAppliedState(draftState);
+    } else {
+      hydrateMarketplaceToolbar(toolbarForm, snapshot);
+      if (hasPersistableMarketplaceDraft(snapshot)) {
+        writeStoredState(DRAFT_FILTERS_KEY, snapshot);
+        writeStoredState(APPLIED_FILTERS_KEY, snapshot);
+        reflectAppliedState(snapshot);
+      } else {
+        writeStoredState(APPLIED_FILTERS_KEY, {});
+        reflectAppliedState({});
+      }
     }
 
     bindDraftPersistence(form);
     resetControls.forEach(bindMarketplaceReset);
-    form.addEventListener("submit", () => {
-      const nextState = readFilterStateFromForm(form);
+    syncMarketplaceOptionsPickersFromDom(form);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      form.querySelectorAll("[data-options-picker]").forEach((root) => {
+        root.__optionsPicker?.prepareForSubmit();
+      });
+      const nextState = readMarketplacePersistSnapshot();
       writeStoredState(DRAFT_FILTERS_KEY, nextState);
       writeStoredState(APPLIED_FILTERS_KEY, nextState);
       reflectAppliedState(nextState);
+      const action = form.getAttribute("action") || "/marketplace";
+      const merged = new URL(
+        buildUrlWithFilters(action, nextState),
+        window.location.origin,
+      );
+      merged.searchParams.set("page", "1");
+      window.location.assign(merged.toString());
     });
   }
 
@@ -830,10 +1315,10 @@
     const marketplaceButton = alertRoot.querySelector(
       "[data-item-unavailable-marketplace]",
     );
-    const itemLocationOptionId = alertRoot.dataset.itemLocationOptionId || "";
+    const itemLocationSlug = alertRoot.dataset.itemLocationSlug || "";
     const itemCapacity = parseInteger(alertRoot.dataset.itemCapacity);
-    const itemMaxWeight = parseInteger(alertRoot.dataset.itemMaxWeight);
-    const itemDifficulty = parseInteger(alertRoot.dataset.itemDifficultyLevel);
+    const itemWeight = parseInteger(alertRoot.dataset.itemWeight);
+    const itemDifficulty = parseInteger(alertRoot.dataset.itemDifficulty);
     const mismatchPrefix =
       alertRoot.dataset.mismatchPrefix ||
       "This item does not match the saved filters for";
@@ -853,12 +1338,12 @@
     const controls = getDateTimeControls(document);
     const mismatchReasons = [];
     const requestedCapacity = parseInteger(appliedState.capacity);
-    const requestedWeight = parseInteger(appliedState.maxWeight);
-    const requestedDifficulty = parseInteger(appliedState.difficultyLevel);
+    const requestedWeight = parseInteger(appliedState.weight);
+    const requestedDifficulty = parseInteger(appliedState.difficulty);
 
     if (
-      appliedState.locationOptionId &&
-      String(appliedState.locationOptionId) !== String(itemLocationOptionId)
+      appliedState.location &&
+      String(appliedState.location) !== String(itemLocationSlug)
     ) {
       mismatchReasons.push(mismatchLocation);
     }
@@ -873,15 +1358,16 @@
 
     if (
       requestedWeight != null &&
-      itemMaxWeight != null &&
-      itemMaxWeight < requestedWeight
+      itemWeight != null &&
+      itemWeight < requestedWeight
     ) {
       mismatchReasons.push(mismatchWeight);
     }
 
     if (
       requestedDifficulty != null &&
-      (itemDifficulty == null || itemDifficulty !== requestedDifficulty)
+      itemDifficulty != null &&
+      itemDifficulty !== requestedDifficulty
     ) {
       mismatchReasons.push(mismatchDifficulty);
     }
@@ -957,8 +1443,8 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll("[data-location-picker]").forEach((root) => {
-      new LocationPicker(root);
+    document.querySelectorAll("[data-options-picker]").forEach((root) => {
+      new OptionsPicker(root);
     });
 
     document.querySelectorAll("[data-people-count]").forEach((root) => {
@@ -967,6 +1453,10 @@
 
     document.querySelectorAll("[data-weight-slider]").forEach((root) => {
       new WeightSlider(root);
+    });
+
+    document.querySelectorAll("[data-min-rating-picker]").forEach((root) => {
+      new minAvgRatingPicker(root);
     });
 
     initializeLandingFilters();

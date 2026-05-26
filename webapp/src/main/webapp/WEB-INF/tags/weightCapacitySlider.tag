@@ -13,8 +13,8 @@
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
-<spring:message code="filters.maxWeight" var="defaultWeightLabel" />
-<spring:message code="filters.maxWeight.helper" var="defaultWeightHelper" />
+<spring:message code="filters.weight" var="defaultWeightLabel" />
+<spring:message code="filters.weight.helper" var="defaultWeightHelper" />
 <c:set var="resolvedLabel" value="${not empty label ? label : defaultWeightLabel}" />
 <c:set var="resolvedMin" value="${not empty min ? min : '100'}" />
 <c:set var="resolvedMax" value="${not empty max ? max : '2000'}" />

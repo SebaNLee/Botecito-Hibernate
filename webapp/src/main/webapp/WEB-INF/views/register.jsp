@@ -19,8 +19,9 @@
 <spring:message code="register.password.label" var="passwordLabel" />
 <spring:message code="register.confirmPassword.label" var="confirmPasswordLabel" />
 <spring:message code="register.submit" var="registerSubmitLabel" />
+<spring:message code="page.title.register" var="titleRegister" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen">
+<paw:layout title="${titleRegister} - Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen">
   <div class="w-full max-w-lg px-6">
     <div class="card bg-base-100 shadow-sm border border-outline-variant/20">
       <div class="card-body p-8 gap-6">
@@ -50,6 +51,7 @@
           <paw:formField path="paymentAlias" label="${paymentAliasLabel}" placeholder="${paymentAliasPlaceholder}" />
           <paw:formField path="password" type="password" label="${passwordLabel}" placeholder="${passwordPlaceholder}" />
           <paw:formField path="confirmPassword" type="password" label="${confirmPasswordLabel}" placeholder="${confirmPasswordPlaceholder}" />
+          <form:errors path="passwordConfirmationValid" cssClass="text-error text-xs mt-1" element="p" />
           <paw:button type="submit" fullWidth="true" color="primary" text="${registerSubmitLabel}" />
         </form:form>
 

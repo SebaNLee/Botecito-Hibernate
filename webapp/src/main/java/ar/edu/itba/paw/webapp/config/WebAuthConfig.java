@@ -2,12 +2,15 @@ package ar.edu.itba.paw.webapp.config;
 
 import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
 
+import ar.edu.itba.paw.webapp.auth.AuthenticatedUserExistsFilter;
 import ar.edu.itba.paw.webapp.auth.UserAccountDetailsService;
 import java.util.concurrent.TimeUnit;
+import javax.servlet.RequestDispatcher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -15,7 +18,8 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.RegexRequestMatcher;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -33,11 +37,17 @@ public class WebAuthConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(
-            final HttpSecurity http, final UserAccountDetailsService userDetailsAccountService) throws Exception {
+            final HttpSecurity http,
+            final UserAccountDetailsService userDetailsAccountService,
+            final AuthenticationSuccessHandler authenticationSuccessHandler,
+            final AuthenticatedUserExistsFilter authenticatedUserExistsFilter)
+            throws Exception {
         http.userDetailsService(userDetailsAccountService)
+                .addFilterAfter(authenticatedUserExistsFilter, RememberMeAuthenticationFilter.class)
                 .sessionManagement(session -> session.invalidSessionUrl("/login"))
                 .authorizeHttpRequests(auth -> auth
-                        // Use AntPathRequestMatcher so Spring Security does not pick MvcRequestMatcher (Servlet 4).
+                        // Use AntPathRequestMatcher so Spring Security does not pick
+                        // MvcRequestMatcher (Servlet 4).
                         .requestMatchers(antMatcher("/login"))
                         .permitAll()
                         .requestMatchers(antMatcher("/register"))
@@ -46,31 +56,39 @@ public class WebAuthConfig {
                                 antMatcher(HttpMethod.GET, "/"),
                                 antMatcher(HttpMethod.GET, "/marketplace"),
                                 antMatcher(HttpMethod.GET, "/location-options"),
-                                antMatcher(HttpMethod.GET, "/errors"),
-                                antMatcher(HttpMethod.GET, "/403"))
+                                antMatcher(HttpMethod.GET, "/item-type-options"),
+                                antMatcher(HttpMethod.GET, "/errors"))
                         .permitAll()
                         .requestMatchers(antMatcher("/password-recovery/**"))
+                        .permitAll()
+                        .requestMatchers(antMatcher("/verify-email/**"))
                         .permitAll()
                         .requestMatchers(
                                 antMatcher(HttpMethod.GET, "/image/*"),
                                 antMatcher(HttpMethod.GET, "/bookings/*/accept"),
                                 antMatcher(HttpMethod.GET, "/bookings/*/decline"))
                         .permitAll()
-                        .requestMatchers(new RegexRequestMatcher("^/item/[0-9]+$", "GET"))
+                        .requestMatchers(antMatcher(HttpMethod.GET, "/item/*"))
                         .permitAll()
                         .requestMatchers(antMatcher("/**"))
                         .authenticated())
                 .formLogin(form -> form.usernameParameter("j_username")
                         .passwordParameter("j_password")
-                        .defaultSuccessUrl("/", false)
+                        .successHandler(authenticationSuccessHandler)
                         .loginPage("/login")
-                        .failureUrl("/login?error=true"))
+                        .failureHandler((request, response, exception) -> response.sendRedirect(request.getContextPath()
+                                + (exception instanceof DisabledException
+                                        ? "/login?unverified=true"
+                                        : "/login?error=true"))))
                 .rememberMe(remember -> remember.rememberMeParameter("j_rememberme")
                         .userDetailsService(userDetailsAccountService)
                         .key("botecito-remember-me-secret")
                         .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(30)))
                 .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/login?logout=true"))
-                .exceptionHandling(ex -> ex.accessDeniedPage("/403"))
+                .exceptionHandling(ex -> ex.accessDeniedHandler((request, response, accessDeniedException) -> {
+                    request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
+                    request.getRequestDispatcher("/errors").forward(request, response);
+                }))
                 .csrf(csrf -> csrf.disable());
         return http.build();
     }

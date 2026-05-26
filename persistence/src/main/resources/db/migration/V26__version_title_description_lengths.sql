@@ -1,0 +1,5 @@
+ALTER TABLE version
+    ALTER COLUMN title TYPE VARCHAR(100);
+
+ALTER TABLE version
+    ALTER COLUMN description TYPE VARCHAR(1000);

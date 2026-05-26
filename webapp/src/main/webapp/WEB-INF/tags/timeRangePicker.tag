@@ -1,8 +1,8 @@
 <%@ tag language="java" pageEncoding="UTF-8" body-content="scriptless" %>
 <%@ attribute name="id" required="true" %>
 <%@ attribute name="dateInputId" required="true" %>
-<%@ attribute name="startName" required="true" %>
-<%@ attribute name="endName" required="true" %>
+<%@ attribute name="startTimeFieldName" required="true" %>
+<%@ attribute name="endTimeFieldName" required="true" %>
 <%@ attribute name="offeredTimesJson" required="true" %>
 <%@ attribute name="occupiedTimesJson" required="true" %>
 <%@ attribute name="label" required="false" %>
@@ -64,8 +64,8 @@
     data-pick-start-label="${fn:escapeXml(timePickerPickStart)}"
     data-minimum-duration-label="${fn:escapeXml(timePickerMinimumDuration)}"
     data-from-label="${fn:escapeXml(timePickerFrom)}">
-  <input id="${id}-start" name="${startName}" type="hidden" value="${fn:escapeXml(resolvedStartValue)}" data-time-start-input />
-  <input id="${id}-end" name="${endName}" type="hidden" value="${fn:escapeXml(resolvedEndValue)}" data-time-end-input />
+  <input id="${id}-start" name="${startTimeFieldName}" type="hidden" value="${fn:escapeXml(resolvedStartValue)}" data-time-start-input />
+  <input id="${id}-end" name="${endTimeFieldName}" type="hidden" value="${fn:escapeXml(resolvedEndValue)}" data-time-end-input />
 
   <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
     <c:out value="${resolvedLabel}" />

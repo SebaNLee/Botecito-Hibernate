@@ -1,43 +1,24 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.User;
+import ar.edu.itba.paw.models.entity.Users;
 import java.util.Optional;
 
 public interface UserService {
-    enum PasswordRecoveryResult {
-        SUCCESS,
-        INVALID_TOKEN
-    }
 
-    enum RegistrationResult {
-        SUCCESS,
-        EMAIL_ALREADY_EXISTS
-    }
+    void register(String firstName, String lastName, String email, String alias, String language, String rawPassword);
 
-    RegistrationResult register(
-            String givenName,
-            String lastName,
-            String email,
-            String rawPassword,
-            String paymentAlias,
-            String preferredLanguage);
+    Optional<Users> findByEmail(String email);
 
-    Optional<User> findByEmail(String email);
+    Optional<Users> findById(int id);
 
-    Optional<User> findById(int id);
+    Optional<Users> updateProfile(
+            int userId, String firstName, String lastName, String email, String phone, String alias, String language);
 
-    Optional<User> updateProfile(
-            int userId,
-            String givenName,
-            String lastName,
-            String email,
-            String phone,
-            String paymentAlias,
-            String preferredLanguage);
+    Optional<Users> requestPasswordRecovery(String email);
 
-    Optional<User> requestPasswordRecovery(String email);
+    Optional<Users> findByPasswordRecoveryToken(String token);
 
-    Optional<User> findByPasswordRecoveryToken(String token);
+    boolean resetPassword(String token, String rawPassword);
 
-    PasswordRecoveryResult resetPassword(String token, String rawPassword);
+    Optional<Users> verifyEmail(String token);
 }

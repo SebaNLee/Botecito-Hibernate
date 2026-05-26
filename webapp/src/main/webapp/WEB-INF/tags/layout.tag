@@ -4,6 +4,7 @@
 <%@ attribute name="headerCtaMessageCode" required="false" %>
 <%@ attribute name="headerCtaHref" required="false" %>
 <%@ attribute name="headerCtaVariant" required="false" %>
+<%@ attribute name="scripts" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 
@@ -30,16 +31,6 @@
       <jsp:doBody />
     </main>
     <paw:siteFooter />
-    <script src="<c:url value='/js/dismissible-alerts.js' />"></script>
-    <script src="<c:url value='/js/toast.js' />"></script>
-    <script type="module" src="<c:url value='/js/cally-loader.js' />"></script>
-    <script src="<c:url value='/js/date-time-picker.js' />"></script>
-    <script src="<c:url value='/js/search-filters.js' />"></script>
-    <script src="<c:url value='/js/form-submit-state.js' />"></script>
-    <script src="<c:url value='/js/weekly-availability.js?v=2' />"></script>
-    <script src="<c:url value='/js/image-upload-preview.js' />"></script>
-    <script src="<c:url value='/js/image-gallery.js' />"></script>
-    <script src="<c:url value='/js/image-carousel.js' />"></script>
-    <script src="<c:url value='/js/rating-stars.js' />"></script>
+    <paw:pageScripts bundles="${scripts}" />
   </body>
 </html>

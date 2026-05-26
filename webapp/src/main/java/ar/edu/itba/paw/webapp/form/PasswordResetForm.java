@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.form;
 
+import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import lombok.Getter;
@@ -15,4 +16,15 @@ public class PasswordResetForm {
 
     @NotBlank(message = "{passwordRecovery.reset.validation.confirmPassword.required}")
     private String confirmPassword;
+
+    private String token;
+    private String invalid;
+
+    @AssertTrue(message = "{passwordRecovery.reset.validation.password.mismatch}")
+    public boolean isPasswordConfirmationValid() {
+        if (password == null || password.isBlank() || confirmPassword == null || confirmPassword.isBlank()) {
+            return true;
+        }
+        return password.equals(confirmPassword);
+    }
 }

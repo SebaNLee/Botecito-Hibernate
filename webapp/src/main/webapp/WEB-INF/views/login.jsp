@@ -10,8 +10,10 @@
 <spring:message code="login.password.placeholder" var="passwordPlaceholder" />
 <spring:message code="login.email.label" var="emailLabel" />
 <spring:message code="login.password.label" var="passwordLabel" />
+<spring:message code="page.title.login" var="titleLogin" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen">
+<paw:layout title="${titleLogin} - Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen" scripts="toast">
+  <paw:toastNotifier />
   <div class="w-full max-w-md px-6">
     <div class="card bg-base-100 shadow-sm border border-outline-variant/20">
       <div class="card-body p-8 gap-6">
@@ -33,11 +35,26 @@
         <c:if test="${registeredSuccess}">
           <paw:alertMessage type="success"><spring:message code="login.registered" /></paw:alertMessage>
         </c:if>
+        <c:if test="${verificationSentSuccess}">
+          <paw:alertMessage type="success"><spring:message code="login.verificationSent" /></paw:alertMessage>
+        </c:if>
+        <c:if test="${emailVerifiedSuccess}">
+          <paw:alertMessage type="success"><spring:message code="login.verified" /></paw:alertMessage>
+        </c:if>
+        <c:if test="${verificationInvalidError}">
+          <paw:alertMessage type="error"><spring:message code="login.verificationInvalid" /></paw:alertMessage>
+        </c:if>
+        <c:if test="${unverifiedError}">
+          <paw:alertMessage type="warning"><spring:message code="login.unverified" /></paw:alertMessage>
+        </c:if>
         <c:if test="${legacyTokenError}">
           <paw:alertMessage type="warning"><spring:message code="login.legacyToken" /></paw:alertMessage>
         </c:if>
         <c:if test="${passwordRecoveredSuccess}">
           <paw:alertMessage type="success"><spring:message code="login.passwordRecovered" /></paw:alertMessage>
+        </c:if>
+        <c:if test="${sessionExpiredWarning}">
+          <paw:alertMessage type="warning"><spring:message code="login.sessionExpired" /></paw:alertMessage>
         </c:if>
 
         <form action="${loginUrl}" method="post" class="space-y-4">

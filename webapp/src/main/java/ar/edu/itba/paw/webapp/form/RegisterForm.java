@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.form;
 
+import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
@@ -32,4 +33,30 @@ public class RegisterForm {
 
     @Size(max = 120, message = "{register.validation.paymentAlias.max}")
     private String paymentAlias;
+
+    private String preferredLanguage;
+
+    @AssertTrue(message = "{register.validation.password.mismatch}")
+    public boolean isPasswordConfirmationValid() {
+        if (password == null || password.isBlank() || confirmPassword == null || confirmPassword.isBlank()) {
+            return true;
+        }
+        return password.equals(confirmPassword);
+    }
+
+    public void setGivenName(final String givenName) {
+        this.givenName = givenName == null ? null : givenName.trim();
+    }
+
+    public void setLastName(final String lastName) {
+        this.lastName = lastName == null ? null : lastName.trim();
+    }
+
+    public void setEmail(final String email) {
+        this.email = email == null ? null : email.trim();
+    }
+
+    public void setPaymentAlias(final String paymentAlias) {
+        this.paymentAlias = paymentAlias == null ? null : paymentAlias.trim();
+    }
 }

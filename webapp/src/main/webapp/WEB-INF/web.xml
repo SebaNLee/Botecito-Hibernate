@@ -59,7 +59,7 @@
     <multipart-config>
         <location>/tmp</location>
         <max-file-size>5242880</max-file-size>
-        <max-request-size>10485760</max-request-size>
+        <max-request-size>20971520</max-request-size>
         <file-size-threshold>2621440</file-size-threshold>
     </multipart-config>
     <init-param>
@@ -83,7 +83,7 @@
   </error-page>
   <error-page>
     <error-code>403</error-code>
-    <location>/403</location>
+    <location>/errors</location>
   </error-page>
   <error-page>
     <error-code>404</error-code>

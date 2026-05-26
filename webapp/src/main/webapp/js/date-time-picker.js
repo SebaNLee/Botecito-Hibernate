@@ -15,6 +15,19 @@
     day: "numeric",
     month: "long",
   });
+  /** Same fields as above but calendar day in UTC (pairs with isoToUtcCivilDate). */
+  const DATE_FORMATTER_UTC = new Intl.DateTimeFormat(UI_LOCALE, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+  const DATE_TRIGGER_SHORT_WEEKDAY_UTC = new Intl.DateTimeFormat(UI_LOCALE, {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
   const FILTER_STORAGE_KEY = "paw.marketplaceFilters";
   const ALL_TIMES = buildAllTimes();
   const MONTH_SECTION_CLASS = "picker-month";
@@ -142,6 +155,16 @@
     return new Date(isoDate + "T00:00:00");
   }
 
+  /** Civil calendar Y-M-D at UTC midnight (no browser local offset shift). */
+  function isoToUtcCivilDate(isoDate) {
+    const parts = isoDateParts(isoDate).map(Number);
+    if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) {
+      return isoToDate(isoDate);
+    }
+
+    return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+  }
+
   function formatLongDate(isoDate) {
     if (!isoDate) {
       return "";
@@ -151,15 +174,21 @@
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }
 
-  function formatDatePickerTriggerLabel(isoDate) {
+  function formatDatePickerTriggerLabel(isoDate, civilCalendar) {
     if (!isoDate) {
       return "";
     }
 
-    const date = isoToDate(isoDate);
-    let formatted = DATE_FORMATTER.format(date);
+    const date = civilCalendar
+      ? isoToUtcCivilDate(isoDate)
+      : isoToDate(isoDate);
+    const longFmt = civilCalendar ? DATE_FORMATTER_UTC : DATE_FORMATTER;
+    const shortFmt = civilCalendar
+      ? DATE_TRIGGER_SHORT_WEEKDAY_UTC
+      : DATE_TRIGGER_SHORT_WEEKDAY;
+    let formatted = longFmt.format(date);
     if (formatted.length > 32) {
-      formatted = DATE_TRIGGER_SHORT_WEEKDAY.format(date);
+      formatted = shortFmt.format(date);
     }
 
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
@@ -419,9 +448,27 @@
     return Boolean(state && state.date && state.startTime && state.endTime);
   }
 
+  function trimStoredParam(value) {
+    return (value == null ? "" : String(value)).trim();
+  }
+
   function readStoredFilters() {
     try {
-      return parseJson(sessionStorage.getItem(FILTER_STORAGE_KEY), {}) || {};
+      const raw =
+        parseJson(sessionStorage.getItem(FILTER_STORAGE_KEY), {}) || {};
+      const location = trimStoredParam(raw.location);
+      if (location) {
+        raw.location = location;
+      } else {
+        delete raw.location;
+      }
+      const itemType = trimStoredParam(raw.itemType);
+      if (itemType) {
+        raw.itemType = itemType;
+      } else {
+        delete raw.itemType;
+      }
+      return raw;
     } catch (error) {
       return {};
     }
@@ -429,14 +476,30 @@
 
   function writeStoredFilters(state) {
     try {
-      sessionStorage.setItem(
-        FILTER_STORAGE_KEY,
-        JSON.stringify({
-          date: state.date || "",
-          startTime: state.startTime || "",
-          endTime: state.endTime || "",
-        }),
-      );
+      const previous = readStoredFilters() || {};
+      const merged = {
+        ...previous,
+        date: state.date || "",
+        startTime: state.startTime || "",
+        endTime: state.endTime || "",
+      };
+      merged.location = trimStoredParam(merged.location);
+      if (!merged.location) {
+        delete merged.location;
+      }
+      merged.itemType = trimStoredParam(merged.itemType);
+      if (!merged.itemType) {
+        delete merged.itemType;
+      }
+      const stillHasFilters = Object.keys(merged).some((key) => {
+        const value = merged[key];
+        return value != null && String(value).trim() !== "";
+      });
+      if (stillHasFilters) {
+        sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(merged));
+      } else {
+        sessionStorage.removeItem(FILTER_STORAGE_KEY);
+      }
     } catch (error) {
       // Ignore session storage failures.
     }
@@ -450,8 +513,46 @@
     }
   }
 
+  const ITEM_DETAIL_QUERY_KEYS = [
+    "searchQuery",
+    "location",
+    "itemType",
+    "date",
+    "startTime",
+    "endTime",
+    "capacity",
+    "weight",
+    "difficulty",
+    "minAvgRating",
+    "sortBy",
+    "pageSize",
+    "page",
+    "reviewPage",
+    "returnTo",
+  ];
+
   function buildUrlWithFilters(baseUrl, state) {
     const url = new URL(baseUrl, window.location.origin);
+    const stored = readStoredFilters() || {};
+    const preservedKeys = [
+      "searchQuery",
+      "location",
+      "itemType",
+      "capacity",
+      "weight",
+      "difficulty",
+      "minAvgRating",
+      "sortBy",
+      "pageSize",
+    ];
+    preservedKeys.forEach((key) => {
+      const value = stored[key];
+      if (value != null && String(value).trim() !== "") {
+        url.searchParams.set(key, String(value));
+      } else if (key === "location" || key === "itemType") {
+        url.searchParams.delete(key);
+      }
+    });
 
     ["date", "startTime", "endTime"].forEach((key) => {
       if (state && state[key]) {
@@ -462,6 +563,58 @@
     });
 
     return url.toString();
+  }
+
+  function buildMarketplaceReturnPath(state) {
+    const url = new URL("/marketplace", window.location.origin);
+    const stored = readStoredFilters() || {};
+    const preservedKeys = [
+      "searchQuery",
+      "location",
+      "itemType",
+      "capacity",
+      "weight",
+      "difficulty",
+      "minAvgRating",
+      "sortBy",
+      "pageSize",
+    ];
+    preservedKeys.forEach((key) => {
+      const value = stored[key];
+      if (value != null && String(value).trim() !== "") {
+        url.searchParams.set(key, String(value));
+      }
+    });
+
+    ["date", "startTime", "endTime"].forEach((key) => {
+      if (state && state[key]) {
+        url.searchParams.set(key, state[key]);
+      }
+    });
+
+    const pageInput = document.querySelector(
+      '[data-marketplace-toolbar-form] input[name="page"]',
+    );
+    const pageValue =
+      pageInput?.value ||
+      new URLSearchParams(window.location.search).get("page") ||
+      "";
+    if (pageValue) {
+      url.searchParams.set("page", pageValue);
+    }
+
+    return url.pathname + url.search;
+  }
+
+  function buildItemDetailHref(baseHref, state) {
+    const url = new URL(baseHref, window.location.origin);
+
+    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
+      url.searchParams.delete(key);
+    });
+
+    url.searchParams.set("returnTo", buildMarketplaceReturnPath(state));
+    return url.pathname + url.search;
   }
 
   function stripAvailabilityFilters(baseUrl) {
@@ -498,7 +651,7 @@
 
         link.setAttribute(
           "href",
-          buildUrlWithFilters(link.dataset.baseHref, state),
+          buildItemDetailHref(link.dataset.baseHref, state),
         );
       });
   }
@@ -653,8 +806,12 @@
         root.dataset.restrictToAvailability,
         true,
       );
-      this.today = todayIsoDate();
-      this.maxDate = visibleRangeEndIsoDate();
+      const anchorToday = (root.dataset.anchorTodayIso || "").trim();
+      const anchorMax = (root.dataset.anchorMaxDateIso || "").trim();
+      this.civilCalendar = parseBoolean(root.dataset.civilCalendar, false);
+      this.useAnchorRange = Boolean(anchorToday && anchorMax);
+      this.today = this.useAnchorRange ? anchorToday : todayIsoDate();
+      this.maxDate = this.useAnchorRange ? anchorMax : visibleRangeEndIsoDate();
       this.root.__datePicker = this;
       mountFloatingPanel(this.panel);
 
@@ -813,7 +970,7 @@
 
     updateValueLabel() {
       this.valueNode.textContent = this.input.value
-        ? formatDatePickerTriggerLabel(this.input.value)
+        ? formatDatePickerTriggerLabel(this.input.value, this.civilCalendar)
         : this.placeholder;
 
       const hasValue = Boolean(this.input.value);
@@ -1385,7 +1542,9 @@
     updateTriggerLabel() {
       if (this.startInput.value && this.endInput.value) {
         this.valueNode.textContent =
-          displayTime(this.startInput.value) + " - " + displayTime(this.endInput.value);
+          displayTime(this.startInput.value) +
+          " - " +
+          displayTime(this.endInput.value);
       } else if (this.startInput.value) {
         this.valueNode.textContent =
           this.fromLabel + " " + displayTime(this.startInput.value);
@@ -1396,10 +1555,7 @@
       const hasSelection = Boolean(
         this.startInput.value || this.endInput.value,
       );
-      syncTriggerClearButtonCollapsed(
-        this.triggerClearButton,
-        !hasSelection,
-      );
+      syncTriggerClearButtonCollapsed(this.triggerClearButton, !hasSelection);
     }
   }
 

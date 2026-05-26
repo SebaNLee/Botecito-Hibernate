@@ -6,7 +6,7 @@
 <c:url var="outgoingFormAction" value="/requests/outgoing" />
 <spring:message code="page.title.requestsOutgoing" var="titleRequestsOutgoing" />
 
-<paw:layout title="${titleRequestsOutgoing} - Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6" scripts="toast,search-filters,date-time,form-submit">
+<paw:layout title="${titleRequestsOutgoing} - Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6" scripts="toast,search-filters,date-time,form-submit,rating-stars">
   <paw:requestsBookingsList
       formAction="${outgoingFormAction}"
       sidebarActive="outgoing"

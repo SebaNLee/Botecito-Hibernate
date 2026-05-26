@@ -8,7 +8,8 @@ import java.util.Optional;
 
 public interface ItemService {
 
-    ItemSearchResult listOwnerItems(int ownerId, int page, int pageSize);
+    ItemSearchResult listOwnerItems(int ownerId, String searchQuery, String status, String location,
+                                    int page, int pageSize, String sortBy);
 
     Item findItemById(int id);
 

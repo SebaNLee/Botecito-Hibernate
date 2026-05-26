@@ -86,9 +86,9 @@ public class WebAuthConfig {
                         .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(30)))
                 .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/login?logout=true"))
                 .exceptionHandling(ex -> ex.accessDeniedHandler((request, response, accessDeniedException) -> {
-    request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
-    request.getRequestDispatcher("/errors").forward(request, response);
-}))
+                    request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
+                    request.getRequestDispatcher("/errors").forward(request, response);
+                }))
                 .csrf(csrf -> csrf.disable());
         return http.build();
     }

@@ -238,8 +238,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
     }
 
     private long countReviewsForItem(final int itemId) {
-        final Query query = em.createNativeQuery(
-                "SELECT COUNT(r.id) FROM review r "
+        final Query query = em.createNativeQuery("SELECT COUNT(r.id) FROM review r "
                 + "INNER JOIN booking b ON r.booking_id = b.id "
                 + "INNER JOIN version v2 ON b.version_id = v2.id "
                 + "WHERE r.target_type = CAST(:target AS target_enum) AND v2.item_id = :itemId");
@@ -249,8 +248,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
     }
 
     private double averageRatingForItem(final int itemId) {
-        final Query query = em.createNativeQuery(
-                "SELECT COALESCE(AVG(r.rating), 0) FROM review r "
+        final Query query = em.createNativeQuery("SELECT COALESCE(AVG(r.rating), 0) FROM review r "
                 + "INNER JOIN booking b ON r.booking_id = b.id "
                 + "INNER JOIN version v2 ON b.version_id = v2.id "
                 + "WHERE r.target_type = CAST(:target AS target_enum) AND v2.item_id = :itemId");

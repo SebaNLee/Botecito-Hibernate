@@ -135,7 +135,7 @@ public class BookingJpaDao implements BookingDao {
         }
 
         String jpql =
-                "SELECT DISTINCT b FROM Booking b JOIN FETCH b.guest JOIN FETCH b.version v JOIN FETCH v.item i JOIN FETCH i.host LEFT JOIN FETCH v.media WHERE b.id IN :ids"
+                "SELECT DISTINCT b FROM Booking b JOIN FETCH b.guest LEFT JOIN FETCH b.paymentProof JOIN FETCH b.version v JOIN FETCH v.item i JOIN FETCH i.host LEFT JOIN FETCH v.media WHERE b.id IN :ids"
                         + jpqlOrderBy(query);
         var dataQuery = em.createQuery(jpql, Booking.class).setParameter("ids", ids);
 

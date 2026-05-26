@@ -12,8 +12,9 @@
   <c:set var="filesError" value="${status.errorMessage}" />
 </spring:bind>
 
+<spring:message code="page.title.publish" var="titlePublish" />
 <paw:layout
-  title="Botecito"
+  title="${titlePublish} - Botecito"
   mainClass="pt-24 pb-14 max-w-3xl mx-auto px-6"
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"

@@ -9,8 +9,9 @@
 <spring:message code="passwordRecovery.request.email.label" var="emailLabel" />
 <spring:message code="passwordRecovery.request.email.placeholder" var="emailPlaceholder" />
 <spring:message code="passwordRecovery.request.submit" var="submitLabel" />
+<spring:message code="page.title.passwordRecovery" var="titlePasswordRecovery" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen">
+<paw:layout title="${titlePasswordRecovery} - Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen">
   <div class="w-full max-w-md px-6">
     <div class="card bg-base-100 shadow-sm border border-outline-variant/20">
       <div class="card-body p-8 gap-6">

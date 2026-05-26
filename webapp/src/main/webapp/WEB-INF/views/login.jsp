@@ -10,8 +10,9 @@
 <spring:message code="login.password.placeholder" var="passwordPlaceholder" />
 <spring:message code="login.email.label" var="emailLabel" />
 <spring:message code="login.password.label" var="passwordLabel" />
+<spring:message code="page.title.login" var="titleLogin" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen" scripts="toast">
+<paw:layout title="${titleLogin} - Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen" scripts="toast">
   <paw:toastNotifier />
   <div class="w-full max-w-md px-6">
     <div class="card bg-base-100 shadow-sm border border-outline-variant/20">

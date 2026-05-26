@@ -3,8 +3,9 @@
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
+<spring:message code="page.title.edit" var="titleEdit" />
 <paw:layout
-  title="Botecito"
+  title="${titleEdit} - Botecito"
   mainClass="pt-24 pb-14 max-w-3xl mx-auto px-6"
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"

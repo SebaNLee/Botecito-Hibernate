@@ -36,8 +36,9 @@
   <c:set var="initials" value="${fn:substring(user.email, 0, 1)}" />
 </c:if>
 <c:set var="initials" value="${fn:toUpperCase(initials)}" />
+<spring:message code="page.title.profile" var="titleProfile" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-10 w-full max-w-7xl mx-auto px-6">
+<paw:layout title="${titleProfile} - Botecito" mainClass="pt-24 pb-10 w-full max-w-7xl mx-auto px-6">
   <section class="space-y-6 min-w-0">
 
     <%-- Header card --%>

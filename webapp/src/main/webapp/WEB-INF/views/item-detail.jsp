@@ -50,6 +50,7 @@
 <spring:message code="itemDetail.price.hours" var="itemDetailPriceHoursLabel" />
 <spring:message code="detail.reviews.anonymous" var="detailReviewAnonymousLabel" />
 <spring:message code="contact.sendEmail" var="contactSendEmailLabel" />
+<spring:message code="itemDetail.contact.viewProfile" var="viewProfileLabel" />
 
 <paw:layout title="Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8" scripts="toast,search-filters,date-time,form-submit,pre-booking-draft,image-carousel,rating-stars">
   <paw:toastNotifier />
@@ -122,88 +123,6 @@
               </span>
             </li>
           </ul>
-        </jsp:body>
-      </paw:sectionCard>
-
-      <paw:sectionCard icon="person">
-        <jsp:attribute name="title"><spring:message code="itemDetail.contact.host" /></jsp:attribute>
-        <jsp:body>
-          <div class="flex min-w-0 flex-col gap-4">
-            <div class="flex min-w-0 items-center gap-4">
-              <div class="avatar placeholder shrink-0">
-                <div class="bg-primary/10 text-primary rounded-full w-14 h-14 flex items-center justify-center">
-                  <span class="font-extrabold text-xl"><c:out value="${ownerInitials}" /></span>
-                </div>
-              </div>
-              <div class="min-w-0">
-                <h3 class="font-extrabold text-lg m-0 break-words">
-                  <c:choose>
-                    <c:when test="${itemOwner != null}">
-                      <c:url var="itemOwnerProfileUrl" value="/profiles/${itemOwner.id}" />
-                      <a href="${itemOwnerProfileUrl}" class="no-underline text-on-background hover:underline"><c:out value="${itemOwnerDisplayName}" /></a>
-                    </c:when>
-                    <c:otherwise><spring:message code="itemDetail.owner.none" /></c:otherwise>
-                  </c:choose>
-                </h3>
-                <div class="break-all text-xs text-on-surface-variant">
-                  <c:choose>
-                    <c:when test="${itemOwner != null}"><c:out value="${itemOwner.email}" /></c:when>
-                    <c:otherwise><spring:message code="itemDetail.owner.noEmail" /></c:otherwise>
-                  </c:choose>
-                </div>
-              </div>
-            </div>
-            <div class="flex w-full flex-col gap-2">
-              <paw:button
-                href="mailto:${itemOwner != null ? itemOwner.email : ''}"
-                color="outline"
-                icon="mail"
-                cssClass="w-full sm:w-auto"
-                text="${contactSendEmailLabel}"
-              />
-              <c:if test="${canSubscribeToOwner}">
-                <c:choose>
-                  <c:when test="${viewer == null}">
-                    <c:url var="subscriptionLoginUrl" value="/login" />
-                    <paw:button
-                      href="${subscriptionLoginUrl}"
-                      color="secondary"
-                      variant="outline"
-                      icon="notifications"
-                      cssClass="w-full"
-                      text="${subscriptionLoginToSubscribeLabel}"
-                    />
-                  </c:when>
-                  <c:when test="${subscribedToOwner}">
-                    <c:url var="unsubscribeOwnerUrl" value="/users/${itemOwner.id}/unsubscribe" />
-                    <form action="${unsubscribeOwnerUrl}" method="post" class="m-0">
-                      <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
-                      <paw:button
-                        type="submit"
-                        color="outline"
-                        icon="notifications_off"
-                        cssClass="w-full"
-                        text="${subscriptionUnsubscribeLabel}"
-                      />
-                    </form>
-                  </c:when>
-                  <c:otherwise>
-                    <c:url var="subscribeOwnerUrl" value="/users/${itemOwner.id}/subscribe" />
-                    <form action="${subscribeOwnerUrl}" method="post" class="m-0">
-                      <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
-                      <paw:button
-                        type="submit"
-                        color="secondary"
-                        icon="notifications"
-                        cssClass="w-full"
-                        text="${subscriptionSubscribeLabel}"
-                      />
-                    </form>
-                  </c:otherwise>
-                </c:choose>
-              </c:if>
-            </div>
-          </div>
         </jsp:body>
       </paw:sectionCard>
       <paw:sectionCard icon="star">
@@ -480,6 +399,96 @@
         </div>
       </div>
 
+      <paw:sectionCard icon="person">
+        <jsp:attribute name="title"><spring:message code="itemDetail.contact.host" /></jsp:attribute>
+        <jsp:body>
+          <div class="flex min-w-0 flex-col gap-4">
+            <div class="flex min-w-0 items-center gap-4">
+              <div class="avatar placeholder shrink-0">
+                <div class="bg-primary/10 text-primary rounded-full w-14 h-14 flex items-center justify-center">
+                  <span class="font-extrabold text-xl"><c:out value="${ownerInitials}" /></span>
+                </div>
+              </div>
+              <div class="min-w-0">
+                <h3 class="font-extrabold text-lg m-0 break-words">
+                  <c:choose>
+                    <c:when test="${itemOwner != null}">
+                      <c:url var="itemOwnerProfileUrl" value="/profiles/${itemOwner.id}" />
+                      <a href="${itemOwnerProfileUrl}" class="no-underline text-on-background hover:underline"><c:out value="${itemOwnerDisplayName}" /></a>
+                    </c:when>
+                    <c:otherwise><spring:message code="itemDetail.owner.none" /></c:otherwise>
+                  </c:choose>
+                </h3>
+                <div class="break-all text-xs text-on-surface-variant">
+                  <c:choose>
+                    <c:when test="${itemOwner != null}"><c:out value="${itemOwner.email}" /></c:when>
+                    <c:otherwise><spring:message code="itemDetail.owner.noEmail" /></c:otherwise>
+                  </c:choose>
+                </div>
+              </div>
+            </div>
+            <div class="flex w-full flex-col gap-2">
+              <c:if test="${itemOwner != null}">
+                <paw:button
+                  href="${itemOwnerProfileUrl}"
+                  color="outline"
+                  icon="person"
+                  cssClass="w-full sm:w-auto"
+                  text="${viewProfileLabel}"
+                />
+              </c:if>
+              <paw:button
+                href="mailto:${itemOwner != null ? itemOwner.email : ''}"
+                color="outline"
+                icon="mail"
+                cssClass="w-full sm:w-auto"
+                text="${contactSendEmailLabel}"
+              />
+              <c:if test="${canSubscribeToOwner}">
+                <c:choose>
+                  <c:when test="${viewer == null}">
+                    <c:url var="subscriptionLoginUrl" value="/login" />
+                    <paw:button
+                      href="${subscriptionLoginUrl}"
+                      color="secondary"
+                      variant="outline"
+                      icon="notifications"
+                      cssClass="w-full"
+                      text="${subscriptionLoginToSubscribeLabel}"
+                    />
+                  </c:when>
+                  <c:when test="${subscribedToOwner}">
+                    <c:url var="unsubscribeOwnerUrl" value="/users/${itemOwner.id}/unsubscribe" />
+                    <form action="${unsubscribeOwnerUrl}" method="post" class="m-0">
+                      <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                      <paw:button
+                        type="submit"
+                        color="outline"
+                        icon="notifications_off"
+                        cssClass="w-full"
+                        text="${subscriptionUnsubscribeLabel}"
+                      />
+                    </form>
+                  </c:when>
+                  <c:otherwise>
+                    <c:url var="subscribeOwnerUrl" value="/users/${itemOwner.id}/subscribe" />
+                    <form action="${subscribeOwnerUrl}" method="post" class="m-0">
+                      <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                      <paw:button
+                        type="submit"
+                        color="secondary"
+                        icon="notifications"
+                        cssClass="w-full"
+                        text="${subscriptionSubscribeLabel}"
+                      />
+                    </form>
+                  </c:otherwise>
+                </c:choose>
+              </c:if>
+            </div>
+          </div>
+        </jsp:body>
+      </paw:sectionCard>
 
     </aside>
   </div>

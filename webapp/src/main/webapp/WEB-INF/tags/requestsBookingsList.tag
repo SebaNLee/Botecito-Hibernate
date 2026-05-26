@@ -85,7 +85,7 @@
 <paw:toastNotifier />
 <div class="grid grid-cols-1 gap-8 md:grid-cols-[18rem_minmax(0,1fr)] lg:grid-cols-[20rem_minmax(0,1fr)] items-start w-full">
   <form id="${filterFormId}" action="${formAction}" method="get" class="contents">
-  <div class="relative z-40 w-full min-w-0 space-y-6">
+  <div class="sticky top-24 w-full min-w-0 space-y-6">
     <paw:requestsSidebar active="${sidebarActive}" />
     <input type="hidden" name="page" value="1" id="${pageHiddenId}" />
     <paw:sectionCard icon="tune">

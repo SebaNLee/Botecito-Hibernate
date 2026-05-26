@@ -274,8 +274,14 @@
                       </p>
                       <p class="m-0 text-sm font-semibold text-on-surface">
                         <c:choose>
-                          <c:when test="${isIncoming}"><c:out value="${b.guest.firstName}" /> <c:out value="${b.guest.lastName}" /></c:when>
-                          <c:otherwise><c:out value="${b.version.item.host.firstName}" /> <c:out value="${b.version.item.host.lastName}" /></c:otherwise>
+                          <c:when test="${isIncoming}">
+                            <c:url var="bookingPartyProfileUrl" value="/profiles/${b.guest.id}" />
+                            <a href="${bookingPartyProfileUrl}" class="text-on-surface no-underline hover:underline"><c:out value="${b.guest.firstName}" /> <c:out value="${b.guest.lastName}" /></a>
+                          </c:when>
+                          <c:otherwise>
+                            <c:url var="bookingPartyProfileUrl" value="/profiles/${b.version.item.host.id}" />
+                            <a href="${bookingPartyProfileUrl}" class="text-on-surface no-underline hover:underline"><c:out value="${b.version.item.host.firstName}" /> <c:out value="${b.version.item.host.lastName}" /></a>
+                          </c:otherwise>
                         </c:choose>
                       </p>
                     </div>

@@ -24,6 +24,7 @@
 <spring:message code="settings.subscriptions.title" var="subscriptionsTitle" />
 <spring:message code="settings.subscriptions.empty" var="subscriptionsEmptyLabel" />
 <spring:message code="subscription.unsubscribe" var="subscriptionUnsubscribeLabel" />
+<spring:message code="settings.viewPublicProfile" var="viewPublicProfileLabel" />
 
 <c:set var="initials" value="" />
 <c:if test="${not empty user.firstName}">
@@ -55,7 +56,11 @@
               </div>
             </div>
             <c:if test="${not settingsEdit}">
-              <paw:button href="${settingsEditUrl}" color="primary" variant="outline" icon="edit" text="${settingsEditLabel}" cssClass="shrink-0 w-full sm:w-auto" />
+              <c:url var="myPublicProfileUrl" value="/profiles/${user.id}" />
+              <div class="flex shrink-0 flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <paw:button href="${myPublicProfileUrl}" variant="outline" icon="person" text="${viewPublicProfileLabel}" cssClass="w-full sm:w-auto" />
+                <paw:button href="${settingsEditUrl}" color="primary" variant="outline" icon="edit" text="${settingsEditLabel}" cssClass="w-full sm:w-auto" />
+              </div>
             </c:if>
           </div>
 
@@ -132,9 +137,10 @@
                     <c:set var="subscriptionLastName" value="${subscriptionUser.lastName != null ? subscriptionUser.lastName : ''}" />
                     <c:set var="subscriptionFirstNameTrimmed" value="${fn:trim(subscriptionFirstName)}" />
                     <c:set var="subscriptionLastNameTrimmed" value="${fn:trim(subscriptionLastName)}" />
+                    <c:url var="subscriptionProfileUrl" value="/profiles/${subscriptionUser.id}" />
                     <div class="rounded-xl bg-base-200 p-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div class="min-w-0">
-                        <p class="m-0 font-bold text-on-surface break-words">
+                        <a href="${subscriptionProfileUrl}" class="m-0 font-bold text-on-surface break-words no-underline hover:underline">
                           <c:choose>
                             <c:when test="${not empty subscriptionFirstNameTrimmed or not empty subscriptionLastNameTrimmed}">
                               <c:out value="${subscriptionFirstNameTrimmed}" />
@@ -143,7 +149,7 @@
                             </c:when>
                             <c:otherwise><c:out value="${subscriptionUser.email}" /></c:otherwise>
                           </c:choose>
-                        </p>
+                        </a>
                         <p class="m-0 mt-1 text-xs text-on-surface-variant break-all"><c:out value="${subscriptionUser.email}" /></p>
                       </div>
                       <c:url var="unsubscribeSettingsUrl" value="/users/${subscriptionUser.id}/unsubscribe" />

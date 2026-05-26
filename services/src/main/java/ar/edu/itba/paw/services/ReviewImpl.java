@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Review;
@@ -101,6 +102,22 @@ public final class ReviewImpl implements ReviewService {
     public Map<Integer, List<Review>> findReviewsByBookingIds(final int reviewerUserId) {
         return reviewDao.findReviewsBySender(reviewerUserId).stream()
                 .collect(Collectors.groupingBy(r -> r.getBooking().getId()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PageModel<Review> findReviewsAboutHost(final int hostUserId, final int page, final int pageSize) {
+        final int safePage = Math.max(1, page);
+        final int safePageSize = Math.max(1, pageSize);
+        final int total = reviewDao.countReviewsAboutHost(hostUserId);
+        return new PageModel<>(
+                reviewDao.findReviewsAboutHost(hostUserId, safePage, safePageSize), safePage, safePageSize, total);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Double> averageRatingAboutHost(final int hostUserId) {
+        return reviewDao.averageRatingAboutHost(hostUserId);
     }
 
     private static boolean isReviewWindowOpen(final Booking booking) {

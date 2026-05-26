@@ -12,6 +12,7 @@ import ar.edu.itba.paw.models.exceptions.NoAnticipationException;
 import ar.edu.itba.paw.models.exceptions.OutsideAvailabilityException;
 import ar.edu.itba.paw.models.exceptions.PastSlotException;
 import ar.edu.itba.paw.models.exceptions.SlotOverlapException;
+import ar.edu.itba.paw.models.exceptions.UserNotFoundException;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -53,6 +54,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ItemNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ModelAndView handleItemNotFound(final HttpServletRequest request) {
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
+        return new ModelAndView("forward:/errors");
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ModelAndView handleUserNotFound(final HttpServletRequest request) {
         request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
         return new ModelAndView("forward:/errors");
     }

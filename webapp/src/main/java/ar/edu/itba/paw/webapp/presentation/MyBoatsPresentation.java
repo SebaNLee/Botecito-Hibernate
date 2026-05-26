@@ -3,7 +3,6 @@ package ar.edu.itba.paw.webapp.presentation;
 import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
-import ar.edu.itba.paw.models.entity.Location;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.SelectorsService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;

@@ -39,7 +39,8 @@ public class ItemJpaDao implements ItemDao {
         parameters.put("deleted", ItemStatusEnum.DELETED.name());
 
         String sql = "SELECT i.id FROM item i";
-        sql += " JOIN version v ON v.id = (SELECT v2.id FROM version v2 WHERE v2.item_id = i.id ORDER BY v2.created_at DESC LIMIT 1)";
+        sql +=
+                " JOIN version v ON v.id = (SELECT v2.id FROM version v2 WHERE v2.item_id = i.id ORDER BY v2.created_at DESC LIMIT 1)";
 
         if (!isEmpty(query.getSearchQuery())) {
             whereClauses.add("LOWER(v.title) LIKE LOWER(:searchQuery) ESCAPE '!'");
@@ -70,16 +71,12 @@ public class ItemJpaDao implements ItemDao {
         }
 
         // Phase 2: load full entities (no ORDER BY needed — reorder by Phase 1 ID order)
-        List<Item> items = em.createQuery(
-                        "SELECT DISTINCT i FROM Item i WHERE i.id IN :ids", Item.class)
+        List<Item> items = em.createQuery("SELECT DISTINCT i FROM Item i WHERE i.id IN :ids", Item.class)
                 .setParameter("ids", ids)
                 .getResultList();
 
-        final Map<Integer, Item> itemMap = items.stream()
-                .collect(Collectors.toMap(Item::getId, Function.identity()));
-        final List<Item> sortedItems = ids.stream()
-                .map(itemMap::get)
-                .collect(Collectors.toList());
+        final Map<Integer, Item> itemMap = items.stream().collect(Collectors.toMap(Item::getId, Function.identity()));
+        final List<Item> sortedItems = ids.stream().map(itemMap::get).collect(Collectors.toList());
 
         return new ItemSearchResult(sortedItems, totalCount);
     }
@@ -95,12 +92,12 @@ public class ItemJpaDao implements ItemDao {
         parameters.put("deleted", ItemStatusEnum.DELETED.name());
 
         String sql = "SELECT COUNT(DISTINCT i.id) FROM item i";
-        boolean needsVersionJoin = !isEmpty(query.getSearchQuery())
-                || !isEmpty(query.getLocationSlug())
-                || isNameSort(query.getSortBy());
+        boolean needsVersionJoin =
+                !isEmpty(query.getSearchQuery()) || !isEmpty(query.getLocationSlug()) || isNameSort(query.getSortBy());
 
         if (needsVersionJoin) {
-            sql += " JOIN version v ON v.id = (SELECT v2.id FROM version v2 WHERE v2.item_id = i.id ORDER BY v2.created_at DESC LIMIT 1)";
+            sql +=
+                    " JOIN version v ON v.id = (SELECT v2.id FROM version v2 WHERE v2.item_id = i.id ORDER BY v2.created_at DESC LIMIT 1)";
         }
 
         if (!isEmpty(query.getSearchQuery())) {

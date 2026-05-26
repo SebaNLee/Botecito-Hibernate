@@ -5,6 +5,7 @@ import static org.springframework.security.web.util.matcher.AntPathRequestMatche
 import ar.edu.itba.paw.webapp.auth.AuthenticatedUserExistsFilter;
 import ar.edu.itba.paw.webapp.auth.UserAccountDetailsService;
 import java.util.concurrent.TimeUnit;
+import javax.servlet.RequestDispatcher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -84,7 +85,10 @@ public class WebAuthConfig {
                         .key("botecito-remember-me-secret")
                         .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(30)))
                 .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/login?logout=true"))
-                .exceptionHandling(ex -> ex.accessDeniedPage("/errors?status=403"))
+                .exceptionHandling(ex -> ex.accessDeniedHandler((request, response, accessDeniedException) -> {
+                    request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
+                    request.getRequestDispatcher("/errors").forward(request, response);
+                }))
                 .csrf(csrf -> csrf.disable());
         return http.build();
     }

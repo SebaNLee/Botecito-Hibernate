@@ -12,8 +12,9 @@
 <spring:message code="publish.availability.day.empty.client" var="publishMissingRangeLabel" />
 <spring:message code="publish.actions.continueImages" var="publishContinueImagesLabel" />
 
+<spring:message code="page.title.edit" var="titleEdit" />
 <paw:layout
-  title="Botecito"
+  title="${titleEdit} - Botecito"
   mainClass="pt-24 pb-14 max-w-6xl mx-auto px-6"
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"

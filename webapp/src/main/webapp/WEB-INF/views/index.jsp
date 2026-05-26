@@ -13,8 +13,9 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 <spring:message code="filters.time.placeholder" var="timePlaceholder" />
 <spring:message code="filters.people" var="peopleLabel" />
 <spring:message code="filters.people.placeholder" var="peoplePlaceholder" />
+<spring:message code="page.title.home" var="titleHome" />
 
-<paw:layout title="Botecito" mainClass="relative min-h-screen flex flex-col" scripts="search-filters,date-time">
+<paw:layout title="${titleHome}" mainClass="relative min-h-screen flex flex-col" scripts="search-filters,date-time">
   <section
     class="relative flex-grow flex items-center justify-center px-6 py-20 min-h-[870px]"
   >

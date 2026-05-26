@@ -111,8 +111,9 @@
     </c:if>
   </c:url>
 </c:if>
+<spring:message code="page.title.marketplace" var="titleMarketplace" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-[18rem_minmax(0,1fr)] lg:grid-cols-[20rem_minmax(0,1fr)] gap-8 items-start" scripts="toast,search-filters,date-time">
+<paw:layout title="${titleMarketplace} - Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-[18rem_minmax(0,1fr)] lg:grid-cols-[20rem_minmax(0,1fr)] gap-8 items-start" scripts="toast,search-filters,date-time">
   <paw:toastNotifier />
   <aside class="relative z-40 w-full md:min-w-0">
     <div class="space-y-6">
@@ -230,19 +231,15 @@
 
   <section class="relative z-0 min-w-0">
     <div class="mx-auto mb-8 w-full max-w-3xl">
-      <label class="input input-lg flex items-center gap-3 rounded-full bg-base-100 shadow-sm">
-        <span class="material-symbols-outlined text-outline" aria-hidden="true">search</span>
-        <input
-            id="marketplace-search-query"
-            form="marketplace-filters-form"
-            name="searchQuery"
-            type="search"
-            value="${param.searchQuery}"
-            placeholder="${searchLabel}"
-            aria-label="${searchLabel}"
-            data-marketplace-search-input
-            class="grow border-none bg-transparent p-0 text-on-surface placeholder:text-outline outline-none focus:outline-none focus-visible:outline-none focus:ring-0" />
-      </label>
+      <paw:searchBar
+          formId="marketplace-filters-form"
+          name="searchQuery"
+          value="${param.searchQuery}"
+          placeholder="${searchLabel}"
+          ariaLabel="${searchLabel}"
+          inputId="marketplace-search-query"
+          extraAttributes="data-marketplace-search-input"
+          size="lg" />
     </div>
 
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">

@@ -7,7 +7,7 @@
 <c:url var="requestsOutgoingUrl" value="/requests/outgoing" />
 <spring:message code="requests.nav.sectionTitle" var="requestsNavSectionTitle" />
 
-<aside class="card bg-base-200 shadow-sm lg:sticky lg:top-24">
+<aside class="card bg-base-200 shadow-sm">
   <nav class="card-body gap-2 p-4" aria-label="${requestsNavSectionTitle}">
     <p class="m-0 text-xs font-bold uppercase tracking-wider text-outline"><c:out value="${requestsNavSectionTitle}" /></p>
     <a

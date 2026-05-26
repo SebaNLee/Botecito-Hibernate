@@ -40,8 +40,10 @@ public class GlobalExceptionHandler {
     private static final Pattern EDIT_IMAGES_URI = Pattern.compile("/edit/(\\d+)/images");
 
     @ExceptionHandler(ForbiddenOperationException.class)
-    public ModelAndView handleForbiddenOperation() {
-        return new ModelAndView("redirect:/errors?status=403");
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ModelAndView handleForbiddenOperation(final HttpServletRequest request) {
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
+        return new ModelAndView("forward:/errors");
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)
@@ -116,8 +118,10 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ModelAndView handleAccessDenied() {
-        return new ModelAndView("redirect:/errors?status=403");
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ModelAndView handleAccessDenied(final HttpServletRequest request) {
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
+        return new ModelAndView("forward:/errors");
     }
 
     @ExceptionHandler(Exception.class)

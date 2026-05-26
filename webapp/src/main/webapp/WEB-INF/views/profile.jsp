@@ -36,8 +36,9 @@
   <c:set var="initials" value="${fn:substring(user.email, 0, 1)}" />
 </c:if>
 <c:set var="initials" value="${fn:toUpperCase(initials)}" />
+<spring:message code="page.title.profile" var="titleProfile" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-10 w-full max-w-7xl mx-auto px-6">
+<paw:layout title="${titleProfile} - Botecito" mainClass="pt-24 pb-10 w-full max-w-7xl mx-auto px-6">
   <section class="space-y-6 min-w-0">
 
     <%-- Header card --%>
@@ -218,33 +219,7 @@
                 <c:otherwise>
                   <div class="flex flex-col gap-3">
                     <c:forEach items="${reviews}" var="review">
-                      <c:set var="reviewerFirstName" value="${review.sender.firstName != null ? fn:trim(review.sender.firstName) : ''}" />
-                      <c:set var="reviewerLastName" value="${review.sender.lastName != null ? fn:trim(review.sender.lastName) : ''}" />
-                      <c:url var="reviewerProfileUrl" value="/profiles/${review.sender.id}" />
-                      <div class="rounded-xl bg-base-200 p-4 flex flex-col gap-2">
-                        <div class="flex items-center justify-between gap-3 flex-wrap">
-                          <a href="${reviewerProfileUrl}" class="font-bold text-on-surface no-underline hover:underline break-words">
-                            <c:choose>
-                              <c:when test="${not empty reviewerFirstName or not empty reviewerLastName}">
-                                <c:out value="${reviewerFirstName}" />
-                                <c:if test="${not empty reviewerFirstName and not empty reviewerLastName}"> </c:if>
-                                <c:out value="${reviewerLastName}" />
-                              </c:when>
-                              <c:otherwise><c:out value="${review.sender.email}" /></c:otherwise>
-                            </c:choose>
-                          </a>
-                          <div class="flex items-center gap-1 text-sm font-bold text-on-surface">
-                            <span class="material-symbols-outlined text-base text-warning">star</span>
-                            <fmt:formatNumber value="${review.rating}" type="number" minFractionDigits="1" maxFractionDigits="1" />
-                          </div>
-                        </div>
-                        <c:if test="${not empty review.comment}">
-                          <p class="m-0 text-sm text-on-surface-variant break-words"><c:out value="${review.comment}" /></p>
-                        </c:if>
-                        <p class="m-0 text-xs text-outline">
-                          <c:out value="${reviewDatesById[review.id]}" />
-                        </p>
-                      </div>
+                      <paw:reviewCard review="${review}" reviewDate="${reviewDatesById[review.id]}" showReviewer="true" />
                     </c:forEach>
                   </div>
                   <c:if test="${reviewsPage.totalPages > 1}">

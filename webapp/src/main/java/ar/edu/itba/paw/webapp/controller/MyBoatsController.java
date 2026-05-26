@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
+import ar.edu.itba.paw.webapp.form.MyBoatsSearchForm;
 import ar.edu.itba.paw.webapp.form.SaveSelfBlocksForm;
 import ar.edu.itba.paw.webapp.presentation.AvailabilityPresentation;
 import ar.edu.itba.paw.webapp.presentation.MyBoatsActionsPresentation;
@@ -27,13 +28,25 @@ public class MyBoatsController {
     private final MyBoatsActionsPresentation myBoatsActionsPresentation;
     private final AvailabilityPresentation availabilityPresentation;
 
+    @ModelAttribute("myBoatsSearch")
+    public MyBoatsSearchForm defaultMyBoatsSearch() {
+        final MyBoatsSearchForm form = new MyBoatsSearchForm();
+        form.setPage(1);
+        form.setPageSize(12);
+        form.setSortBy("newest");
+        return form;
+    }
+
     @RequestMapping(value = "/my-boats", method = RequestMethod.GET)
     public ModelAndView myBoats(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             final HttpServletRequest request,
-            @RequestParam(value = "page", defaultValue = "1") final int page,
-            @RequestParam(value = "pageSize", defaultValue = "12") final int pageSize) {
-        return myBoatsPresentation.myBoats(user, request, page, pageSize);
+            @Valid @ModelAttribute("myBoatsSearch") final MyBoatsSearchForm search,
+            final BindingResult errors) {
+        if (errors.hasErrors()) {
+            return myBoatsPresentation.myBoatsErrors(user, request, search, errors);
+        }
+        return myBoatsPresentation.myBoatsList(user, request, search);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/disable", method = RequestMethod.POST)

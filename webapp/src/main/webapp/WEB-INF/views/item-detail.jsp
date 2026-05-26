@@ -51,8 +51,9 @@
 <spring:message code="detail.reviews.anonymous" var="detailReviewAnonymousLabel" />
 <spring:message code="contact.sendEmail" var="contactSendEmailLabel" />
 <spring:message code="itemDetail.contact.viewProfile" var="viewProfileLabel" />
+<spring:message code="page.title.itemDetail" var="titleItemDetail" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8" scripts="toast,search-filters,date-time,form-submit,pre-booking-draft,image-carousel,rating-stars">
+<paw:layout title="${titleItemDetail} - Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8" scripts="toast,search-filters,date-time,form-submit,pre-booking-draft,image-carousel,rating-stars">
   <paw:toastNotifier />
       <div class="w-full">
         <a href="<c:out value="${marketplaceBackHref}" />" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
@@ -173,35 +174,7 @@
               <c:when test="${not empty reviewPage.content}">
                 <div class="space-y-3">
                   <c:forEach items="${reviewPage.content}" var="review">
-                    <c:set var="fullStars" value="${review.rating ge 5 ? 5 : (review.rating ge 4 ? 4 : (review.rating ge 3 ? 3 : (review.rating ge 2 ? 2 : (review.rating ge 1 ? 1 : 0))))}" />
-                    <div class="rounded-xl bg-base-200 p-4 space-y-2">
-                      <div class="flex items-center justify-between gap-3">
-                        <p class="m-0 text-sm font-bold text-on-surface"><c:out value="${detailReviewAnonymousLabel}" /></p>
-                        <div class="flex flex-col items-end gap-0.5 shrink-0">
-                          <div class="flex items-center gap-0.5" aria-label="${review.rating} of 5">
-                            <c:forEach var="starIndex" begin="1" end="5">
-                              <c:choose>
-                                <c:when test="${starIndex <= fullStars}">
-                                  <span class="material-symbols-outlined text-sm leading-none text-warning">star</span>
-                                </c:when>
-                                <c:otherwise>
-                                  <span class="material-symbols-outlined text-sm leading-none text-outline opacity-[0.35]">star</span>
-                                </c:otherwise>
-                              </c:choose>
-                            </c:forEach>
-                          </div>
-                          <span class="text-[10px] font-bold text-on-surface-variant tabular-nums">
-                            <fmt:formatNumber value="${review.rating}" minFractionDigits="1" maxFractionDigits="1" />
-                          </span>
-                        </div>
-                      </div>
-                      <p class="m-0 text-xs text-on-surface-variant">
-                        <time datetime="${review.createdAt}"><c:out value="${review.createdAt}" /></time>
-                      </p>
-                      <c:if test="${not empty review.comment}">
-                        <p class="m-0 text-sm text-on-surface-variant break-words"><c:out value="${review.comment}" /></p>
-                      </c:if>
-                    </div>
+                    <paw:reviewCard review="${review}" reviewDate="${reviewDatesById[review.id]}" showReviewer="false" anonymousLabel="${detailReviewAnonymousLabel}" />
                   </c:forEach>
                 </div>
               </c:when>

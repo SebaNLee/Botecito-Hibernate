@@ -85,7 +85,7 @@
 <paw:toastNotifier />
 <div class="grid grid-cols-1 gap-8 md:grid-cols-[18rem_minmax(0,1fr)] lg:grid-cols-[20rem_minmax(0,1fr)] items-start w-full">
   <form id="${filterFormId}" action="${formAction}" method="get" class="contents">
-  <div class="relative z-40 w-full min-w-0 space-y-6">
+  <div class="sticky top-24 w-full min-w-0 space-y-6">
     <paw:requestsSidebar active="${sidebarActive}" />
     <input type="hidden" name="page" value="1" id="${pageHiddenId}" />
     <paw:sectionCard icon="tune">
@@ -133,18 +133,14 @@
     <div id="booking-requests-list" class="scroll-mt-24 space-y-8">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-4">
         <div class="min-w-0 w-full flex-1">
-          <label class="input input-lg flex w-full min-w-0 items-center gap-3 rounded-full bg-base-100 shadow-sm">
-            <span class="material-symbols-outlined text-outline" aria-hidden="true">search</span>
-            <input
-                type="search"
-                name="searchQuery"
-                form="${filterFormId}"
-                value="${fn:escapeXml(bookingSearch.searchQuery)}"
-                placeholder="${searchLabel}"
-                aria-label="${searchLabel}"
-                maxlength="100"
-                class="min-w-0 grow border-none bg-transparent p-0 text-on-surface placeholder:text-outline outline-none focus:outline-none focus-visible:outline-none focus:ring-0" />
-          </label>
+          <paw:searchBar
+              formId="${filterFormId}"
+              name="searchQuery"
+              value="${fn:escapeXml(bookingSearch.searchQuery)}"
+              placeholder="${searchLabel}"
+              ariaLabel="${searchLabel}"
+              maxlength="100"
+              size="lg" />
         </div>
         <div class="flex shrink-0 flex-nowrap items-center gap-2 text-sm font-medium text-on-surface-variant lg:justify-end">
           <label for="requests-${sidebarActive}-sort" class="shrink-0 whitespace-nowrap"><c:out value="${sortLabel}" /></label>
@@ -215,8 +211,8 @@
             <c:forEach var="b" items="${bookings}">
               <c:set var="badgeClass" value="badge-ghost" />
               <c:if test="${b.status.name() == 'PENDING'}"><c:set var="badgeClass" value="badge-warning" /></c:if>
-              <c:if test="${b.status.name() == 'ACCEPTED' || b.status.name() == 'CONFIRMED'}"><c:set var="badgeClass" value="badge-info" /></c:if>
-              <c:if test="${b.status.name() == 'PAID'}"><c:set var="badgeClass" value="badge-success" /></c:if>
+              <c:if test="${b.status.name() == 'ACCEPTED' || b.status.name() == 'PAID'}"><c:set var="badgeClass" value="badge-info" /></c:if>
+              <c:if test="${b.status.name() == 'CONFIRMED'}"><c:set var="badgeClass" value="badge-success" /></c:if>
               <c:if test="${b.status.name() == 'REJECTED' || b.status.name() == 'CANCELLED' || b.status.name() == 'REFUSED'}"><c:set var="badgeClass" value="badge-error" /></c:if>
               <c:if test="${b.status.name() == 'FINISHED'}"><c:set var="badgeClass" value="badge-ghost" /></c:if>
 
@@ -245,8 +241,15 @@
 
               <div class="flex flex-col md:flex-row w-full bg-base-100 rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden p-0 transition hover:bg-base-200">
                 <!-- Image Side -->
-                <div class="flex w-full md:w-48 shrink-0 items-center justify-center bg-base-300 md:border-r border-outline-variant/20 p-4 h-32 md:h-auto">
-                  <span class="material-symbols-outlined text-6xl text-outline/40" aria-hidden="true">directions_boat</span>
+                <div class="flex w-full md:w-48 shrink-0 items-center justify-center bg-base-300 md:border-r border-outline-variant/20 p-4 h-32 md:h-auto overflow-hidden">
+                  <c:url var="bookingCoverUrl" value="/css/boat-placeholder.svg" />
+                  <c:if test="${not empty b.version.media}">
+                    <c:set var="firstMedia" value="${b.version.media[0]}" />
+                    <c:if test="${not empty firstMedia.image}">
+                      <c:url var="bookingCoverUrl" value="/image/${firstMedia.image.id}" />
+                    </c:if>
+                  </c:if>
+                  <img src="${bookingCoverUrl}" alt="" class="w-full h-full object-cover" loading="lazy" />
                 </div>
                 
                 <!-- Details Side -->
@@ -260,6 +263,11 @@
                       <p class="m-0 text-xs font-semibold text-on-surface-variant flex items-center gap-1 mt-1">
                         <span class="material-symbols-outlined text-[14px]">calendar_today</span>
                         <c:out value="${fmtStart}" /> &rarr; <c:out value="${fmtEnd}" />
+                      </p>
+                      <p class="m-0 text-xs font-semibold text-on-surface-variant flex items-center gap-1 mt-1">
+                        <span class="material-symbols-outlined text-[14px]">attach_money</span>
+                        $<fmt:formatNumber value="${b.version.price}" type="number" groupingUsed="true" maxFractionDigits="0" />
+                        <span class="text-[10px] font-bold uppercase tracking-tighter text-outline"><spring:message code="marketplace.card.perHour" /></span>
                       </p>
                     </div>
                   </div>
@@ -370,6 +378,12 @@
                       <!-- View Proof Modal -->
                       <paw:detailsModal id="${detailModalId}-proof" title="${viewPaymentProofLabel}">
                         <jsp:body>
+                            <c:if test="${not empty b.paymentProof.replyMsg}">
+                              <div class="rounded-lg bg-base-100 p-3 border-l-4 border-primary space-y-1 mb-4">
+                                <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="payment.guestReply.display.label" /></p>
+                                <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${b.paymentProof.replyMsg}" /></p>
+                              </div>
+                            </c:if>
                             <c:if test="${not empty b.paymentProof.refuseMsg}">
                               <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error space-y-1 mb-4">
                                 <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error">
@@ -379,12 +393,6 @@
                                   </c:choose>
                                 </p>
                                 <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${b.paymentProof.refuseMsg}" /></p>
-                              </div>
-                            </c:if>
-                            <c:if test="${not empty b.paymentProof.replyMsg}">
-                              <div class="rounded-lg bg-base-100 p-3 border-l-4 border-primary space-y-1 mb-4">
-                                <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="payment.guestReply.display.label" /></p>
-                                <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${b.paymentProof.replyMsg}" /></p>
                               </div>
                             </c:if>
                           <div class="overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">

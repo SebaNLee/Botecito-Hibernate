@@ -28,8 +28,9 @@
 <spring:message code="manageAvailability.unsavedConfirm" var="unsavedConfirmLabel" />
 <spring:message code="publish.step2.deleteRange" var="deleteRangeLabel" />
 
+<spring:message code="page.title.manageAvailability" var="titleManageAvailability" />
 <paw:layout
-    title="Botecito"
+    title="${titleManageAvailability} - Botecito"
     mainClass="pt-24 pb-14 max-w-4xl mx-auto px-6"
     headerCtaMessageCode="nav.rent"
     headerCtaHref="/marketplace"

@@ -11,8 +11,9 @@
 <spring:message code="passwordRecovery.reset.confirmPassword.label" var="confirmPasswordLabel" />
 <spring:message code="passwordRecovery.reset.confirmPassword.placeholder" var="confirmPasswordPlaceholder" />
 <spring:message code="passwordRecovery.reset.submit" var="submitLabel" />
+<spring:message code="page.title.passwordReset" var="titlePasswordReset" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen">
+<paw:layout title="${titlePasswordReset} - Botecito" mainClass="pt-24 pb-14 flex items-center justify-center min-h-screen">
   <div class="w-full max-w-md px-6">
     <div class="card bg-base-100 shadow-sm border border-outline-variant/20">
       <div class="card-body p-8 gap-6">

@@ -29,7 +29,17 @@
     </div>
     <div class="flex items-center gap-1 text-sm font-semibold text-on-surface-variant">
       <span class="material-symbols-outlined text-base text-warning">star</span>
-      <c:out value="${reviewsEmptyShortLabel}" />
+      <c:choose>
+        <c:when test="${item.totalReviews > 0}">
+          <fmt:formatNumber value="${item.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
+          <span class="text-outline">
+            (<spring:message code="itemDetail.reviews.count" arguments="${item.totalReviews}" />)
+          </span>
+        </c:when>
+        <c:otherwise>
+          <c:out value="${reviewsEmptyShortLabel}" />
+        </c:otherwise>
+      </c:choose>
     </div>
     <div class="flex min-w-0 items-center text-on-surface-variant text-sm gap-1">
       <span class="material-symbols-outlined shrink-0 text-primary text-lg">location_on</span>

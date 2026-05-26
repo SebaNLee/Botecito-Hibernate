@@ -34,8 +34,9 @@
   <c:set var="initials" value="${initials}${fn:substring(user.lastName, 0, 1)}" />
 </c:if>
 <c:set var="initials" value="${fn:toUpperCase(initials)}" />
+<spring:message code="page.title.settings" var="titleSettings" />
 
-<paw:layout title="Botecito" mainClass="pt-24 pb-10 w-full max-w-7xl mx-auto px-6">
+<paw:layout title="${titleSettings} - Botecito" mainClass="pt-24 pb-10 w-full max-w-7xl mx-auto px-6">
   <section class="min-w-0">
     <div class="card bg-base-100 shadow-sm">
       <div class="card-body p-6 gap-6">

@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.ItemSearchResult;
+import ar.edu.itba.paw.models.dto.MyBoatsQueryModel;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Version;
@@ -24,8 +25,19 @@ public class ItemImpl implements ItemService {
 
     @Override
     @Transactional(readOnly = true)
-    public ItemSearchResult listOwnerItems(int ownerId, int page, int pageSize) {
-        var result = itemDao.listOwnerItems(ownerId, page, pageSize);
+    public ItemSearchResult listOwnerItems(
+            int ownerId, String searchQuery, String status, String location, int page, int pageSize, String sortBy) {
+        final MyBoatsQueryModel query = MyBoatsQueryModel.builder()
+                .ownerId(ownerId)
+                .searchQuery(searchQuery)
+                .status(status)
+                .locationSlug(location)
+                .page(page)
+                .pageSize(pageSize)
+                .sortBy(sortBy)
+                .build();
+
+        var result = itemDao.listOwnerItems(query);
 
         // This loop is safe, result is bounded
         for (Item item : result.getItems()) {

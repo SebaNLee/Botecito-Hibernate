@@ -138,7 +138,10 @@
               <div class="min-w-0">
                 <h3 class="font-extrabold text-lg m-0 break-words">
                   <c:choose>
-                    <c:when test="${itemOwner != null}"><c:out value="${itemOwnerDisplayName}" /></c:when>
+                    <c:when test="${itemOwner != null}">
+                      <c:url var="itemOwnerProfileUrl" value="/profiles/${itemOwner.id}" />
+                      <a href="${itemOwnerProfileUrl}" class="no-underline text-on-background hover:underline"><c:out value="${itemOwnerDisplayName}" /></a>
+                    </c:when>
                     <c:otherwise><spring:message code="itemDetail.owner.none" /></c:otherwise>
                   </c:choose>
                 </h3>

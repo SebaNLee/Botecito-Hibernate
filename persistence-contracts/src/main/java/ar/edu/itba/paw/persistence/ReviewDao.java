@@ -13,4 +13,10 @@ public interface ReviewDao {
     Optional<Review> findReviewByBookingSenderAndTargetType(int bookingId, int senderUserId, TargetEnum targetType);
 
     List<Review> findReviewsBySender(int senderUserId);
+
+    List<Review> findReviewsAboutHost(int hostUserId, int page, int pageSize);
+
+    int countReviewsAboutHost(int hostUserId);
+
+    Optional<Double> averageRatingAboutHost(int hostUserId);
 }

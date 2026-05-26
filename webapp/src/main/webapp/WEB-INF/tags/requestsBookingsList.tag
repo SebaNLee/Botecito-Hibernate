@@ -133,18 +133,14 @@
     <div id="booking-requests-list" class="scroll-mt-24 space-y-8">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-4">
         <div class="min-w-0 w-full flex-1">
-          <label class="input input-lg flex w-full min-w-0 items-center gap-3 rounded-full bg-base-100 shadow-sm">
-            <span class="material-symbols-outlined text-outline" aria-hidden="true">search</span>
-            <input
-                type="search"
-                name="searchQuery"
-                form="${filterFormId}"
-                value="${fn:escapeXml(bookingSearch.searchQuery)}"
-                placeholder="${searchLabel}"
-                aria-label="${searchLabel}"
-                maxlength="100"
-                class="min-w-0 grow border-none bg-transparent p-0 text-on-surface placeholder:text-outline outline-none focus:outline-none focus-visible:outline-none focus:ring-0" />
-          </label>
+          <paw:searchBar
+              formId="${filterFormId}"
+              name="searchQuery"
+              value="${fn:escapeXml(bookingSearch.searchQuery)}"
+              placeholder="${searchLabel}"
+              ariaLabel="${searchLabel}"
+              maxlength="100"
+              size="lg" />
         </div>
         <div class="flex shrink-0 flex-nowrap items-center gap-2 text-sm font-medium text-on-surface-variant lg:justify-end">
           <label for="requests-${sidebarActive}-sort" class="shrink-0 whitespace-nowrap"><c:out value="${sortLabel}" /></label>

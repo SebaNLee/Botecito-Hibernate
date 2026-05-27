@@ -30,7 +30,7 @@ public class ReviewController {
             @PathVariable("bookingId") final int bookingId,
             @Valid @ModelAttribute("reviewForm") final ReviewForm form,
             final BindingResult errors,
-            @RequestParam(value = "returnTo", required = false, defaultValue = "dashboard") final String returnTo,
+            @RequestParam(value = "returnTo", required = false, defaultValue = "outgoing") final String returnTo,
             @RequestParam(value = "itemId", required = false) final Integer itemId,
             final RedirectAttributes redirectAttributes) {
         if (user == null) {
@@ -69,6 +69,6 @@ public class ReviewController {
         if ("outgoing".equals(returnTo)) {
             return new ModelAndView("redirect:/requests/outgoing");
         }
-        return new ModelAndView("redirect:/bookings#sent-booking-requests");
+        return new ModelAndView("redirect:/requests/outgoing");
     }
 }

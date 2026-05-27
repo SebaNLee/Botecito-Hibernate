@@ -13,7 +13,7 @@
 <spring:message code="landing.hero.search" var="searchLabel" />
 <spring:message code="filters.date" var="dateLabel" />
 <spring:message code="filters.date.placeholder" var="datePlaceholder" />
-<spring:message code="dashboard.filters.status" var="statusFilterLabel" />
+<spring:message code="bookingSearch.field.status" var="statusFilterLabel" />
 <spring:message code="requests.outgoing.status.any" var="statusAnyPlaceholder" />
 <spring:message code="optionsPicker.availableOptions" var="statusPanelCaption" />
 <spring:message code="optionsPicker.noMatches" var="statusNoMatchCaption" />
@@ -41,7 +41,7 @@
 <spring:message code="payment.guestReply.input.label" var="guestReplyLabel" />
 <spring:message code="payment.reply.placeholder" var="guestReplyPlaceholder" />
 <spring:message code="payment.refusal.reason.label" var="rejectPaymentReasonLabel" />
-<spring:message code="settings.sentBookings.paymentProof.view" var="viewPaymentProofLabel" />
+<spring:message code="requests.paymentProof.view" var="viewPaymentProofLabel" />
 <spring:message code="itemDetail.reviews.leave" var="reviewLeaveLabel" />
 <spring:message code="itemDetail.reviews.rating" var="reviewRatingLabel" />
 <spring:message code="itemDetail.reviews.comment" var="reviewCommentLabel" />
@@ -179,18 +179,18 @@
 
       <div class="min-w-0">
         <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words md:text-4xl">
-          <spring:message code="bookings.title" />
+          <spring:message code="requests.nav.sectionTitle" />
         </h1>
         <p class="text-on-surface-variant mt-2 m-0">
           <c:choose>
             <c:when test="${isIncoming}"><spring:message code="requests.incoming.subtitle" /></c:when>
-            <c:otherwise><spring:message code="bookings.subtitle" /></c:otherwise>
+            <c:otherwise><spring:message code="requests.outgoing.subtitle" /></c:otherwise>
           </c:choose>
         </p>
         <h2 class="text-2xl font-extrabold tracking-tight text-on-background m-0 mt-6 break-words md:text-4xl">
           <c:choose>
-            <c:when test="${isIncoming}"><spring:message code="settings.bookings.title" /></c:when>
-            <c:otherwise><spring:message code="settings.sentBookings.title" /></c:otherwise>
+            <c:when test="${isIncoming}"><spring:message code="requests.incoming.title" /></c:when>
+            <c:otherwise><spring:message code="requests.outgoing.title" /></c:otherwise>
           </c:choose>
         </h2>
         <p class="text-on-surface-variant mt-2 m-0">
@@ -235,7 +235,7 @@
               <c:url var="incomingRejectPaymentUrl" value="/requests/incoming/${b.id}/reject-payment" />
               <c:url var="outgoingCancelUrl" value="/requests/outgoing/${b.id}/cancel" />
               <c:url var="outgoingPaymentUrl" value="/requests/outgoing/${b.id}/payment" />
-              <c:url var="nuevoPaymentProofUrl" value="/requests/bookings/${b.id}/payment-proof" />
+              <c:url var="paymentProofUrl" value="/requests/bookings/${b.id}/payment-proof" />
 
               <c:set var="detailModalId" value="nuevo-booking-detail-${sidebarActive}-${b.id}" />
 
@@ -396,8 +396,8 @@
                               </div>
                             </c:if>
                           <div class="overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
-                            <object data="${nuevoPaymentProofUrl}" type="application/pdf" class="block h-[60vh] w-full bg-base-100">
-                              <img src="${nuevoPaymentProofUrl}" alt="<spring:message code='settings.sentBookings.paymentProof.view' />" class="max-h-[60vh] w-full object-contain" loading="lazy" />
+                            <object data="${paymentProofUrl}" type="application/pdf" class="block h-[60vh] w-full bg-base-100">
+                              <img src="${paymentProofUrl}" alt="<spring:message code='requests.paymentProof.view' />" class="max-h-[60vh] w-full object-contain" loading="lazy" />
                             </object>
                           </div>
                         </jsp:body>
@@ -493,7 +493,7 @@
               <p class="m-0 max-w-lg text-on-surface-variant">
                 <c:choose>
                   <c:when test="${isIncoming}"><spring:message code="requests.incoming.empty" /></c:when>
-                  <c:otherwise><spring:message code="settings.sentBookings.empty" /></c:otherwise>
+                  <c:otherwise><spring:message code="requests.outgoing.empty" /></c:otherwise>
                 </c:choose>
               </p>
               <a href="${clearFiltersUrl}" class="btn btn-primary btn-sm no-underline">

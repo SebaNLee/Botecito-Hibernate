@@ -25,6 +25,7 @@ import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
 import ar.edu.itba.paw.models.exceptions.NoAnticipationException;
 import ar.edu.itba.paw.models.exceptions.OutsideAvailabilityException;
 import ar.edu.itba.paw.models.exceptions.PastSlotException;
+import ar.edu.itba.paw.models.exceptions.SelfBlockCollisionException;
 import ar.edu.itba.paw.persistence.BookingDao;
 import ar.edu.itba.paw.services.util.DateTimeUtils;
 import java.time.DayOfWeek;
@@ -187,7 +188,11 @@ public class BookingImpl implements BookingService {
             if (!isOwner) {
                 mailService.sendPreBookingMail(booking);
             }
-        } else throw new BookingCollisionException();
+        } else if (isOwner) {
+            throw new SelfBlockCollisionException();
+        } else {
+            throw new BookingCollisionException();
+        }
     }
 
     @Override
@@ -533,7 +538,7 @@ public class BookingImpl implements BookingService {
         final Booking probe =
                 Booking.builder().version(version).start(utcStart).end(utcEnd).build();
         if (!bookingDao.canUpdate(probe, bookingId, BLOCKING_STATES)) {
-            throw new BookingCollisionException();
+            throw new SelfBlockCollisionException();
         }
 
         booking.setStart(utcStart);

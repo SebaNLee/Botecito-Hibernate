@@ -37,20 +37,7 @@ public class ItemImpl implements ItemService {
                 .sortBy(sortBy)
                 .build();
 
-        var result = itemDao.listOwnerItems(query);
-
-        // This loop is safe, result is bounded
-        for (Item item : result.getItems()) {
-            // Fetch latest version and the cover image
-            var media = item.getLatestVersion().getMedia();
-
-            if (media != null && media.size() > 0) {
-                @SuppressWarnings("unused")
-                var image = media.get(0).getImage();
-            }
-        }
-
-        return result;
+        return itemDao.listOwnerItems(query);
     }
 
     @Override

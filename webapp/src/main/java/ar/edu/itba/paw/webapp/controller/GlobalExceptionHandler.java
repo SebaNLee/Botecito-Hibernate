@@ -11,7 +11,7 @@ import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
 import ar.edu.itba.paw.models.exceptions.NoAnticipationException;
 import ar.edu.itba.paw.models.exceptions.OutsideAvailabilityException;
 import ar.edu.itba.paw.models.exceptions.PastSlotException;
-import ar.edu.itba.paw.models.exceptions.SlotOverlapException;
+import ar.edu.itba.paw.models.exceptions.SelfBlockCollisionException;
 import ar.edu.itba.paw.models.exceptions.UserNotFoundException;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.util.regex.Matcher;
@@ -150,6 +150,12 @@ public class GlobalExceptionHandler {
         return redirectToReferer(request);
     }
 
+    @ExceptionHandler(SelfBlockCollisionException.class)
+    public ModelAndView handleSelfBlockCollision(HttpServletRequest request, RedirectAttributes ra) {
+        ToastSupport.error(ra, "manageAvailability.msg.hasBookings");
+        return redirectToReferer(request);
+    }
+
     @ExceptionHandler(IllegalBookingOperationException.class)
     public ModelAndView handleIllegalOperation(HttpServletRequest request, RedirectAttributes ra) {
         ToastSupport.error(ra, "requests.booking.operationFailed");
@@ -183,12 +189,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidSlotException.class)
     public ModelAndView handleInvalidSlot(HttpServletRequest request, RedirectAttributes ra) {
         ToastSupport.error(ra, "manageAvailability.msg.invalid");
-        return redirectToReferer(request);
-    }
-
-    @ExceptionHandler(SlotOverlapException.class)
-    public ModelAndView handleSlotOverlap(HttpServletRequest request, RedirectAttributes ra) {
-        ToastSupport.error(ra, "manageAvailability.msg.hasBookings");
         return redirectToReferer(request);
     }
 

@@ -110,10 +110,7 @@ public class WebAuthConfig {
 
     private static RequestMatcher[] publicResourceMatchers() {
         return new RequestMatcher[] {
-            antMatcher(HttpMethod.GET, "/image/*"),
-            antMatcher(HttpMethod.GET, "/bookings/*/accept"),
-            antMatcher(HttpMethod.GET, "/bookings/*/decline"),
-            antMatcher(HttpMethod.GET, "/item/*"),
+            antMatcher(HttpMethod.GET, "/image/*"), antMatcher(HttpMethod.GET, "/item/*"),
         };
     }
 

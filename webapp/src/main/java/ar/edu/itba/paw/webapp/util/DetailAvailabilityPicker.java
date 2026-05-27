@@ -1,9 +1,9 @@
 package ar.edu.itba.paw.webapp.util;
 
+import ar.edu.itba.paw.models.dto.AvailabilityData;
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
-import ar.edu.itba.paw.services.util.AvailabilityPickerBuilder;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -22,25 +22,24 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
- * Builds {@link AvailabilityPickerBuilder.Data} for the nuevo item detail pre-booking UI from all
- * {@link AvailabilityWindow} rows for the version (merged) and item-scoped bookings across all versions (UTC) converted to the
- * version timezone, including the same 30-minute clearance as {@code BookingHibernateDao}. Date keys and
- * weekday matching use {@code ZonedDateTime.now(listingZone).toLocalDate()} through the picker horizon so the grid
- * matches the listing calendar day, not the app server default zone.
+ * Builds {@link AvailabilityData} for the item detail pre-booking UI from weekly availability windows
+ * and item-scoped bookings across all versions (UTC) converted to the listing timezone, including the
+ * same 30-minute clearance as the booking DAO. Date keys and weekday matching use the listing zone
+ * through the picker horizon so the grid matches the listing calendar day, not the app server default zone.
  */
 public final class DetailAvailabilityPicker {
 
     /** Keep in sync with the client date picker anchor range (see {@code date-time-picker.js}). */
     public static final int LISTING_PICKER_MONTHS_AROUND_TODAY = 2;
 
+    public static final DateTimeFormatter INPUT_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    public static final DateTimeFormatter RESERVATION_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    public static final int TIME_SLOT_STEP_MINUTES = 30;
+
     private static final int CLEARANCE_MINUTES = 30;
 
     private static final Set<BookingStatusEnum> BLOCKING_STATUSES = EnumSet.of(
             BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED, BookingStatusEnum.PAID, BookingStatusEnum.CONFIRMED);
-
-    private static final DateTimeFormatter INPUT_DATE_FORMAT = AvailabilityPickerBuilder.INPUT_DATE_FORMAT;
-    private static final DateTimeFormatter RESERVATION_TIME_FORMAT = AvailabilityPickerBuilder.RESERVATION_TIME_FORMAT;
-    private static final int TIME_SLOT_STEP_MINUTES = AvailabilityPickerBuilder.TIME_SLOT_STEP_MINUTES;
 
     private DetailAvailabilityPicker() {}
 
@@ -66,10 +65,10 @@ public final class DetailAvailabilityPicker {
         return pickerEndDate(listingCalendarToday(versionTimezone));
     }
 
-    public static AvailabilityPickerBuilder.Data build(
+    public static AvailabilityData build(
             final List<Availability> availabilityWindows, final List<Booking> bookings, final String versionTimezone) {
         if (availabilityWindows == null || availabilityWindows.isEmpty()) {
-            return new AvailabilityPickerBuilder.Data(List.of(), List.of(), Map.of(), Map.of());
+            return emptyData();
         }
         final ZoneId zoneId = listingZoneOrUtc(versionTimezone);
         final LocalDate rangeStart = listingCalendarToday(versionTimezone);
@@ -86,7 +85,7 @@ public final class DetailAvailabilityPicker {
                     scheduledTimesByDate, dayOfWeek, window.getStartTime(), window.getEndTime(), rangeStart, rangeEnd);
         }
         if (scheduledTimesByDate.isEmpty()) {
-            return new AvailabilityPickerBuilder.Data(List.of(), List.of(), Map.of(), Map.of());
+            return emptyData();
         }
         final Map<String, TreeSet<String>> bookedTimesByDate =
                 buildBookedTimesByDate(bookings == null ? List.of() : bookings, zoneId, rangeStart, rangeEnd);
@@ -105,11 +104,15 @@ public final class DetailAvailabilityPicker {
                 occupiedDates.add(date);
             }
         }
-        return new AvailabilityPickerBuilder.Data(
+        return new AvailabilityData(
                 List.copyOf(offeredDates),
                 List.copyOf(occupiedDates),
                 toImmutableTimesByDate(availableTimesByDate),
                 toImmutableTimesByDate(occupiedTimesByDate));
+    }
+
+    private static AvailabilityData emptyData() {
+        return new AvailabilityData(List.of(), List.of(), Map.of(), Map.of());
     }
 
     private static boolean isUsableWindow(final Availability window) {

@@ -68,7 +68,7 @@
           aria-controls="${id}-panel"
           aria-haspopup="dialog">
         <span class="material-symbols-outlined shrink-0 text-primary text-xl"><c:out value="${resolvedIcon}" /></span>
-        <span class="min-w-0 flex-1 truncate text-[0.95rem] font-bold leading-tight text-on-surface" data-picker-value><c:out value="${resolvedPlaceholder}" /></span>
+        <span class="min-w-0 flex-1 text-sm font-bold leading-tight text-on-surface tabular-nums" data-picker-value><c:out value="${resolvedPlaceholder}" /></span>
       </button>
       <button
           type="button"

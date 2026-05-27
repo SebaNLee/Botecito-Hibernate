@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.dto.MyBoatsQueryModel;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
+import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.persistence.utils.Paging;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -38,9 +40,8 @@ public class ItemJpaDao implements ItemDao {
         whereClauses.add("i.status <> CAST(:deleted AS item_status_enum)");
         parameters.put("deleted", ItemStatusEnum.DELETED.name());
 
-        String sql = "SELECT i.id FROM item i";
-        sql +=
-                " JOIN version v ON v.id = (SELECT v2.id FROM version v2 WHERE v2.item_id = i.id ORDER BY v2.created_at DESC LIMIT 1)";
+        String sql =
+                "SELECT v.id FROM item i JOIN version v ON v.id = (SELECT v2.id FROM version v2 WHERE v2.item_id = i.id ORDER BY v2.created_at DESC LIMIT 1)";
 
         if (!isEmpty(query.getSearchQuery())) {
             whereClauses.add("LOWER(v.title) LIKE LOWER(:searchQuery) ESCAPE '!'");
@@ -64,19 +65,31 @@ public class ItemJpaDao implements ItemDao {
         }
 
         Paging.apply(nativeQuery, query.getPage(), query.getPageSize());
-        final List<Integer> ids = Paging.toIntegerIds(nativeQuery.getResultList());
+        final List<Integer> versionIds = Paging.toIntegerIds(nativeQuery.getResultList());
 
-        if (ids.isEmpty()) {
+        if (versionIds.isEmpty()) {
             return new ItemSearchResult(List.of(), totalCount);
         }
 
-        // Phase 2: load full entities (no ORDER BY needed — reorder by Phase 1 ID order)
-        List<Item> items = em.createQuery("SELECT DISTINCT i FROM Item i WHERE i.id IN :ids", Item.class)
-                .setParameter("ids", ids)
-                .getResultList();
+        final String jpql = "SELECT DISTINCT v FROM Version v "
+                + "JOIN FETCH v.item JOIN FETCH v.location JOIN FETCH v.type "
+                + "LEFT JOIN FETCH v.media m LEFT JOIN FETCH m.image "
+                + "WHERE v.id IN :ids";
+        final TypedQuery<Version> versionQuery = em.createQuery(jpql, Version.class);
+        versionQuery.setParameter("ids", versionIds);
+        final List<Version> versions = versionQuery.getResultList();
 
-        final Map<Integer, Item> itemMap = items.stream().collect(Collectors.toMap(Item::getId, Function.identity()));
-        final List<Item> sortedItems = ids.stream().map(itemMap::get).collect(Collectors.toList());
+        final Map<Integer, Version> versionById =
+                versions.stream().collect(Collectors.toMap(Version::getId, Function.identity()));
+
+        final List<Item> sortedItems = new ArrayList<>(versionIds.size());
+        for (final Integer versionId : versionIds) {
+            final Version v = versionById.get(versionId);
+            if (v == null) continue;
+            final Item item = v.getItem();
+            item.setLatestVersion(v);
+            sortedItems.add(item);
+        }
 
         return new ItemSearchResult(sortedItems, totalCount);
     }

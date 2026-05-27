@@ -155,12 +155,8 @@ public class DetailPresentation {
                 version.getAvailabilities() == null ? List.of() : version.getAvailabilities();
         final List<Booking> itemBookings = item.getBookings() == null ? List.of() : item.getBookings();
         final String listingTz = version.getTimezone();
-        final var builderData = DetailAvailabilityPicker.build(availabilityWindows, itemBookings, listingTz);
-        final var detailData = new AvailabilityData(
-                builderData.offeredDates(),
-                builderData.occupiedDates(),
-                builderData.offeredTimesByDate(),
-                builderData.occupiedTimesByDate());
+        final AvailabilityData detailData =
+                DetailAvailabilityPicker.build(availabilityWindows, itemBookings, listingTz);
         AvailabilityJsonHelper.addAvailabilityPickerData(mav, MESSAGE_PREFIX, detailData);
         mav.addObject("detailListingTimezoneId", listingTz == null || listingTz.isBlank() ? "" : listingTz.trim());
         mav.addObject(

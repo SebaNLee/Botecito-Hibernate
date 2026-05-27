@@ -10,10 +10,9 @@
     day: "numeric",
     month: "long",
   });
-  const DATE_TRIGGER_SHORT_WEEKDAY = new Intl.DateTimeFormat(UI_LOCALE, {
-    weekday: "short",
+  const DATE_TRIGGER_COMPACT = new Intl.DateTimeFormat(UI_LOCALE, {
     day: "numeric",
-    month: "long",
+    month: "short",
   });
   /** Same fields as above but calendar day in UTC (pairs with isoToUtcCivilDate). */
   const DATE_FORMATTER_UTC = new Intl.DateTimeFormat(UI_LOCALE, {
@@ -22,10 +21,9 @@
     month: "long",
     timeZone: "UTC",
   });
-  const DATE_TRIGGER_SHORT_WEEKDAY_UTC = new Intl.DateTimeFormat(UI_LOCALE, {
-    weekday: "short",
+  const DATE_TRIGGER_COMPACT_UTC = new Intl.DateTimeFormat(UI_LOCALE, {
     day: "numeric",
-    month: "long",
+    month: "short",
     timeZone: "UTC",
   });
   const FILTER_STORAGE_KEY = "paw.marketplaceFilters";
@@ -83,6 +81,11 @@
 
   function displayTime(time) {
     return time ? time + " hs" : "";
+  }
+
+  /** Compact HH:mm for picker triggers (no suffix; fits narrow filter bars). */
+  function displayTimeCompact(time) {
+    return time || "";
   }
 
   function parseJson(value, fallback) {
@@ -182,14 +185,24 @@
     const date = civilCalendar
       ? isoToUtcCivilDate(isoDate)
       : isoToDate(isoDate);
-    const longFmt = civilCalendar ? DATE_FORMATTER_UTC : DATE_FORMATTER;
-    const shortFmt = civilCalendar
-      ? DATE_TRIGGER_SHORT_WEEKDAY_UTC
-      : DATE_TRIGGER_SHORT_WEEKDAY;
-    let formatted = longFmt.format(date);
-    if (formatted.length > 32) {
-      formatted = shortFmt.format(date);
+    const compactFmt = civilCalendar
+      ? DATE_TRIGGER_COMPACT_UTC
+      : DATE_TRIGGER_COMPACT;
+    const formatted = compactFmt.format(date);
+
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }
+
+  function formatDatePickerTriggerTitle(isoDate, civilCalendar) {
+    if (!isoDate) {
+      return "";
     }
+
+    const date = civilCalendar
+      ? isoToUtcCivilDate(isoDate)
+      : isoToDate(isoDate);
+    const longFmt = civilCalendar ? DATE_FORMATTER_UTC : DATE_FORMATTER;
+    const formatted = longFmt.format(date);
 
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }
@@ -969,11 +982,21 @@
     }
 
     updateValueLabel() {
-      this.valueNode.textContent = this.input.value
-        ? formatDatePickerTriggerLabel(this.input.value, this.civilCalendar)
-        : this.placeholder;
-
       const hasValue = Boolean(this.input.value);
+      if (hasValue) {
+        this.valueNode.textContent = formatDatePickerTriggerLabel(
+          this.input.value,
+          this.civilCalendar,
+        );
+        this.valueNode.title = formatDatePickerTriggerTitle(
+          this.input.value,
+          this.civilCalendar,
+        );
+      } else {
+        this.valueNode.textContent = this.placeholder;
+        this.valueNode.removeAttribute("title");
+      }
+
       syncTriggerClearButtonCollapsed(this.triggerClearButton, !hasValue);
     }
 
@@ -1540,21 +1563,28 @@
     }
 
     updateTriggerLabel() {
-      if (this.startInput.value && this.endInput.value) {
-        this.valueNode.textContent =
-          displayTime(this.startInput.value) +
-          " - " +
-          displayTime(this.endInput.value);
-      } else if (this.startInput.value) {
-        this.valueNode.textContent =
-          this.fromLabel + " " + displayTime(this.startInput.value);
-      } else {
-        this.valueNode.textContent = this.placeholder;
-      }
-
       const hasSelection = Boolean(
         this.startInput.value || this.endInput.value,
       );
+
+      if (this.startInput.value && this.endInput.value) {
+        const start = displayTimeCompact(this.startInput.value);
+        const end = displayTimeCompact(this.endInput.value);
+        this.valueNode.textContent = start + " – " + end;
+        this.valueNode.title =
+          displayTime(this.startInput.value) +
+          " – " +
+          displayTime(this.endInput.value);
+      } else if (this.startInput.value) {
+        const start = displayTimeCompact(this.startInput.value);
+        this.valueNode.textContent = start + "+";
+        this.valueNode.title =
+          this.fromLabel + " " + displayTime(this.startInput.value);
+      } else {
+        this.valueNode.textContent = this.placeholder;
+        this.valueNode.removeAttribute("title");
+      }
+
       syncTriggerClearButtonCollapsed(this.triggerClearButton, !hasSelection);
     }
   }

@@ -15,7 +15,11 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 <spring:message code="filters.people.placeholder" var="peoplePlaceholder" />
 <spring:message code="page.title.home" var="titleHome" />
 
-<paw:layout title="${titleHome}" mainClass="relative min-h-screen flex flex-col" scripts="search-filters,date-time">
+<paw:layout
+  title="${titleHome}"
+  mainClass="relative min-h-screen flex flex-col"
+  scripts="search-filters,date-time"
+>
   <section
     class="relative flex-grow flex items-center justify-center px-6 py-20 min-h-[870px]"
   >
@@ -29,7 +33,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
         class="absolute inset-0 bg-gradient-to-b from-on-background/40 via-on-background/10 to-background"
       ></div>
     </div>
-    <div class="relative z-10 w-full max-w-6xl mx-auto text-center">
+    <div class="relative z-10 w-full max-w-7xl mx-auto text-center">
       <h1
         class="hero-title font-extrabold text-4xl md:text-6xl text-white mb-6 tracking-tight drop-shadow-sm"
       >
@@ -48,9 +52,9 @@ charset=UTF-8" pageEncoding="UTF-8" %>
         action="${marketplaceUrl}"
         method="get"
         data-filter-form="landing"
-        class="bg-base-100/95 backdrop-blur-sm border border-base-200 p-2 md:p-3 rounded-2xl md:rounded-[2rem] shadow-xl max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-2"
+        class="bg-base-100/95 backdrop-blur-sm border border-base-200 p-2 md:p-3 rounded-2xl md:rounded-[2rem] shadow-xl w-full max-w-7xl mx-auto flex flex-col md:flex-row md:items-stretch items-center gap-2"
       >
-        <div class="w-full min-w-0 px-3 py-3 group md:flex-[1.05]">
+        <div class="w-full min-w-0 px-2 py-3 md:px-3 group md:flex-1 md:min-w-0">
           <paw:optionsPicker
             id="landing-location"
             name="location"
@@ -62,7 +66,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
         </div>
         <div class="hidden md:block w-px h-8 bg-outline-variant/20"></div>
 
-        <div class="w-full min-w-0 px-3 py-3 md:flex-[0.8]">
+        <div class="w-full min-w-0 px-2 py-3 md:px-3 md:flex-1 md:min-w-0">
           <paw:datePicker
             id="landing-date"
             dateFieldName="date"
@@ -75,7 +79,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
         </div>
         <div class="hidden md:block w-px h-8 bg-outline-variant/20"></div>
 
-        <div class="w-full min-w-0 px-3 py-3 md:flex-[0.8]">
+        <div class="w-full min-w-0 px-2 py-3 md:px-3 md:flex-1 md:min-w-0">
           <paw:timeRangePicker
             id="landing-time-range"
             dateInputId="landing-date"
@@ -90,7 +94,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
         </div>
         <div class="hidden md:block w-px h-8 bg-outline-variant/20"></div>
 
-        <div class="w-full min-w-0 px-3 py-3 md:flex-[0.98]">
+        <div class="w-full min-w-0 px-2 py-3 md:px-3 md:flex-1 md:min-w-0">
           <paw:peopleCount
             id="landing-capacity"
             name="capacity"
@@ -105,7 +109,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 
         <button
           type="submit"
-          class="btn btn-primary btn-lg w-full md:w-auto md:ml-4 md:shrink-0 rounded-full gap-2"
+          class="btn btn-primary btn-lg w-full md:w-auto md:mx-3 md:my-3 md:shrink-0 md:self-center rounded-full gap-2"
         >
           <span class="material-symbols-outlined">search</span>
           <span><spring:message code="landing.hero.search" /></span>

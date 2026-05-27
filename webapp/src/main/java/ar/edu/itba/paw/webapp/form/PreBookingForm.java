@@ -31,8 +31,11 @@ public class PreBookingForm {
     @Size(max = 255, message = "{prebooking.validation.message.max}")
     private String message;
 
-    @AssertTrue
+    @AssertTrue(message = "{prebooking.validation.twoHourGap}")
     public boolean hasTwoHourGap() {
+        if (startTime == null || endTime == null) {
+            return true;
+        }
         return !endTime.isBefore(startTime.plusHours(2));
     }
 
@@ -41,8 +44,11 @@ public class PreBookingForm {
         return minutes == 0 || minutes == 30;
     }
 
-    @AssertTrue
+    @AssertTrue(message = "{prebooking.validation.halfHour}")
     public boolean landsOnHalfHour() {
+        if (startTime == null || endTime == null) {
+            return true;
+        }
         return isOnHalfHour(startTime) && isOnHalfHour(endTime);
     }
 }

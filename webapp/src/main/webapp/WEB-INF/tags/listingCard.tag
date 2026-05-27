@@ -3,6 +3,7 @@
 <%@ attribute name="coverSrc" required="true" %>
 <%@ attribute name="returnTo" required="true" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
@@ -17,7 +18,7 @@
 </c:if>
 <a href="${itemUrl}" data-marketplace-item-link class="group card min-w-0 bg-base-100 shadow-sm overflow-hidden no-underline text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
   <figure class="aspect-[4/3] overflow-hidden">
-    <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${item.latestVersion.title}" src="${resolvedCoverSrc}"/>
+    <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${fn:escapeXml(item.latestVersion.title)}" src="${resolvedCoverSrc}"/>
   </figure>
   <div class="card-body min-w-0 p-4 gap-3">
     <div class="flex justify-between items-start gap-3">

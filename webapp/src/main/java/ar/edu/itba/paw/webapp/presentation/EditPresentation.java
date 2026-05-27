@@ -7,9 +7,8 @@ import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.SelectorsService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import ar.edu.itba.paw.webapp.util.JsonForHtml;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -28,8 +27,6 @@ import org.springframework.web.servlet.view.RedirectView;
 @RequiredArgsConstructor
 public class EditPresentation {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
     private final EditService editService;
     private final ItemService itemService;
     private final SelectorsService selectorsInterface;
@@ -44,11 +41,7 @@ public class EditPresentation {
         final ModelAndView mav = new ModelAndView("edit-bootstrap");
         mav.addObject("itemId", itemId);
         mav.addObject("detailsUrl", "/edit/" + itemId + "/details");
-        try {
-            mav.addObject("draftJson", OBJECT_MAPPER.writeValueAsString(draft));
-        } catch (final JsonProcessingException e) {
-            throw new IllegalStateException("Failed to serialize edit draft", e);
-        }
+        mav.addObject("draftJson", JsonForHtml.serialize(draft));
         return mav;
     }
 

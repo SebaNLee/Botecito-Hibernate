@@ -83,8 +83,8 @@
 
     <form id="my-boats-filters-form" action="${myBoatsUrl}" method="get" class="w-full">
       <input type="hidden" name="page" value="1" />
-      <div class="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
-        <div class="flex-1 min-w-0">
+      <div class="flex items-center justify-between gap-2 text-sm font-medium text-on-surface-variant">
+        <div class="max-w-sm">
           <paw:searchBar
               formId="my-boats-filters-form"
               name="searchQuery"
@@ -95,6 +95,7 @@
               size="sm" />
         </div>
 
+        <div class="flex items-center gap-2">
         <select id="my-boats-location" name="location" class="select select-xs w-28 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
           <option value="" disabled selected hidden><c:out value="${locationPlaceholder}" /></option>
           <c:forEach var="loc" items="${locationOptions}">
@@ -120,6 +121,7 @@
           <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
           <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
         </select>
+        </div>
       </div>
     </form>
 

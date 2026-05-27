@@ -51,6 +51,9 @@
 <spring:message code="detail.reviews.anonymous" var="detailReviewAnonymousLabel" />
 <spring:message code="contact.sendEmail" var="contactSendEmailLabel" />
 <spring:message code="itemDetail.contact.viewProfile" var="viewProfileLabel" />
+<spring:message code="itemDetail.owner.ownPublicationNotice" var="itemDetailOwnerNoticeLabel" />
+<spring:message code="itemDetail.owner.blockButton" var="itemDetailOwnerBlockButtonLabel" />
+<spring:message code="itemDetail.owner.incomingRequestsButton" var="itemDetailOwnerIncomingRequestsButtonLabel" />
 <spring:message code="page.title.itemDetail" var="titleItemDetail" />
 
 <paw:layout title="${titleItemDetail} - Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8" scripts="toast,search-filters,date-time,form-submit,pre-booking-draft,image-carousel,rating-stars">
@@ -249,6 +252,32 @@
           </div>
 
           <c:if test="${showPreBookingPanel}">
+            <c:choose>
+              <c:when test="${isOwner}">
+                <div class="space-y-4">
+                  <paw:alertMessage type="info"><c:out value="${itemDetailOwnerNoticeLabel}" /></paw:alertMessage>
+                  <c:url var="manageAvailabilityUrl" value="/my-boats/${item.id}/availability">
+                    <c:param name="return" value="${detailReturnPath}" />
+                  </c:url>
+                  <c:url var="incomingRequestsUrl" value="/requests/incoming" />
+                  <paw:button
+                      href="${manageAvailabilityUrl}"
+                      color="primary"
+                      icon="event_available"
+                      text="${itemDetailOwnerBlockButtonLabel}"
+                      fullWidth="true"
+                      size="lg" />
+                  <paw:button
+                      href="${incomingRequestsUrl}"
+                      color="primary"
+                      variant="outline"
+                      icon="inbox"
+                      text="${itemDetailOwnerIncomingRequestsButtonLabel}"
+                      fullWidth="true"
+                      size="lg" />
+                </div>
+              </c:when>
+              <c:otherwise>
               <div
                   data-prebook-draft-root
                   data-item-id="${item.id}"
@@ -368,6 +397,8 @@
                   </c:choose>
                 </form:form>
               </div>
+              </c:otherwise>
+            </c:choose>
           </c:if>
         </div>
       </div>

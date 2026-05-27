@@ -145,7 +145,7 @@
               <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
               <button type="button" class="flex h-full w-full max-w-sm flex-col gap-2 rounded-xl bg-base-200 p-2 text-left transition hover:bg-base-300 sm:p-3 ${itemActive ? '' : 'opacity-75'}" onclick="document.getElementById('${detailsModalId}').showModal()">
                 <div class="h-24 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:h-32">
-                  <img src="${publicationImageUrl}" alt="${version.title}" class="h-full w-full object-cover" loading="lazy" />
+                  <img src="${publicationImageUrl}" alt="${fn:escapeXml(version.title)}" class="h-full w-full object-cover" loading="lazy" />
                 </div>
                 <div class="flex min-w-0 flex-1 flex-col gap-1">
                   <div class="flex min-w-0 items-start gap-1.5">
@@ -164,7 +164,7 @@
               </button>
               <paw:detailsModal id="${detailsModalId}" title="${version.title}">
                 <div class="overflow-hidden rounded-lg bg-base-100">
-                  <img src="${publicationImageUrl}" alt="${version.title}" class="h-56 w-full object-cover" loading="lazy" />
+                  <img src="${publicationImageUrl}" alt="${fn:escapeXml(version.title)}" class="h-56 w-full object-cover" loading="lazy" />
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="badge ${itemActive ? 'badge-success' : 'badge-ghost'} font-bold">

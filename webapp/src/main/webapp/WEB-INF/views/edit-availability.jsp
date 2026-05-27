@@ -54,7 +54,7 @@
         </c:if>
         <div
             data-weekly-availability-grid
-            data-existing-slots='${existingSlotsJson}'
+            data-existing-slots='${fn:escapeXml(existingSlotsJson)}'
             data-min-duration="120"
             data-no-ranges-text="${publishNoRangesLabel}"
             data-delete-text="${publishDeleteRangeLabel}"

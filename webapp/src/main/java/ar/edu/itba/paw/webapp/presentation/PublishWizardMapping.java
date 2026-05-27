@@ -3,6 +3,7 @@ package ar.edu.itba.paw.webapp.presentation;
 import ar.edu.itba.paw.models.dto.AvailabilityWindow;
 import ar.edu.itba.paw.models.dto.ImageUpload;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
+import ar.edu.itba.paw.webapp.util.JsonForHtml;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
@@ -114,10 +115,9 @@ public final class PublishWizardMapping {
 
     public static String toExistingSlotsJson(final PublishBoatForm form) {
         if (form.getAvailabilityRanges() == null || form.getAvailabilityRanges().isEmpty()) {
-            return "[]";
+            return JsonForHtml.serialize(List.of());
         }
-        final StringBuilder sb = new StringBuilder("[");
-        boolean first = true;
+        final List<Map<String, String>> slots = new ArrayList<>();
         for (final PublishBoatForm.AvailabilityRangeBinding range : form.getAvailabilityRanges()) {
             if (range == null
                     || range.getWeekday() == null
@@ -125,19 +125,13 @@ public final class PublishWizardMapping {
                     || range.getEndTime() == null) {
                 continue;
             }
-            if (!first) {
-                sb.append(",");
-            }
-            sb.append("{\"weekday\":\"")
-                    .append(range.getWeekday().name())
-                    .append("\",\"startTime\":\"")
-                    .append(range.getStartTime())
-                    .append("\",\"endTime\":\"")
-                    .append(range.getEndTime())
-                    .append("\"}");
-            first = false;
+            final Map<String, String> slot = new LinkedHashMap<>();
+            slot.put("weekday", range.getWeekday().name());
+            slot.put("startTime", range.getStartTime().toString());
+            slot.put("endTime", range.getEndTime().toString());
+            slots.add(slot);
         }
-        return sb.append("]").toString();
+        return JsonForHtml.serialize(slots);
     }
 
     private static boolean isAvailabilityError(final String field) {

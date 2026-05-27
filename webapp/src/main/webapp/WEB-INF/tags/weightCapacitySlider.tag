@@ -38,7 +38,7 @@
     </span>
   </div>
 
-  <input id="${id}" name="${name}" type="hidden" value="${resolvedValue}" data-weight-value-input />
+  <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-weight-value-input />
 
   <input
       id="${id}-range"
@@ -46,7 +46,7 @@
       min="${resolvedMin}"
       max="${resolvedMax}"
       step="${resolvedStep}"
-      value="${resolvedDisplayValue}"
+      value="${fn:escapeXml(resolvedDisplayValue)}"
       class="range range-primary range-sm w-full"
       data-weight-input />
 

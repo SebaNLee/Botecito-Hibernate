@@ -9,6 +9,7 @@ import ar.edu.itba.paw.services.BookingService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.SaveSelfBlocksForm;
 import ar.edu.itba.paw.webapp.util.DetailAvailabilityPicker;
+import ar.edu.itba.paw.webapp.util.JsonForHtml;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -19,7 +20,9 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
@@ -95,7 +98,7 @@ public class AvailabilityPresentation {
         final ModelAndView mav = new ModelAndView("manage-availability");
         final String timezone = model.getTimezone();
         mav.addObject("item", model.getItem());
-        mav.addObject("offeredDatesJson", toJsonArray(model.getOfferedDates()));
+        mav.addObject("offeredDatesJson", JsonForHtml.serialize(model.getOfferedDates()));
         mav.addObject("selectedDate", model.getSelectedDate());
         mav.addObject(
                 "manageAvailabilityTodayIso",
@@ -147,7 +150,10 @@ public class AvailabilityPresentation {
             final Set<Integer> selfBlockBookingIds,
             final String timezone) {
         if (selectedDate == null) {
-            return "{\"availableRanges\":[],\"bookedRanges\":[],\"selfBlocks\":[]}";
+            return JsonForHtml.serialize(Map.of(
+                    "availableRanges", List.of(),
+                    "bookedRanges", List.of(),
+                    "selfBlocks", List.of()));
         }
         final ZoneId zone = DetailAvailabilityPicker.listingZoneOrUtc(timezone);
         final List<TimeRangeRow> availableRanges = new ArrayList<>();
@@ -305,60 +311,34 @@ public class AvailabilityPresentation {
         return redirectUrl + sep + "return=" + URLEncoder.encode(sanitizedReturnPath, StandardCharsets.UTF_8);
     }
 
-    private static String toJsonArray(final List<?> values) {
-        final StringBuilder json = new StringBuilder("[");
-        for (int i = 0; i < values.size(); i++) {
-            if (i > 0) {
-                json.append(',');
-            }
-            json.append('"')
-                    .append(String.valueOf(values.get(i)).replace("\"", "\\\""))
-                    .append('"');
-        }
-        return json.append(']').toString();
-    }
-
     private static String toDayTimelineJson(
             final List<TimeRangeRow> availableRanges,
             final List<TimeRangeRow> bookedRanges,
             final List<SelfBlockRow> selfBlocks) {
-        final StringBuilder json = new StringBuilder("{\"availableRanges\":[");
-        appendTimeRangeRows(json, availableRanges);
-        json.append("],\"bookedRanges\":[");
-        appendTimeRangeRows(json, bookedRanges);
-        json.append("],\"selfBlocks\":[");
-        for (int i = 0; i < selfBlocks.size(); i++) {
-            if (i > 0) {
-                json.append(',');
-            }
-            final SelfBlockRow block = selfBlocks.get(i);
-            json.append("{\"id\":")
-                    .append(block.getId())
-                    .append(",\"startTime\":\"")
-                    .append(escapeJson(block.getStartTime()))
-                    .append("\",\"endTime\":\"")
-                    .append(escapeJson(block.getEndTime()))
-                    .append("\"}");
+        final Map<String, Object> timeline = new LinkedHashMap<>();
+        timeline.put("availableRanges", toTimeRangeMaps(availableRanges));
+        timeline.put("bookedRanges", toTimeRangeMaps(bookedRanges));
+        final List<Map<String, Object>> selfBlockMaps = new ArrayList<>();
+        for (final SelfBlockRow block : selfBlocks) {
+            final Map<String, Object> row = new LinkedHashMap<>();
+            row.put("id", block.getId());
+            row.put("startTime", block.getStartTime());
+            row.put("endTime", block.getEndTime());
+            selfBlockMaps.add(row);
         }
-        return json.append("]}").toString();
+        timeline.put("selfBlocks", selfBlockMaps);
+        return JsonForHtml.serialize(timeline);
     }
 
-    private static void appendTimeRangeRows(final StringBuilder json, final List<TimeRangeRow> rows) {
-        for (int i = 0; i < rows.size(); i++) {
-            if (i > 0) {
-                json.append(',');
-            }
-            final TimeRangeRow row = rows.get(i);
-            json.append("{\"startTime\":\"")
-                    .append(escapeJson(row.getStartTime()))
-                    .append("\",\"endTime\":\"")
-                    .append(escapeJson(row.getEndTime()))
-                    .append("\"}");
+    private static List<Map<String, String>> toTimeRangeMaps(final List<TimeRangeRow> rows) {
+        final List<Map<String, String>> maps = new ArrayList<>();
+        for (final TimeRangeRow row : rows) {
+            final Map<String, String> map = new LinkedHashMap<>();
+            map.put("startTime", row.getStartTime());
+            map.put("endTime", row.getEndTime());
+            maps.add(map);
         }
-    }
-
-    private static String escapeJson(final String value) {
-        return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"");
+        return maps;
     }
 
     @Getter

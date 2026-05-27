@@ -35,7 +35,7 @@
 <c:set var="currentSortBy" value="${empty myBoatsSearch.sortBy ? 'newest' : myBoatsSearch.sortBy}" />
 <c:set var="hasActiveFilters" value="${not empty myBoatsSearch.searchQuery or not empty myBoatsSearch.status or not empty myBoatsSearch.location}" />
 
-<c:url var="clearFiltersUrl" value="${myBoatsUrl}">
+<c:url var="clearFiltersUrl" value="/my-boats">
   <c:if test="${currentSortBy != 'newest'}">
     <c:param name="sortBy" value="${currentSortBy}" />
   </c:if>
@@ -45,7 +45,7 @@
 </c:url>
 
 <c:if test="${itemPage.totalPages > 1}">
-  <c:url var="previousPageUrl" value="${myBoatsUrl}">
+  <c:url var="previousPageUrl" value="/my-boats">
     <c:param name="page" value="${itemPage.previousPage}" />
     <c:param name="sortBy" value="${currentSortBy}" />
     <c:param name="pageSize" value="${pageSize}" />
@@ -53,7 +53,7 @@
     <c:if test="${not empty myBoatsSearch.status}"><c:param name="status" value="${myBoatsSearch.status}" /></c:if>
     <c:if test="${not empty myBoatsSearch.location}"><c:param name="location" value="${myBoatsSearch.location}" /></c:if>
   </c:url>
-  <c:url var="nextPageUrl" value="${myBoatsUrl}">
+  <c:url var="nextPageUrl" value="/my-boats">
     <c:param name="page" value="${itemPage.nextPage}" />
     <c:param name="sortBy" value="${currentSortBy}" />
     <c:param name="pageSize" value="${pageSize}" />
@@ -83,8 +83,8 @@
 
     <form id="my-boats-filters-form" action="${myBoatsUrl}" method="get" class="w-full">
       <input type="hidden" name="page" value="1" />
-      <div class="flex flex-wrap items-center justify-between gap-2 text-sm font-medium text-on-surface-variant">
-        <div class="w-[70%]">
+      <div class="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
+        <div class="flex-1 min-w-0">
           <paw:searchBar
               formId="my-boats-filters-form"
               name="searchQuery"
@@ -95,33 +95,31 @@
               size="sm" />
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
-          <select id="my-boats-location" name="location" class="select select-xs w-28 font-bold text-primary" onchange="this.form.requestSubmit()">
-            <option value="" disabled selected hidden><c:out value="${locationPlaceholder}" /></option>
-            <c:forEach var="loc" items="${locationOptions}">
-              <option value="${loc.slug}" ${myBoatsSearch.location == loc.slug ? 'selected="selected"' : ''}><c:out value="${loc.name}" /></option>
-            </c:forEach>
-          </select>
+        <select id="my-boats-location" name="location" class="select select-xs w-28 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
+          <option value="" disabled selected hidden><c:out value="${locationPlaceholder}" /></option>
+          <c:forEach var="loc" items="${locationOptions}">
+            <option value="${loc.slug}" ${myBoatsSearch.location == loc.slug ? 'selected="selected"' : ''}><c:out value="${loc.name}" /></option>
+          </c:forEach>
+        </select>
 
-          <select id="my-boats-status" name="status" class="select select-xs w-24 font-bold text-primary" onchange="this.form.requestSubmit()">
-            <option value="" disabled selected hidden><spring:message code="myBoats.filter.status.placeholder" /></option>
-            <option value="ACTIVE" ${myBoatsSearch.status == 'ACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusActiveLabel}" /></option>
-            <option value="INACTIVE" ${myBoatsSearch.status == 'INACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusInactiveLabel}" /></option>
-          </select>
+        <select id="my-boats-status" name="status" class="select select-xs w-24 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
+          <option value="" disabled selected hidden><spring:message code="myBoats.filter.status.placeholder" /></option>
+          <option value="ACTIVE" ${myBoatsSearch.status == 'ACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusActiveLabel}" /></option>
+          <option value="INACTIVE" ${myBoatsSearch.status == 'INACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusInactiveLabel}" /></option>
+        </select>
 
-          <select id="my-boats-sort" name="sortBy" class="select select-xs w-28 font-bold text-primary" onchange="this.form.requestSubmit()">
-            <option value="newest" ${empty myBoatsSearch.sortBy || myBoatsSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><c:out value="${sortNewestLabel}" /></option>
-            <option value="oldest" ${myBoatsSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><c:out value="${sortOldestLabel}" /></option>
-            <option value="nameAsc" ${myBoatsSearch.sortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
-            <option value="nameDesc" ${myBoatsSearch.sortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
-          </select>
+        <select id="my-boats-sort" name="sortBy" class="select select-xs w-28 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
+          <option value="newest" ${empty myBoatsSearch.sortBy || myBoatsSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><c:out value="${sortNewestLabel}" /></option>
+          <option value="oldest" ${myBoatsSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><c:out value="${sortOldestLabel}" /></option>
+          <option value="nameAsc" ${myBoatsSearch.sortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
+          <option value="nameDesc" ${myBoatsSearch.sortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
+        </select>
 
-          <select id="my-boats-page-size" name="pageSize" class="select select-xs w-16 font-bold text-primary" onchange="this.form.requestSubmit()">
-            <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-            <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-            <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
-          </select>
-        </div>
+        <select id="my-boats-page-size" name="pageSize" class="select select-xs w-16 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
+          <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+          <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+          <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+        </select>
       </div>
     </form>
 

@@ -3,6 +3,7 @@ table users {
     first_name VARCHAR(100) NN,
     last_name VARCHAR (100) NN,
     email VARCHAR(100) UNIQUE NN,
+    admin boolean NN,
     phone VARCHAR(30),
     language VARCHAR(10) NN,
     alias VARCHAR (30),
@@ -98,6 +99,26 @@ table review {
     rating NUMERIC(2,1) NN,
     comment VARCHAR(255),
     created_at TIMESTAMP NN
+}
+
+table reports {
+    id INT PK NN,
+    sender_id INT FK-ref-users ON-DELETE-SET-NULL,
+    item_id INT FK-ref-item NN ON-DELETE-CASCADE,
+    reason report_enum NN,
+    description VARCHAR(255),
+    created_at TIMESTAMP NN,
+    unique(sender_id, item_id)
+}
+
+enum report_enum {
+    FAKE, -- Fake, misleading, or inaccurate publication content.
+    ABANDONED, -- The publication appears abandoned.
+    DUPLICATE, -- The publication is the same as another one.
+    SPAM, -- Promotional garbage content.
+    IRRELEVANT, -- The publication is unrelated to the platform’s purpose
+    INAPPROPRIATE -- The publication contains offensive, explicit, abusive, or otherwise unacceptable content.
+    OTHER -- Anything else not covered by the other options.
 }
 
 enum item_status_enum {

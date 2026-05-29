@@ -93,6 +93,8 @@ public class WebAuthConfig {
                 .permitAll()
                 .requestMatchers(publicResourceMatchers())
                 .permitAll()
+                .requestMatchers(antMatcher("/admin/**"))
+                .hasRole("ADMIN")
                 .requestMatchers(antMatcher("/**"))
                 .authenticated();
     }

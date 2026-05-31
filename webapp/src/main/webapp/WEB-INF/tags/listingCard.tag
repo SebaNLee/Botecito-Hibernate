@@ -33,10 +33,10 @@
       <input type="hidden" name="return" value="${fn:escapeXml(resolvedFavouriteReturn)}" />
       <button
           type="submit"
-          class="btn btn-circle btn-sm bg-base-100/95 border-outline-variant/40 text-primary shadow-sm hover:bg-base-100"
+          class="btn btn-circle btn-sm shadow-sm ${isFavourite ? 'bg-error border-error text-error-content hover:bg-error/90 hover:border-error' : 'bg-base-100/95 border-outline-variant/40 text-primary hover:bg-base-100'}"
           aria-label="${isFavourite ? favouriteRemoveLabel : favouriteAddLabel}"
           title="${isFavourite ? favouriteRemoveLabel : favouriteAddLabel}">
-        <span class="material-symbols-outlined text-lg">${isFavourite ? 'favorite' : 'favorite_border'}</span>
+        <span class="material-symbols-outlined text-lg" style="${isFavourite ? 'margin-left: 1px;' : ''}">${isFavourite ? 'heart_check' : 'favorite_border'}</span>
       </button>
     </form>
   </c:if>

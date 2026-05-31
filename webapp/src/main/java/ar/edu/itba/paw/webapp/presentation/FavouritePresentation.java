@@ -103,7 +103,7 @@ public class FavouritePresentation {
             return new ModelAndView("redirect:/login");
         }
         favouriteService.removeFavourite(principal.getId(), itemId);
-        ToastSupport.success(redirectAttributes, "favourite.removed");
+        ToastSupport.info(redirectAttributes, "favourite.removed");
         return redirect(returnPath);
     }
 

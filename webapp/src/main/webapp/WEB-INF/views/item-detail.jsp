@@ -254,44 +254,6 @@
             <span class="text-xs font-bold uppercase tracking-wider text-outline"><spring:message code="marketplace.card.perHour" /></span>
           </div>
 
-          <c:if test="${canFavouriteItem}">
-            <c:choose>
-              <c:when test="${viewer == null}">
-                <c:url var="favouriteLoginUrl" value="/login" />
-                <paw:button
-                    href="${favouriteLoginUrl}"
-                    color="outline"
-                    icon="favorite_border"
-                    fullWidth="true"
-                    text="${favouriteLoginToAddLabel}" />
-              </c:when>
-              <c:when test="${favouriteItem}">
-                <c:url var="unfavouriteItemUrl" value="/items/${item.id}/unfavourite" />
-                <form action="${unfavouriteItemUrl}" method="post" class="m-0">
-                  <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
-                  <paw:button
-                      type="submit"
-                      color="outline"
-                      icon="favorite"
-                      fullWidth="true"
-                      text="${favouriteRemoveLabel}" />
-                </form>
-              </c:when>
-              <c:otherwise>
-                <c:url var="favouriteItemUrl" value="/items/${item.id}/favourite" />
-                <form action="${favouriteItemUrl}" method="post" class="m-0">
-                  <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
-                  <paw:button
-                      type="submit"
-                      color="secondary"
-                      icon="favorite_border"
-                      fullWidth="true"
-                      text="${favouriteAddLabel}" />
-                </form>
-              </c:otherwise>
-            </c:choose>
-          </c:if>
-
           <c:if test="${showPreBookingPanel}">
             <c:choose>
               <c:when test="${isOwner}">
@@ -438,6 +400,44 @@
                   </c:choose>
                 </form:form>
               </div>
+              </c:otherwise>
+            </c:choose>
+          </c:if>
+
+          <c:if test="${canFavouriteItem}">
+            <c:choose>
+              <c:when test="${viewer == null}">
+                <c:url var="favouriteLoginUrl" value="/login" />
+                <paw:button
+                    href="${favouriteLoginUrl}"
+                    color="outline"
+                    icon="favorite_border"
+                    fullWidth="true"
+                    text="${favouriteLoginToAddLabel}" />
+              </c:when>
+              <c:when test="${favouriteItem}">
+                <c:url var="unfavouriteItemUrl" value="/items/${item.id}/unfavourite" />
+                <form action="${unfavouriteItemUrl}" method="post" class="m-0">
+                  <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                  <paw:button
+                      type="submit"
+                      color="danger"
+                      icon="favorite"
+                      fullWidth="true"
+                      text="${favouriteRemoveLabel}" />
+                </form>
+              </c:when>
+              <c:otherwise>
+                <c:url var="favouriteItemUrl" value="/items/${item.id}/favourite" />
+                <form action="${favouriteItemUrl}" method="post" class="m-0">
+                  <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                  <paw:button
+                      type="submit"
+                      color="outline"
+                      icon="favorite_border"
+                      fullWidth="true"
+                      text="${favouriteAddLabel}" />
+                </form>
               </c:otherwise>
             </c:choose>
           </c:if>

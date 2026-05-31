@@ -26,6 +26,9 @@
         </a>
       </sec:authorize>
       <sec:authorize access="isAuthenticated()">
+        <a href="<c:url value='/favourites' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+          <spring:message code="account.nav.favourites" />
+        </a>
         <a href="<c:url value='/my-boats' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
           <spring:message code="account.nav.myBoats" />
         </a>

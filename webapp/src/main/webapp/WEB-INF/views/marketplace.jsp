@@ -305,7 +305,13 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <c:forEach items="${items}" var="item">
-        <paw:listingCard item="${item}" coverSrc="${imageUrlsByItemId[item.id]}" returnTo="${marketplaceReturnTo}" />
+        <paw:listingCard
+            item="${item}"
+            coverSrc="${imageUrlsByItemId[item.id]}"
+            returnTo="${marketplaceReturnTo}"
+            favourite="${favouriteByItemId[item.id]}"
+            canFavourite="${canFavouriteByItemId[item.id]}"
+            favouriteReturn="${marketplaceReturnTo}" />
       </c:forEach>
     </div>
 

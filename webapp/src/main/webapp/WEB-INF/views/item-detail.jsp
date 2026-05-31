@@ -21,6 +21,9 @@
 <spring:message code="subscription.subscribe" var="subscriptionSubscribeLabel" />
 <spring:message code="subscription.unsubscribe" var="subscriptionUnsubscribeLabel" />
 <spring:message code="subscription.loginToSubscribe" var="subscriptionLoginToSubscribeLabel" />
+<spring:message code="favourite.add" var="favouriteAddLabel" />
+<spring:message code="favourite.remove" var="favouriteRemoveLabel" />
+<spring:message code="favourite.loginToAdd" var="favouriteLoginToAddLabel" />
 <spring:message code="itemDetail.reviews.title" var="itemReviewsTitle" />
 <spring:message code="itemDetail.reviews.empty" var="itemReviewsEmpty" />
 <spring:message code="itemDetail.reviews.count" var="itemReviewsCountLabel" />
@@ -250,6 +253,44 @@
             </span>
             <span class="text-xs font-bold uppercase tracking-wider text-outline"><spring:message code="marketplace.card.perHour" /></span>
           </div>
+
+          <c:if test="${canFavouriteItem}">
+            <c:choose>
+              <c:when test="${viewer == null}">
+                <c:url var="favouriteLoginUrl" value="/login" />
+                <paw:button
+                    href="${favouriteLoginUrl}"
+                    color="outline"
+                    icon="favorite_border"
+                    fullWidth="true"
+                    text="${favouriteLoginToAddLabel}" />
+              </c:when>
+              <c:when test="${favouriteItem}">
+                <c:url var="unfavouriteItemUrl" value="/items/${item.id}/unfavourite" />
+                <form action="${unfavouriteItemUrl}" method="post" class="m-0">
+                  <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                  <paw:button
+                      type="submit"
+                      color="outline"
+                      icon="favorite"
+                      fullWidth="true"
+                      text="${favouriteRemoveLabel}" />
+                </form>
+              </c:when>
+              <c:otherwise>
+                <c:url var="favouriteItemUrl" value="/items/${item.id}/favourite" />
+                <form action="${favouriteItemUrl}" method="post" class="m-0">
+                  <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                  <paw:button
+                      type="submit"
+                      color="secondary"
+                      icon="favorite_border"
+                      fullWidth="true"
+                      text="${favouriteAddLabel}" />
+                </form>
+              </c:otherwise>
+            </c:choose>
+          </c:if>
 
           <c:if test="${showPreBookingPanel}">
             <c:choose>

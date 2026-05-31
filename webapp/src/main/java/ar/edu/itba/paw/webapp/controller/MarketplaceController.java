@@ -1,10 +1,12 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import ar.edu.itba.paw.webapp.presentation.MarketplacePresentation;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -33,10 +35,11 @@ public class MarketplaceController {
 
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
     public ModelAndView marketplace(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
             final HttpServletRequest request,
             @Valid @ModelAttribute("marketplaceSearch") final MarketplaceSearchForm search,
             final BindingResult errors) {
 
-        return marketplacePresentation.marketplace(request, search, errors);
+        return marketplacePresentation.marketplace(user, request, search, errors);
     }
 }

@@ -1,5 +1,7 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.dto.FavouritesQueryModel;
+import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
@@ -52,14 +54,29 @@ public class FavouriteServiceImpl implements FavouriteService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageModel<Item> listFavourites(final int userId, final int page, final int pageSize) {
+    public PageModel<Item> listFavourites(
+            final int userId,
+            final String searchQuery,
+            final String status,
+            final String location,
+            final int page,
+            final int pageSize,
+            final String sortBy) {
         final int safePage = Math.max(1, page);
         final int safePageSize = pageSize > 0 ? Math.min(pageSize, 18) : DEFAULT_PAGE_SIZE;
-        return new PageModel<>(
-                favouriteDao.listFavourites(userId, safePage, safePageSize),
-                safePage,
-                safePageSize,
-                favouriteDao.countFavourites(userId));
+        final FavouritesQueryModel query = FavouritesQueryModel.builder()
+                .userId(userId)
+                .searchQuery(searchQuery)
+                .status(status)
+                .locationSlug(location)
+                .page(safePage)
+                .pageSize(safePageSize)
+                .sortBy(sortBy)
+                .build();
+        final ItemSearchResult result = favouriteDao.listFavourites(query);
+        final int totalItems =
+                result.getTotalCount() > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) result.getTotalCount();
+        return new PageModel<>(result.getItems(), safePage, safePageSize, totalItems);
     }
 
     private static boolean canFavourite(final int userId, final Item item) {

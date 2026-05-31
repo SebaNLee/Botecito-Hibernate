@@ -1,5 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.dto.FavouritesQueryModel;
+import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.entity.Favourite;
 import ar.edu.itba.paw.models.entity.FavouriteId;
 import ar.edu.itba.paw.models.entity.Item;
@@ -29,6 +31,7 @@ public class FavouriteJpaDao implements FavouriteDao {
             + "JOIN FETCH v.item i JOIN FETCH i.host JOIN FETCH v.location JOIN FETCH v.type "
             + "LEFT JOIN FETCH v.media m LEFT JOIN FETCH m.image "
             + "WHERE v.id IN :ids";
+    private static final int DEFAULT_PAGE_SIZE = 12;
 
     @PersistenceContext
     private EntityManager em;
@@ -77,20 +80,25 @@ public class FavouriteJpaDao implements FavouriteDao {
     }
 
     @Override
-    public List<Item> listFavourites(final int userId, final int page, final int pageSize) {
-        final Query versionIdsQuery = em.createNativeQuery("SELECT v.id FROM favourite f "
+    public ItemSearchResult listFavourites(final FavouritesQueryModel query) {
+        final long totalCount = countFavourites(query);
+
+        final Map<String, Object> parameters = new LinkedHashMap<>();
+        final List<String> whereClauses = new ArrayList<>();
+        String sql = "SELECT v.id FROM favourite f "
                 + "INNER JOIN item i ON f.item_id = i.id "
                 + "INNER JOIN version v ON v.id = (SELECT v2.id FROM version v2 "
-                + "WHERE v2.item_id = i.id ORDER BY v2.created_at DESC LIMIT 1) "
-                + "WHERE f.user_id = :userId AND i.status <> CAST(:deleted AS item_status_enum) "
-                + "ORDER BY f.created_at DESC, f.item_id DESC");
-        versionIdsQuery.setParameter("userId", userId);
-        versionIdsQuery.setParameter("deleted", ItemStatusEnum.DELETED.name());
-        Paging.apply(versionIdsQuery, page, pageSize);
+                + "WHERE v2.item_id = i.id ORDER BY v2.created_at DESC LIMIT 1) ";
+        sql = getSqlForFilter(query, parameters, whereClauses, sql);
+        sql += " ORDER BY " + nativeOrderBy(query);
+
+        final Query versionIdsQuery = em.createNativeQuery(sql);
+        setParameters(versionIdsQuery, parameters);
+        Paging.apply(versionIdsQuery, resolvePage(query), resolvePageSize(query));
 
         final List<Integer> versionIds = Paging.toIntegerIds(versionIdsQuery.getResultList());
         if (versionIds.isEmpty()) {
-            return List.of();
+            return new ItemSearchResult(List.of(), totalCount);
         }
 
         final TypedQuery<Version> versionQuery = em.createQuery(VERSION_FETCH_JPQL, Version.class);
@@ -112,18 +120,92 @@ public class FavouriteJpaDao implements FavouriteDao {
             items.add(item);
         }
         populateReviewTransients(items);
-        return items;
+        return new ItemSearchResult(items, totalCount);
     }
 
     @Override
-    public int countFavourites(final int userId) {
-        return em.createQuery(
-                        "SELECT COUNT(f) FROM Favourite f" + " WHERE f.user.id = :userId AND f.item.status <> :deleted",
-                        Long.class)
-                .setParameter("userId", userId)
-                .setParameter("deleted", ItemStatusEnum.DELETED)
-                .getSingleResult()
-                .intValue();
+    public int countFavourites(final FavouritesQueryModel query) {
+        final Map<String, Object> parameters = new LinkedHashMap<>();
+        final List<String> whereClauses = new ArrayList<>();
+        String sql = "SELECT COUNT(i.id) FROM favourite f "
+                + "INNER JOIN item i ON f.item_id = i.id "
+                + "INNER JOIN version v ON v.id = (SELECT v2.id FROM version v2 "
+                + "WHERE v2.item_id = i.id ORDER BY v2.created_at DESC LIMIT 1) ";
+        sql = getSqlForFilter(query, parameters, whereClauses, sql);
+        final Query countQuery = em.createNativeQuery(sql);
+        setParameters(countQuery, parameters);
+        return ((Number) countQuery.getSingleResult()).intValue();
+    }
+
+    private static String getSqlForFilter(
+            final FavouritesQueryModel query,
+            final Map<String, Object> parameters,
+            final List<String> whereClauses,
+            String sql) {
+        whereClauses.add("f.user_id = :userId");
+        parameters.put("userId", query.getUserId());
+        whereClauses.add("i.status <> CAST(:deleted AS item_status_enum)");
+        parameters.put("deleted", ItemStatusEnum.DELETED.name());
+
+        if (!isEmpty(query.getSearchQuery())) {
+            whereClauses.add("LOWER(v.title) LIKE LOWER(:searchQuery) ESCAPE '!'");
+            parameters.put("searchQuery", setupSearchQuery(query.getSearchQuery()));
+        }
+        if (!isEmpty(query.getStatus())) {
+            whereClauses.add("i.status = CAST(:status AS item_status_enum)");
+            parameters.put("status", query.getStatus());
+        }
+        if (!isEmpty(query.getLocationSlug())) {
+            whereClauses.add("EXISTS (SELECT 1 FROM location l WHERE l.id = v.location_id AND l.slug = :location)");
+            parameters.put("location", query.getLocationSlug());
+        }
+
+        sql += "WHERE " + String.join(" AND ", whereClauses);
+        return sql;
+    }
+
+    private static void setParameters(final Query query, final Map<String, Object> parameters) {
+        for (final Map.Entry<String, Object> entry : parameters.entrySet()) {
+            query.setParameter(entry.getKey(), entry.getValue());
+        }
+    }
+
+    private static String nativeOrderBy(final FavouritesQueryModel query) {
+        final String sortBy = query.getSortBy();
+        if (sortBy == null || sortBy.isBlank()) {
+            return "f.created_at DESC, f.item_id DESC";
+        }
+        return switch (sortBy) {
+            case "oldest" -> "f.created_at ASC, f.item_id ASC";
+            case "nameAsc" -> "v.title ASC, i.id ASC";
+            case "nameDesc" -> "v.title DESC, i.id DESC";
+            default -> "f.created_at DESC, f.item_id DESC";
+        };
+    }
+
+    private static int resolvePage(final FavouritesQueryModel query) {
+        return query == null ? Paging.DEFAULT_PAGE : Paging.resolvePage(query.getPage());
+    }
+
+    private static int resolvePageSize(final FavouritesQueryModel query) {
+        return query == null
+                ? DEFAULT_PAGE_SIZE
+                : Paging.resolvePageSize(query.getPageSize(), DEFAULT_PAGE_SIZE, 6, 12, 18);
+    }
+
+    private static String setupSearchQuery(final String searchQuery) {
+        final String queryWithWildcards = searchQuery
+                .trim()
+                .toLowerCase()
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_")
+                .replaceAll("\\s+", "%");
+        return "%" + queryWithWildcards + "%";
+    }
+
+    private static boolean isEmpty(final String value) {
+        return value == null || value.isBlank();
     }
 
     private void populateReviewTransients(final List<Item> items) {

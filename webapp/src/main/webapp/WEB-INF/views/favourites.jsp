@@ -1,4 +1,5 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
@@ -6,17 +7,48 @@
 <c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="favouritesUrl" value="/favourites" />
 <spring:message code="page.title.favourites" var="titleFavourites" />
+<spring:message code="landing.hero.search" var="searchLabel" />
+<spring:message code="favourites.search.placeholder" var="searchPlaceholder" />
+<spring:message code="myBoats.sort.newest" var="sortNewestLabel" />
+<spring:message code="myBoats.sort.oldest" var="sortOldestLabel" />
+<spring:message code="myBoats.sort.nameAsc" var="sortNameAscLabel" />
+<spring:message code="myBoats.sort.nameDesc" var="sortNameDescLabel" />
+<spring:message code="myBoats.filter.status.active" var="statusActiveLabel" />
+<spring:message code="myBoats.filter.status.inactive" var="statusInactiveLabel" />
+<spring:message code="myBoats.filter.location.placeholder" var="locationPlaceholder" />
+<spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
+<spring:message code="favourites.filter.empty" var="filterEmptyLabel" />
+<c:set var="pageSize" value="${favouritesSearch.pageSize != null ? favouritesSearch.pageSize : 12}" />
+<c:set var="currentSortBy" value="${empty favouritesSearch.sortBy ? 'newest' : favouritesSearch.sortBy}" />
+<c:set var="hasActiveFilters" value="${not empty favouritesSearch.searchQuery or not empty favouritesSearch.status or not empty favouritesSearch.location}" />
+
+<c:url var="clearFiltersUrl" value="/favourites">
+  <c:if test="${currentSortBy != 'newest'}">
+    <c:param name="sortBy" value="${currentSortBy}" />
+  </c:if>
+  <c:if test="${pageSize != 12}">
+    <c:param name="pageSize" value="${pageSize}" />
+  </c:if>
+</c:url>
 
 <c:if test="${itemPage.hasPrevious}">
   <c:url var="previousPageUrl" value="/favourites">
     <c:param name="page" value="${itemPage.previousPage}" />
+    <c:param name="sortBy" value="${currentSortBy}" />
     <c:param name="pageSize" value="${pageSize}" />
+    <c:if test="${not empty favouritesSearch.searchQuery}"><c:param name="searchQuery" value="${favouritesSearch.searchQuery}" /></c:if>
+    <c:if test="${not empty favouritesSearch.status}"><c:param name="status" value="${favouritesSearch.status}" /></c:if>
+    <c:if test="${not empty favouritesSearch.location}"><c:param name="location" value="${favouritesSearch.location}" /></c:if>
   </c:url>
 </c:if>
 <c:if test="${itemPage.hasNext}">
   <c:url var="nextPageUrl" value="/favourites">
     <c:param name="page" value="${itemPage.nextPage}" />
+    <c:param name="sortBy" value="${currentSortBy}" />
     <c:param name="pageSize" value="${pageSize}" />
+    <c:if test="${not empty favouritesSearch.searchQuery}"><c:param name="searchQuery" value="${favouritesSearch.searchQuery}" /></c:if>
+    <c:if test="${not empty favouritesSearch.status}"><c:param name="status" value="${favouritesSearch.status}" /></c:if>
+    <c:if test="${not empty favouritesSearch.location}"><c:param name="location" value="${favouritesSearch.location}" /></c:if>
   </c:url>
 </c:if>
 
@@ -33,6 +65,61 @@
     </a>
   </div>
 
+  <form id="favourites-filters-form" action="${favouritesUrl}" method="get" class="w-full">
+    <input type="hidden" name="page" value="1" />
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between text-sm font-medium text-on-surface-variant">
+      <div class="max-w-sm">
+        <paw:searchBar
+            formId="favourites-filters-form"
+            name="searchQuery"
+            value="${fn:escapeXml(favouritesSearch.searchQuery)}"
+            placeholder="${searchPlaceholder}"
+            ariaLabel="${searchLabel}"
+            maxlength="100"
+            size="sm" />
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <select id="favourites-location" name="location" class="select select-xs w-28 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
+          <option value="" disabled selected hidden><c:out value="${locationPlaceholder}" /></option>
+          <c:forEach var="loc" items="${locationOptions}">
+            <option value="${loc.slug}" ${favouritesSearch.location == loc.slug ? 'selected="selected"' : ''}><c:out value="${loc.name}" /></option>
+          </c:forEach>
+        </select>
+
+        <select id="favourites-status" name="status" class="select select-xs w-24 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
+          <option value="" disabled selected hidden><spring:message code="myBoats.filter.status.placeholder" /></option>
+          <option value="ACTIVE" ${favouritesSearch.status == 'ACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusActiveLabel}" /></option>
+          <option value="INACTIVE" ${favouritesSearch.status == 'INACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusInactiveLabel}" /></option>
+        </select>
+
+        <select id="favourites-sort" name="sortBy" class="select select-xs w-28 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
+          <option value="newest" ${empty favouritesSearch.sortBy || favouritesSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><c:out value="${sortNewestLabel}" /></option>
+          <option value="oldest" ${favouritesSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><c:out value="${sortOldestLabel}" /></option>
+          <option value="nameAsc" ${favouritesSearch.sortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
+          <option value="nameDesc" ${favouritesSearch.sortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
+        </select>
+
+        <c:if test="${itemsCount > 6}">
+          <div class="flex items-center gap-1.5 shrink-0">
+            <label for="favourites-page-size" class="text-xs font-semibold text-on-surface-variant">Items:</label>
+            <select id="favourites-page-size" name="pageSize" class="select select-xs w-16 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
+              <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+              <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+              <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+            </select>
+          </div>
+        </c:if>
+
+        <c:if test="${hasActiveFilters}">
+          <a href="${clearFiltersUrl}" class="btn btn-outline btn-xs no-underline">
+            <c:out value="${filtersClearLabel}" />
+          </a>
+        </c:if>
+      </div>
+    </div>
+  </form>
+
   <c:if test="${empty items}">
     <div class="card bg-base-100 shadow-sm">
       <div class="card-body items-center text-center gap-4 p-10">
@@ -40,12 +127,29 @@
           <span class="material-symbols-outlined text-4xl">favorite</span>
         </div>
         <div class="max-w-lg">
-          <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><spring:message code="favourites.empty.title" /></h2>
-          <p class="m-0 mt-2 text-on-surface-variant"><spring:message code="favourites.empty.message" /></p>
+          <c:choose>
+            <c:when test="${hasActiveFilters}">
+              <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><c:out value="${filterEmptyLabel}" /></h2>
+              <p class="m-0 mt-2 text-on-surface-variant"><spring:message code="favourites.empty.filtered.message" /></p>
+            </c:when>
+            <c:otherwise>
+              <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><spring:message code="favourites.empty.title" /></h2>
+              <p class="m-0 mt-2 text-on-surface-variant"><spring:message code="favourites.empty.message" /></p>
+            </c:otherwise>
+          </c:choose>
         </div>
-        <a href="${marketplaceUrl}" class="btn btn-primary no-underline">
-          <spring:message code="favourites.empty.browse" />
-        </a>
+        <c:choose>
+          <c:when test="${hasActiveFilters}">
+            <a href="${clearFiltersUrl}" class="btn btn-outline no-underline">
+              <c:out value="${filtersClearLabel}" />
+            </a>
+          </c:when>
+          <c:otherwise>
+            <a href="${marketplaceUrl}" class="btn btn-primary no-underline">
+              <spring:message code="favourites.empty.browse" />
+            </a>
+          </c:otherwise>
+        </c:choose>
       </div>
     </div>
   </c:if>

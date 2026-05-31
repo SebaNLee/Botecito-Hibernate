@@ -3,14 +3,18 @@ package ar.edu.itba.paw.webapp.presentation;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.services.FavouriteService;
+import ar.edu.itba.paw.services.SelectorsService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
+import ar.edu.itba.paw.webapp.form.FavouritesSearchForm;
 import ar.edu.itba.paw.webapp.presentation.util.CoverImageUrlResolver;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -19,17 +23,50 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class FavouritePresentation {
 
     private static final String VIEW_NAME = "favourites";
+    private static final String MESSAGE_PREFIX = "favourites";
 
     private final FavouriteService favouriteService;
+    private final SelectorsService selectorsService;
     private final CoverImageUrlResolver coverImageUrlResolver;
+    private final ToastPresentation toastPresentation;
 
     public ModelAndView favourites(
-            final BotecitoUserDetails principal, final HttpServletRequest request, final int page, final int pageSize) {
+            final BotecitoUserDetails principal, final HttpServletRequest request, final FavouritesSearchForm search) {
         if (principal == null) {
             return new ModelAndView("redirect:/login");
         }
-        final PageModel<Item> itemPage = favouriteService.listFavourites(principal.getId(), page, pageSize);
-        final ModelAndView mav = new ModelAndView(VIEW_NAME);
+        final int page = search.getPage() == null ? 1 : search.getPage();
+        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
+        final PageModel<Item> itemPage = favouriteService.listFavourites(
+                principal.getId(),
+                search.getSearchQuery(),
+                search.getStatus(),
+                search.getLocation(),
+                page,
+                pageSize,
+                search.getSortBy());
+        final ModelAndView mav = new ModelAndView(VIEW_NAME, "favouritesSearch", search);
+        addListingModelObjects(mav, itemPage, request);
+        return mav;
+    }
+
+    public ModelAndView favouritesErrors(
+            final BotecitoUserDetails principal,
+            final HttpServletRequest request,
+            final FavouritesSearchForm search,
+            final BindingResult errors) {
+        if (principal == null) {
+            return new ModelAndView("redirect:/login");
+        }
+        final ModelAndView mav = new ModelAndView(VIEW_NAME, "favouritesSearch", search);
+        mav.addAllObjects(errors.getModel());
+        mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
+        addListingModelObjects(mav, new PageModel<>(List.of(), 1, 12, 0), request);
+        return mav;
+    }
+
+    private void addListingModelObjects(
+            final ModelAndView mav, final PageModel<Item> itemPage, final HttpServletRequest request) {
         mav.addObject("itemPage", itemPage);
         mav.addObject("items", itemPage.getContent());
         mav.addObject("itemsCount", itemPage.getTotalItems());
@@ -38,7 +75,7 @@ public class FavouritePresentation {
         mav.addObject("imageUrlsByItemId", coverImageUrlResolver.resolve(itemPage.getContent(), request));
         mav.addObject("favouriteByItemId", booleanMap(itemPage.getContent(), true));
         mav.addObject("canFavouriteByItemId", booleanMap(itemPage.getContent(), true));
-        return mav;
+        mav.addObject("locationOptions", selectorsService.getLocationOptions());
     }
 
     public ModelAndView addFavourite(

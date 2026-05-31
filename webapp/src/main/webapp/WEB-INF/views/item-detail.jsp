@@ -240,9 +240,52 @@
     <aside class="order-1 lg:order-2 w-full min-w-0 space-y-6">
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body p-8 gap-4">
-          <h1 class="text-3xl font-extrabold tracking-tight m-0 break-words">
-            <c:out value="${version.title}" />
-          </h1>
+          <div class="flex items-start justify-between gap-4">
+            <h1 class="text-3xl font-extrabold tracking-tight m-0 break-words">
+              <c:out value="${version.title}" />
+            </h1>
+            <c:if test="${canFavouriteItem}">
+              <div class="shrink-0 pt-1">
+                <c:choose>
+                  <c:when test="${viewer == null}">
+                    <c:url var="favouriteLoginUrl" value="/login" />
+                    <a href="${favouriteLoginUrl}"
+                       class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 text-primary hover:bg-base-100"
+                       aria-label="${favouriteLoginToAddLabel}"
+                       title="${favouriteLoginToAddLabel}">
+                      <span class="material-symbols-outlined text-lg">favorite_border</span>
+                    </a>
+                  </c:when>
+                  <c:when test="${favouriteItem}">
+                    <c:url var="unfavouriteItemUrl" value="/items/${item.id}/unfavourite" />
+                    <form action="${unfavouriteItemUrl}" method="post" class="m-0">
+                      <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                      <button
+                          type="submit"
+                          class="btn btn-circle btn-sm shadow-sm bg-error border-error text-error-content hover:bg-error/90 hover:border-error"
+                          aria-label="${favouriteRemoveLabel}"
+                          title="${favouriteRemoveLabel}">
+                        <span class="material-symbols-outlined text-lg" style="margin-left: 1px;">heart_check</span>
+                      </button>
+                    </form>
+                  </c:when>
+                  <c:otherwise>
+                    <c:url var="favouriteItemUrl" value="/items/${item.id}/favourite" />
+                    <form action="${favouriteItemUrl}" method="post" class="m-0">
+                      <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                      <button
+                          type="submit"
+                          class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 text-primary hover:bg-base-100"
+                          aria-label="${favouriteAddLabel}"
+                          title="${favouriteAddLabel}">
+                        <span class="material-symbols-outlined text-lg">favorite_border</span>
+                      </button>
+                    </form>
+                  </c:otherwise>
+                </c:choose>
+              </div>
+            </c:if>
+          </div>
           <div class="flex min-w-0 items-center text-on-surface-variant text-sm gap-1">
             <span class="material-symbols-outlined text-primary text-lg">location_on</span>
             <span class="min-w-0 break-words"><c:out value="${version.location.name}" /></span>
@@ -404,43 +447,7 @@
             </c:choose>
           </c:if>
 
-          <c:if test="${canFavouriteItem}">
-            <c:choose>
-              <c:when test="${viewer == null}">
-                <c:url var="favouriteLoginUrl" value="/login" />
-                <paw:button
-                    href="${favouriteLoginUrl}"
-                    color="outline"
-                    icon="favorite_border"
-                    fullWidth="true"
-                    text="${favouriteLoginToAddLabel}" />
-              </c:when>
-              <c:when test="${favouriteItem}">
-                <c:url var="unfavouriteItemUrl" value="/items/${item.id}/unfavourite" />
-                <form action="${unfavouriteItemUrl}" method="post" class="m-0">
-                  <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
-                  <paw:button
-                      type="submit"
-                      color="danger"
-                      icon="favorite"
-                      fullWidth="true"
-                      text="${favouriteRemoveLabel}" />
-                </form>
-              </c:when>
-              <c:otherwise>
-                <c:url var="favouriteItemUrl" value="/items/${item.id}/favourite" />
-                <form action="${favouriteItemUrl}" method="post" class="m-0">
-                  <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
-                  <paw:button
-                      type="submit"
-                      color="outline"
-                      icon="favorite_border"
-                      fullWidth="true"
-                      text="${favouriteAddLabel}" />
-                </form>
-              </c:otherwise>
-            </c:choose>
-          </c:if>
+
         </div>
       </div>
 

@@ -1,24 +1,16 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.models.dto.ReportSearchResult;
 import ar.edu.itba.paw.models.entity.Report;
 import ar.edu.itba.paw.persistence.utils.Paging;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.persistence.TypedQuery;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class ReportJpaDao implements ReportDao {
-
-    private static final String ADMIN_LIST_JPQL = "SELECT DISTINCT r FROM Report r "
-            + "JOIN FETCH r.sender "
-            + "JOIN FETCH r.item i "
-            + "LEFT JOIN FETCH i.host ";
 
     @PersistenceContext
     private EntityManager em;
@@ -58,57 +50,43 @@ public class ReportJpaDao implements ReportDao {
     }
 
     @Override
-    public int countAll() {
-        return ((Number) em.createQuery("SELECT COUNT(r) FROM Report r").getSingleResult()).intValue();
+    public ReportSearchResult searchReports(final int page, final int pageSize, final String sortBy) {
+        final long totalCount = countAll();
+
+        var nativeQuery = em.createNativeQuery("SELECT r.id FROM reports r " + nativeOrderBy(sortBy));
+        Paging.apply(nativeQuery, page, pageSize);
+        final List<Integer> ids = Paging.toIntegerIds(nativeQuery.getResultList());
+
+        if (ids.isEmpty()) return new ReportSearchResult(List.of(), totalCount);
+
+        var query = em.createQuery(
+                "SELECT DISTINCT r FROM Report r JOIN FETCH r.sender JOIN FETCH r.item i JOIN FETCH i.version WHERE r.id IN :ids "
+                        + jpqlOrderBy(sortBy),
+                Report.class);
+        query.setParameter("ids", ids);
+
+        return new ReportSearchResult(query.getResultList(), totalCount);
     }
 
-    @Override
-    public List<Report> findAll(final int page, final int pageSize, final boolean newestFirst) {
-        final String order = newestFirst ? "DESC" : "ASC";
-        final TypedQuery<Report> query =
-                em.createQuery(ADMIN_LIST_JPQL + "ORDER BY r.createdAt " + order + ", r.id " + order, Report.class);
-        Paging.apply(query, page, pageSize);
-        final List<Report> reports = query.getResultList();
-        populateItemTitles(reports);
-        return reports;
+    private long countAll() {
+        return ((Number) em.createNativeQuery("SELECT COUNT(r) FROM reports r").getSingleResult()).longValue();
     }
 
-    private void populateItemTitles(final List<Report> reports) {
-        if (reports == null || reports.isEmpty()) {
-            return;
-        }
-        final Map<Integer, String> titlesByItemId = loadLatestTitlesByItemId(reports);
-        for (final Report report : reports) {
-            if (report.getItem() == null || report.getItem().getId() == null) {
-                continue;
-            }
-            final String title = titlesByItemId.get(report.getItem().getId());
-            if (title != null) {
-                report.setItemTitle(title);
-            }
-        }
+    private String nativeOrderBy(final String sortBy) {
+        return "ORDER BY "
+                + switch (sortBy) {
+                    case "oldest" -> "r.created_at ASC, r.id ASC";
+                    case "newest" -> "r.created_at DESC, r.id DESC";
+                    default -> "r.created_at DESC, r.id DESC";
+                };
     }
 
-    private Map<Integer, String> loadLatestTitlesByItemId(final List<Report> reports) {
-        final List<Integer> itemIds = reports.stream()
-                .map(Report::getItem)
-                .filter(item -> item != null && item.getId() != null)
-                .map(Item::getId)
-                .distinct()
-                .toList();
-        if (itemIds.isEmpty()) {
-            return Map.of();
-        }
-        @SuppressWarnings("unchecked")
-        final List<Object[]> rows = em.createNativeQuery("SELECT v.item_id, v.title FROM version v "
-                        + "WHERE v.item_id IN (:itemIds) "
-                        + "AND v.created_at = (SELECT MAX(v2.created_at) FROM version v2 WHERE v2.item_id = v.item_id)")
-                .setParameter("itemIds", itemIds)
-                .getResultList();
-        final Map<Integer, String> titles = new HashMap<>();
-        for (final Object[] row : rows) {
-            titles.put(((Number) row[0]).intValue(), (String) row[1]);
-        }
-        return titles;
+    private String jpqlOrderBy(final String sortBy) {
+        return "ORDER BY "
+                + switch (sortBy) {
+                    case "oldest" -> "r.createdAt ASC, r.id ASC";
+                    case "newest" -> "r.createdAt DESC, r.id DESC";
+                    default -> "r.createdAt DESC, r.id DESC";
+                };
     }
 }

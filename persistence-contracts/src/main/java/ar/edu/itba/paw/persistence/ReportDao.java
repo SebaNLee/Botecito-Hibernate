@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.dto.ReportSearchResult;
 import ar.edu.itba.paw.models.entity.Report;
-import java.util.List;
 import java.util.Optional;
 
 public interface ReportDao {
@@ -16,7 +16,5 @@ public interface ReportDao {
 
     void deleteAllByItemId(int itemId);
 
-    int countAll();
-
-    List<Report> findAll(int page, int pageSize, boolean newestFirst);
+    ReportSearchResult searchReports(final int page, final int pageSize, final String sortBy);
 }

@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.ReportSearchResult;
 import ar.edu.itba.paw.models.entity.Report;
 import ar.edu.itba.paw.models.entity.ReportEnum;
 
@@ -12,7 +12,7 @@ public interface ReportService {
 
     boolean hasReported(int senderId, int itemId);
 
-    PageModel<Report> findReportsForAdmin(int page, int pageSize, String sortBy);
+    ReportSearchResult searchReports(int page, int pageSize, String sortBy);
 
     void dismissReport(int reportId, int adminUserId);
 

@@ -3,6 +3,8 @@ package ar.edu.itba.paw.models.dto;
 import java.util.List;
 import lombok.Getter;
 
+// TODO: Change total items to a long
+
 @Getter
 public class PageModel<T> {
 

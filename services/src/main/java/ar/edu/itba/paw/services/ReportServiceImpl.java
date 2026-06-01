@@ -13,6 +13,8 @@ import ar.edu.itba.paw.models.exceptions.ReportNotFoundException;
 import ar.edu.itba.paw.models.exceptions.UserNotFoundException;
 import ar.edu.itba.paw.persistence.ReportDao;
 import ar.edu.itba.paw.services.util.DateTimeUtils;
+import java.util.List;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,8 +92,7 @@ public class ReportServiceImpl implements ReportService {
     @Transactional
     public void dismissReport(final int reportId) {
         final Report report = findById(reportId);
-        mailService.sendReportDismissedEmail(
-                report.getSender(), report.getItem(), report.getReason(), report.getDescription());
+        notifyDismissal(report);
         reportDao.deleteById(reportId);
     }
 
@@ -103,8 +104,8 @@ public class ReportServiceImpl implements ReportService {
         final Users owner = item.getHost();
         final String itemTitle = report.getItemTitle();
 
-        mailService.sendReportPublicationRemovedEmail(
-                report.getSender(), item, report.getReason(), report.getDescription(), itemTitle);
+        notifyReporters(report, this::notifySuccess);
+
         if (owner != null) {
             mailService.sendPublicationRemovedDueToReportEmail(
                     owner, item, report.getReason(), report.getDescription(), itemTitle);
@@ -112,6 +113,37 @@ public class ReportServiceImpl implements ReportService {
 
         reportDao.deleteAllByItemId(item.getId());
         manageItemService.deleteItemAsAdmin(item.getId());
+    }
+
+    private void notifyReporters(final Report originalReport, final Consumer<Report> notifyAction) {
+        int page = 1;
+        final int pageSize = 18;
+        Item item = originalReport.getItem();
+        final int totalPages = (int) Math.ceil((double) reportDao.countReports(item) / pageSize);
+        List<Report> batch = null;
+
+        while (page <= totalPages) {
+            var search = reportDao.searchReports(page, pageSize, "newest", item);
+            batch = search.getReports();
+            for (Report report : batch) {
+                notifyAction.accept(report);
+            }
+            page++;
+        }
+    }
+
+    private void notifySuccess(final Report report) {
+        mailService.sendReportPublicationRemovedEmail(
+                report.getSender(),
+                report.getItem(),
+                report.getReason(),
+                report.getDescription(),
+                report.getItemTitle());
+    }
+
+    private void notifyDismissal(final Report report) {
+        mailService.sendReportDismissedEmail(
+                report.getSender(), report.getItem(), report.getReason(), report.getDescription());
     }
 
     private static String normalizeDescription(final String description) {

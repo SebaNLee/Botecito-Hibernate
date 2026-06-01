@@ -308,10 +308,7 @@
         <paw:listingCard
             item="${item}"
             coverSrc="${imageUrlsByItemId[item.id]}"
-            returnTo="${marketplaceReturnTo}"
-            favourite="${favouriteByItemId[item.id]}"
-            canFavourite="${canFavouriteByItemId[item.id]}"
-            favouriteReturn="${marketplaceReturnTo}" />
+            returnTo="${marketplaceReturnTo}" />
       </c:forEach>
     </div>
 

@@ -60,7 +60,7 @@ public class ReportJpaDao implements ReportDao {
         if (ids.isEmpty()) return new ReportSearchResult(List.of(), totalCount);
 
         var query = em.createQuery(
-                "SELECT DISTINCT r FROM Report r JOIN FETCH r.sender JOIN FETCH r.item i JOIN FETCH i.version WHERE r.id IN :ids "
+                "SELECT DISTINCT r FROM Report r JOIN FETCH r.sender JOIN FETCH r.item WHERE r.id IN :ids "
                         + jpqlOrderBy(sortBy),
                 Report.class);
         query.setParameter("ids", ids);

@@ -50,14 +50,14 @@ public class AdminReportsPresentation {
 
     public ModelAndView dismissReport(
             final int reportId, final AdminReportsSearchForm search, final RedirectAttributes redirectAttributes) {
-        reportService.dismissReport(reportId, 0);
+        reportService.dismissReport(reportId);
         ToastSupport.success(redirectAttributes, MESSAGE_PREFIX + ".dismiss.success");
         return redirectToList(search);
     }
 
     public ModelAndView deletePublicationForReport(
             final int reportId, final AdminReportsSearchForm search, final RedirectAttributes redirectAttributes) {
-        reportService.deletePublicationForReport(reportId, 0);
+        reportService.deletePublicationForReport(reportId);
         ToastSupport.success(redirectAttributes, MESSAGE_PREFIX + ".deletePublication.success");
         return redirectToList(search);
     }

@@ -14,7 +14,7 @@ public interface ReportService {
 
     ReportSearchResult searchReports(int page, int pageSize, String sortBy);
 
-    void dismissReport(int reportId, int adminUserId);
+    void dismissReport(int reportId);
 
-    void deletePublicationForReport(int reportId, int adminUserId);
+    void deletePublicationForReport(int reportId);
 }

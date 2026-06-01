@@ -88,7 +88,7 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     @Transactional
-    public void dismissReport(final int reportId, final int adminUserId) {
+    public void dismissReport(final int reportId) {
         final Report report = findById(reportId);
         mailService.sendReportDismissedEmail(
                 report.getSender(), report.getItem(), report.getReason(), report.getDescription());
@@ -97,7 +97,7 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     @Transactional
-    public void deletePublicationForReport(final int reportId, final int adminUserId) {
+    public void deletePublicationForReport(final int reportId) {
         final Report report = findById(reportId);
         final Item item = report.getItem();
         final Users owner = item.getHost();

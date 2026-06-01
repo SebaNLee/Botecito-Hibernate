@@ -54,7 +54,7 @@ public class ReportServiceImpl implements ReportService {
                 .item(item)
                 .reason(reason)
                 .description(normalizeDescription(description))
-                .createdAt(DateTimeUtils.getCurrent()) // TODO: se anota 3 horas mas de lo que deberia, investigar
+                .createdAt(DateTimeUtils.getCurrent())
                 .build();
 
         reportDao.create(report);

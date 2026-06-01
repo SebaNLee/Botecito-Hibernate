@@ -16,7 +16,7 @@ CREATE TABLE reports (
     item_id     INT NOT NULL REFERENCES item(id) ON DELETE CASCADE,
     reason      report_enum NOT NULL,
     description VARCHAR(255),
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_reports_sender_item UNIQUE (sender_id, item_id)
 );
 

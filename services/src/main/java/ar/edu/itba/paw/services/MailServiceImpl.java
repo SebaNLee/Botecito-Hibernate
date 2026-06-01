@@ -327,14 +327,7 @@ public class MailServiceImpl implements MailService {
             context.setVariable("reportDescription", description);
             context.setVariable("actionUrl", actionUrl);
             context.setVariable("heading", getMessage(messagePrefix + ".heading", locale));
-            context.setVariable(
-                    "body",
-                    getMessage(
-                            messagePrefix + ".body",
-                            locale,
-                            resolvedTitle,
-                            reasonLabel,
-                            descriptionOrDash(description, locale)));
+            context.setVariable("body", getMessage(messagePrefix + ".body", locale, resolvedTitle));
             context.setVariable("note", getMessage(messagePrefix + ".note", locale));
             context.setVariable("action", getMessage(messagePrefix + ".action", locale));
             sendHtmlEmail(
@@ -344,13 +337,6 @@ public class MailServiceImpl implements MailService {
         } catch (final RuntimeException e) {
             LOGGER.error("Could not send report resolution email '{}' to {}.", messagePrefix, recipient.getEmail(), e);
         }
-    }
-
-    private String descriptionOrDash(final String description, final Locale locale) {
-        if (isBlank(description)) {
-            return getMessage("mail.report.noDescription", locale);
-        }
-        return description;
     }
 
     private static String resolveItemTitle(final Item item) {

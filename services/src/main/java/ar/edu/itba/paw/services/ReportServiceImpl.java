@@ -54,7 +54,7 @@ public class ReportServiceImpl implements ReportService {
                 .item(item)
                 .reason(reason)
                 .description(normalizeDescription(description))
-                .createdAt(DateTimeUtils.getCurrent())
+                .createdAt(DateTimeUtils.getCurrent()) // TODO: se anota 3 horas mas de lo que deberia, investigar
                 .build();
 
         reportDao.create(report);
@@ -104,6 +104,9 @@ public class ReportServiceImpl implements ReportService {
         final Users owner = item.getHost();
         final String itemTitle = report.getItemTitle();
 
+        // TODO: esto ahora mismo causa una race condition por enviar los mails antes.
+        // Las funciones en mail service van a tener que recibir todos los datos individuales en vez de entidades
+        // Ya intente hacer wrappers sincronicos, el helper no se llama async, tema de spring
         notifyReporters(report, this::notifySuccess);
 
         if (owner != null) {
@@ -115,6 +118,7 @@ public class ReportServiceImpl implements ReportService {
         manageItemService.deleteItemAsAdmin(item.getId());
     }
 
+    // TODO: como referencia a futuro, para listas sin cota, hay que usar una version generalizada de esto
     private void notifyReporters(final Report originalReport, final Consumer<Report> notifyAction) {
         int page = 1;
         final int pageSize = 18;

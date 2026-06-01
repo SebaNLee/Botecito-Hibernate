@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services.util;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -11,7 +12,7 @@ public final class DateTimeUtils {
     }
 
     public static LocalDateTime getCurrent(ZoneOffset offset) {
-        return LocalDateTime.now(offset);
+        return LocalDateTime.ofInstant(Instant.now(), offset);
     }
 
     public static LocalDateTime inTimezone(LocalDateTime original, String originalZone, String targetZone) {

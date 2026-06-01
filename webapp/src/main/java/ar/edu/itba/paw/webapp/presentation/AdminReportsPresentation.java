@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.PageModel;
-import ar.edu.itba.paw.models.dto.ReportSearchResult;
+import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Report;
 import ar.edu.itba.paw.services.ReportService;
 import ar.edu.itba.paw.webapp.form.AdminReportsSearchForm;
@@ -40,9 +40,9 @@ public class AdminReportsPresentation {
         final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
         final String sortBy =
                 search.getSortBy() == null || search.getSortBy().isBlank() ? "newest" : search.getSortBy();
-        final ReportSearchResult result = reportService.searchReports(page, pageSize, sortBy);
+        final SearchResult<Report> result = reportService.searchReports(page, pageSize, sortBy);
         final PageModel<Report> reportPage =
-                new PageModel<>(result.getReports(), page, pageSize, (int) result.getTotalCount());
+                new PageModel<>(result.getPageElements(), page, pageSize, (int) result.getTotalCount());
         mav.addObject("reportPage", reportPage);
         mav.addObject("reportDatesById", formatReportDates(reportPage.getContent()));
         return mav;

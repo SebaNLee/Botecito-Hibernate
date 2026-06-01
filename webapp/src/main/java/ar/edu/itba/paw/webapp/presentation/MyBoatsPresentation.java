@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.services.ItemService;
 import ar.edu.itba.paw.services.SelectorsService;
@@ -33,7 +33,7 @@ public class MyBoatsPresentation {
         final int page = search.getPage() == null ? 1 : search.getPage();
         final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
 
-        final ItemSearchResult result = itemService.listOwnerItems(
+        final SearchResult<Item> result = itemService.listOwnerItems(
                 principal.getId(),
                 search.getSearchQuery(),
                 search.getStatus(),
@@ -41,7 +41,7 @@ public class MyBoatsPresentation {
                 page,
                 pageSize,
                 search.getSortBy());
-        final List<Item> ownedItems = result.getItems();
+        final List<Item> ownedItems = result.getPageElements();
 
         final ModelAndView mav = new ModelAndView("my-boats", "myBoatsSearch", search);
         addListingModelObjects(mav, search, ownedItems, result.getTotalCount(), request);

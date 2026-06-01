@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.dto.ReportSearchResult;
+import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Report;
 import ar.edu.itba.paw.persistence.utils.Paging;
@@ -51,7 +51,7 @@ public class ReportJpaDao implements ReportDao {
     }
 
     @Override
-    public ReportSearchResult searchReports(
+    public SearchResult<Report> searchReports(
             final int page, final int pageSize, final String sortBy, final Item reportedItem) {
         final long totalCount = countReports(reportedItem);
 
@@ -63,13 +63,13 @@ public class ReportJpaDao implements ReportDao {
         Paging.apply(nativeQuery, page, pageSize);
         final List<Integer> ids = Paging.toIntegerIds(nativeQuery.getResultList());
 
-        if (ids.isEmpty()) return new ReportSearchResult(List.of(), totalCount);
+        if (ids.isEmpty()) return new SearchResult<>(List.of(), totalCount);
 
         String jpql = "SELECT DISTINCT r FROM Report r JOIN FETCH r.sender JOIN FETCH r.item WHERE r.id IN :ids ";
         var query = em.createQuery(jpql + jpqlOrderBy(sortBy), Report.class);
         query.setParameter("ids", ids);
 
-        return new ReportSearchResult(query.getResultList(), totalCount);
+        return new SearchResult<>(query.getResultList(), totalCount);
     }
 
     @Override
@@ -81,7 +81,7 @@ public class ReportJpaDao implements ReportDao {
     }
 
     @Override
-    public ReportSearchResult searchReports(final int page, final int pageSize, final String sortBy) {
+    public SearchResult<Report> searchReports(final int page, final int pageSize, final String sortBy) {
         return searchReports(page, pageSize, sortBy, null);
     }
 

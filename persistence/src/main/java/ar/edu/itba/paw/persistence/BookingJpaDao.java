@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.BookingQueryModel;
-import ar.edu.itba.paw.models.dto.BookingSearchResult;
+import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Item;
@@ -111,7 +111,7 @@ public class BookingJpaDao implements BookingDao {
     }
 
     @Override
-    public BookingSearchResult searchBookings(final BookingQueryModel query) {
+    public SearchResult<Booking> searchBookings(final BookingQueryModel query) {
         long totalCount = countBookings(query);
 
         final Map<String, Object> params = new HashMap<>();
@@ -131,7 +131,7 @@ public class BookingJpaDao implements BookingDao {
         final List<Integer> ids = Paging.toIntegerIds(nativeQuery.getResultList());
 
         if (ids.isEmpty()) {
-            return new BookingSearchResult(List.of(), totalCount);
+            return new SearchResult<>(List.of(), totalCount);
         }
 
         String jpql =
@@ -141,7 +141,7 @@ public class BookingJpaDao implements BookingDao {
 
         List<Booking> results = dataQuery.getResultList();
 
-        return new BookingSearchResult(results, totalCount);
+        return new SearchResult<>(results, totalCount);
     }
 
     private static String getFilter(BookingQueryModel query, Map<String, Object> params) {

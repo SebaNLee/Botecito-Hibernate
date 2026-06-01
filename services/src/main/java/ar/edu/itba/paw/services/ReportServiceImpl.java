@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.ReportSearchResult;
+import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.Report;
@@ -76,13 +76,13 @@ public class ReportServiceImpl implements ReportService {
 
     @Override
     @Transactional(readOnly = true)
-    public ReportSearchResult searchReports(final int page, final int pageSize, final String sortBy) {
+    public SearchResult<Report> searchReports(final int page, final int pageSize, final String sortBy) {
         final int safePage = Math.max(1, page);
         final int safePageSize = Math.max(1, pageSize);
         var result = reportDao.searchReports(safePage, safePageSize, sortBy);
 
         // Set transients
-        for (Report report : result.getReports()) {
+        for (Report report : result.getPageElements()) {
             report.setItemTitle(report.getItem().getLatestVersion().getTitle());
         }
         return result;
@@ -124,7 +124,7 @@ public class ReportServiceImpl implements ReportService {
 
         while (page <= totalPages) {
             var search = reportDao.searchReports(page, pageSize, "newest", item);
-            batch = search.getReports();
+            batch = search.getPageElements();
             for (Report report : batch) {
                 notifyAction.accept(report);
             }

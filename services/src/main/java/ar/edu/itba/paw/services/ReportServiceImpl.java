@@ -10,7 +10,9 @@ import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
 import ar.edu.itba.paw.models.exceptions.ReportAlreadyExistsException;
 import ar.edu.itba.paw.models.exceptions.ReportNotFoundException;
+import ar.edu.itba.paw.models.exceptions.UserNotFoundException;
 import ar.edu.itba.paw.persistence.ReportDao;
+import ar.edu.itba.paw.services.util.DateTimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,7 @@ public class ReportServiceImpl implements ReportService {
 
     private final ReportDao reportDao;
     private final ItemService itemService;
+    private final UserService userService;
     private final ManageItemService manageItemService;
     private final MailService mailService;
 
@@ -38,17 +41,35 @@ public class ReportServiceImpl implements ReportService {
             throw new ForbiddenOperationException();
         }
 
-        if (reportDao.findBySenderAndItem(senderId, itemId).isPresent()) {
+        final Users sender = userService.findById(senderId).orElseThrow(UserNotFoundException::new);
+
+        if (hasReported(senderId, itemId)) {
             throw new ReportAlreadyExistsException();
         }
 
-        reportDao.create(senderId, itemId, reason, normalizeDescription(description));
+        Report report = Report.builder()
+                .sender(sender)
+                .item(item)
+                .reason(reason)
+                .description(normalizeDescription(description))
+                .createdAt(DateTimeUtils.getCurrent())
+                .build();
+
+        reportDao.create(report);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Report findById(int reportId) {
+        var report = reportDao.findById(reportId).orElseThrow(ReportNotFoundException::new);
+        report.setItemTitle(report.getItem().getLatestVersion().getTitle());
+        return report;
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean hasReported(final int senderId, final int itemId) {
-        return reportDao.findBySenderAndItem(senderId, itemId).isPresent();
+        return reportDao.hasReported(senderId, itemId);
     }
 
     @Override
@@ -64,7 +85,7 @@ public class ReportServiceImpl implements ReportService {
     @Override
     @Transactional
     public void dismissReport(final int reportId, final int adminUserId) {
-        final Report report = reportDao.findById(reportId).orElseThrow(ReportNotFoundException::new);
+        final Report report = findById(reportId);
         mailService.sendReportDismissedEmail(
                 report.getSender(), report.getItem(), report.getReason(), report.getDescription());
         reportDao.deleteById(reportId);
@@ -73,7 +94,7 @@ public class ReportServiceImpl implements ReportService {
     @Override
     @Transactional
     public void deletePublicationForReport(final int reportId, final int adminUserId) {
-        final Report report = reportDao.findById(reportId).orElseThrow(ReportNotFoundException::new);
+        final Report report = findById(reportId);
         final Item item = report.getItem();
         final Users owner = item.getHost();
         final String itemTitle = report.getItemTitle();

@@ -8,6 +8,8 @@ public interface ReportService {
 
     void createReport(int itemId, int senderId, ReportEnum reason, String description);
 
+    Report findById(int reportId);
+
     boolean hasReported(int senderId, int itemId);
 
     PageModel<Report> findReportsForAdmin(int page, int pageSize, String sortBy);

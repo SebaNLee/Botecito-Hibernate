@@ -65,11 +65,18 @@ mvn jetty:run
 
 ### Users (per authentication level)
 
-#### Logged user:
+#### Usuario admin:
 
 ```
 botecito.dev@gmail.com
 oakrmirkfcudrwes
+```
+
+#### Usuario loggeado:
+
+```
+botecito.user@gmail.com
+BotecitoMejorApp
 ```
 
 ### Deployear

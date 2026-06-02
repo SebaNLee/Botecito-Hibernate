@@ -4,7 +4,6 @@ import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.services.MarketplaceService;
-import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import ar.edu.itba.paw.webapp.presentation.util.CoverImageUrlResolver;
 import java.util.List;
@@ -25,10 +24,7 @@ public class MarketplacePresentation {
     private final CoverImageUrlResolver coverImageUrlResolver;
 
     public ModelAndView marketplace(
-            final BotecitoUserDetails viewer,
-            final HttpServletRequest request,
-            final MarketplaceSearchForm form,
-            final BindingResult errors) {
+            final HttpServletRequest request, final MarketplaceSearchForm form, final BindingResult errors) {
         final ModelAndView mav = new ModelAndView("marketplace", "marketplaceSearch", form);
         List<Item> items = List.of();
         long totalCount = 0;

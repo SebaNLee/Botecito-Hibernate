@@ -52,92 +52,15 @@
   </c:url>
 </c:if>
 
-<paw:layout title="${titleFavourites} - Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-[18rem_minmax(0,1fr)] lg:grid-cols-[20rem_minmax(0,1fr)] gap-8 items-start" scripts="toast,search-filters">
+<paw:layout title="${titleFavourites} - Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6" scripts="toast">
   <paw:toastNotifier />
-  <aside class="relative z-40 w-full md:min-w-0">
-    <div class="space-y-6">
-      <a href="${marketplaceUrl}" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
-        <span class="material-symbols-outlined">arrow_back</span>
-        <span><spring:message code="common.back" /></span>
-      </a>
+  <section class="min-w-0 space-y-6">
+    <a href="${marketplaceUrl}" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
+      <span class="material-symbols-outlined">arrow_back</span>
+      <span><spring:message code="common.back" /></span>
+    </a>
 
-      <paw:sectionCard element="aside" icon="tune">
-        <jsp:attribute name="title"><spring:message code="marketplace.filters.title" /></jsp:attribute>
-        <jsp:body>
-          <form id="favourites-filters-form" action="${favouritesUrl}" method="get" class="space-y-6">
-            <input type="hidden" name="page" value="1" />
-            <input type="hidden" name="searchQuery" value="${fn:escapeXml(favouritesSearch.searchQuery)}" />
-
-            <div class="form-control w-full">
-              <label for="favourites-location" class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 block">
-                <c:out value="${locationPlaceholder}" />
-              </label>
-              <select id="favourites-location" name="location" class="select select-bordered w-full font-semibold text-on-surface" onchange="this.form.requestSubmit()">
-                <option value="" ${empty favouritesSearch.location ? 'selected="selected"' : ''}><c:out value="${locationPlaceholder}" /></option>
-                <c:forEach var="loc" items="${locationOptions}">
-                  <option value="${loc.slug}" ${favouritesSearch.location == loc.slug ? 'selected="selected"' : ''}><c:out value="${loc.name}" /></option>
-                </c:forEach>
-              </select>
-            </div>
-
-            <div class="form-control w-full">
-              <label for="favourites-status" class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 block">
-                <spring:message code="myBoats.filter.status.placeholder" />
-              </label>
-              <select id="favourites-status" name="status" class="select select-bordered w-full font-semibold text-on-surface" onchange="this.form.requestSubmit()">
-                <option value="" ${empty favouritesSearch.status ? 'selected="selected"' : ''}><spring:message code="myBoats.filter.status.placeholder" /></option>
-                <option value="ACTIVE" ${favouritesSearch.status == 'ACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusActiveLabel}" /></option>
-                <option value="INACTIVE" ${favouritesSearch.status == 'INACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusInactiveLabel}" /></option>
-              </select>
-            </div>
-
-            <div class="form-control w-full">
-              <label for="favourites-sort" class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 block">
-                <spring:message code="marketplace.sort.label" />
-              </label>
-              <select id="favourites-sort" name="sortBy" class="select select-bordered w-full font-semibold text-on-surface" onchange="this.form.requestSubmit()">
-                <option value="newest" ${empty favouritesSearch.sortBy || favouritesSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><c:out value="${sortNewestLabel}" /></option>
-                <option value="oldest" ${favouritesSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><c:out value="${sortOldestLabel}" /></option>
-                <option value="nameAsc" ${favouritesSearch.sortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
-                <option value="nameDesc" ${favouritesSearch.sortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
-              </select>
-            </div>
-
-            <div class="form-control w-full">
-              <label for="favourites-page-size" class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 block">
-                <spring:message code="myBoats.pageSize" />
-              </label>
-              <select id="favourites-page-size" name="pageSize" class="select select-bordered w-full font-semibold text-on-surface" onchange="this.form.requestSubmit()">
-                <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-                <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-                <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
-              </select>
-            </div>
-
-            <c:if test="${hasActiveFilters}">
-              <a href="${clearFiltersUrl}" class="btn btn-outline btn-block no-underline">
-                <c:out value="${filtersClearLabel}" />
-              </a>
-            </c:if>
-          </form>
-        </jsp:body>
-      </paw:sectionCard>
-    </div>
-  </aside>
-
-  <section class="relative z-0 min-w-0">
-    <div class="mx-auto mb-8 w-full max-w-3xl">
-      <paw:searchBar
-          formId="favourites-filters-form"
-          name="searchQuery"
-          value="${fn:escapeXml(favouritesSearch.searchQuery)}"
-          placeholder="${searchPlaceholder}"
-          ariaLabel="${searchLabel}"
-          inputId="favourites-search-query"
-          size="lg" />
-    </div>
-
-    <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
       <div class="min-w-0">
         <h1 class="text-4xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="favourites.title" /></h1>
         <p class="text-on-surface-variant mt-2 m-0">
@@ -152,6 +75,51 @@
         </p>
       </div>
     </div>
+
+    <form id="favourites-filters-form" action="${favouritesUrl}" method="get" class="w-full">
+      <input type="hidden" name="page" value="1" />
+      <div class="flex flex-col gap-3 text-sm font-medium text-on-surface-variant lg:flex-row lg:items-center lg:justify-between">
+        <div class="w-full max-w-sm">
+          <paw:searchBar
+              formId="favourites-filters-form"
+              name="searchQuery"
+              value="${fn:escapeXml(favouritesSearch.searchQuery)}"
+              placeholder="${searchPlaceholder}"
+              ariaLabel="${searchLabel}"
+              inputId="favourites-search-query"
+              maxlength="100"
+              size="sm" />
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 lg:flex-nowrap">
+          <select id="favourites-location" name="location" class="select select-xs w-28 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
+            <option value="" disabled selected hidden><c:out value="${locationPlaceholder}" /></option>
+            <c:forEach var="loc" items="${locationOptions}">
+              <option value="${loc.slug}" ${favouritesSearch.location == loc.slug ? 'selected="selected"' : ''}><c:out value="${loc.name}" /></option>
+            </c:forEach>
+          </select>
+
+          <select id="favourites-status" name="status" class="select select-xs w-24 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
+            <option value="" disabled selected hidden><spring:message code="myBoats.filter.status.placeholder" /></option>
+            <option value="ACTIVE" ${favouritesSearch.status == 'ACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusActiveLabel}" /></option>
+            <option value="INACTIVE" ${favouritesSearch.status == 'INACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusInactiveLabel}" /></option>
+          </select>
+
+          <select id="favourites-sort" name="sortBy" class="select select-xs w-28 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
+            <option value="newest" ${empty favouritesSearch.sortBy || favouritesSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><c:out value="${sortNewestLabel}" /></option>
+            <option value="oldest" ${favouritesSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><c:out value="${sortOldestLabel}" /></option>
+            <option value="nameAsc" ${favouritesSearch.sortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
+            <option value="nameDesc" ${favouritesSearch.sortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
+          </select>
+
+          <select id="favourites-page-size" name="pageSize" class="select select-xs w-16 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
+            <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+            <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+            <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+          </select>
+        </div>
+      </div>
+    </form>
 
     <c:if test="${empty items}">
       <div class="card bg-base-100 shadow-sm">

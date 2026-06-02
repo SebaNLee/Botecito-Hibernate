@@ -219,14 +219,12 @@ public class MailServiceImpl implements MailService {
     @Async("mailTaskExecutor")
     public void sendReportSuccessEmail(final ReportEmail email) {
         sendReportResolutionEmail(email, "mail.reportPublicationRemoved", appBaseUrl + "/marketplace");
-        LOGGER.debug("SENT REPORT EMAIL TO REPORTER");
     }
 
     @Override
     @Async("mailTaskExecutor")
     public void sendPublicationRemovedEmail(final ReportEmail email) {
         sendReportResolutionEmail(email, "mail.publicationRemovedDueToReport", myBoatsBaseUrl);
-        LOGGER.debug("SENT REPORT EMAIL TO OWNER");
     }
 
     public static Locale resolveLocale(final Users user) {

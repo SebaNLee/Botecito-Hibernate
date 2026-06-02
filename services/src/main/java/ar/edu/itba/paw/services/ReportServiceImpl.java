@@ -13,7 +13,7 @@ import ar.edu.itba.paw.models.exceptions.ReportNotFoundException;
 import ar.edu.itba.paw.models.exceptions.UserNotFoundException;
 import ar.edu.itba.paw.persistence.ReportDao;
 import ar.edu.itba.paw.services.util.DateTimeUtils;
-import java.util.List;
+import ar.edu.itba.paw.services.util.PagedProcessing;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -112,22 +112,14 @@ public class ReportServiceImpl implements ReportService {
         manageItemService.deleteItemAsAdmin(item.getId());
     }
 
-    // TODO: como referencia a futuro, para listas sin cota, hay que usar una version generalizada de esto
     private void notifyReporters(final Report originalReport, final Consumer<Report> notifyAction) {
-        int page = 1;
-        final int pageSize = 18;
         Item item = originalReport.getItem();
-        final int totalPages = (int) Math.ceil((double) reportDao.countReports(item) / pageSize);
-        List<Report> batch = null;
 
-        while (page <= totalPages) {
-            var search = reportDao.searchReports(page, pageSize, "newest", item);
-            batch = search.getPageElements();
-            for (Report report : batch) {
-                notifyAction.accept(report);
-            }
-            page++;
-        }
+        PagedProcessing.batchAction(
+                1,
+                reportDao.countReports(item),
+                (page, pageSize) -> reportDao.searchReports(page, pageSize, "newest", item),
+                notifyAction);
     }
 
     private void notifySuccess(final Report report) {

@@ -16,12 +16,14 @@ table users {
 
 table item_type {
     id INT PK NN,
-    name VARCHAR(100) NN
+    name VARCHAR(100) NN,
+    slug VARCHAR(100) UNIQUE NN
 }
 
 table location {
     id INT PK NN,
-    name VARCHAR(100) NN
+    name VARCHAR(100) NN,
+    slug VARCHAR(100) UNIQUE NN
 }
 
 table image {
@@ -109,6 +111,20 @@ table reports {
     description VARCHAR(255),
     created_at TIMESTAMP NN,
     unique(sender_id, item_id)
+}
+
+table favourite {
+    user_id    INT FK-ref-users NN ON-DELETE-CASCADE,
+    item_id    INT FK-ref-item NN ON-DELETE-CASCADE,
+    created_at TIMESTAMP NN,
+    PK(user_id, item_id)
+}
+
+table subscriptons {
+    subscriber_id    INT FK-ref-users NN ON-DELETE-CASCADE,
+    subscribed_to_id INT FK-ref-users NN ON-DELETE-CASCADE,
+    created_at       TIMESTAMP NN,
+    PK(subscriber_id, subscribed_to_id)
 }
 
 enum report_enum {

@@ -2,6 +2,7 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
 import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.persistence.MarketplaceDao;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -18,7 +19,7 @@ public final class MarketplaceImpl implements MarketplaceService {
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<ar.edu.itba.paw.models.entity.Item> searchMarketplace(
+    public SearchResult<Item> searchMarketplace(
             final String searchQuery,
             final LocalDate date,
             final LocalTime startTime,

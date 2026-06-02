@@ -23,7 +23,7 @@ public interface BookingDao {
 
     Optional<Booking> findById(int bookingId);
 
-    SearchResult<ar.edu.itba.paw.models.entity.Booking> searchBookings(final BookingQueryModel query);
+    SearchResult<Booking> searchBookings(final BookingQueryModel query);
 
     void uploadPayment(PaymentProof paymentProof);
 

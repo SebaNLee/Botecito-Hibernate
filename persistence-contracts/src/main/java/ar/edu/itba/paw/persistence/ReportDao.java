@@ -17,10 +17,9 @@ public interface ReportDao {
 
     void deleteAllByItemId(int itemId);
 
-    SearchResult<ar.edu.itba.paw.models.entity.Report> searchReports(
-            final int page, final int pageSize, final String sortBy);
+    SearchResult<Report> searchReports(final int page, final int pageSize, final String sortBy);
 
-    SearchResult<ar.edu.itba.paw.models.entity.Report> searchReports(
+    SearchResult<Report> searchReports(
             final int page, final int pageSize, final String sortBy, final Item reportedItem);
 
     long countReports(final Item reportedItem);

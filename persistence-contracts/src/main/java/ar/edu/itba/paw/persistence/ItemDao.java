@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface ItemDao {
 
-    SearchResult<ar.edu.itba.paw.models.entity.Item> listOwnerItems(MyBoatsQueryModel query);
+    SearchResult<Item> listOwnerItems(MyBoatsQueryModel query);
 
     Optional<Item> findItemById(int id);
 

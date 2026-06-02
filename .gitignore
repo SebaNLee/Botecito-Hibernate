@@ -39,6 +39,9 @@ webapp/src/main/resources/config/credentials-production.properties
 # JetBrains IDE
 .idea/
 
+# VSCode
+.vscode/
+
 # Unit test reports
 TEST*.xml
 

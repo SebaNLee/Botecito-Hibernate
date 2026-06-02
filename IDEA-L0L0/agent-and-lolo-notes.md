@@ -1,18 +1,6 @@
 
 todo:
 
-## As a user, I want to subscribe to a user so that I get notified about
-  their activities
-
-  - Add a table in the DB for subscriptions, aka one user is to another user. This would be a follow table.
-  
-  - Notification email to subscribed users when someone publishes a new item. Aka when I publish a boat, send an email to everyone follows me.
-
-  - Item details: from here, a user can subscribe/unsubscribe to a specific user. In the card where the owner’s contact info is shown, add a conditional button that says subscribe or unsubscribe as appropriate.
-
-  - In /profile, add the user’s subscription list so they can cancel subscriptions from there too. In /profile, add a dropdown/list of all the people I follow with very simple cards, with a button like the one in item details.
-
-
 ## Considerations:
 # Target data flow
 
@@ -49,20 +37,21 @@ Rules:
 - Presentation owns form-to-model mapping and JSP-ready model preparation.
 - Services receive domain models, not web forms.
 
+## Favourites implementation notes
 
-## What we implemented
-
-- Added user subscriptions as a follow relationship between users.
-- Users can subscribe/unsubscribe from the item detail owner card.
-- The profile page now shows the people the user follows, with pagination and
-  unsubscribe actions.
-- Publishing now notifies verified followers by email after the publish
-  transaction commits.
-- The publisher confirmation email still sends, but it now also runs after the
-  transaction commits.
-- Subscription listing code was kept paginated only; the old unpaged service
-  path was removed.
-- The item detail page was adjusted so everything scrolls normally with the
-  document. No sticky right panel and no internal sidebar scrolling.
-- The host/contact card was moved under the right-side item panel.
-- The old direct "send email" mailto button was removed from the host card.
+- `persistence/src/main/resources/db/migration/V28__favourites.sql`: adds the `favourite` join table for saved user-item relationships.
+- `models/src/main/java/ar/edu/itba/paw/models/entity/Favourite.java` and `FavouriteId.java`: add the JPA entity and composite key for favourite rows.
+- `persistence-contracts/src/main/java/ar/edu/itba/paw/persistence/FavouriteDao.java`: defines persistence operations for creating, deleting, checking, and listing favourites.
+- `persistence/src/main/java/ar/edu/itba/paw/persistence/FavouriteJpaDao.java`: implements favourite persistence and loads favourite items with their latest versions for listing cards.
+- `service-contracts/src/main/java/ar/edu/itba/paw/services/FavouriteService.java`: exposes the service contract used by web/presentation code.
+- `services/src/main/java/ar/edu/itba/paw/services/FavouriteServiceImpl.java`: enforces favourite rules such as no own-item favourites and no deleted-item favourites.
+- `services/src/test/java/ar/edu/itba/paw/services/FavouriteServiceImplTest.java`: covers the main service rules and idempotent add/remove behavior.
+- `webapp/src/main/java/ar/edu/itba/paw/webapp/controller/FavouriteController.java`: adds skinny routes for the favourites page and favourite/unfavourite POST actions.
+- `webapp/src/main/java/ar/edu/itba/paw/webapp/presentation/FavouritePresentation.java`: prepares the favourites page model, handles toasts, redirects, and PRG flow.
+- `webapp/src/main/java/ar/edu/itba/paw/webapp/controller/MarketplaceController.java` and `MarketplacePresentation.java`: pass the logged-in user and add per-card favourite state to marketplace results.
+- `webapp/src/main/java/ar/edu/itba/paw/webapp/presentation/DetailPresentation.java`: adds favourite state for the item detail page.
+- `webapp/src/main/webapp/WEB-INF/views/favourites.jsp`: renders the authenticated favourites list with existing listing-card UI.
+- `webapp/src/main/webapp/WEB-INF/tags/listingCard.tag`: adds optional favourite/unfavourite controls while preserving the existing card link behavior.
+- `webapp/src/main/webapp/WEB-INF/views/marketplace.jsp` and `item-detail.jsp`: render favourite actions in marketplace cards and item detail.
+- `webapp/src/main/webapp/WEB-INF/tags/siteHeader.tag`: adds the authenticated header link to `/favourites`.
+- `webapp/src/main/resources/i18n/messages.properties` and `messages_es.properties`: add English and Spanish labels, titles, empty states, and toast messages for favourites.

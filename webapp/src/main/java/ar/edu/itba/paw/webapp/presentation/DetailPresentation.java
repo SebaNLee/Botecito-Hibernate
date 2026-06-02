@@ -12,6 +12,7 @@ import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.services.BookingService;
 import ar.edu.itba.paw.services.DetailService;
+import ar.edu.itba.paw.services.FavouriteService;
 import ar.edu.itba.paw.services.ReportService;
 import ar.edu.itba.paw.services.SubscriptionService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
@@ -52,6 +53,7 @@ public class DetailPresentation {
     private final DetailService detailService;
     private final BookingService bookingService;
     private final SubscriptionService subscriptionService;
+    private final FavouriteService favouriteService;
     private final ReportService reportService;
     private final ToastPresentation toastPresentation;
 
@@ -115,6 +117,9 @@ public class DetailPresentation {
         final boolean isActive = item.getStatus() == ItemStatusEnum.ACTIVE;
 
         final boolean isOwner = viewer != null && itemOwner != null && itemOwner.getId() == viewer.getId();
+        final boolean canFavouriteItem = itemOwner == null || viewer == null || itemOwner.getId() != viewer.getId();
+        final boolean favouriteItem =
+                canFavouriteItem && viewer != null && favouriteService.isFavourite(viewer.getId(), item.getId());
         final boolean canReport = viewer != null && isActive && !isOwner;
         final boolean alreadyReported = canReport && reportService.hasReported(viewer.getId(), item.getId());
         final boolean canSubscribeToOwner = itemOwner != null && !isOwner;
@@ -129,6 +134,8 @@ public class DetailPresentation {
         mav.addObject("listingInactiveNotice", !isActive);
         mav.addObject("itemOwner", itemOwner);
         mav.addObject("isOwner", isOwner);
+        mav.addObject("canFavouriteItem", canFavouriteItem);
+        mav.addObject("favouriteItem", favouriteItem);
         mav.addObject("canReport", canReport && !alreadyReported);
         mav.addObject("alreadyReported", alreadyReported);
         mav.addObject("canSubscribeToOwner", canSubscribeToOwner);

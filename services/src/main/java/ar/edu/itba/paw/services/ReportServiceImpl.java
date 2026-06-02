@@ -116,7 +116,7 @@ public class ReportServiceImpl implements ReportService {
         Item item = originalReport.getItem();
 
         PagedProcessing.batchAction(
-                1,
+                20,
                 reportDao.countReports(item),
                 (page, pageSize) -> reportDao.searchReports(page, pageSize, "newest", item),
                 notifyAction);

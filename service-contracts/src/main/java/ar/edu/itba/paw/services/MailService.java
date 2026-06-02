@@ -1,8 +1,7 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.dto.ReportEmail;
 import ar.edu.itba.paw.models.entity.Booking;
-import ar.edu.itba.paw.models.entity.Item;
-import ar.edu.itba.paw.models.entity.ReportEnum;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 
@@ -34,11 +33,9 @@ public interface MailService {
 
     void sendBookingFinishedMail(Booking booking);
 
-    void sendReportDismissedEmail(Users reporter, Item item, ReportEnum reason, String description);
+    void sendReportDismissedEmail(ReportEmail reportEmail);
 
-    void sendReportPublicationRemovedEmail(
-            Users reporter, Item item, ReportEnum reason, String description, String itemTitle);
+    void sendReportSuccessEmail(ReportEmail reportEmail);
 
-    void sendPublicationRemovedDueToReportEmail(
-            Users owner, Item item, ReportEnum reason, String description, String itemTitle);
+    void sendPublicationRemovedEmail(ReportEmail reportEmail);
 }

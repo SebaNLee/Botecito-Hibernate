@@ -102,16 +102,10 @@ public class ReportServiceImpl implements ReportService {
         final Report report = findById(reportId);
         final Item item = report.getItem();
         final Users owner = item.getHost();
-        final String itemTitle = report.getItemTitle();
 
-        // TODO: esto ahora mismo causa una race condition por enviar los mails antes.
-        // Las funciones en mail service van a tener que recibir todos los datos individuales en vez de entidades
-        // Ya intente hacer wrappers sincronicos, el helper no se llama async, tema de spring
         notifyReporters(report, this::notifySuccess);
-
         if (owner != null) {
-            mailService.sendPublicationRemovedDueToReportEmail(
-                    owner, item, report.getReason(), report.getDescription(), itemTitle);
+            mailService.sendPublicationRemovedEmail(MailServiceImpl.getItemRemovedEmail(report));
         }
 
         reportDao.deleteAllByItemId(item.getId());
@@ -137,17 +131,11 @@ public class ReportServiceImpl implements ReportService {
     }
 
     private void notifySuccess(final Report report) {
-        mailService.sendReportPublicationRemovedEmail(
-                report.getSender(),
-                report.getItem(),
-                report.getReason(),
-                report.getDescription(),
-                report.getItemTitle());
+        mailService.sendReportSuccessEmail(MailServiceImpl.getReporterEmail(report));
     }
 
     private void notifyDismissal(final Report report) {
-        mailService.sendReportDismissedEmail(
-                report.getSender(), report.getItem(), report.getReason(), report.getDescription());
+        mailService.sendReportDismissedEmail(MailServiceImpl.getReporterEmail(report));
     }
 
     private static String normalizeDescription(final String description) {

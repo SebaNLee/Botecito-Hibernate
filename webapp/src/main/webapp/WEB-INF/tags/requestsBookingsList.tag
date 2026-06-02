@@ -395,11 +395,18 @@
                                 <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${b.paymentProof.refuseMsg}" /></p>
                               </div>
                             </c:if>
-                          <div class="overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
-                            <object data="${paymentProofUrl}" type="application/pdf" class="block h-[60vh] w-full bg-base-100">
-                              <img src="${paymentProofUrl}" alt="<spring:message code='requests.paymentProof.view' />" class="max-h-[60vh] w-full object-contain" loading="lazy" />
-                            </object>
-                          </div>
+                          <c:choose>
+                            <c:when test="${fn:startsWith(b.paymentProof.contentType, 'image/')}">
+                              <div class="overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
+                                <img src="${paymentProofUrl}" alt="<spring:message code='requests.paymentProof.view' />" class="max-h-[60vh] w-full object-contain" loading="lazy" />
+                              </div>
+                            </c:when>
+                            <c:otherwise>
+                              <div class="overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
+                                <iframe src="${paymentProofUrl}#toolbar=0" class="h-[60vh] w-full border-0"></iframe>
+                              </div>
+                            </c:otherwise>
+                          </c:choose>
                         </jsp:body>
                       </paw:detailsModal>
                   </c:if>

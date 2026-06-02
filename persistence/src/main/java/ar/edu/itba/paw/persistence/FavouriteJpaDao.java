@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.FavouritesQueryModel;
-import ar.edu.itba.paw.models.dto.ItemSearchResult;
+import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Favourite;
 import ar.edu.itba.paw.models.entity.FavouriteId;
 import ar.edu.itba.paw.models.entity.Item;
@@ -80,7 +80,7 @@ public class FavouriteJpaDao implements FavouriteDao {
     }
 
     @Override
-    public ItemSearchResult listFavourites(final FavouritesQueryModel query) {
+    public SearchResult<Item> listFavourites(final FavouritesQueryModel query) {
         final long totalCount = countFavourites(query);
 
         final Map<String, Object> parameters = new LinkedHashMap<>();
@@ -98,7 +98,7 @@ public class FavouriteJpaDao implements FavouriteDao {
 
         final List<Integer> versionIds = Paging.toIntegerIds(versionIdsQuery.getResultList());
         if (versionIds.isEmpty()) {
-            return new ItemSearchResult(List.of(), totalCount);
+            return new SearchResult<>(List.of(), totalCount);
         }
 
         final TypedQuery<Version> versionQuery = em.createQuery(VERSION_FETCH_JPQL, Version.class);
@@ -120,7 +120,7 @@ public class FavouriteJpaDao implements FavouriteDao {
             items.add(item);
         }
         populateReviewTransients(items);
-        return new ItemSearchResult(items, totalCount);
+        return new SearchResult<>(items, totalCount);
     }
 
     @Override

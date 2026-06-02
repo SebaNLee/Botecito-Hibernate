@@ -13,6 +13,7 @@ import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.services.BookingService;
 import ar.edu.itba.paw.services.DetailService;
 import ar.edu.itba.paw.services.FavouriteService;
+import ar.edu.itba.paw.services.ReportService;
 import ar.edu.itba.paw.services.SubscriptionService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PreBookingForm;
@@ -53,6 +54,7 @@ public class DetailPresentation {
     private final BookingService bookingService;
     private final SubscriptionService subscriptionService;
     private final FavouriteService favouriteService;
+    private final ReportService reportService;
     private final ToastPresentation toastPresentation;
 
     /**
@@ -118,6 +120,8 @@ public class DetailPresentation {
         final boolean canFavouriteItem = itemOwner == null || viewer == null || itemOwner.getId() != viewer.getId();
         final boolean favouriteItem =
                 canFavouriteItem && viewer != null && favouriteService.isFavourite(viewer.getId(), item.getId());
+        final boolean canReport = viewer != null && isActive && !isOwner;
+        final boolean alreadyReported = canReport && reportService.hasReported(viewer.getId(), item.getId());
         final boolean canSubscribeToOwner = itemOwner != null && !isOwner;
         final boolean subscribedToOwner = canSubscribeToOwner
                 && viewer != null
@@ -132,6 +136,8 @@ public class DetailPresentation {
         mav.addObject("isOwner", isOwner);
         mav.addObject("canFavouriteItem", canFavouriteItem);
         mav.addObject("favouriteItem", favouriteItem);
+        mav.addObject("canReport", canReport && !alreadyReported);
+        mav.addObject("alreadyReported", alreadyReported);
         mav.addObject("canSubscribeToOwner", canSubscribeToOwner);
         mav.addObject("subscribedToOwner", subscribedToOwner);
         mav.addObject("detailReturnPath", currentRequestPath(request));

@@ -2,7 +2,8 @@ package ar.edu.itba.paw.webapp.auth;
 
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.UserService;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -36,11 +37,13 @@ public class UserAccountDetailsService implements UserDetailsService {
         if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
             throw new UsernameNotFoundException("User account is not claimed yet for email " + user.getEmail());
         }
+        final boolean isAdmin = Boolean.TRUE.equals(user.getAdmin());
+        final List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+        if (isAdmin) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
         return new BotecitoUserDetails(
-                user.getEmail(),
-                user.getPasswordHash(),
-                user.getVerified(),
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")),
-                user.getId());
+                user.getEmail(), user.getPasswordHash(), user.getVerified(), authorities, user.getId(), isAdmin);
     }
 }

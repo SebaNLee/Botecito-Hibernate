@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.dto.BookingSearchResult;
 import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import ar.edu.itba.paw.models.entity.Review;
@@ -45,7 +45,7 @@ public class BookingPresentation {
             final BotecitoUserDetails principal, final HttpServletRequest request, final BookingSearchForm search) {
         return callerId(principal)
                 .map(userId -> {
-                    final BookingSearchResult result = bookingInterface.searchBookings(
+                    final SearchResult<Booking> result = bookingInterface.searchBookings(
                             userId,
                             false,
                             search.getSearchQuery(),
@@ -54,7 +54,7 @@ public class BookingPresentation {
                             search.getPage(),
                             search.getPageSize(),
                             search.getSortBy());
-                    final List<Booking> bookings = result.getBookings();
+                    final List<Booking> bookings = result.getPageElements();
                     final ModelAndView mav = new ModelAndView("requests-outgoing", "bookingSearch", search);
                     mav.addObject("bookings", bookings);
                     addListingModelObjects(mav, search, bookings, result.getTotalCount());
@@ -85,7 +85,7 @@ public class BookingPresentation {
             final BotecitoUserDetails principal, final HttpServletRequest request, final BookingSearchForm search) {
         return callerId(principal)
                 .map(userId -> {
-                    final BookingSearchResult result = bookingInterface.searchBookings(
+                    final SearchResult<Booking> result = bookingInterface.searchBookings(
                             userId,
                             true,
                             search.getSearchQuery(),
@@ -94,7 +94,7 @@ public class BookingPresentation {
                             search.getPage(),
                             search.getPageSize(),
                             search.getSortBy());
-                    final List<Booking> bookings = result.getBookings();
+                    final List<Booking> bookings = result.getPageElements();
                     final ModelAndView mav = new ModelAndView("requests-incoming", "bookingSearch", search);
                     mav.addObject("bookings", bookings);
                     addListingModelObjects(mav, search, bookings, result.getTotalCount());

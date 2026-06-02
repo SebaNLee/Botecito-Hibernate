@@ -57,6 +57,8 @@
 <spring:message code="itemDetail.owner.ownPublicationNotice" var="itemDetailOwnerNoticeLabel" />
 <spring:message code="itemDetail.owner.blockButton" var="itemDetailOwnerBlockButtonLabel" />
 <spring:message code="itemDetail.owner.incomingRequestsButton" var="itemDetailOwnerIncomingRequestsButtonLabel" />
+<spring:message code="itemDetail.report.button" var="itemDetailReportButtonLabel" />
+<spring:message code="itemDetail.report.alreadyReported" var="itemDetailReportAlreadyReportedLabel" />
 <spring:message code="page.title.itemDetail" var="titleItemDetail" />
 
 <paw:layout title="${titleItemDetail} - Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8" scripts="toast,search-filters,date-time,form-submit,pre-booking-draft,image-carousel,rating-stars">
@@ -298,6 +300,20 @@
             </span>
             <span class="text-xs font-bold uppercase tracking-wider text-outline"><spring:message code="marketplace.card.perHour" /></span>
           </div>
+
+          <c:if test="${canReport}">
+            <c:set var="reportModalId" value="report-item-modal-${item.id}" />
+            <button type="button" class="btn btn-outline btn-error btn-sm w-full gap-2" onclick="document.getElementById('${reportModalId}').showModal()">
+              <span class="material-symbols-outlined text-base">flag</span>
+              <c:out value="${itemDetailReportButtonLabel}" />
+            </button>
+            <paw:reportModal itemId="${item.id}" modalId="${reportModalId}" returnPath="${detailReturnPath}" />
+          </c:if>
+          <c:if test="${alreadyReported}">
+            <p class="m-0 text-sm text-on-surface-variant italic">
+              <c:out value="${itemDetailReportAlreadyReportedLabel}" />
+            </p>
+          </c:if>
 
           <c:if test="${showPreBookingPanel}">
             <c:choose>

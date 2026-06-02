@@ -49,6 +49,7 @@ public class UserServiceImpl implements UserService {
             userToCreate.setAlias(normalizeNullable(alias));
             userToCreate.setLanguage(language != null ? language : "ES");
             userToCreate.setVerified(false);
+            userToCreate.setAdmin(false);
             userToCreate.setMailToken(verificationToken);
             userToCreate.setCreatedAt(LocalDateTime.now());
             sendEmailVerificationEmail(userDao.createUser(userToCreate));

@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
+import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.TargetEnum;
@@ -31,7 +31,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
     private EntityManager em;
 
     @Override
-    public ItemSearchResult searchMarketplace(final MarketplaceQueryModel query) {
+    public SearchResult<Item> searchMarketplace(final MarketplaceQueryModel query) {
         // Total matching rows (ignoring page limits) for pagination UI.
         final long totalCount = countMarketplaceResults(query);
 
@@ -55,7 +55,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
         final List<Integer> idList = Paging.toIntegerIds(nativeQuery.getResultList());
 
         if (idList.isEmpty()) {
-            return new ItemSearchResult(List.of(), totalCount);
+            return new SearchResult<>(List.of(), totalCount);
         }
 
         // Phase 2 (JPQL): load full entities for this page only (one row per item, already latest).
@@ -89,7 +89,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             }
         }
 
-        return new ItemSearchResult(items, totalCount);
+        return new SearchResult<>(items, totalCount);
     }
 
     private long countMarketplaceResults(final MarketplaceQueryModel query) {

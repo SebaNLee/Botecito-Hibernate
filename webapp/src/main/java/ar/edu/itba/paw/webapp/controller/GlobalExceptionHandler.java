@@ -11,6 +11,8 @@ import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
 import ar.edu.itba.paw.models.exceptions.NoAnticipationException;
 import ar.edu.itba.paw.models.exceptions.OutsideAvailabilityException;
 import ar.edu.itba.paw.models.exceptions.PastSlotException;
+import ar.edu.itba.paw.models.exceptions.ReportAlreadyExistsException;
+import ar.edu.itba.paw.models.exceptions.ReportNotFoundException;
 import ar.edu.itba.paw.models.exceptions.SelfBlockCollisionException;
 import ar.edu.itba.paw.models.exceptions.UserNotFoundException;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
@@ -178,6 +180,19 @@ public class GlobalExceptionHandler {
     public ModelAndView handleInvalidBookingStatus(HttpServletRequest request, RedirectAttributes ra) {
         ToastSupport.error(ra, "bookingSearch.validation.status.invalid");
         return redirectToReferer(request);
+    }
+
+    @ExceptionHandler(ReportAlreadyExistsException.class)
+    public ModelAndView handleReportAlreadyExists(final HttpServletRequest request, final RedirectAttributes ra) {
+        ToastSupport.error(ra, "report.alreadyReported");
+        return redirectToReferer(request);
+    }
+
+    @ExceptionHandler(ReportNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ModelAndView handleReportNotFound(final HttpServletRequest request) {
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
+        return new ModelAndView("forward:/errors");
     }
 
     @ExceptionHandler(PastSlotException.class)

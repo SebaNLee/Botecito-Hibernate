@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.dto.ReportEmail;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
@@ -31,4 +32,10 @@ public interface MailService {
     void sendBookingExpiredMail(Booking booking);
 
     void sendBookingFinishedMail(Booking booking);
+
+    void sendReportDismissedEmail(ReportEmail reportEmail);
+
+    void sendReportSuccessEmail(ReportEmail reportEmail);
+
+    void sendPublicationRemovedEmail(ReportEmail reportEmail);
 }

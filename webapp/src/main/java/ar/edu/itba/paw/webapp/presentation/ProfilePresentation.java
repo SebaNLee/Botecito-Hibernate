@@ -1,7 +1,8 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.exceptions.UserNotFoundException;
@@ -53,12 +54,12 @@ public class ProfilePresentation {
         final int safeReviewsPage = clampPage(reviewsPage);
         final int safeReviewsPageSize = clampPageSize(reviewsPageSize, MAX_REVIEWS_PAGE_SIZE);
 
-        final ItemSearchResult listingsResult =
+        final SearchResult<Item> listingsResult =
                 itemService.listOwnerItems(id, null, null, null, safeListingsPage, safeListingsPageSize, "newest");
         final long total = listingsResult.getTotalCount();
         final int totalListings = total > LISTINGS_TOTAL_CAP ? LISTINGS_TOTAL_CAP : (int) total;
-        final PageModel<?> listingsPageModel =
-                new PageModel<>(listingsResult.getItems(), safeListingsPage, safeListingsPageSize, totalListings);
+        final PageModel<?> listingsPageModel = new PageModel<>(
+                listingsResult.getPageElements(), safeListingsPage, safeListingsPageSize, totalListings);
 
         final PageModel<Review> reviewsPageModel =
                 reviewService.findReviewsAboutHost(id, safeReviewsPage, safeReviewsPageSize);
@@ -77,10 +78,10 @@ public class ProfilePresentation {
         mav.addObject("isSelf", isSelf);
         mav.addObject("isSubscribed", isSubscribed);
         mav.addObject("followersCount", followersCount);
-        mav.addObject("listings", listingsResult.getItems());
+        mav.addObject("listings", listingsResult.getPageElements());
         mav.addObject("listingsPage", listingsPageModel);
         mav.addObject("listingsTotal", totalListings);
-        mav.addObject("imageUrlsByItemId", coverImageUrlResolver.resolve(listingsResult.getItems(), request));
+        mav.addObject("imageUrlsByItemId", coverImageUrlResolver.resolve(listingsResult.getPageElements(), request));
         mav.addObject("reviews", reviewsPageModel.getContent());
         mav.addObject("reviewsPage", reviewsPageModel);
         mav.addObject("reviewsTotal", reviewsPageModel.getTotalItems());

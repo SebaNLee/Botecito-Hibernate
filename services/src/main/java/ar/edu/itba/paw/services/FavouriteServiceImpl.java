@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.FavouritesQueryModel;
-import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.persistence.FavouriteDao;
@@ -73,10 +73,10 @@ public class FavouriteServiceImpl implements FavouriteService {
                 .pageSize(safePageSize)
                 .sortBy(sortBy)
                 .build();
-        final ItemSearchResult result = favouriteDao.listFavourites(query);
+        final SearchResult<Item> result = favouriteDao.listFavourites(query);
         final int totalItems =
                 result.getTotalCount() > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) result.getTotalCount();
-        return new PageModel<>(result.getItems(), safePage, safePageSize, totalItems);
+        return new PageModel<>(result.getPageElements(), safePage, safePageSize, totalItems);
     }
 
     private static boolean canFavourite(final int userId, final Item item) {

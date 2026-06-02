@@ -41,6 +41,7 @@ public class UserJpaDaoTest {
         user.setEmail("ada@example.com");
         user.setLanguage("EN");
         user.setVerified(false);
+        user.setAdmin(false);
         user.setCreatedAt(LocalDateTime.now());
 
         final Users created = userDao.createUser(user);

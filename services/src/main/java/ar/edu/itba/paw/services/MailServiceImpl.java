@@ -1,9 +1,11 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.PreferredLanguageModel;
+import ar.edu.itba.paw.models.dto.ReportEmail;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.PaymentProof;
+import ar.edu.itba.paw.models.entity.Report;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -207,10 +209,47 @@ public class MailServiceImpl implements MailService {
         sendBookingEmail(booking, host(booking), "mail.booking.finished", incomingBookingsBaseUrl);
     }
 
-    public Locale resolveLocale(final Users user) {
+    @Override
+    @Async("mailTaskExecutor")
+    public void sendReportDismissedEmail(final ReportEmail email) {
+        sendReportResolutionEmail(email, "mail.reportDismissed", appBaseUrl + "/marketplace");
+    }
+
+    @Override
+    @Async("mailTaskExecutor")
+    public void sendReportSuccessEmail(final ReportEmail email) {
+        sendReportResolutionEmail(email, "mail.reportPublicationRemoved", appBaseUrl + "/marketplace");
+    }
+
+    @Override
+    @Async("mailTaskExecutor")
+    public void sendPublicationRemovedEmail(final ReportEmail email) {
+        sendReportResolutionEmail(email, "mail.publicationRemovedDueToReport", myBoatsBaseUrl);
+    }
+
+    public static Locale resolveLocale(final Users user) {
         return user == null
                 ? Locale.of("es")
                 : PreferredLanguageModel.fromPersistence(user.getLanguage()).toLocale();
+    }
+
+    public static ReportEmail getReporterEmail(final Report report) {
+        return getReportEmail(report, report.getSender());
+    }
+
+    public static ReportEmail getItemRemovedEmail(final Report report) {
+        return getReportEmail(report, report.getItem().getHost());
+    }
+
+    private static ReportEmail getReportEmail(final Report report, final Users user) {
+        return ReportEmail.builder()
+                .email(user.getEmail())
+                .displayName(displayName(user))
+                .locale(resolveLocale(user))
+                .itemTitle(report.getItemTitle())
+                .description(report.getDescription())
+                .reason(report.getReason())
+                .build();
     }
 
     private static boolean hasEmail(final Users user) {
@@ -257,6 +296,36 @@ public class MailServiceImpl implements MailService {
                     booking.getId(),
                     recipient.getEmail(),
                     e);
+        }
+    }
+
+    private void sendReportResolutionEmail(
+            final ReportEmail reportEmail, final String messagePrefix, final String actionUrl) {
+        if (reportEmail.getEmail() == null || reportEmail.getReason() == null) {
+            return;
+        }
+        try {
+            final Locale locale = reportEmail.getLocale();
+            final String title = reportEmail.getItemTitle();
+            final String reasonLabel =
+                    getMessage("report.reason." + reportEmail.getReason().name(), locale);
+            final Context context = new Context(locale);
+            context.setVariable("recipientName", reportEmail.getDisplayName());
+            context.setVariable("itemTitle", title);
+            context.setVariable("reportReason", reasonLabel);
+            context.setVariable("reportDescription", reportEmail.getDescription());
+            context.setVariable("actionUrl", actionUrl);
+            context.setVariable("heading", getMessage(messagePrefix + ".heading", locale));
+            context.setVariable("body", getMessage(messagePrefix + ".body", locale, title));
+            context.setVariable("note", getMessage(messagePrefix + ".note", locale));
+            context.setVariable("action", getMessage(messagePrefix + ".action", locale));
+            sendHtmlEmail(
+                    reportEmail.getEmail(),
+                    getMessage(messagePrefix + ".subject", locale, title),
+                    templateEngine.process("report-resolution", context));
+        } catch (final RuntimeException e) {
+            LOGGER.error(
+                    "Could not send report resolution email '{}' to {}.", messagePrefix, reportEmail.getEmail(), e);
         }
     }
 

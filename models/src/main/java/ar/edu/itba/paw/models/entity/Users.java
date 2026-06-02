@@ -55,6 +55,9 @@ public class Users {
     @Column(name = "verified", nullable = false)
     private Boolean verified;
 
+    @Column(name = "admin", nullable = false)
+    private Boolean admin;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 }

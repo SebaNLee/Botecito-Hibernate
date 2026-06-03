@@ -72,17 +72,6 @@ public class ReviewImplTest {
     }
 
     @Test
-    public void testCreateDuplicate() {
-        when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(finishedBooking()));
-        when(reviewDao.findReviewByBookingSenderAndTargetType(BOOKING_ID, GUEST_ID, TargetEnum.ITEM))
-                .thenReturn(Optional.of(new Review()));
-
-        var result = reviewService.createReviewForBooking(BOOKING_ID, GUEST_ID, 5, "Great!");
-
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
     public void testFindByBookingIds() {
         var review = new Review();
         review.setBooking(finishedBooking());

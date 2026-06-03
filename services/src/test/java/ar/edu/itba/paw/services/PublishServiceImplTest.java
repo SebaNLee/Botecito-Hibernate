@@ -39,7 +39,7 @@ public class PublishServiceImplTest {
     private PublishServiceImpl publishService;
 
     @Test
-    public void createExecutesSuccessfully() {
+    public void createWorksOk() {
         Item item = Item.builder().id(1).build();
         when(publishDao.persistItem(any())).thenReturn(item);
         when(publishDao.persistVersion(any()))
@@ -60,7 +60,7 @@ public class PublishServiceImplTest {
     }
 
     @Test
-    public void createThrowsWhenDifficultyNull() {
+    public void createExceptionWhenIncomplete() {
         assertThrows(
                 NullPointerException.class,
                 () -> publishService.create(

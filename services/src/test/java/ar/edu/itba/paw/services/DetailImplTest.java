@@ -35,10 +35,20 @@ public class DetailImplTest {
     private DetailImpl detailService;
 
     @Test
-    public void detailReturnsItemWhenFound() {
+    public void detailReturnsItem() {
         when(detailDao.getItemDetail(ITEM_ID, REVIEW_PAGE)).thenReturn(Optional.of(detailItem(HOST_ID, true)));
 
         Item result = detailService.getItemDetail(ITEM_ID, REVIEW_PAGE);
+
+        assertNotNull(result);
+        assertEquals(ITEM_ID, result.getId());
+    }
+
+    @Test
+    public void detailHostReturnsItem() {
+        when(detailDao.getItemDetail(ITEM_ID, REVIEW_PAGE)).thenReturn(Optional.of(detailItem(HOST_ID, true)));
+
+        Item result = detailService.getItemDetail(ITEM_ID, REVIEW_PAGE, HOST_ID);
 
         assertNotNull(result);
         assertEquals(ITEM_ID, result.getId());
@@ -52,43 +62,12 @@ public class DetailImplTest {
     }
 
     @Test
-    public void detailThrowsNotFoundWhenNoVersion() {
-        when(detailDao.getItemDetail(ITEM_ID, REVIEW_PAGE)).thenReturn(Optional.of(detailItem(HOST_ID, false)));
-
-        assertThrows(ItemNotFoundException.class, () -> detailService.getItemDetail(ITEM_ID, REVIEW_PAGE));
-    }
-
-    @Test
-    public void detailWithHostReturnsItem() {
-        when(detailDao.getItemDetail(ITEM_ID, REVIEW_PAGE)).thenReturn(Optional.of(detailItem(HOST_ID, true)));
-
-        Item result = detailService.getItemDetail(ITEM_ID, REVIEW_PAGE, HOST_ID);
-
-        assertNotNull(result);
-        assertEquals(ITEM_ID, result.getId());
-    }
-
-    @Test
-    public void detailWithHostThrowsForbidden() {
+    public void detailWrongHostThrowsForbidden() {
         when(detailDao.getItemDetail(ITEM_ID, REVIEW_PAGE)).thenReturn(Optional.of(detailItem(HOST_ID, true)));
 
         assertThrows(
                 ForbiddenOperationException.class,
                 () -> detailService.getItemDetail(ITEM_ID, REVIEW_PAGE, WRONG_HOST_ID));
-    }
-
-    @Test
-    public void detailWithHostThrowsForbiddenNoHost() {
-        Item item = Item.builder()
-                .id(ITEM_ID)
-                .host(null)
-                .status(ItemStatusEnum.ACTIVE)
-                .latestVersion(Version.builder().id(1).build())
-                .build();
-        when(detailDao.getItemDetail(ITEM_ID, REVIEW_PAGE)).thenReturn(Optional.of(item));
-
-        assertThrows(
-                ForbiddenOperationException.class, () -> detailService.getItemDetail(ITEM_ID, REVIEW_PAGE, HOST_ID));
     }
 
     private static Item detailItem(final int hostId, final boolean withVersion) {

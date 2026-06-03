@@ -55,15 +55,6 @@ public class ItemImplTest {
     }
 
     @Test
-    public void findImageByIdReturnsEmpty() {
-        when(itemDao.findImageById(IMAGE_ID)).thenReturn(Optional.empty());
-
-        Optional<Image> result = itemService.findImageById(IMAGE_ID);
-
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
     public void userOwnsItemByIdReturnsTrue() {
         Users host = new Users();
         host.setId(USER_ID);

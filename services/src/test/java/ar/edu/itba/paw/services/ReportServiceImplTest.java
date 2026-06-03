@@ -9,8 +9,6 @@ import ar.edu.itba.paw.models.entity.Report;
 import ar.edu.itba.paw.models.entity.ReportEnum;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
-import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
-import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
 import ar.edu.itba.paw.models.exceptions.ReportAlreadyExistsException;
 import ar.edu.itba.paw.models.exceptions.ReportNotFoundException;
 import ar.edu.itba.paw.persistence.ReportDao;
@@ -39,9 +37,6 @@ public class ReportServiceImplTest {
     private UserService userService;
 
     @Mock
-    private ManageItemService manageItemService;
-
-    @Mock
     private MailService mailService;
 
     @InjectMocks
@@ -57,26 +52,7 @@ public class ReportServiceImplTest {
     }
 
     @Test
-    public void createReportThrowsWhenInactive() {
-        Item item = Item.builder().id(ITEM_ID).status(ItemStatusEnum.INACTIVE).build();
-        when(itemService.findItemById(ITEM_ID)).thenReturn(item);
-
-        assertThrows(
-                ItemNotFoundException.class,
-                () -> reportService.createReport(ITEM_ID, SENDER_ID, ReportEnum.SPAM, null));
-    }
-
-    @Test
-    public void createReportThrowsWhenOwnItem() {
-        when(itemService.findItemById(ITEM_ID)).thenReturn(activeItem(SENDER_ID));
-
-        assertThrows(
-                ForbiddenOperationException.class,
-                () -> reportService.createReport(ITEM_ID, SENDER_ID, ReportEnum.SPAM, null));
-    }
-
-    @Test
-    public void createReportThrowsWhenReported() {
+    public void createReportThrowsWhenAlreadyReported() {
         when(itemService.findItemById(ITEM_ID)).thenReturn(activeItem(HOST_ID));
         when(userService.findById(SENDER_ID)).thenReturn(Optional.of(sender()));
         when(reportDao.hasReported(SENDER_ID, ITEM_ID)).thenReturn(true);

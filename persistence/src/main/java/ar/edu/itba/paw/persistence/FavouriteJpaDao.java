@@ -144,8 +144,8 @@ public class FavouriteJpaDao implements FavouriteDao {
             String sql) {
         whereClauses.add("f.user_id = :userId");
         parameters.put("userId", query.getUserId());
-        whereClauses.add("i.status <> CAST(:deleted AS item_status_enum)");
-        parameters.put("deleted", ItemStatusEnum.DELETED.name());
+        whereClauses.add("i.status = CAST(:active AS item_status_enum)");
+        parameters.put("active", ItemStatusEnum.ACTIVE.name());
 
         if (!isEmpty(query.getSearchQuery())) {
             whereClauses.add("LOWER(v.title) LIKE LOWER(:searchQuery) ESCAPE '!'");

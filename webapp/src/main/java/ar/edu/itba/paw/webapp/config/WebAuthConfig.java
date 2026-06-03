@@ -29,6 +29,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
@@ -67,7 +69,13 @@ public class WebAuthConfig {
                 .rememberMe(remember -> configureRememberMe(remember, userDetailsAccountService))
                 .logout(logout -> logout.logoutUrl(LOGOUT_PATH).logoutSuccessUrl(LOGIN_PATH + "?logout=true"))
                 .exceptionHandling(ex -> ex.accessDeniedHandler(WebAuthConfig::handleAccessDenied))
-                .csrf(csrf -> csrf.disable());
+                .csrf(csrf -> csrf.disable())
+                // payment-proof needs SAMEORIGIN for redering PDF in modal iframes
+                .headers(headers -> headers.frameOptions(frame -> frame.deny())
+                        .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                                antMatcher("/requests/bookings/*/payment-proof"),
+                                new XFrameOptionsHeaderWriter(
+                                        XFrameOptionsHeaderWriter.XFrameOptionsMode.SAMEORIGIN))));
         return http.build();
     }
 

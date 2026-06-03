@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.persistence;
 
-import java.util.List;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 import org.hsqldb.jdbc.JDBCDataSource;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -13,6 +13,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @EnableTransactionManagement
+@ComponentScan("ar.edu.itba.paw.persistence")
 @Configuration
 public class TestConfiguration {
 
@@ -28,7 +29,7 @@ public class TestConfiguration {
     @Bean
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(final DataSource dataSource) {
         final LocalContainerEntityManagerFactoryBean factoryBean = new LocalContainerEntityManagerFactoryBean();
-        factoryBean.setPackagesToScan("ar.edu.itba.paw.models.entity");
+        factoryBean.setPackagesToScan("ar.edu.itba.paw.models.entity", "ar.edu.itba.paw.persistence");
         factoryBean.setDataSource(dataSource);
         factoryBean.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
@@ -38,17 +39,7 @@ public class TestConfiguration {
                 "hibernate.show_sql", "true",
                 "hibernate.format_sql", "true"));
 
-        factoryBean.setPersistenceUnitPostProcessors(pui -> {
-            pui.getManagedClassNames().clear();
-            pui.getManagedClassNames().addAll(entityClassNames());
-        });
-
         return factoryBean;
-    }
-
-    @Bean
-    public List<String> entityClassNames() {
-        return List.of();
     }
 
     @Bean

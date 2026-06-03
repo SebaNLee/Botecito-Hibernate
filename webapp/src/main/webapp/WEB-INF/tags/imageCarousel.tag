@@ -16,7 +16,7 @@
   <div class="space-y-3" data-image-carousel>
     <div class="relative card bg-base-100 shadow-sm overflow-hidden">
       <img src="${imageUrls[0]}"
-           alt="${fn:escapeXml(altText)}"
+           alt="$<c:out value="${altText}" />"
            class="w-full ${resolvedAspect} object-cover block"
            data-carousel-main />
       <c:if test="${imageCount > 1}">

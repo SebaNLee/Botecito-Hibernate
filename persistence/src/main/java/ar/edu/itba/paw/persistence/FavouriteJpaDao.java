@@ -151,14 +151,6 @@ public class FavouriteJpaDao implements FavouriteDao {
             whereClauses.add("LOWER(v.title) LIKE LOWER(:searchQuery) ESCAPE '!'");
             parameters.put("searchQuery", setupSearchQuery(query.getSearchQuery()));
         }
-        if (!isEmpty(query.getStatus())) {
-            whereClauses.add("i.status = CAST(:status AS item_status_enum)");
-            parameters.put("status", query.getStatus());
-        }
-        if (!isEmpty(query.getLocationSlug())) {
-            whereClauses.add("EXISTS (SELECT 1 FROM location l WHERE l.id = v.location_id AND l.slug = :location)");
-            parameters.put("location", query.getLocationSlug());
-        }
 
         sql += "WHERE " + String.join(" AND ", whereClauses);
         return sql;

@@ -9,7 +9,7 @@ import java.util.Optional;
 public interface ItemService {
 
     SearchResult<Item> listOwnerItems(
-            int ownerId, String searchQuery, String status, String location, int page, int pageSize, String sortBy);
+            int ownerId, String searchQuery, String status, int page, int pageSize, String sortBy);
 
     Item findItemById(int id);
 

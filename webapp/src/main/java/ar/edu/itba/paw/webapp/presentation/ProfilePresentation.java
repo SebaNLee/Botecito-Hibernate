@@ -55,7 +55,7 @@ public class ProfilePresentation {
         final int safeReviewsPageSize = clampPageSize(reviewsPageSize, MAX_REVIEWS_PAGE_SIZE);
 
         final SearchResult<Item> listingsResult =
-                itemService.listOwnerItems(id, null, null, null, safeListingsPage, safeListingsPageSize, "newest");
+                itemService.listOwnerItems(id, null, null, safeListingsPage, safeListingsPageSize, "newest");
         final long total = listingsResult.getTotalCount();
         final int totalListings = total > LISTINGS_TOTAL_CAP ? LISTINGS_TOTAL_CAP : (int) total;
         final PageModel<?> listingsPageModel = new PageModel<>(

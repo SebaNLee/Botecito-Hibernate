@@ -32,13 +32,7 @@ public class MyBoatsPresentation {
         final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
 
         final SearchResult<Item> result = itemService.listOwnerItems(
-                principal.getId(),
-                search.getSearchQuery(),
-                search.getStatus(),
-                null,
-                page,
-                pageSize,
-                search.getSortBy());
+                principal.getId(), search.getSearchQuery(), search.getStatus(), page, pageSize, search.getSortBy());
         final List<Item> ownedItems = result.getPageElements();
 
         final ModelAndView mav = new ModelAndView("my-boats", "myBoatsSearch", search);

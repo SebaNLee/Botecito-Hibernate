@@ -51,10 +51,6 @@ public class ItemJpaDao implements ItemDao {
             whereClauses.add("i.status = CAST(:status AS item_status_enum)");
             parameters.put("status", query.getStatus());
         }
-        if (!isEmpty(query.getLocationSlug())) {
-            whereClauses.add("EXISTS (SELECT 1 FROM location l WHERE l.id = v.location_id AND l.slug = :location)");
-            parameters.put("location", query.getLocationSlug());
-        }
 
         sql += " WHERE " + String.join(" AND ", whereClauses);
         sql += " ORDER BY " + nativeOrderBy(query);
@@ -105,8 +101,7 @@ public class ItemJpaDao implements ItemDao {
         parameters.put("deleted", ItemStatusEnum.DELETED.name());
 
         String sql = "SELECT COUNT(DISTINCT i.id) FROM item i";
-        boolean needsVersionJoin =
-                !isEmpty(query.getSearchQuery()) || !isEmpty(query.getLocationSlug()) || isNameSort(query.getSortBy());
+        boolean needsVersionJoin = !isEmpty(query.getSearchQuery()) || isNameSort(query.getSortBy());
 
         if (needsVersionJoin) {
             sql +=
@@ -120,10 +115,6 @@ public class ItemJpaDao implements ItemDao {
         if (!isEmpty(query.getStatus())) {
             whereClauses.add("i.status = CAST(:status AS item_status_enum)");
             parameters.put("status", query.getStatus());
-        }
-        if (!isEmpty(query.getLocationSlug())) {
-            whereClauses.add("EXISTS (SELECT 1 FROM location l WHERE l.id = v.location_id AND l.slug = :location)");
-            parameters.put("location", query.getLocationSlug());
         }
 
         sql += " WHERE " + String.join(" AND ", whereClauses);

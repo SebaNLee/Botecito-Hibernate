@@ -13,7 +13,6 @@ public class MyBoatsQueryModel {
     private int ownerId;
     private String searchQuery;
     private String status;
-    private String locationSlug;
     private int page;
     private int pageSize;
     private String sortBy;

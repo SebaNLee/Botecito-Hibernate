@@ -55,20 +55,12 @@ public class FavouriteServiceImpl implements FavouriteService {
     @Override
     @Transactional(readOnly = true)
     public PageModel<Item> listFavourites(
-            final int userId,
-            final String searchQuery,
-            final String status,
-            final String location,
-            final int page,
-            final int pageSize,
-            final String sortBy) {
+            final int userId, final String searchQuery, final int page, final int pageSize, final String sortBy) {
         final int safePage = Math.max(1, page);
         final int safePageSize = pageSize > 0 ? Math.min(pageSize, 18) : DEFAULT_PAGE_SIZE;
         final FavouritesQueryModel query = FavouritesQueryModel.builder()
                 .userId(userId)
                 .searchQuery(searchQuery)
-                .status(status)
-                .locationSlug(location)
                 .page(safePage)
                 .pageSize(safePageSize)
                 .sortBy(sortBy)

@@ -2,10 +2,6 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Version;
-import ar.edu.itba.paw.services.EditService;
-import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.SelectorsService;
-import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import ar.edu.itba.paw.webapp.util.JsonForHtml;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
@@ -27,14 +23,7 @@ import org.springframework.web.servlet.view.RedirectView;
 @RequiredArgsConstructor
 public class EditPresentation {
 
-    private final EditService editService;
-    private final ItemService itemService;
-    private final SelectorsService selectorsInterface;
-
-    public ModelAndView bootstrapEdit(
-            final BotecitoUserDetails principal, final int itemId, final HttpServletRequest request) {
-
-        final Version version = itemService.requireOwnedFullData(itemId, principal.getId());
+    public ModelAndView bootstrapEdit(final Version version, final int itemId, final HttpServletRequest request) {
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
         final Map<String, Object> draft = buildDraftPayload(version, itemId, contextPath);
 
@@ -87,44 +76,23 @@ public class EditPresentation {
         return mav;
     }
 
-    public ModelAndView editStepThreeSubmit(
-            final BotecitoUserDetails principal,
-            final int itemId,
-            final PublishBoatForm form,
-            final BindingResult errors,
-            final RedirectAttributes redirectAttributes) {
-
+    public ModelAndView editStepThreeSubmit(final int itemId, final PublishBoatForm form, final BindingResult errors) {
         if (errors.hasErrors()) {
             if (PublishWizardMapping.hasErrorsOutsideAvailability(errors)) {
                 return redirectToEditDetails(itemId);
             }
             return editImagesView(itemId);
         }
+        return null;
+    }
 
-        final boolean updated = editService.edit(
-                itemId,
-                principal.getId(),
-                form.getItemTypeId(),
-                form.getTitle().trim(),
-                form.getDescription() == null ? "" : form.getDescription().trim(),
-                form.getPricePerHour(),
-                form.getCapacity(),
-                form.getWeight(),
-                form.getDifficulty(),
-                form.getLocationOptionId(),
-                PublishWizardMapping.toAvailabilityWindows(form),
-                PublishWizardMapping.toEditImageUploads(form));
+    public ModelAndView editSavedRedirect(final boolean updated, final RedirectAttributes redirectAttributes) {
         if (updated) {
             ToastSupport.success(redirectAttributes, "settings.publications.updated");
         } else {
             ToastSupport.info(redirectAttributes, "settings.publications.noChanges");
         }
-
         return new ModelAndView("redirect:/my-boats");
-    }
-
-    public Map<String, String> buildDifficultyOptions() {
-        return selectorsInterface.getDifficultyOptions();
     }
 
     public int maxGalleryImages() {

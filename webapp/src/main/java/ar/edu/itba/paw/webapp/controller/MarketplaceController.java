@@ -1,5 +1,8 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.services.MarketplaceService;
 import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import ar.edu.itba.paw.webapp.presentation.MarketplacePresentation;
 import javax.servlet.http.HttpServletRequest;
@@ -16,6 +19,7 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class MarketplaceController {
 
+    private final MarketplaceService marketplaceService;
     private final MarketplacePresentation marketplacePresentation;
 
     /**
@@ -37,6 +41,24 @@ public class MarketplaceController {
             @Valid @ModelAttribute("marketplaceSearch") final MarketplaceSearchForm search,
             final BindingResult errors) {
 
-        return marketplacePresentation.marketplace(request, search, errors);
+        if (errors.hasErrors()) {
+            return marketplacePresentation.marketplaceErrors(request, search, errors);
+        }
+
+        final SearchResult<Item> result = marketplaceService.searchMarketplace(
+                search.getSearchQuery(),
+                search.getDate(),
+                search.getStartTime(),
+                search.getEndTime(),
+                search.getCapacity(),
+                search.getWeight(),
+                search.getDifficulty(),
+                search.getMinAvgRating(),
+                search.getLocation(),
+                search.getItemType(),
+                search.getPage(),
+                search.getPageSize(),
+                search.getSortBy());
+        return marketplacePresentation.marketplace(request, search, result);
     }
 }

@@ -1,8 +1,12 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.services.EditService;
+import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.SelectorsService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import ar.edu.itba.paw.webapp.presentation.EditPresentation;
+import ar.edu.itba.paw.webapp.presentation.PublishWizardMapping;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +25,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class EditController {
 
+    private final ItemService itemService;
+    private final EditService editService;
+    private final SelectorsService selectorsService;
     private final EditPresentation editPresentation;
 
     @ModelAttribute("publishForm")
@@ -30,7 +37,7 @@ public class EditController {
 
     @ModelAttribute("difficultyOptions")
     public Map<String, String> difficultyOptions() {
-        return editPresentation.buildDifficultyOptions();
+        return selectorsService.getDifficultyOptions();
     }
 
     @ModelAttribute("maxGalleryImages")
@@ -43,7 +50,8 @@ public class EditController {
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("itemId") final int itemId,
             final HttpServletRequest request) {
-        return editPresentation.bootstrapEdit(user, itemId, request);
+        final var version = itemService.requireOwnedFullData(itemId, user.getId());
+        return editPresentation.bootstrapEdit(version, itemId, request);
     }
 
     @RequestMapping(value = "/edit/{itemId:[0-9]+}/details", method = RequestMethod.GET)
@@ -87,6 +95,23 @@ public class EditController {
                     final PublishBoatForm form,
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
-        return editPresentation.editStepThreeSubmit(user, itemId, form, errors, redirectAttributes);
+        final ModelAndView errorView = editPresentation.editStepThreeSubmit(itemId, form, errors);
+        if (errorView != null) {
+            return errorView;
+        }
+        final boolean updated = editService.edit(
+                itemId,
+                user.getId(),
+                form.getItemTypeId(),
+                form.getTitle().trim(),
+                form.getDescription() == null ? "" : form.getDescription().trim(),
+                form.getPricePerHour(),
+                form.getCapacity(),
+                form.getWeight(),
+                form.getDifficulty(),
+                form.getLocationOptionId(),
+                PublishWizardMapping.toAvailabilityWindows(form),
+                PublishWizardMapping.toEditImageUploads(form));
+        return editPresentation.editSavedRedirect(updated, redirectAttributes);
     }
 }

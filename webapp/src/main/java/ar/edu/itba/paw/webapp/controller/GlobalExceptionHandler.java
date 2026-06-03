@@ -6,6 +6,7 @@ import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.models.exceptions.IllegalBookingOperationException;
 import ar.edu.itba.paw.models.exceptions.InvalidBookingStatusException;
 import ar.edu.itba.paw.models.exceptions.InvalidDateFormatException;
+import ar.edu.itba.paw.models.exceptions.InvalidPaymentProofException;
 import ar.edu.itba.paw.models.exceptions.InvalidSlotException;
 import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
 import ar.edu.itba.paw.models.exceptions.NoAnticipationException;
@@ -16,6 +17,7 @@ import ar.edu.itba.paw.models.exceptions.ReportNotFoundException;
 import ar.edu.itba.paw.models.exceptions.SelfBlockCollisionException;
 import ar.edu.itba.paw.models.exceptions.UserNotFoundException;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
+import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.RequestDispatcher;
@@ -205,6 +207,24 @@ public class GlobalExceptionHandler {
     public ModelAndView handleInvalidSlot(HttpServletRequest request, RedirectAttributes ra) {
         ToastSupport.error(ra, "manageAvailability.msg.invalid");
         return redirectToReferer(request);
+    }
+
+    @ExceptionHandler(InvalidPaymentProofException.class)
+    public ModelAndView handleInvalidPaymentProof(final HttpServletRequest request, final RedirectAttributes ra) {
+        ToastSupport.error(ra, "requests.booking.paymentProofRequired");
+        return redirectToReferer(request);
+    }
+
+    @ExceptionHandler(IOException.class)
+    public ModelAndView handleIOException(final HttpServletRequest request, final RedirectAttributes ra) {
+        final String requestUri = request == null ? null : request.getRequestURI();
+        if (requestUri != null && requestUri.contains("/payment")) {
+            ToastSupport.error(ra, "requests.booking.paymentInvalidFile");
+            return redirectToReferer(request);
+        }
+        LOGGER.error("Unhandled IOException");
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
+        return new ModelAndView("forward:/errors");
     }
 
     private static ModelAndView redirectToReferer(HttpServletRequest request) {

@@ -1,5 +1,8 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.services.FavouriteService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.FavouritesSearchForm;
 import ar.edu.itba.paw.webapp.presentation.FavouritePresentation;
@@ -21,6 +24,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class FavouriteController {
 
+    private final FavouriteService favouriteService;
     private final FavouritePresentation favouritePresentation;
 
     @ModelAttribute("favouritesSearch")
@@ -39,9 +43,13 @@ public class FavouriteController {
             @Valid @ModelAttribute("favouritesSearch") final FavouritesSearchForm search,
             final BindingResult errors) {
         if (errors.hasErrors()) {
-            return favouritePresentation.favouritesErrors(user, request, search, errors);
+            return favouritePresentation.favouritesErrors(request, search, errors);
         }
-        return favouritePresentation.favourites(user, request, search);
+        final int page = search.getPage() == null ? 1 : search.getPage();
+        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
+        final PageModel<Item> itemPage = favouriteService.listFavourites(
+                user.getId(), search.getSearchQuery(), page, pageSize, search.getSortBy());
+        return favouritePresentation.favourites(request, search, itemPage);
     }
 
     @RequestMapping(value = "/items/{id:[1-9]\\d*}/favourite", method = RequestMethod.POST)
@@ -50,7 +58,8 @@ public class FavouriteController {
             @PathVariable("id") final int itemId,
             @RequestParam(value = "return", required = false) final String returnPath,
             final RedirectAttributes redirectAttributes) {
-        return favouritePresentation.addFavourite(user, itemId, returnPath, redirectAttributes);
+        final boolean success = favouriteService.addFavourite(user.getId(), itemId);
+        return favouritePresentation.addFavouriteResult(success, returnPath, redirectAttributes);
     }
 
     @RequestMapping(value = "/items/{id:[1-9]\\d*}/unfavourite", method = RequestMethod.POST)
@@ -59,6 +68,7 @@ public class FavouriteController {
             @PathVariable("id") final int itemId,
             @RequestParam(value = "return", required = false) final String returnPath,
             final RedirectAttributes redirectAttributes) {
-        return favouritePresentation.removeFavourite(user, itemId, returnPath, redirectAttributes);
+        favouriteService.removeFavourite(user.getId(), itemId);
+        return favouritePresentation.removeFavouriteResult(returnPath, redirectAttributes);
     }
 }

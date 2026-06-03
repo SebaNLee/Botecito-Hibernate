@@ -5,9 +5,6 @@ import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Version;
-import ar.edu.itba.paw.services.BookingService;
-import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
-import ar.edu.itba.paw.webapp.form.SaveSelfBlocksForm;
 import ar.edu.itba.paw.webapp.util.DetailAvailabilityPicker;
 import ar.edu.itba.paw.webapp.util.JsonForHtml;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
@@ -42,40 +39,26 @@ public class AvailabilityPresentation {
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    private final BookingService bookingInterface;
     private final ToastPresentation toastPresentation;
 
-    public ModelAndView manageAvailabilityPage(
-            final BotecitoUserDetails principal,
-            final int itemId,
-            final String requestedDate,
-            final String returnParam,
-            final HttpServletRequest request,
-            final RedirectAttributes redirectAttributes) {
-        final String backPath = resolveBackPath(request, returnParam);
-        final SelfBookingData model =
-                bookingInterface.getSelfBlocks(itemId, principal.getId(), parseRequestedDate(requestedDate));
+    public ModelAndView manageAvailabilityPage(final SelfBookingData model, final String backPath) {
         return buildManageAvailabilityView(model, backPath);
     }
 
-    public ModelAndView saveSelfBlocks(
-            final BotecitoUserDetails principal,
+    public ModelAndView saveSelfBlocksErrors(
+            final SelfBookingData model, final String backPath, final BindingResult errors) {
+        final ModelAndView mav = buildManageAvailabilityView(model, backPath);
+        mav.addObject("toasts", toastPresentation.validationToasts(errors, "saveSelfBlocks"));
+        return mav;
+    }
+
+    public ModelAndView saveSelfBlocksSuccess(
             final int itemId,
-            final String returnParam,
-            final SaveSelfBlocksForm form,
-            final BindingResult errors,
+            final String dateStr,
+            final String backPath,
             final RedirectAttributes redirectAttributes) {
-        final String backPath = sanitizeReturnPath(returnParam);
-        if (errors.hasErrors()) {
-            final SelfBookingData model = bookingInterface.getSelfBlocks(itemId, principal.getId(), form.getDate());
-            final ModelAndView mav = buildManageAvailabilityView(model, backPath);
-            mav.addObject("toasts", toastPresentation.validationToasts(errors, "saveSelfBlocks"));
-            return mav;
-        }
-        bookingInterface.saveSelfBlockChanges(
-                itemId, principal.getId(), form.getDate(), form.deletedBlockIds(), form.updates(), form.creates());
         ToastSupport.success(redirectAttributes, "manageAvailability.msg.saved");
-        return availabilityRedirect(itemId, form.getDate().toString(), backPath);
+        return availabilityRedirect(itemId, dateStr, backPath);
     }
 
     private ModelAndView availabilityRedirect(
@@ -226,7 +209,7 @@ public class AvailabilityPresentation {
                 || status == BookingStatusEnum.CONFIRMED;
     }
 
-    static String resolveBackPath(final HttpServletRequest request, final String returnParam) {
+    public static String resolveBackPath(final HttpServletRequest request, final String returnParam) {
         final String safeReturn = sanitizeReturnPath(returnParam);
         if (safeReturn != null) {
             return safeReturn;
@@ -256,7 +239,7 @@ public class AvailabilityPresentation {
         return DEFAULT_AVAILABILITY_BACK_PATH;
     }
 
-    static String sanitizeReturnPath(final String raw) {
+    public static String sanitizeReturnPath(final String raw) {
         if (raw == null) {
             return null;
         }
@@ -285,7 +268,7 @@ public class AvailabilityPresentation {
         return candidate;
     }
 
-    private static LocalDate parseRequestedDate(final String raw) {
+    public static LocalDate parseRequestedDate(final String raw) {
         if (raw == null || raw.isBlank()) {
             return null;
         }

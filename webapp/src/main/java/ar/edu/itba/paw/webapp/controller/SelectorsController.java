@@ -3,7 +3,7 @@ package ar.edu.itba.paw.webapp.controller;
 import ar.edu.itba.paw.models.dto.BookingStatusOptionModel;
 import ar.edu.itba.paw.models.entity.ItemType;
 import ar.edu.itba.paw.models.entity.Location;
-import ar.edu.itba.paw.webapp.presentation.SelectorsPresentation;
+import ar.edu.itba.paw.services.SelectorsService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @RequiredArgsConstructor
 public class SelectorsController {
 
-    private final SelectorsPresentation selectorsPresentation;
+    private final SelectorsService selectorsService;
 
     @ResponseBody
     @RequestMapping(
@@ -24,7 +24,7 @@ public class SelectorsController {
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Location> getLocationOptions() {
-        return selectorsPresentation.getLocationOptions();
+        return selectorsService.getLocationOptions();
     }
 
     @ResponseBody
@@ -33,7 +33,7 @@ public class SelectorsController {
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public List<ItemType> getItemTypeOptions() {
-        return selectorsPresentation.getItemTypeOptions();
+        return selectorsService.getItemTypeOptions();
     }
 
     @ResponseBody
@@ -42,6 +42,6 @@ public class SelectorsController {
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public List<BookingStatusOptionModel> getBookingStatusOptions() {
-        return selectorsPresentation.getBookingStatusOptions();
+        return selectorsService.getBookingStatusOptions();
     }
 }

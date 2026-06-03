@@ -1,9 +1,7 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.PageModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Report;
-import ar.edu.itba.paw.services.ReportService;
 import ar.edu.itba.paw.webapp.form.AdminReportsSearchForm;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.time.format.DateTimeFormatter;
@@ -23,41 +21,32 @@ public class AdminReportsPresentation {
     private static final String MESSAGE_PREFIX = "admin.reports";
     private static final DateTimeFormatter REPORT_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    private final ReportService reportService;
     private final ToastPresentation toastPresentation;
 
-    public ModelAndView listReports(final AdminReportsSearchForm search, final BindingResult errors) {
+    public ModelAndView listReports(final AdminReportsSearchForm search, final PageModel<Report> reportPage) {
         final ModelAndView mav = new ModelAndView("admin-reports", "adminReportsSearch", search);
-        if (errors.hasErrors()) {
-            mav.addAllObjects(errors.getModel());
-            mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
-            mav.addObject("reportPage", new PageModel<Report>(List.of(), 1, 12, 0));
-            mav.addObject("reportDatesById", Map.of());
-            return mav;
-        }
-
-        final int page = search.getPage() == null ? 1 : search.getPage();
-        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
-        final String sortBy =
-                search.getSortBy() == null || search.getSortBy().isBlank() ? "newest" : search.getSortBy();
-        final SearchResult<Report> result = reportService.searchReports(page, pageSize, sortBy);
-        final PageModel<Report> reportPage =
-                new PageModel<>(result.getPageElements(), page, pageSize, (int) result.getTotalCount());
         mav.addObject("reportPage", reportPage);
         mav.addObject("reportDatesById", formatReportDates(reportPage.getContent()));
         return mav;
     }
 
-    public ModelAndView dismissReport(
-            final int reportId, final AdminReportsSearchForm search, final RedirectAttributes redirectAttributes) {
-        reportService.dismissReport(reportId);
+    public ModelAndView listReportsErrors(final AdminReportsSearchForm search, final BindingResult errors) {
+        final ModelAndView mav = new ModelAndView("admin-reports", "adminReportsSearch", search);
+        mav.addAllObjects(errors.getModel());
+        mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
+        mav.addObject("reportPage", new PageModel<Report>(List.of(), 1, 12, 0));
+        mav.addObject("reportDatesById", Map.of());
+        return mav;
+    }
+
+    public ModelAndView dismissReportResult(
+            final AdminReportsSearchForm search, final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, MESSAGE_PREFIX + ".dismiss.success");
         return redirectToList(search);
     }
 
-    public ModelAndView deletePublicationForReport(
-            final int reportId, final AdminReportsSearchForm search, final RedirectAttributes redirectAttributes) {
-        reportService.deletePublicationForReport(reportId);
+    public ModelAndView deletePublicationForReportResult(
+            final AdminReportsSearchForm search, final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, MESSAGE_PREFIX + ".deletePublication.success");
         return redirectToList(search);
     }

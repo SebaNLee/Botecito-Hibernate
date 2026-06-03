@@ -4,7 +4,6 @@ import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.SelectorsService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.MyBoatsSearchForm;
 import java.util.LinkedHashMap;
@@ -26,7 +25,6 @@ public class MyBoatsPresentation {
 
     private final ItemService itemService;
     private final ToastPresentation toastPresentation;
-    private final SelectorsService selectorsService;
 
     public ModelAndView myBoatsList(
             final BotecitoUserDetails principal, final HttpServletRequest request, final MyBoatsSearchForm search) {
@@ -37,7 +35,7 @@ public class MyBoatsPresentation {
                 principal.getId(),
                 search.getSearchQuery(),
                 search.getStatus(),
-                search.getLocation(),
+                null,
                 page,
                 pageSize,
                 search.getSortBy());
@@ -45,7 +43,6 @@ public class MyBoatsPresentation {
 
         final ModelAndView mav = new ModelAndView("my-boats", "myBoatsSearch", search);
         addListingModelObjects(mav, search, ownedItems, result.getTotalCount(), request);
-        mav.addObject("locationOptions", selectorsService.getLocationOptions());
         return mav;
     }
 
@@ -62,7 +59,6 @@ public class MyBoatsPresentation {
         mav.addObject("imageUrlsByItemId", new LinkedHashMap<>());
         mav.addObject("itemPage", new PageModel<>(ownedItems, 1, 12, 0));
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
-        mav.addObject("locationOptions", selectorsService.getLocationOptions());
         return mav;
     }
 

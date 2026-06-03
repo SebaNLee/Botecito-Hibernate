@@ -16,9 +16,6 @@ public class MyBoatsActionsPresentation {
 
     public ModelAndView disablePublication(
             final BotecitoUserDetails principal, final int itemId, final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
 
         manageItemService.setEnabled(itemId, principal.getId(), false);
         ToastSupport.success(redirectAttributes, "settings.publications.disabled");
@@ -27,9 +24,6 @@ public class MyBoatsActionsPresentation {
 
     public ModelAndView enablePublication(
             final BotecitoUserDetails principal, final int itemId, final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
 
         manageItemService.setEnabled(itemId, principal.getId(), true);
         ToastSupport.success(redirectAttributes, "settings.publications.enabled");
@@ -38,9 +32,6 @@ public class MyBoatsActionsPresentation {
 
     public ModelAndView hardDeletePublication(
             final BotecitoUserDetails principal, final int itemId, final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
 
         manageItemService.deleteItem(itemId, principal.getId());
         ToastSupport.success(redirectAttributes, "settings.publications.deleted");

@@ -95,10 +95,6 @@ public class DetailPresentation {
             final PreBookingForm form,
             final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
-        if (viewer == null) {
-            ToastSupport.error(redirectAttributes, MESSAGE_PREFIX + ".preBooking.loginRequired");
-            return new ModelAndView("redirect:/login");
-        }
 
         bookingService.createBooking(
                 itemId, form.getDate(), form.getStartTime(), form.getEndTime(), form.getMessage(), viewer.getId());

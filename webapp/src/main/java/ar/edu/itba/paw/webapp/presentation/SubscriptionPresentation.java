@@ -19,9 +19,6 @@ public class SubscriptionPresentation {
             final int subscribedToId,
             final String returnPath,
             final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
         if (!subscriptionService.subscribe(principal.getId(), subscribedToId)) {
             ToastSupport.error(redirectAttributes, "subscription.self.error");
             return redirect(returnPath);
@@ -35,9 +32,6 @@ public class SubscriptionPresentation {
             final int subscribedToId,
             final String returnPath,
             final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
         if (!subscriptionService.unsubscribe(principal.getId(), subscribedToId)) {
             ToastSupport.error(redirectAttributes, "subscription.self.error");
             return redirect(returnPath);

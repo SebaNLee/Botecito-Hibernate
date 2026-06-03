@@ -52,9 +52,6 @@ public class AvailabilityPresentation {
             final String returnParam,
             final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
         final String backPath = resolveBackPath(request, returnParam);
         final SelfBookingData model =
                 bookingInterface.getSelfBlocks(itemId, principal.getId(), parseRequestedDate(requestedDate));
@@ -68,9 +65,6 @@ public class AvailabilityPresentation {
             final SaveSelfBlocksForm form,
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
         final String backPath = sanitizeReturnPath(returnParam);
         if (errors.hasErrors()) {
             final SelfBookingData model = bookingInterface.getSelfBlocks(itemId, principal.getId(), form.getDate());

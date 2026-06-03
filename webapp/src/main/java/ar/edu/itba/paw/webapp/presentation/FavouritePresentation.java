@@ -30,9 +30,6 @@ public class FavouritePresentation {
 
     public ModelAndView favourites(
             final BotecitoUserDetails principal, final HttpServletRequest request, final FavouritesSearchForm search) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
         final int page = search.getPage() == null ? 1 : search.getPage();
         final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
         final PageModel<Item> itemPage = favouriteService.listFavourites(
@@ -47,9 +44,6 @@ public class FavouritePresentation {
             final HttpServletRequest request,
             final FavouritesSearchForm search,
             final BindingResult errors) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
         final ModelAndView mav = new ModelAndView(VIEW_NAME, "favouritesSearch", search);
         mav.addAllObjects(errors.getModel());
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
@@ -74,9 +68,6 @@ public class FavouritePresentation {
             final int itemId,
             final String returnPath,
             final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
         if (!favouriteService.addFavourite(principal.getId(), itemId)) {
             ToastSupport.error(redirectAttributes, "favourite.add.error");
             return redirect(returnPath);
@@ -90,9 +81,6 @@ public class FavouritePresentation {
             final int itemId,
             final String returnPath,
             final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
         favouriteService.removeFavourite(principal.getId(), itemId);
         ToastSupport.info(redirectAttributes, "favourite.removed");
         return redirect(returnPath);

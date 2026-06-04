@@ -18,12 +18,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class UserServiceImplTest {
 
     private static final int USER_ID = 1;
-    private static final String EMAIL = "test@test.com";
-    private static final String PASSWORD = "password123";
+    private static final String EMAIL = "botecito.dev@gmail.com";
+    private static final String PASSWORD = "password";
     private static final String HASH = "hashedPassword";
-    private static final String FIRST_NAME = "John";
-    private static final String LAST_NAME = "Doe";
-    private static final String TOKEN = "recovery-token";
+    private static final String FIRST_NAME = "Botecito";
+    private static final String LAST_NAME = "Dev";
+    private static final String TOKEN = "recoveryToken";
 
     @Mock
     private UserDao userDao;
@@ -66,7 +66,7 @@ public class UserServiceImplTest {
         when(passwordEncoder.encode(PASSWORD)).thenReturn(HASH);
         when(userDao.createUser(any())).thenReturn(new Users());
 
-        assertDoesNotThrow(() -> userService.register(FIRST_NAME, LAST_NAME, EMAIL, null, "ES", PASSWORD));
+        assertDoesNotThrow(() -> userService.register(FIRST_NAME, LAST_NAME, EMAIL, null, "es", PASSWORD));
     }
 
     @Test
@@ -78,7 +78,7 @@ public class UserServiceImplTest {
 
         assertThrows(
                 EmailAlreadyExistsException.class,
-                () -> userService.register(FIRST_NAME, LAST_NAME, EMAIL, null, "ES", PASSWORD));
+                () -> userService.register(FIRST_NAME, LAST_NAME, EMAIL, null, "es", PASSWORD));
     }
 
     @Test
@@ -90,7 +90,7 @@ public class UserServiceImplTest {
         when(userDao.findById(USER_ID)).thenReturn(Optional.of(user));
         when(userDao.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
-        Optional<Users> result = userService.updateProfile(USER_ID, FIRST_NAME, LAST_NAME, EMAIL, null, null, "ES");
+        Optional<Users> result = userService.updateProfile(USER_ID, FIRST_NAME, LAST_NAME, EMAIL, null, null, "es");
 
         assertTrue(result.isPresent());
     }

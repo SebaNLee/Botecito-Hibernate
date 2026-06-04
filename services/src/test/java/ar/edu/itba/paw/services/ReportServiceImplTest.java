@@ -113,7 +113,7 @@ public class ReportServiceImplTest {
     private static Users sender() {
         Users user = new Users();
         user.setId(SENDER_ID);
-        user.setEmail("sender@test.com");
+        user.setEmail("botecito.dev@gmail.com");
         user.setFirstName("Sender");
         user.setLastName("Test");
         return user;

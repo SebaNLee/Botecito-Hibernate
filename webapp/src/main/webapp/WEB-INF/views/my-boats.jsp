@@ -22,18 +22,19 @@
 <spring:message code="page.title.myBoats" var="titleMyBoats" />
 <spring:message code="landing.hero.search" var="searchLabel" />
 <spring:message code="myBoats.search.placeholder" var="searchPlaceholder" />
-<spring:message code="myBoats.sort.newest" var="sortNewestLabel" />
-<spring:message code="myBoats.sort.oldest" var="sortOldestLabel" />
 <spring:message code="myBoats.sort.nameAsc" var="sortNameAscLabel" />
 <spring:message code="myBoats.sort.nameDesc" var="sortNameDescLabel" />
+<spring:message code="myBoats.filter.status.placeholder" var="statusFilterLabel" />
+<spring:message code="myBoats.filter.status.any" var="statusAnyLabel" />
 <spring:message code="myBoats.filter.status.active" var="statusActiveLabel" />
 <spring:message code="myBoats.filter.status.inactive" var="statusInactiveLabel" />
-<spring:message code="myBoats.filter.location.placeholder" var="locationPlaceholder" />
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
+<spring:message code="marketplace.sort.label" var="sortLabel" />
+<spring:message code="myBoats.pageSize" var="pageSizeFieldLabel" />
 <spring:message code="myBoats.filter.empty" var="filterEmptyLabel" />
 <c:set var="pageSize" value="${myBoatsSearch.pageSize != null ? myBoatsSearch.pageSize : 12}" />
 <c:set var="currentSortBy" value="${empty myBoatsSearch.sortBy ? 'newest' : myBoatsSearch.sortBy}" />
-<c:set var="hasActiveFilters" value="${not empty myBoatsSearch.searchQuery or not empty myBoatsSearch.status or not empty myBoatsSearch.location}" />
+<c:set var="hasActiveFilters" value="${not empty myBoatsSearch.searchQuery or not empty myBoatsSearch.status}" />
 
 <c:url var="clearFiltersUrl" value="/my-boats">
   <c:if test="${currentSortBy != 'newest'}">
@@ -51,7 +52,6 @@
     <c:param name="pageSize" value="${pageSize}" />
     <c:if test="${not empty myBoatsSearch.searchQuery}"><c:param name="searchQuery" value="${myBoatsSearch.searchQuery}" /></c:if>
     <c:if test="${not empty myBoatsSearch.status}"><c:param name="status" value="${myBoatsSearch.status}" /></c:if>
-    <c:if test="${not empty myBoatsSearch.location}"><c:param name="location" value="${myBoatsSearch.location}" /></c:if>
   </c:url>
   <c:url var="nextPageUrl" value="/my-boats">
     <c:param name="page" value="${itemPage.nextPage}" />
@@ -59,7 +59,6 @@
     <c:param name="pageSize" value="${pageSize}" />
     <c:if test="${not empty myBoatsSearch.searchQuery}"><c:param name="searchQuery" value="${myBoatsSearch.searchQuery}" /></c:if>
     <c:if test="${not empty myBoatsSearch.status}"><c:param name="status" value="${myBoatsSearch.status}" /></c:if>
-    <c:if test="${not empty myBoatsSearch.location}"><c:param name="location" value="${myBoatsSearch.location}" /></c:if>
   </c:url>
 </c:if>
 
@@ -83,40 +82,50 @@
 
     <form id="my-boats-filters-form" action="${myBoatsUrl}" method="get" class="w-full">
       <input type="hidden" name="page" value="1" />
-      <div class="flex items-center justify-between gap-2 text-sm font-medium text-on-surface-variant">
-        <div class="max-w-sm">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-4">
+        <div class="min-w-0 w-full flex-1">
           <paw:searchBar
               formId="my-boats-filters-form"
               name="searchQuery"
               value="${fn:escapeXml(myBoatsSearch.searchQuery)}"
               placeholder="${searchPlaceholder}"
               ariaLabel="${searchLabel}"
+              inputId="my-boats-search-query"
               maxlength="100"
-              size="sm" />
+              size="lg" />
         </div>
-
-        <div class="flex items-center gap-2">
-        <select id="my-boats-location" name="location" class="select select-xs w-28 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
-          <option value="" disabled selected hidden><c:out value="${locationPlaceholder}" /></option>
-          <c:forEach var="loc" items="${locationOptions}">
-            <option value="${loc.slug}" ${myBoatsSearch.location == loc.slug ? 'selected="selected"' : ''}><c:out value="${loc.name}" /></option>
-          </c:forEach>
-        </select>
-
-        <select id="my-boats-status" name="status" class="select select-xs w-24 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
-          <option value="" disabled selected hidden><spring:message code="myBoats.filter.status.placeholder" /></option>
+        <div class="flex shrink-0 flex-wrap items-center gap-2 text-sm font-medium text-on-surface-variant lg:flex-nowrap lg:justify-end">
+        <label for="my-boats-status" class="shrink-0 whitespace-nowrap"><c:out value="${statusFilterLabel}" /></label>
+        <select
+            id="my-boats-status"
+            name="status"
+            class="select select-sm w-28 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none"
+            onchange="this.form.requestSubmit()">
+          <option value="" ${empty myBoatsSearch.status ? 'selected="selected"' : ''}><c:out value="${statusAnyLabel}" /></option>
           <option value="ACTIVE" ${myBoatsSearch.status == 'ACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusActiveLabel}" /></option>
           <option value="INACTIVE" ${myBoatsSearch.status == 'INACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusInactiveLabel}" /></option>
         </select>
-
-        <select id="my-boats-sort" name="sortBy" class="select select-xs w-28 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
-          <option value="newest" ${empty myBoatsSearch.sortBy || myBoatsSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><c:out value="${sortNewestLabel}" /></option>
-          <option value="oldest" ${myBoatsSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><c:out value="${sortOldestLabel}" /></option>
+        <label for="my-boats-sort" class="shrink-0 whitespace-nowrap ml-2"><c:out value="${sortLabel}" /></label>
+        <select
+            id="my-boats-sort"
+            name="sortBy"
+            class="select select-sm w-32 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none sm:w-36"
+            onchange="this.form.requestSubmit()">
+          <option value="newest" ${empty myBoatsSearch.sortBy || myBoatsSearch.sortBy == 'newest' ? 'selected="selected"' : ''}>
+            <spring:message code="marketplace.sort.newest" />
+          </option>
+          <option value="oldest" ${myBoatsSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}>
+            <spring:message code="marketplace.sort.oldest" />
+          </option>
           <option value="nameAsc" ${myBoatsSearch.sortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
           <option value="nameDesc" ${myBoatsSearch.sortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
         </select>
-
-        <select id="my-boats-page-size" name="pageSize" class="select select-xs w-16 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
+        <label for="my-boats-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
+        <select
+            id="my-boats-page-size"
+            name="pageSize"
+            class="select select-sm w-20 font-bold text-primary"
+            onchange="this.form.requestSubmit()">
           <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
           <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
           <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
@@ -238,18 +247,23 @@
           </div>
         </c:when>
         <c:otherwise>
-          <div class="mx-1 rounded-xl bg-base-200 px-4 py-6 text-center sm:mx-3">
-            <c:choose>
-              <c:when test="${hasActiveFilters}">
-                <p class="m-0 text-sm text-on-surface-variant"><c:out value="${filterEmptyLabel}" /></p>
-                <a href="${clearFiltersUrl}" class="btn btn-outline btn-sm mt-4 no-underline">
-                  <c:out value="${filtersClearLabel}" />
-                </a>
-              </c:when>
-              <c:otherwise>
-                <p class="m-0 text-sm text-on-surface-variant"><spring:message code="settings.publications.empty" /></p>
-              </c:otherwise>
-            </c:choose>
+          <div class="card bg-base-100 shadow-sm">
+            <div class="card-body items-center gap-4 p-10 text-center">
+              <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <span class="material-symbols-outlined text-4xl" aria-hidden="true">sailing</span>
+              </div>
+              <c:choose>
+                <c:when test="${hasActiveFilters}">
+                  <p class="m-0 max-w-lg text-on-surface-variant"><c:out value="${filterEmptyLabel}" /></p>
+                  <a href="${clearFiltersUrl}" class="btn btn-primary btn-sm no-underline">
+                    <c:out value="${filtersClearLabel}" />
+                  </a>
+                </c:when>
+                <c:otherwise>
+                  <p class="m-0 max-w-lg text-on-surface-variant"><spring:message code="settings.publications.empty" /></p>
+                </c:otherwise>
+              </c:choose>
+            </div>
           </div>
         </c:otherwise>
       </c:choose>

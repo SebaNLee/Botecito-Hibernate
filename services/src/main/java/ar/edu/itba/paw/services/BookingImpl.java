@@ -20,6 +20,7 @@ import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.models.exceptions.IllegalBookingOperationException;
 import ar.edu.itba.paw.models.exceptions.InvalidBookingStatusException;
 import ar.edu.itba.paw.models.exceptions.InvalidDateFormatException;
+import ar.edu.itba.paw.models.exceptions.InvalidPaymentProofException;
 import ar.edu.itba.paw.models.exceptions.InvalidSlotException;
 import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
 import ar.edu.itba.paw.models.exceptions.NoAnticipationException;
@@ -310,6 +311,7 @@ public class BookingImpl implements BookingService {
             final byte[] fileData,
             final String guestMsg,
             final int callerId) {
+        requirePaymentProofFile(fileData);
         Booking booking = findById(bookingId);
         updateStatus(booking, callerId, false, BookingStatusEnum.PAID);
         final LocalDateTime now = currentDateTime();
@@ -339,6 +341,7 @@ public class BookingImpl implements BookingService {
             final byte[] fileData,
             final String guestMsg,
             final int callerId) {
+        requirePaymentProofFile(fileData);
         PaymentProof payment = findById(bookingId).getPaymentProof();
 
         if (payment == null) {
@@ -562,5 +565,11 @@ public class BookingImpl implements BookingService {
             cursor = cursor.plusDays(1);
         }
         return dates;
+    }
+
+    private static void requirePaymentProofFile(final byte[] fileData) {
+        if (fileData == null || fileData.length == 0) {
+            throw new InvalidPaymentProofException();
+        }
     }
 }

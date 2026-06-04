@@ -54,6 +54,7 @@ public class Report {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    // TODO: See if it can be removed if we use the Item title from the item entity
     @Transient
     private String itemTitle;
 }

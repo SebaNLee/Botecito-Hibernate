@@ -1,8 +1,11 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.services.PublishService;
+import ar.edu.itba.paw.services.SelectorsService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import ar.edu.itba.paw.webapp.presentation.PublishPresentation;
+import ar.edu.itba.paw.webapp.presentation.PublishWizardMapping;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,6 +22,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class PublishController {
 
+    private final PublishService publishService;
+    private final SelectorsService selectorsService;
     private final PublishPresentation publishPresentation;
 
     @ModelAttribute("publishForm")
@@ -28,7 +33,7 @@ public class PublishController {
 
     @ModelAttribute("difficultyOptions")
     public Map<String, String> difficultyOptions() {
-        return publishPresentation.buildDifficultyOptions();
+        return selectorsService.getDifficultyOptions();
     }
 
     @ModelAttribute("maxGalleryImages")
@@ -74,6 +79,22 @@ public class PublishController {
                     final PublishBoatForm form,
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
-        return publishPresentation.publishStepThreeSubmit(user, form, errors, redirectAttributes);
+        final ModelAndView errorView = publishPresentation.publishStepThreeSubmit(form, errors);
+        if (errorView != null) {
+            return errorView;
+        }
+        publishService.create(
+                user.getId(),
+                form.getItemTypeId(),
+                form.getTitle().trim(),
+                form.getDescription() == null ? "" : form.getDescription().trim(),
+                form.getPricePerHour(),
+                form.getCapacity(),
+                form.getWeight(),
+                form.getDifficulty(),
+                form.getLocationOptionId(),
+                PublishWizardMapping.toAvailabilityWindows(form),
+                PublishWizardMapping.toPublishImageUploads(form));
+        return publishPresentation.publishCreatedRedirect(redirectAttributes);
     }
 }

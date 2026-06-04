@@ -33,9 +33,6 @@ public class ReviewController {
             @RequestParam(value = "returnTo", required = false, defaultValue = "outgoing") final String returnTo,
             @RequestParam(value = "itemId", required = false) final Integer itemId,
             final RedirectAttributes redirectAttributes) {
-        if (user == null) {
-            return new ModelAndView("redirect:/login");
-        }
 
         if (errors.hasErrors()) {
             ToastSupport.error(redirectAttributes, "settings.reviews.validationError");

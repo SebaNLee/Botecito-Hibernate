@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.services.SubscriptionService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.presentation.SubscriptionPresentation;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class SubscriptionController {
 
+    private final SubscriptionService subscriptionService;
     private final SubscriptionPresentation subscriptionPresentation;
 
     @RequestMapping(value = "/users/{id:[1-9]\\d*}/subscribe", method = RequestMethod.POST)
@@ -24,7 +26,8 @@ public class SubscriptionController {
             @PathVariable("id") final int subscribedToId,
             @RequestParam(value = "return", required = false) final String returnPath,
             final RedirectAttributes redirectAttributes) {
-        return subscriptionPresentation.subscribe(user, subscribedToId, returnPath, redirectAttributes);
+        final boolean success = subscriptionService.subscribe(user.getId(), subscribedToId);
+        return subscriptionPresentation.subscribeResult(success, returnPath, redirectAttributes);
     }
 
     @RequestMapping(value = "/users/{id:[1-9]\\d*}/unsubscribe", method = RequestMethod.POST)
@@ -33,6 +36,7 @@ public class SubscriptionController {
             @PathVariable("id") final int subscribedToId,
             @RequestParam(value = "return", required = false) final String returnPath,
             final RedirectAttributes redirectAttributes) {
-        return subscriptionPresentation.unsubscribe(user, subscribedToId, returnPath, redirectAttributes);
+        final boolean success = subscriptionService.unsubscribe(user.getId(), subscribedToId);
+        return subscriptionPresentation.unsubscribeResult(success, returnPath, redirectAttributes);
     }
 }

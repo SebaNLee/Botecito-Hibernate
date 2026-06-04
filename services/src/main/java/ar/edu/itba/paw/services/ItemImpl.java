@@ -26,12 +26,11 @@ public class ItemImpl implements ItemService {
     @Override
     @Transactional(readOnly = true)
     public SearchResult<Item> listOwnerItems(
-            int ownerId, String searchQuery, String status, String location, int page, int pageSize, String sortBy) {
+            int ownerId, String searchQuery, String status, int page, int pageSize, String sortBy) {
         final MyBoatsQueryModel query = MyBoatsQueryModel.builder()
                 .ownerId(ownerId)
                 .searchQuery(searchQuery)
                 .status(status)
-                .locationSlug(location)
                 .page(page)
                 .pageSize(pageSize)
                 .sortBy(sortBy)

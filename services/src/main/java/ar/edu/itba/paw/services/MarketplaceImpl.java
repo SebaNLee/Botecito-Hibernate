@@ -19,6 +19,7 @@ public final class MarketplaceImpl implements MarketplaceService {
 
     @Override
     @Transactional(readOnly = true)
+    // TODO: See if we can remove the SearchResult and use the PageModel directly
     public SearchResult<Item> searchMarketplace(
             final String searchQuery,
             final LocalDate date,

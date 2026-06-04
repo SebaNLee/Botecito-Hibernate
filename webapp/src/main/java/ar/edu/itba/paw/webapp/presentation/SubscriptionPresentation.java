@@ -1,7 +1,5 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.services.SubscriptionService;
-import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -12,17 +10,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class SubscriptionPresentation {
 
-    private final SubscriptionService subscriptionService;
-
-    public ModelAndView subscribe(
-            final BotecitoUserDetails principal,
-            final int subscribedToId,
-            final String returnPath,
-            final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        if (!subscriptionService.subscribe(principal.getId(), subscribedToId)) {
+    public ModelAndView subscribeResult(
+            final boolean success, final String returnPath, final RedirectAttributes redirectAttributes) {
+        if (!success) {
             ToastSupport.error(redirectAttributes, "subscription.self.error");
             return redirect(returnPath);
         }
@@ -30,15 +20,9 @@ public class SubscriptionPresentation {
         return redirect(returnPath);
     }
 
-    public ModelAndView unsubscribe(
-            final BotecitoUserDetails principal,
-            final int subscribedToId,
-            final String returnPath,
-            final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        if (!subscriptionService.unsubscribe(principal.getId(), subscribedToId)) {
+    public ModelAndView unsubscribeResult(
+            final boolean success, final String returnPath, final RedirectAttributes redirectAttributes) {
+        if (!success) {
             ToastSupport.error(redirectAttributes, "subscription.self.error");
             return redirect(returnPath);
         }

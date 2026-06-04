@@ -48,7 +48,7 @@ public class ReportServiceImplTest {
         when(userService.findById(SENDER_ID)).thenReturn(Optional.of(sender()));
         when(reportDao.hasReported(SENDER_ID, ITEM_ID)).thenReturn(false);
 
-        reportService.createReport(ITEM_ID, SENDER_ID, ReportEnum.SPAM, "test desc");
+        assertDoesNotThrow(() -> reportService.createReport(ITEM_ID, SENDER_ID, ReportEnum.SPAM, "test desc"));
     }
 
     @Test
@@ -90,7 +90,14 @@ public class ReportServiceImplTest {
         Report report = Report.builder().id(REPORT_ID).item(item).sender(sender).build();
         when(reportDao.findById(REPORT_ID)).thenReturn(Optional.of(report));
 
-        reportService.dismissReport(REPORT_ID);
+        assertDoesNotThrow(() -> reportService.dismissReport(REPORT_ID));
+    }
+
+    @Test
+    public void dismissReportThrowsWhenNotFound() {
+        when(reportDao.findById(REPORT_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ReportNotFoundException.class, () -> reportService.dismissReport(REPORT_ID));
     }
 
     private static Item activeItem(final int hostId) {

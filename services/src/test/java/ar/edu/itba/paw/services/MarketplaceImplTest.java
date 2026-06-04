@@ -25,7 +25,7 @@ public class MarketplaceImplTest {
     @Test
     public void searchMarketplaceReturnsItems() {
         Item item = Item.builder().id(1).build();
-        SearchResult<Item> expected = new SearchResult<>(List.of(item), 10L);
+        SearchResult<Item> expected = new SearchResult<>(List.of(item), 10);
         when(marketplaceDao.searchMarketplace(any())).thenReturn(expected);
 
         SearchResult<Item> result = marketplaceService.searchMarketplace(
@@ -34,7 +34,6 @@ public class MarketplaceImplTest {
         assertNotNull(result);
         assertEquals(1, result.getPageElements().size());
         assertSame(item, result.getPageElements().get(0));
-        assertEquals(10L, result.getTotalCount());
-        verify(marketplaceDao).searchMarketplace(any());
+        assertEquals(10, result.getTotalCount());
     }
 }

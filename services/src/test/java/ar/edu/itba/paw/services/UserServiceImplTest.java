@@ -66,7 +66,7 @@ public class UserServiceImplTest {
         when(passwordEncoder.encode(PASSWORD)).thenReturn(HASH);
         when(userDao.createUser(any())).thenReturn(new Users());
 
-        userService.register(FIRST_NAME, LAST_NAME, EMAIL, null, "ES", PASSWORD);
+        assertDoesNotThrow(() -> userService.register(FIRST_NAME, LAST_NAME, EMAIL, null, "ES", PASSWORD));
     }
 
     @Test

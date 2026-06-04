@@ -50,7 +50,8 @@ public class BookingImplTest {
         when(itemService.findItemById(ITEM_ID)).thenReturn(activeItem());
         when(bookingDao.canInsertBooking(any(), any())).thenReturn(true);
 
-        bookingService.createBooking(ITEM_ID, DATE, LocalTime.of(10, 0), LocalTime.of(12, 0), "msg", GUEST_ID);
+        assertDoesNotThrow(
+                () -> bookingService.createBooking(ITEM_ID, DATE, LocalTime.of(10, 0), LocalTime.of(12, 0), "msg", GUEST_ID));
     }
 
     @Test
@@ -64,10 +65,21 @@ public class BookingImplTest {
     }
 
     @Test
+    public void testCreateThrowsOnCollision() {
+        when(userService.findById(GUEST_ID)).thenReturn(Optional.of(user(GUEST_ID)));
+        when(itemService.findItemById(ITEM_ID)).thenReturn(activeItem());
+        when(bookingDao.canInsertBooking(any(), any())).thenReturn(false);
+
+        assertThrows(
+                BookingCollisionException.class,
+                () -> bookingService.createBooking(ITEM_ID, DATE, LocalTime.of(10, 0), LocalTime.of(12, 0), "msg", GUEST_ID));
+    }
+
+    @Test
     public void testAccept() {
         when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking(BookingStatusEnum.PENDING)));
 
-        bookingService.acceptBooking(BOOKING_ID, OWNER_ID);
+        assertDoesNotThrow(() -> bookingService.acceptBooking(BOOKING_ID, OWNER_ID));
     }
 
     @Test
@@ -82,14 +94,33 @@ public class BookingImplTest {
     public void testReject() {
         when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking(BookingStatusEnum.PENDING)));
 
-        bookingService.rejectBooking(BOOKING_ID, OWNER_ID);
+        assertDoesNotThrow(() -> bookingService.rejectBooking(BOOKING_ID, OWNER_ID));
+    }
+
+    @Test
+    public void testRejectThrowsWhenNotOwner() {
+        when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking(BookingStatusEnum.PENDING)));
+
+        assertThrows(
+                IllegalBookingOperationException.class,
+                () -> bookingService.rejectBooking(BOOKING_ID, OTHER_USER_ID));
     }
 
     @Test
     public void testSubmitPayment() {
         when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking(BookingStatusEnum.ACCEPTED)));
 
-        bookingService.submitPayment(BOOKING_ID, "file.pdf", "application/pdf", new byte[] {1}, null, GUEST_ID);
+        assertDoesNotThrow(
+                () -> bookingService.submitPayment(BOOKING_ID, "file.pdf", "application/pdf", new byte[] {1}, null, GUEST_ID));
+    }
+
+    @Test
+    public void testSubmitPaymentThrowsWhenNotGuest() {
+        when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking(BookingStatusEnum.ACCEPTED)));
+
+        assertThrows(
+                IllegalBookingOperationException.class,
+                () -> bookingService.submitPayment(BOOKING_ID, "file.pdf", "application/pdf", new byte[] {1}, null, OTHER_USER_ID));
     }
 
     @Test
@@ -109,7 +140,16 @@ public class BookingImplTest {
     public void testConfirmPayment() {
         when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking(BookingStatusEnum.PAID)));
 
-        bookingService.confirmPayment(BOOKING_ID, OWNER_ID);
+        assertDoesNotThrow(() -> bookingService.confirmPayment(BOOKING_ID, OWNER_ID));
+    }
+
+    @Test
+    public void testConfirmPaymentThrowsWhenNotOwner() {
+        when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking(BookingStatusEnum.PAID)));
+
+        assertThrows(
+                IllegalBookingOperationException.class,
+                () -> bookingService.confirmPayment(BOOKING_ID, OTHER_USER_ID));
     }
 
     @Test
@@ -118,14 +158,34 @@ public class BookingImplTest {
         b.setPaymentProof(new PaymentProof());
         when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(b));
 
-        bookingService.rejectPayment(BOOKING_ID, OWNER_ID, "bad proof");
+        assertDoesNotThrow(() -> bookingService.rejectPayment(BOOKING_ID, OWNER_ID, "bad proof"));
+    }
+
+    @Test
+    public void testRejectPaymentThrowsWhenNotOwner() {
+        var b = booking(BookingStatusEnum.PAID);
+        b.setPaymentProof(new PaymentProof());
+        when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(b));
+
+        assertThrows(
+                IllegalBookingOperationException.class,
+                () -> bookingService.rejectPayment(BOOKING_ID, OTHER_USER_ID, "bad proof"));
     }
 
     @Test
     public void testCancel() {
         when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking(BookingStatusEnum.PENDING)));
 
-        bookingService.cancelBooking(BOOKING_ID, GUEST_ID);
+        assertDoesNotThrow(() -> bookingService.cancelBooking(BOOKING_ID, GUEST_ID));
+    }
+
+    @Test
+    public void testCancelThrowsWhenNotGuest() {
+        when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking(BookingStatusEnum.PENDING)));
+
+        assertThrows(
+                IllegalBookingOperationException.class,
+                () -> bookingService.cancelBooking(BOOKING_ID, OTHER_USER_ID));
     }
 
     private static Users user(int id) {

@@ -45,7 +45,7 @@ public class PublishServiceImplTest {
         when(publishDao.persistVersion(any()))
                 .thenReturn(Version.builder().id(1).item(item).build());
 
-        publishService.create(
+        assertDoesNotThrow(() -> publishService.create(
                 OWNER_ID,
                 TYPE_ID,
                 TITLE,
@@ -56,7 +56,7 @@ public class PublishServiceImplTest {
                 DIFFICULTY,
                 LOCATION_ID,
                 List.of(),
-                List.of());
+                List.of()));
     }
 
     @Test

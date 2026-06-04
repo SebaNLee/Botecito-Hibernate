@@ -152,6 +152,7 @@
                       </button>
                       <paw:confirmModal id="${dismissModalId}" title="${dismissConfirmTitle}" message="${dismissConfirmMessage}" confirmText="${dismissConfirmConfirmLabel}" cancelText="${cancelLabel}" confirmColor="primary" icon="flag">
                         <form action="<c:url value='/admin/reports/${report.id}/dismiss' />" method="post" class="m-0">
+                          <paw:csrfInput />
                           <input type="hidden" name="page" value="${reportPage.page}" />
                           <input type="hidden" name="pageSize" value="${pageSize}" />
                           <input type="hidden" name="sortBy" value="${currentSortBy}" />
@@ -162,6 +163,7 @@
                       </paw:confirmModal>
                       <paw:confirmModal id="${deletePublicationModalId}" title="${deletePublicationConfirmTitle}" message="${deletePublicationConfirmMessage}" confirmText="${deletePublicationConfirmConfirmLabel}" cancelText="${cancelLabel}" icon="delete">
                         <form action="<c:url value='/admin/reports/${report.id}/delete-publication' />" method="post" class="m-0">
+                          <paw:csrfInput />
                           <input type="hidden" name="page" value="${reportPage.page}" />
                           <input type="hidden" name="pageSize" value="${pageSize}" />
                           <input type="hidden" name="sortBy" value="${currentSortBy}" />

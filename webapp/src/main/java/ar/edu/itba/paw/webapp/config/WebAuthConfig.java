@@ -27,8 +27,11 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
+import org.springframework.security.web.context.DelegatingSecurityContextRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
 import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -54,22 +57,35 @@ public class WebAuthConfig {
         return authConfig.getAuthenticationManager();
     }
 
+    /**
+     * Shared between the form-login filter and the programmatic login performed after email
+     * verification, so both persist the {@link org.springframework.security.core.context.SecurityContext}
+     * the same way under the explicit-save model.
+     */
+    @Bean
+    public SecurityContextRepository securityContextRepository() {
+        return new DelegatingSecurityContextRepository(
+                new HttpSessionSecurityContextRepository(), new RequestAttributeSecurityContextRepository());
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(
             final HttpSecurity http,
             final UserAccountDetailsService userDetailsAccountService,
-            final AuthenticationSuccessHandler authenticationSuccessHandler,
+            final SecurityContextRepository securityContextRepository,
             final AuthenticatedUserExistsFilter authenticatedUserExistsFilter)
             throws Exception {
         http.userDetailsService(userDetailsAccountService)
                 .addFilterAfter(authenticatedUserExistsFilter, RememberMeAuthenticationFilter.class)
+                .securityContext(context -> context.securityContextRepository(securityContextRepository))
                 .sessionManagement(session -> session.invalidSessionUrl(LOGIN_PATH))
                 .authorizeHttpRequests(this::configureAuthorization)
-                .formLogin(form -> configureFormLogin(form, authenticationSuccessHandler))
+                .formLogin(WebAuthConfig::configureFormLogin)
                 .rememberMe(remember -> configureRememberMe(remember, userDetailsAccountService))
                 .logout(logout -> logout.logoutUrl(LOGOUT_PATH).logoutSuccessUrl(LOGIN_PATH + "?logout=true"))
                 .exceptionHandling(ex -> ex.accessDeniedHandler(WebAuthConfig::handleAccessDenied))
-                .csrf(csrf -> csrf.disable())
+                // CSRF stays enabled (Spring default). Plain <form> posts include the token via the
+                // csrfInput tag; <form:form> tags inject it through CsrfRequestDataValueProcessor.
                 // payment-proof needs SAMEORIGIN for redering PDF in modal iframes
                 .headers(headers -> headers.frameOptions(frame -> frame.deny())
                         .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
@@ -124,13 +140,13 @@ public class WebAuthConfig {
         };
     }
 
-    private static void configureFormLogin(
-            final FormLoginConfigurer<HttpSecurity> form,
-            final AuthenticationSuccessHandler authenticationSuccessHandler) {
+    private static void configureFormLogin(final FormLoginConfigurer<HttpSecurity> form) {
         form.usernameParameter("j_username")
                 .passwordParameter("j_password")
-                .successHandler(authenticationSuccessHandler)
                 .loginPage(LOGIN_PATH)
+                // Falls back to "/" only when there is no saved request; Spring's RequestCache
+                // returns users to the protected page they were bounced from.
+                .defaultSuccessUrl("/")
                 .failureHandler(WebAuthConfig::handleLoginFailure);
     }
 

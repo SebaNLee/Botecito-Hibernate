@@ -16,6 +16,7 @@
 <paw:detailsModal id="${modalId}" title="${reportFormTitle}">
   <jsp:body>
     <form action="<c:url value='/item/${itemId}/report' />" method="post" class="space-y-4">
+      <paw:csrfInput />
       <c:if test="${not empty returnPath}">
         <input type="hidden" name="returnTo" value="${returnPath}" />
       </c:if>

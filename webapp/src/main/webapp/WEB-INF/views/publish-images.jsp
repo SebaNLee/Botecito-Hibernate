@@ -5,7 +5,11 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="stepTwoUrl" value="/publish/availability" />
-<c:url var="stepThreeUrl" value="/publish/images" />
+<%-- Multipart form: CSRF token must travel in the query string because the CsrfFilter runs
+     before the multipart body is parsed (multipart is parsed at the DispatcherServlet). --%>
+<c:url var="stepThreeUrl" value="/publish/images">
+  <c:param name="${_csrf.parameterName}" value="${_csrf.token}" />
+</c:url>
 <spring:message code="publish.actions.submit" var="publishSubmitLabel" />
 <spring:message code="publish.back.imagesLost" var="publishBackImagesLostMsg" />
 <spring:bind path="publishForm.files">

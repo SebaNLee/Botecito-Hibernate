@@ -156,6 +156,7 @@
             <c:if test="${pendingItemReviewAction != null}">
               <c:url var="createItemReviewUrl" value="/reviews/booking/${pendingItemReviewAction.bookingId}" />
               <form action="${createItemReviewUrl}" method="post" class="rounded-2xl bg-base-200 p-4 space-y-3">
+                <paw:csrfInput />
                 <input type="hidden" name="returnTo" value="item" />
                 <input type="hidden" name="itemId" value="${item.id}" />
                 <h3 class="m-0 text-sm font-bold text-on-surface"><c:out value="${itemReviewLeaveLabel}" /></h3>
@@ -250,9 +251,7 @@
               <div class="shrink-0 pt-1">
                 <c:choose>
                   <c:when test="${viewer == null}">
-                    <c:url var="favouriteLoginUrl" value="/login">
-                      <c:param name="next" value="/item/${item.id}" />
-                    </c:url>
+                    <c:url var="favouriteLoginUrl" value="/login" />
                     <a href="${favouriteLoginUrl}"
                        class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 text-primary hover:bg-base-100"
                        aria-label="${favouriteLoginToAddLabel}"
@@ -263,6 +262,7 @@
                   <c:when test="${favouriteItem}">
                     <c:url var="unfavouriteItemUrl" value="/items/${item.id}/unfavourite" />
                     <form action="${unfavouriteItemUrl}" method="post" class="m-0">
+                      <paw:csrfInput />
                       <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
                       <button
                           type="submit"
@@ -276,6 +276,7 @@
                   <c:otherwise>
                     <c:url var="favouriteItemUrl" value="/items/${item.id}/favourite" />
                     <form action="${favouriteItemUrl}" method="post" class="m-0">
+                      <paw:csrfInput />
                       <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
                       <button
                           type="submit"
@@ -530,6 +531,7 @@
                   <c:when test="${subscribedToOwner}">
                     <c:url var="unsubscribeOwnerUrl" value="/users/${itemOwner.id}/unsubscribe" />
                     <form action="${unsubscribeOwnerUrl}" method="post" class="m-0">
+                      <paw:csrfInput />
                       <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
                       <paw:button
                         type="submit"
@@ -543,6 +545,7 @@
                   <c:otherwise>
                     <c:url var="subscribeOwnerUrl" value="/users/${itemOwner.id}/subscribe" />
                     <form action="${subscribeOwnerUrl}" method="post" class="m-0">
+                      <paw:csrfInput />
                       <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
                       <paw:button
                         type="submit"

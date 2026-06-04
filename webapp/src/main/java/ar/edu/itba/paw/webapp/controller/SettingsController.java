@@ -9,6 +9,7 @@ import ar.edu.itba.paw.webapp.auth.SecurityContextRefresher;
 import ar.edu.itba.paw.webapp.form.SettingsForm;
 import ar.edu.itba.paw.webapp.presentation.SettingsPresentation;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -55,7 +56,8 @@ public class SettingsController {
             final BindingResult errors,
             @RequestParam(value = "subscriptionsPage", defaultValue = "1") final int subscriptionsPage,
             @RequestParam(value = "subscriptionsPageSize", defaultValue = "6") final int subscriptionsPageSize,
-            final HttpServletRequest request) {
+            final HttpServletRequest request,
+            final HttpServletResponse response) {
         request.getSession().removeAttribute("userLocale");
 
         final Users currentUser = userService.findById(user.getId()).orElseThrow();
@@ -82,7 +84,7 @@ public class SettingsController {
         }
 
         if (!updatedUser.getEmail().equalsIgnoreCase(currentUser.getEmail())) {
-            securityContextRefresher.refreshPrincipal(updatedUser.getEmail());
+            securityContextRefresher.refreshPrincipal(updatedUser.getEmail(), request, response);
         }
         if (updatedUser.getVerified() == null || !updatedUser.getVerified()) {
             return settingsPresentation.settingsVerificationSentRedirect();

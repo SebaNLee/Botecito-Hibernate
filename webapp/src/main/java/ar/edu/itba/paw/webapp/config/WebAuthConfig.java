@@ -3,6 +3,7 @@ package ar.edu.itba.paw.webapp.config;
 import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
 
 import ar.edu.itba.paw.webapp.auth.AuthenticatedUserExistsFilter;
+import ar.edu.itba.paw.webapp.auth.CookieClearingRememberMeServices;
 import ar.edu.itba.paw.webapp.auth.UserAccountDetailsService;
 import java.io.IOException;
 import java.util.Properties;
@@ -29,6 +30,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.RememberMeServices;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 import org.springframework.security.web.context.DelegatingSecurityContextRepository;
@@ -48,6 +50,7 @@ public class WebAuthConfig {
     private static final String LOGOUT_PATH = "/logout";
     private static final String ERRORS_PATH = "/errors";
     private static final String REMEMBER_ME_KEY_PROPERTY = "rememberMe.key";
+    private static final String REMEMBER_ME_PARAMETER = "j_rememberme";
     private static final int REMEMBER_ME_VALIDITY_SECONDS = (int) TimeUnit.DAYS.toSeconds(30);
 
     @Bean
@@ -164,10 +167,12 @@ public class WebAuthConfig {
         // Spring Security 5.8's remember-me DSL still defaults the signature to MD5 for backward
         // compatibility, so build the services explicitly to sign with SHA-256 (the algorithm name
         // is embedded in the cookie, so old MD5 cookies could still be matched if ever needed).
-        final TokenBasedRememberMeServices rememberMeServices = new TokenBasedRememberMeServices(
+        final TokenBasedRememberMeServices tokenServices = new TokenBasedRememberMeServices(
                 rememberMeKey, userDetailsService, TokenBasedRememberMeServices.RememberMeTokenAlgorithm.SHA256);
-        rememberMeServices.setParameter("j_rememberme");
-        rememberMeServices.setTokenValiditySeconds(REMEMBER_ME_VALIDITY_SECONDS);
+        tokenServices.setParameter(REMEMBER_ME_PARAMETER);
+        tokenServices.setTokenValiditySeconds(REMEMBER_ME_VALIDITY_SECONDS);
+        final RememberMeServices rememberMeServices =
+                new CookieClearingRememberMeServices(tokenServices, REMEMBER_ME_PARAMETER);
         remember.rememberMeServices(rememberMeServices).key(rememberMeKey);
     }
 

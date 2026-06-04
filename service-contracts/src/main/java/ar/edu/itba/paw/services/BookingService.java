@@ -26,6 +26,8 @@ public interface BookingService {
             Integer pageSize,
             String sortBy);
 
+    Booking findById(int bookingId);
+
     List<Booking> getUpcomingBookings(Item item);
 
     void acceptBooking(int bookingId, int callerId);

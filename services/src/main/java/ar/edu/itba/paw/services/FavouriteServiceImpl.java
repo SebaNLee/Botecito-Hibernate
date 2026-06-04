@@ -6,7 +6,6 @@ import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.persistence.FavouriteDao;
-import ar.edu.itba.paw.persistence.ItemDao;
 import java.util.Collection;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -20,12 +19,12 @@ public class FavouriteServiceImpl implements FavouriteService {
     private static final int DEFAULT_PAGE_SIZE = 12;
 
     private final FavouriteDao favouriteDao;
-    private final ItemDao itemDao;
+    private final ItemService itemService;
 
     @Override
     @Transactional
     public boolean addFavourite(final int userId, final int itemId) {
-        final Item item = itemDao.findItemById(itemId).orElse(null);
+        final Item item = itemService.findItemById(itemId);
         if (!canFavourite(userId, item)) {
             return false;
         }

@@ -283,7 +283,9 @@ public class BookingImpl implements BookingService {
         updateStatus(booking, callerId, asHost, newStatus, true);
     }
 
-    private Booking findById(int bookingId) {
+    @Override
+    @Transactional(readOnly = true)
+    public Booking findById(int bookingId) {
         return bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
     }
 

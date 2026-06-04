@@ -574,4 +574,22 @@ public class BookingImpl implements BookingService {
             throw new InvalidPaymentProofException();
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean itemHasBookings(final Item item) {
+        return bookingDao.itemHasBookings(item);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean itemHasBookings(final int itemId) {
+        return itemHasBookings(itemService.findItemById(itemId));
+    }
+
+    @Override
+    @Transactional
+    public void deleteAllSelfBlocks(final Item item) {
+        bookingDao.deleteAllSelfBlocks(item);
+    }
 }

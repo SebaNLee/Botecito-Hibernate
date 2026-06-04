@@ -86,4 +86,10 @@ public class ItemImpl implements ItemService {
 
         return version;
     }
+
+    @Override
+    @Transactional
+    public void forceDeleteItem(Item item) {
+        itemDao.deleteItem(item);
+    }
 }

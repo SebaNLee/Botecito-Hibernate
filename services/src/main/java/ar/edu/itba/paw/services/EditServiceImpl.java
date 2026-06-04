@@ -33,6 +33,7 @@ public class EditServiceImpl implements EditService {
     private final EditDao editDao;
     private final PublishDao publishDao;
     private final ItemService itemService;
+    private final BookingService bookingService;
 
     @Override
     @Transactional
@@ -68,7 +69,7 @@ public class EditServiceImpl implements EditService {
             return false;
         }
 
-        if (editDao.itemHasBookings(itemId)) {
+        if (bookingService.itemHasBookings(itemId)) {
             createNewVersion(
                     current,
                     typeId,

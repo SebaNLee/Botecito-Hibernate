@@ -2,10 +2,7 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
-import ar.edu.itba.paw.persistence.BookingDao;
-import ar.edu.itba.paw.persistence.EditDao;
 import ar.edu.itba.paw.persistence.ManageItemDao;
-import ar.edu.itba.paw.persistence.ReportDao;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,16 +13,15 @@ public class ManageItemServiceImpl implements ManageItemService {
 
     private final ManageItemDao manageItemDao;
     private final ItemService itemService;
-    private final EditDao editDao;
-    private final BookingDao bookingDao;
-    private final ReportDao reportDao;
+    private final BookingService bookingService;
+    private final ReportService reportService;
 
     @Override
     @Transactional
     public void deleteItem(final int itemId, final int ownerId) {
         final Item item = itemService.requireOwnedItem(itemId, ownerId);
         deleteItemInternal(item);
-        reportDao.deleteAllByItemId(itemId);
+        reportService.deleteAllByItemId(itemId);
     }
 
     @Override
@@ -43,24 +39,24 @@ public class ManageItemServiceImpl implements ManageItemService {
     }
 
     private void deleteItemInternal(final Item item) {
-        bookingDao.deleteAllSelfBlocks(item);
+        bookingService.deleteAllSelfBlocks(item);
 
         if (manageItemDao.countVersionsByItemId(item.getId()) > 1) {
             applySoftDelete(item);
             return;
         }
 
-        if (editDao.itemHasBookings(item.getId())) {
+        if (bookingService.itemHasBookings(item)) {
             applySoftDelete(item);
         } else {
-            manageItemDao.deleteItem(item);
+            itemService.forceDeleteItem(item);
         }
     }
 
     private void applySoftDelete(final Item item) {
         item.setStatus(ItemStatusEnum.DELETED);
-        if (!editDao.itemHasBookings(item.getId())) {
-            manageItemDao.findLatestVersionIdByItemId(item.getId()).ifPresent(manageItemDao::deleteVersion);
+        if (!bookingService.itemHasBookings(item)) {
+            manageItemDao.deleteVersion(item.getLatestVersion().getId());
         }
     }
 }

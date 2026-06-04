@@ -23,4 +23,6 @@ public interface ItemService {
 
     // Rellena todos los datos que puede necesitar una version
     Version requireOwnedFullData(int itemId, int userId);
+
+    void forceDeleteItem(Item item);
 }

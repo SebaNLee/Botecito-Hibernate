@@ -13,4 +13,6 @@ public interface ItemDao {
     Optional<Item> findItemById(int id);
 
     Optional<Image> findImageById(int id);
+
+    void deleteItem(Item item);
 }

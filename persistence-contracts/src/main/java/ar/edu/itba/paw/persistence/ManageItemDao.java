@@ -9,8 +9,6 @@ public interface ManageItemDao {
 
     int countVersionsByItemId(int itemId);
 
-    void deleteItem(Item item);
-
     Optional<Integer> findLatestVersionIdByItemId(int itemId);
 
     void deleteVersion(int versionId);

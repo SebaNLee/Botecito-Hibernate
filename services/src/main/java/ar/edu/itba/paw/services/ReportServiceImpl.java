@@ -26,7 +26,6 @@ public class ReportServiceImpl implements ReportService {
     private final ReportDao reportDao;
     private final ItemService itemService;
     private final UserService userService;
-    private final ManageItemService manageItemService;
     private final MailService mailService;
 
     @Override
@@ -109,7 +108,13 @@ public class ReportServiceImpl implements ReportService {
         }
 
         reportDao.deleteAllByItemId(item.getId());
-        manageItemService.deleteItemAsAdmin(item.getId());
+        itemService.forceDeleteItem(item);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAllByItemId(int itemId) {
+        reportDao.deleteAllByItemId(itemId);
     }
 
     private void notifyReporters(final Report originalReport, final Consumer<Report> notifyAction) {

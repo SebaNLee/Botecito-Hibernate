@@ -33,11 +33,6 @@ public class ManageItemJpaDao implements ManageItemDao {
     }
 
     @Override
-    public void deleteItem(final Item item) {
-        entityManager.remove(item);
-    }
-
-    @Override
     public Optional<Integer> findLatestVersionIdByItemId(final int itemId) {
         @SuppressWarnings("unchecked")
         final List<Number> ids = entityManager

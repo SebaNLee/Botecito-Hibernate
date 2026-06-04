@@ -168,4 +168,9 @@ public class ItemJpaDao implements ItemDao {
     public Optional<Image> findImageById(int id) {
         return Optional.ofNullable(em.find(Image.class, id));
     }
+
+    @Override
+    public void deleteItem(final Item item) {
+        em.remove(item);
+    }
 }

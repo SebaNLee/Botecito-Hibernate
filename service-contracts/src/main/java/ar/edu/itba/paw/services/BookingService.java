@@ -61,6 +61,12 @@ public interface BookingService {
             List<SelfBlockUpdate> updates,
             List<SelfBlockCreate> creates);
 
+    boolean itemHasBookings(Item item);
+
+    boolean itemHasBookings(int itemId);
+
+    void deleteAllSelfBlocks(Item item);
+
     // cron job
     void bookingResolutionRoutine();
 }

@@ -29,8 +29,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         if (subscriberId == subscribedToId) {
             return false;
         }
-        subscriptionDao.delete(subscriberId, subscribedToId);
-        return true;
+        return subscriptionDao.delete(subscriberId, subscribedToId);
     }
 
     @Override

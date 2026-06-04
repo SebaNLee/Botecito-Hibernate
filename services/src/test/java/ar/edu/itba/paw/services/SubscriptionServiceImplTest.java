@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.services;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import ar.edu.itba.paw.models.entity.Users;
@@ -33,13 +32,29 @@ public class SubscriptionServiceImplTest {
     }
 
     @Test
+    public void testSubscribeAlreadySubscribed() {
+        when(subscriptionDao.create(USER_ID, OTHER_USER_ID)).thenReturn(false);
+
+        assertFalse(subscriptionService.subscribe(USER_ID, OTHER_USER_ID));
+    }
+
+    @Test
     public void testSubscribeSelf() {
         assertFalse(subscriptionService.subscribe(USER_ID, USER_ID));
     }
 
     @Test
     public void testUnsubscribe() {
+        when(subscriptionDao.delete(USER_ID, OTHER_USER_ID)).thenReturn(true);
+
         assertTrue(subscriptionService.unsubscribe(USER_ID, OTHER_USER_ID));
+    }
+
+    @Test
+    public void testUnsubscribeNotSubscribed() {
+        when(subscriptionDao.delete(USER_ID, OTHER_USER_ID)).thenReturn(false);
+
+        assertFalse(subscriptionService.unsubscribe(USER_ID, OTHER_USER_ID));
     }
 
     @Test

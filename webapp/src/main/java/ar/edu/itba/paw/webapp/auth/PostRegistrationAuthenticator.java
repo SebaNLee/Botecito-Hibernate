@@ -16,11 +16,8 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Component;
 
 /**
- * Logs in a user after they verify their email, without a password being submitted. Mirrors the
- * success sequence of {@link org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter}:
- * notify the {@link SessionAuthenticationStrategy}, set and persist the {@code SecurityContext}
- * through the shared {@link SecurityContextRepository}, and publish an
- * {@link InteractiveAuthenticationSuccessEvent}.
+ * Logs in a user after email verification (no password submitted), mirroring the success sequence of
+ * {@link org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter}.
  */
 @Component
 @RequiredArgsConstructor

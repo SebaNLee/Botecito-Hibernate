@@ -234,8 +234,7 @@
               <c:url var="incomingConfirmPaymentUrl" value="/requests/incoming/${b.id}/confirm-payment" />
               <c:url var="incomingRejectPaymentUrl" value="/requests/incoming/${b.id}/reject-payment" />
               <c:url var="outgoingCancelUrl" value="/requests/outgoing/${b.id}/cancel" />
-              <%-- Multipart form: CSRF token must travel in the query string because the
-                   CsrfFilter runs before the multipart body is parsed. --%>
+              <%-- CSRF in query string: CsrfFilter runs before multipart parsing. --%>
               <c:url var="outgoingPaymentUrl" value="/requests/outgoing/${b.id}/payment">
                 <c:param name="${_csrf.parameterName}" value="${_csrf.token}" />
               </c:url>

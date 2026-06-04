@@ -5,11 +5,13 @@ import static org.springframework.security.web.util.matcher.AntPathRequestMatche
 import ar.edu.itba.paw.webapp.auth.AuthenticatedUserExistsFilter;
 import ar.edu.itba.paw.webapp.auth.UserAccountDetailsService;
 import java.io.IOException;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -28,6 +30,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
+import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 import org.springframework.security.web.context.DelegatingSecurityContextRepository;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
@@ -44,7 +47,7 @@ public class WebAuthConfig {
     private static final String REGISTER_PATH = "/register";
     private static final String LOGOUT_PATH = "/logout";
     private static final String ERRORS_PATH = "/errors";
-    private static final String REMEMBER_ME_KEY = "botecito-remember-me-secret";
+    private static final String REMEMBER_ME_KEY_PROPERTY = "rememberMe.key";
     private static final int REMEMBER_ME_VALIDITY_SECONDS = (int) TimeUnit.DAYS.toSeconds(30);
 
     @Bean
@@ -73,20 +76,24 @@ public class WebAuthConfig {
             final HttpSecurity http,
             final UserAccountDetailsService userDetailsAccountService,
             final SecurityContextRepository securityContextRepository,
-            final AuthenticatedUserExistsFilter authenticatedUserExistsFilter)
+            final AuthenticatedUserExistsFilter authenticatedUserExistsFilter,
+            @Qualifier("credentialsProperties") final Properties credentialsProperties)
             throws Exception {
+        final String rememberMeKey = requireRememberMeKey(credentialsProperties);
         http.userDetailsService(userDetailsAccountService)
                 .addFilterAfter(authenticatedUserExistsFilter, RememberMeAuthenticationFilter.class)
                 .securityContext(context -> context.securityContextRepository(securityContextRepository))
                 .sessionManagement(session -> session.invalidSessionUrl(LOGIN_PATH))
                 .authorizeHttpRequests(this::configureAuthorization)
                 .formLogin(WebAuthConfig::configureFormLogin)
-                .rememberMe(remember -> configureRememberMe(remember, userDetailsAccountService))
-                .logout(logout -> logout.logoutUrl(LOGOUT_PATH).logoutSuccessUrl(LOGIN_PATH + "?logout=true"))
+                .rememberMe(remember -> configureRememberMe(remember, userDetailsAccountService, rememberMeKey))
+                .logout(logout -> logout.logoutUrl(LOGOUT_PATH)
+                        .deleteCookies("JSESSIONID")
+                        .logoutSuccessUrl(LOGIN_PATH + "?logout=true"))
                 .exceptionHandling(ex -> ex.accessDeniedHandler(WebAuthConfig::handleAccessDenied))
                 // CSRF stays enabled (Spring default). Plain <form> posts include the token via the
                 // csrfInput tag; <form:form> tags inject it through CsrfRequestDataValueProcessor.
-                // payment-proof needs SAMEORIGIN for redering PDF in modal iframes
+                // payment-proof needs SAMEORIGIN for rendering PDF in modal iframes
                 .headers(headers -> headers.frameOptions(frame -> frame.deny())
                         .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
                                 antMatcher("/requests/bookings/*/payment-proof"),
@@ -151,11 +158,26 @@ public class WebAuthConfig {
     }
 
     private static void configureRememberMe(
-            final RememberMeConfigurer<HttpSecurity> remember, final UserAccountDetailsService userDetailsService) {
-        remember.rememberMeParameter("j_rememberme")
-                .userDetailsService(userDetailsService)
-                .key(REMEMBER_ME_KEY)
-                .tokenValiditySeconds(REMEMBER_ME_VALIDITY_SECONDS);
+            final RememberMeConfigurer<HttpSecurity> remember,
+            final UserAccountDetailsService userDetailsService,
+            final String rememberMeKey) {
+        // Spring Security 5.8's remember-me DSL still defaults the signature to MD5 for backward
+        // compatibility, so build the services explicitly to sign with SHA-256 (the algorithm name
+        // is embedded in the cookie, so old MD5 cookies could still be matched if ever needed).
+        final TokenBasedRememberMeServices rememberMeServices = new TokenBasedRememberMeServices(
+                rememberMeKey, userDetailsService, TokenBasedRememberMeServices.RememberMeTokenAlgorithm.SHA256);
+        rememberMeServices.setParameter("j_rememberme");
+        rememberMeServices.setTokenValiditySeconds(REMEMBER_ME_VALIDITY_SECONDS);
+        remember.rememberMeServices(rememberMeServices).key(rememberMeKey);
+    }
+
+    private static String requireRememberMeKey(final Properties credentialsProperties) {
+        final String key = credentialsProperties.getProperty(REMEMBER_ME_KEY_PROPERTY);
+        if (key == null || key.isBlank()) {
+            throw new IllegalStateException(
+                    "Missing or blank '" + REMEMBER_ME_KEY_PROPERTY + "' in credentials properties");
+        }
+        return key;
     }
 
     private static void handleLoginFailure(

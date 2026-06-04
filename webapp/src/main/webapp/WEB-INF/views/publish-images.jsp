@@ -5,8 +5,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="stepTwoUrl" value="/publish/availability" />
-<%-- Multipart form: CSRF token must travel in the query string because the CsrfFilter runs
-     before the multipart body is parsed (multipart is parsed at the DispatcherServlet). --%>
+<%-- CSRF in query string: CsrfFilter runs before multipart parsing. --%>
 <c:url var="stepThreeUrl" value="/publish/images">
   <c:param name="${_csrf.parameterName}" value="${_csrf.token}" />
 </c:url>

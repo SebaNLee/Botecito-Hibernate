@@ -4,11 +4,7 @@
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<c:url var="pageUrl" value="/my-boats/${item.id}/availability">
-  <c:if test="${not empty manageAvailabilityReturnPath}">
-    <c:param name="return" value="${manageAvailabilityReturnPath}" />
-  </c:if>
-</c:url>
+<c:url var="pageUrl" value="/my-boats/${item.id}/availability" />
 <c:url var="saveUrl" value="/my-boats/${item.id}/availability/save" />
 <c:url var="manageAvailabilityBackUrl" value="${manageAvailabilityBackPath}" />
 
@@ -163,9 +159,6 @@
                 </template>
 
                 <form action="${saveUrl}" method="post" data-timeline-save-form class="mt-6 flex justify-end">
-                  <c:if test="${not empty manageAvailabilityReturnPath}">
-                    <input type="hidden" name="return" value="<c:out value='${manageAvailabilityReturnPath}' />" />
-                  </c:if>
                   <input type="hidden" name="date" value="${selectedDate}" />
                   <div data-timeline-save-hidden-fields></div>
                   <paw:button

@@ -117,7 +117,7 @@
               <c:otherwise><spring:message code="favourites.empty.message" /></c:otherwise>
             </c:choose>
           </p>
-          <a href="${clearFiltersUrl}" class="btn btn-primary btn-sm no-underline">
+          <a href="${clearFiltersUrl}" data-clear-list-filters class="btn btn-primary btn-sm no-underline">
             <c:out value="${filtersClearLabel}" />
           </a>
         </div>
@@ -130,10 +130,9 @@
           <paw:listingCard
               item="${item}"
               coverSrc="${imageUrlsByItemId[item.id]}"
-              returnTo="${favouritesReturnPath}"
               favourite="${favouriteByItemId[item.id]}"
               canFavourite="${canFavouriteByItemId[item.id]}"
-              favouriteReturn="${favouritesReturnPath}" />
+              favouritesSearch="${favouritesSearch}" />
         </c:forEach>
       </div>
     </c:if>

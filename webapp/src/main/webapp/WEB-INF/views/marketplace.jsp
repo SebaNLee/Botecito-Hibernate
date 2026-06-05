@@ -30,6 +30,7 @@
 <spring:message code="landing.hero.search" var="searchLabel" />
 <spring:message code="marketplace.filters.apply" var="filtersApplyLabel" />
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
+<spring:message code="marketplace.field.pageSize" var="pageSizeFieldLabel" />
 <spring:message code="reviews.empty.short" var="reviewsEmptyShortLabel" />
 <c:set
     var="pageSize"
@@ -120,7 +121,7 @@
     <div class="space-y-6">
       <a href="${homeUrl}" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
         <span class="material-symbols-outlined">arrow_back</span>
-        <span><spring:message code="common.back" /></span>
+        <span><spring:message code="marketplace.back.home" /></span>
       </a>
 
       <paw:sectionCard element="aside" icon="tune">
@@ -272,7 +273,7 @@
           <option value="priceAsc" ${marketplaceSearch.sortBy == 'priceAsc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceAsc" /></option>
           <option value="priceDesc" ${marketplaceSearch.sortBy == 'priceDesc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceDesc" /></option>
         </select>
-        <label for="marketplace-page-size" class="shrink-0 ml-2">Páginas:</label>
+        <label for="marketplace-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
         <select id="marketplace-page-size" name="pageSize" class="select select-sm w-20 font-bold text-primary">
             <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
             <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
@@ -298,17 +299,11 @@
       </div>
     </c:if>
 
-    <c:set var="marketplaceReturnTo" value="/marketplace" />
-    <c:if test="${not empty pageContext.request.queryString}">
-      <c:set var="marketplaceReturnTo" value="/marketplace?${pageContext.request.queryString}" />
-    </c:if>
-
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <c:forEach items="${items}" var="item">
         <paw:listingCard
             item="${item}"
-            coverSrc="${imageUrlsByItemId[item.id]}"
-            returnTo="${marketplaceReturnTo}" />
+            coverSrc="${imageUrlsByItemId[item.id]}" />
       </c:forEach>
     </div>
 

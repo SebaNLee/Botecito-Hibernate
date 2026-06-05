@@ -541,7 +541,6 @@
     "pageSize",
     "page",
     "reviewPage",
-    "returnTo",
   ];
 
   function buildUrlWithFilters(baseUrl, state) {
@@ -578,8 +577,8 @@
     return url.toString();
   }
 
-  function buildMarketplaceReturnPath(state) {
-    const url = new URL("/marketplace", window.location.origin);
+  function buildItemDetailHref(baseHref, state) {
+    const url = new URL(baseHref, window.location.origin);
     const stored = readStoredFilters() || {};
     const preservedKeys = [
       "searchQuery",
@@ -592,6 +591,11 @@
       "sortBy",
       "pageSize",
     ];
+
+    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
+      url.searchParams.delete(key);
+    });
+
     preservedKeys.forEach((key) => {
       const value = stored[key];
       if (value != null && String(value).trim() !== "") {
@@ -605,28 +609,6 @@
       }
     });
 
-    const pageInput = document.querySelector(
-      '[data-marketplace-toolbar-form] input[name="page"]',
-    );
-    const pageValue =
-      pageInput?.value ||
-      new URLSearchParams(window.location.search).get("page") ||
-      "";
-    if (pageValue) {
-      url.searchParams.set("page", pageValue);
-    }
-
-    return url.pathname + url.search;
-  }
-
-  function buildItemDetailHref(baseHref, state) {
-    const url = new URL(baseHref, window.location.origin);
-
-    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
-      url.searchParams.delete(key);
-    });
-
-    url.searchParams.set("returnTo", buildMarketplaceReturnPath(state));
     return url.pathname + url.search;
   }
 
@@ -1630,6 +1612,14 @@
     const path = window.location.pathname;
     const isMarketplacePage = path.endsWith("/marketplace");
     const isItemPage = /\/item\/\d+$/.test(path);
+    const isLandingPage =
+      document.querySelector('[data-filter-form="landing"]') != null;
+    const isRequestsPage = /\/requests\/(outgoing|incoming)$/.test(path);
+
+    if (isMarketplacePage || isLandingPage || isRequestsPage) {
+      return;
+    }
+
     const storedState = readStoredFilters();
     const pageState = currentPickerState(controls);
 
@@ -1644,18 +1634,6 @@
         storedState.endTime,
       );
       syncPersistentFilters(currentPickerState(controls));
-
-      if (isMarketplacePage && storedState.date) {
-        const syncedUrl = buildUrlWithFilters(
-          window.location.href,
-          storedState,
-        );
-
-        if (syncedUrl !== window.location.href) {
-          window.location.replace(syncedUrl);
-          return;
-        }
-      }
     } else {
       syncPersistentFilters(pageState);
     }

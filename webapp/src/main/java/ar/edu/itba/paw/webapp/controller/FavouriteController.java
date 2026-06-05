@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.services.FavouriteService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.FavouritesSearchForm;
+import ar.edu.itba.paw.webapp.form.ItemDetailViewForm;
 import ar.edu.itba.paw.webapp.presentation.FavouritePresentation;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -52,23 +52,44 @@ public class FavouriteController {
         return favouritePresentation.favourites(request, search, itemPage);
     }
 
-    @RequestMapping(value = "/items/{id:[1-9]\\d*}/favourite", method = RequestMethod.POST)
-    public ModelAndView addFavourite(
+    @RequestMapping(value = "/favourites/items/{id:[1-9]\\d*}/favourite", method = RequestMethod.POST)
+    public ModelAndView addFavouriteFromFavourites(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
-            @RequestParam(value = "return", required = false) final String returnPath,
+            @ModelAttribute("favouritesSearch") final FavouritesSearchForm favouritesSearch,
             final RedirectAttributes redirectAttributes) {
         final boolean success = favouriteService.addFavourite(user.getId(), itemId);
-        return favouritePresentation.addFavouriteResult(success, returnPath, redirectAttributes);
+        return favouritePresentation.addFavouriteFromFavouritesResult(favouritesSearch, success, redirectAttributes);
+    }
+
+    @RequestMapping(value = "/favourites/items/{id:[1-9]\\d*}/unfavourite", method = RequestMethod.POST)
+    public ModelAndView removeFavouriteFromFavourites(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            @PathVariable("id") final int itemId,
+            @ModelAttribute("favouritesSearch") final FavouritesSearchForm favouritesSearch,
+            final RedirectAttributes redirectAttributes) {
+        favouriteService.removeFavourite(user.getId(), itemId);
+        return favouritePresentation.removeFavouriteFromFavouritesResult(favouritesSearch, redirectAttributes);
+    }
+
+    @RequestMapping(value = "/items/{id:[1-9]\\d*}/favourite", method = RequestMethod.POST)
+    public ModelAndView addFavouriteFromItemDetail(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            @PathVariable("id") final int itemId,
+            @ModelAttribute("itemDetailView") final ItemDetailViewForm itemDetailView,
+            final RedirectAttributes redirectAttributes) {
+        final boolean success = favouriteService.addFavourite(user.getId(), itemId);
+        return favouritePresentation.addFavouriteFromItemDetailResult(
+                itemDetailView, itemId, success, redirectAttributes);
     }
 
     @RequestMapping(value = "/items/{id:[1-9]\\d*}/unfavourite", method = RequestMethod.POST)
-    public ModelAndView removeFavourite(
+    public ModelAndView removeFavouriteFromItemDetail(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
-            @RequestParam(value = "return", required = false) final String returnPath,
+            @ModelAttribute("itemDetailView") final ItemDetailViewForm itemDetailView,
             final RedirectAttributes redirectAttributes) {
         favouriteService.removeFavourite(user.getId(), itemId);
-        return favouritePresentation.removeFavouriteResult(returnPath, redirectAttributes);
+        return favouritePresentation.removeFavouriteFromItemDetailResult(itemDetailView, itemId, redirectAttributes);
     }
 }

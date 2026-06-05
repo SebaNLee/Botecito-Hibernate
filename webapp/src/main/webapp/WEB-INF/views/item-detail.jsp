@@ -7,7 +7,9 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <fmt:setLocale value="es_AR" />
+<c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="publishUrl" value="/publish" />
+<spring:message code="detail.back.marketplace" var="detailBackMarketplaceLabel" />
 <spring:message code="itemDetail.unavailable.mismatchPrefix" var="unavailableMismatchPrefix" />
 <spring:message code="itemDetail.unavailable.mismatchSuffix" var="unavailableMismatchSuffix" />
 <spring:message code="common.and" var="andLabel" />
@@ -27,9 +29,6 @@
 <spring:message code="itemDetail.reviews.title" var="itemReviewsTitle" />
 <spring:message code="itemDetail.reviews.empty" var="itemReviewsEmpty" />
 <spring:message code="itemDetail.reviews.count" var="itemReviewsCountLabel" />
-<spring:message code="itemDetail.reviews.leave" var="itemReviewLeaveLabel" />
-<spring:message code="itemDetail.reviews.rating" var="itemReviewRatingLabel" />
-<spring:message code="itemDetail.reviews.comment" var="itemReviewCommentLabel" />
 <spring:message code="reviews.empty.short" var="reviewsEmptyShortLabel" />
 <spring:message code="itemDetail.description.empty" var="itemDescriptionEmptyLabel" />
 <spring:message code="detail.preBooking.subtitle" var="detailPreBookingSubtitle" />
@@ -64,9 +63,9 @@
 <paw:layout title="${titleItemDetail} - Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8" scripts="toast,search-filters,date-time,form-submit,pre-booking-draft,image-carousel,rating-stars">
   <paw:toastNotifier />
       <div class="w-full">
-        <a href="<c:out value="${marketplaceBackHref}" />" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
+        <a href="${marketplaceUrl}" data-detail-marketplace-back data-nav-filter-page="marketplace" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
           <span class="material-symbols-outlined">arrow_back</span>
-          <span><spring:message code="common.back" /></span>
+          <span><c:out value="${detailBackMarketplaceLabel}" /></span>
         </a>
       </div>
 
@@ -153,31 +152,6 @@
               </p>
             </div>
 
-            <c:if test="${pendingItemReviewAction != null}">
-              <c:url var="createItemReviewUrl" value="/reviews/booking/${pendingItemReviewAction.bookingId}" />
-              <form action="${createItemReviewUrl}" method="post" class="rounded-2xl bg-base-200 p-4 space-y-3">
-                <input type="hidden" name="returnTo" value="item" />
-                <input type="hidden" name="itemId" value="${item.id}" />
-                <h3 class="m-0 text-sm font-bold text-on-surface"><c:out value="${itemReviewLeaveLabel}" /></h3>
-                <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
-                  <label class="text-xs font-bold uppercase tracking-wider text-outline" for="item-review-rating"><c:out value="${itemReviewRatingLabel}" /></label>
-                  <div class="flex items-center gap-1" data-rating-stars>
-                    <input id="item-review-rating" type="hidden" name="rating" value="" data-rating-value />
-                    <c:forEach var="starIndex" begin="1" end="5">
-                      <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${itemReviewRatingLabel} ${starIndex}">
-                        <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
-                      </button>
-                    </c:forEach>
-                  </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
-                  <label class="text-xs font-bold uppercase tracking-wider text-outline pt-2" for="item-review-comment"><c:out value="${itemReviewCommentLabel}" /></label>
-                  <textarea id="item-review-comment" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
-                </div>
-                <paw:button type="submit" color="primary" size="sm" text="${itemReviewLeaveLabel}" />
-              </form>
-            </c:if>
-
             <c:choose>
               <c:when test="${not empty reviewPage.content}">
                 <div class="space-y-3">
@@ -195,15 +169,9 @@
               <div class="flex items-center justify-between gap-3 pt-2">
                 <c:url var="reviewPrevUrl" value="/item/${item.id}">
                   <c:param name="reviewPage" value="${reviewPage.previousPage}" />
-                  <c:if test="${not empty param.returnTo}">
-                    <c:param name="returnTo" value="${param.returnTo}" />
-                  </c:if>
                 </c:url>
                 <c:url var="reviewNextUrl" value="/item/${item.id}">
                   <c:param name="reviewPage" value="${reviewPage.nextPage}" />
-                  <c:if test="${not empty param.returnTo}">
-                    <c:param name="returnTo" value="${param.returnTo}" />
-                  </c:if>
                 </c:url>
                 <c:choose>
                   <c:when test="${reviewPage.hasPrevious}">
@@ -263,7 +231,7 @@
                   <c:when test="${favouriteItem}">
                     <c:url var="unfavouriteItemUrl" value="/items/${item.id}/unfavourite" />
                     <form action="${unfavouriteItemUrl}" method="post" class="m-0">
-                      <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                      <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
                       <button
                           type="submit"
                           class="btn btn-circle btn-sm shadow-sm bg-error border-error text-error-content hover:bg-error/90 hover:border-error"
@@ -276,7 +244,7 @@
                   <c:otherwise>
                     <c:url var="favouriteItemUrl" value="/items/${item.id}/favourite" />
                     <form action="${favouriteItemUrl}" method="post" class="m-0">
-                      <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                      <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
                       <button
                           type="submit"
                           class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 text-primary hover:bg-base-100"
@@ -307,7 +275,7 @@
               <span class="material-symbols-outlined text-base">flag</span>
               <c:out value="${itemDetailReportButtonLabel}" />
             </button>
-            <paw:reportModal itemId="${item.id}" modalId="${reportModalId}" returnPath="${detailReturnPath}" />
+            <paw:reportModal itemId="${item.id}" modalId="${reportModalId}" />
           </c:if>
           <c:if test="${alreadyReported}">
             <p class="m-0 text-sm text-on-surface-variant italic">
@@ -320,9 +288,7 @@
               <c:when test="${isOwner}">
                 <div class="space-y-4">
                   <paw:alertMessage type="info"><c:out value="${itemDetailOwnerNoticeLabel}" /></paw:alertMessage>
-                  <c:url var="manageAvailabilityUrl" value="/my-boats/${item.id}/availability">
-                    <c:param name="return" value="${detailReturnPath}" />
-                  </c:url>
+                  <c:url var="manageAvailabilityUrl" value="/my-boats/${item.id}/availability" />
                   <c:url var="incomingRequestsUrl" value="/requests/incoming" />
                   <paw:button
                       href="${manageAvailabilityUrl}"
@@ -386,9 +352,6 @@
                     </p>
                   </c:if>
                   <form:hidden path="versionId" />
-                  <c:if test="${not empty param.returnTo}">
-                    <input type="hidden" name="returnTo" value="<c:out value="${param.returnTo}" />" />
-                  </c:if>
                   <paw:datePicker
                       id="detail-prebook-date"
                       dateFieldName="date"
@@ -530,7 +493,7 @@
                   <c:when test="${subscribedToOwner}">
                     <c:url var="unsubscribeOwnerUrl" value="/users/${itemOwner.id}/unsubscribe" />
                     <form action="${unsubscribeOwnerUrl}" method="post" class="m-0">
-                      <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                      <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
                       <paw:button
                         type="submit"
                         color="outline"
@@ -543,7 +506,7 @@
                   <c:otherwise>
                     <c:url var="subscribeOwnerUrl" value="/users/${itemOwner.id}/subscribe" />
                     <form action="${subscribeOwnerUrl}" method="post" class="m-0">
-                      <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                      <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
                       <paw:button
                         type="submit"
                         color="secondary"
@@ -566,7 +529,7 @@
   <dialog
     class="modal"
     data-item-unavailable-alert
-    data-marketplace-url="<c:out value="${marketplaceBackHref}" />"
+    data-marketplace-url="${marketplaceUrl}"
     data-item-location-option-id="${version.location.id}"
     data-item-location-slug="${itemLocationSlug}"
     data-item-capacity="${version.capacity}"

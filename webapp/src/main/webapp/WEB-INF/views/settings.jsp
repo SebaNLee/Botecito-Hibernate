@@ -75,8 +75,15 @@
             <paw:alertMessage type="success"><spring:message code="settings.passwordRecovery.sent" /></paw:alertMessage>
           </c:if>
 
-          <form:form action="${settingsUrl}" method="post" modelAttribute="settingsForm" onsubmit="${not settingsEdit ? 'return false;' : 'return true;'}">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form:form action="${settingsUrl}" method="post" modelAttribute="settingsForm">
+            <c:choose>
+              <c:when test="${settingsEdit}">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              </c:when>
+              <c:otherwise>
+                <fieldset disabled class="grid grid-cols-1 md:grid-cols-2 gap-4 border-0 p-0 m-0 min-w-0">
+              </c:otherwise>
+            </c:choose>
               <paw:formField path="givenName" label="${givenNameLabel}" maxlength="100" required="${settingsEdit}" readonly="${not settingsEdit}" />
               <paw:formField path="lastName" label="${lastNameLabel}" maxlength="100" required="${settingsEdit}" readonly="${not settingsEdit}" />
               <paw:formField path="email" type="email" label="${emailLabel}" maxlength="150" required="${settingsEdit}" readonly="${not settingsEdit}" />
@@ -114,7 +121,10 @@
                   <paw:button type="submit" color="primary" icon="save" text="${settingsSaveLabel}" cssClass="shrink-0" />
                 </div>
               </c:if>
-            </div>
+            <c:choose>
+              <c:when test="${settingsEdit}"></div></c:when>
+              <c:otherwise></fieldset></c:otherwise>
+            </c:choose>
           </form:form>
 
           <div class="border-b border-outline-variant/20"></div>
@@ -153,9 +163,9 @@
                         </a>
                         <p class="m-0 mt-1 text-xs text-on-surface-variant break-all"><c:out value="${subscriptionUser.email}" /></p>
                       </div>
-                      <c:url var="unsubscribeSettingsUrl" value="/users/${subscriptionUser.id}/unsubscribe" />
+                      <c:url var="unsubscribeSettingsUrl" value="/settings/subscriptions/${subscriptionUser.id}/unsubscribe" />
                       <form action="${unsubscribeSettingsUrl}" method="post" class="m-0 shrink-0">
-                        <input type="hidden" name="return" value="/settings" />
+                        <paw:settingsViewHiddenFields view="${settingsView}" />
                         <paw:button type="submit" color="outline" icon="notifications_off" text="${subscriptionUnsubscribeLabel}" cssClass="w-full sm:w-auto" />
                       </form>
                     </div>

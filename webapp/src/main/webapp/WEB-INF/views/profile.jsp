@@ -18,10 +18,8 @@
 <spring:message code="marketplace.pagination.next" var="paginationNextLabel" />
 
 <c:url var="settingsUrl" value="/settings" />
-<c:url var="profileReturnTo" value="/profiles/${user.id}?tab=listings" />
 <c:url var="listingsTabUrl" value="/profiles/${user.id}"><c:param name="tab" value="listings" /></c:url>
 <c:url var="reviewsTabUrl" value="/profiles/${user.id}"><c:param name="tab" value="reviews" /></c:url>
-
 <c:set var="userFirstName" value="${user.firstName != null ? fn:trim(user.firstName) : ''}" />
 <c:set var="userLastName" value="${user.lastName != null ? fn:trim(user.lastName) : ''}" />
 <c:set var="hasFullName" value="${not empty userFirstName or not empty userLastName}" />
@@ -95,17 +93,17 @@
                             text="${editMyProfileLabel}" cssClass="w-full sm:w-auto" />
               </c:when>
               <c:when test="${isSubscribed}">
-                <c:url var="unsubscribeProfileUrl" value="/users/${user.id}/unsubscribe" />
+                <c:url var="unsubscribeProfileUrl" value="/profiles/${user.id}/unsubscribe" />
                 <form action="${unsubscribeProfileUrl}" method="post" class="m-0">
-                  <input type="hidden" name="return" value="/profiles/${user.id}" />
+                  <paw:profileViewHiddenFields view="${profileView}" />
                   <paw:button type="submit" color="outline" icon="notifications_off"
                               text="${subscriptionUnsubscribeLabel}" cssClass="w-full sm:w-auto" />
                 </form>
               </c:when>
               <c:otherwise>
-                <c:url var="subscribeProfileUrl" value="/users/${user.id}/subscribe" />
+                <c:url var="subscribeProfileUrl" value="/profiles/${user.id}/subscribe" />
                 <form action="${subscribeProfileUrl}" method="post" class="m-0">
-                  <input type="hidden" name="return" value="/profiles/${user.id}" />
+                  <paw:profileViewHiddenFields view="${profileView}" />
                   <paw:button type="submit" color="secondary" icon="notifications"
                               text="${subscriptionSubscribeLabel}" cssClass="w-full sm:w-auto" />
                 </form>
@@ -156,7 +154,7 @@
                 <c:otherwise>
                   <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     <c:forEach items="${listings}" var="item">
-                      <paw:listingCard item="${item}" coverSrc="${imageUrlsByItemId[item.id]}" returnTo="${profileReturnTo}" />
+                      <paw:listingCard item="${item}" coverSrc="${imageUrlsByItemId[item.id]}" />
                     </c:forEach>
                   </div>
                   <c:if test="${listingsPage.totalPages > 1}">

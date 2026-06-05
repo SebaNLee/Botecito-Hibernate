@@ -6,6 +6,7 @@
 <c:set var="resolvedBundles" value=",${bundles}," />
 
 <script src="<c:url value='/js/dismissible-alerts.js' />"></script>
+<script src="<c:url value='/js/nav-filters.js' />"></script>
 
 <c:if test="${fn:contains(resolvedBundles, ',toast,')}">
   <script src="<c:url value='/js/toast.js' />"></script>

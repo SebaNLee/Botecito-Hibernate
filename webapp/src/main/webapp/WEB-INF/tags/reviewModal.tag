@@ -1,10 +1,12 @@
 <%@ tag language="java" pageEncoding="UTF-8" body-content="scriptless" %>
 <%@ attribute name="bookingId" required="true" type="java.lang.Integer" rtexprvalue="true" %>
 <%@ attribute name="modalId" required="true" type="java.lang.String" rtexprvalue="true" %>
-<%@ attribute name="returnTo" required="true" type="java.lang.String" rtexprvalue="true" %>
+<%@ attribute name="listMode" required="true" type="java.lang.String" rtexprvalue="true" %>
 <%@ attribute name="targetType" required="false" type="java.lang.String" rtexprvalue="true" %>
 <%@ attribute name="existingReview" required="false" type="ar.edu.itba.paw.models.entity.Review" rtexprvalue="true" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 
@@ -35,7 +37,11 @@
           <c:if test="${not empty existingReview.comment}">
             <p class="m-0 text-sm text-on-surface-variant break-words whitespace-pre-line"><c:out value="${existingReview.comment}" /></p>
           </c:if>
-          <p class="m-0 text-xs text-outline"><c:out value="${existingReview.createdAt}" /></p>
+          <c:if test="${not empty existingReview.createdAt}">
+            <fmt:parseDate value="${fn:substring(existingReview.createdAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedReviewDate" />
+            <fmt:formatDate value="${parsedReviewDate}" pattern="dd/MM/yyyy" var="formattedReviewDate" />
+          </c:if>
+          <p class="m-0 text-xs text-outline"><c:out value="${formattedReviewDate}" /></p>
         </div>
       </jsp:body>
     </paw:detailsModal>
@@ -43,8 +49,9 @@
   <c:otherwise>
     <paw:detailsModal id="${modalId}" title="${reviewLeaveLabel}">
       <jsp:body>
-        <form action="<c:url value='/reviews/booking/${bookingId}' />" method="post" class="space-y-4">
-          <input type="hidden" name="returnTo" value="${returnTo}" />
+        <c:url var="reviewPostUrl" value="/requests/${listMode}/${bookingId}/review" />
+        <form action="${reviewPostUrl}" method="post" class="space-y-4">
+          <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
           <c:if test="${not empty targetType}">
             <input type="hidden" name="targetType" value="${targetType}" />
           </c:if>

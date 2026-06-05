@@ -56,6 +56,6 @@ public class DetailController {
         }
         bookingService.createBooking(
                 itemId, form.getDate(), form.getStartTime(), form.getEndTime(), form.getMessage(), user.getId());
-        return detailPresentation.submitPreBookingSuccess(itemId, request, redirectAttributes);
+        return detailPresentation.submitPreBookingSuccess(itemId, redirectAttributes);
     }
 }

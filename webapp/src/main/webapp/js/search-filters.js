@@ -109,6 +109,81 @@
     }
   }
 
+  /** Applied filters only (set on Apply or toolbar navigation). */
+  function readAppliedMarketplaceFilters() {
+    return readStoredState(APPLIED_FILTERS_KEY);
+  }
+
+  /** Active listing filters come from the URL; sidebar inputs may still hold an unapplied draft. */
+  function readAppliedMarketplaceSnapshot() {
+    const params = new URLSearchParams(window.location.search);
+    const state = FILTER_KEYS.reduce((acc, key) => {
+      acc[key] = params.get(key) || "";
+      return acc;
+    }, {});
+    MARKETPLACE_TOOLBAR_KEYS.forEach((key) => {
+      if (params.has(key)) {
+        state[key] = params.get(key) || "";
+      }
+    });
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
+    if (toolbarForm) {
+      const sortBy = toolbarForm.querySelector('[name="sortBy"]')?.value?.trim();
+      const pageSize = toolbarForm
+        .querySelector('[name="pageSize"]')
+        ?.value?.trim();
+      if (sortBy) {
+        state.sortBy = sortBy;
+      }
+      if (pageSize) {
+        state.pageSize = pageSize;
+      }
+    }
+    return normalizeState(state);
+  }
+
+  function pathAndSearchFromHref(href) {
+    const url = new URL(href, window.location.origin);
+    return url.pathname + url.search;
+  }
+
+  function isMarketplacePage() {
+    return window.location.pathname.endsWith("/marketplace");
+  }
+
+  function syncMarketplaceUrlFromStorageIfNeeded() {
+    if (!isMarketplacePage()) {
+      return false;
+    }
+
+    const urlSnapshot = readAppliedMarketplaceSnapshot();
+    if (
+      hasAnyFilter(urlSnapshot) ||
+      hasPersistableMarketplaceDraft(urlSnapshot)
+    ) {
+      writeStoredState(APPLIED_FILTERS_KEY, urlSnapshot);
+      writeStoredState(DRAFT_FILTERS_KEY, urlSnapshot);
+      return false;
+    }
+
+    const stored = readAppliedMarketplaceFilters();
+    if (!hasAnyFilter(stored) && !hasPersistableMarketplaceDraft(stored)) {
+      return false;
+    }
+
+    const target = buildUrlWithFilters(window.location.pathname, stored);
+    if (
+      pathAndSearchFromHref(window.location.href) !==
+      pathAndSearchFromHref(target)
+    ) {
+      window.location.replace(target);
+      return true;
+    }
+    return false;
+  }
+
   function writeStoredState(storageKey, state) {
     let merged = {};
     try {
@@ -149,7 +224,6 @@
     ...MARKETPLACE_TOOLBAR_KEYS,
     "page",
     "reviewPage",
-    "returnTo",
   ];
 
   function buildUrlWithFilters(baseUrl, state) {
@@ -178,9 +252,13 @@
     return url.toString();
   }
 
-  function buildMarketplaceReturnPath(state) {
-    const url = new URL("/marketplace", window.location.origin);
+  function buildItemDetailHref(baseHref, state) {
+    const url = new URL(baseHref, window.location.origin);
     const normalized = normalizeState(state);
+
+    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
+      url.searchParams.delete(key);
+    });
 
     FILTER_KEYS.forEach((key) => {
       if (normalized[key]) {
@@ -197,28 +275,6 @@
       }
     });
 
-    const pageInput = document.querySelector(
-      '[data-marketplace-toolbar-form] input[name="page"]',
-    );
-    const pageValue =
-      pageInput?.value ||
-      new URLSearchParams(window.location.search).get("page") ||
-      "";
-    if (pageValue) {
-      url.searchParams.set("page", pageValue);
-    }
-
-    return url.pathname + url.search;
-  }
-
-  function buildItemDetailHref(baseHref, state) {
-    const url = new URL(baseHref, window.location.origin);
-
-    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
-      url.searchParams.delete(key);
-    });
-
-    url.searchParams.set("returnTo", buildMarketplaceReturnPath(state));
     return url.pathname + url.search;
   }
 
@@ -362,7 +418,14 @@
   }
 
   function navigateMarketplaceToolbar(toolbarForm) {
-    const snapshot = readMarketplacePersistSnapshot();
+    const applied = readAppliedMarketplaceSnapshot();
+    const sortBy = toolbarForm.querySelector('[name="sortBy"]')?.value?.trim();
+    const pageSize = toolbarForm.querySelector('[name="pageSize"]')?.value?.trim();
+    const snapshot = normalizeState({
+      ...applied,
+      ...(sortBy ? { sortBy } : {}),
+      ...(pageSize ? { pageSize } : {}),
+    });
     writeStoredState(DRAFT_FILTERS_KEY, snapshot);
     writeStoredState(APPLIED_FILTERS_KEY, snapshot);
     reflectAppliedState(snapshot);
@@ -1233,48 +1296,84 @@
     });
   }
 
-  function initializeMarketplaceFilters() {
-    const toolbarForm = document.querySelector(
-      "[data-marketplace-toolbar-form]",
-    );
-    bindMarketplaceToolbarForm(toolbarForm);
+  function bindMarketplaceItemLinkPersistence() {
+    document
+      .querySelectorAll("[data-marketplace-item-link]")
+      .forEach((link) => {
+        link.addEventListener(
+          "click",
+          () => {
+            const applied = readAppliedMarketplaceSnapshot();
+            const baseHref =
+              link.dataset.baseHref || link.getAttribute("href") || "";
+            const nextHref = buildItemDetailHref(baseHref, applied);
+            if (link.getAttribute("href") !== nextHref) {
+              link.setAttribute("href", nextHref);
+            }
+          },
+          true,
+        );
+      });
+  }
 
+  function initializeItemDetailMarketplaceBack() {
+    const backLink = document.querySelector("[data-detail-marketplace-back]");
+    if (!backLink) {
+      return;
+    }
+
+    const state = readAppliedMarketplaceFilters();
+    if (!hasAnyFilter(state) && !hasPersistableMarketplaceDraft(state)) {
+      return;
+    }
+
+    const baseHref = backLink.getAttribute("href") || "/marketplace";
+    backLink.setAttribute("href", buildUrlWithFilters(baseHref, state));
+  }
+
+  function initializeMarketplaceFilters() {
     const form = document.querySelector('[data-filter-form="marketplace"]');
     if (!form) {
       return;
     }
+
+    if (syncMarketplaceUrlFromStorageIfNeeded()) {
+      return;
+    }
+
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
+    bindMarketplaceToolbarForm(toolbarForm);
     const resetControls = document.querySelectorAll(
       "[data-clear-marketplace-filters]",
     );
 
-    const snapshot = readMarketplacePersistSnapshot();
+    const appliedSnapshot = readAppliedMarketplaceSnapshot();
     const draftState = readStoredState(DRAFT_FILTERS_KEY);
 
-    if (hasAnyFilter(snapshot)) {
-      hydrateForm(form, snapshot);
-      writeStoredState(DRAFT_FILTERS_KEY, snapshot);
-      writeStoredState(APPLIED_FILTERS_KEY, snapshot);
-      reflectAppliedState(snapshot);
+    if (
+      hasAnyFilter(appliedSnapshot) ||
+      hasPersistableMarketplaceDraft(appliedSnapshot)
+    ) {
+      hydrateForm(form, appliedSnapshot);
+      writeStoredState(DRAFT_FILTERS_KEY, appliedSnapshot);
+      writeStoredState(APPLIED_FILTERS_KEY, appliedSnapshot);
+      reflectAppliedState(appliedSnapshot);
     } else if (hasPersistableMarketplaceDraft(draftState)) {
       if (hasAnyFilter(draftState)) {
         hydrateForm(form, draftState);
       }
       hydrateMarketplaceToolbar(toolbarForm, draftState);
-      writeStoredState(APPLIED_FILTERS_KEY, draftState);
-      reflectAppliedState(draftState);
+      reflectAppliedState({});
     } else {
-      hydrateMarketplaceToolbar(toolbarForm, snapshot);
-      if (hasPersistableMarketplaceDraft(snapshot)) {
-        writeStoredState(DRAFT_FILTERS_KEY, snapshot);
-        writeStoredState(APPLIED_FILTERS_KEY, snapshot);
-        reflectAppliedState(snapshot);
-      } else {
-        writeStoredState(APPLIED_FILTERS_KEY, {});
-        reflectAppliedState({});
-      }
+      hydrateMarketplaceToolbar(toolbarForm, appliedSnapshot);
+      writeStoredState(APPLIED_FILTERS_KEY, {});
+      reflectAppliedState({});
     }
 
     bindDraftPersistence(form);
+    bindMarketplaceItemLinkPersistence();
     resetControls.forEach(bindMarketplaceReset);
     syncMarketplaceOptionsPickersFromDom(form);
     form.addEventListener("submit", (event) => {
@@ -1302,10 +1401,8 @@
       return;
     }
 
-    const appliedState = normalizeState({
-      ...readStoredState(APPLIED_FILTERS_KEY),
-      ...readUrlState(),
-    });
+    const appliedState = readAppliedMarketplaceFilters();
+
     const messageNode = alertRoot.querySelector(
       "[data-item-unavailable-message]",
     );
@@ -1461,6 +1558,7 @@
 
     initializeLandingFilters();
     initializeMarketplaceFilters();
+    initializeItemDetailMarketplaceBack();
     initializeItemAvailabilityAlert();
   });
 })();

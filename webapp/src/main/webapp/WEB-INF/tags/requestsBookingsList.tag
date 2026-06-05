@@ -118,8 +118,8 @@
               containerClass="w-full" />
 
           <div class="flex flex-col gap-3">
-            <paw:button type="submit" color="primary" fullWidth="true" text="${filtersApplyLabel}" />
-            <a href="${clearFiltersUrl}" class="btn btn-outline btn-block no-underline">
+            <paw:button type="submit" color="primary" fullWidth="true" text="${filtersApplyLabel}" cssClass="js-apply-list-filters" />
+            <a href="${clearFiltersUrl}" data-clear-list-filters class="btn btn-outline btn-block no-underline">
               <c:out value="${filtersClearLabel}" />
             </a>
           </div>
@@ -319,14 +319,17 @@
                 <div class="flex flex-col md:w-60 shrink-0 bg-base-200/50 p-4 border-t md:border-t-0 md:border-l border-outline-variant/20 gap-2 justify-center">
                   <c:if test="${isIncoming && b.status.name() == 'PENDING'}">
                     <form action="${incomingAcceptUrl}" method="post" class="w-full">
+                      <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
                       <paw:button type="submit" color="primary" cssClass="w-full" size="sm" text="${actionAcceptLabel}" submitLoading="true" />
                     </form>
                     <form action="${incomingRejectUrl}" method="post" class="w-full">
+                      <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
                       <paw:button type="submit" color="danger" variant="outline" cssClass="w-full" size="sm" text="${actionRejectLabel}" submitLoading="true" />
                     </form>
                   </c:if>
                   <c:if test="${isIncoming && b.status.name() == 'PAID'}">
                     <form action="${incomingConfirmPaymentUrl}" method="post" class="w-full">
+                      <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
                       <paw:button type="submit" color="primary" cssClass="w-full" size="sm" text="${actionConfirmPaymentLabel}" submitLoading="true" />
                     </form>
                     <button type="button" class="btn btn-outline btn-error btn-sm w-full" onclick="document.getElementById('${detailModalId}-reject').showModal()">
@@ -336,6 +339,7 @@
                     <paw:detailsModal id="${detailModalId}-reject" title="${actionRejectPaymentLabel}">
                       <jsp:body>
                         <form action="${incomingRejectPaymentUrl}" method="post" class="space-y-4">
+                          <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
                           <div class="form-control w-full">
                             <label class="label block text-[11px] font-bold uppercase tracking-wider text-outline" for="reject-pay-reason-${b.id}"><c:out value="${rejectPaymentReasonLabel}" /></label>
                             <textarea id="reject-pay-reason-${b.id}" name="reason" rows="3" maxlength="255" required="required" class="textarea textarea-bordered w-full"></textarea>
@@ -347,6 +351,7 @@
                   </c:if>
                   <c:if test="${not isIncoming && (b.status.name() == 'PENDING' || b.status.name() == 'ACCEPTED' || b.status.name() == 'PAID' || b.status.name() == 'CONFIRMED' || b.status.name() == 'REFUSED')}">
                     <form action="${outgoingCancelUrl}" method="post" class="w-full">
+                      <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
                       <paw:button type="submit" color="danger" variant="outline" cssClass="w-full" size="sm" text="${actionCancelLabel}" submitLoading="true" />
                     </form>
                   </c:if>
@@ -358,6 +363,7 @@
                     <paw:detailsModal id="${detailModalId}-pay" title="${actionSubmitPaymentLabel}">
                       <jsp:body>
                         <form action="${outgoingPaymentUrl}" method="post" enctype="multipart/form-data" class="space-y-4" data-submit-loading-form="true">
+                          <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
                           <div class="form-control w-full space-y-1">
                             <p class="block text-[11px] font-bold uppercase tracking-wider text-outline mb-1"><spring:message code="requests.payment.uploadLabel" /></p>
                             <input type="file" name="file" accept="application/pdf,image/png,image/jpeg,image/webp" required="required" class="file-input file-input-bordered file-input-sm w-full" />
@@ -435,13 +441,13 @@
                             <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review').showModal()">
                               <span class="material-symbols-outlined text-sm">visibility</span> <c:out value="${reviewViewUserLabel}" />
                             </button>
-                            <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review" returnTo="dashboardHosting" existingReview="${userReview}" />
+                            <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review" listMode="${listMode}" existingReview="${userReview}" />
                           </c:when>
                           <c:otherwise>
                             <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review').showModal()">
                               <c:out value="${reviewUserLabel}" />
                             </button>
-                            <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review" returnTo="dashboardHosting" />
+                            <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review" listMode="${listMode}" />
                           </c:otherwise>
                         </c:choose>
                       </c:when>
@@ -452,13 +458,13 @@
                               <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-item').showModal()">
                                 <span class="material-symbols-outlined text-sm">visibility</span> <c:out value="${reviewViewItemLabel}" />
                               </button>
-                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-item" returnTo="outgoing" existingReview="${itemReview}" />
+                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-item" listMode="${listMode}" existingReview="${itemReview}" />
                             </c:when>
                             <c:otherwise>
                               <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-item').showModal()">
                                 <c:out value="${reviewItemLabel}" />
                               </button>
-                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-item" returnTo="outgoing" targetType="ITEM" />
+                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-item" listMode="${listMode}" targetType="ITEM" />
                             </c:otherwise>
                           </c:choose>
                           <c:choose>
@@ -466,13 +472,13 @@
                               <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-user').showModal()">
                                 <span class="material-symbols-outlined text-sm">visibility</span> <c:out value="${reviewViewOwnerLabel}" />
                               </button>
-                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-user" returnTo="outgoing" existingReview="${userReview}" />
+                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-user" listMode="${listMode}" existingReview="${userReview}" />
                             </c:when>
                             <c:otherwise>
                               <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-user').showModal()">
                                 <c:out value="${reviewOwnerLabel}" />
                               </button>
-                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-user" returnTo="outgoing" targetType="USER" />
+                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-user" listMode="${listMode}" targetType="USER" />
                             </c:otherwise>
                           </c:choose>
                         </div>
@@ -503,7 +509,7 @@
                   <c:otherwise><spring:message code="requests.outgoing.empty" /></c:otherwise>
                 </c:choose>
               </p>
-              <a href="${clearFiltersUrl}" class="btn btn-primary btn-sm no-underline">
+              <a href="${clearFiltersUrl}" data-clear-list-filters class="btn btn-primary btn-sm no-underline">
                 <spring:message code="marketplace.filters.clear" />
               </a>
             </div>

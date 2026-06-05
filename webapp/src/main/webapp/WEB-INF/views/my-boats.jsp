@@ -143,9 +143,7 @@
               <c:set var="itemActive" value="${item.status == 'ACTIVE'}" />
               <c:url var="itemDetailUrl" value="/item/${item.id}" />
               <c:url var="editItemUrl" value="/edit/${item.id}" />
-              <c:url var="manageAvailabilityItemUrl" value="/my-boats/${item.id}/availability">
-                <c:param name="return" value="/my-boats" />
-              </c:url>
+              <c:url var="manageAvailabilityItemUrl" value="/my-boats/${item.id}/availability" />
               <c:url var="disableItemUrl" value="/my-boats/${item.id}/disable" />
               <c:url var="enableItemUrl" value="/my-boats/${item.id}/enable" />
               <c:url var="deleteItemUrl" value="/my-boats/${item.id}/delete" />
@@ -255,7 +253,7 @@
               <c:choose>
                 <c:when test="${hasActiveFilters}">
                   <p class="m-0 max-w-lg text-on-surface-variant"><c:out value="${filterEmptyLabel}" /></p>
-                  <a href="${clearFiltersUrl}" class="btn btn-primary btn-sm no-underline">
+                  <a href="${clearFiltersUrl}" data-clear-list-filters class="btn btn-primary btn-sm no-underline">
                     <c:out value="${filtersClearLabel}" />
                   </a>
                 </c:when>

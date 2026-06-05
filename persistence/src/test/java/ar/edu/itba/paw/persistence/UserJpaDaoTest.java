@@ -121,18 +121,29 @@ public class UserJpaDaoTest {
 
     @Test
     public void testFindUsersByIds() {
-        Users user = new Users();
-        user.setFirstName("Botecito");
-        user.setLastName("User");
-        user.setEmail("botecito.user@gmail.com");
-        user.setLanguage("en");
-        user.setVerified(false);
-        user.setAdmin(false);
-        user.setCreatedAt(LocalDateTime.now());
-        em.persist(user);
+        Users user1 = new Users();
+        user1.setFirstName("Botecito");
+        user1.setLastName("User");
+        user1.setEmail("botecito.user@gmail.com");
+        user1.setLanguage("en");
+        user1.setVerified(false);
+        user1.setAdmin(false);
+        user1.setCreatedAt(LocalDateTime.now());
+        em.persist(user1);
         em.flush();
 
-        List<Users> found = userDao.findUsersByIds(List.of(user.getId(), user.getId()));
+        Users user2 = new Users();
+        user2.setFirstName("Botecito");
+        user2.setLastName("User2");
+        user2.setEmail("botecito.user2@gmail.com");
+        user2.setLanguage("en");
+        user2.setVerified(false);
+        user2.setAdmin(false);
+        user2.setCreatedAt(LocalDateTime.now());
+        em.persist(user2);
+        em.flush();
+
+        List<Users> found = userDao.findUsersByIds(List.of(user1.getId(), user2.getId()));
 
         assertEquals(2, found.size());
     }

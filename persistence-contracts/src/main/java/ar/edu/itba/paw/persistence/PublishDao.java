@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Media;
 import ar.edu.itba.paw.models.entity.Version;
+import java.util.Optional;
 
 public interface PublishDao {
 
@@ -18,5 +19,7 @@ public interface PublishDao {
 
     Media persistMedia(Media media);
 
-    void flush();
+    Optional<Version> findVersionById(int versionId);
+
+    void removeVersionChildren(Version version);
 }

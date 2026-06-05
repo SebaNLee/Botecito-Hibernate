@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.services.EditService;
 import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.PublishService;
 import ar.edu.itba.paw.services.SelectorsService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
@@ -26,7 +26,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class EditController {
 
     private final ItemService itemService;
-    private final EditService editService;
+    private final PublishService publishService;
     private final SelectorsService selectorsService;
     private final EditPresentation editPresentation;
 
@@ -99,7 +99,7 @@ public class EditController {
         if (errorView != null) {
             return errorView;
         }
-        final boolean updated = editService.edit(
+        final boolean updated = publishService.edit(
                 itemId,
                 user.getId(),
                 form.getItemTypeId(),

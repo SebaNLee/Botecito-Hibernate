@@ -19,6 +19,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,8 @@ public class PublishServiceImpl implements PublishService {
 
     private static final String DEFAULT_STATUS = "ACTIVE";
     private static final String DEFAULT_TIMEZONE = "America/Argentina/Buenos_Aires"; // TODO hardcode default timezone
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublishServiceImpl.class);
 
     private final PublishDao publishDao;
     private final MailService mailService;
@@ -64,6 +68,7 @@ public class PublishServiceImpl implements PublishService {
                 locationOptionId,
                 now));
         publishDao.flush();
+        LOGGER.info("User {} created item {} (version {})", ownerId, item.getId(), version.getId());
 
         for (final AvailabilityWindow window : filteredAvailabilities) {
             publishDao.persistAvailability(buildAvailability(version, window));

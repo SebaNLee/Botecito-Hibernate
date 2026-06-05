@@ -16,12 +16,16 @@ import ar.edu.itba.paw.services.util.DateTimeUtils;
 import ar.edu.itba.paw.services.util.PagedProcessing;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class ReportServiceImpl implements ReportService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReportServiceImpl.class);
 
     private final ReportDao reportDao;
     private final ItemService itemService;
@@ -58,6 +62,7 @@ public class ReportServiceImpl implements ReportService {
                 .build();
 
         reportDao.create(report);
+        LOGGER.info("User {} reported item {} for {}", senderId, itemId, reason);
     }
 
     @Override
@@ -94,6 +99,7 @@ public class ReportServiceImpl implements ReportService {
         final Report report = findById(reportId);
         notifyDismissal(report);
         reportDao.deleteById(reportId);
+        LOGGER.info("Report {} dismissed", reportId);
     }
 
     @Override
@@ -110,6 +116,7 @@ public class ReportServiceImpl implements ReportService {
 
         reportDao.deleteAllByItemId(item.getId());
         manageItemService.deleteItemAsAdmin(item.getId());
+        LOGGER.info("Publication deleted for report {} (item {})", reportId, item.getId());
     }
 
     private void notifyReporters(final Report originalReport, final Consumer<Report> notifyAction) {

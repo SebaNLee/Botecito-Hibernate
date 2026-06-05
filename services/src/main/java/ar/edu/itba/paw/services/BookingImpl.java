@@ -41,6 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +50,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class BookingImpl implements BookingService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BookingImpl.class);
 
     private final BookingDao bookingDao;
     private final ItemService itemService;
@@ -185,6 +189,7 @@ public class BookingImpl implements BookingService {
 
         if (canInsert) {
             bookingDao.insertBooking(booking);
+            LOGGER.info("Booking created: item {}, guest {}, {} - {}", itemId, guestId, utcStart, utcEnd);
             if (!isOwner) {
                 mailService.sendPreBookingMail(booking);
             }
@@ -328,6 +333,7 @@ public class BookingImpl implements BookingService {
         var payment = builder.build();
         bookingDao.uploadPayment(payment);
         booking.setPaymentProof(payment);
+        LOGGER.info("Payment uploaded for booking {}", bookingId);
         mailService.sendPaymentMail(booking);
     }
 
@@ -354,6 +360,7 @@ public class BookingImpl implements BookingService {
         payment.setFileData(fileData);
         payment.setReplyMsg(guestMsg);
         payment.setRepliedAt(currentDateTime());
+        LOGGER.info("Payment resubmitted for booking {}", bookingId);
         mailService.sendPaymentMail(booking);
     }
 
@@ -487,6 +494,7 @@ public class BookingImpl implements BookingService {
         var ownerId = booking.getVersion().getItem().getHost().getId().intValue();
         if (ownerId != callerId || ownerId != booking.getGuest().getId().intValue()) return false;
         bookingDao.deleteBooking(bookingId);
+        LOGGER.info("Self-block {} removed by user {}", bookingId, callerId);
         return true;
     }
 

@@ -10,6 +10,8 @@ import ar.edu.itba.paw.persistence.ItemDao;
 import java.util.Collection;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class FavouriteServiceImpl implements FavouriteService {
 
     private static final int DEFAULT_PAGE_SIZE = 12;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FavouriteServiceImpl.class);
 
     private final FavouriteDao favouriteDao;
     private final ItemDao itemDao;
@@ -30,6 +34,7 @@ public class FavouriteServiceImpl implements FavouriteService {
             return false;
         }
         favouriteDao.create(userId, itemId);
+        LOGGER.info("User {} added favourite item {}", userId, itemId);
         return true;
     }
 
@@ -37,6 +42,7 @@ public class FavouriteServiceImpl implements FavouriteService {
     @Transactional
     public boolean removeFavourite(final int userId, final int itemId) {
         favouriteDao.delete(userId, itemId);
+        LOGGER.info("User {} removed favourite item {}", userId, itemId);
         return true;
     }
 

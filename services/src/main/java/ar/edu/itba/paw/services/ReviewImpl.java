@@ -14,12 +14,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public final class ReviewImpl implements ReviewService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReviewImpl.class);
 
     private final BookingDao bookingDao;
     private final ReviewDao reviewDao;
@@ -65,7 +69,15 @@ public final class ReviewImpl implements ReviewService {
             return Optional.empty();
         }
 
-        return reviewDao.createReview(bookingId, reviewerUserId, resolved, rating, normalizeComment(comment));
+        final Optional<Review> review =
+                reviewDao.createReview(bookingId, reviewerUserId, resolved, rating, normalizeComment(comment));
+        review.ifPresent(r -> LOGGER.info(
+                "Review created: user {} reviewed booking {} with rating {} for {}",
+                reviewerUserId,
+                bookingId,
+                rating,
+                resolved));
+        return review;
     }
 
     private static TargetEnum resolveTarget(

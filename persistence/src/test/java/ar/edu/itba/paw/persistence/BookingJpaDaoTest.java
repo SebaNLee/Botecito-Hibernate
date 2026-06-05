@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static ar.edu.itba.paw.persistence.TestUtils.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.dto.BookingQueryModel;
 import ar.edu.itba.paw.models.dto.SearchResult;
@@ -50,8 +50,8 @@ public class BookingJpaDaoTest {
 
     @Test
     public void testInsertBooking() {
-        Booking booking = createBooking(version, guest,
-                LocalDateTime.now(), LocalDateTime.now().plusDays(1), BookingStatusEnum.PENDING);
+        Booking booking = createBooking(
+                version, guest, LocalDateTime.now(), LocalDateTime.now().plusDays(1), BookingStatusEnum.PENDING);
         bookingDao.insertBooking(booking);
         em.flush();
 
@@ -96,7 +96,7 @@ public class BookingJpaDaoTest {
                 .booking(booking)
                 .filename("proof.pdf")
                 .contentType("application/pdf")
-                .fileData(new byte[]{1, 2, 3})
+                .fileData(new byte[] {1, 2, 3})
                 .createdAt(LocalDateTime.now())
                 .build();
         bookingDao.uploadPayment(proof);
@@ -110,7 +110,8 @@ public class BookingJpaDaoTest {
         LocalDateTime start = LocalDateTime.now().plusDays(10);
         Booking booking = createBooking(version, guest, start, start.plusDays(1), BookingStatusEnum.PENDING);
 
-        assertTrue(bookingDao.canInsertBooking(booking, EnumSet.of(BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED)));
+        assertTrue(bookingDao.canInsertBooking(
+                booking, EnumSet.of(BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED)));
     }
 
     @Test
@@ -121,7 +122,8 @@ public class BookingJpaDaoTest {
         LocalDateTime start = LocalDateTime.now().plusDays(1);
         Booking newBooking = createBooking(version, guest, start, start.plusDays(1), BookingStatusEnum.PENDING);
 
-        assertFalse(bookingDao.canInsertBooking(newBooking, EnumSet.of(BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED)));
+        assertFalse(bookingDao.canInsertBooking(
+                newBooking, EnumSet.of(BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED)));
     }
 
     @Test
@@ -132,7 +134,8 @@ public class BookingJpaDaoTest {
         LocalDateTime start = LocalDateTime.now().plusDays(1);
         Booking update = createBooking(version, guest, start, start.plusDays(1), BookingStatusEnum.PENDING);
 
-        assertTrue(bookingDao.canUpdate(update, existing.getId(), EnumSet.of(BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED)));
+        assertTrue(bookingDao.canUpdate(
+                update, existing.getId(), EnumSet.of(BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED)));
     }
 
     @Test
@@ -196,7 +199,8 @@ public class BookingJpaDaoTest {
         em.persist(createBooking(version, guest, pastStart, pastStart.plusDays(1), BookingStatusEnum.PENDING));
         em.flush();
 
-        bookingDao.expireBookingsBefore(LocalDateTime.now(), EnumSet.of(BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED));
+        bookingDao.expireBookingsBefore(
+                LocalDateTime.now(), EnumSet.of(BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED));
         em.flush();
         em.clear();
 
@@ -222,7 +226,8 @@ public class BookingJpaDaoTest {
         em.flush();
         em.clear();
 
-        long remainingSelf = (Long) em.createQuery("SELECT COUNT(b) FROM Booking b WHERE b.guest.id = :userId AND b.version.item.host.id = :userId")
+        long remainingSelf = (Long) em.createQuery(
+                        "SELECT COUNT(b) FROM Booking b WHERE b.guest.id = :userId AND b.version.item.host.id = :userId")
                 .setParameter("userId", sameUser.getId())
                 .getSingleResult();
 

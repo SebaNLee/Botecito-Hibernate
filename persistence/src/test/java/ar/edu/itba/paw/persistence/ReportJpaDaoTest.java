@@ -1,11 +1,10 @@
 package ar.edu.itba.paw.persistence;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static ar.edu.itba.paw.persistence.TestUtils.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.entity.*;
 import java.time.LocalDateTime;
-import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -107,8 +106,18 @@ public class ReportJpaDaoTest {
         insertVersion(em, item, itemType, location, "Boat");
         em.flush();
 
-        Report report1 = Report.builder().sender(sender).item(item).reason(ReportEnum.INAPPROPRIATE).createdAt(LocalDateTime.now()).build();
-        Report report2 = Report.builder().sender(sender).item(item).reason(ReportEnum.SPAM).createdAt(LocalDateTime.now()).build();
+        Report report1 = Report.builder()
+                .sender(sender)
+                .item(item)
+                .reason(ReportEnum.INAPPROPRIATE)
+                .createdAt(LocalDateTime.now())
+                .build();
+        Report report2 = Report.builder()
+                .sender(sender)
+                .item(item)
+                .reason(ReportEnum.SPAM)
+                .createdAt(LocalDateTime.now())
+                .build();
         reportDao.create(report1);
         reportDao.create(report2);
         em.flush();
@@ -128,7 +137,12 @@ public class ReportJpaDaoTest {
         insertVersion(em, item, itemType, location, "Boat");
         em.flush();
 
-        Report report = Report.builder().sender(sender).item(item).reason(ReportEnum.INAPPROPRIATE).createdAt(LocalDateTime.now()).build();
+        Report report = Report.builder()
+                .sender(sender)
+                .item(item)
+                .reason(ReportEnum.INAPPROPRIATE)
+                .createdAt(LocalDateTime.now())
+                .build();
         reportDao.create(report);
         em.flush();
 

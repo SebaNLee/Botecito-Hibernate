@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static ar.edu.itba.paw.persistence.TestUtils.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.entity.*;
 import java.math.BigDecimal;
@@ -68,8 +68,17 @@ public class DetailJpaDaoTest {
 
     @Test
     public void testGetItemDetailLatestVersion() {
-        insertVersion(em, item, itemType, location, "Old Boat",
-                BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now().minusDays(10));
+        insertVersion(
+                em,
+                item,
+                itemType,
+                location,
+                "Old Boat",
+                BigDecimal.valueOf(100),
+                4,
+                200,
+                2,
+                LocalDateTime.now().minusDays(10));
         em.flush();
         em.clear();
 

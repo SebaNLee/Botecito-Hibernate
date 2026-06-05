@@ -50,8 +50,8 @@ public class BookingImplTest {
         when(itemService.findItemById(ITEM_ID)).thenReturn(activeItem());
         when(bookingDao.canInsertBooking(any(), any())).thenReturn(true);
 
-        assertDoesNotThrow(
-                () -> bookingService.createBooking(ITEM_ID, DATE, LocalTime.of(10, 0), LocalTime.of(12, 0), "msg", GUEST_ID));
+        assertDoesNotThrow(() ->
+                bookingService.createBooking(ITEM_ID, DATE, LocalTime.of(10, 0), LocalTime.of(12, 0), "msg", GUEST_ID));
     }
 
     @Test
@@ -72,7 +72,8 @@ public class BookingImplTest {
 
         assertThrows(
                 BookingCollisionException.class,
-                () -> bookingService.createBooking(ITEM_ID, DATE, LocalTime.of(10, 0), LocalTime.of(12, 0), "msg", GUEST_ID));
+                () -> bookingService.createBooking(
+                        ITEM_ID, DATE, LocalTime.of(10, 0), LocalTime.of(12, 0), "msg", GUEST_ID));
     }
 
     @Test
@@ -102,16 +103,15 @@ public class BookingImplTest {
         when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking(BookingStatusEnum.PENDING)));
 
         assertThrows(
-                IllegalBookingOperationException.class,
-                () -> bookingService.rejectBooking(BOOKING_ID, OTHER_USER_ID));
+                IllegalBookingOperationException.class, () -> bookingService.rejectBooking(BOOKING_ID, OTHER_USER_ID));
     }
 
     @Test
     public void testSubmitPayment() {
         when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking(BookingStatusEnum.ACCEPTED)));
 
-        assertDoesNotThrow(
-                () -> bookingService.submitPayment(BOOKING_ID, "file.pdf", "application/pdf", new byte[] {1}, null, GUEST_ID));
+        assertDoesNotThrow(() -> bookingService.submitPayment(
+                BOOKING_ID, "file.pdf", "application/pdf", new byte[] {1}, null, GUEST_ID));
     }
 
     @Test
@@ -120,7 +120,8 @@ public class BookingImplTest {
 
         assertThrows(
                 IllegalBookingOperationException.class,
-                () -> bookingService.submitPayment(BOOKING_ID, "file.pdf", "application/pdf", new byte[] {1}, null, OTHER_USER_ID));
+                () -> bookingService.submitPayment(
+                        BOOKING_ID, "file.pdf", "application/pdf", new byte[] {1}, null, OTHER_USER_ID));
     }
 
     @Test
@@ -148,8 +149,7 @@ public class BookingImplTest {
         when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking(BookingStatusEnum.PAID)));
 
         assertThrows(
-                IllegalBookingOperationException.class,
-                () -> bookingService.confirmPayment(BOOKING_ID, OTHER_USER_ID));
+                IllegalBookingOperationException.class, () -> bookingService.confirmPayment(BOOKING_ID, OTHER_USER_ID));
     }
 
     @Test
@@ -184,8 +184,7 @@ public class BookingImplTest {
         when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking(BookingStatusEnum.PENDING)));
 
         assertThrows(
-                IllegalBookingOperationException.class,
-                () -> bookingService.cancelBooking(BOOKING_ID, OTHER_USER_ID));
+                IllegalBookingOperationException.class, () -> bookingService.cancelBooking(BOOKING_ID, OTHER_USER_ID));
     }
 
     private static Users user(int id) {

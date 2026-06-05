@@ -10,8 +10,8 @@ public final class TestUtils {
 
     private TestUtils() {}
 
-    public static Users insertUser(final EntityManager em, final String firstName,
-                                    final String lastName, final String email) {
+    public static Users insertUser(
+            final EntityManager em, final String firstName, final String lastName, final String email) {
         final Users user = new Users();
         user.setFirstName(firstName);
         user.setLastName(lastName);
@@ -24,8 +24,7 @@ public final class TestUtils {
         return user;
     }
 
-    public static Location insertLocation(final EntityManager em, final String name,
-                                           final String slug) {
+    public static Location insertLocation(final EntityManager em, final String name, final String slug) {
         final Location loc = new Location();
         loc.setName(name);
         loc.setSlug(slug);
@@ -33,8 +32,7 @@ public final class TestUtils {
         return loc;
     }
 
-    public static ItemType insertItemType(final EntityManager em, final String name,
-                                           final String slug) {
+    public static ItemType insertItemType(final EntityManager em, final String name, final String slug) {
         final ItemType type = new ItemType();
         type.setName(name);
         type.setSlug(slug);
@@ -42,8 +40,7 @@ public final class TestUtils {
         return type;
     }
 
-    public static Item insertItem(final EntityManager em, final Users host,
-                                   final ItemStatusEnum status) {
+    public static Item insertItem(final EntityManager em, final Users host, final ItemStatusEnum status) {
         final Item item = new Item();
         item.setHost(host);
         item.setStatus(status);
@@ -52,12 +49,17 @@ public final class TestUtils {
         return item;
     }
 
-    public static Version insertVersion(final EntityManager em, final Item item,
-                                         final ItemType type, final Location location,
-                                         final String title, final BigDecimal price,
-                                         final int capacity, final int weight,
-                                         final int difficulty,
-                                         final LocalDateTime createdAt) {
+    public static Version insertVersion(
+            final EntityManager em,
+            final Item item,
+            final ItemType type,
+            final Location location,
+            final String title,
+            final BigDecimal price,
+            final int capacity,
+            final int weight,
+            final int difficulty,
+            final LocalDateTime createdAt) {
         final Version v = new Version();
         v.setItem(item);
         v.setType(type);
@@ -74,16 +76,13 @@ public final class TestUtils {
         return v;
     }
 
-    public static Version insertVersion(final EntityManager em, final Item item,
-                                         final ItemType type, final Location location,
-                                         final String title) {
-        return insertVersion(em, item, type, location, title,
-                BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now());
+    public static Version insertVersion(
+            final EntityManager em, final Item item, final ItemType type, final Location location, final String title) {
+        return insertVersion(em, item, type, location, title, BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now());
     }
 
-    public static Booking insertBooking(final EntityManager em, final Version version,
-                                         final Users guest,
-                                         final BookingStatusEnum status) {
+    public static Booking insertBooking(
+            final EntityManager em, final Version version, final Users guest, final BookingStatusEnum status) {
         final Booking b = new Booking();
         b.setVersion(version);
         b.setGuest(guest);
@@ -96,9 +95,13 @@ public final class TestUtils {
         return b;
     }
 
-    public static Review insertReview(final EntityManager em, final Booking booking,
-                                       final Users sender, final TargetEnum targetType,
-                                       final double rating, final String comment) {
+    public static Review insertReview(
+            final EntityManager em,
+            final Booking booking,
+            final Users sender,
+            final TargetEnum targetType,
+            final double rating,
+            final String comment) {
         final Review r = new Review();
         r.setBooking(booking);
         r.setSender(sender);
@@ -110,11 +113,12 @@ public final class TestUtils {
         return r;
     }
 
-    public static Availability insertAvailability(final EntityManager em,
-                                                   final Version version,
-                                                   final WeekdayEnum weekday,
-                                                   final LocalTime startTime,
-                                                   final LocalTime endTime) {
+    public static Availability insertAvailability(
+            final EntityManager em,
+            final Version version,
+            final WeekdayEnum weekday,
+            final LocalTime startTime,
+            final LocalTime endTime) {
         final Availability a = new Availability();
         a.setVersion(version);
         a.setWeekday(weekday);
@@ -126,13 +130,12 @@ public final class TestUtils {
 
     public static Image insertImage(final EntityManager em) {
         final Image img = new Image();
-        img.setData(new byte[]{1, 2, 3});
+        img.setData(new byte[] {1, 2, 3});
         em.persist(img);
         return img;
     }
 
-    public static Media insertMedia(final EntityManager em, final Version version,
-                                     final Image image, final int index) {
+    public static Media insertMedia(final EntityManager em, final Version version, final Image image, final int index) {
         final Media media = new Media();
         media.setId(new MediaId(version.getId(), index));
         media.setVersion(version);
@@ -141,9 +144,12 @@ public final class TestUtils {
         return media;
     }
 
-    public static Booking createBooking(final Version version, final Users guest,
-                                         final LocalDateTime start, final LocalDateTime end,
-                                         final BookingStatusEnum status) {
+    public static Booking createBooking(
+            final Version version,
+            final Users guest,
+            final LocalDateTime start,
+            final LocalDateTime end,
+            final BookingStatusEnum status) {
         final Booking b = new Booking();
         b.setVersion(version);
         b.setGuest(guest);

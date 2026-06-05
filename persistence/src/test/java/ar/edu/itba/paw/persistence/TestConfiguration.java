@@ -21,11 +21,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 public class TestConfiguration {
 
     private static final String[] PG_ENUM_TYPES = {
-            "item_status_enum",
-            "booking_status_enum",
-            "report_enum",
-            "target_enum",
-            "weekday_enum"
+        "item_status_enum", "booking_status_enum", "report_enum", "target_enum", "weekday_enum"
     };
 
     @Bean
@@ -38,7 +34,8 @@ public class TestConfiguration {
         // With JDBC we did a 1:1 representation of Flyway migration in HSQLDB relative syntax (ENUMs -> VARCHARs)
         // We now don't use Flyway to recreate the HSQLDB schema for testing, and instead use the @Entitys themselves
         // So now for Hibernate, this is the reasonable workaround (no really elegant tho)
-        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
+        try (Connection conn = dataSource.getConnection();
+                Statement stmt = conn.createStatement()) {
             for (final String type : PG_ENUM_TYPES) {
                 stmt.execute("DROP DOMAIN IF EXISTS " + type);
                 stmt.execute("CREATE DOMAIN " + type + " AS VARCHAR(20)");
@@ -46,7 +43,7 @@ public class TestConfiguration {
         } catch (final SQLException e) {
             throw new RuntimeException("HSQLDB persistence test setup failed", e);
         }
-        
+
         return dataSource;
     }
 

@@ -1,10 +1,9 @@
 package ar.edu.itba.paw.persistence;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static ar.edu.itba.paw.persistence.TestUtils.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.entity.*;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import javax.persistence.EntityManager;
@@ -49,8 +48,8 @@ public class ReviewJpaDaoTest {
         Booking booking = insertBooking(em, version, guest, BookingStatusEnum.FINISHED);
         em.flush();
 
-        Optional<Review> created = reviewDao.createReview(
-                booking.getId(), guest.getId(), TargetEnum.ITEM, 4.5, "Great!");
+        Optional<Review> created =
+                reviewDao.createReview(booking.getId(), guest.getId(), TargetEnum.ITEM, 4.5, "Great!");
 
         assertTrue(created.isPresent());
         assertEquals(4.5, created.get().getRating().doubleValue(), 0.01);
@@ -65,8 +64,8 @@ public class ReviewJpaDaoTest {
         reviewDao.createReview(booking.getId(), guest.getId(), TargetEnum.ITEM, 4.5, "Great!");
         em.flush();
 
-        Optional<Review> found = reviewDao.findReviewByBookingSenderAndTargetType(
-                booking.getId(), guest.getId(), TargetEnum.ITEM);
+        Optional<Review> found =
+                reviewDao.findReviewByBookingSenderAndTargetType(booking.getId(), guest.getId(), TargetEnum.ITEM);
 
         assertTrue(found.isPresent());
     }

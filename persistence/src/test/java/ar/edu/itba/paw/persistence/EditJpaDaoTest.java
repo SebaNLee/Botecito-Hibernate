@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static ar.edu.itba.paw.persistence.TestUtils.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.entity.*;
 import java.math.BigDecimal;
@@ -43,8 +43,8 @@ public class EditJpaDaoTest {
         location = insertLocation(em, "Portezuelo", "portezuelo");
         itemType = insertItemType(em, "Kayak", "kayak");
         item = insertItem(em, host, ItemStatusEnum.ACTIVE);
-        version = insertVersion(em, item, itemType, location,
-                "Boat", BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now());
+        version = insertVersion(
+                em, item, itemType, location, "Boat", BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now());
         em.flush();
         em.clear();
     }
@@ -90,8 +90,8 @@ public class EditJpaDaoTest {
     @Test
     public void testRemoveVersionChildrenAvailabilities() {
         Version managed = em.find(Version.class, version.getId());
-        Availability availability = insertAvailability(em, managed, WeekdayEnum.MONDAY,
-                LocalTime.of(9, 0), LocalTime.of(17, 0));
+        Availability availability =
+                insertAvailability(em, managed, WeekdayEnum.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0));
         em.flush();
         em.clear();
 
@@ -105,8 +105,8 @@ public class EditJpaDaoTest {
     @Test
     public void testRemoveVersionChildrenMedia() {
         Version managed = em.find(Version.class, version.getId());
-        Availability availability = insertAvailability(em, managed, WeekdayEnum.MONDAY,
-                LocalTime.of(9, 0), LocalTime.of(17, 0));
+        Availability availability =
+                insertAvailability(em, managed, WeekdayEnum.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0));
         Image image = insertImage(em);
         Media media = insertMedia(em, managed, image, 0);
         em.flush();

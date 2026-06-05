@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static ar.edu.itba.paw.persistence.TestUtils.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.entity.*;
 import java.math.BigDecimal;
@@ -54,8 +54,19 @@ public class ManageItemJpaDaoTest {
     @Test
     public void testCountVersionsByItemId() {
         Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
-        insertVersion(em, item, itemType, location, "Version 1", BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now());
-        insertVersion(em, item, itemType, location, "Version 2", BigDecimal.valueOf(150), 4, 200, 2, LocalDateTime.now().plusDays(1));
+        insertVersion(
+                em, item, itemType, location, "Version 1", BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now());
+        insertVersion(
+                em,
+                item,
+                itemType,
+                location,
+                "Version 2",
+                BigDecimal.valueOf(150),
+                4,
+                200,
+                2,
+                LocalDateTime.now().plusDays(1));
         em.flush();
 
         int count = manageItemDao.countVersionsByItemId(item.getId());
@@ -92,8 +103,19 @@ public class ManageItemJpaDaoTest {
     @Test
     public void testFindLatestVersionIdByItemId() {
         Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
-        insertVersion(em, item, itemType, location, "Old Boat", BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now().minusDays(10));
-        Version newest = insertVersion(em, item, itemType, location, "New Boat", BigDecimal.valueOf(150), 4, 200, 2, LocalDateTime.now());
+        insertVersion(
+                em,
+                item,
+                itemType,
+                location,
+                "Old Boat",
+                BigDecimal.valueOf(100),
+                4,
+                200,
+                2,
+                LocalDateTime.now().minusDays(10));
+        Version newest = insertVersion(
+                em, item, itemType, location, "New Boat", BigDecimal.valueOf(150), 4, 200, 2, LocalDateTime.now());
         em.flush();
 
         Optional<Integer> latestId = manageItemDao.findLatestVersionIdByItemId(item.getId());

@@ -25,8 +25,10 @@ class MailServiceImplTest {
 
     @Mock
     private JavaMailSender mailSender;
+
     @Mock
     private TemplateEngine templateEngine;
+
     @Mock
     private MessageSource messageSource;
 
@@ -48,9 +50,9 @@ class MailServiceImplTest {
             return "<html><body><p>Alo!</p></body></html>";
         });
 
-        mailService.sendPreBookingMail(
-                booking(version("Boat", item(user("botecito.dev@gmail.com", "O", "W", "es", null))),
-                        user("botecito.user@gmail.com", "G", "S", "en", null)));
+        mailService.sendPreBookingMail(booking(
+                version("Boat", item(user("botecito.dev@gmail.com", "O", "W", "es", null))),
+                user("botecito.user@gmail.com", "G", "S", "en", null)));
 
         assertEquals("booking-lifecycle", template[0]);
     }
@@ -64,9 +66,9 @@ class MailServiceImplTest {
             return "<html><body><p>Alo!</p></body></html>";
         });
 
-        mailService.sendBookingFinishedMail(
-                booking(version("Boat", item(user("botecito.dev@gmail.com", "O", "W", "es", null))),
-                        user("botecito.user@gmail.com", "G", "S", "en", null)));
+        mailService.sendBookingFinishedMail(booking(
+                version("Boat", item(user("botecito.dev@gmail.com", "O", "W", "es", null))),
+                user("botecito.user@gmail.com", "G", "S", "en", null)));
 
         assertEquals(2, count.get());
     }
@@ -86,8 +88,10 @@ class MailServiceImplTest {
 
     @Test
     void resolveLocaleReturnsCorrectLocale() {
-        assertEquals(Locale.of("es"), MailServiceImpl.resolveLocale(user("botecito.user@gmail.com", "A", "B", "es", null)));
-        assertEquals(Locale.ENGLISH, MailServiceImpl.resolveLocale(user("botecito.user@gmail.com", "A", "B", "en", null)));
+        assertEquals(
+                Locale.of("es"), MailServiceImpl.resolveLocale(user("botecito.user@gmail.com", "A", "B", "es", null)));
+        assertEquals(
+                Locale.ENGLISH, MailServiceImpl.resolveLocale(user("botecito.user@gmail.com", "A", "B", "en", null)));
         assertEquals(Locale.of("es"), MailServiceImpl.resolveLocale(null));
     }
 
@@ -122,8 +126,7 @@ class MailServiceImplTest {
     }
 
     private void defaultMocks() {
-        when(mailSender.createMimeMessage())
-                .thenAnswer(inv -> new MimeMessage(Session.getInstance(new Properties())));
+        when(mailSender.createMimeMessage()).thenAnswer(inv -> new MimeMessage(Session.getInstance(new Properties())));
         when(messageSource.getMessage(anyString(), any(), any())).thenReturn("subject");
     }
 }

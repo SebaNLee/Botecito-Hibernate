@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static ar.edu.itba.paw.persistence.TestUtils.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.entity.ItemType;
 import ar.edu.itba.paw.models.entity.Location;
@@ -61,7 +61,8 @@ public class SelectorsJpaDaoTest {
 
         Location found = locations.stream()
                 .filter(l -> l.getId().equals(locationOne.getId()))
-                .findFirst().orElseThrow();
+                .findFirst()
+                .orElseThrow();
         assertEquals("Portezuelo", found.getName());
         assertEquals("portezuelo", found.getSlug());
     }
@@ -87,7 +88,8 @@ public class SelectorsJpaDaoTest {
 
         ItemType found = types.stream()
                 .filter(t -> t.getId().equals(typeOne.getId()))
-                .findFirst().orElseThrow();
+                .findFirst()
+                .orElseThrow();
         assertEquals("Kayak", found.getName());
         assertEquals("kayak", found.getSlug());
     }

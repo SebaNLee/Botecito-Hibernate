@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static ar.edu.itba.paw.persistence.TestUtils.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.dto.FavouritesQueryModel;
 import ar.edu.itba.paw.models.dto.SearchResult;
@@ -92,8 +92,8 @@ public class FavouriteJpaDaoTest {
         favouriteDao.create(user.getId(), item1.getId());
         favouriteDao.create(user.getId(), item3.getId());
 
-        Set<Integer> favIds = favouriteDao.findFavouriteItemIds(user.getId(),
-                List.of(item1.getId(), item2.getId(), item3.getId(), item4.getId()));
+        Set<Integer> favIds = favouriteDao.findFavouriteItemIds(
+                user.getId(), List.of(item1.getId(), item2.getId(), item3.getId(), item4.getId()));
 
         assertEquals(Set.of(item1.getId(), item3.getId()), favIds);
     }

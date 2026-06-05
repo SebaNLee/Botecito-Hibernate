@@ -46,14 +46,12 @@ public class EditJpaDaoTest {
         version = insertVersion(
                 em, item, itemType, location, "Boat", BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now());
         em.flush();
-        em.clear();
     }
 
     @Test
     public void testItemHasBookingsNoVersion() {
         Item noVersionItem = insertItem(em, host, ItemStatusEnum.ACTIVE);
         em.flush();
-        em.clear();
 
         boolean result = editDao.itemHasBookings(noVersionItem.getId());
 
@@ -71,7 +69,6 @@ public class EditJpaDaoTest {
     public void testItemHasBookingsHasBookings() {
         insertBooking(em, version, guest, BookingStatusEnum.FINISHED);
         em.flush();
-        em.clear();
 
         boolean result = editDao.itemHasBookings(item.getId());
 

@@ -44,14 +44,12 @@ public class DetailJpaDaoTest {
         item = insertItem(em, host, ItemStatusEnum.ACTIVE);
         version = insertVersion(em, item, itemType, location, "Test Boat");
         em.flush();
-        em.clear();
     }
 
     @Test
     public void testGetItemDetailNoVersion() {
         Item itemNoVersion = insertItem(em, host, ItemStatusEnum.ACTIVE);
         em.flush();
-        em.clear();
 
         Optional<Item> result = detailDao.getItemDetail(itemNoVersion.getId(), 1);
 
@@ -80,7 +78,6 @@ public class DetailJpaDaoTest {
                 2,
                 LocalDateTime.now().minusDays(10));
         em.flush();
-        em.clear();
 
         Optional<Item> result = detailDao.getItemDetail(item.getId(), 1);
 
@@ -93,7 +90,6 @@ public class DetailJpaDaoTest {
         Booking booking = insertBooking(em, version, guest, BookingStatusEnum.FINISHED);
         insertReview(em, booking, guest, TargetEnum.ITEM, 4.5, "Botecito mejor app");
         em.flush();
-        em.clear();
 
         Optional<Item> result = detailDao.getItemDetail(item.getId(), 1);
 

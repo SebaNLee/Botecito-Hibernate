@@ -40,7 +40,6 @@ public class ItemJpaDaoTest {
         location = insertLocation(em, "Portezuelo", "portezuelo");
         itemType = insertItemType(em, "Kayak", "kayak");
         em.flush();
-        em.clear();
     }
 
     @Test
@@ -48,7 +47,6 @@ public class ItemJpaDaoTest {
         Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
         insertVersion(em, item, itemType, location, "Boat");
         em.flush();
-        em.clear();
 
         MyBoatsQueryModel query = MyBoatsQueryModel.builder()
                 .ownerId(host.getId())
@@ -70,7 +68,6 @@ public class ItemJpaDaoTest {
         insertVersion(em, active, itemType, location, "Active Boat");
         insertVersion(em, deleted, itemType, location, "Deleted Boat");
         em.flush();
-        em.clear();
 
         MyBoatsQueryModel query = MyBoatsQueryModel.builder()
                 .ownerId(host.getId())
@@ -93,7 +90,6 @@ public class ItemJpaDaoTest {
         insertVersion(em, item2, itemType, location, "Kayak 2");
         insertVersion(em, item3, itemType, location, "Kayak 3");
         em.flush();
-        em.clear();
 
         MyBoatsQueryModel query = MyBoatsQueryModel.builder()
                 .ownerId(host.getId())

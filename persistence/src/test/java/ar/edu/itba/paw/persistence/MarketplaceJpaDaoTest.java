@@ -48,7 +48,6 @@ public class MarketplaceJpaDaoTest {
         Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
         insertVersion(em, item, itemType, location, "Boat");
         em.flush();
-        em.clear();
 
         MarketplaceQueryModel query = new MarketplaceQueryModel();
         query.setPage(1);
@@ -68,7 +67,6 @@ public class MarketplaceJpaDaoTest {
         insertVersion(em, itemA, itemType, location, "Boat 1");
         insertVersion(em, itemB, itemType, otherLocation, "Boat 2");
         em.flush();
-        em.clear();
 
         MarketplaceQueryModel query = new MarketplaceQueryModel();
         query.setLocationSlug("portezuelo");
@@ -89,7 +87,6 @@ public class MarketplaceJpaDaoTest {
         insertVersion(em, kayakItem, itemType, location, "Kayak");
         insertVersion(em, paddleItem, otherItemType, location, "Paddle");
         em.flush();
-        em.clear();
 
         MarketplaceQueryModel query = new MarketplaceQueryModel();
         query.setItemTypeSlug("paddle");
@@ -110,7 +107,6 @@ public class MarketplaceJpaDaoTest {
             insertVersion(em, it, itemType, location, "Boat " + i);
         }
         em.flush();
-        em.clear();
 
         MarketplaceQueryModel query = new MarketplaceQueryModel();
         query.setPage(1);

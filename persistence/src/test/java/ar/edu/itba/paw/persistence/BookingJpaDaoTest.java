@@ -184,7 +184,6 @@ public class BookingJpaDaoTest {
 
         bookingDao.finalizeBookingsBefore(LocalDateTime.now());
         em.flush();
-        em.clear();
 
         long finalizedCount = (Long) em.createQuery("SELECT COUNT(b) FROM Booking b WHERE b.status = :status")
                 .setParameter("status", BookingStatusEnum.FINISHED)
@@ -202,7 +201,6 @@ public class BookingJpaDaoTest {
         bookingDao.expireBookingsBefore(
                 LocalDateTime.now(), EnumSet.of(BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED));
         em.flush();
-        em.clear();
 
         long cancelledCount = (Long) em.createQuery("SELECT COUNT(b) FROM Booking b WHERE b.status = :status")
                 .setParameter("status", BookingStatusEnum.CANCELLED)
@@ -224,7 +222,6 @@ public class BookingJpaDaoTest {
 
         bookingDao.deleteSelfBlocksBefore(LocalDateTime.now());
         em.flush();
-        em.clear();
 
         long remainingSelf = (Long) em.createQuery(
                         "SELECT COUNT(b) FROM Booking b WHERE b.guest.id = :userId AND b.version.item.host.id = :userId")

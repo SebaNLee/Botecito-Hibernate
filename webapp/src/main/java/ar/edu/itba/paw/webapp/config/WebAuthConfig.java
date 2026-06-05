@@ -99,7 +99,7 @@ public class WebAuthConfig {
                 // payment-proof needs SAMEORIGIN for rendering PDF in modal iframes
                 .headers(headers -> headers.frameOptions(frame -> frame.deny())
                         .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
-                                antMatcher("/requests/bookings/*/payment-proof"),
+                                antMatcher("/requests/bookings/*/payment-proof"), // payment-proof needs SAMEORIGIN for redering PDF in modal iframes
                                 new XFrameOptionsHeaderWriter(
                                         XFrameOptionsHeaderWriter.XFrameOptionsMode.SAMEORIGIN))));
         return http.build();

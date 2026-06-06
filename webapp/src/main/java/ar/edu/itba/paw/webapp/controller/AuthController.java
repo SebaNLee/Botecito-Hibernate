@@ -37,9 +37,9 @@ public class AuthController {
         final String next = form.getNext();
         if (next != null) {
             if (PostLoginRedirectSupport.isSafeInternalRedirect(next)) {
-                request.getSession().setAttribute(PostLoginRedirectSupport.SESSION_ATTR, next.trim());
+                request.getSession().setAttribute("continueUrl", next.trim());
             } else {
-                request.getSession().removeAttribute(PostLoginRedirectSupport.SESSION_ATTR);
+                request.getSession().removeAttribute("continueUrl");
             }
         }
         return authPresentation.login(form);

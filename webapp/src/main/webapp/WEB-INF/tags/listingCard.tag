@@ -9,6 +9,7 @@
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 
 <fmt:setLocale value="es_AR" />
 <spring:message code="reviews.empty.short" var="reviewsEmptyShortLabel" />

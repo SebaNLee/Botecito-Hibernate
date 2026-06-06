@@ -250,9 +250,7 @@
               <div class="shrink-0 pt-1">
                 <c:choose>
                   <c:when test="${viewer == null}">
-                    <c:url var="favouriteLoginUrl" value="/login">
-                      <c:param name="next" value="/item/${item.id}" />
-                    </c:url>
+                    <c:url var="favouriteLoginUrl" value="/login" />
                     <a href="${favouriteLoginUrl}"
                        class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 text-primary hover:bg-base-100"
                        aria-label="${favouriteLoginToAddLabel}"

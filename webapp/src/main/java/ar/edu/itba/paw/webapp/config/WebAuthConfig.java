@@ -30,7 +30,9 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.RememberMeServices;
+import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.authentication.rememberme.TokenBasedRememberMeServices;
 import org.springframework.security.web.context.DelegatingSecurityContextRepository;
@@ -39,6 +41,8 @@ import org.springframework.security.web.context.RequestAttributeSecurityContextR
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
 import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
@@ -74,12 +78,22 @@ public class WebAuthConfig {
                 new HttpSessionSecurityContextRepository(), new RequestAttributeSecurityContextRepository());
     }
 
+    /**
+     * Single source of truth for saved bounced requests, shared between the {@code ExceptionTranslationFilter}
+     * that stores them and the {@link SavedRequestAwareAuthenticationSuccessHandler} that restores them on login.
+     */
+    @Bean
+    public RequestCache requestCache() {
+        return new HttpSessionRequestCache();
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(
             final HttpSecurity http,
             final UserAccountDetailsService userDetailsAccountService,
             final SecurityContextRepository securityContextRepository,
             final AuthenticatedUserExistsFilter authenticatedUserExistsFilter,
+            final RequestCache requestCache,
             @Qualifier("credentialsProperties") final Properties credentialsProperties)
             throws Exception {
         final String rememberMeKey = requireRememberMeKey(credentialsProperties);
@@ -87,8 +101,9 @@ public class WebAuthConfig {
                 .addFilterAfter(authenticatedUserExistsFilter, RememberMeAuthenticationFilter.class)
                 .securityContext(context -> context.securityContextRepository(securityContextRepository))
                 .sessionManagement(session -> session.invalidSessionUrl(LOGIN_PATH))
+                .requestCache(cache -> cache.requestCache(requestCache))
                 .authorizeHttpRequests(this::configureAuthorization)
-                .formLogin(WebAuthConfig::configureFormLogin)
+                .formLogin(form -> configureFormLogin(form, savedRequestSuccessHandler(requestCache)))
                 .rememberMe(remember -> configureRememberMe(remember, userDetailsAccountService, rememberMeKey))
                 .logout(logout -> logout.logoutUrl(LOGOUT_PATH)
                         .deleteCookies("JSESSIONID")
@@ -150,14 +165,22 @@ public class WebAuthConfig {
         };
     }
 
-    private static void configureFormLogin(final FormLoginConfigurer<HttpSecurity> form) {
+    private static void configureFormLogin(
+            final FormLoginConfigurer<HttpSecurity> form, final AuthenticationSuccessHandler successHandler) {
         form.usernameParameter("j_username")
                 .passwordParameter("j_password")
                 .loginPage(LOGIN_PATH)
-                // Falls back to "/" only when there is no saved request; Spring's RequestCache
-                // returns users to the protected page they were bounced from.
-                .defaultSuccessUrl("/")
+                .successHandler(successHandler)
                 .failureHandler(WebAuthConfig::handleLoginFailure);
+    }
+
+    private static AuthenticationSuccessHandler savedRequestSuccessHandler(final RequestCache requestCache) {
+        // Returns users to the page they were bounced from; "/" is only the fallback when nothing was saved.
+        final SavedRequestAwareAuthenticationSuccessHandler handler =
+                new SavedRequestAwareAuthenticationSuccessHandler();
+        handler.setRequestCache(requestCache);
+        handler.setDefaultTargetUrl("/");
+        return handler;
     }
 
     private static void configureRememberMe(

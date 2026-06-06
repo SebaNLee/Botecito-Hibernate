@@ -45,10 +45,8 @@ public class FavouriteController {
         if (errors.hasErrors()) {
             return favouritePresentation.favouritesErrors(request, search, errors);
         }
-        final int page = search.getPage() == null ? 1 : search.getPage();
-        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
         final PageModel<Item> itemPage = favouriteService.listFavourites(
-                user.getId(), search.getSearchQuery(), page, pageSize, search.getSortBy());
+                user.getId(), search.getSearchQuery(), search.getPage(), search.getPageSize(), search.getSortBy());
         return favouritePresentation.favourites(request, search, itemPage);
     }
 

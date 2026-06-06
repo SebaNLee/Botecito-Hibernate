@@ -11,15 +11,18 @@ import ar.edu.itba.paw.services.ReviewService;
 import ar.edu.itba.paw.services.SubscriptionService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
+import ar.edu.itba.paw.webapp.form.ProfileViewForm;
 import ar.edu.itba.paw.webapp.presentation.ProfilePresentation;
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
@@ -27,9 +30,7 @@ import org.springframework.web.servlet.ModelAndView;
 public class ProfileController {
 
     private static final int LISTINGS_TOTAL_CAP = Integer.MAX_VALUE;
-    private static final int MAX_LISTINGS_PAGE_SIZE = 24;
-    private static final int MAX_REVIEWS_PAGE_SIZE = 50;
-    private static final int MAX_PAGE_NUMBER = 100_000;
+    private static final int REVIEWS_PAGE_SIZE = 5;
 
     private final UserService userService;
     private final ItemService itemService;
@@ -37,34 +38,43 @@ public class ProfileController {
     private final SubscriptionService subscriptionService;
     private final ProfilePresentation profilePresentation;
 
+    @ModelAttribute("profileView")
+    public ProfileViewForm defaultProfileView() {
+        final ProfileViewForm form = new ProfileViewForm();
+        form.setTab("listings");
+        form.setPage(1);
+        form.setPageSize(12);
+        form.setSortBy("newest");
+        return form;
+    }
+
     @RequestMapping(value = "/profiles/{id:[1-9]\\d*}", method = RequestMethod.GET)
     public ModelAndView profile(
             @AuthenticationPrincipal final BotecitoUserDetails viewer,
             @PathVariable("id") final int id,
-            @RequestParam(value = "tab", defaultValue = "listings") final String tab,
-            @RequestParam(value = "listingsPage", defaultValue = "1") final int listingsPage,
-            @RequestParam(value = "listingsPageSize", defaultValue = "6") final int listingsPageSize,
-            @RequestParam(value = "reviewsPage", defaultValue = "1") final int reviewsPage,
-            @RequestParam(value = "reviewsPageSize", defaultValue = "5") final int reviewsPageSize,
+            @Valid @ModelAttribute("profileView") final ProfileViewForm profileView,
+            final BindingResult errors,
             final HttpServletRequest request) {
         final Users profileUser = userService.findById(id).orElseThrow(UserNotFoundException::new);
 
-        final String activeTab = "reviews".equalsIgnoreCase(tab) ? "reviews" : "listings";
+        if (errors.hasErrors()) {
+            return profilePresentation.profileErrors(viewer, profileUser, profileView, errors, request);
+        }
 
-        final int safeListingsPage = clampPage(listingsPage);
-        final int safeListingsPageSize = clampPageSize(listingsPageSize, MAX_LISTINGS_PAGE_SIZE);
-        final int safeReviewsPage = clampPage(reviewsPage);
-        final int safeReviewsPageSize = clampPageSize(reviewsPageSize, MAX_REVIEWS_PAGE_SIZE);
+        final String activeTab = resolveActiveTab(profileView.getTab());
+        final int listingsPage = "reviews".equals(activeTab) ? 1 : profileView.getPage();
+        final int reviewsPage = "reviews".equals(activeTab) ? profileView.getPage() : 1;
 
+        final String sortBy = resolveSortBy(profileView.getSortBy());
         final SearchResult<Item> listingsResult =
-                itemService.listOwnerItems(id, null, null, safeListingsPage, safeListingsPageSize, "newest");
+                itemService.listOwnerItems(id, null, null, listingsPage, profileView.getPageSize(), sortBy);
         final long total = listingsResult.getTotalCount();
         final int totalListings = total > LISTINGS_TOTAL_CAP ? LISTINGS_TOTAL_CAP : (int) total;
         final PageModel<Item> listingsPageModel = new PageModel<>(
-                listingsResult.getPageElements(), safeListingsPage, safeListingsPageSize, totalListings);
+                listingsResult.getPageElements(), listingsPage, profileView.getPageSize(), totalListings);
 
         final PageModel<Review> reviewsPageModel =
-                reviewService.findReviewsAboutHost(id, safeReviewsPage, safeReviewsPageSize);
+                reviewService.findReviewsAboutHost(id, reviewsPage, REVIEWS_PAGE_SIZE);
         final Double averageRating = reviewService.averageRatingAboutHost(id).orElse(null);
         final int followersCount = subscriptionService.countFollowers(id);
 
@@ -83,20 +93,18 @@ public class ProfileController {
                 followersCount,
                 isSelf,
                 isSubscribed,
+                profileView,
                 request);
     }
 
-    private static int clampPage(final int page) {
-        if (page < 1) {
-            return 1;
-        }
-        return Math.min(MAX_PAGE_NUMBER, page);
+    private static String resolveActiveTab(final String tab) {
+        return "reviews".equalsIgnoreCase(tab) ? "reviews" : "listings";
     }
 
-    private static int clampPageSize(final int pageSize, final int max) {
-        if (pageSize < 1) {
-            return 1;
+    private static String resolveSortBy(final String sortBy) {
+        if (sortBy == null || sortBy.isBlank()) {
+            return "newest";
         }
-        return Math.min(max, pageSize);
+        return sortBy;
     }
 }

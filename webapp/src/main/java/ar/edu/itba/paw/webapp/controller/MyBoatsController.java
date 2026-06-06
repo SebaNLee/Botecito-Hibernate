@@ -54,10 +54,13 @@ public class MyBoatsController {
         if (errors.hasErrors()) {
             return myBoatsPresentation.myBoatsErrors(request, search, errors);
         }
-        final int page = search.getPage() == null ? 1 : search.getPage();
-        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
         final SearchResult<Item> result = itemService.listOwnerItems(
-                user.getId(), search.getSearchQuery(), search.getStatus(), page, pageSize, search.getSortBy());
+                user.getId(),
+                search.getSearchQuery(),
+                search.getStatus(),
+                search.getPage(),
+                search.getPageSize(),
+                search.getSortBy());
         return myBoatsPresentation.myBoatsList(request, search, result.getPageElements(), result.getTotalCount());
     }
 

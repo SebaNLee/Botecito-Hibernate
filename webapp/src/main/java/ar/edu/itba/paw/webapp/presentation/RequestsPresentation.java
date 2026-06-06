@@ -171,10 +171,8 @@ public class RequestsPresentation {
         if (search == null) {
             return;
         }
-        final int page = search.getPage() == null ? 1 : search.getPage();
-        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
-        redirectAttributes.addAttribute("page", page);
-        redirectAttributes.addAttribute("pageSize", pageSize);
+        redirectAttributes.addAttribute("page", search.getPage());
+        redirectAttributes.addAttribute("pageSize", search.getPageSize());
         if (StringUtils.hasText(search.getSortBy()) && !"newest".equals(search.getSortBy())) {
             redirectAttributes.addAttribute("sortBy", search.getSortBy());
         }
@@ -207,10 +205,8 @@ public class RequestsPresentation {
 
     private void addListingModelObjects(
             final ModelAndView mav, final BookingSearchForm search, final List<Booking> bookings, final long total) {
-        final int page = search.getPage() == null ? 1 : search.getPage();
-        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
         final int totalItems = total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
-        mav.addObject("bookingPage", new PageModel<>(bookings, page, pageSize, totalItems));
+        mav.addObject("bookingPage", new PageModel<>(bookings, search.getPage(), search.getPageSize(), totalItems));
         mav.addObject("bookingsCount", totalItems);
         mav.addObject("sort", sortRequestValue(search.getSortBy()));
     }

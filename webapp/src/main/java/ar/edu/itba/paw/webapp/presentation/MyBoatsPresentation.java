@@ -29,6 +29,7 @@ public class MyBoatsPresentation {
             final long totalCount) {
         final ModelAndView mav = new ModelAndView("my-boats", "myBoatsSearch", search);
         addListingModelObjects(mav, search, ownedItems, totalCount, request);
+        mav.addObject("hasValidationErrors", false);
         return mav;
     }
 
@@ -42,6 +43,7 @@ public class MyBoatsPresentation {
         mav.addObject("imageUrlsByItemId", new LinkedHashMap<>());
         mav.addObject("itemPage", new PageModel<>(ownedItems, 1, 12, 0));
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
+        mav.addObject("hasValidationErrors", true);
         return mav;
     }
 
@@ -51,8 +53,8 @@ public class MyBoatsPresentation {
             final List<Item> ownedItems,
             final long total,
             final HttpServletRequest request) {
-        final int page = search.getPage() == null ? 1 : search.getPage();
-        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
+        final int page = search.getPage();
+        final int pageSize = search.getPageSize();
         final int totalItems = total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
 

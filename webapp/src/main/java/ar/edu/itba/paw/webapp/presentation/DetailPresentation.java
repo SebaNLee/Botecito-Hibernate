@@ -49,8 +49,22 @@ public class DetailPresentation {
             final Item item,
             final BotecitoUserDetails viewer,
             final DetailPageFlags flags,
-            final HttpServletRequest request) {
-        return buildDetailView(item, viewer, flags, request);
+            final HttpServletRequest request,
+            final ItemDetailViewForm itemDetailView) {
+        return buildDetailView(item, viewer, flags, request, itemDetailView);
+    }
+
+    public ModelAndView detailPageWithViewValidationErrors(
+            final Item item,
+            final BotecitoUserDetails viewer,
+            final DetailPageFlags flags,
+            final HttpServletRequest request,
+            final ItemDetailViewForm itemDetailView,
+            final BindingResult errors) {
+        final ModelAndView mav = buildDetailView(item, viewer, flags, request, itemDetailView);
+        mav.addAllObjects(errors.getModel());
+        mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
+        return mav;
     }
 
     public ModelAndView detailPageWithPreBookingValidationErrors(
@@ -59,7 +73,10 @@ public class DetailPresentation {
             final DetailPageFlags flags,
             final HttpServletRequest request,
             final BindingResult errors) {
-        final ModelAndView mav = detailPage(item, viewer, flags, request);
+        final ItemDetailViewForm itemDetailView = new ItemDetailViewForm();
+        itemDetailView.setItemId(item.getId());
+        itemDetailView.setPage(1);
+        final ModelAndView mav = buildDetailView(item, viewer, flags, request, itemDetailView);
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
         return mav;
     }
@@ -71,7 +88,14 @@ public class DetailPresentation {
             final HttpServletRequest request,
             final ReportForm form,
             final BindingResult errors) {
-        final ModelAndView mav = detailPage(item, viewer, flags, request);
+        final ItemDetailViewForm itemDetailView = new ItemDetailViewForm();
+        itemDetailView.setItemId(item.getId());
+        if (item.getReviewPage() != null) {
+            itemDetailView.setPage(item.getReviewPage().getPage());
+        } else {
+            itemDetailView.setPage(1);
+        }
+        final ModelAndView mav = buildDetailView(item, viewer, flags, request, itemDetailView);
         mav.addObject("reportForm", form);
         mav.addObject("openReportModal", true);
         mav.addObject("toasts", toastPresentation.validationToasts(errors, "report"));
@@ -87,7 +111,8 @@ public class DetailPresentation {
             final Item item,
             final BotecitoUserDetails viewer,
             final DetailPageFlags flags,
-            final HttpServletRequest request) {
+            final HttpServletRequest request,
+            final ItemDetailViewForm itemDetailView) {
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
         final Version version = item.getLatestVersion();
         final Users itemOwner = item.getHost();
@@ -119,7 +144,7 @@ public class DetailPresentation {
         mav.addObject("totalReviews", item.getTotalReviews());
         mav.addObject("averageRating", item.getAverageRating());
         mav.addObject("reviewDatesById", formatReviewDates(item.getReviewPage()));
-        mav.addObject("itemDetailView", itemDetailView(item));
+        mav.addObject("itemDetailView", itemDetailView);
 
         final PreBookingForm preBookingForm = new PreBookingForm();
         preBookingForm.setVersionId(version.getId());
@@ -149,15 +174,6 @@ public class DetailPresentation {
                 "detailListingMaxDateIso",
                 DetailAvailabilityPicker.listingCalendarMaxInclusive(listingTz)
                         .format(DateTimeFormatter.ISO_LOCAL_DATE));
-    }
-
-    private static ItemDetailViewForm itemDetailView(final Item item) {
-        final ItemDetailViewForm view = new ItemDetailViewForm();
-        view.setItemId(item.getId());
-        if (item.getReviewPage() != null) {
-            view.setReviewPage(item.getReviewPage().getPage());
-        }
-        return view;
     }
 
     private static Map<Integer, String> formatReviewDates(final PageModel<Review> page) {

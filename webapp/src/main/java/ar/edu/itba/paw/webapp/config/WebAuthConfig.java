@@ -12,6 +12,7 @@ import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -113,7 +114,8 @@ public class WebAuthConfig {
                 // payment-proof needs SAMEORIGIN for rendering PDF in modal iframes
                 .headers(headers -> headers.frameOptions(frame -> frame.deny())
                         .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
-                                antMatcher("/requests/bookings/*/payment-proof"), // payment-proof needs SAMEORIGIN for redering PDF in modal iframes
+                                antMatcher("/requests/bookings/*/payment-proof"), // payment-proof needs SAMEORIGIN for
+                                // redering PDF in modal iframes
                                 new XFrameOptionsHeaderWriter(
                                         XFrameOptionsHeaderWriter.XFrameOptionsMode.SAMEORIGIN))));
         return http.build();
@@ -175,11 +177,22 @@ public class WebAuthConfig {
 
     private static AuthenticationSuccessHandler savedRequestSuccessHandler(final RequestCache requestCache) {
         // Returns users to the page they were bounced from; "/" is only the fallback when nothing was saved.
-        final SavedRequestAwareAuthenticationSuccessHandler handler =
+        final SavedRequestAwareAuthenticationSuccessHandler fallback =
                 new SavedRequestAwareAuthenticationSuccessHandler();
-        handler.setRequestCache(requestCache);
-        handler.setDefaultTargetUrl("/");
-        return handler;
+        fallback.setRequestCache(requestCache);
+        fallback.setDefaultTargetUrl("/");
+        return (request, response, authentication) -> {
+            final HttpSession session = request.getSession(false);
+            if (session != null) {
+                final String continueUrl = (String) session.getAttribute("continueUrl");
+                if (continueUrl != null) {
+                    session.removeAttribute("continueUrl");
+                    response.sendRedirect(request.getContextPath() + continueUrl);
+                    return;
+                }
+            }
+            fallback.onAuthenticationSuccess(request, response, authentication);
+        };
     }
 
     private static void configureRememberMe(

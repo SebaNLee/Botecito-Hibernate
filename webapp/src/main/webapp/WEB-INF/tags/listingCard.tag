@@ -31,7 +31,6 @@
 <div class="group card relative min-w-0 bg-base-100 shadow-sm overflow-hidden text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
   <c:if test="${isFavouriteAllowed}">
     <form action="${isFavourite ? unfavouriteUrl : favouriteUrl}" method="post" class="absolute right-3 top-3 z-10 m-0">
-      <paw:csrfInput />
       <input type="hidden" name="return" value="${fn:escapeXml(resolvedFavouriteReturn)}" />
       <button
           type="submit"

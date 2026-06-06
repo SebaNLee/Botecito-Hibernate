@@ -234,10 +234,7 @@
               <c:url var="incomingConfirmPaymentUrl" value="/requests/incoming/${b.id}/confirm-payment" />
               <c:url var="incomingRejectPaymentUrl" value="/requests/incoming/${b.id}/reject-payment" />
               <c:url var="outgoingCancelUrl" value="/requests/outgoing/${b.id}/cancel" />
-              <%-- CSRF in query string: CsrfFilter runs before multipart parsing. --%>
-              <c:url var="outgoingPaymentUrl" value="/requests/outgoing/${b.id}/payment">
-                <c:param name="${_csrf.parameterName}" value="${_csrf.token}" />
-              </c:url>
+              <c:url var="outgoingPaymentUrl" value="/requests/outgoing/${b.id}/payment" />
               <c:url var="paymentProofUrl" value="/requests/bookings/${b.id}/payment-proof" />
 
               <c:set var="detailModalId" value="nuevo-booking-detail-${sidebarActive}-${b.id}" />
@@ -322,17 +319,14 @@
                 <div class="flex flex-col md:w-60 shrink-0 bg-base-200/50 p-4 border-t md:border-t-0 md:border-l border-outline-variant/20 gap-2 justify-center">
                   <c:if test="${isIncoming && b.status.name() == 'PENDING'}">
                     <form action="${incomingAcceptUrl}" method="post" class="w-full">
-                      <paw:csrfInput />
                       <paw:button type="submit" color="primary" cssClass="w-full" size="sm" text="${actionAcceptLabel}" submitLoading="true" />
                     </form>
                     <form action="${incomingRejectUrl}" method="post" class="w-full">
-                      <paw:csrfInput />
                       <paw:button type="submit" color="danger" variant="outline" cssClass="w-full" size="sm" text="${actionRejectLabel}" submitLoading="true" />
                     </form>
                   </c:if>
                   <c:if test="${isIncoming && b.status.name() == 'PAID'}">
                     <form action="${incomingConfirmPaymentUrl}" method="post" class="w-full">
-                      <paw:csrfInput />
                       <paw:button type="submit" color="primary" cssClass="w-full" size="sm" text="${actionConfirmPaymentLabel}" submitLoading="true" />
                     </form>
                     <button type="button" class="btn btn-outline btn-error btn-sm w-full" onclick="document.getElementById('${detailModalId}-reject').showModal()">
@@ -342,7 +336,6 @@
                     <paw:detailsModal id="${detailModalId}-reject" title="${actionRejectPaymentLabel}">
                       <jsp:body>
                         <form action="${incomingRejectPaymentUrl}" method="post" class="space-y-4">
-                          <paw:csrfInput />
                           <div class="form-control w-full">
                             <label class="label block text-[11px] font-bold uppercase tracking-wider text-outline" for="reject-pay-reason-${b.id}"><c:out value="${rejectPaymentReasonLabel}" /></label>
                             <textarea id="reject-pay-reason-${b.id}" name="reason" rows="3" maxlength="255" required="required" class="textarea textarea-bordered w-full"></textarea>
@@ -354,7 +347,6 @@
                   </c:if>
                   <c:if test="${not isIncoming && (b.status.name() == 'PENDING' || b.status.name() == 'ACCEPTED' || b.status.name() == 'PAID' || b.status.name() == 'CONFIRMED' || b.status.name() == 'REFUSED')}">
                     <form action="${outgoingCancelUrl}" method="post" class="w-full">
-                      <paw:csrfInput />
                       <paw:button type="submit" color="danger" variant="outline" cssClass="w-full" size="sm" text="${actionCancelLabel}" submitLoading="true" />
                     </form>
                   </c:if>

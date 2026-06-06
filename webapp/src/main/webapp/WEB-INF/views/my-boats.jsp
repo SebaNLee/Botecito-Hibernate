@@ -217,7 +217,6 @@
                   <c:choose>
                     <c:when test="${itemActive}">
                       <form action="${disableItemUrl}" method="post" class="m-0">
-                        <paw:csrfInput />
                         <button type="submit" class="btn btn-outline btn-sm">
                           <span class="material-symbols-outlined text-base">visibility_off</span>
                           <c:out value="${disableLabel}" />
@@ -226,7 +225,6 @@
                     </c:when>
                     <c:otherwise>
                       <form action="${enableItemUrl}" method="post" class="m-0">
-                        <paw:csrfInput />
                         <button type="submit" class="btn btn-outline btn-sm">
                           <span class="material-symbols-outlined text-base">visibility</span>
                           <c:out value="${enableLabel}" />
@@ -242,7 +240,6 @@
               </paw:detailsModal>
               <paw:confirmModal id="${deleteModalId}" title="${deleteConfirmTitle}" message="${deleteConfirmMessage}" confirmText="${deleteConfirmConfirm}" cancelText="${deleteConfirmCancel}" confirmColor="danger" icon="delete_forever">
                 <form action="${deleteItemUrl}" method="post" class="m-0">
-                  <paw:csrfInput />
                   <paw:button type="submit" color="danger" cssClass="w-full sm:w-auto" text="${deleteConfirmConfirm}" />
                 </form>
               </paw:confirmModal>

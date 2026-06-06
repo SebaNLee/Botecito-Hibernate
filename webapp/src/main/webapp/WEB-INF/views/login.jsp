@@ -58,7 +58,6 @@
         </c:if>
 
         <form action="${loginUrl}" method="post" class="space-y-4">
-          <paw:csrfInput />
           <fieldset class="fieldset">
             <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="j_username">
               <c:out value="${emailLabel}" />

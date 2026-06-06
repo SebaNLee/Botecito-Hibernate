@@ -155,7 +155,6 @@
                       </div>
                       <c:url var="unsubscribeSettingsUrl" value="/users/${subscriptionUser.id}/unsubscribe" />
                       <form action="${unsubscribeSettingsUrl}" method="post" class="m-0 shrink-0">
-                        <paw:csrfInput />
                         <input type="hidden" name="return" value="/settings" />
                         <paw:button type="submit" color="outline" icon="notifications_off" text="${subscriptionUnsubscribeLabel}" cssClass="w-full sm:w-auto" />
                       </form>
@@ -219,11 +218,9 @@
 
           <div class="flex flex-wrap items-center gap-3">
             <form action="${settingsPasswordRecoveryUrl}" method="post" class="m-0">
-              <paw:csrfInput />
               <paw:button type="submit" color="secondary" icon="mail" text="${passwordRecoverySendLabel}" />
             </form>
             <form action="${logoutUrl}" method="post" class="m-0">
-              <paw:csrfInput />
               <paw:button type="submit" variant="outline" icon="logout" text="${logoutLabel}" />
             </form>
           </div>

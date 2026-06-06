@@ -5,10 +5,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="editAvailabilityUrl" value="/edit/${itemId}/availability" />
-<%-- CSRF in query string: CsrfFilter runs before multipart parsing. --%>
-<c:url var="editImagesUrl" value="/edit/${itemId}/images">
-  <c:param name="${_csrf.parameterName}" value="${_csrf.token}" />
-</c:url>
+<c:url var="editImagesUrl" value="/edit/${itemId}/images" />
 <spring:message code="editPublication.actions.save" var="editSubmitLabel" />
 <spring:message code="publish.back.imagesLost" var="publishBackImagesLostMsg" />
 <spring:bind path="publishForm.files">

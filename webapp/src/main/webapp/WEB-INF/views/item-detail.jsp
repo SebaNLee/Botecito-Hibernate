@@ -156,7 +156,6 @@
             <c:if test="${pendingItemReviewAction != null}">
               <c:url var="createItemReviewUrl" value="/reviews/booking/${pendingItemReviewAction.bookingId}" />
               <form action="${createItemReviewUrl}" method="post" class="rounded-2xl bg-base-200 p-4 space-y-3">
-                <paw:csrfInput />
                 <input type="hidden" name="returnTo" value="item" />
                 <input type="hidden" name="itemId" value="${item.id}" />
                 <h3 class="m-0 text-sm font-bold text-on-surface"><c:out value="${itemReviewLeaveLabel}" /></h3>
@@ -262,7 +261,6 @@
                   <c:when test="${favouriteItem}">
                     <c:url var="unfavouriteItemUrl" value="/items/${item.id}/unfavourite" />
                     <form action="${unfavouriteItemUrl}" method="post" class="m-0">
-                      <paw:csrfInput />
                       <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
                       <button
                           type="submit"
@@ -276,7 +274,6 @@
                   <c:otherwise>
                     <c:url var="favouriteItemUrl" value="/items/${item.id}/favourite" />
                     <form action="${favouriteItemUrl}" method="post" class="m-0">
-                      <paw:csrfInput />
                       <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
                       <button
                           type="submit"
@@ -531,7 +528,6 @@
                   <c:when test="${subscribedToOwner}">
                     <c:url var="unsubscribeOwnerUrl" value="/users/${itemOwner.id}/unsubscribe" />
                     <form action="${unsubscribeOwnerUrl}" method="post" class="m-0">
-                      <paw:csrfInput />
                       <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
                       <paw:button
                         type="submit"
@@ -545,7 +541,6 @@
                   <c:otherwise>
                     <c:url var="subscribeOwnerUrl" value="/users/${itemOwner.id}/subscribe" />
                     <form action="${subscribeOwnerUrl}" method="post" class="m-0">
-                      <paw:csrfInput />
                       <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
                       <paw:button
                         type="submit"

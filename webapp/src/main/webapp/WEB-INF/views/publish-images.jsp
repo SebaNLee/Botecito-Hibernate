@@ -5,10 +5,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="stepTwoUrl" value="/publish/availability" />
-<%-- CSRF in query string: CsrfFilter runs before multipart parsing. --%>
-<c:url var="stepThreeUrl" value="/publish/images">
-  <c:param name="${_csrf.parameterName}" value="${_csrf.token}" />
-</c:url>
+<c:url var="stepThreeUrl" value="/publish/images" />
 <spring:message code="publish.actions.submit" var="publishSubmitLabel" />
 <spring:message code="publish.back.imagesLost" var="publishBackImagesLostMsg" />
 <spring:bind path="publishForm.files">

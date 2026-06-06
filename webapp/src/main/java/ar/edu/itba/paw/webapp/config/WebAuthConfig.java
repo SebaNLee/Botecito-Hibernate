@@ -109,8 +109,7 @@ public class WebAuthConfig {
                         .deleteCookies("JSESSIONID")
                         .logoutSuccessUrl(LOGIN_PATH + "?logout=true"))
                 .exceptionHandling(ex -> ex.accessDeniedHandler(WebAuthConfig::handleAccessDenied))
-                // CSRF stays enabled (Spring default). Plain <form> posts include the token via the
-                // csrfInput tag; <form:form> tags inject it through CsrfRequestDataValueProcessor.
+                .csrf(csrf -> csrf.disable())
                 // payment-proof needs SAMEORIGIN for rendering PDF in modal iframes
                 .headers(headers -> headers.frameOptions(frame -> frame.deny())
                         .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(

@@ -97,7 +97,6 @@
               <c:when test="${isSubscribed}">
                 <c:url var="unsubscribeProfileUrl" value="/users/${user.id}/unsubscribe" />
                 <form action="${unsubscribeProfileUrl}" method="post" class="m-0">
-                  <paw:csrfInput />
                   <input type="hidden" name="return" value="/profiles/${user.id}" />
                   <paw:button type="submit" color="outline" icon="notifications_off"
                               text="${subscriptionUnsubscribeLabel}" cssClass="w-full sm:w-auto" />
@@ -106,7 +105,6 @@
               <c:otherwise>
                 <c:url var="subscribeProfileUrl" value="/users/${user.id}/subscribe" />
                 <form action="${subscribeProfileUrl}" method="post" class="m-0">
-                  <paw:csrfInput />
                   <input type="hidden" name="return" value="/profiles/${user.id}" />
                   <paw:button type="submit" color="secondary" icon="notifications"
                               text="${subscriptionSubscribeLabel}" cssClass="w-full sm:w-auto" />

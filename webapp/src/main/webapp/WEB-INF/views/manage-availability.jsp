@@ -163,7 +163,6 @@
                 </template>
 
                 <form action="${saveUrl}" method="post" data-timeline-save-form class="mt-6 flex justify-end">
-                  <paw:csrfInput />
                   <c:if test="${not empty manageAvailabilityReturnPath}">
                     <input type="hidden" name="return" value="<c:out value='${manageAvailabilityReturnPath}' />" />
                   </c:if>

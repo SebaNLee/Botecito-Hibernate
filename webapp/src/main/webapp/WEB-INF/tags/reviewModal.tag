@@ -44,7 +44,6 @@
     <paw:detailsModal id="${modalId}" title="${reviewLeaveLabel}">
       <jsp:body>
         <form action="<c:url value='/reviews/booking/${bookingId}' />" method="post" class="space-y-4">
-          <paw:csrfInput />
           <input type="hidden" name="returnTo" value="${returnTo}" />
           <c:if test="${not empty targetType}">
             <input type="hidden" name="targetType" value="${targetType}" />

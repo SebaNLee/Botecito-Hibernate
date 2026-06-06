@@ -31,6 +31,7 @@ public class FavouritePresentation {
             final HttpServletRequest request, final FavouritesSearchForm search, final PageModel<Item> itemPage) {
         final ModelAndView mav = new ModelAndView(VIEW_NAME, "favouritesSearch", search);
         addListingModelObjects(mav, itemPage, request);
+        mav.addObject("hasValidationErrors", false);
         return mav;
     }
 
@@ -40,6 +41,7 @@ public class FavouritePresentation {
         mav.addAllObjects(errors.getModel());
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
         addListingModelObjects(mav, new PageModel<>(List.of(), 1, 12, 0), request);
+        mav.addObject("hasValidationErrors", true);
         return mav;
     }
 
@@ -103,10 +105,8 @@ public class FavouritePresentation {
         if (search == null) {
             return;
         }
-        final int page = search.getPage() == null ? 1 : search.getPage();
-        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
-        redirectAttributes.addAttribute("page", page);
-        redirectAttributes.addAttribute("pageSize", pageSize);
+        redirectAttributes.addAttribute("page", search.getPage());
+        redirectAttributes.addAttribute("pageSize", search.getPageSize());
         if (StringUtils.hasText(search.getSortBy()) && !"newest".equals(search.getSortBy())) {
             redirectAttributes.addAttribute("sortBy", search.getSortBy());
         }
@@ -120,8 +120,8 @@ public class FavouritePresentation {
         if (view == null || view.getItemId() == null) {
             return;
         }
-        if (view.getReviewPage() != null && view.getReviewPage() > 1) {
-            redirectAttributes.addAttribute("reviewPage", view.getReviewPage());
+        if (view.getPage() != null && view.getPage() > 1) {
+            redirectAttributes.addAttribute("page", view.getPage());
         }
     }
 

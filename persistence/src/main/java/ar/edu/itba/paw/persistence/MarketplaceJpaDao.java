@@ -20,8 +20,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class MarketplaceJpaDao implements MarketplaceDao {
 
-    private static final int DEFAULT_PAGE_SIZE = 12;
-
     private static final String VERSION_FETCH_JPQL = "SELECT DISTINCT v FROM Version v "
             + "JOIN FETCH v.item JOIN FETCH v.location JOIN FETCH v.type "
             + "LEFT JOIN FETCH v.media m LEFT JOIN FETCH m.image "
@@ -48,9 +46,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             nativeQuery.setParameter(entry.getKey(), entry.getValue());
         }
 
-        final int pageSize = resolvePageSize(query);
-        final int page = resolvePage(query);
-        Paging.apply(nativeQuery, page, pageSize);
+        Paging.apply(nativeQuery, query.getPage(), query.getPageSize());
 
         final List<Integer> idList = Paging.toIntegerIds(nativeQuery.getResultList());
 
@@ -205,20 +201,6 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             return null;
         }
         return query.getSortBy();
-    }
-
-    private static int resolvePage(final MarketplaceQueryModel query) {
-        if (query == null) {
-            return Paging.DEFAULT_PAGE;
-        }
-        return Paging.resolvePage(query.getPage());
-    }
-
-    private static int resolvePageSize(final MarketplaceQueryModel query) {
-        if (query == null) {
-            return DEFAULT_PAGE_SIZE;
-        }
-        return Paging.resolvePageSize(query.getPageSize(), DEFAULT_PAGE_SIZE, 6, 12, 18);
     }
 
     // Escape LIKE wildcards and turn spaces into % so "foo bar" matches titles containing both words.

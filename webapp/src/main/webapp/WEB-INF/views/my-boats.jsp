@@ -31,7 +31,8 @@
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
 <spring:message code="marketplace.sort.label" var="sortLabel" />
 <spring:message code="myBoats.pageSize" var="pageSizeFieldLabel" />
-<spring:message code="myBoats.filter.empty" var="filterEmptyLabel" />
+<spring:message code="myBoats.filter.empty.title" var="filterEmptyTitleLabel" />
+<spring:message code="myBoats.filter.empty.message" var="filterEmptyMessageLabel" />
 <c:set var="pageSize" value="${myBoatsSearch.pageSize != null ? myBoatsSearch.pageSize : 12}" />
 <c:set var="currentSortBy" value="${empty myBoatsSearch.sortBy ? 'newest' : myBoatsSearch.sortBy}" />
 <c:set var="hasActiveFilters" value="${not empty myBoatsSearch.searchQuery or not empty myBoatsSearch.status}" />
@@ -233,8 +234,11 @@
                 <span class="material-symbols-outlined text-4xl" aria-hidden="true">sailing</span>
               </div>
               <c:choose>
-                <c:when test="${hasActiveFilters}">
-                  <p class="m-0 max-w-lg text-on-surface-variant"><c:out value="${filterEmptyLabel}" /></p>
+                <c:when test="${hasValidationErrors or hasActiveFilters or itemPage.totalItems > 0}">
+                  <div class="max-w-lg">
+                    <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><c:out value="${filterEmptyTitleLabel}" /></h2>
+                    <p class="m-0 mt-2 text-on-surface-variant"><c:out value="${filterEmptyMessageLabel}" /></p>
+                  </div>
                   <a href="${clearFiltersUrl}" data-clear-list-filters class="btn btn-primary btn-sm no-underline">
                     <c:out value="${filtersClearLabel}" />
                   </a>

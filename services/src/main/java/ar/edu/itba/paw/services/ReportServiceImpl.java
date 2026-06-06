@@ -77,9 +77,7 @@ public class ReportServiceImpl implements ReportService {
     @Override
     @Transactional(readOnly = true)
     public SearchResult<Report> searchReports(final int page, final int pageSize, final String sortBy) {
-        final int safePage = Math.max(1, page);
-        final int safePageSize = Math.max(1, pageSize);
-        var result = reportDao.searchReports(safePage, safePageSize, sortBy);
+        var result = reportDao.searchReports(page, pageSize, sortBy);
 
         // Set transients
         for (Report report : result.getPageElements()) {

@@ -13,7 +13,8 @@
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
 <spring:message code="marketplace.sort.label" var="sortLabel" />
 <spring:message code="myBoats.pageSize" var="pageSizeFieldLabel" />
-<spring:message code="favourites.filter.empty" var="filterEmptyLabel" />
+<spring:message code="favourites.filter.empty.title" var="filterEmptyTitleLabel" />
+<spring:message code="favourites.filter.empty.message" var="filterEmptyMessageLabel" />
 <c:set var="pageSize" value="${favouritesSearch.pageSize != null ? favouritesSearch.pageSize : 12}" />
 <c:set var="currentSortBy" value="${empty favouritesSearch.sortBy ? 'newest' : favouritesSearch.sortBy}" />
 <c:set var="hasActiveFilters" value="${not empty favouritesSearch.searchQuery}" />
@@ -111,12 +112,18 @@
           <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
             <span class="material-symbols-outlined text-4xl icon-heart-outline" aria-hidden="true">favorite</span>
           </div>
-          <p class="m-0 max-w-lg text-on-surface-variant">
+          <div class="max-w-lg">
             <c:choose>
-              <c:when test="${hasActiveFilters}"><c:out value="${filterEmptyLabel}" /></c:when>
-              <c:otherwise><spring:message code="favourites.empty.message" /></c:otherwise>
+              <c:when test="${hasValidationErrors or hasActiveFilters}">
+                <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><c:out value="${filterEmptyTitleLabel}" /></h2>
+                <p class="m-0 mt-2 text-on-surface-variant"><c:out value="${filterEmptyMessageLabel}" /></p>
+              </c:when>
+              <c:otherwise>
+                <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><spring:message code="favourites.empty.title" /></h2>
+                <p class="m-0 mt-2 text-on-surface-variant"><spring:message code="favourites.empty.message" /></p>
+              </c:otherwise>
             </c:choose>
-          </p>
+          </div>
           <a href="${clearFiltersUrl}" data-clear-list-filters class="btn btn-primary btn-sm no-underline">
             <c:out value="${filtersClearLabel}" />
           </a>

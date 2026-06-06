@@ -167,10 +167,10 @@
             <c:if test="${reviewPage.totalPages > 1}">
               <div class="flex items-center justify-between gap-3 pt-2">
                 <c:url var="reviewPrevUrl" value="/item/${item.id}">
-                  <c:param name="reviewPage" value="${reviewPage.previousPage}" />
+                  <c:param name="page" value="${reviewPage.previousPage}" />
                 </c:url>
                 <c:url var="reviewNextUrl" value="/item/${item.id}">
-                  <c:param name="reviewPage" value="${reviewPage.nextPage}" />
+                  <c:param name="page" value="${reviewPage.nextPage}" />
                 </c:url>
                 <c:choose>
                   <c:when test="${reviewPage.hasPrevious}">

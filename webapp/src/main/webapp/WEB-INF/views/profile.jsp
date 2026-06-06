@@ -10,14 +10,40 @@
 <spring:message code="profile.editMyProfile" var="editMyProfileLabel" />
 <spring:message code="profile.listings.empty" var="listingsEmptyLabel" />
 <spring:message code="profile.reviews.empty" var="reviewsEmptyLabel" />
+<spring:message code="profile.listings.filter.empty.title" var="listingsFilterEmptyTitleLabel" />
+<spring:message code="profile.listings.filter.empty.message" var="listingsFilterEmptyMessageLabel" />
+<spring:message code="profile.reviews.filter.empty.title" var="reviewsFilterEmptyTitleLabel" />
+<spring:message code="profile.reviews.filter.empty.message" var="reviewsFilterEmptyMessageLabel" />
+<spring:message code="marketplace.empty.clear" var="filterEmptyClearLabel" />
 <spring:message code="subscription.subscribe" var="subscriptionSubscribeLabel" />
 <spring:message code="subscription.unsubscribe" var="subscriptionUnsubscribeLabel" />
 <spring:message code="marketplace.pagination.previous" var="paginationPreviousLabel" />
 <spring:message code="marketplace.pagination.next" var="paginationNextLabel" />
+<spring:message code="marketplace.sort.label" var="sortLabel" />
+<spring:message code="myBoats.sort.nameAsc" var="sortNameAscLabel" />
+<spring:message code="myBoats.sort.nameDesc" var="sortNameDescLabel" />
+<spring:message code="myBoats.pageSize" var="pageSizeFieldLabel" />
+
+<c:set var="pageSize" value="${profileView.pageSize != null ? profileView.pageSize : 12}" />
+<c:set var="profileSortBy" value="${empty profileView.sortBy ? 'newest' : profileView.sortBy}" />
+<c:set var="hasActiveListingsFilters" value="${profileSortBy != 'newest' or pageSize != 12 or (profileView.page != null && profileView.page > 1)}" />
+<c:set var="hasActiveReviewsFilters" value="${profileView.page != null && profileView.page > 1}" />
+<c:set var="showListingsFilterEmpty" value="${hasValidationErrors or hasActiveListingsFilters or listingsTotal > 0}" />
+<c:set var="showReviewsFilterEmpty" value="${hasValidationErrors or hasActiveReviewsFilters or reviewsTotal > 0}" />
 
 <c:url var="settingsUrl" value="/settings" />
-<c:url var="listingsTabUrl" value="/profiles/${user.id}"><c:param name="tab" value="listings" /></c:url>
-<c:url var="reviewsTabUrl" value="/profiles/${user.id}"><c:param name="tab" value="reviews" /></c:url>
+<c:url var="clearProfileListingsFiltersUrl" value="/profiles/${user.id}" />
+<c:url var="listingsTabUrl" value="/profiles/${user.id}">
+  <c:if test="${profileSortBy != 'newest'}"><c:param name="sortBy" value="${profileSortBy}" /></c:if>
+  <c:if test="${pageSize != 12}"><c:param name="pageSize" value="${pageSize}" /></c:if>
+</c:url>
+<c:url var="reviewsTabUrl" value="/profiles/${user.id}">
+  <c:param name="tab" value="reviews" />
+  <c:if test="${activeTab == 'reviews' && profileView.page != null && profileView.page > 1}">
+    <c:param name="page" value="${profileView.page}" />
+  </c:if>
+</c:url>
+<c:url var="profileListingsUrl" value="/profiles/${user.id}" />
 <c:set var="userFirstName" value="${user.firstName != null ? fn:trim(user.firstName) : ''}" />
 <c:set var="userLastName" value="${user.lastName != null ? fn:trim(user.lastName) : ''}" />
 <c:set var="hasFullName" value="${not empty userFirstName or not empty userLastName}" />
@@ -34,7 +60,8 @@
 <c:set var="initials" value="${fn:toUpperCase(initials)}" />
 <spring:message code="page.title.profile" var="titleProfile" />
 
-<paw:layout title="${titleProfile} - Botecito" mainClass="pt-24 pb-10 w-full max-w-7xl mx-auto px-6">
+<paw:layout title="${titleProfile} - Botecito" mainClass="pt-24 pb-10 w-full max-w-7xl mx-auto px-6" scripts="toast">
+  <paw:toastNotifier />
   <section class="space-y-6 min-w-0">
 
     <%-- Header card --%>
@@ -151,11 +178,62 @@
 
             <%-- Listings panel --%>
             <c:when test="${activeTab == 'listings'}">
+              <form id="profile-listings-filters-form" action="${profileListingsUrl}" method="get" class="mb-6 w-full">
+                <input type="hidden" name="page" value="1" />
+                <div class="flex shrink-0 flex-wrap items-center justify-end gap-2 text-sm font-medium text-on-surface-variant">
+                  <label for="profile-listings-sort" class="shrink-0 whitespace-nowrap"><c:out value="${sortLabel}" /></label>
+                  <select
+                      id="profile-listings-sort"
+                      name="sortBy"
+                      class="select select-sm w-32 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none sm:w-36"
+                      onchange="this.form.requestSubmit()">
+                    <option value="newest" ${profileSortBy == 'newest' ? 'selected="selected"' : ''}>
+                      <spring:message code="marketplace.sort.newest" />
+                    </option>
+                    <option value="oldest" ${profileSortBy == 'oldest' ? 'selected="selected"' : ''}>
+                      <spring:message code="marketplace.sort.oldest" />
+                    </option>
+                    <option value="nameAsc" ${profileSortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
+                    <option value="nameDesc" ${profileSortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
+                  </select>
+                  <label for="profile-listings-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
+                  <select
+                      id="profile-listings-page-size"
+                      name="pageSize"
+                      class="select select-sm w-20 font-bold text-primary"
+                      onchange="this.form.requestSubmit()">
+                    <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+                    <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+                    <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+                  </select>
+                </div>
+              </form>
+
               <c:choose>
                 <c:when test="${empty listings}">
-                  <p class="m-0 rounded-xl border border-dashed border-outline-variant/40 bg-base-200/45 px-4 py-3 text-sm text-on-surface-variant">
-                    <c:out value="${listingsEmptyLabel}" />
-                  </p>
+                  <c:choose>
+                    <c:when test="${showListingsFilterEmpty}">
+                      <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body items-center gap-4 p-10 text-center">
+                          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <span class="material-symbols-outlined text-4xl" aria-hidden="true">directions_boat</span>
+                          </div>
+                          <div class="max-w-lg">
+                            <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><c:out value="${listingsFilterEmptyTitleLabel}" /></h2>
+                            <p class="m-0 mt-2 text-on-surface-variant"><c:out value="${listingsFilterEmptyMessageLabel}" /></p>
+                          </div>
+                          <a href="${clearProfileListingsFiltersUrl}" class="btn btn-primary no-underline" data-clear-list-filters>
+                            <c:out value="${filterEmptyClearLabel}" />
+                          </a>
+                        </div>
+                      </div>
+                    </c:when>
+                    <c:otherwise>
+                      <p class="m-0 rounded-xl border border-dashed border-outline-variant/40 bg-base-200/45 px-4 py-3 text-sm text-on-surface-variant">
+                        <c:out value="${listingsEmptyLabel}" />
+                      </p>
+                    </c:otherwise>
+                  </c:choose>
                 </c:when>
                 <c:otherwise>
                   <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -165,14 +243,14 @@
                   </div>
                   <c:if test="${listingsPage.totalPages > 1}">
                     <c:url var="listingsPreviousPageUrl" value="/profiles/${user.id}">
-                      <c:param name="tab" value="listings" />
-                      <c:param name="listingsPage" value="${listingsPage.previousPage}" />
-                      <c:param name="listingsPageSize" value="${listingsPage.pageSize}" />
+                      <c:param name="page" value="${listingsPage.previousPage}" />
+                      <c:param name="sortBy" value="${profileSortBy}" />
+                      <c:param name="pageSize" value="${listingsPage.pageSize}" />
                     </c:url>
                     <c:url var="listingsNextPageUrl" value="/profiles/${user.id}">
-                      <c:param name="tab" value="listings" />
-                      <c:param name="listingsPage" value="${listingsPage.nextPage}" />
-                      <c:param name="listingsPageSize" value="${listingsPage.pageSize}" />
+                      <c:param name="page" value="${listingsPage.nextPage}" />
+                      <c:param name="sortBy" value="${profileSortBy}" />
+                      <c:param name="pageSize" value="${listingsPage.pageSize}" />
                     </c:url>
                     <nav class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
                       <c:choose>
@@ -216,9 +294,29 @@
             <c:otherwise>
               <c:choose>
                 <c:when test="${empty reviews}">
-                  <p class="m-0 rounded-xl border border-dashed border-outline-variant/40 bg-base-200/45 px-4 py-3 text-sm text-on-surface-variant">
-                    <c:out value="${reviewsEmptyLabel}" />
-                  </p>
+                  <c:choose>
+                    <c:when test="${showReviewsFilterEmpty}">
+                      <div class="card bg-base-100 shadow-sm">
+                        <div class="card-body items-center gap-4 p-10 text-center">
+                          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <span class="material-symbols-outlined text-4xl" aria-hidden="true">star</span>
+                          </div>
+                          <div class="max-w-lg">
+                            <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><c:out value="${reviewsFilterEmptyTitleLabel}" /></h2>
+                            <p class="m-0 mt-2 text-on-surface-variant"><c:out value="${reviewsFilterEmptyMessageLabel}" /></p>
+                          </div>
+                          <a href="${reviewsTabUrl}" class="btn btn-primary no-underline" data-clear-list-filters>
+                            <c:out value="${filterEmptyClearLabel}" />
+                          </a>
+                        </div>
+                      </div>
+                    </c:when>
+                    <c:otherwise>
+                      <p class="m-0 rounded-xl border border-dashed border-outline-variant/40 bg-base-200/45 px-4 py-3 text-sm text-on-surface-variant">
+                        <c:out value="${reviewsEmptyLabel}" />
+                      </p>
+                    </c:otherwise>
+                  </c:choose>
                 </c:when>
                 <c:otherwise>
                   <div class="flex flex-col gap-3">
@@ -229,13 +327,11 @@
                   <c:if test="${reviewsPage.totalPages > 1}">
                     <c:url var="reviewsPreviousPageUrl" value="/profiles/${user.id}">
                       <c:param name="tab" value="reviews" />
-                      <c:param name="reviewsPage" value="${reviewsPage.previousPage}" />
-                      <c:param name="reviewsPageSize" value="${reviewsPage.pageSize}" />
+                      <c:param name="page" value="${reviewsPage.previousPage}" />
                     </c:url>
                     <c:url var="reviewsNextPageUrl" value="/profiles/${user.id}">
                       <c:param name="tab" value="reviews" />
-                      <c:param name="reviewsPage" value="${reviewsPage.nextPage}" />
-                      <c:param name="reviewsPageSize" value="${reviewsPage.pageSize}" />
+                      <c:param name="page" value="${reviewsPage.nextPage}" />
                     </c:url>
                     <nav class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
                       <c:choose>

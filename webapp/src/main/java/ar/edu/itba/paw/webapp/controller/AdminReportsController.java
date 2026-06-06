@@ -40,13 +40,11 @@ public class AdminReportsController {
         if (errors.hasErrors()) {
             return adminReportsPresentation.listReportsErrors(search, errors);
         }
-        final int page = search.getPage() == null ? 1 : search.getPage();
-        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
         final String sortBy =
                 search.getSortBy() == null || search.getSortBy().isBlank() ? "newest" : search.getSortBy();
-        final SearchResult<Report> result = reportService.searchReports(page, pageSize, sortBy);
-        final PageModel<Report> reportPage =
-                new PageModel<>(result.getPageElements(), page, pageSize, (int) result.getTotalCount());
+        final SearchResult<Report> result = reportService.searchReports(search.getPage(), search.getPageSize(), sortBy);
+        final PageModel<Report> reportPage = new PageModel<>(
+                result.getPageElements(), search.getPage(), search.getPageSize(), (int) result.getTotalCount());
         return adminReportsPresentation.listReports(search, reportPage);
     }
 

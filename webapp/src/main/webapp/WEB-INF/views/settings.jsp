@@ -23,8 +23,20 @@
 <spring:message code="settings.preferredLanguage.en" var="englishLabel" />
 <spring:message code="settings.subscriptions.title" var="subscriptionsTitle" />
 <spring:message code="settings.subscriptions.empty" var="subscriptionsEmptyLabel" />
+<spring:message code="settings.subscriptions.filter.empty.title" var="filterEmptyTitleLabel" />
+<spring:message code="settings.subscriptions.filter.empty.message" var="filterEmptyMessageLabel" />
+<spring:message code="marketplace.empty.clear" var="filterEmptyClearLabel" />
 <spring:message code="subscription.unsubscribe" var="subscriptionUnsubscribeLabel" />
 <spring:message code="settings.viewPublicProfile" var="viewPublicProfileLabel" />
+
+<c:set var="subscriptionsPageSize" value="${settingsView.pageSize != null ? settingsView.pageSize : 6}" />
+<c:set var="hasActiveSubscriptionsFilters" value="${(settingsView.page != null && settingsView.page > 1) or subscriptionsPageSize != 6}" />
+<c:set var="showSubscriptionsFilterEmpty" value="${hasValidationErrors or hasActiveSubscriptionsFilters or subscriptionsPage.totalItems > 0}" />
+<c:url var="clearSubscriptionsFiltersUrl" value="/settings">
+  <c:if test="${settingsEdit}">
+    <c:param name="edit" value="true" />
+  </c:if>
+</c:url>
 
 <c:set var="initials" value="" />
 <c:if test="${not empty user.firstName}">
@@ -137,9 +149,29 @@
             </div>
             <c:choose>
               <c:when test="${empty subscriptions}">
-                <p class="m-0 rounded-xl border border-dashed border-outline-variant/40 bg-base-200/45 px-4 py-3 text-sm text-on-surface-variant">
-                  <c:out value="${subscriptionsEmptyLabel}" />
-                </p>
+                <c:choose>
+                  <c:when test="${showSubscriptionsFilterEmpty}">
+                    <div class="card bg-base-100 shadow-sm">
+                      <div class="card-body items-center gap-4 p-10 text-center">
+                        <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <span class="material-symbols-outlined text-4xl" aria-hidden="true">notifications</span>
+                        </div>
+                        <div class="max-w-lg">
+                          <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><c:out value="${filterEmptyTitleLabel}" /></h2>
+                          <p class="m-0 mt-2 text-on-surface-variant"><c:out value="${filterEmptyMessageLabel}" /></p>
+                        </div>
+                        <a href="${clearSubscriptionsFiltersUrl}" class="btn btn-primary no-underline" data-clear-list-filters>
+                          <c:out value="${filterEmptyClearLabel}" />
+                        </a>
+                      </div>
+                    </div>
+                  </c:when>
+                  <c:otherwise>
+                    <p class="m-0 rounded-xl border border-dashed border-outline-variant/40 bg-base-200/45 px-4 py-3 text-sm text-on-surface-variant">
+                      <c:out value="${subscriptionsEmptyLabel}" />
+                    </p>
+                  </c:otherwise>
+                </c:choose>
               </c:when>
               <c:otherwise>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -173,15 +205,15 @@
                 </div>
                 <c:if test="${subscriptionsPage.totalPages > 1}">
                   <c:url var="subscriptionsPreviousPageUrl" value="/settings">
-                    <c:param name="subscriptionsPage" value="${subscriptionsPage.previousPage}" />
-                    <c:param name="subscriptionsPageSize" value="${subscriptionsPage.pageSize}" />
+                    <c:param name="page" value="${subscriptionsPage.previousPage}" />
+                    <c:param name="pageSize" value="${subscriptionsPage.pageSize}" />
                     <c:if test="${settingsEdit}">
                       <c:param name="edit" value="true" />
                     </c:if>
                   </c:url>
                   <c:url var="subscriptionsNextPageUrl" value="/settings">
-                    <c:param name="subscriptionsPage" value="${subscriptionsPage.nextPage}" />
-                    <c:param name="subscriptionsPageSize" value="${subscriptionsPage.pageSize}" />
+                    <c:param name="page" value="${subscriptionsPage.nextPage}" />
+                    <c:param name="pageSize" value="${subscriptionsPage.pageSize}" />
                     <c:if test="${settingsEdit}">
                       <c:param name="edit" value="true" />
                     </c:if>

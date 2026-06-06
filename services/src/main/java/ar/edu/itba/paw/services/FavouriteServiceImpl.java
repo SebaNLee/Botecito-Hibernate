@@ -16,8 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FavouriteServiceImpl implements FavouriteService {
 
-    private static final int DEFAULT_PAGE_SIZE = 12;
-
     private final FavouriteDao favouriteDao;
     private final ItemService itemService;
 
@@ -55,19 +53,17 @@ public class FavouriteServiceImpl implements FavouriteService {
     @Transactional(readOnly = true)
     public PageModel<Item> listFavourites(
             final int userId, final String searchQuery, final int page, final int pageSize, final String sortBy) {
-        final int safePage = Math.max(1, page);
-        final int safePageSize = pageSize > 0 ? Math.min(pageSize, 18) : DEFAULT_PAGE_SIZE;
         final FavouritesQueryModel query = FavouritesQueryModel.builder()
                 .userId(userId)
                 .searchQuery(searchQuery)
-                .page(safePage)
-                .pageSize(safePageSize)
+                .page(page)
+                .pageSize(pageSize)
                 .sortBy(sortBy)
                 .build();
         final SearchResult<Item> result = favouriteDao.listFavourites(query);
         final int totalItems =
                 result.getTotalCount() > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) result.getTotalCount();
-        return new PageModel<>(result.getPageElements(), safePage, safePageSize, totalItems);
+        return new PageModel<>(result.getPageElements(), page, pageSize, totalItems);
     }
 
     private static boolean canFavourite(final int userId, final Item item) {

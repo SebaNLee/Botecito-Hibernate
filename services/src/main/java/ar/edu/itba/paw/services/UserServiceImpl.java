@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.dto.PreferredLanguageModel;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.exceptions.EmailAlreadyExistsException;
 import ar.edu.itba.paw.models.exceptions.MissingUserNamesException;
@@ -47,7 +48,8 @@ public class UserServiceImpl implements UserService {
             userToCreate.setEmail(normalizedEmail);
             userToCreate.setPasswordHash(passwordHash);
             userToCreate.setAlias(normalizeNullable(alias));
-            userToCreate.setLanguage(language != null ? language : "ES");
+            userToCreate.setLanguage(
+                    PreferredLanguageModel.fromPersistence(language).getPersistenceCode());
             userToCreate.setVerified(false);
             userToCreate.setAdmin(false);
             userToCreate.setMailToken(verificationToken);
@@ -61,7 +63,8 @@ public class UserServiceImpl implements UserService {
             final Users existing = existingUser.get();
             existing.setFirstName(firstName);
             existing.setLastName(lastName);
-            existing.setLanguage(language != null ? language : "ES");
+            existing.setLanguage(
+                    PreferredLanguageModel.fromPersistence(language).getPersistenceCode());
             existing.setPasswordHash(passwordHash);
             existing.setMailToken(verificationToken);
             existing.setMailTokenEmittedAt(null);
@@ -132,7 +135,7 @@ public class UserServiceImpl implements UserService {
         existing.setEmail(normalizedEmail);
         existing.setPhone(normalizeNullable(phone));
         existing.setAlias(normalizeNullable(alias));
-        existing.setLanguage(language);
+        existing.setLanguage(PreferredLanguageModel.fromInput(language).getPersistenceCode());
         if (emailChanged) {
             existing.setVerified(false);
             existing.setMailToken(UUID.randomUUID().toString());

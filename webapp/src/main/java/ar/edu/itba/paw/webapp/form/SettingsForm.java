@@ -21,13 +21,13 @@ public class SettingsForm {
 
     @NotBlank(message = "{settings.validation.email.required}")
     @Email(message = "{settings.validation.email.invalid}")
-    @Size(max = 150, message = "{settings.validation.email.max}")
+    @Size(max = 100, message = "{settings.validation.email.max}")
     private String email;
 
     @Size(max = 30, message = "{settings.validation.phone.max}")
     private String phone;
 
-    @Size(max = 120, message = "{settings.validation.paymentAlias.max}")
+    @Size(max = 30, message = "{settings.validation.paymentAlias.max}")
     private String paymentAlias;
 
     @NotBlank(message = "{settings.validation.preferredLanguage.required}")

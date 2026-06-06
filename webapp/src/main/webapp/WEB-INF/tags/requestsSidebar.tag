@@ -12,12 +12,14 @@
     <p class="m-0 text-xs font-bold uppercase tracking-wider text-outline"><c:out value="${requestsNavSectionTitle}" /></p>
     <a
       href="${requestsIncomingUrl}"
+      data-nav-filter-page="requestsIncoming"
       class="btn ${active == 'incoming' ? 'btn-primary' : 'btn-ghost'} justify-start no-underline">
       <span class="material-symbols-outlined text-base">inbox</span>
       <spring:message code="requests.nav.incoming" />
     </a>
     <a
       href="${requestsOutgoingUrl}"
+      data-nav-filter-page="requestsOutgoing"
       class="btn ${active == 'outgoing' ? 'btn-primary' : 'btn-ghost'} justify-start no-underline">
       <span class="material-symbols-outlined text-base">send</span>
       <spring:message code="requests.nav.outgoing" />

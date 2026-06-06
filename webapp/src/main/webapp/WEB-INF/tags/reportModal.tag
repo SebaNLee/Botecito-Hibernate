@@ -1,7 +1,6 @@
 <%@ tag language="java" pageEncoding="UTF-8" body-content="scriptless" %>
 <%@ attribute name="itemId" required="true" type="java.lang.Integer" rtexprvalue="true" %>
 <%@ attribute name="modalId" required="true" type="java.lang.String" rtexprvalue="true" %>
-<%@ attribute name="returnPath" required="false" type="java.lang.String" rtexprvalue="true" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
@@ -16,9 +15,6 @@
 <paw:detailsModal id="${modalId}" title="${reportFormTitle}">
   <jsp:body>
     <form action="<c:url value='/item/${itemId}/report' />" method="post" class="space-y-4">
-      <c:if test="${not empty returnPath}">
-        <input type="hidden" name="returnTo" value="${returnPath}" />
-      </c:if>
       <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
         <label class="text-xs font-bold uppercase tracking-wider text-outline" for="report-reason-${itemId}">
           <c:out value="${reportReasonLabel}" />

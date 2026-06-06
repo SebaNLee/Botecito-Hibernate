@@ -15,7 +15,7 @@
 <spring:message code="page.title.edit" var="titleEdit" />
 <paw:layout
   title="${titleEdit} - Botecito"
-  mainClass="pt-24 pb-14 max-w-6xl mx-auto px-6"
+  mainClass="pt-24 pb-14 w-full max-w-6xl mx-auto px-6"
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"
   headerCtaVariant="rent"
@@ -24,6 +24,7 @@
     data-edit-wizard-root="step2"
     data-edit-details-url="${editDetailsUrl}"
     data-item-id="${itemId}"
+    class="w-full"
   >
   <div class="mb-8">
     <a href="${editDetailsUrl}" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">

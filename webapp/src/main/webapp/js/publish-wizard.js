@@ -3,6 +3,16 @@
 
   var STORAGE_KEY = "botecito.publishDraft.v1";
   var DRAFT_VERSION = 1;
+  var MAX_TITLE_LENGTH = 100;
+  var MAX_DESCRIPTION_LENGTH = 1000;
+
+  function truncateText(value, max) {
+    if (value === null || value === undefined) {
+      return value;
+    }
+    var text = String(value);
+    return text.length > max ? text.slice(0, max) : text;
+  }
 
   function readDraft() {
     try {
@@ -43,8 +53,8 @@
       return {};
     }
     return {
-      title: fieldValue(form, "title"),
-      description: fieldValue(form, "description"),
+      title: truncateText(fieldValue(form, "title"), MAX_TITLE_LENGTH),
+      description: truncateText(fieldValue(form, "description"), MAX_DESCRIPTION_LENGTH),
       itemTypeId: fieldValue(form, "itemTypeId"),
       pricePerHour: fieldValue(form, "pricePerHour"),
       capacity: fieldValue(form, "capacity"),
@@ -94,8 +104,8 @@
     if (!form || !draft) {
       return;
     }
-    setFieldValue(form, "title", draft.title);
-    setFieldValue(form, "description", draft.description);
+    setFieldValue(form, "title", truncateText(draft.title, MAX_TITLE_LENGTH));
+    setFieldValue(form, "description", truncateText(draft.description, MAX_DESCRIPTION_LENGTH));
     setFieldValue(form, "itemTypeId", draft.itemTypeId);
     setFieldValue(form, "pricePerHour", draft.pricePerHour);
     setFieldValue(form, "capacity", draft.capacity);
@@ -249,8 +259,8 @@
       return;
     }
     container.innerHTML = "";
-    appendHiddenField(container, "title", draft.title);
-    appendHiddenField(container, "description", draft.description);
+    appendHiddenField(container, "title", truncateText(draft.title, MAX_TITLE_LENGTH));
+    appendHiddenField(container, "description", truncateText(draft.description, MAX_DESCRIPTION_LENGTH));
     appendHiddenField(container, "itemTypeId", draft.itemTypeId);
     appendHiddenField(container, "pricePerHour", draft.pricePerHour);
     appendHiddenField(container, "capacity", draft.capacity);

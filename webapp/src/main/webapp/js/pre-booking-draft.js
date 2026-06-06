@@ -1,5 +1,14 @@
 (function () {
   const STORAGE_PREFIX = "botecito.preBookingDraft.";
+  const MAX_MESSAGE_LENGTH = 255;
+
+  function truncateText(value, max) {
+    if (value === null || value === undefined) {
+      return value;
+    }
+    const text = String(value);
+    return text.length > max ? text.slice(0, max) : text;
+  }
 
   function storageKey(itemId) {
     return STORAGE_PREFIX + itemId;
@@ -56,7 +65,9 @@
       date: dateInput ? String(dateInput.value || "") : "",
       startTime: startInput ? String(startInput.value || "") : "",
       endTime: endInput ? String(endInput.value || "") : "",
-      message: messageInput ? String(messageInput.value || "").trim() : "",
+      message: messageInput
+        ? truncateText(String(messageInput.value || "").trim(), MAX_MESSAGE_LENGTH)
+        : "",
       messageOpen: Boolean(toggle && toggle.checked),
     };
   }
@@ -91,7 +102,7 @@
     }
 
     if (messageInput && typeof draft.message === "string" && draft.message.length > 0) {
-      messageInput.value = draft.message;
+      messageInput.value = truncateText(draft.message, MAX_MESSAGE_LENGTH);
     }
   }
 

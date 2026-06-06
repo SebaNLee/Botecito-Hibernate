@@ -68,6 +68,7 @@
               type="email"
               class="input w-full"
               placeholder="${emailPlaceholder}"
+              maxlength="100"
               required />
           </fieldset>
           <fieldset class="fieldset">
@@ -80,6 +81,7 @@
               type="password"
               class="input w-full"
               placeholder="${passwordPlaceholder}"
+              maxlength="100"
               required />
           </fieldset>
           <div class="flex items-center gap-2">

@@ -3,12 +3,11 @@
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<c:url var="incomingFormAction" value="/requests/incoming" />
 <spring:message code="page.title.requestsIncoming" var="titleRequestsIncoming" />
 
 <paw:layout title="${titleRequestsIncoming} - Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6" scripts="toast,search-filters,date-time,form-submit,rating-stars">
   <paw:requestsBookingsList
-      formAction="${incomingFormAction}"
+      formActionPath="/requests/incoming"
       sidebarActive="incoming"
       listMode="incoming" />
 </paw:layout>

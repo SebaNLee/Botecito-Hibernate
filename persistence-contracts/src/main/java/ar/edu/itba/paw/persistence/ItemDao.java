@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.dto.MyBoatsQueryModel;
 import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.models.entity.Version;
 import java.util.Optional;
 
 public interface ItemDao {
@@ -13,4 +14,10 @@ public interface ItemDao {
     Optional<Item> findItemById(int id);
 
     Optional<Image> findImageById(int id);
+
+    void deleteItem(Item item);
+
+    int getVersionCount(int itemId);
+
+    void deleteVersion(Version version);
 }

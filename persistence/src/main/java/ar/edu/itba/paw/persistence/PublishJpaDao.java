@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Media;
 import ar.edu.itba.paw.models.entity.Version;
+import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
@@ -46,7 +47,19 @@ public class PublishJpaDao implements PublishDao {
     }
 
     @Override
-    public void flush() {
-        entityManager.flush();
+    public Optional<Version> findVersionById(final int versionId) {
+        return Optional.ofNullable(entityManager.find(Version.class, versionId));
+    }
+
+    @Override
+    public void removeVersionChildren(final Version version) {
+        entityManager
+                .createQuery("DELETE FROM Availability a WHERE a.version.id = :vid")
+                .setParameter("vid", version.getId())
+                .executeUpdate();
+        entityManager
+                .createQuery("DELETE FROM Media m WHERE m.version.id = :vid")
+                .setParameter("vid", version.getId())
+                .executeUpdate();
     }
 }

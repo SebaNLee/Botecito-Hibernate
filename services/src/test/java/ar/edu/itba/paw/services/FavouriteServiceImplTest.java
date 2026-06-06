@@ -7,8 +7,6 @@ import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.persistence.FavouriteDao;
-import ar.edu.itba.paw.persistence.ItemDao;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,15 +24,14 @@ public class FavouriteServiceImplTest {
     private FavouriteDao favouriteDao;
 
     @Mock
-    private ItemDao itemDao;
+    private ItemService itemService;
 
     @InjectMocks
     private FavouriteServiceImpl favouriteService;
 
     @Test
     public void addFavouriteCreatesFavouriteForValidItem() {
-        when(itemDao.findItemById(ITEM_ID))
-                .thenReturn(Optional.of(item(ITEM_ID, OTHER_USER_ID, ItemStatusEnum.ACTIVE)));
+        when(itemService.findItemById(ITEM_ID)).thenReturn(item(ITEM_ID, OTHER_USER_ID, ItemStatusEnum.ACTIVE));
 
         assertTrue(favouriteService.addFavourite(USER_ID, ITEM_ID));
 
@@ -43,8 +40,7 @@ public class FavouriteServiceImplTest {
 
     @Test
     public void addFavouriteIsIdempotentForExistingFavourite() {
-        when(itemDao.findItemById(ITEM_ID))
-                .thenReturn(Optional.of(item(ITEM_ID, OTHER_USER_ID, ItemStatusEnum.ACTIVE)));
+        when(itemService.findItemById(ITEM_ID)).thenReturn(item(ITEM_ID, OTHER_USER_ID, ItemStatusEnum.ACTIVE));
         when(favouriteDao.create(USER_ID, ITEM_ID)).thenReturn(false);
 
         assertTrue(favouriteService.addFavourite(USER_ID, ITEM_ID));
@@ -54,7 +50,7 @@ public class FavouriteServiceImplTest {
 
     @Test
     public void addFavouriteRejectsOwnItem() {
-        when(itemDao.findItemById(ITEM_ID)).thenReturn(Optional.of(item(ITEM_ID, USER_ID, ItemStatusEnum.ACTIVE)));
+        when(itemService.findItemById(ITEM_ID)).thenReturn(item(ITEM_ID, USER_ID, ItemStatusEnum.ACTIVE));
 
         assertFalse(favouriteService.addFavourite(USER_ID, ITEM_ID));
 
@@ -63,8 +59,7 @@ public class FavouriteServiceImplTest {
 
     @Test
     public void addFavouriteRejectsDeletedItem() {
-        when(itemDao.findItemById(ITEM_ID))
-                .thenReturn(Optional.of(item(ITEM_ID, OTHER_USER_ID, ItemStatusEnum.DELETED)));
+        when(itemService.findItemById(ITEM_ID)).thenReturn(item(ITEM_ID, OTHER_USER_ID, ItemStatusEnum.DELETED));
 
         assertFalse(favouriteService.addFavourite(USER_ID, ITEM_ID));
 
@@ -73,7 +68,7 @@ public class FavouriteServiceImplTest {
 
     @Test
     public void addFavouriteRejectsMissingItem() {
-        when(itemDao.findItemById(ITEM_ID)).thenReturn(Optional.empty());
+        when(itemService.findItemById(ITEM_ID)).thenReturn(null);
 
         assertFalse(favouriteService.addFavourite(USER_ID, ITEM_ID));
 

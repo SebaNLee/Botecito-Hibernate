@@ -283,7 +283,9 @@ public class BookingImpl implements BookingService {
         updateStatus(booking, callerId, asHost, newStatus, true);
     }
 
-    private Booking findById(int bookingId) {
+    @Override
+    @Transactional(readOnly = true)
+    public Booking findById(int bookingId) {
         return bookingDao.findById(bookingId).orElseThrow(IllegalBookingOperationException::new);
     }
 
@@ -571,5 +573,23 @@ public class BookingImpl implements BookingService {
         if (fileData == null || fileData.length == 0) {
             throw new InvalidPaymentProofException();
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean itemHasBookings(final Item item) {
+        return bookingDao.itemHasBookings(item);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean itemHasBookings(final int itemId) {
+        return itemHasBookings(itemService.findItemById(itemId));
+    }
+
+    @Override
+    @Transactional
+    public void deleteAllSelfBlocks(final Item item) {
+        bookingDao.deleteAllSelfBlocks(item);
     }
 }

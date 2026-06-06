@@ -26,8 +26,8 @@ public class ReportServiceImpl implements ReportService {
     private final ReportDao reportDao;
     private final ItemService itemService;
     private final UserService userService;
-    private final ManageItemService manageItemService;
     private final MailService mailService;
+    private final BookingService bookingService;
 
     @Override
     @Transactional
@@ -109,7 +109,14 @@ public class ReportServiceImpl implements ReportService {
         }
 
         reportDao.deleteAllByItemId(item.getId());
-        manageItemService.deleteItemAsAdmin(item.getId());
+        boolean isSoft = itemService.getVersionCount(item.getId()) > 1 || bookingService.itemHasBookings(item);
+        itemService.deleteItem(item, isSoft);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAllByItemId(int itemId) {
+        reportDao.deleteAllByItemId(itemId);
     }
 
     private void notifyReporters(final Report originalReport, final Consumer<Report> notifyAction) {

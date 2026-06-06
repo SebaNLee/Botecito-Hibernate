@@ -44,6 +44,6 @@ public class ReportController {
             return detailPresentation.detailPageWithReportValidationErrors(item, user, flags, request, form, errors);
         }
         reportService.createReport(itemId, user.getId(), form.getReason(), form.getDescription());
-        return reportPresentation.submitReportResult(itemId, request, redirectAttributes);
+        return reportPresentation.submitReportResult(itemId, redirectAttributes);
     }
 }

@@ -17,7 +17,7 @@
       Botecito
     </a>
     <div class="flex items-center gap-2">
-      <a href="<c:url value='/marketplace' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+      <a href="<c:url value='/marketplace' />" data-nav-filter-page="marketplace" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
         <spring:message code="nav.marketplace" />
       </a>
       <sec:authorize access="isAnonymous()">
@@ -31,13 +31,13 @@
             <spring:message code="nav.adminReports" />
           </a>
         </sec:authorize>
-        <a href="<c:url value='/favourites' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+        <a href="<c:url value='/favourites' />" data-nav-filter-page="favourites" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
           <spring:message code="account.nav.favourites" />
         </a>
-        <a href="<c:url value='/my-boats' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+        <a href="<c:url value='/my-boats' />" data-nav-filter-page="myBoats" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
           <spring:message code="account.nav.myBoats" />
         </a>
-        <a href="<c:url value='/requests/outgoing' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+        <a href="<c:url value='/requests/outgoing' />" data-nav-filter-page="requestsOutgoing" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
           <spring:message code="account.nav.bookings" />
         </a>
         <a href="<c:url value='/settings' />" class="btn btn-outline btn-circle btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200" title="<sec:authentication property='name' />" aria-label="Settings">

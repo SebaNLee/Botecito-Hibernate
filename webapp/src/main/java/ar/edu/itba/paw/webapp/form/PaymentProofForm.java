@@ -13,6 +13,6 @@ public class PaymentProofForm {
     @FileSize(max = 5242880, message = "{paymentProof.validation.file.size}")
     private MultipartFile file;
 
-    @Size(max = 500, message = "{paymentProof.validation.guestReply.size}")
+    @Size(max = 255, message = "{paymentProof.validation.guestReply.size}")
     private String guestReply;
 }

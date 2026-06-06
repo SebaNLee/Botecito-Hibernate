@@ -1,12 +1,6 @@
 package ar.edu.itba.paw.webapp.util;
 
-/**
- * Validates in-app redirect targets after login and stores the chosen URL in the HTTP session under
- * {@link #SESSION_ATTR}.
- */
 public final class PostLoginRedirectSupport {
-
-    public static final String SESSION_ATTR = "POST_LOGIN_REDIRECT";
 
     private PostLoginRedirectSupport() {}
 

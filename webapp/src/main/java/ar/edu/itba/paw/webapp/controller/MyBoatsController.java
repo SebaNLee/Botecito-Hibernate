@@ -92,27 +92,22 @@ public class MyBoatsController {
     public ModelAndView manageAvailability(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
-            @RequestParam(value = "date", required = false) final String requestedDate,
-            @RequestParam(value = "return", required = false) final String returnParam,
-            final HttpServletRequest request) {
-        final String backPath = AvailabilityPresentation.resolveBackPath(request, returnParam);
+            @RequestParam(value = "date", required = false) final String requestedDate) {
         final var model = bookingService.getSelfBlocks(
                 itemId, user.getId(), AvailabilityPresentation.parseRequestedDate(requestedDate));
-        return availabilityPresentation.manageAvailabilityPage(model, backPath);
+        return availabilityPresentation.manageAvailabilityPage(model);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/availability/save", method = RequestMethod.POST)
     public ModelAndView saveSelfBlocks(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
-            @RequestParam(value = "return", required = false) final String returnParam,
             @Valid @ModelAttribute final SaveSelfBlocksForm saveSelfBlocksForm,
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
-        final String backPath = AvailabilityPresentation.sanitizeReturnPath(returnParam);
         if (errors.hasErrors()) {
             final var model = bookingService.getSelfBlocks(itemId, user.getId(), saveSelfBlocksForm.getDate());
-            return availabilityPresentation.saveSelfBlocksErrors(model, backPath, errors);
+            return availabilityPresentation.saveSelfBlocksErrors(model, errors);
         }
         bookingService.saveSelfBlockChanges(
                 itemId,
@@ -122,6 +117,6 @@ public class MyBoatsController {
                 saveSelfBlocksForm.updates(),
                 saveSelfBlocksForm.creates());
         return availabilityPresentation.saveSelfBlocksSuccess(
-                itemId, saveSelfBlocksForm.getDate().toString(), backPath, redirectAttributes);
+                itemId, saveSelfBlocksForm.getDate().toString(), redirectAttributes);
     }
 }

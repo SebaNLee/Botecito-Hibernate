@@ -14,6 +14,45 @@ html {
   vertical-align: middle;
 }
 
+.icon-star-filled,
+.icon-star-outline {
+  color: var(--color-rating-star);
+}
+
+.icon-star-filled {
+  font-variation-settings:
+    "FILL" 1,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
+.icon-star-outline {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
+.icon-heart-filled {
+  color: var(--color-error);
+  font-variation-settings:
+    "FILL" 1,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
+.icon-heart-outline {
+  color: var(--color-error);
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
 body {
   font-family: "Inter", sans-serif;
   -webkit-font-smoothing: antialiased;

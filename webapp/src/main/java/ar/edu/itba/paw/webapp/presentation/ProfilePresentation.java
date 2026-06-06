@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
+import ar.edu.itba.paw.webapp.form.ProfileViewForm;
 import ar.edu.itba.paw.webapp.presentation.util.CoverImageUrlResolver;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
@@ -52,7 +53,19 @@ public class ProfilePresentation {
         mav.addObject("reviewsTotal", reviewsPageModel.getTotalItems());
         mav.addObject("reviewDatesById", reviewDatesById);
         mav.addObject("averageRating", averageRating);
+        mav.addObject("profileView", profileView(activeTab, listingsPageModel, reviewsPageModel));
         return mav;
+    }
+
+    private static ProfileViewForm profileView(
+            final String activeTab, final PageModel<Item> listingsPageModel, final PageModel<Review> reviewsPageModel) {
+        final ProfileViewForm view = new ProfileViewForm();
+        view.setTab(activeTab);
+        view.setListingsPage(listingsPageModel.getPage());
+        view.setListingsPageSize(listingsPageModel.getPageSize());
+        view.setReviewsPage(reviewsPageModel.getPage());
+        view.setReviewsPageSize(reviewsPageModel.getPageSize());
+        return view;
     }
 
     private static Map<Integer, String> formatReviewDates(final PageModel<Review> page) {

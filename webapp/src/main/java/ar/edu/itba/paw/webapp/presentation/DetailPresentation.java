@@ -11,14 +11,12 @@ import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
+import ar.edu.itba.paw.webapp.form.ItemDetailViewForm;
 import ar.edu.itba.paw.webapp.form.PreBookingForm;
 import ar.edu.itba.paw.webapp.form.ReportForm;
 import ar.edu.itba.paw.webapp.util.AvailabilityJsonHelper;
 import ar.edu.itba.paw.webapp.util.DetailAvailabilityPicker;
-import ar.edu.itba.paw.webapp.util.MarketplaceReturnUrl;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -52,8 +50,7 @@ public class DetailPresentation {
             final BotecitoUserDetails viewer,
             final DetailPageFlags flags,
             final HttpServletRequest request) {
-        final String marketplaceBackHref = MarketplaceReturnUrl.marketplaceBackHref(request);
-        return buildDetailView(item, viewer, flags, request, marketplaceBackHref);
+        return buildDetailView(item, viewer, flags, request);
     }
 
     public ModelAndView detailPageWithPreBookingValidationErrors(
@@ -81,18 +78,16 @@ public class DetailPresentation {
         return mav;
     }
 
-    public ModelAndView submitPreBookingSuccess(
-            final int itemId, final HttpServletRequest request, final RedirectAttributes redirectAttributes) {
+    public ModelAndView submitPreBookingSuccess(final int itemId, final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, MESSAGE_PREFIX + ".preBooking.success");
-        return itemRedirect(itemId, request);
+        return new ModelAndView("redirect:/item/" + itemId);
     }
 
     private ModelAndView buildDetailView(
             final Item item,
             final BotecitoUserDetails viewer,
             final DetailPageFlags flags,
-            final HttpServletRequest request,
-            final String marketplaceBackHref) {
+            final HttpServletRequest request) {
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
         final Version version = item.getLatestVersion();
         final Users itemOwner = item.getHost();
@@ -116,16 +111,15 @@ public class DetailPresentation {
         mav.addObject("alreadyReported", flags.alreadyReported());
         mav.addObject("canSubscribeToOwner", canSubscribeToOwner);
         mav.addObject("subscribedToOwner", flags.subscribedToOwner());
-        mav.addObject("detailReturnPath", currentRequestPath(request));
         mav.addObject("itemImageUrls", imageUrls(version, contextPath));
         mav.addObject("itemOwnerDisplayName", itemOwner != null ? ownerDisplayName(itemOwner) : "");
         mav.addObject("ownerInitials", itemOwner != null ? ownerInitials(itemOwner) : "");
         mav.addObject("itemLocationSlug", version.getLocation().getSlug());
-        mav.addObject("marketplaceBackHref", marketplaceBackHref);
         mav.addObject("reviewPage", item.getReviewPage());
         mav.addObject("totalReviews", item.getTotalReviews());
         mav.addObject("averageRating", item.getAverageRating());
         mav.addObject("reviewDatesById", formatReviewDates(item.getReviewPage()));
+        mav.addObject("itemDetailView", itemDetailView(item));
 
         final PreBookingForm preBookingForm = new PreBookingForm();
         preBookingForm.setVersionId(version.getId());
@@ -157,6 +151,15 @@ public class DetailPresentation {
                         .format(DateTimeFormatter.ISO_LOCAL_DATE));
     }
 
+    private static ItemDetailViewForm itemDetailView(final Item item) {
+        final ItemDetailViewForm view = new ItemDetailViewForm();
+        view.setItemId(item.getId());
+        if (item.getReviewPage() != null) {
+            view.setReviewPage(item.getReviewPage().getPage());
+        }
+        return view;
+    }
+
     private static Map<Integer, String> formatReviewDates(final PageModel<Review> page) {
         final Map<Integer, String> dates = new LinkedHashMap<>();
         if (page == null || page.getContent() == null) {
@@ -169,28 +172,6 @@ public class DetailPresentation {
             dates.put(review.getId(), review.getCreatedAt().format(REVIEW_DATE_FORMAT));
         }
         return dates;
-    }
-
-    private static String currentRequestPath(final HttpServletRequest request) {
-        if (request == null) {
-            return "/marketplace";
-        }
-        final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
-        String path = request.getRequestURI() == null ? "/marketplace" : request.getRequestURI();
-        if (!contextPath.isEmpty() && path.startsWith(contextPath)) {
-            path = path.substring(contextPath.length());
-        }
-        final String query = request.getQueryString();
-        return query == null || query.isBlank() ? path : path + "?" + query;
-    }
-
-    static ModelAndView itemRedirect(final int itemId, final HttpServletRequest request) {
-        final String returnTo = MarketplaceReturnUrl.relativeReturnTo(request.getParameter("returnTo"));
-        if ("/marketplace".equals(returnTo)) {
-            return new ModelAndView("redirect:/item/" + itemId);
-        }
-        return new ModelAndView(
-                "redirect:/item/" + itemId + "?returnTo=" + URLEncoder.encode(returnTo, StandardCharsets.UTF_8));
     }
 
     private static List<String> imageUrls(final Version version, final String contextPath) {

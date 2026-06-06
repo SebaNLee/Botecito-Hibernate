@@ -8,9 +8,7 @@
 <spring:message code="profile.followers" var="followersLabel" />
 <spring:message code="profile.rating.noneShort" var="ratingNoneShortLabel" />
 <spring:message code="profile.editMyProfile" var="editMyProfileLabel" />
-<spring:message code="profile.listings" var="listingsTitle" />
 <spring:message code="profile.listings.empty" var="listingsEmptyLabel" />
-<spring:message code="profile.reviews" var="reviewsTitle" />
 <spring:message code="profile.reviews.empty" var="reviewsEmptyLabel" />
 <spring:message code="subscription.subscribe" var="subscriptionSubscribeLabel" />
 <spring:message code="subscription.unsubscribe" var="subscriptionUnsubscribeLabel" />
@@ -18,10 +16,8 @@
 <spring:message code="marketplace.pagination.next" var="paginationNextLabel" />
 
 <c:url var="settingsUrl" value="/settings" />
-<c:url var="profileReturnTo" value="/profiles/${user.id}?tab=listings" />
 <c:url var="listingsTabUrl" value="/profiles/${user.id}"><c:param name="tab" value="listings" /></c:url>
 <c:url var="reviewsTabUrl" value="/profiles/${user.id}"><c:param name="tab" value="reviews" /></c:url>
-
 <c:set var="userFirstName" value="${user.firstName != null ? fn:trim(user.firstName) : ''}" />
 <c:set var="userLastName" value="${user.lastName != null ? fn:trim(user.lastName) : ''}" />
 <c:set var="hasFullName" value="${not empty userFirstName or not empty userLastName}" />
@@ -69,7 +65,7 @@
                   <span><c:out value="${followersLabel}" /></span>
                 </span>
                 <span class="flex items-center gap-1">
-                  <span class="material-symbols-outlined text-base text-warning">star</span>
+                  <span class="material-symbols-outlined text-base icon-star-filled">star</span>
                   <c:choose>
                     <c:when test="${averageRating != null}">
                       <span class="font-bold text-on-surface">
@@ -95,17 +91,17 @@
                             text="${editMyProfileLabel}" cssClass="w-full sm:w-auto" />
               </c:when>
               <c:when test="${isSubscribed}">
-                <c:url var="unsubscribeProfileUrl" value="/users/${user.id}/unsubscribe" />
+                <c:url var="unsubscribeProfileUrl" value="/profiles/${user.id}/unsubscribe" />
                 <form action="${unsubscribeProfileUrl}" method="post" class="m-0">
-                  <input type="hidden" name="return" value="/profiles/${user.id}" />
+                  <paw:profileViewHiddenFields view="${profileView}" />
                   <paw:button type="submit" color="outline" icon="notifications_off"
                               text="${subscriptionUnsubscribeLabel}" cssClass="w-full sm:w-auto" />
                 </form>
               </c:when>
               <c:otherwise>
-                <c:url var="subscribeProfileUrl" value="/users/${user.id}/subscribe" />
+                <c:url var="subscribeProfileUrl" value="/profiles/${user.id}/subscribe" />
                 <form action="${subscribeProfileUrl}" method="post" class="m-0">
-                  <input type="hidden" name="return" value="/profiles/${user.id}" />
+                  <paw:profileViewHiddenFields view="${profileView}" />
                   <paw:button type="submit" color="secondary" icon="notifications"
                               text="${subscriptionSubscribeLabel}" cssClass="w-full sm:w-auto" />
                 </form>
@@ -123,22 +119,30 @@
         <%-- Tab bar --%>
         <div role="tablist" class="flex border-b border-outline-variant/20 px-2 pt-2">
           <a role="tab" href="${listingsTabUrl}"
-             class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors
+             class="shrink-0 flex items-center justify-center gap-2 whitespace-nowrap px-6 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors
                     ${activeTab == 'listings' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined text-base">directions_boat</span>
-            <c:out value="${listingsTitle}" />
-            <span class="ml-1 text-xs font-bold tracking-tight ${activeTab == 'listings' ? 'text-primary' : 'text-outline'}">
-              <c:out value="${listingsTotal}" />
-            </span>
+            <span class="material-symbols-outlined text-base shrink-0">directions_boat</span>
+            <c:choose>
+              <c:when test="${listingsTotal == 1}">
+                <spring:message code="profile.listings.tab.singular" />
+              </c:when>
+              <c:otherwise>
+                <spring:message code="profile.listings.tab.plural" arguments="${listingsTotal}" />
+              </c:otherwise>
+            </c:choose>
           </a>
           <a role="tab" href="${reviewsTabUrl}"
-             class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors
+             class="shrink-0 flex items-center justify-center gap-2 whitespace-nowrap px-6 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors
                     ${activeTab == 'reviews' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined text-base">star</span>
-            <c:out value="${reviewsTitle}" />
-            <span class="ml-1 text-xs font-bold tracking-tight ${activeTab == 'reviews' ? 'text-primary' : 'text-outline'}">
-              <c:out value="${reviewsTotal}" />
-            </span>
+            <span class="material-symbols-outlined text-base shrink-0">star</span>
+            <c:choose>
+              <c:when test="${reviewsTotal == 1}">
+                <spring:message code="profile.reviews.tab.singular" />
+              </c:when>
+              <c:otherwise>
+                <spring:message code="profile.reviews.tab.plural" arguments="${reviewsTotal}" />
+              </c:otherwise>
+            </c:choose>
           </a>
         </div>
 
@@ -156,7 +160,7 @@
                 <c:otherwise>
                   <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     <c:forEach items="${listings}" var="item">
-                      <paw:listingCard item="${item}" coverSrc="${imageUrlsByItemId[item.id]}" returnTo="${profileReturnTo}" />
+                      <paw:listingCard item="${item}" coverSrc="${imageUrlsByItemId[item.id]}" />
                     </c:forEach>
                   </div>
                   <c:if test="${listingsPage.totalPages > 1}">

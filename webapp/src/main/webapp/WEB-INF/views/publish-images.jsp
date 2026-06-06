@@ -15,7 +15,7 @@
 <spring:message code="page.title.publish" var="titlePublish" />
 <paw:layout
   title="${titlePublish} - Botecito"
-  mainClass="pt-24 pb-14 max-w-3xl mx-auto px-6"
+  mainClass="pt-24 pb-14 w-full max-w-6xl mx-auto px-6"
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"
   headerCtaVariant="rent"
@@ -25,6 +25,7 @@
     data-publish-wizard-root="step3"
     data-availability-url="/publish/availability"
     data-images-lost-message="${publishBackImagesLostMsg}"
+    class="w-full"
   >
     <div class="mb-8">
       <a

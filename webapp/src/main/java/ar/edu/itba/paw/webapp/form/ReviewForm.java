@@ -15,7 +15,7 @@ public class ReviewForm {
     @Max(value = 5, message = "{review.validation.rating.range}")
     private Integer rating;
 
-    @Size(max = 1000, message = "{review.validation.comment.max}")
+    @Size(max = 255, message = "{review.validation.comment.max}")
     private String comment;
 
     private String targetType;

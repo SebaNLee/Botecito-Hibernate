@@ -1,22 +1,29 @@
 <%@ tag language="java" pageEncoding="UTF-8" %>
 <%@ attribute name="item" required="true" type="ar.edu.itba.paw.models.entity.Item" %>
 <%@ attribute name="coverSrc" required="true" %>
-<%@ attribute name="returnTo" required="true" %>
 <%@ attribute name="favourite" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="canFavourite" required="false" type="java.lang.Boolean" %>
-<%@ attribute name="favouriteReturn" required="false" %>
+<%@ attribute name="favouritesSearch" required="false" type="ar.edu.itba.paw.webapp.form.FavouritesSearchForm" rtexprvalue="true" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 
 <fmt:setLocale value="es_AR" />
 <spring:message code="reviews.empty.short" var="reviewsEmptyShortLabel" />
-<c:url var="itemUrl" value="/item/${item.id}">
-  <c:param name="returnTo" value="${returnTo}" />
-</c:url>
-<c:url var="favouriteUrl" value="/items/${item.id}/favourite" />
-<c:url var="unfavouriteUrl" value="/items/${item.id}/unfavourite" />
+<c:url var="itemUrl" value="/item/${item.id}" />
+<c:choose>
+  <c:when test="${favouritesSearch != null}">
+    <c:url var="favouriteUrl" value="/favourites/items/${item.id}/favourite" />
+    <c:url var="unfavouriteUrl" value="/favourites/items/${item.id}/unfavourite" />
+  </c:when>
+  <c:otherwise>
+    <c:url var="favouriteUrl" value="/items/${item.id}/favourite" />
+    <c:url var="unfavouriteUrl" value="/items/${item.id}/unfavourite" />
+  </c:otherwise>
+</c:choose>
 <spring:message code="favourite.add" var="favouriteAddLabel" />
 <spring:message code="favourite.remove" var="favouriteRemoveLabel" />
 <c:set var="resolvedCoverSrc" value="${coverSrc}" />
@@ -25,18 +32,19 @@
 </c:if>
 <c:set var="isFavourite" value="${favourite ne null ? favourite : false}" />
 <c:set var="isFavouriteAllowed" value="${canFavourite ne null ? canFavourite : false}" />
-<c:set var="resolvedFavouriteReturn" value="${not empty favouriteReturn ? favouriteReturn : returnTo}" />
 
 <div class="group card relative min-w-0 bg-base-100 shadow-sm overflow-hidden text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
   <c:if test="${isFavouriteAllowed}">
     <form action="${isFavourite ? unfavouriteUrl : favouriteUrl}" method="post" class="absolute right-3 top-3 z-10 m-0">
-      <input type="hidden" name="return" value="${fn:escapeXml(resolvedFavouriteReturn)}" />
+      <c:if test="${favouritesSearch != null}">
+        <paw:favouritesSearchHiddenFields search="${favouritesSearch}" />
+      </c:if>
       <button
           type="submit"
-          class="btn btn-circle btn-sm shadow-sm ${isFavourite ? 'bg-error border-error text-error-content hover:bg-error/90 hover:border-error' : 'bg-base-100/95 border-outline-variant/40 text-primary hover:bg-base-100'}"
+          class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 hover:bg-base-100"
           aria-label="${isFavourite ? favouriteRemoveLabel : favouriteAddLabel}"
           title="${isFavourite ? favouriteRemoveLabel : favouriteAddLabel}">
-        <span class="material-symbols-outlined text-lg" style="${isFavourite ? 'margin-left: 1px;' : ''}">${isFavourite ? 'heart_check' : 'favorite_border'}</span>
+        <span class="material-symbols-outlined text-lg ${isFavourite ? 'icon-heart-filled' : 'icon-heart-outline'}">favorite</span>
       </button>
     </form>
   </c:if>
@@ -54,7 +62,7 @@
         </div>
       </div>
       <div class="flex items-center gap-1 text-sm font-semibold text-on-surface-variant">
-        <span class="material-symbols-outlined text-base text-warning">star</span>
+        <span class="material-symbols-outlined text-base icon-star-filled">star</span>
         <c:choose>
           <c:when test="${item.totalReviews > 0}">
             <fmt:formatNumber value="${item.averageRating}" minFractionDigits="1" maxFractionDigits="1" />

@@ -21,7 +21,7 @@ public class RegisterForm {
 
     @NotBlank(message = "{register.validation.email.required}")
     @Email(message = "{register.validation.email.invalid}")
-    @Size(max = 150, message = "{register.validation.email.max}")
+    @Size(max = 100, message = "{register.validation.email.max}")
     private String email;
 
     @NotBlank(message = "{register.validation.password.required}")
@@ -29,9 +29,10 @@ public class RegisterForm {
     private String password;
 
     @NotBlank(message = "{register.validation.confirmPassword.required}")
+    @Size(max = 100, message = "{register.validation.password.size}")
     private String confirmPassword;
 
-    @Size(max = 120, message = "{register.validation.paymentAlias.max}")
+    @Size(max = 30, message = "{register.validation.paymentAlias.max}")
     private String paymentAlias;
 
     private String preferredLanguage;

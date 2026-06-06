@@ -1,8 +1,10 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.PreferredLanguageModel;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.webapp.form.SettingsForm;
+import ar.edu.itba.paw.webapp.form.SettingsViewForm;
 import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -24,7 +26,8 @@ public class SettingsPresentation {
             form.setEmail(user.getEmail());
             form.setPhone(user.getPhone());
             form.setPaymentAlias(user.getAlias());
-            form.setPreferredLanguage(user.getLanguage());
+            form.setPreferredLanguage(
+                    PreferredLanguageModel.fromPersistence(user.getLanguage()).getPersistenceCode());
         }
         return buildSettingsView(user, edit, subscriptions);
     }
@@ -49,6 +52,15 @@ public class SettingsPresentation {
         mav.addObject("subscriptions", subscriptions.getContent());
         mav.addObject("memberSinceDisplay", user.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         mav.addObject("settingsEdit", settingsEdit);
+        mav.addObject("settingsView", settingsView(subscriptions, settingsEdit));
         return mav;
+    }
+
+    private static SettingsViewForm settingsView(final PageModel<Users> subscriptions, final boolean settingsEdit) {
+        final SettingsViewForm view = new SettingsViewForm();
+        view.setSubscriptionsPage(subscriptions.getPage());
+        view.setSubscriptionsPageSize(subscriptions.getPageSize());
+        view.setEdit(settingsEdit);
+        return view;
     }
 }

@@ -25,7 +25,7 @@
   <script src="<c:url value='/js/publish-wizard.js?v=4' />"></script>
 </c:if>
 <c:if test="${fn:contains(resolvedBundles, ',edit-wizard,')}">
-  <script src="<c:url value='/js/edit-wizard.js?v=3' />"></script>
+  <script src="<c:url value='/js/edit-wizard.js?v=9' />"></script>
 </c:if>
 <c:if test="${fn:contains(resolvedBundles, ',form-submit,')}">
   <script src="<c:url value='/js/form-submit-state.js' />"></script>
@@ -34,7 +34,7 @@
   <script src="<c:url value='/js/weekly-availability.js?v=2' />"></script>
 </c:if>
 <c:if test="${fn:contains(resolvedBundles, ',image-gallery,')}">
-  <script src="<c:url value='/js/image-gallery.js?v=6' />"></script>
+  <script src="<c:url value='/js/image-gallery.js?v=11' />"></script>
 </c:if>
 <c:if test="${fn:contains(resolvedBundles, ',image-carousel,')}">
   <script src="<c:url value='/js/image-carousel.js' />"></script>

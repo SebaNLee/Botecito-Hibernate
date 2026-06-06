@@ -8,9 +8,7 @@
 <spring:message code="profile.followers" var="followersLabel" />
 <spring:message code="profile.rating.noneShort" var="ratingNoneShortLabel" />
 <spring:message code="profile.editMyProfile" var="editMyProfileLabel" />
-<spring:message code="profile.listings" var="listingsTitle" />
 <spring:message code="profile.listings.empty" var="listingsEmptyLabel" />
-<spring:message code="profile.reviews" var="reviewsTitle" />
 <spring:message code="profile.reviews.empty" var="reviewsEmptyLabel" />
 <spring:message code="subscription.subscribe" var="subscriptionSubscribeLabel" />
 <spring:message code="subscription.unsubscribe" var="subscriptionUnsubscribeLabel" />
@@ -67,7 +65,7 @@
                   <span><c:out value="${followersLabel}" /></span>
                 </span>
                 <span class="flex items-center gap-1">
-                  <span class="material-symbols-outlined text-base text-warning">star</span>
+                  <span class="material-symbols-outlined text-base icon-star-filled">star</span>
                   <c:choose>
                     <c:when test="${averageRating != null}">
                       <span class="font-bold text-on-surface">
@@ -121,22 +119,30 @@
         <%-- Tab bar --%>
         <div role="tablist" class="flex border-b border-outline-variant/20 px-2 pt-2">
           <a role="tab" href="${listingsTabUrl}"
-             class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors
+             class="shrink-0 flex items-center justify-center gap-2 whitespace-nowrap px-6 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors
                     ${activeTab == 'listings' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined text-base">directions_boat</span>
-            <c:out value="${listingsTitle}" />
-            <span class="ml-1 text-xs font-bold tracking-tight ${activeTab == 'listings' ? 'text-primary' : 'text-outline'}">
-              <c:out value="${listingsTotal}" />
-            </span>
+            <span class="material-symbols-outlined text-base shrink-0">directions_boat</span>
+            <c:choose>
+              <c:when test="${listingsTotal == 1}">
+                <spring:message code="profile.listings.tab.singular" />
+              </c:when>
+              <c:otherwise>
+                <spring:message code="profile.listings.tab.plural" arguments="${listingsTotal}" />
+              </c:otherwise>
+            </c:choose>
           </a>
           <a role="tab" href="${reviewsTabUrl}"
-             class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors
+             class="shrink-0 flex items-center justify-center gap-2 whitespace-nowrap px-6 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors
                     ${activeTab == 'reviews' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined text-base">star</span>
-            <c:out value="${reviewsTitle}" />
-            <span class="ml-1 text-xs font-bold tracking-tight ${activeTab == 'reviews' ? 'text-primary' : 'text-outline'}">
-              <c:out value="${reviewsTotal}" />
-            </span>
+            <span class="material-symbols-outlined text-base shrink-0">star</span>
+            <c:choose>
+              <c:when test="${reviewsTotal == 1}">
+                <spring:message code="profile.reviews.tab.singular" />
+              </c:when>
+              <c:otherwise>
+                <spring:message code="profile.reviews.tab.plural" arguments="${reviewsTotal}" />
+              </c:otherwise>
+            </c:choose>
           </a>
         </div>
 

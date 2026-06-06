@@ -177,9 +177,21 @@
     writeStoredState(MARKETPLACE_STORAGE_KEY, snapshot, MARKETPLACE_PARAM_KEYS);
   }
 
+  function normalizePathname(pathname) {
+    if (!pathname) {
+      return "/";
+    }
+    const trimmed = pathname.replace(/\/+$/, "");
+    return trimmed || "/";
+  }
+
   function findActiveListPreset() {
-    const path = window.location.pathname;
-    return LIST_PAGE_PRESETS.find((preset) => path.endsWith(preset.pathSuffix)) || null;
+    const path = normalizePathname(window.location.pathname);
+    return (
+      LIST_PAGE_PRESETS.find((preset) =>
+        path.endsWith(normalizePathname(preset.pathSuffix)),
+      ) || null
+    );
   }
 
   function usesSidebarApply(preset) {

@@ -3,6 +3,16 @@
 
   var STORAGE_KEY = "botecito.editDraft.v1";
   var DRAFT_VERSION = 1;
+  var MAX_TITLE_LENGTH = 100;
+  var MAX_DESCRIPTION_LENGTH = 1000;
+
+  function truncateText(value, max) {
+    if (value === null || value === undefined) {
+      return value;
+    }
+    var text = String(value);
+    return text.length > max ? text.slice(0, max) : text;
+  }
 
   function readItemId(root) {
     if (!root || !root.dataset.itemId) {
@@ -72,8 +82,8 @@
       return {};
     }
     return {
-      title: fieldValue(form, "title"),
-      description: fieldValue(form, "description"),
+      title: truncateText(fieldValue(form, "title"), MAX_TITLE_LENGTH),
+      description: truncateText(fieldValue(form, "description"), MAX_DESCRIPTION_LENGTH),
       itemTypeId: fieldValue(form, "itemTypeId"),
       pricePerHour: fieldValue(form, "pricePerHour"),
       capacity: fieldValue(form, "capacity"),
@@ -123,8 +133,8 @@
     if (!form || !draft) {
       return;
     }
-    setFieldValue(form, "title", draft.title);
-    setFieldValue(form, "description", draft.description);
+    setFieldValue(form, "title", truncateText(draft.title, MAX_TITLE_LENGTH));
+    setFieldValue(form, "description", truncateText(draft.description, MAX_DESCRIPTION_LENGTH));
     setFieldValue(form, "itemTypeId", draft.itemTypeId);
     setFieldValue(form, "pricePerHour", draft.pricePerHour);
     setFieldValue(form, "capacity", draft.capacity);
@@ -278,8 +288,8 @@
       return;
     }
     container.innerHTML = "";
-    appendHiddenField(container, "title", draft.title);
-    appendHiddenField(container, "description", draft.description);
+    appendHiddenField(container, "title", truncateText(draft.title, MAX_TITLE_LENGTH));
+    appendHiddenField(container, "description", truncateText(draft.description, MAX_DESCRIPTION_LENGTH));
     appendHiddenField(container, "itemTypeId", draft.itemTypeId);
     appendHiddenField(container, "pricePerHour", draft.pricePerHour);
     appendHiddenField(container, "capacity", draft.capacity);
@@ -595,13 +605,6 @@
 
       var hasEntries = entries.length > 0;
       previewList.classList.toggle("hidden", !hasEntries);
-      previewList.classList.toggle("grid", hasEntries);
-      previewList.classList.toggle("grid-cols-1", hasEntries);
-      previewList.classList.toggle("sm:grid-cols-2", hasEntries);
-      previewList.classList.toggle("gap-3", hasEntries);
-      previewList.classList.toggle("list-none", hasEntries);
-      previewList.classList.toggle("p-0", hasEntries);
-      previewList.classList.toggle("m-0", hasEntries);
       if (emptyState) {
         emptyState.classList.toggle("hidden", hasEntries);
       }

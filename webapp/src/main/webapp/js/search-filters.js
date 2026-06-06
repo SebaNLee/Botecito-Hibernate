@@ -1071,15 +1071,10 @@
           }
         }
         icon.textContent = symbol;
-        if (filled) {
-          icon.className = `${baseIcon} text-warning opacity-100`;
-          icon.style.fontVariationSettings =
-            '"FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24';
-        } else {
-          icon.className = `${baseIcon} text-outline opacity-35`;
-          icon.style.fontVariationSettings =
-            '"FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24';
-        }
+        icon.className = filled
+          ? `${baseIcon} icon-star-filled`
+          : `${baseIcon} icon-star-outline`;
+        icon.style.fontVariationSettings = "";
       }
     }
 
@@ -1241,6 +1236,37 @@
     }
   }
 
+  function readMarketplaceToolbarPrefs() {
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
+    const params = new URLSearchParams(window.location.search);
+    const sortBy =
+      trimParam(toolbarForm?.querySelector('[name="sortBy"]')?.value) ||
+      trimParam(params.get("sortBy"));
+    const pageSize =
+      trimParam(toolbarForm?.querySelector('[name="pageSize"]')?.value) ||
+      trimParam(params.get("pageSize"));
+    const prefs = {};
+
+    if (sortBy && sortBy !== "newest") {
+      prefs.sortBy = sortBy;
+    }
+    if (pageSize && pageSize !== "12") {
+      prefs.pageSize = pageSize;
+    }
+
+    return prefs;
+  }
+
+  function buildMarketplaceClearHref(control) {
+    const href = control?.getAttribute("href") || "/marketplace";
+    const url = new URL(href, window.location.origin);
+    FILTER_KEYS.forEach((key) => url.searchParams.delete(key));
+    url.searchParams.delete("page");
+    return buildUrlWithFilters(url.pathname, readMarketplaceToolbarPrefs());
+  }
+
   function bindMarketplaceReset(control) {
     if (!control) {
       return;
@@ -1249,9 +1275,7 @@
     control.addEventListener("click", (event) => {
       event.preventDefault();
       clearStoredStates();
-      window.location.assign(
-        control.href || buildUrlWithFilters(window.location.href, {}),
-      );
+      window.location.assign(buildMarketplaceClearHref(control));
     });
   }
 

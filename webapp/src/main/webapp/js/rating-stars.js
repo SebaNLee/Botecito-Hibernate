@@ -16,9 +16,8 @@
       button.setAttribute("aria-pressed", selected ? "true" : "false");
       if (icon) {
         icon.textContent = "star";
-        icon.classList.toggle("text-warning", selected);
-        icon.classList.toggle("text-outline", !selected);
-        icon.style.opacity = selected ? "1" : "0.35";
+        icon.classList.toggle("icon-star-filled", selected);
+        icon.classList.toggle("icon-star-outline", !selected);
       }
     });
   }

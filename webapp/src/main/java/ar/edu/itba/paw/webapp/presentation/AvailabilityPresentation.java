@@ -29,7 +29,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class AvailabilityPresentation {
 
-    private static final String MANAGE_AVAILABILITY_BACK_PATH = "/my-boats";
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
 
@@ -88,7 +87,6 @@ public class AvailabilityPresentation {
                         timezone));
         mav.addObject(
                 "hasTimelineAvailability", hasAvailabilityWindowsForDate(model.getSelectedDate(), availabilityWindows));
-        mav.addObject("manageAvailabilityBackPath", MANAGE_AVAILABILITY_BACK_PATH);
         return mav;
     }
 

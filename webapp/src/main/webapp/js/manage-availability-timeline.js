@@ -35,6 +35,7 @@
     this.previewStart = null;
     this.dragState = null;
     this.saving = false;
+    this.skipLeaveWarning = false;
     this.nextTempId = -1;
     this.deletedIds = {};
 
@@ -493,10 +494,26 @@
         event.preventDefault();
         return;
       }
+      self.skipLeaveWarning = true;
       self.saving = true;
       self.updateSaveButtonState();
       self.injectSaveFormFields();
     });
+  };
+
+  ManageAvailabilityTimeline.prototype.shouldWarnBeforeLeaving = function () {
+    return !this.skipLeaveWarning && !this.saving && this.hasUnsavedChanges();
+  };
+
+  ManageAvailabilityTimeline.prototype.confirmLeaveWithoutSaving = function () {
+    if (!this.hasUnsavedChanges()) {
+      return true;
+    }
+    if (!window.confirm(this.unsavedConfirmText)) {
+      return false;
+    }
+    this.skipLeaveWarning = true;
+    return true;
   };
 
   ManageAvailabilityTimeline.prototype.bindUnsavedNavigationGuard = function () {
@@ -504,19 +521,18 @@
     var dateForm = document.querySelector("[data-manage-availability-date-form]");
     if (dateForm) {
       dateForm.addEventListener("submit", function (event) {
-        if (self.hasUnsavedChanges()) {
-          var confirmed = window.confirm(self.unsavedConfirmText);
-          if (!confirmed) {
-            event.preventDefault();
-          }
+        if (!self.confirmLeaveWithoutSaving()) {
+          event.preventDefault();
         }
       });
     }
+
     window.addEventListener("beforeunload", function (event) {
-      if (self.hasUnsavedChanges()) {
-        event.preventDefault();
-        event.returnValue = "";
+      if (!self.shouldWarnBeforeLeaving()) {
+        return;
       }
+      event.preventDefault();
+      event.returnValue = "";
     });
   };
 

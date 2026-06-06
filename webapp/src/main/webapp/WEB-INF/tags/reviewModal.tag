@@ -21,19 +21,7 @@
     <paw:detailsModal id="${modalId}" title="${reviewViewLabel}">
       <jsp:body>
         <div class="space-y-4">
-          <c:set var="fullStars" value="${existingReview.rating ge 5 ? 5 : (existingReview.rating ge 4 ? 4 : (existingReview.rating ge 3 ? 3 : (existingReview.rating ge 2 ? 2 : (existingReview.rating ge 1 ? 1 : 0))))}" />
-          <div class="flex items-center gap-1" aria-label="${existingReview.rating} of 5">
-            <c:forEach var="starIndex" begin="1" end="5">
-              <c:choose>
-                <c:when test="${starIndex <= fullStars}">
-                  <span class="material-symbols-outlined text-2xl leading-none text-warning">star</span>
-                </c:when>
-                <c:otherwise>
-                  <span class="material-symbols-outlined text-2xl leading-none text-outline opacity-[0.35]">star</span>
-                </c:otherwise>
-              </c:choose>
-            </c:forEach>
-          </div>
+          <paw:ratingStarsDisplay rating="${existingReview.rating}" />
           <c:if test="${not empty existingReview.comment}">
             <p class="m-0 text-sm text-on-surface-variant break-words whitespace-pre-line"><c:out value="${existingReview.comment}" /></p>
           </c:if>
@@ -61,14 +49,14 @@
               <input id="review-rating-${bookingId}" type="hidden" name="rating" value="" data-rating-value />
               <c:forEach var="starIndex" begin="1" end="5">
                 <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${reviewRatingLabel} ${starIndex}">
-                  <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
+                  <span class="material-symbols-outlined text-xl leading-none icon-star-outline">star</span>
                 </button>
               </c:forEach>
             </div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
             <label class="text-xs font-bold uppercase tracking-wider text-outline pt-2" for="review-comment-${bookingId}"><c:out value="${reviewCommentLabel}" /></label>
-            <textarea id="review-comment-${bookingId}" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
+            <textarea id="review-comment-${bookingId}" name="comment" rows="3" maxlength="255" class="textarea textarea-bordered w-full"></textarea>
           </div>
           <paw:button type="submit" color="primary" text="${reviewSubmitLabel}" submitLoading="true" />
         </form>

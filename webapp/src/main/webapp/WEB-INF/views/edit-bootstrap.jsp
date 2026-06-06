@@ -6,7 +6,7 @@
 <spring:message code="page.title.edit" var="titleEdit" />
 <paw:layout
   title="${titleEdit} - Botecito"
-  mainClass="pt-24 pb-14 max-w-3xl mx-auto px-6"
+  mainClass="pt-24 pb-14 w-full max-w-6xl mx-auto px-6"
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"
   headerCtaVariant="rent">

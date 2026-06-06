@@ -109,7 +109,7 @@
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body items-center gap-4 p-10 text-center">
           <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <span class="material-symbols-outlined text-4xl" aria-hidden="true">favorite</span>
+            <span class="material-symbols-outlined text-4xl icon-heart-outline" aria-hidden="true">favorite</span>
           </div>
           <p class="m-0 max-w-lg text-on-surface-variant">
             <c:choose>

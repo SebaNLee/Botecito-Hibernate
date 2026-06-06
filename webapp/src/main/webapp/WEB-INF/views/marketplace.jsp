@@ -38,7 +38,14 @@
 <c:set
     var="marketplaceSortBy"
     value="${empty marketplaceSearch.sortBy ? 'newest' : marketplaceSearch.sortBy}" />
-<c:url var="clearMarketplaceFiltersUrl" value="/marketplace" />
+<c:url var="clearMarketplaceFiltersUrl" value="/marketplace">
+  <c:if test="${marketplaceSortBy != 'newest'}">
+    <c:param name="sortBy" value="${marketplaceSortBy}" />
+  </c:if>
+  <c:if test="${pageSize != 12}">
+    <c:param name="pageSize" value="${pageSize}" />
+  </c:if>
+</c:url>
 <c:if test="${itemPage.hasPrevious}">
   <c:url var="previousPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.previousPage}" />
@@ -240,6 +247,7 @@
           placeholder="${searchLabel}"
           ariaLabel="${searchLabel}"
           inputId="marketplace-search-query"
+          maxlength="100"
           extraAttributes="data-marketplace-search-input"
           size="lg" />
     </div>

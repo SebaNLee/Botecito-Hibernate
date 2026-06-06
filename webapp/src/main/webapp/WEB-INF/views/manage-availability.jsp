@@ -6,9 +6,10 @@
 
 <c:url var="pageUrl" value="/my-boats/${item.id}/availability" />
 <c:url var="saveUrl" value="/my-boats/${item.id}/availability/save" />
-<c:url var="manageAvailabilityBackUrl" value="${manageAvailabilityBackPath}" />
+<c:url var="myBoatsUrl" value="/my-boats" />
 
 <spring:message code="manageAvailability.title" var="pageTitle" />
+<spring:message code="manageAvailability.back.myBoats" var="manageAvailabilityBackMyBoatsLabel" />
 <spring:message code="manageAvailability.subtitle" var="pageSubtitle" />
 <spring:message code="manageAvailability.calendar.title" var="calendarTitle" />
 <spring:message code="manageAvailability.calendar.hint" var="calendarHint" />
@@ -36,9 +37,9 @@
   <paw:toastNotifier />
 
   <div class="mb-8">
-    <a href="${manageAvailabilityBackUrl}" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
+    <a href="${myBoatsUrl}" data-nav-filter-page="myBoats" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
       <span class="material-symbols-outlined">arrow_back</span>
-      <span><spring:message code="common.back" /></span>
+      <span><c:out value="${manageAvailabilityBackMyBoatsLabel}" /></span>
     </a>
   </div>
 

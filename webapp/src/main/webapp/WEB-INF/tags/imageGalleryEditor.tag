@@ -43,7 +43,7 @@
   <div data-gallery-empty class="rounded-xl bg-base-200 p-6 text-center text-sm text-on-surface-variant">
     <c:out value="${galleryEmptyLabel}" />
   </div>
-  <ul data-gallery-local-preview data-gallery-sortable class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 list-none p-0 m-0"></ul>
+  <ul data-gallery-local-preview data-gallery-sortable class="hidden grid w-full max-w-4xl mx-auto grid-cols-3 gap-3 list-none p-0 m-0"></ul>
 
   <c:choose>
     <c:when test="${canAddMore}">

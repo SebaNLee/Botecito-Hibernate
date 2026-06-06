@@ -86,9 +86,9 @@
             </c:choose>
               <paw:formField path="givenName" label="${givenNameLabel}" maxlength="100" required="${settingsEdit}" readonly="${not settingsEdit}" />
               <paw:formField path="lastName" label="${lastNameLabel}" maxlength="100" required="${settingsEdit}" readonly="${not settingsEdit}" />
-              <paw:formField path="email" type="email" label="${emailLabel}" maxlength="150" required="${settingsEdit}" readonly="${not settingsEdit}" />
+              <paw:formField path="email" type="email" label="${emailLabel}" maxlength="100" required="${settingsEdit}" readonly="${not settingsEdit}" />
               <paw:formField path="phone" label="${phoneLabel}" maxlength="30" readonly="${not settingsEdit}" />
-              <paw:formField path="paymentAlias" label="${paymentAliasLabel}" maxlength="120" readonly="${not settingsEdit}" />
+              <paw:formField path="paymentAlias" label="${paymentAliasLabel}" maxlength="30" readonly="${not settingsEdit}" />
 
               <fieldset class="fieldset">
                 <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">

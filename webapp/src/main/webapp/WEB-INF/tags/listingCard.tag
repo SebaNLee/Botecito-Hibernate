@@ -40,10 +40,10 @@
       </c:if>
       <button
           type="submit"
-          class="btn btn-circle btn-sm shadow-sm ${isFavourite ? 'bg-error border-error text-error-content hover:bg-error/90 hover:border-error' : 'bg-base-100/95 border-outline-variant/40 text-primary hover:bg-base-100'}"
+          class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 hover:bg-base-100"
           aria-label="${isFavourite ? favouriteRemoveLabel : favouriteAddLabel}"
           title="${isFavourite ? favouriteRemoveLabel : favouriteAddLabel}">
-        <span class="material-symbols-outlined text-lg" style="${isFavourite ? 'margin-left: 1px;' : ''}">${isFavourite ? 'heart_check' : 'favorite_border'}</span>
+        <span class="material-symbols-outlined text-lg ${isFavourite ? 'icon-heart-filled' : 'icon-heart-outline'}">favorite</span>
       </button>
     </form>
   </c:if>
@@ -61,7 +61,7 @@
         </div>
       </div>
       <div class="flex items-center gap-1 text-sm font-semibold text-on-surface-variant">
-        <span class="material-symbols-outlined text-base text-warning">star</span>
+        <span class="material-symbols-outlined text-base icon-star-filled">star</span>
         <c:choose>
           <c:when test="${item.totalReviews > 0}">
             <fmt:formatNumber value="${item.averageRating}" minFractionDigits="1" maxFractionDigits="1" />

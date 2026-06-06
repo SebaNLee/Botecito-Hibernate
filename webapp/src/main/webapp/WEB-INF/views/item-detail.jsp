@@ -52,7 +52,6 @@
 <spring:message code="itemDetail.price.hours" var="itemDetailPriceHoursLabel" />
 <spring:message code="detail.reviews.anonymous" var="detailReviewAnonymousLabel" />
 <spring:message code="contact.sendEmail" var="contactSendEmailLabel" />
-<spring:message code="itemDetail.contact.viewProfile" var="viewProfileLabel" />
 <spring:message code="itemDetail.owner.ownPublicationNotice" var="itemDetailOwnerNoticeLabel" />
 <spring:message code="itemDetail.owner.blockButton" var="itemDetailOwnerBlockButtonLabel" />
 <spring:message code="itemDetail.owner.incomingRequestsButton" var="itemDetailOwnerIncomingRequestsButtonLabel" />
@@ -139,7 +138,7 @@
           <div class="space-y-5">
             <div class="rounded-2xl bg-base-200 px-4 py-3 flex items-center justify-between gap-3">
               <div class="flex items-center gap-2 text-lg font-black text-on-surface">
-                <span class="material-symbols-outlined text-warning">star</span>
+                <span class="material-symbols-outlined icon-star-filled">star</span>
                 <c:choose>
                   <c:when test="${totalReviews > 0}">
                     <fmt:formatNumber value="${averageRating}" minFractionDigits="1" maxFractionDigits="1" />
@@ -222,10 +221,10 @@
                       <c:param name="next" value="/item/${item.id}" />
                     </c:url>
                     <a href="${favouriteLoginUrl}"
-                       class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 text-primary hover:bg-base-100"
+                       class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 hover:bg-base-100"
                        aria-label="${favouriteLoginToAddLabel}"
                        title="${favouriteLoginToAddLabel}">
-                      <span class="material-symbols-outlined text-lg">favorite_border</span>
+                      <span class="material-symbols-outlined text-lg icon-heart-outline">favorite</span>
                     </a>
                   </c:when>
                   <c:when test="${favouriteItem}">
@@ -234,10 +233,10 @@
                       <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
                       <button
                           type="submit"
-                          class="btn btn-circle btn-sm shadow-sm bg-error border-error text-error-content hover:bg-error/90 hover:border-error"
+                          class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 hover:bg-base-100"
                           aria-label="${favouriteRemoveLabel}"
                           title="${favouriteRemoveLabel}">
-                        <span class="material-symbols-outlined text-lg" style="margin-left: 1px;">heart_check</span>
+                        <span class="material-symbols-outlined text-lg icon-heart-filled">favorite</span>
                       </button>
                     </form>
                   </c:when>
@@ -247,10 +246,10 @@
                       <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
                       <button
                           type="submit"
-                          class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 text-primary hover:bg-base-100"
+                          class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 hover:bg-base-100"
                           aria-label="${favouriteAddLabel}"
                           title="${favouriteAddLabel}">
-                        <span class="material-symbols-outlined text-lg">favorite_border</span>
+                        <span class="material-symbols-outlined text-lg icon-heart-outline">favorite</span>
                       </button>
                     </form>
                   </c:otherwise>
@@ -436,40 +435,46 @@
         <jsp:attribute name="title"><spring:message code="itemDetail.contact.host" /></jsp:attribute>
         <jsp:body>
           <div class="flex min-w-0 flex-col gap-4">
-            <div class="flex min-w-0 items-center gap-4">
-              <div class="avatar placeholder shrink-0">
-                <div class="bg-primary/10 text-primary rounded-full w-14 h-14 flex items-center justify-center">
-                  <span class="font-extrabold text-xl"><c:out value="${ownerInitials}" /></span>
+            <c:if test="${itemOwner != null}">
+              <c:url var="itemOwnerProfileUrl" value="/profiles/${itemOwner.id}" />
+            </c:if>
+            <c:choose>
+              <c:when test="${itemOwner != null}">
+                <a href="${itemOwnerProfileUrl}" class="group flex min-w-0 items-center gap-4 no-underline rounded-xl transition-colors hover:bg-base-200/60 -m-2 p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25">
+                  <div class="avatar placeholder shrink-0">
+                    <div class="bg-primary/10 text-primary rounded-full w-14 h-14 flex items-center justify-center">
+                      <span class="font-extrabold text-xl"><c:out value="${ownerInitials}" /></span>
+                    </div>
+                  </div>
+                  <div class="min-w-0">
+                    <h3 class="font-extrabold text-lg m-0 break-words text-on-background group-hover:underline">
+                      <c:out value="${itemOwnerDisplayName}" />
+                    </h3>
+                    <div class="break-all text-xs text-on-surface-variant">
+                      <c:out value="${itemOwner.email}" />
+                    </div>
+                  </div>
+                </a>
+              </c:when>
+              <c:otherwise>
+                <div class="flex min-w-0 items-center gap-4">
+                  <div class="avatar placeholder shrink-0">
+                    <div class="bg-primary/10 text-primary rounded-full w-14 h-14 flex items-center justify-center">
+                      <span class="font-extrabold text-xl"><c:out value="${ownerInitials}" /></span>
+                    </div>
+                  </div>
+                  <div class="min-w-0">
+                    <h3 class="font-extrabold text-lg m-0 break-words">
+                      <spring:message code="itemDetail.owner.none" />
+                    </h3>
+                    <div class="break-all text-xs text-on-surface-variant">
+                      <spring:message code="itemDetail.owner.noEmail" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div class="min-w-0">
-                <h3 class="font-extrabold text-lg m-0 break-words">
-                  <c:choose>
-                    <c:when test="${itemOwner != null}">
-                      <c:url var="itemOwnerProfileUrl" value="/profiles/${itemOwner.id}" />
-                      <a href="${itemOwnerProfileUrl}" class="no-underline text-on-background hover:underline"><c:out value="${itemOwnerDisplayName}" /></a>
-                    </c:when>
-                    <c:otherwise><spring:message code="itemDetail.owner.none" /></c:otherwise>
-                  </c:choose>
-                </h3>
-                <div class="break-all text-xs text-on-surface-variant">
-                  <c:choose>
-                    <c:when test="${itemOwner != null}"><c:out value="${itemOwner.email}" /></c:when>
-                    <c:otherwise><spring:message code="itemDetail.owner.noEmail" /></c:otherwise>
-                  </c:choose>
-                </div>
-              </div>
-            </div>
+              </c:otherwise>
+            </c:choose>
             <div class="flex w-full flex-col gap-2">
-              <c:if test="${itemOwner != null}">
-                <paw:button
-                  href="${itemOwnerProfileUrl}"
-                  color="outline"
-                  icon="person"
-                  cssClass="w-full sm:w-auto"
-                  text="${viewProfileLabel}"
-                />
-              </c:if>
               <paw:button
                 href="mailto:${itemOwner != null ? itemOwner.email : ''}"
                 color="outline"

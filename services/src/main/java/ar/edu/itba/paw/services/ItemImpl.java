@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.dto.MyBoatsQueryModel;
 import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
@@ -88,8 +89,24 @@ public class ItemImpl implements ItemService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public int getVersionCount(int itemId) {
+        return itemDao.getVersionCount(itemId);
+    }
+
+    @Override
     @Transactional
-    public void forceDeleteItem(Item item) {
-        itemDao.deleteItem(item);
+    public void deleteItem(Item item, boolean soft) {
+        if (soft) {
+            applySoftDelete(item);
+            return;
+        } else {
+            itemDao.deleteItem(item);
+        }
+    }
+
+    private void applySoftDelete(final Item item) {
+        item.setStatus(ItemStatusEnum.DELETED);
+        itemDao.deleteVersion(item.getLatestVersion());
     }
 }

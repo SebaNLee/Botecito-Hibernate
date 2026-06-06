@@ -170,6 +170,19 @@ public class ItemJpaDao implements ItemDao {
     }
 
     @Override
+    public int getVersionCount(final int itemId) {
+        final Long count = em.createQuery("SELECT COUNT(v) FROM Version v WHERE v.item.id = :itemId", Long.class)
+                .setParameter("itemId", itemId)
+                .getSingleResult();
+        return count == null ? 0 : count.intValue();
+    }
+
+    @Override
+    public void deleteVersion(final Version version) {
+        em.remove(version);
+    }
+
+    @Override
     public void deleteItem(final Item item) {
         em.remove(item);
     }

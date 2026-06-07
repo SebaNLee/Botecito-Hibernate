@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.form;
 
 import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import lombok.Getter;
@@ -17,16 +18,15 @@ public class FavouritesSearchForm {
     @Pattern(regexp = "^$|^(newest|oldest|nameAsc|nameDesc)$", message = "{favourites.search.validation.sort.pattern}")
     private String sortBy;
 
+    @NotNull
     @Min(value = 1, message = "{favourites.search.validation.page.pattern}")
     private Integer page;
 
+    @NotNull(message = "{favourites.search.validation.pageSize.pattern}")
     private Integer pageSize;
 
     @AssertTrue(message = "{favourites.search.validation.pageSize.pattern}")
     public boolean isPageSizeValid() {
-        if (pageSize == null) {
-            return true;
-        }
-        return pageSize == 6 || pageSize == 12 || pageSize == 18;
+        return pageSize != null && (pageSize == 6 || pageSize == 12 || pageSize == 18);
     }
 }

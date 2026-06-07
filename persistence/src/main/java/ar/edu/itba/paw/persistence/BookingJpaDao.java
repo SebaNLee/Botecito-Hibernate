@@ -22,8 +22,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class BookingJpaDao implements BookingDao {
 
-    private static final int DEFAULT_PAGE_SIZE = 12;
-
     private static final String NATIVE_JOIN =
             "booking b JOIN version v ON b.version_id = v.id JOIN item i ON v.item_id = i.id ";
 
@@ -137,9 +135,7 @@ public class BookingJpaDao implements BookingDao {
             nativeQuery.setParameter(entry.getKey(), entry.getValue());
         }
 
-        final int pageSize = resolvePageSize(query);
-        final int page = resolvePage(query);
-        Paging.apply(nativeQuery, page, pageSize);
+        Paging.apply(nativeQuery, query.getPage(), query.getPageSize());
         final List<Integer> ids = Paging.toIntegerIds(nativeQuery.getResultList());
 
         if (ids.isEmpty()) {
@@ -261,20 +257,6 @@ public class BookingJpaDao implements BookingDao {
                         "DELETE FROM Booking b WHERE b.id IN (SELECT b2.id FROM Booking b2 INNER JOIN b2.version v INNER JOIN v.item i WHERE b2.guest = i.host AND i = :item)")
                 .setParameter("item", item)
                 .executeUpdate();
-    }
-
-    private static int resolvePage(final BookingQueryModel query) {
-        if (query == null) {
-            return Paging.DEFAULT_PAGE;
-        }
-        return Paging.resolvePage(query.getPage());
-    }
-
-    private static int resolvePageSize(final BookingQueryModel query) {
-        if (query == null) {
-            return DEFAULT_PAGE_SIZE;
-        }
-        return Paging.resolvePageSize(query.getPageSize(), DEFAULT_PAGE_SIZE, 6, 12, 18);
     }
 
     private static String nativeOrderBy(final BookingQueryModel query) {

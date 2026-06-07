@@ -118,11 +118,8 @@ public final class ReviewImpl implements ReviewService {
     @Override
     @Transactional(readOnly = true)
     public PageModel<Review> findReviewsAboutHost(final int hostUserId, final int page, final int pageSize) {
-        final int safePage = Math.max(1, page);
-        final int safePageSize = Math.max(1, pageSize);
         final int total = reviewDao.countReviewsAboutHost(hostUserId);
-        return new PageModel<>(
-                reviewDao.findReviewsAboutHost(hostUserId, safePage, safePageSize), safePage, safePageSize, total);
+        return new PageModel<>(reviewDao.findReviewsAboutHost(hostUserId, page, pageSize), page, pageSize, total);
     }
 
     @Override

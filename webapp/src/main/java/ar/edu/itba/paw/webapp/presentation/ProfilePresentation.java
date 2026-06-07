@@ -14,15 +14,18 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
 
 @Component
 @RequiredArgsConstructor
 public class ProfilePresentation {
 
+    private static final String MESSAGE_PREFIX = "profile";
     private static final DateTimeFormatter REVIEW_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final CoverImageUrlResolver coverImageUrlResolver;
+    private final ToastPresentation toastPresentation;
 
     public ModelAndView profile(
             final BotecitoUserDetails viewer,
@@ -35,6 +38,7 @@ public class ProfilePresentation {
             final int followersCount,
             final boolean isSelf,
             final boolean isSubscribed,
+            final ProfileViewForm profileView,
             final HttpServletRequest request) {
         final Map<Integer, String> reviewDatesById = formatReviewDates(reviewsPageModel);
 
@@ -53,19 +57,42 @@ public class ProfilePresentation {
         mav.addObject("reviewsTotal", reviewsPageModel.getTotalItems());
         mav.addObject("reviewDatesById", reviewDatesById);
         mav.addObject("averageRating", averageRating);
-        mav.addObject("profileView", profileView(activeTab, listingsPageModel, reviewsPageModel));
+        mav.addObject("profileView", profileView);
+        mav.addObject("hasValidationErrors", false);
         return mav;
     }
 
-    private static ProfileViewForm profileView(
-            final String activeTab, final PageModel<Item> listingsPageModel, final PageModel<Review> reviewsPageModel) {
-        final ProfileViewForm view = new ProfileViewForm();
-        view.setTab(activeTab);
-        view.setListingsPage(listingsPageModel.getPage());
-        view.setListingsPageSize(listingsPageModel.getPageSize());
-        view.setReviewsPage(reviewsPageModel.getPage());
-        view.setReviewsPageSize(reviewsPageModel.getPageSize());
-        return view;
+    public ModelAndView profileErrors(
+            final BotecitoUserDetails viewer,
+            final Users profileUser,
+            final ProfileViewForm profileView,
+            final BindingResult errors,
+            final HttpServletRequest request) {
+        final String activeTab = profileView.getTab() != null && "reviews".equalsIgnoreCase(profileView.getTab())
+                ? "reviews"
+                : "listings";
+        final boolean isSelf = viewer != null && viewer.getId() == profileUser.getId();
+
+        final ModelAndView mav = new ModelAndView("profile");
+        mav.addAllObjects(errors.getModel());
+        mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
+        mav.addObject("user", profileUser);
+        mav.addObject("activeTab", activeTab);
+        mav.addObject("isSelf", isSelf);
+        mav.addObject("isSubscribed", false);
+        mav.addObject("followersCount", 0);
+        mav.addObject("listings", List.of());
+        mav.addObject("listingsPage", new PageModel<>(List.of(), 1, 12, 0));
+        mav.addObject("listingsTotal", 0);
+        mav.addObject("imageUrlsByItemId", Map.of());
+        mav.addObject("reviews", List.of());
+        mav.addObject("reviewsPage", new PageModel<>(List.of(), 1, 5, 0));
+        mav.addObject("reviewsTotal", 0);
+        mav.addObject("reviewDatesById", Map.of());
+        mav.addObject("averageRating", null);
+        mav.addObject("profileView", profileView);
+        mav.addObject("hasValidationErrors", true);
+        return mav;
     }
 
     private static Map<Integer, String> formatReviewDates(final PageModel<Review> page) {

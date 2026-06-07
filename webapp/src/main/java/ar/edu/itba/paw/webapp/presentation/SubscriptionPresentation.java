@@ -84,8 +84,8 @@ public class SubscriptionPresentation {
 
     private static void addItemDetailViewParams(
             final RedirectAttributes redirectAttributes, final ItemDetailViewForm view) {
-        if (view.getReviewPage() != null && view.getReviewPage() > 1) {
-            redirectAttributes.addAttribute("reviewPage", view.getReviewPage());
+        if (view.getPage() != null && view.getPage() > 1) {
+            redirectAttributes.addAttribute("page", view.getPage());
         }
     }
 
@@ -97,24 +97,23 @@ public class SubscriptionPresentation {
         if (!"listings".equals(tab)) {
             redirectAttributes.addAttribute("tab", tab);
         }
-        final int listingsPage = view.getListingsPage() == null ? 1 : view.getListingsPage();
-        final int listingsPageSize = view.getListingsPageSize() == null ? 6 : view.getListingsPageSize();
-        final int reviewsPage = view.getReviewsPage() == null ? 1 : view.getReviewsPage();
-        final int reviewsPageSize = view.getReviewsPageSize() == null ? 5 : view.getReviewsPageSize();
+        final int page = view.getPage() == null ? 1 : view.getPage();
+        final int pageSize = view.getPageSize() == null ? 12 : view.getPageSize();
 
         if ("reviews".equals(tab)) {
-            if (reviewsPage > 1) {
-                redirectAttributes.addAttribute("reviewsPage", reviewsPage);
-            }
-            if (reviewsPageSize != 5) {
-                redirectAttributes.addAttribute("reviewsPageSize", reviewsPageSize);
+            redirectAttributes.addAttribute("tab", "reviews");
+            if (page > 1) {
+                redirectAttributes.addAttribute("page", page);
             }
         } else {
-            if (listingsPage > 1) {
-                redirectAttributes.addAttribute("listingsPage", listingsPage);
+            if (page > 1) {
+                redirectAttributes.addAttribute("page", page);
             }
-            if (listingsPageSize != 6) {
-                redirectAttributes.addAttribute("listingsPageSize", listingsPageSize);
+            if (StringUtils.hasText(view.getSortBy()) && !"newest".equals(view.getSortBy())) {
+                redirectAttributes.addAttribute("sortBy", view.getSortBy());
+            }
+            if (pageSize != 12) {
+                redirectAttributes.addAttribute("pageSize", pageSize);
             }
         }
     }
@@ -124,13 +123,13 @@ public class SubscriptionPresentation {
         if (view == null) {
             return;
         }
-        final int page = view.getSubscriptionsPage() == null ? 1 : view.getSubscriptionsPage();
-        final int pageSize = view.getSubscriptionsPageSize() == null ? 6 : view.getSubscriptionsPageSize();
+        final int page = view.getPage() == null ? 1 : view.getPage();
+        final int pageSize = view.getPageSize() == null ? 6 : view.getPageSize();
         if (page > 1) {
-            redirectAttributes.addAttribute("subscriptionsPage", page);
+            redirectAttributes.addAttribute("page", page);
         }
         if (pageSize != 6) {
-            redirectAttributes.addAttribute("subscriptionsPageSize", pageSize);
+            redirectAttributes.addAttribute("pageSize", pageSize);
         }
         if (Boolean.TRUE.equals(view.getEdit())) {
             redirectAttributes.addAttribute("edit", true);

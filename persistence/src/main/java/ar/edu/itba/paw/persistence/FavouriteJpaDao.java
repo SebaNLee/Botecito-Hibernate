@@ -31,7 +31,6 @@ public class FavouriteJpaDao implements FavouriteDao {
             + "JOIN FETCH v.item i JOIN FETCH i.host JOIN FETCH v.location JOIN FETCH v.type "
             + "LEFT JOIN FETCH v.media m LEFT JOIN FETCH m.image "
             + "WHERE v.id IN :ids";
-    private static final int DEFAULT_PAGE_SIZE = 12;
 
     @PersistenceContext
     private EntityManager em;
@@ -94,7 +93,7 @@ public class FavouriteJpaDao implements FavouriteDao {
 
         final Query versionIdsQuery = em.createNativeQuery(sql);
         setParameters(versionIdsQuery, parameters);
-        Paging.apply(versionIdsQuery, resolvePage(query), resolvePageSize(query));
+        Paging.apply(versionIdsQuery, query.getPage(), query.getPageSize());
 
         final List<Integer> versionIds = Paging.toIntegerIds(versionIdsQuery.getResultList());
         if (versionIds.isEmpty()) {
@@ -173,16 +172,6 @@ public class FavouriteJpaDao implements FavouriteDao {
             case "nameDesc" -> "v.title DESC, i.id DESC";
             default -> "f.created_at DESC, f.item_id DESC";
         };
-    }
-
-    private static int resolvePage(final FavouritesQueryModel query) {
-        return query == null ? Paging.DEFAULT_PAGE : Paging.resolvePage(query.getPage());
-    }
-
-    private static int resolvePageSize(final FavouritesQueryModel query) {
-        return query == null
-                ? DEFAULT_PAGE_SIZE
-                : Paging.resolvePageSize(query.getPageSize(), DEFAULT_PAGE_SIZE, 6, 12, 18);
     }
 
     private static String setupSearchQuery(final String searchQuery) {

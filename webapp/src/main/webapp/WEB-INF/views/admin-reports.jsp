@@ -21,6 +21,9 @@
 
 <c:set var="pageSize" value="${adminReportsSearch.pageSize != null ? adminReportsSearch.pageSize : 12}" />
 <c:set var="currentSortBy" value="${empty adminReportsSearch.sortBy ? 'newest' : adminReportsSearch.sortBy}" />
+<c:set var="hasActiveReportsFilters" value="${currentSortBy != 'newest' or pageSize != 12 or (adminReportsSearch.page != null && adminReportsSearch.page > 1)}" />
+<c:set var="showReportsFilterEmpty" value="${hasValidationErrors or hasActiveReportsFilters or reportPage.totalItems > 0}" />
+<c:url var="clearReportsFiltersUrl" value="/admin/reports" />
 
 <c:if test="${reportPage.totalPages > 1}">
   <c:url var="previousPageUrl" value="/admin/reports">
@@ -75,9 +78,29 @@
 
     <c:choose>
       <c:when test="${empty reportPage.content}">
-        <paw:alertMessage type="info">
-          <spring:message code="admin.reports.empty" />
-        </paw:alertMessage>
+        <c:choose>
+          <c:when test="${showReportsFilterEmpty}">
+            <div class="card bg-base-100 shadow-sm">
+              <div class="card-body items-center gap-4 p-10 text-center">
+                <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <span class="material-symbols-outlined text-4xl" aria-hidden="true">flag</span>
+                </div>
+                <div class="max-w-lg">
+                  <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><spring:message code="admin.reports.filter.empty.title" /></h2>
+                  <p class="m-0 mt-2 text-on-surface-variant"><spring:message code="admin.reports.filter.empty.message" /></p>
+                </div>
+                <a href="${clearReportsFiltersUrl}" class="btn btn-primary no-underline" data-clear-list-filters>
+                  <spring:message code="marketplace.empty.clear" />
+                </a>
+              </div>
+            </div>
+          </c:when>
+          <c:otherwise>
+            <paw:alertMessage type="info">
+              <spring:message code="admin.reports.empty" />
+            </paw:alertMessage>
+          </c:otherwise>
+        </c:choose>
       </c:when>
       <c:otherwise>
         <div class="overflow-x-auto rounded-2xl border border-outline-variant/20 bg-base-100 shadow-sm">

@@ -1,12 +1,12 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.services.SubscriptionService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.auth.SecurityContextRefresher;
 import ar.edu.itba.paw.webapp.form.SettingsForm;
+import ar.edu.itba.paw.webapp.form.SettingsViewForm;
 import ar.edu.itba.paw.webapp.presentation.SettingsPresentation;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -18,7 +18,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
@@ -30,6 +29,15 @@ public class SettingsController {
     private final SecurityContextRefresher securityContextRefresher;
     private final SettingsPresentation settingsPresentation;
 
+    @ModelAttribute("settingsView")
+    public SettingsViewForm defaultSettingsView() {
+        final SettingsViewForm form = new SettingsViewForm();
+        form.setPage(1);
+        form.setPageSize(6);
+        form.setEdit(false);
+        return form;
+    }
+
     @RequestMapping(value = "/settings/password-recovery", method = RequestMethod.POST)
     public ModelAndView settingsPasswordRecoveryRequest(@AuthenticationPrincipal final BotecitoUserDetails user) {
         userService.requestPasswordRecovery(user.getEmail());
@@ -39,13 +47,16 @@ public class SettingsController {
     @RequestMapping(value = "/settings", method = RequestMethod.GET)
     public ModelAndView settings(
             @AuthenticationPrincipal final BotecitoUserDetails user,
-            @RequestParam(value = "edit", defaultValue = "false") final boolean edit,
-            @RequestParam(value = "subscriptionsPage", defaultValue = "1") final int subscriptionsPage,
-            @RequestParam(value = "subscriptionsPageSize", defaultValue = "6") final int subscriptionsPageSize,
+            @Valid @ModelAttribute("settingsView") final SettingsViewForm settingsView,
+            final BindingResult viewErrors,
             @ModelAttribute("settingsForm") final SettingsForm form) {
         final Users currentUser = userService.findById(user.getId()).orElseThrow();
-        final PageModel<Users> subscriptions =
-                listSubscriptions(user.getId(), subscriptionsPage, subscriptionsPageSize);
+        if (viewErrors.hasErrors()) {
+            return settingsPresentation.settingsViewErrors(currentUser, form, settingsView, viewErrors);
+        }
+        final var subscriptions =
+                subscriptionService.listSubscriptions(user.getId(), settingsView.getPage(), settingsView.getPageSize());
+        final boolean edit = Boolean.TRUE.equals(settingsView.getEdit());
         return settingsPresentation.settingsView(currentUser, form, edit, subscriptions);
     }
 
@@ -54,15 +65,18 @@ public class SettingsController {
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @Valid @ModelAttribute("settingsForm") final SettingsForm form,
             final BindingResult errors,
-            @RequestParam(value = "subscriptionsPage", defaultValue = "1") final int subscriptionsPage,
-            @RequestParam(value = "subscriptionsPageSize", defaultValue = "6") final int subscriptionsPageSize,
+            @Valid @ModelAttribute("settingsView") final SettingsViewForm settingsView,
+            final BindingResult viewErrors,
             final HttpServletRequest request,
             final HttpServletResponse response) {
         request.getSession().removeAttribute("userLocale");
 
         final Users currentUser = userService.findById(user.getId()).orElseThrow();
-        final PageModel<Users> subscriptions =
-                listSubscriptions(user.getId(), subscriptionsPage, subscriptionsPageSize);
+        if (viewErrors.hasErrors()) {
+            return settingsPresentation.settingsViewErrors(currentUser, form, settingsView, viewErrors);
+        }
+        final var subscriptions =
+                subscriptionService.listSubscriptions(user.getId(), settingsView.getPage(), settingsView.getPageSize());
 
         if (errors.hasErrors()) {
             return settingsPresentation.settingsEditView(currentUser, subscriptions);
@@ -90,12 +104,5 @@ public class SettingsController {
             return settingsPresentation.settingsVerificationSentRedirect();
         }
         return settingsPresentation.settingsUpdatedRedirect();
-    }
-
-    private PageModel<Users> listSubscriptions(
-            final int userId, final int subscriptionsPage, final int subscriptionsPageSize) {
-        final int safeSubscriptionsPage = Math.max(1, subscriptionsPage);
-        final int safeSubscriptionsPageSize = Math.max(1, subscriptionsPageSize);
-        return subscriptionService.listSubscriptions(userId, safeSubscriptionsPage, safeSubscriptionsPageSize);
     }
 }

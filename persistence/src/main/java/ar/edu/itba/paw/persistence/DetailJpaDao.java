@@ -95,12 +95,11 @@ public class DetailJpaDao implements DetailDao {
     private void populateReviewTransients(final Item item, final int itemId, final int reviewPage) {
         final long totalReviews = countReviewsForItem(itemId);
         final double averageRating = averageRatingForItem(itemId);
-        final int page = Paging.resolvePage(reviewPage);
-        final List<Review> reviews = loadReviewsPage(itemId, page);
+        final List<Review> reviews = loadReviewsPage(itemId, reviewPage);
 
         item.setTotalReviews(totalReviews);
         item.setAverageRating(averageRating);
-        item.setReviewPage(new PageModel<>(reviews, page, REVIEW_PAGE_SIZE, (int) totalReviews));
+        item.setReviewPage(new PageModel<>(reviews, reviewPage, REVIEW_PAGE_SIZE, (int) totalReviews));
     }
 
     private long countReviewsForItem(final int itemId) {

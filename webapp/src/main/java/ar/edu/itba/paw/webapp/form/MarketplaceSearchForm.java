@@ -5,6 +5,7 @@ import java.time.LocalTime;
 import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import lombok.Getter;
@@ -56,9 +57,11 @@ public class MarketplaceSearchForm {
     @Size(max = 100)
     private String itemType;
 
+    @NotNull
     @Min(value = 1, message = "{marketplace.validation.page.pattern}")
     private Integer page;
 
+    @NotNull(message = "{marketplace.validation.pageSize.pattern}")
     private Integer pageSize;
 
     @Pattern(regexp = "^$|^(newest|oldest|priceAsc|priceDesc)$", message = "{marketplace.validation.sort.pattern}")
@@ -66,10 +69,7 @@ public class MarketplaceSearchForm {
 
     @AssertTrue(message = "{marketplace.validation.pageSize.pattern}")
     public boolean isPageSizeValid() {
-        if (pageSize == null) {
-            return true;
-        }
-        return pageSize == 6 || pageSize == 12 || pageSize == 18;
+        return pageSize != null && (pageSize == 6 || pageSize == 12 || pageSize == 18);
     }
 
     @AssertTrue(message = "{marketplace.validation.timeOrder}")

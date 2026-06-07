@@ -45,8 +45,8 @@ public class MarketplacePresentation {
 
     private void addListingModelObjects(
             final ModelAndView mav, final MarketplaceSearchForm search, final List<Item> items, final long total) {
-        final int page = search.getPage() == null ? 1 : search.getPage();
-        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
+        final int page = search.getPage();
+        final int pageSize = search.getPageSize();
         final int totalItems = total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
         mav.addObject("itemPage", new PageModel<>(items, page, pageSize, totalItems));
         mav.addObject("itemsCount", totalItems);

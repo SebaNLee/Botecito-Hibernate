@@ -246,7 +246,7 @@ public class MailServiceImpl implements MailService {
                 .email(user.getEmail())
                 .displayName(displayName(user))
                 .locale(resolveLocale(user))
-                .itemTitle(report.getItemTitle())
+                .itemTitle(report.getItem().getLatestVersion().getTitle())
                 .description(report.getDescription())
                 .reason(report.getReason())
                 .build();

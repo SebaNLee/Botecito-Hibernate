@@ -5,7 +5,6 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<spring:message code="profile.followers" var="followersLabel" />
 <spring:message code="profile.rating.noneShort" var="ratingNoneShortLabel" />
 <spring:message code="profile.editMyProfile" var="editMyProfileLabel" />
 <spring:message code="profile.listings.empty" var="listingsEmptyLabel" />
@@ -89,8 +88,14 @@
               <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-semibold text-on-surface-variant">
                 <span class="flex items-center gap-1">
                   <span class="material-symbols-outlined text-base">group</span>
-                  <spring:message code="profile.followersCount" arguments="${followersCount}" />
-                  <span><c:out value="${followersLabel}" /></span>
+                  <c:choose>
+                    <c:when test="${followersCount == 1}">
+                      <spring:message code="profile.followersCount.singular" />
+                    </c:when>
+                    <c:otherwise>
+                      <spring:message code="profile.followersCount.plural" arguments="${followersCount}" />
+                    </c:otherwise>
+                  </c:choose>
                 </span>
                 <c:if test="${activeTab == 'reviews'}">
                   <span class="flex items-center gap-1">
@@ -198,6 +203,16 @@
 
             <%-- Listings panel --%>
             <c:when test="${activeTab == 'listings'}">
+              <p class="text-on-surface-variant mb-4 m-0">
+                <c:choose>
+                  <c:when test="${listingsPage.totalItems == 1}">
+                    <spring:message code="profile.listings.results.count.singular" />
+                  </c:when>
+                  <c:otherwise>
+                    <spring:message code="profile.listings.results.count.plural" arguments="${listingsPage.totalItems}" />
+                  </c:otherwise>
+                </c:choose>
+              </p>
               <form id="profile-listings-filters-form" action="${profileListingsUrl}" method="get" class="mb-6 w-full">
                 <input type="hidden" name="page" value="1" />
                 <div class="flex shrink-0 flex-wrap items-center justify-end gap-2 text-sm font-medium text-on-surface-variant">
@@ -285,6 +300,16 @@
 
             <%-- Reviews panel --%>
             <c:otherwise>
+              <p class="text-on-surface-variant mb-4 m-0">
+                <c:choose>
+                  <c:when test="${reviewsPage.totalItems == 1}">
+                    <spring:message code="profile.rating.reviewsCount.singular" />
+                  </c:when>
+                  <c:otherwise>
+                    <spring:message code="profile.rating.reviewsCount.plural" arguments="${reviewsPage.totalItems}" />
+                  </c:otherwise>
+                </c:choose>
+              </p>
               <c:choose>
                 <c:when test="${empty reviewsPage.content}">
                   <c:choose>
@@ -314,7 +339,7 @@
                 <c:otherwise>
                   <div class="flex flex-col gap-3">
                     <c:forEach items="${reviewsPage.content}" var="review">
-                      <paw:reviewCard review="${review}" reviewDate="${reviewDatesById[review.id]}" showReviewer="true" />
+                      <paw:reviewCard review="${review}" showReviewer="true" />
                     </c:forEach>
                   </div>
                   <c:url var="reviewsPreviousPageUrl" value="/profiles/${user.id}/reviews">

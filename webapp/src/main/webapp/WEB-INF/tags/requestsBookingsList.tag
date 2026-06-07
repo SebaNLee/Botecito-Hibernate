@@ -4,7 +4,6 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
-<fmt:setLocale value="es_AR" />
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ attribute name="formActionPath" required="true" type="java.lang.String" %>
 <%@ attribute name="sidebarActive" required="true" type="java.lang.String" %>
@@ -195,10 +194,24 @@
         <p class="text-on-surface-variant mt-2 m-0">
           <c:choose>
             <c:when test="${isIncoming}">
-              <spring:message code="requests.incoming.resultsCount" arguments="${bookingPage.totalItems}" />
+              <c:choose>
+                <c:when test="${bookingPage.totalItems == 1}">
+                  <spring:message code="requests.incoming.resultsCount.singular" />
+                </c:when>
+                <c:otherwise>
+                  <spring:message code="requests.incoming.resultsCount.plural" arguments="${bookingPage.totalItems}" />
+                </c:otherwise>
+              </c:choose>
             </c:when>
             <c:otherwise>
-              <spring:message code="requests.outgoing.resultsCount" arguments="${bookingPage.totalItems}" />
+              <c:choose>
+                <c:when test="${bookingPage.totalItems == 1}">
+                  <spring:message code="requests.outgoing.resultsCount.singular" />
+                </c:when>
+                <c:otherwise>
+                  <spring:message code="requests.outgoing.resultsCount.plural" arguments="${bookingPage.totalItems}" />
+                </c:otherwise>
+              </c:choose>
             </c:otherwise>
           </c:choose>
         </p>

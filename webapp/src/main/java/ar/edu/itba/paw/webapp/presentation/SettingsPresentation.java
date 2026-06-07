@@ -5,7 +5,6 @@ import ar.edu.itba.paw.models.dto.PreferredLanguageModel;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.webapp.form.SettingsForm;
 import ar.edu.itba.paw.webapp.form.SettingsViewForm;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -78,7 +77,6 @@ public class SettingsPresentation {
         final ModelAndView mav = new ModelAndView("settings");
         mav.addObject("user", user);
         mav.addObject("subscriptionsPage", subscriptions);
-        mav.addObject("memberSinceDisplay", user.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         mav.addObject("settingsEdit", settingsEdit);
         mav.addObject("settingsView", settingsView(subscriptions, settingsEdit));
         mav.addObject("hasValidationErrors", false);

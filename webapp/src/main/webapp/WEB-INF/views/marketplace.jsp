@@ -5,7 +5,6 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<fmt:setLocale value="es_AR" />
 <c:url var="publishUrl" value="/publish" />
 <c:url var="homeUrl" value="/" />
 <c:url var="marketplaceUrl" value="/marketplace" />
@@ -244,7 +243,16 @@
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
       <div class="min-w-0">
         <h1 class="text-4xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="marketplace.title" /></h1>
-        <p class="text-on-surface-variant mt-2 m-0"><spring:message code="marketplace.results.count" arguments="${itemPage.totalItems}" /></p>
+        <p class="text-on-surface-variant mt-2 m-0">
+          <c:choose>
+            <c:when test="${itemPage.totalItems == 1}">
+              <spring:message code="marketplace.results.count.singular" />
+            </c:when>
+            <c:otherwise>
+              <spring:message code="marketplace.results.count.plural" arguments="${itemPage.totalItems}" />
+            </c:otherwise>
+          </c:choose>
+        </p>
       </div>
 
       <form

@@ -3,6 +3,7 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="settingsUrl" value="/settings" />
@@ -123,7 +124,13 @@
                 <p class="text-[11px] uppercase tracking-wider font-bold text-outline m-0">
                   <spring:message code="settings.memberSince" />
                 </p>
-                <p class="text-base font-bold text-on-surface mt-1 mb-0"><c:out value="${memberSinceDisplay}" /></p>
+                <p class="text-base font-bold text-on-surface mt-1 mb-0">
+                  <c:if test="${not empty user.createdAt}">
+                    <fmt:parseDate value="${fn:substring(user.createdAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedMemberSince" />
+                    <fmt:formatDate value="${parsedMemberSince}" pattern="dd/MM/yyyy" var="formattedMemberSince" />
+                  </c:if>
+                  <c:out value="${formattedMemberSince}" />
+                </p>
               </div>
 
               <c:if test="${settingsEdit}">
@@ -140,11 +147,24 @@
 
           <div class="border-b border-outline-variant/20"></div>
 
+          <div id="settings-subscriptions" class="scroll-mt-24">
           <section class="space-y-4">
             <div class="flex min-w-0 items-center justify-between gap-3">
-              <h2 class="text-xl font-extrabold tracking-tight text-on-background m-0 break-words">
-                <c:out value="${subscriptionsTitle}" />
-              </h2>
+              <div class="min-w-0">
+                <h2 class="text-xl font-extrabold tracking-tight text-on-background m-0 break-words">
+                  <c:out value="${subscriptionsTitle}" />
+                </h2>
+                <p class="text-on-surface-variant mt-2 m-0">
+                  <c:choose>
+                    <c:when test="${subscriptionsPage.totalItems == 1}">
+                      <spring:message code="settings.subscriptions.results.count.singular" />
+                    </c:when>
+                    <c:otherwise>
+                      <spring:message code="settings.subscriptions.results.count.plural" arguments="${subscriptionsPage.totalItems}" />
+                    </c:otherwise>
+                  </c:choose>
+                </p>
+              </div>
             </div>
             <c:choose>
               <c:when test="${empty subscriptionsPage.content}">
@@ -221,12 +241,13 @@
                     totalPages="${subscriptionsPage.totalPages}"
                     hasPrevious="${subscriptionsPage.hasPrevious}"
                     hasNext="${subscriptionsPage.hasNext}"
-                    previousPageUrl="${subscriptionsPreviousPageUrl}"
-                    nextPageUrl="${subscriptionsNextPageUrl}"
+                    previousPageUrl="${subscriptionsPreviousPageUrl}#settings-subscriptions"
+                    nextPageUrl="${subscriptionsNextPageUrl}#settings-subscriptions"
                     navClass="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant" />
               </c:otherwise>
             </c:choose>
           </section>
+          </div>
 
           <div class="border-b border-outline-variant/20"></div>
 

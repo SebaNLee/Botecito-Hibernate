@@ -1,13 +1,11 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.AvailabilityData;
-import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.Media;
-import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
@@ -18,9 +16,7 @@ import ar.edu.itba.paw.webapp.util.DetailAvailabilityPicker;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +36,6 @@ public class DetailPresentation {
     private static final String VIEW_NAME = "item-detail";
     private static final String IMAGE_PATH_PREFIX = "/image/";
     private static final String PLACEHOLDER_IMAGE_PATH = "/css/boat-placeholder.svg";
-    private static final DateTimeFormatter REVIEW_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final ToastPresentation toastPresentation;
 
@@ -140,12 +135,6 @@ public class DetailPresentation {
         mav.addObject("ownerInitials", itemOwner != null ? ownerInitials(itemOwner) : "");
         mav.addObject("itemLocationSlug", version.getLocation().getSlug());
         mav.addObject("itemReviewPage", item.getItemReviewPage());
-        mav.addObject(
-                "reviewDatesById",
-                formatReviewDates(
-                        item.getItemReviewPage() != null
-                                ? item.getItemReviewPage().getPage()
-                                : null));
         mav.addObject("itemDetailView", itemDetailView);
 
         final PreBookingForm preBookingForm = new PreBookingForm();
@@ -179,20 +168,6 @@ public class DetailPresentation {
                 "detailListingMaxDateIso",
                 DetailAvailabilityPicker.listingCalendarMaxInclusive(listingTz)
                         .format(DateTimeFormatter.ISO_LOCAL_DATE));
-    }
-
-    private static Map<Integer, String> formatReviewDates(final PageModel<Review> page) {
-        final Map<Integer, String> dates = new LinkedHashMap<>();
-        if (page == null || page.getContent() == null) {
-            return dates;
-        }
-        for (final Review review : page.getContent()) {
-            if (review == null || review.getId() == null || review.getCreatedAt() == null) {
-                continue;
-            }
-            dates.put(review.getId(), review.getCreatedAt().format(REVIEW_DATE_FORMAT));
-        }
-        return dates;
     }
 
     private static List<String> imageUrls(final Version version, final String contextPath) {

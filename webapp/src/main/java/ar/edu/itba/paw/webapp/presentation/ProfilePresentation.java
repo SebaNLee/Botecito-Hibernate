@@ -8,10 +8,7 @@ import ar.edu.itba.paw.models.paging.ReviewPaging;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ProfileListingsViewForm;
 import ar.edu.itba.paw.webapp.form.ProfileReviewsViewForm;
-import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
@@ -22,7 +19,6 @@ import org.springframework.web.servlet.ModelAndView;
 public class ProfilePresentation {
 
     private static final String MESSAGE_PREFIX = "profile";
-    private static final DateTimeFormatter REVIEW_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final ToastPresentation toastPresentation;
 
@@ -53,8 +49,6 @@ public class ProfilePresentation {
             final boolean isSelf,
             final boolean isSubscribed,
             final ProfileReviewsViewForm profileReviewsView) {
-        final Map<Integer, String> reviewDatesById = formatReviewDates(reviewsPage);
-
         final ModelAndView mav = new ModelAndView("profile");
         mav.addObject("user", profileUser);
         mav.addObject("activeTab", "reviews");
@@ -62,7 +56,6 @@ public class ProfilePresentation {
         mav.addObject("isSubscribed", isSubscribed);
         mav.addObject("followersCount", followersCount);
         mav.addObject("reviewsPage", reviewsPage);
-        mav.addObject("reviewDatesById", reviewDatesById);
         mav.addObject("averageRating", averageRating);
         mav.addObject("profileReviewsView", profileReviewsView);
         mav.addObject("hasValidationErrors", false);
@@ -106,21 +99,9 @@ public class ProfilePresentation {
         mav.addObject("isSubscribed", false);
         mav.addObject("followersCount", 0);
         mav.addObject("reviewsPage", new PageModel<>(List.of(), 1, ReviewPaging.DEFAULT_PAGE_SIZE, 0L));
-        mav.addObject("reviewDatesById", Map.of());
         mav.addObject("averageRating", null);
         mav.addObject("profileReviewsView", profileReviewsView);
         mav.addObject("hasValidationErrors", true);
         return mav;
-    }
-
-    private static Map<Integer, String> formatReviewDates(final PageModel<Review> page) {
-        final Map<Integer, String> dates = new LinkedHashMap<>();
-        for (final Review review : page.getContent()) {
-            if (review == null || review.getId() == null || review.getCreatedAt() == null) {
-                continue;
-            }
-            dates.put(review.getId(), review.getCreatedAt().format(REVIEW_DATE_FORMAT));
-        }
-        return dates;
     }
 }

@@ -1,6 +1,5 @@
 <%@ tag language="java" pageEncoding="UTF-8" body-content="scriptless" %>
 <%@ attribute name="review" required="true" type="ar.edu.itba.paw.models.entity.Review" rtexprvalue="true" %>
-<%@ attribute name="reviewDate" required="true" type="java.lang.String" rtexprvalue="true" %>
 <%@ attribute name="showReviewer" required="false" type="java.lang.Boolean" rtexprvalue="true" %>
 <%@ attribute name="anonymousLabel" required="false" type="java.lang.String" rtexprvalue="true" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
@@ -35,7 +34,11 @@
   <c:if test="${not empty review.comment}">
     <p class="m-0 text-sm text-on-surface-variant break-words"><c:out value="${review.comment}" /></p>
   </c:if>
+  <c:if test="${not empty review.createdAt}">
+    <fmt:parseDate value="${fn:substring(review.createdAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedReviewDate" />
+    <fmt:formatDate value="${parsedReviewDate}" pattern="dd/MM/yyyy" var="formattedReviewDate" />
+  </c:if>
   <p class="m-0 text-xs text-outline">
-    <c:out value="${reviewDate}" />
+    <c:out value="${formattedReviewDate}" />
   </p>
 </div>

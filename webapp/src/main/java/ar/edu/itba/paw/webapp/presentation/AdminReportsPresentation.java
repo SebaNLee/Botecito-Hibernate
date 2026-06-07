@@ -4,10 +4,7 @@ import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Report;
 import ar.edu.itba.paw.webapp.form.AdminReportsSearchForm;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
-import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
@@ -19,14 +16,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AdminReportsPresentation {
 
     private static final String MESSAGE_PREFIX = "admin.reports";
-    private static final DateTimeFormatter REPORT_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private final ToastPresentation toastPresentation;
 
     public ModelAndView listReports(final AdminReportsSearchForm search, final PageModel<Report> reportPage) {
         final ModelAndView mav = new ModelAndView("admin-reports", "adminReportsSearch", search);
         mav.addObject("reportPage", reportPage);
-        mav.addObject("reportDatesById", formatReportDates(reportPage.getContent()));
         mav.addObject("hasValidationErrors", false);
         return mav;
     }
@@ -36,7 +31,6 @@ public class AdminReportsPresentation {
         mav.addAllObjects(errors.getModel());
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
         mav.addObject("reportPage", new PageModel<Report>(List.of(), 1, 12, 0L));
-        mav.addObject("reportDatesById", Map.of());
         mav.addObject("hasValidationErrors", true);
         return mav;
     }
@@ -63,19 +57,5 @@ public class AdminReportsPresentation {
         target.append("page=").append(search.getPage());
         target.append("&pageSize=").append(search.getPageSize());
         target.append("&sortBy=").append(search.getSortBy());
-    }
-
-    private static Map<Integer, String> formatReportDates(final List<Report> reports) {
-        final Map<Integer, String> dates = new LinkedHashMap<>();
-        if (reports == null) {
-            return dates;
-        }
-        for (final Report report : reports) {
-            if (report == null || report.getId() == null || report.getCreatedAt() == null) {
-                continue;
-            }
-            dates.put(report.getId(), report.getCreatedAt().format(REPORT_DATE_FORMAT));
-        }
-        return dates;
     }
 }

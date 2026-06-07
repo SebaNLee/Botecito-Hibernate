@@ -6,7 +6,6 @@
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<fmt:setLocale value="es_AR" />
 <c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="publishUrl" value="/publish" />
 <spring:message code="detail.back.marketplace" var="detailBackMarketplaceLabel" />
@@ -172,7 +171,7 @@
               <c:when test="${not empty itemReviewPage.page.content}">
                 <div class="space-y-3">
                   <c:forEach items="${itemReviewPage.page.content}" var="review">
-                    <paw:reviewCard review="${review}" reviewDate="${reviewDatesById[review.id]}" showReviewer="false" anonymousLabel="${detailReviewAnonymousLabel}" />
+                    <paw:reviewCard review="${review}" showReviewer="false" anonymousLabel="${detailReviewAnonymousLabel}" />
                   </c:forEach>
                 </div>
               </c:when>

@@ -110,7 +110,7 @@ public class FavouritePresentation {
         if (view.getItemId() == null) {
             return;
         }
-        if (view.getPage() > 1) {
+        if (view.getPage() != null && view.getPage() > 1) {
             redirectAttributes.addAttribute("page", view.getPage());
         }
     }

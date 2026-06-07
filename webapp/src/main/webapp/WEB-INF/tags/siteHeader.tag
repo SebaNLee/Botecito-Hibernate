@@ -27,7 +27,7 @@
       </sec:authorize>
       <sec:authorize access="isAuthenticated()">
         <sec:authorize access="hasRole('ADMIN')">
-          <a href="<c:url value='/admin/reports' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+          <a href="<c:url value='/admin/reports' />" data-nav-filter-page="adminReports" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
             <spring:message code="nav.adminReports" />
           </a>
         </sec:authorize>

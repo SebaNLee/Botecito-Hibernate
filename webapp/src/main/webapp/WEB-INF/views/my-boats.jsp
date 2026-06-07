@@ -5,7 +5,6 @@
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<fmt:setLocale value="es_AR" />
 <c:url var="myBoatsUrl" value="/my-boats" />
 <c:url var="publishUrl" value="/publish" />
 <spring:message code="nav.publishCta" var="publishCtaLabel" />
@@ -70,7 +69,16 @@
       <div class="flex items-end justify-between mb-4">
         <div class="min-w-0">
           <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="myBoats.title" /></h1>
-          <p class="text-on-surface-variant mt-2 m-0"><spring:message code="myBoats.subtitle" /></p>
+          <p class="text-on-surface-variant mt-2 m-0">
+            <c:choose>
+              <c:when test="${itemPage.totalItems == 1}">
+                <spring:message code="myBoats.results.count.singular" />
+              </c:when>
+              <c:otherwise>
+                <spring:message code="myBoats.results.count.plural" arguments="${itemPage.totalItems}" />
+              </c:otherwise>
+            </c:choose>
+          </p>
         </div>
         <a href="${publishUrl}" class="btn btn-secondary shrink-0 no-underline">
           <span class="material-symbols-outlined text-base">add</span>

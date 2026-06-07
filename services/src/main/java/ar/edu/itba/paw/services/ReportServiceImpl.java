@@ -63,9 +63,7 @@ public class ReportServiceImpl implements ReportService {
     @Override
     @Transactional(readOnly = true)
     public Report findById(int reportId) {
-        var report = reportDao.findById(reportId).orElseThrow(ReportNotFoundException::new);
-        report.setItemTitle(report.getItem().getLatestVersion().getTitle());
-        return report;
+        return reportDao.findById(reportId).orElseThrow(ReportNotFoundException::new);
     }
 
     @Override
@@ -77,12 +75,7 @@ public class ReportServiceImpl implements ReportService {
     @Override
     @Transactional(readOnly = true)
     public PageModel<Report> searchReports(final int page, final int pageSize, final String sortBy) {
-        final PageModel<Report> reportPage = reportDao.searchReports(page, pageSize, sortBy);
-
-        for (final Report report : reportPage.getContent()) {
-            report.setItemTitle(report.getItem().getLatestVersion().getTitle());
-        }
-        return reportPage;
+        return reportDao.searchReports(page, pageSize, sortBy);
     }
 
     @Override

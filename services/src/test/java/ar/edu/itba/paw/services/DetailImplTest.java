@@ -1,11 +1,11 @@
 package ar.edu.itba.paw.services;
 
+import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
@@ -71,17 +71,7 @@ public class DetailImplTest {
     }
 
     private static Item detailItem(final int hostId, final boolean withVersion) {
-        Users host = null;
-        if (hostId >= 0) {
-            host = new Users();
-            host.setId(hostId);
-        }
-        Version version = withVersion ? Version.builder().id(1).build() : null;
-        return Item.builder()
-                .id(ITEM_ID)
-                .host(host)
-                .status(ItemStatusEnum.ACTIVE)
-                .latestVersion(version)
-                .build();
+        Version version = withVersion ? version(1) : null;
+        return item(ITEM_ID, hostId >= 0 ? user(hostId) : null, ItemStatusEnum.ACTIVE, version);
     }
 }

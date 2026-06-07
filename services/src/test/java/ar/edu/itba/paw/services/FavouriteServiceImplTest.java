@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -7,7 +8,6 @@ import static org.mockito.Mockito.*;
 import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.persistence.FavouriteDao;
 import java.util.List;
 import java.util.Set;
@@ -81,12 +81,6 @@ public class FavouriteServiceImplTest {
     }
 
     private static Item item(final int hostId, final ItemStatusEnum status) {
-        final Users host = new Users();
-        host.setId(hostId);
-        final Item item = new Item();
-        item.setId(ITEM_ID);
-        item.setHost(host);
-        item.setStatus(status);
-        return item;
+        return TestUtils.item(ITEM_ID, user(hostId), status);
     }
 }

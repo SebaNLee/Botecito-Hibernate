@@ -1,9 +1,9 @@
 package ar.edu.itba.paw.services;
 
+import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,8 +31,7 @@ public class ManageItemServiceImplTest {
 
     @Test
     public void setEnabledWithValidOwner() {
-        when(itemService.requireOwnedItem(ITEM_ID, OWNER_ID))
-                .thenReturn(Item.builder().id(ITEM_ID).build());
+        when(itemService.requireOwnedItem(ITEM_ID, OWNER_ID)).thenReturn(item(ITEM_ID));
 
         assertDoesNotThrow(() -> manageItemService.setEnabled(ITEM_ID, OWNER_ID, true));
     }
@@ -46,8 +45,7 @@ public class ManageItemServiceImplTest {
 
     @Test
     public void deleteItemWithValidOwner() {
-        when(itemService.requireOwnedItem(ITEM_ID, OWNER_ID))
-                .thenReturn(Item.builder().id(ITEM_ID).build());
+        when(itemService.requireOwnedItem(ITEM_ID, OWNER_ID)).thenReturn(item(ITEM_ID));
 
         assertDoesNotThrow(() -> manageItemService.deleteItem(ITEM_ID, OWNER_ID));
     }

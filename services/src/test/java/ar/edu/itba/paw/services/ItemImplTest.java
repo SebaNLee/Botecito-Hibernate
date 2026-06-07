@@ -1,12 +1,12 @@
 package ar.edu.itba.paw.services;
 
+import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +33,7 @@ public class ItemImplTest {
 
     @Test
     public void findItemByIdReturnsItem() {
-        Item item = Item.builder().id(ITEM_ID).build();
+        Item item = item(ITEM_ID);
         when(itemDao.findItemById(ITEM_ID)).thenReturn(Optional.of(item));
 
         Item result = itemService.findItemById(ITEM_ID);
@@ -56,9 +56,7 @@ public class ItemImplTest {
 
     @Test
     public void userOwnsItemByIdReturnsTrue() {
-        Users host = new Users();
-        host.setId(USER_ID);
-        Item item = Item.builder().id(ITEM_ID).host(host).build();
+        Item item = item(ITEM_ID, user(USER_ID));
         when(itemDao.findItemById(ITEM_ID)).thenReturn(Optional.of(item));
 
         assertTrue(itemService.userOwnsItem(ITEM_ID, USER_ID));

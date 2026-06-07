@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -39,9 +40,7 @@ public class UserServiceImplTest {
 
     @Test
     public void findByIdReturnsUser() {
-        Users user = new Users();
-        user.setId(USER_ID);
-        when(userDao.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userDao.findById(USER_ID)).thenReturn(Optional.of(user(USER_ID)));
 
         Optional<Users> result = userService.findById(USER_ID);
 
@@ -51,7 +50,7 @@ public class UserServiceImplTest {
 
     @Test
     public void findByEmailReturnsUser() {
-        Users user = new Users();
+        Users user = user(0);
         user.setEmail(EMAIL);
         when(userDao.findByEmail(EMAIL)).thenReturn(Optional.of(user));
 
@@ -64,7 +63,7 @@ public class UserServiceImplTest {
     public void registerCreatesNewUser() {
         when(userDao.findByEmail(EMAIL)).thenReturn(Optional.empty());
         when(passwordEncoder.encode(PASSWORD)).thenReturn(HASH);
-        when(userDao.createUser(any())).thenReturn(new Users());
+        when(userDao.createUser(any())).thenReturn(user(0));
 
         assertDoesNotThrow(() -> userService.register(FIRST_NAME, LAST_NAME, EMAIL, null, "es", PASSWORD));
     }
@@ -83,8 +82,7 @@ public class UserServiceImplTest {
 
     @Test
     public void updateProfileReturnsUser() {
-        Users user = new Users();
-        user.setId(USER_ID);
+        Users user = user(USER_ID);
         user.setEmail(EMAIL);
         user.setVerified(true);
         when(userDao.findById(USER_ID)).thenReturn(Optional.of(user));

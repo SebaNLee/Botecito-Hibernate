@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -24,7 +25,7 @@ public class MarketplaceImplTest {
 
     @Test
     public void searchMarketplaceReturnsItems() {
-        Item item = Item.builder().id(1).build();
+        Item item = item(1);
         SearchResult<Item> expected = new SearchResult<>(List.of(item), 10);
         when(marketplaceDao.searchMarketplace(any())).thenReturn(expected);
 

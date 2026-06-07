@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -185,12 +186,6 @@ public class BookingImplTest {
 
         assertThrows(
                 IllegalBookingOperationException.class, () -> bookingService.cancelBooking(BOOKING_ID, OTHER_USER_ID));
-    }
-
-    private static Users user(int id) {
-        var u = new Users();
-        u.setId(id);
-        return u;
     }
 
     private static Item activeItem() {

@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -101,21 +102,10 @@ public class ReportServiceImplTest {
     }
 
     private static Item activeItem(final int hostId) {
-        Users host = new Users();
-        host.setId(hostId);
-        return Item.builder()
-                .id(ITEM_ID)
-                .host(host)
-                .status(ItemStatusEnum.ACTIVE)
-                .build();
+        return item(ITEM_ID, user(hostId), ItemStatusEnum.ACTIVE);
     }
 
     private static Users sender() {
-        Users user = new Users();
-        user.setId(SENDER_ID);
-        user.setEmail("botecito.dev@gmail.com");
-        user.setFirstName("Sender");
-        user.setLastName("Test");
-        return user;
+        return user(SENDER_ID, "botecito.dev@gmail.com", "Sender", "Test");
     }
 }

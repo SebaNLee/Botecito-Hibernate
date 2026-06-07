@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -106,7 +107,7 @@ class MailServiceImplTest {
     }
 
     private static Item item(Users host) {
-        return Item.builder().id(1).host(host).status(ItemStatusEnum.ACTIVE).build();
+        return TestUtils.item(1, host, ItemStatusEnum.ACTIVE);
     }
 
     private static Version version(String title, Item item) {

@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.services;
 
+import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -82,14 +83,12 @@ public class ReviewImplTest {
     }
 
     private static Booking finishedBooking() {
-        var host = new Users();
-        host.setId(OWNER_ID);
+        var host = user(OWNER_ID);
         var item = new Item();
         item.setHost(host);
         var version = new Version();
         version.setItem(item);
-        var guest = new Users();
-        guest.setId(GUEST_ID);
+        var guest = user(GUEST_ID);
         var booking = new Booking();
         booking.setId(BOOKING_ID);
         booking.setVersion(version);
@@ -100,14 +99,12 @@ public class ReviewImplTest {
     }
 
     private static Booking bookingWithStatus(BookingStatusEnum status) {
-        var host = new Users();
-        host.setId(OWNER_ID);
+        var host = user(OWNER_ID);
         var item = new Item();
         item.setHost(host);
         var version = new Version();
         version.setItem(item);
-        var guest = new Users();
-        guest.setId(GUEST_ID);
+        var guest = user(GUEST_ID);
         var booking = new Booking();
         booking.setId(BOOKING_ID);
         booking.setVersion(version);

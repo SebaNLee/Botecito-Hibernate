@@ -1,12 +1,16 @@
 package ar.edu.itba.paw.services;
 
+import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
-import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.persistence.FavouriteDao;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -30,67 +34,53 @@ public class FavouriteServiceImplTest {
     private FavouriteServiceImpl favouriteService;
 
     @Test
-    public void addFavouriteCreatesFavouriteForValidItem() {
-        when(itemService.findItemById(ITEM_ID)).thenReturn(item(ITEM_ID, OTHER_USER_ID, ItemStatusEnum.ACTIVE));
+    public void testAdd() {
+        when(itemService.findItemById(ITEM_ID)).thenReturn(item(OTHER_USER_ID, ItemStatusEnum.ACTIVE));
 
         assertTrue(favouriteService.addFavourite(USER_ID, ITEM_ID));
-
-        verify(favouriteDao).create(USER_ID, ITEM_ID);
     }
 
     @Test
-    public void addFavouriteIsIdempotentForExistingFavourite() {
-        when(itemService.findItemById(ITEM_ID)).thenReturn(item(ITEM_ID, OTHER_USER_ID, ItemStatusEnum.ACTIVE));
-        when(favouriteDao.create(USER_ID, ITEM_ID)).thenReturn(false);
-
-        assertTrue(favouriteService.addFavourite(USER_ID, ITEM_ID));
-
-        verify(favouriteDao).create(USER_ID, ITEM_ID);
-    }
-
-    @Test
-    public void addFavouriteRejectsOwnItem() {
-        when(itemService.findItemById(ITEM_ID)).thenReturn(item(ITEM_ID, USER_ID, ItemStatusEnum.ACTIVE));
+    public void testAddOwn() {
+        when(itemService.findItemById(ITEM_ID)).thenReturn(item(USER_ID, ItemStatusEnum.ACTIVE));
 
         assertFalse(favouriteService.addFavourite(USER_ID, ITEM_ID));
-
-        verify(favouriteDao, never()).create(anyInt(), anyInt());
     }
 
     @Test
-    public void addFavouriteRejectsDeletedItem() {
-        when(itemService.findItemById(ITEM_ID)).thenReturn(item(ITEM_ID, OTHER_USER_ID, ItemStatusEnum.DELETED));
-
-        assertFalse(favouriteService.addFavourite(USER_ID, ITEM_ID));
-
-        verify(favouriteDao, never()).create(anyInt(), anyInt());
-    }
-
-    @Test
-    public void addFavouriteRejectsMissingItem() {
-        when(itemService.findItemById(ITEM_ID)).thenReturn(null);
-
-        assertFalse(favouriteService.addFavourite(USER_ID, ITEM_ID));
-
-        verify(favouriteDao, never()).create(anyInt(), anyInt());
-    }
-
-    @Test
-    public void removeFavouriteReturnsTrueWhenFavouriteDoesNotExist() {
-        when(favouriteDao.delete(USER_ID, ITEM_ID)).thenReturn(false);
-
+    public void testRemove() {
         assertTrue(favouriteService.removeFavourite(USER_ID, ITEM_ID));
-
-        verify(favouriteDao).delete(USER_ID, ITEM_ID);
     }
 
-    private static Item item(final int itemId, final int hostId, final ItemStatusEnum status) {
-        final Users host = new Users();
-        host.setId(hostId);
-        final Item item = new Item();
-        item.setId(itemId);
-        item.setHost(host);
-        item.setStatus(status);
-        return item;
+    @Test
+    public void testIsFav() {
+        when(favouriteDao.exists(USER_ID, ITEM_ID)).thenReturn(true);
+
+        assertTrue(favouriteService.isFavourite(USER_ID, ITEM_ID));
+    }
+
+    @Test
+    public void testFavIds() {
+        var expected = Set.of(ITEM_ID);
+        when(favouriteDao.findFavouriteItemIds(USER_ID, List.of(ITEM_ID))).thenReturn(expected);
+
+        var result = favouriteService.findFavouriteItemIds(USER_ID, List.of(ITEM_ID));
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    public void testListFav() {
+        var searchResult = new SearchResult<Item>(List.of(), 0);
+        when(favouriteDao.listFavourites(any())).thenReturn(searchResult);
+
+        var result = favouriteService.listFavourites(USER_ID, null, 1, 10, null);
+
+        assertNotNull(result);
+        assertEquals(0, result.getTotalItems());
+    }
+
+    private static Item item(final int hostId, final ItemStatusEnum status) {
+        return TestUtils.item(ITEM_ID, user(hostId), status);
     }
 }

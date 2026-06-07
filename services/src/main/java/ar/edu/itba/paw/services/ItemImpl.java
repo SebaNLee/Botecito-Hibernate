@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.MyBoatsQueryModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
@@ -26,7 +26,7 @@ public class ItemImpl implements ItemService {
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<Item> listOwnerItems(
+    public PageModel<Item> listOwnerItems(
             int ownerId, String searchQuery, String status, int page, int pageSize, String sortBy) {
         final MyBoatsQueryModel query = MyBoatsQueryModel.builder()
                 .ownerId(ownerId)

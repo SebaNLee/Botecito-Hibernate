@@ -11,10 +11,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ProfileViewForm {
-
-    @Pattern(regexp = "^$|^(listings|reviews)$", message = "{profile.validation.tab.pattern}")
-    private String tab;
+public class ProfileListingsViewForm {
 
     @NotBlank(message = "{profile.validation.sortBy.pattern}")
     @Pattern(regexp = "^(newest|oldest|nameAsc|nameDesc)$", message = "{profile.validation.sortBy.pattern}")
@@ -30,9 +27,6 @@ public class ProfileViewForm {
 
     @AssertTrue(message = "{profile.validation.pageSize.pattern}")
     public boolean isPageSizeValid() {
-        if ("reviews".equalsIgnoreCase(tab)) {
-            return true;
-        }
         return pageSize != null && (pageSize == 6 || pageSize == 12 || pageSize == 18);
     }
 }

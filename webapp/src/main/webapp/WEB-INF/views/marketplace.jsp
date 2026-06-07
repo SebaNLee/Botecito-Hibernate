@@ -245,7 +245,7 @@
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
       <div class="min-w-0">
         <h1 class="text-4xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="marketplace.title" /></h1>
-        <p class="text-on-surface-variant mt-2 m-0"><spring:message code="marketplace.results.count" arguments="${itemsCount}" /></p>
+        <p class="text-on-surface-variant mt-2 m-0"><spring:message code="marketplace.results.count" arguments="${itemPage.totalItems}" /></p>
       </div>
 
       <form
@@ -280,7 +280,7 @@
       </form>
     </div>
 
-    <c:if test="${empty items}">
+    <c:if test="${empty itemPage.content}">
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body items-center text-center gap-4 p-10">
           <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -298,7 +298,7 @@
     </c:if>
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-      <c:forEach items="${items}" var="item">
+      <c:forEach items="${itemPage.content}" var="item">
         <paw:listingCard item="${item}" />
       </c:forEach>
     </div>

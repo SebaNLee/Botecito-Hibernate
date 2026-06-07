@@ -53,7 +53,7 @@ public class SettingsPresentation {
                     PreferredLanguageModel.fromPersistence(user.getLanguage()).getPersistenceCode());
         }
         final boolean edit = Boolean.TRUE.equals(settingsView.getEdit());
-        final ModelAndView mav = buildSettingsView(user, edit, new PageModel<>(List.of(), 1, 6, 0));
+        final ModelAndView mav = buildSettingsView(user, edit, new PageModel<>(List.of(), 1, 6, 0L));
         mav.addAllObjects(errors.getModel());
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
         mav.addObject("settingsView", settingsView);
@@ -78,7 +78,6 @@ public class SettingsPresentation {
         final ModelAndView mav = new ModelAndView("settings");
         mav.addObject("user", user);
         mav.addObject("subscriptionsPage", subscriptions);
-        mav.addObject("subscriptions", subscriptions.getContent());
         mav.addObject("memberSinceDisplay", user.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
         mav.addObject("settingsEdit", settingsEdit);
         mav.addObject("settingsView", settingsView(subscriptions, settingsEdit));

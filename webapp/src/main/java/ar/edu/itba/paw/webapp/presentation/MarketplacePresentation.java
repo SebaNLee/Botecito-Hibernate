@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.PageModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import java.util.List;
@@ -18,12 +17,10 @@ public class MarketplacePresentation {
 
     private final ToastPresentation toastPresentation;
 
-    public ModelAndView marketplace(final MarketplaceSearchForm form, final SearchResult<Item> result) {
-        final List<Item> items = result.getPageElements();
-        final long totalCount = result.getTotalCount();
+    public ModelAndView marketplace(final MarketplaceSearchForm form, final PageModel<Item> itemPage) {
         final ModelAndView mav = new ModelAndView("marketplace", "marketplaceSearch", form);
-        addListingModelObjects(mav, form, items, totalCount);
-        mav.addObject("items", items);
+        mav.addObject("itemPage", itemPage);
+        mav.addObject("hasValidationErrors", false);
         return mav;
     }
 
@@ -31,17 +28,8 @@ public class MarketplacePresentation {
         final ModelAndView mav = new ModelAndView("marketplace", "marketplaceSearch", form);
         mav.addAllObjects(errors.getModel());
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
-        addListingModelObjects(mav, form, List.of(), 0);
-        mav.addObject("items", List.of());
+        mav.addObject("itemPage", new PageModel<Item>(List.of(), 1, 12, 0L));
+        mav.addObject("hasValidationErrors", true);
         return mav;
-    }
-
-    private void addListingModelObjects(
-            final ModelAndView mav, final MarketplaceSearchForm search, final List<Item> items, final long total) {
-        final int page = search.getPage();
-        final int pageSize = search.getPageSize();
-        final int totalItems = total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
-        mav.addObject("itemPage", new PageModel<>(items, page, pageSize, totalItems));
-        mav.addObject("itemsCount", totalItems);
     }
 }

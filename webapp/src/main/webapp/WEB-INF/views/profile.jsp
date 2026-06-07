@@ -23,25 +23,30 @@
 <spring:message code="myBoats.sort.nameAsc" var="sortNameAscLabel" />
 <spring:message code="myBoats.sort.nameDesc" var="sortNameDescLabel" />
 <spring:message code="myBoats.pageSize" var="pageSizeFieldLabel" />
+<spring:message code="profile.listings" var="listingsTabLabel" />
+<spring:message code="profile.reviews" var="reviewsTabLabel" />
 
-<c:set var="hasActiveListingsFilters" value="${profileView.sortBy != 'newest' or profileView.pageSize != 12 or profileView.page > 1}" />
-<c:set var="hasActiveReviewsFilters" value="${profileView.page > 1}" />
-<c:set var="showListingsFilterEmpty" value="${hasValidationErrors or hasActiveListingsFilters or listingsTotal > 0}" />
-<c:set var="showReviewsFilterEmpty" value="${hasValidationErrors or hasActiveReviewsFilters or reviewsTotal > 0}" />
+<c:if test="${activeTab == 'listings'}">
+  <c:set var="hasActiveListingsFilters" value="${profileListingsView.sortBy != 'newest' or profileListingsView.pageSize != 12 or profileListingsView.page > 1}" />
+  <c:set var="showListingsFilterEmpty" value="${hasValidationErrors or hasActiveListingsFilters or listingsPage.totalItems > 0}" />
+</c:if>
+<c:if test="${activeTab == 'reviews'}">
+  <c:set var="hasActiveReviewsFilters" value="${profileReviewsView.page > 1}" />
+  <c:set var="showReviewsFilterEmpty" value="${hasValidationErrors or hasActiveReviewsFilters or reviewsPage.totalItems > 0}" />
+</c:if>
 
 <c:url var="settingsUrl" value="/settings" />
-<c:url var="clearProfileListingsFiltersUrl" value="/profiles/${user.id}" />
-<c:url var="listingsTabUrl" value="/profiles/${user.id}">
-  <c:if test="${profileView.sortBy != 'newest'}"><c:param name="sortBy" value="${profileView.sortBy}" /></c:if>
-  <c:if test="${profileView.pageSize != 12}"><c:param name="pageSize" value="${profileView.pageSize}" /></c:if>
+<c:url var="clearProfileListingsFiltersUrl" value="/profiles/${user.id}/listings" />
+<c:url var="listingsTabUrl" value="/profiles/${user.id}/listings">
+  <c:if test="${activeTab == 'listings' && profileListingsView.sortBy != 'newest'}"><c:param name="sortBy" value="${profileListingsView.sortBy}" /></c:if>
+  <c:if test="${activeTab == 'listings' && profileListingsView.pageSize != 12}"><c:param name="pageSize" value="${profileListingsView.pageSize}" /></c:if>
 </c:url>
-<c:url var="reviewsTabUrl" value="/profiles/${user.id}">
-  <c:param name="tab" value="reviews" />
-  <c:if test="${activeTab == 'reviews' && profileView.page > 1}">
-    <c:param name="page" value="${profileView.page}" />
+<c:url var="reviewsTabUrl" value="/profiles/${user.id}/reviews">
+  <c:if test="${activeTab == 'reviews' && profileReviewsView.page > 1}">
+    <c:param name="page" value="${profileReviewsView.page}" />
   </c:if>
 </c:url>
-<c:url var="profileListingsUrl" value="/profiles/${user.id}" />
+<c:url var="profileListingsUrl" value="/profiles/${user.id}/listings" />
 <c:set var="userFirstName" value="${user.firstName != null ? fn:trim(user.firstName) : ''}" />
 <c:set var="userLastName" value="${user.lastName != null ? fn:trim(user.lastName) : ''}" />
 <c:set var="hasFullName" value="${not empty userFirstName or not empty userLastName}" />
@@ -89,22 +94,24 @@
                   <spring:message code="profile.followersCount" arguments="${followersCount}" />
                   <span><c:out value="${followersLabel}" /></span>
                 </span>
-                <span class="flex items-center gap-1">
-                  <span class="material-symbols-outlined text-base icon-star-filled">star</span>
-                  <c:choose>
-                    <c:when test="${averageRating != null}">
-                      <span class="font-bold text-on-surface">
-                        <fmt:formatNumber value="${averageRating}" type="number" minFractionDigits="1" maxFractionDigits="1" />
-                      </span>
-                      <span class="text-outline">
-                        (<spring:message code="profile.rating.reviewsCount" arguments="${reviewsTotal}" />)
-                      </span>
-                    </c:when>
-                    <c:otherwise>
-                      <span><c:out value="${ratingNoneShortLabel}" /></span>
-                    </c:otherwise>
-                  </c:choose>
-                </span>
+                <c:if test="${activeTab == 'reviews'}">
+                  <span class="flex items-center gap-1">
+                    <span class="material-symbols-outlined text-base icon-star-filled">star</span>
+                    <c:choose>
+                      <c:when test="${averageRating != null}">
+                        <span class="font-bold text-on-surface">
+                          <fmt:formatNumber value="${averageRating}" type="number" minFractionDigits="1" maxFractionDigits="1" />
+                        </span>
+                        <span class="text-outline">
+                          (<spring:message code="profile.rating.reviewsCount" arguments="${reviewsPage.totalItems}" />)
+                        </span>
+                      </c:when>
+                      <c:otherwise>
+                        <span><c:out value="${ratingNoneShortLabel}" /></span>
+                      </c:otherwise>
+                    </c:choose>
+                  </span>
+                </c:if>
               </div>
             </div>
           </div>
@@ -116,20 +123,44 @@
                             text="${editMyProfileLabel}" cssClass="w-full sm:w-auto" />
               </c:when>
               <c:when test="${isSubscribed}">
-                <c:url var="unsubscribeProfileUrl" value="/profiles/${user.id}/unsubscribe" />
-                <form action="${unsubscribeProfileUrl}" method="post" class="m-0">
-                  <paw:profileViewHiddenFields view="${profileView}" />
-                  <paw:button type="submit" color="outline" icon="notifications_off"
-                              text="${subscriptionUnsubscribeLabel}" cssClass="w-full sm:w-auto" />
-                </form>
+                <c:choose>
+                  <c:when test="${activeTab == 'reviews'}">
+                    <c:url var="unsubscribeProfileUrl" value="/profiles/${user.id}/reviews/unsubscribe" />
+                    <form action="${unsubscribeProfileUrl}" method="post" class="m-0">
+                      <paw:profileReviewsHiddenFields view="${profileReviewsView}" />
+                      <paw:button type="submit" color="outline" icon="notifications_off"
+                                  text="${subscriptionUnsubscribeLabel}" cssClass="w-full sm:w-auto" />
+                    </form>
+                  </c:when>
+                  <c:otherwise>
+                    <c:url var="unsubscribeProfileUrl" value="/profiles/${user.id}/listings/unsubscribe" />
+                    <form action="${unsubscribeProfileUrl}" method="post" class="m-0">
+                      <paw:profileListingsHiddenFields view="${profileListingsView}" />
+                      <paw:button type="submit" color="outline" icon="notifications_off"
+                                  text="${subscriptionUnsubscribeLabel}" cssClass="w-full sm:w-auto" />
+                    </form>
+                  </c:otherwise>
+                </c:choose>
               </c:when>
               <c:otherwise>
-                <c:url var="subscribeProfileUrl" value="/profiles/${user.id}/subscribe" />
-                <form action="${subscribeProfileUrl}" method="post" class="m-0">
-                  <paw:profileViewHiddenFields view="${profileView}" />
-                  <paw:button type="submit" color="secondary" icon="notifications"
-                              text="${subscriptionSubscribeLabel}" cssClass="w-full sm:w-auto" />
-                </form>
+                <c:choose>
+                  <c:when test="${activeTab == 'reviews'}">
+                    <c:url var="subscribeProfileUrl" value="/profiles/${user.id}/reviews/subscribe" />
+                    <form action="${subscribeProfileUrl}" method="post" class="m-0">
+                      <paw:profileReviewsHiddenFields view="${profileReviewsView}" />
+                      <paw:button type="submit" color="secondary" icon="notifications"
+                                  text="${subscriptionSubscribeLabel}" cssClass="w-full sm:w-auto" />
+                    </form>
+                  </c:when>
+                  <c:otherwise>
+                    <c:url var="subscribeProfileUrl" value="/profiles/${user.id}/listings/subscribe" />
+                    <form action="${subscribeProfileUrl}" method="post" class="m-0">
+                      <paw:profileListingsHiddenFields view="${profileListingsView}" />
+                      <paw:button type="submit" color="secondary" icon="notifications"
+                                  text="${subscriptionSubscribeLabel}" cssClass="w-full sm:w-auto" />
+                    </form>
+                  </c:otherwise>
+                </c:choose>
               </c:otherwise>
             </c:choose>
           </div>
@@ -147,27 +178,13 @@
              class="shrink-0 flex items-center justify-center gap-2 whitespace-nowrap px-6 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors
                     ${activeTab == 'listings' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined text-base shrink-0">directions_boat</span>
-            <c:choose>
-              <c:when test="${listingsTotal == 1}">
-                <spring:message code="profile.listings.tab.singular" />
-              </c:when>
-              <c:otherwise>
-                <spring:message code="profile.listings.tab.plural" arguments="${listingsTotal}" />
-              </c:otherwise>
-            </c:choose>
+            <c:out value="${listingsTabLabel}" />
           </a>
           <a role="tab" href="${reviewsTabUrl}"
              class="shrink-0 flex items-center justify-center gap-2 whitespace-nowrap px-6 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors
                     ${activeTab == 'reviews' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined text-base shrink-0">star</span>
-            <c:choose>
-              <c:when test="${reviewsTotal == 1}">
-                <spring:message code="profile.reviews.tab.singular" />
-              </c:when>
-              <c:otherwise>
-                <spring:message code="profile.reviews.tab.plural" arguments="${reviewsTotal}" />
-              </c:otherwise>
-            </c:choose>
+            <c:out value="${reviewsTabLabel}" />
           </a>
         </div>
 
@@ -185,14 +202,14 @@
                       name="sortBy"
                       class="select select-sm w-32 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none sm:w-36"
                       onchange="this.form.requestSubmit()">
-                    <option value="newest" ${profileView.sortBy == 'newest' ? 'selected="selected"' : ''}>
+                    <option value="newest" ${profileListingsView.sortBy == 'newest' ? 'selected="selected"' : ''}>
                       <spring:message code="marketplace.sort.newest" />
                     </option>
-                    <option value="oldest" ${profileView.sortBy == 'oldest' ? 'selected="selected"' : ''}>
+                    <option value="oldest" ${profileListingsView.sortBy == 'oldest' ? 'selected="selected"' : ''}>
                       <spring:message code="marketplace.sort.oldest" />
                     </option>
-                    <option value="nameAsc" ${profileView.sortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
-                    <option value="nameDesc" ${profileView.sortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
+                    <option value="nameAsc" ${profileListingsView.sortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
+                    <option value="nameDesc" ${profileListingsView.sortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
                   </select>
                   <label for="profile-listings-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
                   <select
@@ -200,15 +217,15 @@
                       name="pageSize"
                       class="select select-sm w-20 font-bold text-primary"
                       onchange="this.form.requestSubmit()">
-                    <option value="6" ${profileView.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-                    <option value="12" ${profileView.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-                    <option value="18" ${profileView.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+                    <option value="6" ${profileListingsView.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+                    <option value="12" ${profileListingsView.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+                    <option value="18" ${profileListingsView.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
                   </select>
                 </div>
               </form>
 
               <c:choose>
-                <c:when test="${empty listings}">
+                <c:when test="${empty listingsPage.content}">
                   <c:choose>
                     <c:when test="${showListingsFilterEmpty}">
                       <div class="card bg-base-100 shadow-sm">
@@ -235,19 +252,19 @@
                 </c:when>
                 <c:otherwise>
                   <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    <c:forEach items="${listings}" var="item">
+                    <c:forEach items="${listingsPage.content}" var="item">
                       <paw:listingCard item="${item}" />
                     </c:forEach>
                   </div>
                   <c:if test="${listingsPage.totalPages > 1}">
-                    <c:url var="listingsPreviousPageUrl" value="/profiles/${user.id}">
+                    <c:url var="listingsPreviousPageUrl" value="/profiles/${user.id}/listings">
                       <c:param name="page" value="${listingsPage.previousPage}" />
-                      <c:param name="sortBy" value="${profileView.sortBy}" />
+                      <c:param name="sortBy" value="${profileListingsView.sortBy}" />
                       <c:param name="pageSize" value="${listingsPage.pageSize}" />
                     </c:url>
-                    <c:url var="listingsNextPageUrl" value="/profiles/${user.id}">
+                    <c:url var="listingsNextPageUrl" value="/profiles/${user.id}/listings">
                       <c:param name="page" value="${listingsPage.nextPage}" />
-                      <c:param name="sortBy" value="${profileView.sortBy}" />
+                      <c:param name="sortBy" value="${profileListingsView.sortBy}" />
                       <c:param name="pageSize" value="${listingsPage.pageSize}" />
                     </c:url>
                     <nav class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
@@ -291,7 +308,7 @@
             <%-- Reviews panel --%>
             <c:otherwise>
               <c:choose>
-                <c:when test="${empty reviews}">
+                <c:when test="${empty reviewsPage.content}">
                   <c:choose>
                     <c:when test="${showReviewsFilterEmpty}">
                       <div class="card bg-base-100 shadow-sm">
@@ -318,17 +335,15 @@
                 </c:when>
                 <c:otherwise>
                   <div class="flex flex-col gap-3">
-                    <c:forEach items="${reviews}" var="review">
+                    <c:forEach items="${reviewsPage.content}" var="review">
                       <paw:reviewCard review="${review}" reviewDate="${reviewDatesById[review.id]}" showReviewer="true" />
                     </c:forEach>
                   </div>
                   <c:if test="${reviewsPage.totalPages > 1}">
-                    <c:url var="reviewsPreviousPageUrl" value="/profiles/${user.id}">
-                      <c:param name="tab" value="reviews" />
+                    <c:url var="reviewsPreviousPageUrl" value="/profiles/${user.id}/reviews">
                       <c:param name="page" value="${reviewsPage.previousPage}" />
                     </c:url>
-                    <c:url var="reviewsNextPageUrl" value="/profiles/${user.id}">
-                      <c:param name="tab" value="reviews" />
+                    <c:url var="reviewsNextPageUrl" value="/profiles/${user.id}/reviews">
                       <c:param name="page" value="${reviewsPage.nextPage}" />
                     </c:url>
                     <nav class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">

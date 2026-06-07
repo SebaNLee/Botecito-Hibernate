@@ -157,6 +157,8 @@ public class WebAuthConfig {
             antMatcher(HttpMethod.GET, "/location-options"),
             antMatcher(HttpMethod.GET, "/item-type-options"),
             antMatcher(HttpMethod.GET, "/profiles/*"),
+            antMatcher(HttpMethod.GET, "/profiles/*/listings"),
+            antMatcher(HttpMethod.GET, "/profiles/*/reviews"),
             antMatcher(HttpMethod.GET, ERRORS_PATH),
         };
     }

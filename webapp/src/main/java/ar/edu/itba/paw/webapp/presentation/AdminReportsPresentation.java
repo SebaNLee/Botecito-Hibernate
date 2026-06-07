@@ -35,7 +35,7 @@ public class AdminReportsPresentation {
         final ModelAndView mav = new ModelAndView("admin-reports", "adminReportsSearch", search);
         mav.addAllObjects(errors.getModel());
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
-        mav.addObject("reportPage", new PageModel<Report>(List.of(), 1, 12, 0));
+        mav.addObject("reportPage", new PageModel<Report>(List.of(), 1, 12, 0L));
         mav.addObject("reportDatesById", Map.of());
         mav.addObject("hasValidationErrors", true);
         return mav;

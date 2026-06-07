@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.services.BookingService;
 import ar.edu.itba.paw.services.ItemService;
@@ -52,14 +52,14 @@ public class MyBoatsController {
         if (errors.hasErrors()) {
             return myBoatsPresentation.myBoatsErrors(search, errors);
         }
-        final SearchResult<Item> result = itemService.listOwnerItems(
+        final PageModel<Item> itemPage = itemService.listOwnerItems(
                 user.getId(),
                 search.getSearchQuery(),
                 search.getStatus(),
                 search.getPage(),
                 search.getPageSize(),
                 search.getSortBy());
-        return myBoatsPresentation.myBoatsList(search, result.getPageElements(), result.getTotalCount());
+        return myBoatsPresentation.myBoatsList(search, itemPage);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/disable", method = RequestMethod.POST)

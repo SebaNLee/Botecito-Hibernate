@@ -49,11 +49,11 @@
         <h1 class="text-4xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="favourites.title" /></h1>
         <p class="text-on-surface-variant mt-2 m-0">
           <c:choose>
-            <c:when test="${itemsCount == 1}">
+            <c:when test="${itemPage.totalItems == 1}">
               <spring:message code="favourites.results.count.singular" />
             </c:when>
             <c:otherwise>
-              <spring:message code="favourites.results.count.plural" arguments="${itemsCount}" />
+              <spring:message code="favourites.results.count.plural" arguments="${itemPage.totalItems}" />
             </c:otherwise>
           </c:choose>
         </p>
@@ -104,7 +104,7 @@
       </div>
     </form>
 
-    <c:if test="${empty items}">
+    <c:if test="${empty itemPage.content}">
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body items-center gap-4 p-10 text-center">
           <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -129,9 +129,9 @@
       </div>
     </c:if>
 
-    <c:if test="${not empty items}">
+    <c:if test="${not empty itemPage.content}">
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <c:forEach items="${items}" var="item">
+        <c:forEach items="${itemPage.content}" var="item">
           <paw:listingCard
               item="${item}"
               favourite="${favouriteByItemId[item.id]}"

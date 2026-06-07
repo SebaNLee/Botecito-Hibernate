@@ -3,18 +3,16 @@ package ar.edu.itba.paw.models.dto;
 import java.util.List;
 import lombok.Getter;
 
-// TODO: Change total items to a long
-
 @Getter
 public class PageModel<T> {
 
     private final List<T> content;
     private final int page;
     private final int pageSize;
-    private final int totalItems;
+    private final long totalItems;
     private final int totalPages;
 
-    public PageModel(final List<T> content, final int page, final int pageSize, final int totalItems) {
+    public PageModel(final List<T> content, final int page, final int pageSize, final long totalItems) {
         this.content = List.copyOf(content);
         this.page = page;
         this.pageSize = pageSize;

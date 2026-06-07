@@ -195,19 +195,19 @@
         <p class="text-on-surface-variant mt-2 m-0">
           <c:choose>
             <c:when test="${isIncoming}">
-              <spring:message code="requests.incoming.resultsCount" arguments="${bookingsCount}" />
+              <spring:message code="requests.incoming.resultsCount" arguments="${bookingPage.totalItems}" />
             </c:when>
             <c:otherwise>
-              <spring:message code="requests.outgoing.resultsCount" arguments="${bookingsCount}" />
+              <spring:message code="requests.outgoing.resultsCount" arguments="${bookingPage.totalItems}" />
             </c:otherwise>
           </c:choose>
         </p>
       </div>
 
       <c:choose>
-        <c:when test="${not empty bookings}">
+        <c:when test="${not empty bookingPage.content}">
           <div class="flex flex-col gap-4">
-            <c:forEach var="b" items="${bookings}">
+            <c:forEach var="b" items="${bookingPage.content}">
               <c:set var="badgeClass" value="badge-ghost" />
               <c:if test="${b.status.name() == 'PENDING'}"><c:set var="badgeClass" value="badge-warning" /></c:if>
               <c:if test="${b.status.name() == 'ACCEPTED' || b.status.name() == 'PAID'}"><c:set var="badgeClass" value="badge-info" /></c:if>
@@ -288,11 +288,11 @@
                         <p class="m-0 text-sm font-semibold text-on-surface">
                           <c:choose>
                             <c:when test="${isIncoming}">
-                              <c:url var="bookingPartyProfileUrl" value="/profiles/${b.guest.id}" />
+                              <c:url var="bookingPartyProfileUrl" value="/profiles/${b.guest.id}/listings" />
                               <a href="${bookingPartyProfileUrl}" class="text-on-surface no-underline hover:underline"><c:out value="${b.guest.firstName}" /> <c:out value="${b.guest.lastName}" /></a>
                             </c:when>
                             <c:otherwise>
-                              <c:url var="bookingPartyProfileUrl" value="/profiles/${b.version.item.host.id}" />
+                              <c:url var="bookingPartyProfileUrl" value="/profiles/${b.version.item.host.id}/listings" />
                               <a href="${bookingPartyProfileUrl}" class="text-on-surface no-underline hover:underline"><c:out value="${b.version.item.host.firstName}" /> <c:out value="${b.version.item.host.lastName}" /></a>
                             </c:otherwise>
                           </c:choose>

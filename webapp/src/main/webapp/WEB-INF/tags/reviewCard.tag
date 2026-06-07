@@ -14,7 +14,7 @@
       <c:when test="${showReviewer}">
         <c:set var="reviewerFirstName" value="${review.sender.firstName != null ? fn:trim(review.sender.firstName) : ''}" />
         <c:set var="reviewerLastName" value="${review.sender.lastName != null ? fn:trim(review.sender.lastName) : ''}" />
-        <c:url var="reviewerProfileUrl" value="/profiles/${review.sender.id}" />
+        <c:url var="reviewerProfileUrl" value="/profiles/${review.sender.id}/reviews" />
         <a href="${reviewerProfileUrl}" class="font-bold text-on-surface no-underline hover:underline break-words">
           <c:choose>
             <c:when test="${not empty reviewerFirstName or not empty reviewerLastName}">

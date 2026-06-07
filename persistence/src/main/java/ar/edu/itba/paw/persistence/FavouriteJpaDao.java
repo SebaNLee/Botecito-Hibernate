@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.FavouritesQueryModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Favourite;
 import ar.edu.itba.paw.models.entity.FavouriteId;
 import ar.edu.itba.paw.models.entity.Item;
@@ -79,7 +79,7 @@ public class FavouriteJpaDao implements FavouriteDao {
     }
 
     @Override
-    public SearchResult<Item> listFavourites(final FavouritesQueryModel query) {
+    public PageModel<Item> listFavourites(final FavouritesQueryModel query) {
         final long totalCount = countFavourites(query);
 
         final Map<String, Object> parameters = new LinkedHashMap<>();
@@ -97,7 +97,7 @@ public class FavouriteJpaDao implements FavouriteDao {
 
         final List<Integer> versionIds = Paging.toIntegerIds(versionIdsQuery.getResultList());
         if (versionIds.isEmpty()) {
-            return new SearchResult<>(List.of(), totalCount);
+            return new PageModel<>(List.of(), query.getPage(), query.getPageSize(), totalCount);
         }
 
         final TypedQuery<Version> versionQuery = em.createQuery(VERSION_FETCH_JPQL, Version.class);
@@ -119,11 +119,11 @@ public class FavouriteJpaDao implements FavouriteDao {
             items.add(item);
         }
         populateReviewTransients(items);
-        return new SearchResult<>(items, totalCount);
+        return new PageModel<>(items, query.getPage(), query.getPageSize(), totalCount);
     }
 
     @Override
-    public int countFavourites(final FavouritesQueryModel query) {
+    public long countFavourites(final FavouritesQueryModel query) {
         final Map<String, Object> parameters = new LinkedHashMap<>();
         final List<String> whereClauses = new ArrayList<>();
         String sql = "SELECT COUNT(i.id) FROM favourite f "
@@ -133,7 +133,7 @@ public class FavouriteJpaDao implements FavouriteDao {
         sql = getSqlForFilter(query, parameters, whereClauses, sql);
         final Query countQuery = em.createNativeQuery(sql);
         setParameters(countQuery, parameters);
-        return ((Number) countQuery.getSingleResult()).intValue();
+        return ((Number) countQuery.getSingleResult()).longValue();
     }
 
     private static String getSqlForFilter(

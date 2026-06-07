@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.persistence.MarketplaceDao;
 import java.time.DayOfWeek;
@@ -19,8 +19,7 @@ public final class MarketplaceImpl implements MarketplaceService {
 
     @Override
     @Transactional(readOnly = true)
-    // TODO: See if we can remove the SearchResult and use the PageModel directly
-    public SearchResult<Item> searchMarketplace(
+    public PageModel<Item> searchMarketplace(
             final String searchQuery,
             final LocalDate date,
             final LocalTime startTime,

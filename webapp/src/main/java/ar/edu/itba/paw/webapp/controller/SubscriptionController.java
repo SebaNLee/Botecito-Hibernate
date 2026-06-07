@@ -3,7 +3,8 @@ package ar.edu.itba.paw.webapp.controller;
 import ar.edu.itba.paw.services.SubscriptionService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ItemDetailViewForm;
-import ar.edu.itba.paw.webapp.form.ProfileViewForm;
+import ar.edu.itba.paw.webapp.form.ProfileListingsViewForm;
+import ar.edu.itba.paw.webapp.form.ProfileReviewsViewForm;
 import ar.edu.itba.paw.webapp.form.SettingsViewForm;
 import ar.edu.itba.paw.webapp.presentation.SubscriptionPresentation;
 import lombok.RequiredArgsConstructor;
@@ -23,26 +24,64 @@ public class SubscriptionController {
     private final SubscriptionService subscriptionService;
     private final SubscriptionPresentation subscriptionPresentation;
 
-    @RequestMapping(value = "/profiles/{id:[1-9]\\d*}/subscribe", method = RequestMethod.POST)
-    public ModelAndView subscribeFromProfile(
-            @AuthenticationPrincipal final BotecitoUserDetails user,
-            @PathVariable("id") final int profileUserId,
-            @ModelAttribute("profileView") final ProfileViewForm profileView,
-            final RedirectAttributes redirectAttributes) {
-        final boolean success = subscriptionService.subscribe(user.getId(), profileUserId);
-        return subscriptionPresentation.subscribeFromProfileResult(
-                profileView, profileUserId, success, redirectAttributes);
+    @ModelAttribute("profileListingsView")
+    public ProfileListingsViewForm defaultProfileListingsView() {
+        final ProfileListingsViewForm form = new ProfileListingsViewForm();
+        form.setPage(1);
+        form.setPageSize(12);
+        form.setSortBy("newest");
+        return form;
     }
 
-    @RequestMapping(value = "/profiles/{id:[1-9]\\d*}/unsubscribe", method = RequestMethod.POST)
-    public ModelAndView unsubscribeFromProfile(
+    @ModelAttribute("profileReviewsView")
+    public ProfileReviewsViewForm defaultProfileReviewsView() {
+        final ProfileReviewsViewForm form = new ProfileReviewsViewForm();
+        form.setPage(1);
+        return form;
+    }
+
+    @RequestMapping(value = "/profiles/{id:[1-9]\\d*}/listings/subscribe", method = RequestMethod.POST)
+    public ModelAndView subscribeFromProfileListings(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int profileUserId,
-            @ModelAttribute("profileView") final ProfileViewForm profileView,
+            @ModelAttribute("profileListingsView") final ProfileListingsViewForm profileListingsView,
+            final RedirectAttributes redirectAttributes) {
+        final boolean success = subscriptionService.subscribe(user.getId(), profileUserId);
+        return subscriptionPresentation.subscribeFromProfileListingsResult(
+                profileListingsView, profileUserId, success, redirectAttributes);
+    }
+
+    @RequestMapping(value = "/profiles/{id:[1-9]\\d*}/listings/unsubscribe", method = RequestMethod.POST)
+    public ModelAndView unsubscribeFromProfileListings(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            @PathVariable("id") final int profileUserId,
+            @ModelAttribute("profileListingsView") final ProfileListingsViewForm profileListingsView,
             final RedirectAttributes redirectAttributes) {
         final boolean success = subscriptionService.unsubscribe(user.getId(), profileUserId);
-        return subscriptionPresentation.unsubscribeFromProfileResult(
-                profileView, profileUserId, success, redirectAttributes);
+        return subscriptionPresentation.unsubscribeFromProfileListingsResult(
+                profileListingsView, profileUserId, success, redirectAttributes);
+    }
+
+    @RequestMapping(value = "/profiles/{id:[1-9]\\d*}/reviews/subscribe", method = RequestMethod.POST)
+    public ModelAndView subscribeFromProfileReviews(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            @PathVariable("id") final int profileUserId,
+            @ModelAttribute("profileReviewsView") final ProfileReviewsViewForm profileReviewsView,
+            final RedirectAttributes redirectAttributes) {
+        final boolean success = subscriptionService.subscribe(user.getId(), profileUserId);
+        return subscriptionPresentation.subscribeFromProfileReviewsResult(
+                profileReviewsView, profileUserId, success, redirectAttributes);
+    }
+
+    @RequestMapping(value = "/profiles/{id:[1-9]\\d*}/reviews/unsubscribe", method = RequestMethod.POST)
+    public ModelAndView unsubscribeFromProfileReviews(
+            @AuthenticationPrincipal final BotecitoUserDetails user,
+            @PathVariable("id") final int profileUserId,
+            @ModelAttribute("profileReviewsView") final ProfileReviewsViewForm profileReviewsView,
+            final RedirectAttributes redirectAttributes) {
+        final boolean success = subscriptionService.unsubscribe(user.getId(), profileUserId);
+        return subscriptionPresentation.unsubscribeFromProfileReviewsResult(
+                profileReviewsView, profileUserId, success, redirectAttributes);
     }
 
     @RequestMapping(value = "/users/{id:[1-9]\\d*}/subscribe", method = RequestMethod.POST)

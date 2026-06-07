@@ -135,9 +135,9 @@
 
     <div id="my-publications" class="scroll-mt-24 space-y-4">
       <c:choose>
-        <c:when test="${not empty ownedItems}">
+        <c:when test="${not empty itemPage.content}">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
-            <c:forEach var="item" items="${ownedItems}">
+            <c:forEach var="item" items="${itemPage.content}">
               <c:set var="version" value="${item.latestVersion}" />
               <c:set var="itemActive" value="${item.status == 'ACTIVE'}" />
               <c:url var="itemDetailUrl" value="/item/${item.id}" />

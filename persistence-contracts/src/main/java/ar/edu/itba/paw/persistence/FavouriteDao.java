@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.FavouritesQueryModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import java.util.Collection;
 import java.util.Set;
@@ -16,7 +16,7 @@ public interface FavouriteDao {
 
     Set<Integer> findFavouriteItemIds(int userId, Collection<Integer> itemIds);
 
-    SearchResult<Item> listFavourites(FavouritesQueryModel query);
+    PageModel<Item> listFavourites(FavouritesQueryModel query);
 
-    int countFavourites(FavouritesQueryModel query);
+    long countFavourites(FavouritesQueryModel query);
 }

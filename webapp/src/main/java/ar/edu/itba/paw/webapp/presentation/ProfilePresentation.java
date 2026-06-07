@@ -4,8 +4,10 @@ import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.models.paging.ReviewPaging;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
-import ar.edu.itba.paw.webapp.form.ProfileViewForm;
+import ar.edu.itba.paw.webapp.form.ProfileListingsViewForm;
+import ar.edu.itba.paw.webapp.form.ProfileReviewsViewForm;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,66 +26,89 @@ public class ProfilePresentation {
 
     private final ToastPresentation toastPresentation;
 
-    public ModelAndView profile(
-            final BotecitoUserDetails viewer,
+    public ModelAndView profileListings(
             final Users profileUser,
-            final String activeTab,
-            final PageModel<Item> listingsPageModel,
-            final List<Item> listings,
-            final PageModel<Review> reviewsPageModel,
-            final Double averageRating,
+            final PageModel<Item> listingsPage,
             final int followersCount,
             final boolean isSelf,
             final boolean isSubscribed,
-            final ProfileViewForm profileView) {
-        final Map<Integer, String> reviewDatesById = formatReviewDates(reviewsPageModel);
-
+            final ProfileListingsViewForm profileListingsView) {
         final ModelAndView mav = new ModelAndView("profile");
         mav.addObject("user", profileUser);
-        mav.addObject("activeTab", activeTab);
+        mav.addObject("activeTab", "listings");
         mav.addObject("isSelf", isSelf);
         mav.addObject("isSubscribed", isSubscribed);
         mav.addObject("followersCount", followersCount);
-        mav.addObject("listings", listings);
-        mav.addObject("listingsPage", listingsPageModel);
-        mav.addObject("listingsTotal", listingsPageModel.getTotalItems());
-        mav.addObject("reviews", reviewsPageModel.getContent());
-        mav.addObject("reviewsPage", reviewsPageModel);
-        mav.addObject("reviewsTotal", reviewsPageModel.getTotalItems());
-        mav.addObject("reviewDatesById", reviewDatesById);
-        mav.addObject("averageRating", averageRating);
-        mav.addObject("profileView", profileView);
+        mav.addObject("listingsPage", listingsPage);
+        mav.addObject("profileListingsView", profileListingsView);
         mav.addObject("hasValidationErrors", false);
         return mav;
     }
 
-    public ModelAndView profileErrors(
+    public ModelAndView profileReviews(
+            final Users profileUser,
+            final PageModel<Review> reviewsPage,
+            final Double averageRating,
+            final int followersCount,
+            final boolean isSelf,
+            final boolean isSubscribed,
+            final ProfileReviewsViewForm profileReviewsView) {
+        final Map<Integer, String> reviewDatesById = formatReviewDates(reviewsPage);
+
+        final ModelAndView mav = new ModelAndView("profile");
+        mav.addObject("user", profileUser);
+        mav.addObject("activeTab", "reviews");
+        mav.addObject("isSelf", isSelf);
+        mav.addObject("isSubscribed", isSubscribed);
+        mav.addObject("followersCount", followersCount);
+        mav.addObject("reviewsPage", reviewsPage);
+        mav.addObject("reviewDatesById", reviewDatesById);
+        mav.addObject("averageRating", averageRating);
+        mav.addObject("profileReviewsView", profileReviewsView);
+        mav.addObject("hasValidationErrors", false);
+        return mav;
+    }
+
+    public ModelAndView profileListingsErrors(
             final BotecitoUserDetails viewer,
             final Users profileUser,
-            final ProfileViewForm profileView,
+            final ProfileListingsViewForm profileListingsView,
             final BindingResult errors) {
-        final String activeTab = profileView.getTab() != null && "reviews".equalsIgnoreCase(profileView.getTab())
-                ? "reviews"
-                : "listings";
         final boolean isSelf = viewer != null && viewer.getId() == profileUser.getId();
 
         final ModelAndView mav = new ModelAndView("profile");
         mav.addAllObjects(errors.getModel());
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
         mav.addObject("user", profileUser);
-        mav.addObject("activeTab", activeTab);
+        mav.addObject("activeTab", "listings");
         mav.addObject("isSelf", isSelf);
         mav.addObject("isSubscribed", false);
         mav.addObject("followersCount", 0);
-        mav.addObject("listings", List.of());
-        mav.addObject("listingsPage", new PageModel<>(List.of(), 1, 12, 0));
-        mav.addObject("listingsTotal", 0);
-        mav.addObject("reviews", List.of());
-        mav.addObject("reviewsPage", new PageModel<>(List.of(), 1, 5, 0));
-        mav.addObject("reviewsTotal", 0);
+        mav.addObject("listingsPage", new PageModel<>(List.of(), 1, 12, 0L));
+        mav.addObject("profileListingsView", profileListingsView);
+        mav.addObject("hasValidationErrors", true);
+        return mav;
+    }
+
+    public ModelAndView profileReviewsErrors(
+            final BotecitoUserDetails viewer,
+            final Users profileUser,
+            final ProfileReviewsViewForm profileReviewsView,
+            final BindingResult errors) {
+        final boolean isSelf = viewer != null && viewer.getId() == profileUser.getId();
+
+        final ModelAndView mav = new ModelAndView("profile");
+        mav.addAllObjects(errors.getModel());
+        mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
+        mav.addObject("user", profileUser);
+        mav.addObject("activeTab", "reviews");
+        mav.addObject("isSelf", isSelf);
+        mav.addObject("isSubscribed", false);
+        mav.addObject("followersCount", 0);
+        mav.addObject("reviewsPage", new PageModel<>(List.of(), 1, ReviewPaging.DEFAULT_PAGE_SIZE, 0L));
         mav.addObject("reviewDatesById", Map.of());
         mav.addObject("averageRating", null);
-        mav.addObject("profileView", profileView);
+        mav.addObject("profileReviewsView", profileReviewsView);
         mav.addObject("hasValidationErrors", true);
         return mav;
     }

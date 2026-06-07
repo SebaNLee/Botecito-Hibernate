@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Version;
@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface ItemService {
 
-    SearchResult<Item> listOwnerItems(
+    PageModel<Item> listOwnerItems(
             int ownerId, String searchQuery, String status, int page, int pageSize, String sortBy);
 
     Item findItemById(int id);

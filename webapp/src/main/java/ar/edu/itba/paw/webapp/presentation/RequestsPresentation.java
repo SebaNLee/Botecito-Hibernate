@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.PageModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import ar.edu.itba.paw.models.entity.Review;
@@ -32,43 +31,35 @@ public class RequestsPresentation {
 
     public ModelAndView outgoing(
             final BookingSearchForm search,
-            final SearchResult<Booking> result,
+            final PageModel<Booking> bookingPage,
             final Map<Integer, List<Review>> userReviews) {
-        final List<Booking> bookings = result.getPageElements();
         final ModelAndView mav = new ModelAndView("requests-outgoing", "bookingSearch", search);
-        mav.addObject("bookings", bookings);
-        addListingModelObjects(mav, search, bookings, result.getTotalCount());
+        mav.addObject("bookingPage", bookingPage);
         addUserReviews(mav, userReviews);
         return mav;
     }
 
     public ModelAndView outgoingErrors(final BookingSearchForm search, final BindingResult errors) {
-        final List<Booking> bookings = List.of();
         final ModelAndView mav = new ModelAndView("requests-outgoing", "bookingSearch", search);
         mav.addAllObjects(errors.getModel());
-        mav.addObject("bookings", bookings);
-        addListingModelObjects(mav, search, bookings, 0L);
+        mav.addObject("bookingPage", new PageModel<>(List.of(), 1, 12, 0L));
         mav.addObject("toasts", toastPresentation.validationToasts(errors, BOOKING_SEARCH_PREFIX));
         return mav;
     }
 
     public ModelAndView incoming(
             final BookingSearchForm search,
-            final SearchResult<Booking> result,
+            final PageModel<Booking> bookingPage,
             final Map<Integer, List<Review>> userReviews) {
-        final List<Booking> bookings = result.getPageElements();
         final ModelAndView mav = new ModelAndView("requests-incoming", "bookingSearch", search);
-        mav.addObject("bookings", bookings);
-        addListingModelObjects(mav, search, bookings, result.getTotalCount());
+        mav.addObject("bookingPage", bookingPage);
         addUserReviews(mav, userReviews);
         return mav;
     }
 
     public ModelAndView incomingErrors(final BookingSearchForm search, final BindingResult errors) {
-        final List<Booking> bookings = List.of();
         final ModelAndView mav = new ModelAndView("requests-incoming", "bookingSearch", search);
-        mav.addObject("bookings", bookings);
-        addListingModelObjects(mav, search, bookings, 0L);
+        mav.addObject("bookingPage", new PageModel<>(List.of(), 1, 12, 0L));
         mav.addAllObjects(errors.getModel());
         mav.addObject("toasts", toastPresentation.validationToasts(errors, BOOKING_SEARCH_PREFIX));
         return mav;
@@ -198,12 +189,5 @@ public class RequestsPresentation {
     private void addUserReviews(final ModelAndView mav, final Map<Integer, List<Review>> userReviews) {
         mav.addObject(
                 "userReviews", userReviews == null || userReviews.isEmpty() ? Collections.emptyMap() : userReviews);
-    }
-
-    private void addListingModelObjects(
-            final ModelAndView mav, final BookingSearchForm search, final List<Booking> bookings, final long total) {
-        final int totalItems = total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
-        mav.addObject("bookingPage", new PageModel<>(bookings, search.getPage(), search.getPageSize(), totalItems));
-        mav.addObject("bookingsCount", totalItems);
     }
 }

@@ -35,15 +35,13 @@ public class FavouritePresentation {
         final ModelAndView mav = new ModelAndView(VIEW_NAME, "favouritesSearch", search);
         mav.addAllObjects(errors.getModel());
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
-        addListingModelObjects(mav, new PageModel<>(List.of(), 1, 12, 0));
+        addListingModelObjects(mav, new PageModel<>(List.of(), 1, 12, 0L));
         mav.addObject("hasValidationErrors", true);
         return mav;
     }
 
     private void addListingModelObjects(final ModelAndView mav, final PageModel<Item> itemPage) {
         mav.addObject("itemPage", itemPage);
-        mav.addObject("items", itemPage.getContent());
-        mav.addObject("itemsCount", itemPage.getTotalItems());
         mav.addObject("pageSize", itemPage.getPageSize());
         mav.addObject("favouriteByItemId", booleanMap(itemPage.getContent(), true));
         mav.addObject("canFavouriteByItemId", booleanMap(itemPage.getContent(), true));

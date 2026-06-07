@@ -16,7 +16,7 @@ public interface ReviewService {
 
     Map<Integer, List<Review>> findReviewsByBookingIds(int reviewerUserId);
 
-    PageModel<Review> findReviewsAboutHost(int hostUserId, int page, int pageSize);
+    PageModel<Review> findReviewsAboutHost(int hostUserId, int page);
 
     Optional<Double> averageRatingAboutHost(int hostUserId);
 }

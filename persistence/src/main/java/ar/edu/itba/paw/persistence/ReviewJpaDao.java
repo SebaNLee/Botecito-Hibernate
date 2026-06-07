@@ -78,7 +78,7 @@ public class ReviewJpaDao implements ReviewDao {
     }
 
     @Override
-    public int countReviewsAboutHost(final int hostUserId) {
+    public long countReviewsAboutHost(final int hostUserId) {
         return ((Number) entityManager
                         .createQuery("SELECT COUNT(r) FROM Review r "
                                 + "WHERE r.targetType = :target "
@@ -87,7 +87,7 @@ public class ReviewJpaDao implements ReviewDao {
                         .setParameter("target", TargetEnum.USER)
                         .setParameter("hostId", hostUserId)
                         .getSingleResult())
-                .intValue();
+                .longValue();
     }
 
     @Override

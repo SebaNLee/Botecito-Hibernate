@@ -26,11 +26,6 @@
         </a>
       </sec:authorize>
       <sec:authorize access="isAuthenticated()">
-        <sec:authorize access="hasRole('ADMIN')">
-          <a href="<c:url value='/admin/reports' />" data-nav-filter-page="adminReports" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
-            <spring:message code="nav.adminReports" />
-          </a>
-        </sec:authorize>
         <a href="<c:url value='/favourites' />" data-nav-filter-page="favourites" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
           <spring:message code="account.nav.favourites" />
         </a>
@@ -40,6 +35,11 @@
         <a href="<c:url value='/requests/outgoing' />" data-nav-filter-page="requestsOutgoing" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
           <spring:message code="account.nav.bookings" />
         </a>
+        <sec:authorize access="hasRole('ADMIN')">
+          <a href="<c:url value='/admin/reports' />" data-nav-filter-page="adminReports" class="btn btn-outline btn-error btn-sm no-underline">
+            <spring:message code="nav.adminReports" />
+          </a>
+        </sec:authorize>
         <a href="<c:url value='/settings' />" class="btn btn-outline btn-circle btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200" title="<sec:authentication property='name' />" aria-label="Settings">
           <span class="material-symbols-outlined text-xl">account_circle</span>
         </a>

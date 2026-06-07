@@ -141,6 +141,7 @@
           </ul>
         </jsp:body>
       </paw:sectionCard>
+      <div id="item-reviews" class="scroll-mt-24">
       <paw:sectionCard icon="star">
         <jsp:attribute name="title"><c:out value="${itemReviewsTitle}" /></jsp:attribute>
         <jsp:body>
@@ -191,12 +192,13 @@
                 totalPages="${itemReviewPage.page.totalPages}"
                 hasPrevious="${itemReviewPage.page.hasPrevious}"
                 hasNext="${itemReviewPage.page.hasNext}"
-                previousPageUrl="${reviewPreviousPageUrl}"
-                nextPageUrl="${reviewNextPageUrl}"
+                previousPageUrl="${reviewPreviousPageUrl}#item-reviews"
+                nextPageUrl="${reviewNextPageUrl}#item-reviews"
                 navClass="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant" />
           </div>
         </jsp:body>
       </paw:sectionCard>
+      </div>
     </section>
 
     <aside class="order-1 lg:order-2 w-full min-w-0 space-y-6">

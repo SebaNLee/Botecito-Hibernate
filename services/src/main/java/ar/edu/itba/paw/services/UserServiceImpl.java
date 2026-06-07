@@ -216,6 +216,7 @@ public class UserServiceImpl implements UserService {
         existing.setVerified(true);
         existing.setMailToken(null);
         existing.setMailTokenEmittedAt(null);
+        LOGGER.info("Email verified for user {}", existing.getId());
         return Optional.of(existing);
     }
 

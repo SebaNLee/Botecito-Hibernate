@@ -299,6 +299,7 @@ public class BookingImpl implements BookingService {
     public void acceptBooking(int bookingId, int callerId) {
         Booking booking = findById(bookingId);
         updateStatus(booking, callerId, true, BookingStatusEnum.ACCEPTED);
+        LOGGER.info("Booking {} accepted by user {}", bookingId, callerId);
         mailService.sendAcceptMail(booking);
     }
 
@@ -307,6 +308,7 @@ public class BookingImpl implements BookingService {
     public void rejectBooking(int bookingId, int callerId) {
         Booking booking = findById(bookingId);
         updateStatus(booking, callerId, true, BookingStatusEnum.REJECTED);
+        LOGGER.info("Booking {} rejected by user {}", bookingId, callerId);
         mailService.sendRejectMail(booking);
     }
 
@@ -386,6 +388,7 @@ public class BookingImpl implements BookingService {
     public void confirmPayment(int bookingId, int callerId) {
         Booking booking = findById(bookingId);
         updateStatus(booking, callerId, true, BookingStatusEnum.CONFIRMED);
+        LOGGER.info("Payment confirmed for booking {} by user {}", bookingId, callerId);
         mailService.sendBookingConfirmedMail(booking);
     }
 
@@ -398,6 +401,7 @@ public class BookingImpl implements BookingService {
 
         payment.setRefuseMsg(reason);
         payment.setRefusedAt(currentDateTime());
+        LOGGER.info("Payment rejected for booking {} by user {}", bookingId, callerId);
         mailService.sendRefusedPaymentMail(booking);
     }
 
@@ -406,6 +410,7 @@ public class BookingImpl implements BookingService {
     public void cancelBooking(int bookingId, int callerId) {
         Booking booking = findById(bookingId);
         updateStatus(booking, callerId, false, BookingStatusEnum.CANCELLED, false);
+        LOGGER.info("Booking {} cancelled by user {}", bookingId, callerId);
         mailService.sendBookingCancelledMail(booking);
     }
 

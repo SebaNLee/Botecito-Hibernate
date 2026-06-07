@@ -125,6 +125,7 @@ public class ReportServiceImpl implements ReportService {
     @Override
     @Transactional
     public void deleteAllByItemId(int itemId) {
+        LOGGER.info("All reports deleted for item {}", itemId);
         reportDao.deleteAllByItemId(itemId);
     }
 

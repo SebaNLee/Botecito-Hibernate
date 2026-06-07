@@ -37,5 +37,6 @@ public class ManageItemServiceImpl implements ManageItemService {
     public void setEnabled(final int itemId, final int ownerId, final boolean enabled) {
         final Item item = itemService.requireOwnedItem(itemId, ownerId);
         item.setStatus(enabled ? ItemStatusEnum.ACTIVE : ItemStatusEnum.INACTIVE);
+        LOGGER.info("User {} {} item {}", ownerId, enabled ? "enabled" : "disabled", itemId);
     }
 }

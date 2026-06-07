@@ -151,6 +151,7 @@ public class PublishServiceImpl implements PublishService {
                     filteredAvailabilities,
                     filteredImages);
         }
+        LOGGER.info("User {} edited item {}", ownerId, itemId);
         return true;
     }
 

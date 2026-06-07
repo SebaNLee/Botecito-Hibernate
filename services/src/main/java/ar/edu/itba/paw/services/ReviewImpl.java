@@ -2,8 +2,10 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.HostReviewsPage;
 import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.ReviewSummary;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
+import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.TargetEnum;
 import ar.edu.itba.paw.models.entity.Users;
@@ -114,6 +116,29 @@ public final class ReviewImpl implements ReviewService {
         return new HostReviewsPage(
                 new PageModel<>(reviews, page, pageSize, stats.getTotalReviews()),
                 stats.getAverageRating().orElse(null));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void attachReviewSummaries(final List<Item> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        final var itemIds = items.stream().map(Item::getId).toList();
+        final var summaryByItemId = reviewDao.reviewSummariesForItems(itemIds);
+        for (final Item item : items) {
+            item.setReviewSummary(summaryByItemId.getOrDefault(item.getId(), ReviewSummary.EMPTY));
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void attachItemReviews(final Item item, final int itemId, final int page) {
+        final int pageSize = ReviewPaging.DEFAULT_PAGE_SIZE;
+        final var reviewSummary = reviewDao.reviewSummaryForItem(itemId);
+        final var reviews = reviewDao.findReviewsAboutItem(itemId, page, pageSize);
+        item.setReviewSummary(reviewSummary);
+        item.setItemReviews(new PageModel<>(reviews, page, pageSize, reviewSummary.getTotalReviews()));
     }
 
     private static boolean isReviewWindowOpen(final Booking booking) {

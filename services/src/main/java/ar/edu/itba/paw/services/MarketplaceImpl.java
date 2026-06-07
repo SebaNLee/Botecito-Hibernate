@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 public final class MarketplaceImpl implements MarketplaceService {
 
     private final MarketplaceDao marketplaceDao;
+    private final ReviewService reviewService;
 
     @Override
     @Transactional(readOnly = true)
@@ -49,6 +50,8 @@ public final class MarketplaceImpl implements MarketplaceService {
         query.setPage(page);
         query.setPageSize(pageSize);
         query.setSortBy(sortBy);
-        return marketplaceDao.searchMarketplace(query);
+        final PageModel<Item> results = marketplaceDao.searchMarketplace(query);
+        reviewService.attachReviewSummaries(results.getContent());
+        return results;
     }
 }

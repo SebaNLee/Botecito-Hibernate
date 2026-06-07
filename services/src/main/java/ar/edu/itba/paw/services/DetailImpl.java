@@ -14,6 +14,7 @@ public class DetailImpl implements DetailService {
 
     private final DetailDao detailDao;
     private final BookingService bookingService;
+    private final ReviewService reviewService;
 
     @Override
     @Transactional(readOnly = true)
@@ -32,12 +33,12 @@ public class DetailImpl implements DetailService {
     }
 
     private Item requireItemDetail(final int itemId, final int reviewPage) {
-        final Item item = detailDao.getItemDetail(itemId, reviewPage).orElseThrow(ItemNotFoundException::new);
+        final Item item = detailDao.getItemDetail(itemId).orElseThrow(ItemNotFoundException::new);
         if (item.getLatestVersion() == null) {
             throw new ItemNotFoundException();
         }
 
-        // Fetch transient
+        reviewService.attachItemReviews(item, itemId, reviewPage);
         item.setBookings(bookingService.getUpcomingBookings(item));
 
         return item;

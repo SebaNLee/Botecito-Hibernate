@@ -149,28 +149,28 @@
               <div class="flex items-center gap-2 text-lg font-black text-on-surface">
                 <span class="material-symbols-outlined icon-star-filled">star</span>
                 <c:choose>
-                  <c:when test="${itemReviewPage.page.totalItems > 0}">
-                    <fmt:formatNumber value="${itemReviewPage.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
+                  <c:when test="${item.reviewSummary != null and item.reviewSummary.totalReviews > 0}">
+                    <fmt:formatNumber value="${item.reviewSummary.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
                   </c:when>
                   <c:otherwise><c:out value="${reviewsEmptyShortLabel}" /></c:otherwise>
                 </c:choose>
               </div>
               <p class="m-0 text-xs text-on-surface-variant">
                 <c:choose>
-                  <c:when test="${itemReviewPage.page.totalItems == 1}">
+                  <c:when test="${item.reviewSummary != null and item.reviewSummary.totalReviews == 1}">
                     <spring:message code="itemDetail.reviews.count.singular" />
                   </c:when>
                   <c:otherwise>
-                    <spring:message code="itemDetail.reviews.count.plural" arguments="${itemReviewPage.page.totalItems}" />
+                    <spring:message code="itemDetail.reviews.count.plural" arguments="${item.reviewSummary.totalReviews}" />
                   </c:otherwise>
                 </c:choose>
               </p>
             </div>
 
             <c:choose>
-              <c:when test="${not empty itemReviewPage.page.content}">
+              <c:when test="${itemReviews != null and not empty itemReviews.content}">
                 <div class="space-y-3">
-                  <c:forEach items="${itemReviewPage.page.content}" var="review">
+                  <c:forEach items="${itemReviews.content}" var="review">
                     <paw:reviewCard review="${review}" showReviewer="false" anonymousLabel="${detailReviewAnonymousLabel}" />
                   </c:forEach>
                 </div>
@@ -181,16 +181,16 @@
             </c:choose>
 
             <c:url var="reviewPreviousPageUrl" value="/item/${item.id}">
-              <c:param name="page" value="${itemReviewPage.page.previousPage}" />
+              <c:param name="page" value="${itemReviews.previousPage}" />
             </c:url>
             <c:url var="reviewNextPageUrl" value="/item/${item.id}">
-              <c:param name="page" value="${itemReviewPage.page.nextPage}" />
+              <c:param name="page" value="${itemReviews.nextPage}" />
             </c:url>
             <paw:pagination
-                currentPage="${itemReviewPage.page.page}"
-                totalPages="${itemReviewPage.page.totalPages}"
-                hasPrevious="${itemReviewPage.page.hasPrevious}"
-                hasNext="${itemReviewPage.page.hasNext}"
+                currentPage="${itemReviews.page}"
+                totalPages="${itemReviews.totalPages}"
+                hasPrevious="${itemReviews.hasPrevious}"
+                hasNext="${itemReviews.hasNext}"
                 previousPageUrl="${reviewPreviousPageUrl}#item-reviews"
                 nextPageUrl="${reviewNextPageUrl}#item-reviews"
                 navClass="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant" />

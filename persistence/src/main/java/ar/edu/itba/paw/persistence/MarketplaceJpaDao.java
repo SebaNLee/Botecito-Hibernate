@@ -6,7 +6,7 @@ import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.TargetEnum;
 import ar.edu.itba.paw.models.entity.Version;
-import ar.edu.itba.paw.persistence.utils.ItemReviewSummaries;
+import ar.edu.itba.paw.persistence.utils.ItemReviewSql;
 import ar.edu.itba.paw.persistence.utils.Paging;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -81,8 +81,6 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             items.add(item);
         }
 
-        ItemReviewSummaries.populateReviewSummaries(em, items);
-
         return new PageModel<>(items, query.getPage(), query.getPageSize(), totalCount);
     }
 
@@ -131,7 +129,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             parameters.put("difficulty", query.getDifficulty());
         }
         if (query.getMinAvgRating() != null) {
-            sql += ItemReviewSummaries.MARKETPLACE_REVIEW_AVERAGES_JOIN;
+            sql += ItemReviewSql.MARKETPLACE_REVIEW_AVERAGES_JOIN;
             whereClauses.add("COALESCE(item_reviews.average_rating, 0) >= :minAvgRating");
             parameters.put("itemTargetType", TargetEnum.ITEM.name());
             parameters.put("minAvgRating", query.getMinAvgRating());

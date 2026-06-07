@@ -8,7 +8,6 @@ import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
-import ar.edu.itba.paw.persistence.utils.ItemReviewSummaries;
 import ar.edu.itba.paw.persistence.utils.Paging;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -118,7 +117,6 @@ public class FavouriteJpaDao implements FavouriteDao {
             item.setLatestVersion(version);
             items.add(item);
         }
-        ItemReviewSummaries.populateReviewSummaries(em, items);
         return new PageModel<>(items, query.getPage(), query.getPageSize(), totalCount);
     }
 

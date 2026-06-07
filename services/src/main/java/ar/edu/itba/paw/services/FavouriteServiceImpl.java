@@ -17,6 +17,7 @@ public class FavouriteServiceImpl implements FavouriteService {
 
     private final FavouriteDao favouriteDao;
     private final ItemService itemService;
+    private final ReviewService reviewService;
 
     @Override
     @Transactional
@@ -59,7 +60,9 @@ public class FavouriteServiceImpl implements FavouriteService {
                 .pageSize(pageSize)
                 .sortBy(sortBy)
                 .build();
-        return favouriteDao.listFavourites(query);
+        final PageModel<Item> results = favouriteDao.listFavourites(query);
+        reviewService.attachReviewSummaries(results.getContent());
+        return results;
     }
 
     private static boolean canFavourite(final int userId, final Item item) {

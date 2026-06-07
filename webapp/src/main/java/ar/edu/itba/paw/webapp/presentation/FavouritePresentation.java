@@ -4,12 +4,10 @@ import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.webapp.form.FavouritesSearchForm;
 import ar.edu.itba.paw.webapp.form.ItemDetailViewForm;
-import ar.edu.itba.paw.webapp.presentation.util.CoverImageUrlResolver;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -24,34 +22,29 @@ public class FavouritePresentation {
     private static final String VIEW_NAME = "favourites";
     private static final String MESSAGE_PREFIX = "favourites";
 
-    private final CoverImageUrlResolver coverImageUrlResolver;
     private final ToastPresentation toastPresentation;
 
-    public ModelAndView favourites(
-            final HttpServletRequest request, final FavouritesSearchForm search, final PageModel<Item> itemPage) {
+    public ModelAndView favourites(final FavouritesSearchForm search, final PageModel<Item> itemPage) {
         final ModelAndView mav = new ModelAndView(VIEW_NAME, "favouritesSearch", search);
-        addListingModelObjects(mav, itemPage, request);
+        addListingModelObjects(mav, itemPage);
         mav.addObject("hasValidationErrors", false);
         return mav;
     }
 
-    public ModelAndView favouritesErrors(
-            final HttpServletRequest request, final FavouritesSearchForm search, final BindingResult errors) {
+    public ModelAndView favouritesErrors(final FavouritesSearchForm search, final BindingResult errors) {
         final ModelAndView mav = new ModelAndView(VIEW_NAME, "favouritesSearch", search);
         mav.addAllObjects(errors.getModel());
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
-        addListingModelObjects(mav, new PageModel<>(List.of(), 1, 12, 0), request);
+        addListingModelObjects(mav, new PageModel<>(List.of(), 1, 12, 0));
         mav.addObject("hasValidationErrors", true);
         return mav;
     }
 
-    private void addListingModelObjects(
-            final ModelAndView mav, final PageModel<Item> itemPage, final HttpServletRequest request) {
+    private void addListingModelObjects(final ModelAndView mav, final PageModel<Item> itemPage) {
         mav.addObject("itemPage", itemPage);
         mav.addObject("items", itemPage.getContent());
         mav.addObject("itemsCount", itemPage.getTotalItems());
         mav.addObject("pageSize", itemPage.getPageSize());
-        mav.addObject("imageUrlsByItemId", coverImageUrlResolver.resolve(itemPage.getContent(), request));
         mav.addObject("favouriteByItemId", booleanMap(itemPage.getContent(), true));
         mav.addObject("canFavouriteByItemId", booleanMap(itemPage.getContent(), true));
     }

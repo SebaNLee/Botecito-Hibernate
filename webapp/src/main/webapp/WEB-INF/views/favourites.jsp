@@ -136,7 +136,6 @@
         <c:forEach items="${items}" var="item">
           <paw:listingCard
               item="${item}"
-              coverSrc="${imageUrlsByItemId[item.id]}"
               favourite="${favouriteByItemId[item.id]}"
               canFavourite="${canFavouriteByItemId[item.id]}"
               favouritesSearch="${favouritesSearch}" />

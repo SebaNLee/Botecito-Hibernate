@@ -7,7 +7,6 @@ import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.FavouritesSearchForm;
 import ar.edu.itba.paw.webapp.form.ItemDetailViewForm;
 import ar.edu.itba.paw.webapp.presentation.FavouritePresentation;
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -39,15 +38,14 @@ public class FavouriteController {
     @RequestMapping(value = "/favourites", method = RequestMethod.GET)
     public ModelAndView favourites(
             @AuthenticationPrincipal final BotecitoUserDetails user,
-            final HttpServletRequest request,
             @Valid @ModelAttribute("favouritesSearch") final FavouritesSearchForm search,
             final BindingResult errors) {
         if (errors.hasErrors()) {
-            return favouritePresentation.favouritesErrors(request, search, errors);
+            return favouritePresentation.favouritesErrors(search, errors);
         }
         final PageModel<Item> itemPage = favouriteService.listFavourites(
                 user.getId(), search.getSearchQuery(), search.getPage(), search.getPageSize(), search.getSortBy());
-        return favouritePresentation.favourites(request, search, itemPage);
+        return favouritePresentation.favourites(search, itemPage);
     }
 
     @RequestMapping(value = "/favourites/items/{id:[1-9]\\d*}/favourite", method = RequestMethod.POST)

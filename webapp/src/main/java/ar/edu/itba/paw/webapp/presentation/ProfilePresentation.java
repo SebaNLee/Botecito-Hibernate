@@ -6,12 +6,10 @@ import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ProfileViewForm;
-import ar.edu.itba.paw.webapp.presentation.util.CoverImageUrlResolver;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
@@ -24,7 +22,6 @@ public class ProfilePresentation {
     private static final String MESSAGE_PREFIX = "profile";
     private static final DateTimeFormatter REVIEW_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    private final CoverImageUrlResolver coverImageUrlResolver;
     private final ToastPresentation toastPresentation;
 
     public ModelAndView profile(
@@ -38,8 +35,7 @@ public class ProfilePresentation {
             final int followersCount,
             final boolean isSelf,
             final boolean isSubscribed,
-            final ProfileViewForm profileView,
-            final HttpServletRequest request) {
+            final ProfileViewForm profileView) {
         final Map<Integer, String> reviewDatesById = formatReviewDates(reviewsPageModel);
 
         final ModelAndView mav = new ModelAndView("profile");
@@ -51,7 +47,6 @@ public class ProfilePresentation {
         mav.addObject("listings", listings);
         mav.addObject("listingsPage", listingsPageModel);
         mav.addObject("listingsTotal", listingsPageModel.getTotalItems());
-        mav.addObject("imageUrlsByItemId", coverImageUrlResolver.resolve(listings, request));
         mav.addObject("reviews", reviewsPageModel.getContent());
         mav.addObject("reviewsPage", reviewsPageModel);
         mav.addObject("reviewsTotal", reviewsPageModel.getTotalItems());
@@ -66,8 +61,7 @@ public class ProfilePresentation {
             final BotecitoUserDetails viewer,
             final Users profileUser,
             final ProfileViewForm profileView,
-            final BindingResult errors,
-            final HttpServletRequest request) {
+            final BindingResult errors) {
         final String activeTab = profileView.getTab() != null && "reviews".equalsIgnoreCase(profileView.getTab())
                 ? "reviews"
                 : "listings";
@@ -84,7 +78,6 @@ public class ProfilePresentation {
         mav.addObject("listings", List.of());
         mav.addObject("listingsPage", new PageModel<>(List.of(), 1, 12, 0));
         mav.addObject("listingsTotal", 0);
-        mav.addObject("imageUrlsByItemId", Map.of());
         mav.addObject("reviews", List.of());
         mav.addObject("reviewsPage", new PageModel<>(List.of(), 1, 5, 0));
         mav.addObject("reviewsTotal", 0);

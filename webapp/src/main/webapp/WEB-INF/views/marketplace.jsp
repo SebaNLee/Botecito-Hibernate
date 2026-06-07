@@ -309,9 +309,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <c:forEach items="${items}" var="item">
-        <paw:listingCard
-            item="${item}"
-            coverSrc="${imageUrlsByItemId[item.id]}" />
+        <paw:listingCard item="${item}" />
       </c:forEach>
     </div>
 

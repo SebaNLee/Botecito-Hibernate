@@ -148,7 +148,13 @@
               <c:url var="disableItemUrl" value="/my-boats/${item.id}/disable" />
               <c:url var="enableItemUrl" value="/my-boats/${item.id}/enable" />
               <c:url var="deleteItemUrl" value="/my-boats/${item.id}/delete" />
-              <c:set var="publicationImageUrl" value="${imageUrlsByItemId[item.id]}" />
+              <c:url var="publicationImageUrl" value="/css/boat-placeholder.svg" />
+              <c:if test="${not empty version.media}">
+                <c:set var="coverMedia" value="${version.media[0]}" />
+                <c:if test="${not empty coverMedia.image}">
+                  <c:url var="publicationImageUrl" value="/image/${coverMedia.image.id}" />
+                </c:if>
+              </c:if>
               <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
               <c:set var="disableFormId" value="disable-publication-form-${item.id}" />
               <c:set var="enableFormId" value="enable-publication-form-${item.id}" />

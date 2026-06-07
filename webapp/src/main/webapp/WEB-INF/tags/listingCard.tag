@@ -1,6 +1,5 @@
 <%@ tag language="java" pageEncoding="UTF-8" %>
 <%@ attribute name="item" required="true" type="ar.edu.itba.paw.models.entity.Item" %>
-<%@ attribute name="coverSrc" required="true" %>
 <%@ attribute name="favourite" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="canFavourite" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="favouritesSearch" required="false" type="ar.edu.itba.paw.webapp.form.FavouritesSearchForm" rtexprvalue="true" %>
@@ -26,9 +25,12 @@
 </c:choose>
 <spring:message code="favourite.add" var="favouriteAddLabel" />
 <spring:message code="favourite.remove" var="favouriteRemoveLabel" />
-<c:set var="resolvedCoverSrc" value="${coverSrc}" />
-<c:if test="${empty resolvedCoverSrc}">
-  <c:url var="resolvedCoverSrc" value="/css/boat-placeholder.svg" />
+<c:url var="resolvedCoverSrc" value="/css/boat-placeholder.svg" />
+<c:if test="${not empty item.latestVersion.media}">
+  <c:set var="coverMedia" value="${item.latestVersion.media[0]}" />
+  <c:if test="${not empty coverMedia.image}">
+    <c:url var="resolvedCoverSrc" value="/image/${coverMedia.image.id}" />
+  </c:if>
 </c:if>
 <c:set var="isFavourite" value="${favourite ne null ? favourite : false}" />
 <c:set var="isFavouriteAllowed" value="${canFavourite ne null ? canFavourite : false}" />

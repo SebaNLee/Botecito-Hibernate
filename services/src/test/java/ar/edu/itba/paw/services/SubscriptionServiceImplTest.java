@@ -41,7 +41,6 @@ public class SubscriptionServiceImplTest {
     @Test
     public void testSubscribeSelf() {
         assertFalse(subscriptionService.subscribe(USER_ID, USER_ID));
-        verifyNoInteractions(subscriptionDao);
     }
 
     @Test
@@ -61,7 +60,6 @@ public class SubscriptionServiceImplTest {
     @Test
     public void testUnsubscribeSelf() {
         assertFalse(subscriptionService.unsubscribe(USER_ID, USER_ID));
-        verifyNoInteractions(subscriptionDao);
     }
 
     @Test

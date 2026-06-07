@@ -28,24 +28,53 @@
   <c:choose>
     <c:when test="${inputType == 'password'}">
       <c:choose>
-        <c:when test="${isReadonly}">
-          <form:password
-              id="${path}"
-              path="${path}"
-              cssClass="${inputCssClass}"
-              cssErrorClass="${inputErrorCssClass}"
-              placeholder="${placeholder}"
-              readonly="true"
-          />
+        <c:when test="${not empty maxlength}">
+          <c:choose>
+            <c:when test="${isReadonly}">
+              <form:password
+                  id="${path}"
+                  path="${path}"
+                  maxlength="${maxlength}"
+                  cssClass="${inputCssClass}"
+                  cssErrorClass="${inputErrorCssClass}"
+                  placeholder="${placeholder}"
+                  readonly="true"
+              />
+            </c:when>
+            <c:otherwise>
+              <form:password
+                  id="${path}"
+                  path="${path}"
+                  maxlength="${maxlength}"
+                  cssClass="${inputCssClass}"
+                  cssErrorClass="${inputErrorCssClass}"
+                  placeholder="${placeholder}"
+              />
+            </c:otherwise>
+          </c:choose>
         </c:when>
         <c:otherwise>
-          <form:password
-              id="${path}"
-              path="${path}"
-              cssClass="${inputCssClass}"
-              cssErrorClass="${inputErrorCssClass}"
-              placeholder="${placeholder}"
-          />
+          <c:choose>
+            <c:when test="${isReadonly}">
+              <form:password
+                  id="${path}"
+                  path="${path}"
+                  cssClass="${inputCssClass}"
+                  cssErrorClass="${inputErrorCssClass}"
+                  placeholder="${placeholder}"
+                  readonly="true"
+              />
+            </c:when>
+            <c:otherwise>
+              <form:password
+                  id="${path}"
+                  path="${path}"
+                  cssClass="${inputCssClass}"
+                  cssErrorClass="${inputErrorCssClass}"
+                  placeholder="${placeholder}"
+              />
+            </c:otherwise>
+          </c:choose>
         </c:otherwise>
       </c:choose>
     </c:when>

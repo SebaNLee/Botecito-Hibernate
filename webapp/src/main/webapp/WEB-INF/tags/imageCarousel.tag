@@ -16,7 +16,7 @@
   <div class="space-y-3" data-image-carousel>
     <div class="relative card bg-base-100 shadow-sm overflow-hidden">
       <img src="${imageUrls[0]}"
-           alt="${fn:escapeXml(altText)}"
+           alt="$<c:out value="${altText}" />"
            class="w-full ${resolvedAspect} object-cover block"
            data-carousel-main />
       <c:if test="${imageCount > 1}">
@@ -32,8 +32,8 @@
                 data-carousel-next>
           <span class="material-symbols-outlined">chevron_right</span>
         </button>
-        <div class="absolute bottom-3 right-3 badge badge-neutral text-xs font-bold" data-carousel-counter>
-          <span data-carousel-index>1</span>/<c:out value="${imageCount}" />
+        <div class="absolute bottom-3 right-3 badge badge-neutral text-xs font-bold">
+          <span data-carousel-counter><span data-carousel-index>1</span>/<c:out value="${imageCount}" /></span>
         </div>
       </c:if>
     </div>

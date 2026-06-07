@@ -34,7 +34,7 @@
         <c:set var="leftStep" value="${star - 0.5}" />
         <span class="relative inline-flex h-9 w-9 shrink-0 items-center justify-center">
           <span
-              class="pointer-events-none material-symbols-outlined text-3xl leading-none text-outline opacity-35 transition-colors duration-150"
+              class="pointer-events-none material-symbols-outlined text-3xl leading-none icon-star-outline transition-colors duration-150"
               data-min-rating-icon="${star}">star</span>
           <button
               type="button"

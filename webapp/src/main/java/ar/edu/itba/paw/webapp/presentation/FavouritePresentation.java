@@ -2,10 +2,8 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
-import ar.edu.itba.paw.services.FavouriteService;
-import ar.edu.itba.paw.services.SelectorsService;
-import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.FavouritesSearchForm;
+import ar.edu.itba.paw.webapp.form.ItemDetailViewForm;
 import ar.edu.itba.paw.webapp.presentation.util.CoverImageUrlResolver;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.util.LinkedHashMap;
@@ -14,6 +12,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -25,39 +24,18 @@ public class FavouritePresentation {
     private static final String VIEW_NAME = "favourites";
     private static final String MESSAGE_PREFIX = "favourites";
 
-    private final FavouriteService favouriteService;
-    private final SelectorsService selectorsService;
     private final CoverImageUrlResolver coverImageUrlResolver;
     private final ToastPresentation toastPresentation;
 
     public ModelAndView favourites(
-            final BotecitoUserDetails principal, final HttpServletRequest request, final FavouritesSearchForm search) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        final int page = search.getPage() == null ? 1 : search.getPage();
-        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
-        final PageModel<Item> itemPage = favouriteService.listFavourites(
-                principal.getId(),
-                search.getSearchQuery(),
-                search.getStatus(),
-                search.getLocation(),
-                page,
-                pageSize,
-                search.getSortBy());
+            final HttpServletRequest request, final FavouritesSearchForm search, final PageModel<Item> itemPage) {
         final ModelAndView mav = new ModelAndView(VIEW_NAME, "favouritesSearch", search);
         addListingModelObjects(mav, itemPage, request);
         return mav;
     }
 
     public ModelAndView favouritesErrors(
-            final BotecitoUserDetails principal,
-            final HttpServletRequest request,
-            final FavouritesSearchForm search,
-            final BindingResult errors) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
+            final HttpServletRequest request, final FavouritesSearchForm search, final BindingResult errors) {
         final ModelAndView mav = new ModelAndView(VIEW_NAME, "favouritesSearch", search);
         mav.addAllObjects(errors.getModel());
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
@@ -71,40 +49,80 @@ public class FavouritePresentation {
         mav.addObject("items", itemPage.getContent());
         mav.addObject("itemsCount", itemPage.getTotalItems());
         mav.addObject("pageSize", itemPage.getPageSize());
-        mav.addObject("favouritesReturnPath", currentRequestPath(request));
         mav.addObject("imageUrlsByItemId", coverImageUrlResolver.resolve(itemPage.getContent(), request));
         mav.addObject("favouriteByItemId", booleanMap(itemPage.getContent(), true));
         mav.addObject("canFavouriteByItemId", booleanMap(itemPage.getContent(), true));
-        mav.addObject("locationOptions", selectorsService.getLocationOptions());
     }
 
-    public ModelAndView addFavourite(
-            final BotecitoUserDetails principal,
-            final int itemId,
-            final String returnPath,
-            final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        if (!favouriteService.addFavourite(principal.getId(), itemId)) {
+    public ModelAndView addFavouriteFromFavouritesResult(
+            final FavouritesSearchForm search, final boolean success, final RedirectAttributes redirectAttributes) {
+        if (!success) {
             ToastSupport.error(redirectAttributes, "favourite.add.error");
-            return redirect(returnPath);
+        } else {
+            ToastSupport.success(redirectAttributes, "favourite.added");
         }
-        ToastSupport.success(redirectAttributes, "favourite.added");
-        return redirect(returnPath);
+        addFavouritesSearchParams(redirectAttributes, search);
+        return new ModelAndView("redirect:/favourites");
     }
 
-    public ModelAndView removeFavourite(
-            final BotecitoUserDetails principal,
-            final int itemId,
-            final String returnPath,
-            final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        favouriteService.removeFavourite(principal.getId(), itemId);
+    public ModelAndView removeFavouriteFromFavouritesResult(
+            final FavouritesSearchForm search, final RedirectAttributes redirectAttributes) {
         ToastSupport.info(redirectAttributes, "favourite.removed");
-        return redirect(returnPath);
+        addFavouritesSearchParams(redirectAttributes, search);
+        return new ModelAndView("redirect:/favourites");
+    }
+
+    public ModelAndView addFavouriteFromItemDetailResult(
+            final ItemDetailViewForm view,
+            final int itemId,
+            final boolean success,
+            final RedirectAttributes redirectAttributes) {
+        if (!success) {
+            ToastSupport.error(redirectAttributes, "favourite.add.error");
+        } else {
+            ToastSupport.success(redirectAttributes, "favourite.added");
+        }
+        return itemDetailRedirect(view, itemId, redirectAttributes);
+    }
+
+    public ModelAndView removeFavouriteFromItemDetailResult(
+            final ItemDetailViewForm view, final int itemId, final RedirectAttributes redirectAttributes) {
+        ToastSupport.info(redirectAttributes, "favourite.removed");
+        return itemDetailRedirect(view, itemId, redirectAttributes);
+    }
+
+    private static ModelAndView itemDetailRedirect(
+            final ItemDetailViewForm view, final int itemId, final RedirectAttributes redirectAttributes) {
+        addItemDetailViewParams(redirectAttributes, view);
+        final int targetItemId = view != null && view.getItemId() != null ? view.getItemId() : itemId;
+        return new ModelAndView("redirect:/item/" + targetItemId);
+    }
+
+    private static void addFavouritesSearchParams(
+            final RedirectAttributes redirectAttributes, final FavouritesSearchForm search) {
+        if (search == null) {
+            return;
+        }
+        final int page = search.getPage() == null ? 1 : search.getPage();
+        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
+        redirectAttributes.addAttribute("page", page);
+        redirectAttributes.addAttribute("pageSize", pageSize);
+        if (StringUtils.hasText(search.getSortBy()) && !"newest".equals(search.getSortBy())) {
+            redirectAttributes.addAttribute("sortBy", search.getSortBy());
+        }
+        if (StringUtils.hasText(search.getSearchQuery())) {
+            redirectAttributes.addAttribute("searchQuery", search.getSearchQuery());
+        }
+    }
+
+    private static void addItemDetailViewParams(
+            final RedirectAttributes redirectAttributes, final ItemDetailViewForm view) {
+        if (view == null || view.getItemId() == null) {
+            return;
+        }
+        if (view.getReviewPage() != null && view.getReviewPage() > 1) {
+            redirectAttributes.addAttribute("reviewPage", view.getReviewPage());
+        }
     }
 
     private static Map<Integer, Boolean> booleanMap(final Iterable<Item> items, final boolean value) {
@@ -113,36 +131,5 @@ public class FavouritePresentation {
             map.put(item.getId(), value);
         }
         return map;
-    }
-
-    private static ModelAndView redirect(final String returnPath) {
-        return new ModelAndView("redirect:" + safeRelativePath(returnPath));
-    }
-
-    private static String currentRequestPath(final HttpServletRequest request) {
-        if (request == null) {
-            return "/favourites";
-        }
-        final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
-        String path = request.getRequestURI() == null ? "/favourites" : request.getRequestURI();
-        if (!contextPath.isEmpty() && path.startsWith(contextPath)) {
-            path = path.substring(contextPath.length());
-        }
-        final String query = request.getQueryString();
-        return query == null || query.isBlank() ? path : path + "?" + query;
-    }
-
-    private static String safeRelativePath(final String returnPath) {
-        if (returnPath == null || returnPath.isBlank()) {
-            return "/favourites";
-        }
-        final String trimmed = returnPath.trim();
-        if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed.contains("://")) {
-            return "/favourites";
-        }
-        if (trimmed.contains("\r") || trimmed.contains("\n")) {
-            return "/favourites";
-        }
-        return trimmed;
     }
 }

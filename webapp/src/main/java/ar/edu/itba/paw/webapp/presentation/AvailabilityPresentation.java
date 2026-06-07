@@ -5,16 +5,9 @@ import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Version;
-import ar.edu.itba.paw.services.BookingService;
-import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
-import ar.edu.itba.paw.webapp.form.SaveSelfBlocksForm;
 import ar.edu.itba.paw.webapp.util.DetailAvailabilityPicker;
 import ar.edu.itba.paw.webapp.util.JsonForHtml;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
-import java.net.URI;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -25,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -37,64 +29,37 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class AvailabilityPresentation {
 
-    private static final int MAX_RETURN_PATH_LENGTH = 512;
-    private static final String DEFAULT_AVAILABILITY_BACK_PATH = "/my-boats";
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    private final BookingService bookingInterface;
     private final ToastPresentation toastPresentation;
 
-    public ModelAndView manageAvailabilityPage(
-            final BotecitoUserDetails principal,
-            final int itemId,
-            final String requestedDate,
-            final String returnParam,
-            final HttpServletRequest request,
-            final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        final String backPath = resolveBackPath(request, returnParam);
-        final SelfBookingData model =
-                bookingInterface.getSelfBlocks(itemId, principal.getId(), parseRequestedDate(requestedDate));
-        return buildManageAvailabilityView(model, backPath);
+    public ModelAndView manageAvailabilityPage(final SelfBookingData model) {
+        return buildManageAvailabilityView(model);
     }
 
-    public ModelAndView saveSelfBlocks(
-            final BotecitoUserDetails principal,
-            final int itemId,
-            final String returnParam,
-            final SaveSelfBlocksForm form,
-            final BindingResult errors,
-            final RedirectAttributes redirectAttributes) {
-        if (principal == null) {
-            return new ModelAndView("redirect:/login");
-        }
-        final String backPath = sanitizeReturnPath(returnParam);
-        if (errors.hasErrors()) {
-            final SelfBookingData model = bookingInterface.getSelfBlocks(itemId, principal.getId(), form.getDate());
-            final ModelAndView mav = buildManageAvailabilityView(model, backPath);
-            mav.addObject("toasts", toastPresentation.validationToasts(errors, "saveSelfBlocks"));
-            return mav;
-        }
-        bookingInterface.saveSelfBlockChanges(
-                itemId, principal.getId(), form.getDate(), form.deletedBlockIds(), form.updates(), form.creates());
+    public ModelAndView saveSelfBlocksErrors(final SelfBookingData model, final BindingResult errors) {
+        final ModelAndView mav = buildManageAvailabilityView(model);
+        mav.addObject("toasts", toastPresentation.validationToasts(errors, "saveSelfBlocks"));
+        return mav;
+    }
+
+    public ModelAndView saveSelfBlocksSuccess(
+            final int itemId, final String dateStr, final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, "manageAvailability.msg.saved");
-        return availabilityRedirect(itemId, form.getDate().toString(), backPath);
+        return availabilityRedirect(itemId, dateStr);
     }
 
-    private ModelAndView availabilityRedirect(
-            final int itemId, final String dateStr, final String sanitizedReturnPath) {
+    private ModelAndView availabilityRedirect(final int itemId, final String dateStr) {
         final StringBuilder url =
                 new StringBuilder("redirect:/my-boats/").append(itemId).append("/availability");
         if (dateStr != null && !dateStr.isBlank()) {
             url.append("?date=").append(dateStr);
         }
-        return new ModelAndView(appendReturnQuery(url.toString(), sanitizedReturnPath));
+        return new ModelAndView(url.toString());
     }
 
-    private ModelAndView buildManageAvailabilityView(final SelfBookingData model, final String backPath) {
+    private ModelAndView buildManageAvailabilityView(final SelfBookingData model) {
         final ModelAndView mav = new ModelAndView("manage-availability");
         final String timezone = model.getTimezone();
         mav.addObject("item", model.getItem());
@@ -122,8 +87,6 @@ public class AvailabilityPresentation {
                         timezone));
         mav.addObject(
                 "hasTimelineAvailability", hasAvailabilityWindowsForDate(model.getSelectedDate(), availabilityWindows));
-        mav.addObject("manageAvailabilityReturnPath", backPath);
-        mav.addObject("manageAvailabilityBackPath", backPath != null ? backPath : DEFAULT_AVAILABILITY_BACK_PATH);
         return mav;
     }
 
@@ -232,66 +195,7 @@ public class AvailabilityPresentation {
                 || status == BookingStatusEnum.CONFIRMED;
     }
 
-    static String resolveBackPath(final HttpServletRequest request, final String returnParam) {
-        final String safeReturn = sanitizeReturnPath(returnParam);
-        if (safeReturn != null) {
-            return safeReturn;
-        }
-        final String referer = request.getHeader("Referer");
-        if (referer != null && !referer.isBlank()) {
-            try {
-                final URI uri = URI.create(referer.trim());
-                final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
-                String path = uri.getPath() == null ? "" : uri.getPath();
-                if (!contextPath.isEmpty() && path.startsWith(contextPath)) {
-                    path = path.substring(contextPath.length());
-                }
-                if (path.isEmpty()) {
-                    path = "/";
-                }
-                final String query = uri.getQuery();
-                final String candidate = query == null || query.isBlank() ? path : path + "?" + query;
-                final String fromReferer = sanitizeReturnPath(candidate);
-                if (fromReferer != null) {
-                    return fromReferer;
-                }
-            } catch (final IllegalArgumentException ignored) {
-                // ignore malformed referer
-            }
-        }
-        return DEFAULT_AVAILABILITY_BACK_PATH;
-    }
-
-    static String sanitizeReturnPath(final String raw) {
-        if (raw == null) {
-            return null;
-        }
-        String candidate = raw.trim();
-        if (candidate.isEmpty()) {
-            return null;
-        }
-        try {
-            candidate = URLDecoder.decode(candidate, StandardCharsets.UTF_8);
-        } catch (final IllegalArgumentException ignored) {
-            return null;
-        }
-        candidate = candidate.trim();
-        if (candidate.length() > MAX_RETURN_PATH_LENGTH) {
-            return null;
-        }
-        if (!candidate.startsWith("/") || candidate.startsWith("//")) {
-            return null;
-        }
-        if (candidate.contains("://") || candidate.contains("\\") || candidate.indexOf('\n') >= 0) {
-            return null;
-        }
-        if (candidate.indexOf('\r') >= 0 || candidate.indexOf('\0') >= 0) {
-            return null;
-        }
-        return candidate;
-    }
-
-    private static LocalDate parseRequestedDate(final String raw) {
+    public static LocalDate parseRequestedDate(final String raw) {
         if (raw == null || raw.isBlank()) {
             return null;
         }
@@ -300,15 +204,6 @@ public class AvailabilityPresentation {
         } catch (final Exception ignored) {
             return null;
         }
-    }
-
-    private static String appendReturnQuery(final String redirectUrl, final String sanitizedReturnPath) {
-        if (sanitizedReturnPath == null) {
-            return redirectUrl;
-        }
-        final int q = redirectUrl.indexOf('?');
-        final String sep = q >= 0 ? "&" : "?";
-        return redirectUrl + sep + "return=" + URLEncoder.encode(sanitizedReturnPath, StandardCharsets.UTF_8);
     }
 
     private static String toDayTimelineJson(

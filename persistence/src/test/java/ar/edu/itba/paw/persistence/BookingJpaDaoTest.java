@@ -45,6 +45,7 @@ public class BookingJpaDaoTest {
         itemType = insertItemType(em, "Kayak", "kayak");
         item = insertItem(em, host, ItemStatusEnum.ACTIVE);
         version = insertVersion(em, item, itemType, location, "Test Boat");
+        item.setLatestVersion(version);
         em.flush();
     }
 
@@ -229,5 +230,18 @@ public class BookingJpaDaoTest {
                 .getSingleResult();
 
         assertEquals(0, remainingSelf);
+    }
+
+    @Test
+    public void testItemHasBookingsNoBookings() {
+        assertFalse(bookingDao.itemHasBookings(item));
+    }
+
+    @Test
+    public void testItemHasBookingsHasBookings() {
+        insertBooking(em, version, guest, BookingStatusEnum.FINISHED);
+        em.flush();
+
+        assertTrue(bookingDao.itemHasBookings(item));
     }
 }

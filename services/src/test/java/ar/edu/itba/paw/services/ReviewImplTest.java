@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import ar.edu.itba.paw.models.entity.*;
-import ar.edu.itba.paw.persistence.BookingDao;
 import ar.edu.itba.paw.persistence.ReviewDao;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,7 +23,7 @@ public class ReviewImplTest {
     private static final int OWNER_ID = 20;
 
     @Mock
-    private BookingDao bookingDao;
+    private BookingService bookingService;
 
     @Mock
     private ReviewDao reviewDao;
@@ -34,7 +33,7 @@ public class ReviewImplTest {
 
     @Test
     public void testCreate() {
-        when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(finishedBooking()));
+        when(bookingService.findById(BOOKING_ID)).thenReturn(finishedBooking());
         when(reviewDao.findReviewByBookingSenderAndTargetType(BOOKING_ID, GUEST_ID, TargetEnum.ITEM))
                 .thenReturn(Optional.empty());
         when(reviewDao.createReview(anyInt(), anyInt(), any(), anyDouble(), any()))
@@ -54,7 +53,7 @@ public class ReviewImplTest {
 
     @Test
     public void testCreateBookingNotFound() {
-        when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.empty());
+        when(bookingService.findById(BOOKING_ID)).thenReturn(null);
 
         var result = reviewService.createReviewForBooking(BOOKING_ID, GUEST_ID, 5, "Great!");
 
@@ -64,7 +63,7 @@ public class ReviewImplTest {
     @Test
     public void testCreateBookingNotFinished() {
         var booking = bookingWithStatus(BookingStatusEnum.PENDING);
-        when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(booking));
+        when(bookingService.findById(BOOKING_ID)).thenReturn(booking);
 
         var result = reviewService.createReviewForBooking(BOOKING_ID, GUEST_ID, 5, "Great!");
 

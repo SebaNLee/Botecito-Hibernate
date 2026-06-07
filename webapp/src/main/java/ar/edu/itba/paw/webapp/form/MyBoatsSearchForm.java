@@ -17,9 +17,6 @@ public class MyBoatsSearchForm {
     @Pattern(regexp = "^$|^(ACTIVE|INACTIVE)$", message = "{myBoats.search.validation.status.pattern}")
     private String status;
 
-    @Size(max = 100)
-    private String location;
-
     @Pattern(regexp = "^$|^(newest|oldest|nameAsc|nameDesc)$", message = "{myBoats.search.validation.sort.pattern}")
     private String sortBy;
 

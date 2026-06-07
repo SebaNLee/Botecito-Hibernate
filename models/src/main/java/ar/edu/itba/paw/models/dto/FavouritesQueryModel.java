@@ -12,8 +12,6 @@ import lombok.Setter;
 public class FavouritesQueryModel {
     private int userId;
     private String searchQuery;
-    private String status;
-    private String locationSlug;
     private int page;
     private int pageSize;
     private String sortBy;

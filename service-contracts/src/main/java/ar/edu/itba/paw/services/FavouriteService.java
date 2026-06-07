@@ -15,6 +15,5 @@ public interface FavouriteService {
 
     Set<Integer> findFavouriteItemIds(int userId, Collection<Integer> itemIds);
 
-    PageModel<Item> listFavourites(
-            int userId, String searchQuery, String status, String location, int page, int pageSize, String sortBy);
+    PageModel<Item> listFavourites(int userId, String searchQuery, int page, int pageSize, String sortBy);
 }

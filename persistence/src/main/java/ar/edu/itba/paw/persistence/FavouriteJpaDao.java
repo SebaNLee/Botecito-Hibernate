@@ -144,20 +144,12 @@ public class FavouriteJpaDao implements FavouriteDao {
             String sql) {
         whereClauses.add("f.user_id = :userId");
         parameters.put("userId", query.getUserId());
-        whereClauses.add("i.status <> CAST(:deleted AS item_status_enum)");
-        parameters.put("deleted", ItemStatusEnum.DELETED.name());
+        whereClauses.add("i.status = CAST(:active AS item_status_enum)");
+        parameters.put("active", ItemStatusEnum.ACTIVE.name());
 
         if (!isEmpty(query.getSearchQuery())) {
             whereClauses.add("LOWER(v.title) LIKE LOWER(:searchQuery) ESCAPE '!'");
             parameters.put("searchQuery", setupSearchQuery(query.getSearchQuery()));
-        }
-        if (!isEmpty(query.getStatus())) {
-            whereClauses.add("i.status = CAST(:status AS item_status_enum)");
-            parameters.put("status", query.getStatus());
-        }
-        if (!isEmpty(query.getLocationSlug())) {
-            whereClauses.add("EXISTS (SELECT 1 FROM location l WHERE l.id = v.location_id AND l.slug = :location)");
-            parameters.put("location", query.getLocationSlug());
         }
 
         sql += "WHERE " + String.join(" AND ", whereClauses);

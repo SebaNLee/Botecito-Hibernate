@@ -17,4 +17,6 @@ public interface ReportService {
     void dismissReport(int reportId);
 
     void deletePublicationForReport(int reportId);
+
+    void deleteAllByItemId(int itemId);
 }

@@ -5,7 +5,7 @@ import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.TargetEnum;
-import ar.edu.itba.paw.persistence.BookingDao;
+import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.persistence.ReviewDao;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -25,8 +25,8 @@ public final class ReviewImpl implements ReviewService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReviewImpl.class);
 
-    private final BookingDao bookingDao;
     private final ReviewDao reviewDao;
+    private final BookingService bookingService;
 
     @Override
     @Transactional
@@ -47,18 +47,17 @@ public final class ReviewImpl implements ReviewService {
             return Optional.empty();
         }
 
-        final Optional<Booking> booking = bookingDao.findById(bookingId);
-        if (booking.isEmpty() || !isReviewWindowOpen(booking.get())) {
+        final Booking booking = bookingService.findById(bookingId);
+        if (!isReviewWindowOpen(booking)) {
             return Optional.empty();
         }
 
-        final Optional<Integer> ownerId =
-                booking.map(b -> b.getVersion().getItem().getHost().getId());
-        if (ownerId.isEmpty()) {
+        final Users owner = booking.getVersion().getItem().getHost();
+        if (owner == null) {
             return Optional.empty();
         }
 
-        final TargetEnum resolved = resolveTarget(booking.get(), ownerId.get(), reviewerUserId, targetType);
+        final TargetEnum resolved = resolveTarget(booking, owner.getId(), reviewerUserId, targetType);
         if (resolved == null) {
             return Optional.empty();
         }

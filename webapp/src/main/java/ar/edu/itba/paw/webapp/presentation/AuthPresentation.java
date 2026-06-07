@@ -1,17 +1,10 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.entity.Users;
-import ar.edu.itba.paw.services.UserService;
-import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.LoginForm;
 import ar.edu.itba.paw.webapp.form.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.RegisterForm;
-import java.util.Optional;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
 
 @Component
@@ -20,9 +13,6 @@ public class AuthPresentation {
 
     private static final String REGISTER_VIEW = "register";
     private static final String PASSWORD_RECOVERY_RESET_VIEW = "password-recovery-reset";
-
-    private final UserService userService;
-    private final PostRegistrationAuthenticator postRegistrationAuthenticator;
 
     public ModelAndView login(final LoginForm form) {
         final ModelAndView mav = new ModelAndView("login");
@@ -63,14 +53,7 @@ public class AuthPresentation {
         return new ModelAndView(REGISTER_VIEW);
     }
 
-    public ModelAndView registerSubmit(final RegisterForm form, final BindingResult errors) {
-        userService.register(
-                form.getGivenName(),
-                form.getLastName(),
-                form.getEmail(),
-                form.getPaymentAlias(),
-                languageFromInput(form.getPreferredLanguage()),
-                form.getPassword());
+    public ModelAndView registerSuccessRedirect() {
         return new ModelAndView("redirect:/login?verificationSent=true");
     }
 
@@ -82,55 +65,35 @@ public class AuthPresentation {
         return mav;
     }
 
-    public ModelAndView passwordRecoveryRequestSubmit(final PasswordRecoveryRequestForm form) {
-        userService.requestPasswordRecovery(form.getEmail());
+    public ModelAndView passwordRecoveryRequestSuccessRedirect() {
         return new ModelAndView("redirect:/password-recovery?sent=true");
     }
 
-    public ModelAndView passwordRecoveryResetForm(final String token) {
-        final Optional<Users> user = userService.findByPasswordRecoveryToken(token);
-        return user.isEmpty() || user.get().getMailTokenEmittedAt() != null
-                ? new ModelAndView("redirect:/password-recovery/" + token + "?invalid=true")
-                : new ModelAndView(PASSWORD_RECOVERY_RESET_VIEW)
-                        .addObject("token", token)
-                        .addObject("tokenValid", true);
+    public ModelAndView passwordRecoveryResetInvalidTokenRedirect(final String token) {
+        return new ModelAndView("redirect:/password-recovery/" + token + "?invalid=true");
     }
 
-    public ModelAndView passwordRecoveryResetSubmit(final String token, final String rawPassword) {
-        final boolean tokenValid =
-                userService.findByPasswordRecoveryToken(token).isPresent();
-        if (!tokenValid) {
-            return new ModelAndView(PASSWORD_RECOVERY_RESET_VIEW)
-                    .addObject("token", token)
-                    .addObject("tokenValid", false);
-        }
+    public ModelAndView passwordRecoveryResetForm(final String token) {
+        return new ModelAndView(PASSWORD_RECOVERY_RESET_VIEW)
+                .addObject("token", token)
+                .addObject("tokenValid", true);
+    }
 
-        if (!userService.resetPassword(token, rawPassword)) {
-            return new ModelAndView("redirect:/password-recovery/" + token + "?invalid=true");
-        }
+    public ModelAndView passwordRecoveryResetInvalidTokenView(final String token) {
+        return new ModelAndView(PASSWORD_RECOVERY_RESET_VIEW)
+                .addObject("token", token)
+                .addObject("tokenValid", false);
+    }
 
+    public ModelAndView passwordRecoveryResetSuccessRedirect() {
         return new ModelAndView("redirect:/login?passwordRecovered=true");
     }
 
-    public ModelAndView verifyEmail(
-            final String token, final HttpServletRequest request, final HttpServletResponse response) {
-        final Optional<Users> verifiedUser = userService.verifyEmail(token);
-        if (verifiedUser.isPresent()) {
-            postRegistrationAuthenticator.authenticateVerifiedUser(
-                    verifiedUser.get().getEmail(), request, response);
-            return new ModelAndView("redirect:/");
-        }
-        return new ModelAndView("redirect:/login?verificationInvalid=true");
+    public ModelAndView verifyEmailSuccessRedirect() {
+        return new ModelAndView("redirect:/");
     }
 
-    // TODO check this, should be bc of UserDetails SpringSecurity probs
-    private static String languageFromInput(final String preferredLanguage) {
-        if (preferredLanguage == null) {
-            return "ES";
-        }
-        return switch (preferredLanguage.trim().toUpperCase()) {
-            case "EN" -> "EN";
-            default -> "ES";
-        };
+    public ModelAndView verifyEmailInvalidRedirect() {
+        return new ModelAndView("redirect:/login?verificationInvalid=true");
     }
 }

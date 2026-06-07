@@ -9,9 +9,7 @@ import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.persistence.FavouriteDao;
-import ar.edu.itba.paw.persistence.ItemDao;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,21 +28,21 @@ public class FavouriteServiceImplTest {
     private FavouriteDao favouriteDao;
 
     @Mock
-    private ItemDao itemDao;
+    private ItemService itemService;
 
     @InjectMocks
     private FavouriteServiceImpl favouriteService;
 
     @Test
     public void testAdd() {
-        when(itemDao.findItemById(ITEM_ID)).thenReturn(Optional.of(item(OTHER_USER_ID, ItemStatusEnum.ACTIVE)));
+        when(itemService.findItemById(ITEM_ID)).thenReturn(item(OTHER_USER_ID, ItemStatusEnum.ACTIVE));
 
         assertTrue(favouriteService.addFavourite(USER_ID, ITEM_ID));
     }
 
     @Test
     public void testAddOwn() {
-        when(itemDao.findItemById(ITEM_ID)).thenReturn(Optional.of(item(USER_ID, ItemStatusEnum.ACTIVE)));
+        when(itemService.findItemById(ITEM_ID)).thenReturn(item(USER_ID, ItemStatusEnum.ACTIVE));
 
         assertFalse(favouriteService.addFavourite(USER_ID, ITEM_ID));
     }
@@ -76,7 +74,7 @@ public class FavouriteServiceImplTest {
         var searchResult = new SearchResult<Item>(List.of(), 0);
         when(favouriteDao.listFavourites(any())).thenReturn(searchResult);
 
-        var result = favouriteService.listFavourites(USER_ID, null, null, null, 1, 10, null);
+        var result = favouriteService.listFavourites(USER_ID, null, 1, 10, null);
 
         assertNotNull(result);
         assertEquals(0, result.getTotalItems());

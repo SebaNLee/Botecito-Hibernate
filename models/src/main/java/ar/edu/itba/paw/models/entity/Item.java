@@ -66,6 +66,7 @@ public class Item {
     @Transient
     private PageModel<Review> reviewPage;
 
+    // TODO: See if it can be removed if we use the PageModel
     @Transient
     private long totalReviews;
 

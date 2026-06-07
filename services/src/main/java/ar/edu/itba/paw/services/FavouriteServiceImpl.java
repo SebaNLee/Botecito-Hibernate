@@ -6,7 +6,6 @@ import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.persistence.FavouriteDao;
-import ar.edu.itba.paw.persistence.ItemDao;
 import java.util.Collection;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +23,12 @@ public class FavouriteServiceImpl implements FavouriteService {
     private static final Logger LOGGER = LoggerFactory.getLogger(FavouriteServiceImpl.class);
 
     private final FavouriteDao favouriteDao;
-    private final ItemDao itemDao;
+    private final ItemService itemService;
 
     @Override
     @Transactional
     public boolean addFavourite(final int userId, final int itemId) {
-        final Item item = itemDao.findItemById(itemId).orElse(null);
+        final Item item = itemService.findItemById(itemId);
         if (!canFavourite(userId, item)) {
             return false;
         }
@@ -61,20 +60,12 @@ public class FavouriteServiceImpl implements FavouriteService {
     @Override
     @Transactional(readOnly = true)
     public PageModel<Item> listFavourites(
-            final int userId,
-            final String searchQuery,
-            final String status,
-            final String location,
-            final int page,
-            final int pageSize,
-            final String sortBy) {
+            final int userId, final String searchQuery, final int page, final int pageSize, final String sortBy) {
         final int safePage = Math.max(1, page);
         final int safePageSize = pageSize > 0 ? Math.min(pageSize, 18) : DEFAULT_PAGE_SIZE;
         final FavouritesQueryModel query = FavouritesQueryModel.builder()
                 .userId(userId)
                 .searchQuery(searchQuery)
-                .status(status)
-                .locationSlug(location)
                 .page(safePage)
                 .pageSize(safePageSize)
                 .sortBy(sortBy)

@@ -9,7 +9,7 @@ import java.util.Optional;
 public interface ItemService {
 
     SearchResult<Item> listOwnerItems(
-            int ownerId, String searchQuery, String status, String location, int page, int pageSize, String sortBy);
+            int ownerId, String searchQuery, String status, int page, int pageSize, String sortBy);
 
     Item findItemById(int id);
 
@@ -23,4 +23,8 @@ public interface ItemService {
 
     // Rellena todos los datos que puede necesitar una version
     Version requireOwnedFullData(int itemId, int userId);
+
+    int getVersionCount(int itemId);
+
+    void deleteItem(Item item, boolean soft);
 }

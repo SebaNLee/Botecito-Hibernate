@@ -1,5 +1,10 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.services.BookingService;
+import ar.edu.itba.paw.services.ItemService;
+import ar.edu.itba.paw.services.ManageItemService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.MyBoatsSearchForm;
 import ar.edu.itba.paw.webapp.form.SaveSelfBlocksForm;
@@ -24,6 +29,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class MyBoatsController {
 
+    private final ItemService itemService;
+    private final ManageItemService manageItemService;
+    private final BookingService bookingService;
     private final MyBoatsPresentation myBoatsPresentation;
     private final MyBoatsActionsPresentation myBoatsActionsPresentation;
     private final AvailabilityPresentation availabilityPresentation;
@@ -44,9 +52,13 @@ public class MyBoatsController {
             @Valid @ModelAttribute("myBoatsSearch") final MyBoatsSearchForm search,
             final BindingResult errors) {
         if (errors.hasErrors()) {
-            return myBoatsPresentation.myBoatsErrors(user, request, search, errors);
+            return myBoatsPresentation.myBoatsErrors(request, search, errors);
         }
-        return myBoatsPresentation.myBoatsList(user, request, search);
+        final int page = search.getPage() == null ? 1 : search.getPage();
+        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
+        final SearchResult<Item> result = itemService.listOwnerItems(
+                user.getId(), search.getSearchQuery(), search.getStatus(), page, pageSize, search.getSortBy());
+        return myBoatsPresentation.myBoatsList(request, search, result.getPageElements(), result.getTotalCount());
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/disable", method = RequestMethod.POST)
@@ -54,7 +66,8 @@ public class MyBoatsController {
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
             final RedirectAttributes redirectAttributes) {
-        return myBoatsActionsPresentation.disablePublication(user, itemId, redirectAttributes);
+        manageItemService.setEnabled(itemId, user.getId(), false);
+        return myBoatsActionsPresentation.disablePublicationResult(redirectAttributes);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/enable", method = RequestMethod.POST)
@@ -62,7 +75,8 @@ public class MyBoatsController {
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
             final RedirectAttributes redirectAttributes) {
-        return myBoatsActionsPresentation.enablePublication(user, itemId, redirectAttributes);
+        manageItemService.setEnabled(itemId, user.getId(), true);
+        return myBoatsActionsPresentation.enablePublicationResult(redirectAttributes);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/delete", method = RequestMethod.POST)
@@ -70,30 +84,39 @@ public class MyBoatsController {
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
             final RedirectAttributes redirectAttributes) {
-        return myBoatsActionsPresentation.hardDeletePublication(user, itemId, redirectAttributes);
+        manageItemService.deleteItem(itemId, user.getId());
+        return myBoatsActionsPresentation.hardDeletePublicationResult(redirectAttributes);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/availability", method = RequestMethod.GET)
     public ModelAndView manageAvailability(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
-            @RequestParam(value = "date", required = false) final String requestedDate,
-            @RequestParam(value = "return", required = false) final String returnParam,
-            final HttpServletRequest request,
-            final RedirectAttributes redirectAttributes) {
-        return availabilityPresentation.manageAvailabilityPage(
-                user, itemId, requestedDate, returnParam, request, redirectAttributes);
+            @RequestParam(value = "date", required = false) final String requestedDate) {
+        final var model = bookingService.getSelfBlocks(
+                itemId, user.getId(), AvailabilityPresentation.parseRequestedDate(requestedDate));
+        return availabilityPresentation.manageAvailabilityPage(model);
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/availability/save", method = RequestMethod.POST)
     public ModelAndView saveSelfBlocks(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("id") final int itemId,
-            @RequestParam(value = "return", required = false) final String returnParam,
             @Valid @ModelAttribute final SaveSelfBlocksForm saveSelfBlocksForm,
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
-        return availabilityPresentation.saveSelfBlocks(
-                user, itemId, returnParam, saveSelfBlocksForm, errors, redirectAttributes);
+        if (errors.hasErrors()) {
+            final var model = bookingService.getSelfBlocks(itemId, user.getId(), saveSelfBlocksForm.getDate());
+            return availabilityPresentation.saveSelfBlocksErrors(model, errors);
+        }
+        bookingService.saveSelfBlockChanges(
+                itemId,
+                user.getId(),
+                saveSelfBlocksForm.getDate(),
+                saveSelfBlocksForm.deletedBlockIds(),
+                saveSelfBlocksForm.updates(),
+                saveSelfBlocksForm.creates());
+        return availabilityPresentation.saveSelfBlocksSuccess(
+                itemId, saveSelfBlocksForm.getDate().toString(), redirectAttributes);
     }
 }

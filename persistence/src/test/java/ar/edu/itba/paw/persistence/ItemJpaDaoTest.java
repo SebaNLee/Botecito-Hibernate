@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import ar.edu.itba.paw.models.dto.MyBoatsQueryModel;
 import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -112,5 +114,55 @@ public class ItemJpaDaoTest {
 
         assertTrue(found.isPresent());
         assertEquals(item.getId(), found.get().getId());
+    }
+
+    @Test
+    public void testGetVersionCount() {
+        Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        insertVersion(
+                em, item, itemType, location, "Version 1", BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now());
+        insertVersion(
+                em,
+                item,
+                itemType,
+                location,
+                "Version 2",
+                BigDecimal.valueOf(150),
+                4,
+                200,
+                2,
+                LocalDateTime.now().plusDays(1));
+        em.flush();
+
+        int count = itemDao.getVersionCount(item.getId());
+
+        assertEquals(2, count);
+    }
+
+    @Test
+    public void testDeleteItem() {
+        Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        em.flush();
+        int itemId = item.getId();
+
+        Item managed = em.find(Item.class, itemId);
+        itemDao.deleteItem(managed);
+        em.flush();
+
+        assertNull(em.find(Item.class, itemId));
+    }
+
+    @Test
+    public void testDeleteVersion() {
+        Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        Version v = insertVersion(em, item, itemType, location, "Boat");
+        em.flush();
+        int versionId = v.getId();
+
+        Version managed = em.find(Version.class, versionId);
+        itemDao.deleteVersion(managed);
+        em.flush();
+
+        assertNull(em.find(Version.class, versionId));
     }
 }

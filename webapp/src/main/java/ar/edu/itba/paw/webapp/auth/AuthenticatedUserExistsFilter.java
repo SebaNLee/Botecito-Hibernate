@@ -10,8 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.logout.CompositeLogoutHandler;
-import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -26,17 +24,18 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class AuthenticatedUserExistsFilter extends OncePerRequestFilter {
 
     private static final String LOGIN_REDIRECT = "/login?sessionExpired=true";
-    private static final String REMEMBER_ME_COOKIE = "remember-me";
 
     private final UserService userService;
-    private final CompositeLogoutHandler logoutHandler = createLogoutHandler();
+    private final SecurityContextLogoutHandler logoutHandler = createLogoutHandler();
 
-    private static CompositeLogoutHandler createLogoutHandler() {
+    // The remember-me cookie is not cleared here on purpose: on the redirect to the login page
+    // RememberMeAuthenticationFilter re-runs autoLogin, fails because the user no longer exists,
+    // and Spring's TokenBasedRememberMeServices cancels the cookie itself.
+    private static SecurityContextLogoutHandler createLogoutHandler() {
         final SecurityContextLogoutHandler securityContextLogoutHandler = new SecurityContextLogoutHandler();
         securityContextLogoutHandler.setInvalidateHttpSession(true);
         securityContextLogoutHandler.setClearAuthentication(true);
-        return new CompositeLogoutHandler(
-                securityContextLogoutHandler, new CookieClearingLogoutHandler(REMEMBER_ME_COOKIE));
+        return securityContextLogoutHandler;
     }
 
     @Override

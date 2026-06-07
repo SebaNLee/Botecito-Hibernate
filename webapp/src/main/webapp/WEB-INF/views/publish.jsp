@@ -71,7 +71,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 <spring:message code="page.title.publish" var="titlePublish" />
 <paw:layout
   title="${titlePublish} - Botecito"
-  mainClass="pt-24 pb-14 max-w-3xl mx-auto px-6"
+  mainClass="pt-24 pb-14 w-full max-w-6xl mx-auto px-6"
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"
   headerCtaVariant="rent"
@@ -80,7 +80,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
   <div
     data-publish-wizard-root="step1"
     data-publish-wizard-step1-form="true"
-    class="max-w-3xl"
+    class="w-full"
   >
     <div class="mb-8">
       <a
@@ -88,7 +88,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
         class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit"
       >
         <span class="material-symbols-outlined">arrow_back</span>
-        <span><spring:message code="common.back" /></span>
+        <span><spring:message code="manageAvailability.back.myBoats" /></span>
       </a>
     </div>
 

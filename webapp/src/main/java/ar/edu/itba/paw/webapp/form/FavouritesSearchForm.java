@@ -14,12 +14,6 @@ public class FavouritesSearchForm {
     @Size(max = 100, message = "{favourites.search.validation.searchQuery.size}")
     private String searchQuery;
 
-    @Pattern(regexp = "^$|^(ACTIVE|INACTIVE)$", message = "{favourites.search.validation.status.pattern}")
-    private String status;
-
-    @Size(max = 100)
-    private String location;
-
     @Pattern(regexp = "^$|^(newest|oldest|nameAsc|nameDesc)$", message = "{favourites.search.validation.sort.pattern}")
     private String sortBy;
 

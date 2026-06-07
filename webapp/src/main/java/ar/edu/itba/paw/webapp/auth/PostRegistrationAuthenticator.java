@@ -2,69 +2,50 @@ package ar.edu.itba.paw.webapp.auth;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.authentication.event.InteractiveAuthenticationSuccessEvent;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Component;
 
+/**
+ * Logs in a user after email verification (no password submitted), mirroring the success sequence of
+ * {@link org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter}.
+ */
 @Component
 @RequiredArgsConstructor
 public class PostRegistrationAuthenticator {
 
-    private static final SecurityContextRepository SECURITY_CONTEXT_REPOSITORY =
-            new HttpSessionSecurityContextRepository();
+    private final SecurityContextHolderStrategy securityContextHolderStrategy =
+            SecurityContextHolder.getContextHolderStrategy();
+    private final SessionAuthenticationStrategy sessionAuthenticationStrategy =
+            new ChangeSessionIdAuthenticationStrategy();
 
-    private final AuthenticationManager authenticationManager;
     private final UserAccountDetailsService userAccountDetailsService;
-
-    public boolean authenticate(
-            final String email,
-            final String rawPassword,
-            final HttpServletRequest request,
-            final HttpServletResponse response) {
-        final UsernamePasswordAuthenticationToken requestToken =
-                new UsernamePasswordAuthenticationToken(email, rawPassword);
-        requestToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-        final Authentication authentication;
-        try {
-            authentication = authenticationManager.authenticate(requestToken);
-        } catch (final AuthenticationException exception) {
-            SecurityContextHolder.clearContext();
-            final HttpSession existingSession = request.getSession(false);
-            if (existingSession != null) {
-                existingSession.removeAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
-            }
-            return false;
-        }
-
-        final SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
-
-        SECURITY_CONTEXT_REPOSITORY.saveContext(context, request, response);
-        return true;
-    }
+    private final SecurityContextRepository securityContextRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public void authenticateVerifiedUser(
             final String email, final HttpServletRequest request, final HttpServletResponse response) {
         final BotecitoUserDetails userDetails = userAccountDetailsService.loadUserByEmail(email);
-        final UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+        final UsernamePasswordAuthenticationToken authentication = UsernamePasswordAuthenticationToken.authenticated(
                 userDetails, userDetails.getPassword(), userDetails.getAuthorities());
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-        final SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
+        sessionAuthenticationStrategy.onAuthentication(authentication, request, response);
 
-        SECURITY_CONTEXT_REPOSITORY.saveContext(context, request, response);
+        final SecurityContext context = securityContextHolderStrategy.createEmptyContext();
+        context.setAuthentication(authentication);
+        securityContextHolderStrategy.setContext(context);
+        securityContextRepository.saveContext(context, request, response);
+
+        eventPublisher.publishEvent(new InteractiveAuthenticationSuccessEvent(authentication, getClass()));
     }
 }

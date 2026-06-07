@@ -11,7 +11,7 @@
       <a class="link link-hover text-on-surface-variant" href="<c:url value='/' />">
         <spring:message code="nav.home" />
       </a>
-      <a class="link link-hover text-on-surface-variant" href="<c:url value='/marketplace' />">
+      <a class="link link-hover text-on-surface-variant" href="<c:url value='/marketplace' />" data-nav-filter-page="marketplace">
         <spring:message code="nav.marketplace" />
       </a>
       <a class="link link-hover text-on-surface-variant" href="<c:url value='/publish' />">

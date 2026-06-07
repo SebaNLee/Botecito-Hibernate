@@ -1,7 +1,12 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.services.DetailService;
+import ar.edu.itba.paw.services.ReportService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ReportForm;
+import ar.edu.itba.paw.webapp.presentation.DetailPageFlags;
+import ar.edu.itba.paw.webapp.presentation.DetailPresentation;
 import ar.edu.itba.paw.webapp.presentation.ReportPresentation;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -19,6 +24,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class ReportController {
 
+    private final DetailService detailService;
+    private final ReportService reportService;
+    private final DetailPageFlagsFactory detailPageFlagsFactory;
+    private final DetailPresentation detailPresentation;
     private final ReportPresentation reportPresentation;
 
     @RequestMapping(value = "/item/{id:[1-9]\\d*}/report", method = RequestMethod.POST)
@@ -30,8 +39,11 @@ public class ReportController {
             final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
         if (errors.hasErrors()) {
-            return reportPresentation.detailWithReportValidationErrors(itemId, user, request, form, errors);
+            final Item item = detailService.getItemDetail(itemId, 1);
+            final DetailPageFlags flags = detailPageFlagsFactory.compute(item, user);
+            return detailPresentation.detailPageWithReportValidationErrors(item, user, flags, request, form, errors);
         }
-        return reportPresentation.submitReport(itemId, user, form, request, redirectAttributes);
+        reportService.createReport(itemId, user.getId(), form.getReason(), form.getDescription());
+        return reportPresentation.submitReportResult(itemId, redirectAttributes);
     }
 }

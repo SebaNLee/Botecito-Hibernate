@@ -12,7 +12,7 @@ public class PasswordRecoveryRequestForm {
 
     @NotBlank(message = "{passwordRecovery.request.validation.email.required}")
     @Email(message = "{passwordRecovery.request.validation.email.invalid}")
-    @Size(max = 150, message = "{passwordRecovery.request.validation.email.max}")
+    @Size(max = 100, message = "{passwordRecovery.request.validation.email.max}")
     private String email;
 
     private String sent;

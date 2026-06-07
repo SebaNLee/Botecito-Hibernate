@@ -32,7 +32,7 @@
         </c:if>
 
         <form:form action="${passwordRecoveryUrl}" method="post" modelAttribute="passwordRecoveryRequestForm" class="space-y-4">
-          <paw:formField path="email" type="email" label="${emailLabel}" placeholder="${emailPlaceholder}" />
+          <paw:formField path="email" type="email" label="${emailLabel}" placeholder="${emailPlaceholder}" maxlength="100" />
           <paw:button type="submit" fullWidth="true" color="primary" text="${submitLabel}" />
         </form:form>
 

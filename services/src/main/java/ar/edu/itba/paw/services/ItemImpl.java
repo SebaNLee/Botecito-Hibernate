@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.dto.MyBoatsQueryModel;
 import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
@@ -26,12 +27,11 @@ public class ItemImpl implements ItemService {
     @Override
     @Transactional(readOnly = true)
     public SearchResult<Item> listOwnerItems(
-            int ownerId, String searchQuery, String status, String location, int page, int pageSize, String sortBy) {
+            int ownerId, String searchQuery, String status, int page, int pageSize, String sortBy) {
         final MyBoatsQueryModel query = MyBoatsQueryModel.builder()
                 .ownerId(ownerId)
                 .searchQuery(searchQuery)
                 .status(status)
-                .locationSlug(location)
                 .page(page)
                 .pageSize(pageSize)
                 .sortBy(sortBy)
@@ -86,5 +86,27 @@ public class ItemImpl implements ItemService {
         LOGGER.debug("Force-loading {} availabilities and {} media references.", avail.size(), media.size());
 
         return version;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int getVersionCount(int itemId) {
+        return itemDao.getVersionCount(itemId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteItem(Item item, boolean soft) {
+        if (soft) {
+            applySoftDelete(item);
+            return;
+        } else {
+            itemDao.deleteItem(item);
+        }
+    }
+
+    private void applySoftDelete(final Item item) {
+        item.setStatus(ItemStatusEnum.DELETED);
+        itemDao.deleteVersion(item.getLatestVersion());
     }
 }

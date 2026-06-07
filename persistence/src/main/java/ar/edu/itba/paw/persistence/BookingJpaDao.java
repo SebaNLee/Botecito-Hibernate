@@ -45,6 +45,18 @@ public class BookingJpaDao implements BookingDao {
         em.persist(booking);
     }
 
+    @Override
+    public boolean itemHasBookings(final Item item) {
+        final Integer versionId = item.getLatestVersion().getId();
+        if (versionId == null) {
+            return false;
+        }
+        final Long count = em.createQuery("SELECT COUNT(b) FROM Booking b WHERE b.version.id = :versionId", Long.class)
+                .setParameter("versionId", versionId)
+                .getSingleResult();
+        return count != null && count > 0;
+    }
+
     private boolean wouldCollide(final Booking booking, final EnumSet<BookingStatusEnum> blockingStates) {
         String jpql =
                 "SELECT COUNT(b) > 0 FROM Booking b WHERE b.version.item = :item AND b.start <= :requestedEnd AND :requestedStart <= b.end AND b.status IN :blockingStates";

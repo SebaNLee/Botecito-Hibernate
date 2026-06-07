@@ -1,7 +1,11 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.services.BookingService;
+import ar.edu.itba.paw.services.DetailService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PreBookingForm;
+import ar.edu.itba.paw.webapp.presentation.DetailPageFlags;
 import ar.edu.itba.paw.webapp.presentation.DetailPresentation;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
@@ -21,6 +25,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class DetailController {
 
+    private final DetailService detailService;
+    private final BookingService bookingService;
+    private final DetailPageFlagsFactory detailPageFlagsFactory;
     private final DetailPresentation detailPresentation;
 
     @RequestMapping(value = "/item/{id:[1-9]\\d*}", method = RequestMethod.GET)
@@ -29,7 +36,9 @@ public class DetailController {
             @AuthenticationPrincipal final BotecitoUserDetails user,
             final HttpServletRequest request,
             @RequestParam(value = "reviewPage", defaultValue = "1") final int reviewPage) {
-        return detailPresentation.detailPage(itemId, user, request, reviewPage);
+        final Item item = detailService.getItemDetail(itemId, reviewPage);
+        final DetailPageFlags flags = detailPageFlagsFactory.compute(item, user);
+        return detailPresentation.detailPage(item, user, flags, request);
     }
 
     @RequestMapping(value = "/item/{id:[1-9]\\d*}", method = RequestMethod.POST)
@@ -41,8 +50,12 @@ public class DetailController {
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
         if (errors.hasErrors()) {
-            return detailPresentation.detailPageWithPreBookingValidationErrors(itemId, user, request, errors, 1);
+            final Item item = detailService.getItemDetail(itemId, 1);
+            final DetailPageFlags flags = detailPageFlagsFactory.compute(item, user);
+            return detailPresentation.detailPageWithPreBookingValidationErrors(item, user, flags, request, errors);
         }
-        return detailPresentation.submitPreBooking(user, itemId, form, request, redirectAttributes);
+        bookingService.createBooking(
+                itemId, form.getDate(), form.getStartTime(), form.getEndTime(), form.getMessage(), user.getId());
+        return detailPresentation.submitPreBookingSuccess(itemId, redirectAttributes);
     }
 }

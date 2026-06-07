@@ -1,9 +1,15 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.services.SubscriptionService;
+import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
+import ar.edu.itba.paw.webapp.auth.SecurityContextRefresher;
 import ar.edu.itba.paw.webapp.form.SettingsForm;
 import ar.edu.itba.paw.webapp.presentation.SettingsPresentation;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,11 +25,15 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class SettingsController {
 
+    private final UserService userService;
+    private final SubscriptionService subscriptionService;
+    private final SecurityContextRefresher securityContextRefresher;
     private final SettingsPresentation settingsPresentation;
 
     @RequestMapping(value = "/settings/password-recovery", method = RequestMethod.POST)
     public ModelAndView settingsPasswordRecoveryRequest(@AuthenticationPrincipal final BotecitoUserDetails user) {
-        return settingsPresentation.settingsPasswordRecoveryRequest(user);
+        userService.requestPasswordRecovery(user.getEmail());
+        return settingsPresentation.passwordRecoverySentRedirect();
     }
 
     @RequestMapping(value = "/settings", method = RequestMethod.GET)
@@ -33,7 +43,10 @@ public class SettingsController {
             @RequestParam(value = "subscriptionsPage", defaultValue = "1") final int subscriptionsPage,
             @RequestParam(value = "subscriptionsPageSize", defaultValue = "6") final int subscriptionsPageSize,
             @ModelAttribute("settingsForm") final SettingsForm form) {
-        return settingsPresentation.settings(user, edit, subscriptionsPage, subscriptionsPageSize, form);
+        final Users currentUser = userService.findById(user.getId()).orElseThrow();
+        final PageModel<Users> subscriptions =
+                listSubscriptions(user.getId(), subscriptionsPage, subscriptionsPageSize);
+        return settingsPresentation.settingsView(currentUser, form, edit, subscriptions);
     }
 
     @RequestMapping(value = "/settings", method = RequestMethod.POST)
@@ -43,8 +56,46 @@ public class SettingsController {
             final BindingResult errors,
             @RequestParam(value = "subscriptionsPage", defaultValue = "1") final int subscriptionsPage,
             @RequestParam(value = "subscriptionsPageSize", defaultValue = "6") final int subscriptionsPageSize,
-            final HttpServletRequest request) {
+            final HttpServletRequest request,
+            final HttpServletResponse response) {
         request.getSession().removeAttribute("userLocale");
-        return settingsPresentation.settingsSubmit(user, form, errors, subscriptionsPage, subscriptionsPageSize);
+
+        final Users currentUser = userService.findById(user.getId()).orElseThrow();
+        final PageModel<Users> subscriptions =
+                listSubscriptions(user.getId(), subscriptionsPage, subscriptionsPageSize);
+
+        if (errors.hasErrors()) {
+            return settingsPresentation.settingsEditView(currentUser, subscriptions);
+        }
+
+        final Users updatedUser = userService
+                .updateProfile(
+                        currentUser.getId(),
+                        form.getGivenName(),
+                        form.getLastName(),
+                        form.getEmail(),
+                        form.getPhone(),
+                        form.getPaymentAlias(),
+                        form.getPreferredLanguage())
+                .orElse(null);
+        if (updatedUser == null) {
+            errors.rejectValue("email", "settings.validation.email.duplicate");
+            return settingsPresentation.settingsEditView(currentUser, subscriptions);
+        }
+
+        if (!updatedUser.getEmail().equalsIgnoreCase(currentUser.getEmail())) {
+            securityContextRefresher.refreshPrincipal(updatedUser.getEmail(), request, response);
+        }
+        if (updatedUser.getVerified() == null || !updatedUser.getVerified()) {
+            return settingsPresentation.settingsVerificationSentRedirect();
+        }
+        return settingsPresentation.settingsUpdatedRedirect();
+    }
+
+    private PageModel<Users> listSubscriptions(
+            final int userId, final int subscriptionsPage, final int subscriptionsPageSize) {
+        final int safeSubscriptionsPage = Math.max(1, subscriptionsPage);
+        final int safeSubscriptionsPageSize = Math.max(1, subscriptionsPageSize);
+        return subscriptionService.listSubscriptions(userId, safeSubscriptionsPage, safeSubscriptionsPageSize);
     }
 }

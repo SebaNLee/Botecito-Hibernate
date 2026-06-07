@@ -69,7 +69,7 @@ public class ItemImplTest {
         SearchResult<Item> expected = new SearchResult<>(List.of(), 0L);
         when(itemDao.listOwnerItems(any())).thenReturn(expected);
 
-        SearchResult<Item> result = itemService.listOwnerItems(USER_ID, null, null, null, PAGE, PAGE_SIZE, null);
+        SearchResult<Item> result = itemService.listOwnerItems(USER_ID, null, null, PAGE, PAGE_SIZE, null);
 
         assertNotNull(result);
         assertEquals(expected.getPageElements(), result.getPageElements());

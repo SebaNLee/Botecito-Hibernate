@@ -1,5 +1,9 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.entity.Report;
+import ar.edu.itba.paw.services.ReportService;
 import ar.edu.itba.paw.webapp.form.AdminReportsSearchForm;
 import ar.edu.itba.paw.webapp.presentation.AdminReportsPresentation;
 import javax.validation.Valid;
@@ -17,6 +21,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class AdminReportsController {
 
+    private final ReportService reportService;
     private final AdminReportsPresentation adminReportsPresentation;
 
     @ModelAttribute("adminReportsSearch")
@@ -32,7 +37,17 @@ public class AdminReportsController {
     public ModelAndView listReports(
             @Valid @ModelAttribute("adminReportsSearch") final AdminReportsSearchForm search,
             final BindingResult errors) {
-        return adminReportsPresentation.listReports(search, errors);
+        if (errors.hasErrors()) {
+            return adminReportsPresentation.listReportsErrors(search, errors);
+        }
+        final int page = search.getPage() == null ? 1 : search.getPage();
+        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
+        final String sortBy =
+                search.getSortBy() == null || search.getSortBy().isBlank() ? "newest" : search.getSortBy();
+        final SearchResult<Report> result = reportService.searchReports(page, pageSize, sortBy);
+        final PageModel<Report> reportPage =
+                new PageModel<>(result.getPageElements(), page, pageSize, (int) result.getTotalCount());
+        return adminReportsPresentation.listReports(search, reportPage);
     }
 
     @RequestMapping(value = "/admin/reports/{id:[1-9]\\d*}/dismiss", method = RequestMethod.POST)
@@ -40,7 +55,8 @@ public class AdminReportsController {
             @PathVariable("id") final int reportId,
             @ModelAttribute("adminReportsSearch") final AdminReportsSearchForm search,
             final RedirectAttributes redirectAttributes) {
-        return adminReportsPresentation.dismissReport(reportId, search, redirectAttributes);
+        reportService.dismissReport(reportId);
+        return adminReportsPresentation.dismissReportResult(search, redirectAttributes);
     }
 
     @RequestMapping(value = "/admin/reports/{id:[1-9]\\d*}/delete-publication", method = RequestMethod.POST)
@@ -48,6 +64,7 @@ public class AdminReportsController {
             @PathVariable("id") final int reportId,
             @ModelAttribute("adminReportsSearch") final AdminReportsSearchForm search,
             final RedirectAttributes redirectAttributes) {
-        return adminReportsPresentation.deletePublicationForReport(reportId, search, redirectAttributes);
+        reportService.deletePublicationForReport(reportId);
+        return adminReportsPresentation.deletePublicationForReportResult(search, redirectAttributes);
     }
 }

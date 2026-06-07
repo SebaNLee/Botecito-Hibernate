@@ -1,11 +1,7 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.PageModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Item;
-import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.SelectorsService;
-import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.MyBoatsSearchForm;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,36 +20,20 @@ public class MyBoatsPresentation {
     private static final String PLACEHOLDER_IMAGE_PATH = "/css/boat-placeholder.svg";
     private static final String MESSAGE_PREFIX = "myBoats";
 
-    private final ItemService itemService;
     private final ToastPresentation toastPresentation;
-    private final SelectorsService selectorsService;
 
     public ModelAndView myBoatsList(
-            final BotecitoUserDetails principal, final HttpServletRequest request, final MyBoatsSearchForm search) {
-        final int page = search.getPage() == null ? 1 : search.getPage();
-        final int pageSize = search.getPageSize() == null ? 12 : search.getPageSize();
-
-        final SearchResult<Item> result = itemService.listOwnerItems(
-                principal.getId(),
-                search.getSearchQuery(),
-                search.getStatus(),
-                search.getLocation(),
-                page,
-                pageSize,
-                search.getSortBy());
-        final List<Item> ownedItems = result.getPageElements();
-
+            final HttpServletRequest request,
+            final MyBoatsSearchForm search,
+            final List<Item> ownedItems,
+            final long totalCount) {
         final ModelAndView mav = new ModelAndView("my-boats", "myBoatsSearch", search);
-        addListingModelObjects(mav, search, ownedItems, result.getTotalCount(), request);
-        mav.addObject("locationOptions", selectorsService.getLocationOptions());
+        addListingModelObjects(mav, search, ownedItems, totalCount, request);
         return mav;
     }
 
     public ModelAndView myBoatsErrors(
-            final BotecitoUserDetails principal,
-            final HttpServletRequest request,
-            final MyBoatsSearchForm search,
-            final BindingResult errors) {
+            final HttpServletRequest request, final MyBoatsSearchForm search, final BindingResult errors) {
         final List<Item> ownedItems = List.of();
         final ModelAndView mav = new ModelAndView("my-boats", "myBoatsSearch", search);
         mav.addAllObjects(errors.getModel());
@@ -62,7 +42,6 @@ public class MyBoatsPresentation {
         mav.addObject("imageUrlsByItemId", new LinkedHashMap<>());
         mav.addObject("itemPage", new PageModel<>(ownedItems, 1, 12, 0));
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
-        mav.addObject("locationOptions", selectorsService.getLocationOptions());
         return mav;
     }
 

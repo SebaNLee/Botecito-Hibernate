@@ -26,6 +26,8 @@ public interface BookingService {
             Integer pageSize,
             String sortBy);
 
+    Booking findById(int bookingId);
+
     List<Booking> getUpcomingBookings(Item item);
 
     void acceptBooking(int bookingId, int callerId);
@@ -58,6 +60,12 @@ public interface BookingService {
             List<Integer> deletedBlockIds,
             List<SelfBlockUpdate> updates,
             List<SelfBlockCreate> creates);
+
+    boolean itemHasBookings(Item item);
+
+    boolean itemHasBookings(int itemId);
+
+    void deleteAllSelfBlocks(Item item);
 
     // cron job
     void bookingResolutionRoutine();

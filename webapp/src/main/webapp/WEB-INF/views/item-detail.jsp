@@ -28,7 +28,6 @@
 <spring:message code="favourite.loginToAdd" var="favouriteLoginToAddLabel" />
 <spring:message code="itemDetail.reviews.title" var="itemReviewsTitle" />
 <spring:message code="itemDetail.reviews.empty" var="itemReviewsEmpty" />
-<spring:message code="itemDetail.reviews.count" var="itemReviewsCountLabel" />
 <spring:message code="reviews.empty.short" var="reviewsEmptyShortLabel" />
 <spring:message code="itemDetail.description.empty" var="itemDescriptionEmptyLabel" />
 <spring:message code="detail.preBooking.subtitle" var="detailPreBookingSubtitle" />
@@ -150,21 +149,28 @@
               <div class="flex items-center gap-2 text-lg font-black text-on-surface">
                 <span class="material-symbols-outlined icon-star-filled">star</span>
                 <c:choose>
-                  <c:when test="${totalReviews > 0}">
-                    <fmt:formatNumber value="${averageRating}" minFractionDigits="1" maxFractionDigits="1" />
+                  <c:when test="${itemReviewPage.page.totalItems > 0}">
+                    <fmt:formatNumber value="${itemReviewPage.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
                   </c:when>
                   <c:otherwise><c:out value="${reviewsEmptyShortLabel}" /></c:otherwise>
                 </c:choose>
               </div>
               <p class="m-0 text-xs text-on-surface-variant">
-                <spring:message code="itemDetail.reviews.count" arguments="${totalReviews}" />
+                <c:choose>
+                  <c:when test="${itemReviewPage.page.totalItems == 1}">
+                    <spring:message code="itemDetail.reviews.count.singular" />
+                  </c:when>
+                  <c:otherwise>
+                    <spring:message code="itemDetail.reviews.count.plural" arguments="${itemReviewPage.page.totalItems}" />
+                  </c:otherwise>
+                </c:choose>
               </p>
             </div>
 
             <c:choose>
-              <c:when test="${not empty reviewPage.content}">
+              <c:when test="${not empty itemReviewPage.page.content}">
                 <div class="space-y-3">
-                  <c:forEach items="${reviewPage.content}" var="review">
+                  <c:forEach items="${itemReviewPage.page.content}" var="review">
                     <paw:reviewCard review="${review}" reviewDate="${reviewDatesById[review.id]}" showReviewer="false" anonymousLabel="${detailReviewAnonymousLabel}" />
                   </c:forEach>
                 </div>
@@ -174,43 +180,20 @@
               </c:otherwise>
             </c:choose>
 
-            <c:if test="${reviewPage.totalPages > 1}">
-              <div class="flex items-center justify-between gap-3 pt-2">
-                <c:url var="reviewPrevUrl" value="/item/${item.id}">
-                  <c:param name="page" value="${reviewPage.previousPage}" />
-                </c:url>
-                <c:url var="reviewNextUrl" value="/item/${item.id}">
-                  <c:param name="page" value="${reviewPage.nextPage}" />
-                </c:url>
-                <c:choose>
-                  <c:when test="${reviewPage.hasPrevious}">
-                    <a href="${reviewPrevUrl}" class="btn btn-outline btn-xs no-underline">
-                      <spring:message code="marketplace.pagination.previous" />
-                    </a>
-                  </c:when>
-                  <c:otherwise>
-                    <span class="btn btn-outline btn-xs btn-disabled">
-                      <spring:message code="marketplace.pagination.previous" />
-                    </span>
-                  </c:otherwise>
-                </c:choose>
-                <span class="text-xs text-on-surface-variant">
-                  <spring:message code="marketplace.pagination.page" arguments="${reviewPage.page},${reviewPage.totalPages}" />
-                </span>
-                <c:choose>
-                  <c:when test="${reviewPage.hasNext}">
-                    <a href="${reviewNextUrl}" class="btn btn-outline btn-xs no-underline">
-                      <spring:message code="marketplace.pagination.next" />
-                    </a>
-                  </c:when>
-                  <c:otherwise>
-                    <span class="btn btn-outline btn-xs btn-disabled">
-                      <spring:message code="marketplace.pagination.next" />
-                    </span>
-                  </c:otherwise>
-                </c:choose>
-              </div>
-            </c:if>
+            <c:url var="reviewPreviousPageUrl" value="/item/${item.id}">
+              <c:param name="page" value="${itemReviewPage.page.previousPage}" />
+            </c:url>
+            <c:url var="reviewNextPageUrl" value="/item/${item.id}">
+              <c:param name="page" value="${itemReviewPage.page.nextPage}" />
+            </c:url>
+            <paw:pagination
+                currentPage="${itemReviewPage.page.page}"
+                totalPages="${itemReviewPage.page.totalPages}"
+                hasPrevious="${itemReviewPage.page.hasPrevious}"
+                hasNext="${itemReviewPage.page.hasNext}"
+                previousPageUrl="${reviewPreviousPageUrl}"
+                nextPageUrl="${reviewNextPageUrl}"
+                navClass="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant" />
           </div>
         </jsp:body>
       </paw:sectionCard>

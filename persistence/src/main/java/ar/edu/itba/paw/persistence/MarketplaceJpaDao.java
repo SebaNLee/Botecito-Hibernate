@@ -2,6 +2,7 @@ package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
 import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.ReviewSummary;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.TargetEnum;
@@ -82,11 +83,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
 
         // Populate review transients for marketplace cards.
         for (final Item item : items) {
-            final long totalReviews = countReviewsForItem(item.getId());
-            if (totalReviews > 0) {
-                item.setTotalReviews(totalReviews);
-                item.setAverageRating(averageRatingForItem(item.getId()));
-            }
+            item.setReviewSummary(reviewSummaryForItem(item.getId()));
         }
 
         return new PageModel<>(items, query.getPage(), query.getPageSize(), totalCount);
@@ -239,6 +236,12 @@ public class MarketplaceJpaDao implements MarketplaceDao {
 
     private static boolean hasRequestedBookingRange(final MarketplaceQueryModel query) {
         return query.getRequestedDate() != null && query.getStartTime() != null && query.getEndTime() != null;
+    }
+
+    private ReviewSummary reviewSummaryForItem(final int itemId) {
+        final long totalReviews = countReviewsForItem(itemId);
+        final double averageRating = totalReviews > 0 ? averageRatingForItem(itemId) : 0.0;
+        return new ReviewSummary(totalReviews, averageRating);
     }
 
     private long countReviewsForItem(final int itemId) {

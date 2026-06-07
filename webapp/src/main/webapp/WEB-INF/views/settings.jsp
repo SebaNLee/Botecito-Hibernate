@@ -202,55 +202,28 @@
                     </div>
                   </c:forEach>
                 </div>
-                <c:if test="${subscriptionsPage.totalPages > 1}">
-                  <c:url var="subscriptionsPreviousPageUrl" value="/settings">
-                    <c:param name="page" value="${subscriptionsPage.previousPage}" />
-                    <c:param name="pageSize" value="${subscriptionsPage.pageSize}" />
-                    <c:if test="${settingsEdit}">
-                      <c:param name="edit" value="true" />
-                    </c:if>
-                  </c:url>
-                  <c:url var="subscriptionsNextPageUrl" value="/settings">
-                    <c:param name="page" value="${subscriptionsPage.nextPage}" />
-                    <c:param name="pageSize" value="${subscriptionsPage.pageSize}" />
-                    <c:if test="${settingsEdit}">
-                      <c:param name="edit" value="true" />
-                    </c:if>
-                  </c:url>
-                  <nav class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
-                    <c:choose>
-                      <c:when test="${subscriptionsPage.hasPrevious}">
-                        <a href="${subscriptionsPreviousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                          <span class="material-symbols-outlined text-sm">arrow_back</span>
-                          <spring:message code="marketplace.pagination.previous" />
-                        </a>
-                      </c:when>
-                      <c:otherwise>
-                        <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                          <span class="material-symbols-outlined text-sm">arrow_back</span>
-                          <spring:message code="marketplace.pagination.previous" />
-                        </span>
-                      </c:otherwise>
-                    </c:choose>
-                    <span>
-                      <spring:message code="marketplace.pagination.page" arguments="${subscriptionsPage.page},${subscriptionsPage.totalPages}" />
-                    </span>
-                    <c:choose>
-                      <c:when test="${subscriptionsPage.hasNext}">
-                        <a href="${subscriptionsNextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                          <spring:message code="marketplace.pagination.next" />
-                          <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                        </a>
-                      </c:when>
-                      <c:otherwise>
-                        <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                          <spring:message code="marketplace.pagination.next" />
-                          <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                        </span>
-                      </c:otherwise>
-                    </c:choose>
-                  </nav>
-                </c:if>
+                <c:url var="subscriptionsPreviousPageUrl" value="/settings">
+                  <c:param name="page" value="${subscriptionsPage.previousPage}" />
+                  <c:param name="pageSize" value="${subscriptionsPage.pageSize}" />
+                  <c:if test="${settingsEdit}">
+                    <c:param name="edit" value="true" />
+                  </c:if>
+                </c:url>
+                <c:url var="subscriptionsNextPageUrl" value="/settings">
+                  <c:param name="page" value="${subscriptionsPage.nextPage}" />
+                  <c:param name="pageSize" value="${subscriptionsPage.pageSize}" />
+                  <c:if test="${settingsEdit}">
+                    <c:param name="edit" value="true" />
+                  </c:if>
+                </c:url>
+                <paw:pagination
+                    currentPage="${subscriptionsPage.page}"
+                    totalPages="${subscriptionsPage.totalPages}"
+                    hasPrevious="${subscriptionsPage.hasPrevious}"
+                    hasNext="${subscriptionsPage.hasNext}"
+                    previousPageUrl="${subscriptionsPreviousPageUrl}"
+                    nextPageUrl="${subscriptionsNextPageUrl}"
+                    navClass="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant" />
               </c:otherwise>
             </c:choose>
           </section>

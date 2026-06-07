@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.models.entity;
 
-import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.ItemReviewPage;
+import ar.edu.itba.paw.models.dto.ReviewSummary;
 import java.time.LocalDateTime;
 import java.util.List;
 import javax.persistence.Column;
@@ -63,13 +64,16 @@ public class Item {
     @Transient
     private List<Booking> bookings;
 
-    @Transient
-    private PageModel<Review> reviewPage;
+    // Uso estos dos transients porque DetailPage necesita el contenido de la página
+    // y el promedio de rating
+    // Mientras que las cards (como en Marketplace) solo necesitan los valores de
+    // ReviewSummary.
+    // PageModel por si solo no lo resuelve de forma linda, traería una página que
+    // no usaría en marketplace y aún así me faltaría el promedio de rating.
 
-    // TODO: See if it can be removed if we use the PageModel
     @Transient
-    private long totalReviews;
+    private ItemReviewPage itemReviewPage;
 
     @Transient
-    private double averageRating;
+    private ReviewSummary reviewSummary;
 }

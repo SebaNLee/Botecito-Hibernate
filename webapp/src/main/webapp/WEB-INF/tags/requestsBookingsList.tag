@@ -523,23 +523,14 @@
         </c:otherwise>
       </c:choose>
 
-      <c:if test="${bookingPage.totalPages > 1}">
-        <nav class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
-          <c:choose>
-            <c:when test="${bookingPage.hasPrevious}">
-              <a href="${previousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2"><span class="material-symbols-outlined text-sm">arrow_back</span><spring:message code="marketplace.pagination.previous" /></a>
-            </c:when>
-            <c:otherwise><span class="btn btn-outline btn-sm btn-disabled gap-2"><span class="material-symbols-outlined text-sm">arrow_back</span><spring:message code="marketplace.pagination.previous" /></span></c:otherwise>
-          </c:choose>
-          <span><spring:message code="marketplace.pagination.page" arguments="${bookingPage.page},${bookingPage.totalPages}" /></span>
-          <c:choose>
-            <c:when test="${bookingPage.hasNext}">
-              <a href="${nextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2"><spring:message code="marketplace.pagination.next" /><span class="material-symbols-outlined text-sm">arrow_forward</span></a>
-            </c:when>
-            <c:otherwise><span class="btn btn-outline btn-sm btn-disabled gap-2"><spring:message code="marketplace.pagination.next" /><span class="material-symbols-outlined text-sm">arrow_forward</span></span></c:otherwise>
-          </c:choose>
-        </nav>
-      </c:if>
+      <paw:pagination
+          currentPage="${bookingPage.page}"
+          totalPages="${bookingPage.totalPages}"
+          hasPrevious="${bookingPage.hasPrevious}"
+          hasNext="${bookingPage.hasNext}"
+          previousPageUrl="${previousPageUrl}"
+          nextPageUrl="${nextPageUrl}"
+          navClass="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant" />
     </div>
   </section>
 </div>

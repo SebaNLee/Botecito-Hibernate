@@ -17,8 +17,6 @@
 <spring:message code="marketplace.empty.clear" var="filterEmptyClearLabel" />
 <spring:message code="subscription.subscribe" var="subscriptionSubscribeLabel" />
 <spring:message code="subscription.unsubscribe" var="subscriptionUnsubscribeLabel" />
-<spring:message code="marketplace.pagination.previous" var="paginationPreviousLabel" />
-<spring:message code="marketplace.pagination.next" var="paginationNextLabel" />
 <spring:message code="marketplace.sort.label" var="sortLabel" />
 <spring:message code="myBoats.sort.nameAsc" var="sortNameAscLabel" />
 <spring:message code="myBoats.sort.nameDesc" var="sortNameDescLabel" />
@@ -103,7 +101,14 @@
                           <fmt:formatNumber value="${averageRating}" type="number" minFractionDigits="1" maxFractionDigits="1" />
                         </span>
                         <span class="text-outline">
-                          (<spring:message code="profile.rating.reviewsCount" arguments="${reviewsPage.totalItems}" />)
+                          (<c:choose>
+                            <c:when test="${reviewsPage.totalItems == 1}">
+                              <spring:message code="profile.rating.reviewsCount.singular" />
+                            </c:when>
+                            <c:otherwise>
+                              <spring:message code="profile.rating.reviewsCount.plural" arguments="${reviewsPage.totalItems}" />
+                            </c:otherwise>
+                          </c:choose>)
                         </span>
                       </c:when>
                       <c:otherwise>
@@ -256,51 +261,24 @@
                       <paw:listingCard item="${item}" />
                     </c:forEach>
                   </div>
-                  <c:if test="${listingsPage.totalPages > 1}">
-                    <c:url var="listingsPreviousPageUrl" value="/profiles/${user.id}/listings">
-                      <c:param name="page" value="${listingsPage.previousPage}" />
-                      <c:param name="sortBy" value="${profileListingsView.sortBy}" />
-                      <c:param name="pageSize" value="${listingsPage.pageSize}" />
-                    </c:url>
-                    <c:url var="listingsNextPageUrl" value="/profiles/${user.id}/listings">
-                      <c:param name="page" value="${listingsPage.nextPage}" />
-                      <c:param name="sortBy" value="${profileListingsView.sortBy}" />
-                      <c:param name="pageSize" value="${listingsPage.pageSize}" />
-                    </c:url>
-                    <nav class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
-                      <c:choose>
-                        <c:when test="${listingsPage.hasPrevious}">
-                          <a href="${listingsPreviousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                            <span class="material-symbols-outlined text-sm">arrow_back</span>
-                            <c:out value="${paginationPreviousLabel}" />
-                          </a>
-                        </c:when>
-                        <c:otherwise>
-                          <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                            <span class="material-symbols-outlined text-sm">arrow_back</span>
-                            <c:out value="${paginationPreviousLabel}" />
-                          </span>
-                        </c:otherwise>
-                      </c:choose>
-                      <span>
-                        <spring:message code="marketplace.pagination.page" arguments="${listingsPage.page},${listingsPage.totalPages}" />
-                      </span>
-                      <c:choose>
-                        <c:when test="${listingsPage.hasNext}">
-                          <a href="${listingsNextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                            <c:out value="${paginationNextLabel}" />
-                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                          </a>
-                        </c:when>
-                        <c:otherwise>
-                          <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                            <c:out value="${paginationNextLabel}" />
-                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                          </span>
-                        </c:otherwise>
-                      </c:choose>
-                    </nav>
-                  </c:if>
+                  <c:url var="listingsPreviousPageUrl" value="/profiles/${user.id}/listings">
+                    <c:param name="page" value="${listingsPage.previousPage}" />
+                    <c:param name="sortBy" value="${profileListingsView.sortBy}" />
+                    <c:param name="pageSize" value="${listingsPage.pageSize}" />
+                  </c:url>
+                  <c:url var="listingsNextPageUrl" value="/profiles/${user.id}/listings">
+                    <c:param name="page" value="${listingsPage.nextPage}" />
+                    <c:param name="sortBy" value="${profileListingsView.sortBy}" />
+                    <c:param name="pageSize" value="${listingsPage.pageSize}" />
+                  </c:url>
+                  <paw:pagination
+                      currentPage="${listingsPage.page}"
+                      totalPages="${listingsPage.totalPages}"
+                      hasPrevious="${listingsPage.hasPrevious}"
+                      hasNext="${listingsPage.hasNext}"
+                      previousPageUrl="${listingsPreviousPageUrl}"
+                      nextPageUrl="${listingsNextPageUrl}"
+                      navClass="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant" />
                 </c:otherwise>
               </c:choose>
             </c:when>
@@ -339,47 +317,20 @@
                       <paw:reviewCard review="${review}" reviewDate="${reviewDatesById[review.id]}" showReviewer="true" />
                     </c:forEach>
                   </div>
-                  <c:if test="${reviewsPage.totalPages > 1}">
-                    <c:url var="reviewsPreviousPageUrl" value="/profiles/${user.id}/reviews">
-                      <c:param name="page" value="${reviewsPage.previousPage}" />
-                    </c:url>
-                    <c:url var="reviewsNextPageUrl" value="/profiles/${user.id}/reviews">
-                      <c:param name="page" value="${reviewsPage.nextPage}" />
-                    </c:url>
-                    <nav class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
-                      <c:choose>
-                        <c:when test="${reviewsPage.hasPrevious}">
-                          <a href="${reviewsPreviousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                            <span class="material-symbols-outlined text-sm">arrow_back</span>
-                            <c:out value="${paginationPreviousLabel}" />
-                          </a>
-                        </c:when>
-                        <c:otherwise>
-                          <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                            <span class="material-symbols-outlined text-sm">arrow_back</span>
-                            <c:out value="${paginationPreviousLabel}" />
-                          </span>
-                        </c:otherwise>
-                      </c:choose>
-                      <span>
-                        <spring:message code="marketplace.pagination.page" arguments="${reviewsPage.page},${reviewsPage.totalPages}" />
-                      </span>
-                      <c:choose>
-                        <c:when test="${reviewsPage.hasNext}">
-                          <a href="${reviewsNextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                            <c:out value="${paginationNextLabel}" />
-                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                          </a>
-                        </c:when>
-                        <c:otherwise>
-                          <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                            <c:out value="${paginationNextLabel}" />
-                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                          </span>
-                        </c:otherwise>
-                      </c:choose>
-                    </nav>
-                  </c:if>
+                  <c:url var="reviewsPreviousPageUrl" value="/profiles/${user.id}/reviews">
+                    <c:param name="page" value="${reviewsPage.previousPage}" />
+                  </c:url>
+                  <c:url var="reviewsNextPageUrl" value="/profiles/${user.id}/reviews">
+                    <c:param name="page" value="${reviewsPage.nextPage}" />
+                  </c:url>
+                  <paw:pagination
+                      currentPage="${reviewsPage.page}"
+                      totalPages="${reviewsPage.totalPages}"
+                      hasPrevious="${reviewsPage.hasPrevious}"
+                      hasNext="${reviewsPage.hasNext}"
+                      previousPageUrl="${reviewsPreviousPageUrl}"
+                      nextPageUrl="${reviewsNextPageUrl}"
+                      navClass="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant" />
                 </c:otherwise>
               </c:choose>
             </c:otherwise>

@@ -2,6 +2,7 @@ package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.FavouritesQueryModel;
 import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.ReviewSummary;
 import ar.edu.itba.paw.models.entity.Favourite;
 import ar.edu.itba.paw.models.entity.FavouriteId;
 import ar.edu.itba.paw.models.entity.Item;
@@ -191,12 +192,14 @@ public class FavouriteJpaDao implements FavouriteDao {
 
     private void populateReviewTransients(final List<Item> items) {
         for (final Item item : items) {
-            final long totalReviews = countReviewsForItem(item.getId());
-            item.setTotalReviews(totalReviews);
-            if (totalReviews > 0) {
-                item.setAverageRating(averageRatingForItem(item.getId()));
-            }
+            item.setReviewSummary(reviewSummaryForItem(item.getId()));
         }
+    }
+
+    private ReviewSummary reviewSummaryForItem(final int itemId) {
+        final long totalReviews = countReviewsForItem(itemId);
+        final double averageRating = totalReviews > 0 ? averageRatingForItem(itemId) : 0.0;
+        return new ReviewSummary(totalReviews, averageRating);
     }
 
     private long countReviewsForItem(final int itemId) {

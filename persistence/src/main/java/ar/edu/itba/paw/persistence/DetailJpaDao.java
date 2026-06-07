@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.dto.ItemReviewPage;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Review;
@@ -96,9 +97,8 @@ public class DetailJpaDao implements DetailDao {
         final double averageRating = averageRatingForItem(itemId);
         final List<Review> reviews = loadReviewsPage(itemId, reviewPage);
 
-        item.setTotalReviews(totalReviews);
-        item.setAverageRating(averageRating);
-        item.setReviewPage(new PageModel<>(reviews, reviewPage, ReviewPaging.DEFAULT_PAGE_SIZE, totalReviews));
+        item.setItemReviewPage(new ItemReviewPage(
+                new PageModel<>(reviews, reviewPage, ReviewPaging.DEFAULT_PAGE_SIZE, totalReviews), averageRating));
     }
 
     private long countReviewsForItem(final int itemId) {

@@ -89,8 +89,8 @@ public class DetailPresentation {
             final BindingResult errors) {
         final ItemDetailViewForm itemDetailView = new ItemDetailViewForm();
         itemDetailView.setItemId(item.getId());
-        if (item.getReviewPage() != null) {
-            itemDetailView.setPage(item.getReviewPage().getPage());
+        if (item.getItemReviewPage() != null) {
+            itemDetailView.setPage(item.getItemReviewPage().getPage().getPage());
         } else {
             itemDetailView.setPage(1);
         }
@@ -139,10 +139,13 @@ public class DetailPresentation {
         mav.addObject("itemOwnerDisplayName", itemOwner != null ? ownerDisplayName(itemOwner) : "");
         mav.addObject("ownerInitials", itemOwner != null ? ownerInitials(itemOwner) : "");
         mav.addObject("itemLocationSlug", version.getLocation().getSlug());
-        mav.addObject("reviewPage", item.getReviewPage());
-        mav.addObject("totalReviews", item.getTotalReviews());
-        mav.addObject("averageRating", item.getAverageRating());
-        mav.addObject("reviewDatesById", formatReviewDates(item.getReviewPage()));
+        mav.addObject("itemReviewPage", item.getItemReviewPage());
+        mav.addObject(
+                "reviewDatesById",
+                formatReviewDates(
+                        item.getItemReviewPage() != null
+                                ? item.getItemReviewPage().getPage()
+                                : null));
         mav.addObject("itemDetailView", itemDetailView);
 
         final PreBookingForm preBookingForm = new PreBookingForm();

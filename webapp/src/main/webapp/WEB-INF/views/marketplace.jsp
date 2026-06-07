@@ -40,7 +40,7 @@
     <c:param name="pageSize" value="${marketplaceSearch.pageSize}" />
   </c:if>
 </c:url>
-<c:if test="${itemPage.hasPrevious}">
+<c:if test="${itemPage.totalPages > 1}">
   <c:url var="previousPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.previousPage}" />
     <c:param name="sortBy" value="${marketplaceSearch.sortBy}" />
@@ -76,8 +76,6 @@
       <c:param name="minAvgRating" value="${param.minAvgRating}" />
     </c:if>
   </c:url>
-</c:if>
-<c:if test="${itemPage.hasNext}">
   <c:url var="nextPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.nextPage}" />
     <c:param name="sortBy" value="${marketplaceSearch.sortBy}" />
@@ -129,6 +127,7 @@
         <jsp:attribute name="title"><spring:message code="marketplace.filters.title" /></jsp:attribute>
         <jsp:body>
           <form id="marketplace-filters-form" action="${marketplaceUrl}" method="get" class="space-y-6" data-filter-form="marketplace">
+            <input type="hidden" name="page" value="1" />
             <input type="hidden" name="pageSize" value="${marketplaceSearch.pageSize}" />
             <paw:optionsPicker
                 id="marketplace-location"
@@ -303,42 +302,12 @@
       </c:forEach>
     </div>
 
-    <c:if test="${itemPage.totalPages > 1}">
-      <nav class="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
-        <c:choose>
-          <c:when test="${itemPage.hasPrevious}">
-            <a href="${previousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-              <span class="material-symbols-outlined text-sm">arrow_back</span>
-              <spring:message code="marketplace.pagination.previous" />
-            </a>
-          </c:when>
-          <c:otherwise>
-            <span class="btn btn-outline btn-sm btn-disabled gap-2">
-              <span class="material-symbols-outlined text-sm">arrow_back</span>
-              <spring:message code="marketplace.pagination.previous" />
-            </span>
-          </c:otherwise>
-        </c:choose>
-
-        <span>
-          <spring:message code="marketplace.pagination.page" arguments="${itemPage.page},${itemPage.totalPages}" />
-        </span>
-
-        <c:choose>
-          <c:when test="${itemPage.hasNext}">
-            <a href="${nextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-              <spring:message code="marketplace.pagination.next" />
-              <span class="material-symbols-outlined text-sm">arrow_forward</span>
-            </a>
-          </c:when>
-          <c:otherwise>
-            <span class="btn btn-outline btn-sm btn-disabled gap-2">
-              <spring:message code="marketplace.pagination.next" />
-              <span class="material-symbols-outlined text-sm">arrow_forward</span>
-            </span>
-          </c:otherwise>
-        </c:choose>
-      </nav>
-    </c:if>
+    <paw:pagination
+        currentPage="${itemPage.page}"
+        totalPages="${itemPage.totalPages}"
+        hasPrevious="${itemPage.hasPrevious}"
+        hasNext="${itemPage.hasNext}"
+        previousPageUrl="${previousPageUrl}"
+        nextPageUrl="${nextPageUrl}" />
   </section>
 </paw:layout>

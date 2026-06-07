@@ -199,43 +199,14 @@
           </table>
         </div>
 
-        <c:if test="${reportPage.totalPages > 1}">
-          <nav class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
-            <c:choose>
-              <c:when test="${reportPage.hasPrevious}">
-                <a href="${previousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                  <span class="material-symbols-outlined text-sm">arrow_back</span>
-                  <spring:message code="marketplace.pagination.previous" />
-                </a>
-              </c:when>
-              <c:otherwise>
-                <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                  <span class="material-symbols-outlined text-sm">arrow_back</span>
-                  <spring:message code="marketplace.pagination.previous" />
-                </span>
-              </c:otherwise>
-            </c:choose>
-
-            <span>
-              <spring:message code="marketplace.pagination.page" arguments="${reportPage.page},${reportPage.totalPages}" />
-            </span>
-
-            <c:choose>
-              <c:when test="${reportPage.hasNext}">
-                <a href="${nextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                  <spring:message code="marketplace.pagination.next" />
-                  <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                </a>
-              </c:when>
-              <c:otherwise>
-                <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                  <spring:message code="marketplace.pagination.next" />
-                  <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                </span>
-              </c:otherwise>
-            </c:choose>
-          </nav>
-        </c:if>
+        <paw:pagination
+            currentPage="${reportPage.page}"
+            totalPages="${reportPage.totalPages}"
+            hasPrevious="${reportPage.hasPrevious}"
+            hasNext="${reportPage.hasNext}"
+            previousPageUrl="${previousPageUrl}"
+            nextPageUrl="${nextPageUrl}"
+            navClass="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant" />
       </c:otherwise>
     </c:choose>
   </section>

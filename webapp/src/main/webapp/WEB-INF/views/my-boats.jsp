@@ -159,7 +159,7 @@
               <form id="${disableFormId}" action="${disableItemUrl}" method="post" hidden></form>
               <form id="${enableFormId}" action="${enableItemUrl}" method="post" hidden></form>
               <div class="group relative flex h-full w-full max-w-sm flex-col rounded-xl bg-base-200 transition hover:bg-base-300 ${itemActive ? '' : 'opacity-75'}">
-                <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${version.title}'/>"></a>
+                <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${version.title}'/>"></a>
                 <div class="dropdown dropdown-end absolute right-1.5 top-1.5 z-20 pointer-events-auto">
                   <button type="button" tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle bg-base-100/90 shadow-sm backdrop-blur-sm border border-outline-variant/20 hover:bg-base-100" aria-label="<c:out value='${publicationActionsLabel}'/>">
                     <span class="material-symbols-outlined text-base leading-none">more_vert</span>

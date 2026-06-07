@@ -243,7 +243,7 @@
 
               <div class="flex flex-col md:flex-row w-full bg-base-100 rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden p-0">
                 <div class="relative flex flex-col md:flex-row flex-1 min-w-0 transition hover:bg-base-200">
-                  <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-l-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${b.version.title}'/>"></a>
+                  <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-l-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${b.version.title}'/>"></a>
 
                   <!-- Image Side -->
                   <div class="pointer-events-none relative z-0 flex w-full md:w-48 shrink-0 items-center justify-center bg-base-300 md:border-r border-outline-variant/20 p-4 h-32 md:h-auto overflow-hidden">

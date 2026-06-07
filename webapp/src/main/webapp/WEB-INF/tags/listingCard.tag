@@ -53,7 +53,7 @@
 
   <a href="${itemUrl}" data-marketplace-item-link class="block no-underline text-base-content">
     <figure class="aspect-[4/3] overflow-hidden">
-      <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${fn:escapeXml(item.latestVersion.title)}" src="${resolvedCoverSrc}"/>
+      <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="<c:out value='${item.latestVersion.title}'/>" src="${resolvedCoverSrc}"/>
     </figure>
     <div class="card-body min-w-0 p-4 gap-3">
       <div class="flex justify-between items-start gap-3">

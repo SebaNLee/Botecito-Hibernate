@@ -69,7 +69,7 @@
           <paw:searchBar
               formId="favourites-filters-form"
               name="searchQuery"
-              value="${fn:escapeXml(favouritesSearch.searchQuery)}"
+              value="${favouritesSearch.searchQuery}"
               placeholder="${searchPlaceholder}"
               ariaLabel="${searchLabel}"
               inputId="favourites-search-query"

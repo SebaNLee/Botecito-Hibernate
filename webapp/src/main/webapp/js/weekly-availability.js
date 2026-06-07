@@ -56,12 +56,22 @@
   }
 
   WeeklyAvailabilityGrid.prototype.loadExisting = function () {
-    var json = this.root.dataset.existingSlots;
-    if (!json) return;
+    var slots = [];
+    this.root.querySelectorAll("[data-existing-slot]").forEach(function (node) {
+      var weekday = node.getAttribute("data-weekday");
+      var startTime = node.getAttribute("data-start");
+      var endTime = node.getAttribute("data-end");
+      if (!weekday || !startTime || !endTime) {
+        return;
+      }
+      slots.push({
+        weekday: weekday,
+        startTime: startTime,
+        endTime: endTime,
+      });
+    });
 
-    try {
-      var slots = JSON.parse(json);
-      for (var i = 0; i < slots.length; i++) {
+    for (var i = 0; i < slots.length; i++) {
         var slot = slots[i];
         if (!slot.weekday || !this.days[slot.weekday]) continue;
 
@@ -74,9 +84,6 @@
           start: startStep,
           end: endStep,
         });
-      }
-    } catch (ignored) {
-      // ignore parse errors
     }
 
     for (var j = 0; j < WEEKDAYS.length; j++) {

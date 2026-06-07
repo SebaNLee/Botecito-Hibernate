@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.models.dto;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,6 +10,7 @@ import lombok.Setter;
 @Setter
 public class MarketplaceQueryModel {
     private String searchQuery;
+    private LocalDate requestedDate;
     private DayOfWeek weekday;
     private LocalTime startTime;
     private LocalTime endTime;

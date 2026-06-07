@@ -1,8 +1,8 @@
 <%@ tag language="java" pageEncoding="UTF-8" body-content="scriptless" %>
 <%@ attribute name="id" required="true" %>
 <%@ attribute name="dateFieldName" required="true" %>
-<%@ attribute name="offeredDatesJson" required="true" %>
-<%@ attribute name="occupiedDatesJson" required="true" %>
+<%@ attribute name="offeredDates" required="false" type="java.util.List" %>
+<%@ attribute name="occupiedDates" required="false" type="java.util.List" %>
 <%@ attribute name="label" required="false" %>
 <%@ attribute name="value" required="false" %>
 <%@ attribute name="placeholder" required="false" %>
@@ -13,7 +13,6 @@
 <%@ attribute name="anchorMaxDateIso" required="false" %>
 <%@ attribute name="civilCalendar" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
 <spring:message code="filters.date" var="defaultDateLabel" />
@@ -40,18 +39,22 @@
 <fieldset
     class="fieldset min-w-0 max-w-full w-full ${resolvedContainerClass}"
     data-date-picker
-    data-anchor-today-iso="${fn:escapeXml(resolvedAnchorTodayIso)}"
-    data-anchor-max-date-iso="${fn:escapeXml(resolvedAnchorMaxDateIso)}"
-    data-civil-calendar="${fn:escapeXml(resolvedCivilCalendar)}"
-    data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
+    data-anchor-today-iso="<c:out value='${resolvedAnchorTodayIso}'/>"
+    data-anchor-max-date-iso="<c:out value='${resolvedAnchorMaxDateIso}'/>"
+    data-civil-calendar="<c:out value='${resolvedCivilCalendar}'/>"
+    data-placeholder="<c:out value='${resolvedPlaceholder}'/>"
     data-restrict-to-availability="${resolvedRestrictToAvailability}"
-    data-offered-dates='${fn:escapeXml(offeredDatesJson)}'
-    data-occupied-dates='${fn:escapeXml(occupiedDatesJson)}'
-    data-availability-label="${fn:escapeXml(datePickerAvailability)}"
-    data-select-date-label="${fn:escapeXml(datePickerSelectDate)}"
-    data-available-label="${fn:escapeXml(datePickerAvailable)}"
-    data-occupied-label="${fn:escapeXml(datePickerOccupied)}">
-  <input id="${id}" name="${dateFieldName}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-picker-input />
+    data-availability-label="<c:out value='${datePickerAvailability}'/>"
+    data-select-date-label="<c:out value='${datePickerSelectDate}'/>"
+    data-available-label="<c:out value='${datePickerAvailable}'/>"
+    data-occupied-label="<c:out value='${datePickerOccupied}'/>">
+  <c:forEach var="date" items="${offeredDates}">
+    <span class="hidden" data-offered-date="<c:out value='${date}'/>"></span>
+  </c:forEach>
+  <c:forEach var="date" items="${occupiedDates}">
+    <span class="hidden" data-occupied-date="<c:out value='${date}'/>"></span>
+  </c:forEach>
+  <input id="${id}" name="${dateFieldName}" type="hidden" value="<c:out value='${resolvedValue}'/>" data-picker-input />
 
   <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
     <c:out value="${resolvedLabel}" />
@@ -73,7 +76,7 @@
       <button
           type="button"
           class="btn btn-ghost btn-xs btn-circle shrink-0 cursor-pointer text-primary ${empty resolvedValue ? '!w-0 !min-w-0 !max-w-0 overflow-hidden !p-0 opacity-0 pointer-events-none !border-0' : ''}"
-          aria-label="${fn:escapeXml(clearLabel)}"
+          aria-label="<c:out value='${clearLabel}'/>"
           <c:if test="${empty resolvedValue}">aria-hidden="true" tabindex="-1"</c:if>
           data-picker-trigger-clear>
         <span class="material-symbols-outlined text-base">close</span>
@@ -83,7 +86,7 @@
           tabindex="0"
           class="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md p-1 text-primary transition-transform duration-150 outline-none hover:bg-base-200/50 focus-visible:bg-base-200/50 focus-visible:ring-2 focus-visible:ring-primary/25"
           data-picker-chevron
-          aria-label="${fn:escapeXml(datePickerSelectDate)}">
+          aria-label="<c:out value='${datePickerSelectDate}'/>">
         <span class="material-symbols-outlined text-base leading-none">expand_more</span>
       </span>
     </div>
@@ -106,12 +109,12 @@
           type="button"
           class="btn btn-ghost btn-xs btn-circle absolute right-0 top-[0.45rem] z-10 text-on-surface-variant shadow-sm"
           data-picker-close
-          aria-label="${fn:escapeXml(datePickerClose)}">
+          aria-label="<c:out value='${datePickerClose}'/>">
         <span class="material-symbols-outlined text-base">close</span>
       </button>
       <calendar-date
           class="cally w-fit max-w-full"
-          locale="${fn:escapeXml(resolvedLocale)}"
+          locale="<c:out value='${resolvedLocale}'/>"
           first-day-of-week="1"
           format-weekday="short"
           page-by="single"
@@ -119,7 +122,7 @@
           data-picker-calendar>
         <svg
             slot="previous"
-            aria-label="${fn:escapeXml(datePickerPreviousMonth)}"
+            aria-label="<c:out value='${datePickerPreviousMonth}'/>"
             class="size-4 fill-none stroke-current stroke-[1.8]"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24">
@@ -127,7 +130,7 @@
         </svg>
         <svg
             slot="next"
-            aria-label="${fn:escapeXml(datePickerNextMonth)}"
+            aria-label="<c:out value='${datePickerNextMonth}'/>"
             class="size-4 fill-none stroke-current stroke-[1.8]"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24">

@@ -6,16 +6,13 @@ import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.webapp.util.DetailAvailabilityPicker;
-import ar.edu.itba.paw.webapp.util.JsonForHtml;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -63,7 +60,7 @@ public class AvailabilityPresentation {
         final ModelAndView mav = new ModelAndView("manage-availability");
         final String timezone = model.getTimezone();
         mav.addObject("item", model.getItem());
-        mav.addObject("offeredDatesJson", JsonForHtml.serialize(model.getOfferedDates()));
+        mav.addObject("offeredDates", model.getOfferedDates());
         mav.addObject("selectedDate", model.getSelectedDate());
         mav.addObject(
                 "manageAvailabilityTodayIso",
@@ -76,15 +73,16 @@ public class AvailabilityPresentation {
                 version == null || version.getAvailabilities() == null ? List.of() : version.getAvailabilities();
         final Set<Integer> selfBlockIds =
                 model.getOwnerSelfBlocks().stream().map(Booking::getId).collect(Collectors.toSet());
-        mav.addObject(
-                "dayTimelineJson",
-                buildDayTimelineJson(
-                        model.getSelectedDate(),
-                        availabilityWindows,
-                        model.getActiveBookings(),
-                        model.getOwnerSelfBlocks(),
-                        selfBlockIds,
-                        timezone));
+        final DayTimelineModel timeline = buildDayTimelineModel(
+                model.getSelectedDate(),
+                availabilityWindows,
+                model.getActiveBookings(),
+                model.getOwnerSelfBlocks(),
+                selfBlockIds,
+                timezone);
+        mav.addObject("timelineAvailableRanges", timeline.availableRanges());
+        mav.addObject("timelineBookedRanges", timeline.bookedRanges());
+        mav.addObject("timelineSelfBlocks", timeline.selfBlocks());
         mav.addObject(
                 "hasTimelineAvailability", hasAvailabilityWindowsForDate(model.getSelectedDate(), availabilityWindows));
         return mav;
@@ -105,7 +103,7 @@ public class AvailabilityPresentation {
                         && a.getEndTime().isAfter(a.getStartTime()));
     }
 
-    static String buildDayTimelineJson(
+    static DayTimelineModel buildDayTimelineModel(
             final LocalDate selectedDate,
             final List<Availability> availabilities,
             final List<Booking> bookings,
@@ -113,10 +111,7 @@ public class AvailabilityPresentation {
             final Set<Integer> selfBlockBookingIds,
             final String timezone) {
         if (selectedDate == null) {
-            return JsonForHtml.serialize(Map.of(
-                    "availableRanges", List.of(),
-                    "bookedRanges", List.of(),
-                    "selfBlocks", List.of()));
+            return new DayTimelineModel(List.of(), List.of(), List.of());
         }
         final ZoneId zone = DetailAvailabilityPicker.listingZoneOrUtc(timezone);
         final List<TimeRangeRow> availableRanges = new ArrayList<>();
@@ -185,7 +180,7 @@ public class AvailabilityPresentation {
                             .toLocalTime()
                             .format(TIME_FMT)));
         }
-        return toDayTimelineJson(availableRanges, bookedRanges, selfBlocks);
+        return new DayTimelineModel(availableRanges, bookedRanges, selfBlocks);
     }
 
     private static boolean isBlockingState(final BookingStatusEnum status) {
@@ -206,34 +201,14 @@ public class AvailabilityPresentation {
         }
     }
 
-    private static String toDayTimelineJson(
-            final List<TimeRangeRow> availableRanges,
-            final List<TimeRangeRow> bookedRanges,
-            final List<SelfBlockRow> selfBlocks) {
-        final Map<String, Object> timeline = new LinkedHashMap<>();
-        timeline.put("availableRanges", toTimeRangeMaps(availableRanges));
-        timeline.put("bookedRanges", toTimeRangeMaps(bookedRanges));
-        final List<Map<String, Object>> selfBlockMaps = new ArrayList<>();
-        for (final SelfBlockRow block : selfBlocks) {
-            final Map<String, Object> row = new LinkedHashMap<>();
-            row.put("id", block.getId());
-            row.put("startTime", block.getStartTime());
-            row.put("endTime", block.getEndTime());
-            selfBlockMaps.add(row);
-        }
-        timeline.put("selfBlocks", selfBlockMaps);
-        return JsonForHtml.serialize(timeline);
-    }
+    public record DayTimelineModel(
+            List<TimeRangeRow> availableRanges, List<TimeRangeRow> bookedRanges, List<SelfBlockRow> selfBlocks) {
 
-    private static List<Map<String, String>> toTimeRangeMaps(final List<TimeRangeRow> rows) {
-        final List<Map<String, String>> maps = new ArrayList<>();
-        for (final TimeRangeRow row : rows) {
-            final Map<String, String> map = new LinkedHashMap<>();
-            map.put("startTime", row.getStartTime());
-            map.put("endTime", row.getEndTime());
-            maps.add(map);
+        public DayTimelineModel {
+            availableRanges = List.copyOf(availableRanges);
+            bookedRanges = List.copyOf(bookedRanges);
+            selfBlocks = List.copyOf(selfBlocks);
         }
-        return maps;
     }
 
     @Getter

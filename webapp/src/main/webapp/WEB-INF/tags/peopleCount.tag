@@ -46,9 +46,9 @@
         data-min="${resolvedMin}"
         data-max="${resolvedMax}"
         data-step="${resolvedStep}"
-        data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
+        data-placeholder="<c:out value='${resolvedPlaceholder}'/>"
         data-allow-empty="${resolvedAllowEmpty}">
-      <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-people-input />
+      <input id="${id}" name="${name}" type="hidden" value="<c:out value='${resolvedValue}'/>" data-people-input />
       <legend class="fieldset-legend block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
         <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
@@ -59,7 +59,7 @@
           <button
               type="button"
               class="btn btn-ghost btn-xs btn-circle shrink-0 ${pcText}"
-              aria-label="${fn:escapeXml(peopleDecrementLabel)}"
+              aria-label="<c:out value='${peopleDecrementLabel}'/>"
               data-people-decrement>
             <span class="material-symbols-outlined text-base">remove</span>
           </button>
@@ -70,13 +70,13 @@
                 inputmode="numeric"
                 autocomplete="off"
                 spellcheck="false"
-                placeholder="${fn:escapeXml(resolvedPlaceholder)}"
-                aria-label="${fn:escapeXml(peopleValueLabel)}"
+                placeholder="<c:out value='${resolvedPlaceholder}'/>"
+                aria-label="<c:out value='${peopleValueLabel}'/>"
                 data-people-field />
             <button
                 type="button"
                 class="btn btn-ghost btn-xs btn-circle ${pcText} ${peopleClearInitiallyHidden ? 'hidden' : ''}"
-                aria-label="${fn:escapeXml(peopleClearLabel)}"
+                aria-label="<c:out value='${peopleClearLabel}'/>"
                 data-people-clear>
               <span class="material-symbols-outlined text-base">close</span>
             </button>
@@ -84,7 +84,7 @@
           <button
               type="button"
               class="btn btn-ghost btn-xs btn-circle shrink-0 ${pcText}"
-              aria-label="${fn:escapeXml(peopleIncrementLabel)}"
+              aria-label="<c:out value='${peopleIncrementLabel}'/>"
               data-people-increment>
             <span class="material-symbols-outlined text-base">add</span>
           </button>
@@ -99,9 +99,9 @@
         data-min="${resolvedMin}"
         data-max="${resolvedMax}"
         data-step="${resolvedStep}"
-        data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
+        data-placeholder="<c:out value='${resolvedPlaceholder}'/>"
         data-allow-empty="${resolvedAllowEmpty}">
-      <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-people-input />
+      <input id="${id}" name="${name}" type="hidden" value="<c:out value='${resolvedValue}'/>" data-people-input />
       <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
         <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
@@ -111,7 +111,7 @@
         <button
             type="button"
             class="btn btn-ghost btn-xs btn-circle shrink-0 ${pcText}"
-            aria-label="${fn:escapeXml(peopleDecrementLabel)}"
+            aria-label="<c:out value='${peopleDecrementLabel}'/>"
             data-people-decrement>
           <span class="material-symbols-outlined text-base">remove</span>
         </button>
@@ -122,13 +122,13 @@
               inputmode="numeric"
               autocomplete="off"
               spellcheck="false"
-              placeholder="${fn:escapeXml(resolvedPlaceholder)}"
-              aria-label="${fn:escapeXml(peopleValueLabel)}"
+              placeholder="<c:out value='${resolvedPlaceholder}'/>"
+              aria-label="<c:out value='${peopleValueLabel}'/>"
               data-people-field />
           <button
               type="button"
               class="btn btn-ghost btn-xs btn-circle ${pcText} ${peopleClearInitiallyHidden ? 'hidden' : ''}"
-              aria-label="${fn:escapeXml(peopleClearLabel)}"
+              aria-label="<c:out value='${peopleClearLabel}'/>"
               data-people-clear>
             <span class="material-symbols-outlined text-base">close</span>
           </button>
@@ -136,7 +136,7 @@
         <button
             type="button"
             class="btn btn-ghost btn-xs btn-circle shrink-0 ${pcText}"
-            aria-label="${fn:escapeXml(peopleIncrementLabel)}"
+            aria-label="<c:out value='${peopleIncrementLabel}'/>"
             data-people-increment>
           <span class="material-symbols-outlined text-base">add</span>
         </button>

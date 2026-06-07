@@ -59,7 +59,17 @@
 <spring:message code="itemDetail.report.alreadyReported" var="itemDetailReportAlreadyReportedLabel" />
 <spring:message code="page.title.itemDetail" var="titleItemDetail" />
 
+<c:set var="clearMarketplaceFiltersOnLoad" value="false" />
+<c:forEach items="${toasts}" var="toast">
+  <c:if test="${toast.code == 'detail.preBooking.success'}">
+    <c:set var="clearMarketplaceFiltersOnLoad" value="true" />
+  </c:if>
+</c:forEach>
+
 <paw:layout title="${titleItemDetail} - Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8" scripts="toast,search-filters,date-time,form-submit,pre-booking-draft,image-carousel,rating-stars">
+  <c:if test="${clearMarketplaceFiltersOnLoad}">
+    <div hidden data-clear-marketplace-filters="true"></div>
+  </c:if>
   <paw:toastNotifier />
       <div class="w-full">
         <a href="${marketplaceUrl}" data-detail-marketplace-back data-nav-filter-page="marketplace" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
@@ -315,12 +325,12 @@
                     data-reservation-price-summary
                     data-price-per-hour="${version.price}"
                     data-currency-symbol="$"
-                    data-price-pending="${fn:escapeXml(itemDetailPricePendingLabel)}"
-                    data-price-pending-help="${fn:escapeXml(itemDetailPricePendingHelpLabel)}"
-                    data-price-pick-end="${fn:escapeXml(itemDetailPricePickEndLabel)}"
-                    data-price-for-label="${fn:escapeXml(itemDetailPriceForLabel)}"
-                    data-price-hour-label="${fn:escapeXml(itemDetailPriceHourLabel)}"
-                    data-price-hours-label="${fn:escapeXml(itemDetailPriceHoursLabel)}">
+                    data-price-pending="<c:out value='${itemDetailPricePendingLabel}'/>"
+                    data-price-pending-help="<c:out value='${itemDetailPricePendingHelpLabel}'/>"
+                    data-price-pick-end="<c:out value='${itemDetailPricePickEndLabel}'/>"
+                    data-price-for-label="<c:out value='${itemDetailPriceForLabel}'/>"
+                    data-price-hour-label="<c:out value='${itemDetailPriceHourLabel}'/>"
+                    data-price-hours-label="<c:out value='${itemDetailPriceHoursLabel}'/>">
                   <div class="flex items-baseline justify-between gap-3">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-outline"><c:out value="${itemDetailPriceTotalLabel}" /></span>
                     <span class="text-2xl font-black text-primary" data-price-total><c:out value="${itemDetailPricePendingLabel}" /></span>
@@ -356,8 +366,8 @@
                       value="${preBookingForm.date}"
                       placeholder="${itemDetailDatePlaceholder}"
                       restrictToAvailability="true"
-                      offeredDatesJson="${detailOfferedDatesJson}"
-                      occupiedDatesJson="${detailOccupiedDatesJson}"
+                      offeredDates="${detailOfferedDates}"
+                      occupiedDates="${detailOccupiedDates}"
                       anchorTodayIso="${detailListingTodayIso}"
                       anchorMaxDateIso="${detailListingMaxDateIso}"
                       civilCalendar="true" />
@@ -372,8 +382,8 @@
                       endValue="${preBookingForm.endTime}"
                       placeholder="${itemDetailTimePlaceholder}"
                       restrictToAvailability="true"
-                      offeredTimesJson="${detailOfferedTimesJson}"
-                      occupiedTimesJson="${detailOccupiedTimesJson}" />
+                      offeredTimesByDate="${detailOfferedTimesByDate}"
+                      occupiedTimesByDate="${detailOccupiedTimesByDate}" />
                   <form:errors path="startTime" element="p" cssClass="text-error text-xs mt-1" />
                   <form:errors path="endTime" element="p" cssClass="text-error text-xs mt-1" />
 

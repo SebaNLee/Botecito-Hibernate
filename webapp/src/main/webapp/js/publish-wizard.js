@@ -173,15 +173,33 @@
     return enabledDaysFromRanges(availability.ranges);
   }
 
+  function applyExistingSlotsToGrid(grid, slots) {
+    if (!grid) {
+      return;
+    }
+    grid.querySelectorAll("[data-existing-slot]").forEach(function (node) {
+      node.remove();
+    });
+    (slots || []).forEach(function (slot) {
+      if (!slot || !slot.weekday) {
+        return;
+      }
+      var span = document.createElement("span");
+      span.className = "hidden";
+      span.setAttribute("data-existing-slot", "");
+      span.setAttribute("data-weekday", slot.weekday);
+      span.setAttribute("data-start", slot.startTime);
+      span.setAttribute("data-end", slot.endTime);
+      grid.insertBefore(span, grid.firstChild);
+    });
+  }
+
   function restoreStep2Availability(grid, availability, notifyGrid) {
     if (!grid || !availability) {
       return;
     }
 
-    var slots = rangesToExistingSlots(availability);
-    if (slots.length) {
-      grid.dataset.existingSlots = JSON.stringify(slots);
-    }
+    applyExistingSlotsToGrid(grid, rangesToExistingSlots(availability));
 
     resolveEnabledDays(availability).forEach(function (day) {
       var toggle = grid.querySelector('[data-day-toggle="' + day + '"]');

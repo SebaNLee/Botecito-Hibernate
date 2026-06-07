@@ -152,9 +152,7 @@
                   label="${dateLabel}"
                   value="${param.date}"
                   placeholder="${datePlaceholder}"
-                  restrictToAvailability="false"
-                  offeredDatesJson="[]"
-                  occupiedDatesJson="[]" />
+                  restrictToAvailability="false" />
               <paw:timeRangePicker
                   id="marketplace-time-range"
                   dateInputId="marketplace-date"
@@ -164,9 +162,7 @@
                   startValue="${param.startTime}"
                   endValue="${param.endTime}"
                   placeholder="${timePlaceholder}"
-                  restrictToAvailability="false"
-                  offeredTimesJson="{}"
-                  occupiedTimesJson="{}" />
+                  restrictToAvailability="false" />
             </div>
 
             <paw:peopleCount
@@ -264,16 +260,16 @@
           class="flex items-center gap-3 text-sm font-medium text-on-surface-variant"
           data-marketplace-toolbar-form>
         <input type="hidden" name="page" value="${marketplaceSearch.page}" />
-        <input type="hidden" name="searchQuery" value="${fn:escapeXml(param.searchQuery)}" data-applied-filter-mirror />
-        <input type="hidden" name="location" value="${fn:escapeXml(marketplaceSearch.location)}" data-applied-filter-mirror />
-        <input type="hidden" name="itemType" value="${fn:escapeXml(marketplaceSearch.itemType)}" data-applied-filter-mirror />
-        <input type="hidden" name="date" value="${fn:escapeXml(param.date)}" data-applied-filter-mirror />
-        <input type="hidden" name="startTime" value="${fn:escapeXml(param.startTime)}" data-applied-filter-mirror />
-        <input type="hidden" name="endTime" value="${fn:escapeXml(param.endTime)}" data-applied-filter-mirror />
-        <input type="hidden" name="capacity" value="${fn:escapeXml(param.capacity)}" data-applied-filter-mirror />
-        <input type="hidden" name="weight" value="${fn:escapeXml(param.weight)}" data-applied-filter-mirror />
-        <input type="hidden" name="difficulty" value="${fn:escapeXml(param.difficulty)}" data-applied-filter-mirror />
-        <input type="hidden" name="minAvgRating" value="${fn:escapeXml(marketplaceSearch.minAvgRating)}" data-applied-filter-mirror />
+        <input type="hidden" name="searchQuery" value="<c:out value='${param.searchQuery}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="location" value="<c:out value='${marketplaceSearch.location}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="itemType" value="<c:out value='${marketplaceSearch.itemType}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="date" value="<c:out value='${param.date}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="startTime" value="<c:out value='${param.startTime}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="endTime" value="<c:out value='${param.endTime}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="capacity" value="<c:out value='${param.capacity}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="weight" value="<c:out value='${param.weight}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="difficulty" value="<c:out value='${param.difficulty}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="minAvgRating" value="<c:out value='${marketplaceSearch.minAvgRating}'/>" data-applied-filter-mirror />
         <label for="marketplace-sort" class="shrink-0"><spring:message code="marketplace.sort.label" /></label>
         <select id="marketplace-sort" name="sortBy" class="select select-sm font-bold text-primary">
           <option value="newest" ${empty marketplaceSearch.sortBy || marketplaceSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.newest" /></option>

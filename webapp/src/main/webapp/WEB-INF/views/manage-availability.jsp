@@ -64,8 +64,7 @@
         <paw:datePicker
             id="manageAvailabilityDate"
             dateFieldName="date"
-            offeredDatesJson="${offeredDatesJson}"
-            occupiedDatesJson="[]"
+            offeredDates="${offeredDates}"
             label="${datePickerLabel}"
             value="${selectedDate}"
             anchorTodayIso="${manageAvailabilityTodayIso}"
@@ -109,13 +108,31 @@
               <div
                   class="space-y-4"
                   data-manage-availability-timeline
-                  data-selected-date="${selectedDate}"
+                  data-selected-date="<c:out value='${selectedDate}'/>"
                   data-min-duration="120"
                   data-min-separation="30"
-                  data-delete-text="${deleteRangeLabel}"
-                  data-unsaved-confirm="${unsavedConfirmLabel}">
+                  data-delete-text="<c:out value='${deleteRangeLabel}'/>"
+                  data-unsaved-confirm="<c:out value='${unsavedConfirmLabel}'/>">
 
-                <script type="application/json" id="manage-day-timeline-json">${dayTimelineJson}</script>
+                <c:forEach var="range" items="${timelineAvailableRanges}">
+                  <span class="hidden"
+                        data-timeline-available-range
+                        data-start="<c:out value='${range.startTime}'/>"
+                        data-end="<c:out value='${range.endTime}'/>"></span>
+                </c:forEach>
+                <c:forEach var="range" items="${timelineBookedRanges}">
+                  <span class="hidden"
+                        data-timeline-booked-range
+                        data-start="<c:out value='${range.startTime}'/>"
+                        data-end="<c:out value='${range.endTime}'/>"></span>
+                </c:forEach>
+                <c:forEach var="block" items="${timelineSelfBlocks}">
+                  <span class="hidden"
+                        data-timeline-self-block
+                        data-id="<c:out value='${block.id}'/>"
+                        data-start="<c:out value='${block.startTime}'/>"
+                        data-end="<c:out value='${block.endTime}'/>"></span>
+                </c:forEach>
 
                 <p class="text-xs text-outline m-0"><c:out value="${timelineInstructions}" /></p>
 

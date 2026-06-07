@@ -46,17 +46,17 @@ public class EditController {
     }
 
     @RequestMapping(value = "/edit/{itemId:[0-9]+}", method = RequestMethod.GET)
-    public ModelAndView bootstrapEdit(
+    public ModelAndView editEntry(@PathVariable("itemId") final int itemId) {
+        return new ModelAndView("redirect:/edit/" + itemId + "/details");
+    }
+
+    @RequestMapping(value = "/edit/{itemId:[0-9]+}/details", method = RequestMethod.GET)
+    public ModelAndView editStepOne(
             @AuthenticationPrincipal final BotecitoUserDetails user,
             @PathVariable("itemId") final int itemId,
             final HttpServletRequest request) {
         final var version = itemService.requireOwnedFullData(itemId, user.getId());
-        return editPresentation.bootstrapEdit(version, itemId, request);
-    }
-
-    @RequestMapping(value = "/edit/{itemId:[0-9]+}/details", method = RequestMethod.GET)
-    public ModelAndView editStepOne(@PathVariable("itemId") final int itemId) {
-        return editPresentation.editStepOne(itemId);
+        return editPresentation.editStepOne(version, itemId, request);
     }
 
     @RequestMapping(value = "/edit/{itemId:[0-9]+}/details", method = RequestMethod.POST)

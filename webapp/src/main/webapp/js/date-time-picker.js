@@ -96,6 +96,33 @@
     }
   }
 
+  function readDateSet(root, selector) {
+    const dates = [];
+    root.querySelectorAll(selector).forEach((node) => {
+      const date = node.getAttribute(selector === "[data-offered-date]" ? "data-offered-date" : "data-occupied-date");
+      if (date) {
+        dates.push(date);
+      }
+    });
+    return new Set(dates);
+  }
+
+  function readTimesMap(root, selector, dateAttribute, timeAttribute) {
+    const map = {};
+    root.querySelectorAll(selector).forEach((node) => {
+      const date = node.getAttribute(dateAttribute);
+      const time = node.getAttribute(timeAttribute);
+      if (!date || !time) {
+        return;
+      }
+      if (!map[date]) {
+        map[date] = [];
+      }
+      map[date].push(time);
+    });
+    return map;
+  }
+
   function parseBoolean(value, fallback) {
     if (value === "true") {
       return true;
@@ -795,8 +822,8 @@
       this.calendar = root.querySelector("[data-picker-calendar]");
       this.placeholder = root.dataset.placeholder || "";
       this.availabilityLabel = root.dataset.availabilityLabel || "";
-      this.offeredDates = new Set(parseJson(root.dataset.offeredDates, []));
-      this.occupiedDates = new Set(parseJson(root.dataset.occupiedDates, []));
+      this.offeredDates = readDateSet(root, "[data-offered-date]");
+      this.occupiedDates = readDateSet(root, "[data-occupied-date]");
       this.restrictToAvailability = parseBoolean(
         root.dataset.restrictToAvailability,
         true,
@@ -1025,8 +1052,18 @@
       this.pickEndLabel = root.dataset.pickEndLabel || "";
       this.pickStartLabel = root.dataset.pickStartLabel || "";
       this.fromLabel = root.dataset.fromLabel || "";
-      this.offeredTimes = parseJson(root.dataset.offeredTimes, {});
-      this.occupiedTimes = parseJson(root.dataset.occupiedTimes, {});
+      this.offeredTimes = readTimesMap(
+        root,
+        "[data-offered-time]",
+        "data-offered-time-date",
+        "data-offered-time-value",
+      );
+      this.occupiedTimes = readTimesMap(
+        root,
+        "[data-occupied-time]",
+        "data-occupied-time-date",
+        "data-occupied-time-value",
+      );
       this.restrictToAvailability = parseBoolean(
         root.dataset.restrictToAvailability,
         true,

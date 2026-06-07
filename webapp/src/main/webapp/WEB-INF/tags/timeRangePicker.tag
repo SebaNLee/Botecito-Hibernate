@@ -3,8 +3,8 @@
 <%@ attribute name="dateInputId" required="true" %>
 <%@ attribute name="startTimeFieldName" required="true" %>
 <%@ attribute name="endTimeFieldName" required="true" %>
-<%@ attribute name="offeredTimesJson" required="true" %>
-<%@ attribute name="occupiedTimesJson" required="true" %>
+<%@ attribute name="offeredTimesByDate" required="false" type="java.util.Map" %>
+<%@ attribute name="occupiedTimesByDate" required="false" type="java.util.Map" %>
 <%@ attribute name="label" required="false" %>
 <%@ attribute name="startValue" required="false" %>
 <%@ attribute name="endValue" required="false" %>
@@ -14,7 +14,6 @@
 <%@ attribute name="restrictToAvailability" required="false" %>
 <%@ attribute name="minimumDurationMinutes" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
 <spring:message code="filters.time" var="defaultTimeLabel" />
@@ -46,26 +45,40 @@
 <fieldset
     class="fieldset min-w-0 max-w-full w-full ${resolvedContainerClass}"
     data-time-range-picker
-    data-date-input-id="${fn:escapeXml(dateInputId)}"
-    data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
+    data-date-input-id="<c:out value='${dateInputId}'/>"
+    data-placeholder="<c:out value='${resolvedPlaceholder}'/>"
     data-restrict-to-availability="${resolvedRestrictToAvailability}"
     data-minimum-duration-minutes="${resolvedMinimumDurationMinutes}"
-    data-offered-times='${fn:escapeXml(offeredTimesJson)}'
-    data-occupied-times='${fn:escapeXml(occupiedTimesJson)}'
-    data-availability-label="${fn:escapeXml(timePickerAvailability)}"
-    data-select-time-label="${fn:escapeXml(timePickerSelectTime)}"
-    data-available-label="${fn:escapeXml(timePickerAvailable)}"
-    data-unavailable-label="${fn:escapeXml(timePickerUnavailable)}"
-    data-selected-label="${fn:escapeXml(timePickerSelected)}"
-    data-occupied-label="${fn:escapeXml(timePickerOccupied)}"
-    data-pick-date-first-label="${fn:escapeXml(timePickerPickDateFirst)}"
-    data-no-times-label="${fn:escapeXml(timePickerNoTimes)}"
-    data-pick-end-label="${fn:escapeXml(timePickerPickEnd)}"
-    data-pick-start-label="${fn:escapeXml(timePickerPickStart)}"
-    data-minimum-duration-label="${fn:escapeXml(timePickerMinimumDuration)}"
-    data-from-label="${fn:escapeXml(timePickerFrom)}">
-  <input id="${id}-start" name="${startTimeFieldName}" type="hidden" value="${fn:escapeXml(resolvedStartValue)}" data-time-start-input />
-  <input id="${id}-end" name="${endTimeFieldName}" type="hidden" value="${fn:escapeXml(resolvedEndValue)}" data-time-end-input />
+    data-availability-label="<c:out value='${timePickerAvailability}'/>"
+    data-select-time-label="<c:out value='${timePickerSelectTime}'/>"
+    data-available-label="<c:out value='${timePickerAvailable}'/>"
+    data-unavailable-label="<c:out value='${timePickerUnavailable}'/>"
+    data-selected-label="<c:out value='${timePickerSelected}'/>"
+    data-occupied-label="<c:out value='${timePickerOccupied}'/>"
+    data-pick-date-first-label="<c:out value='${timePickerPickDateFirst}'/>"
+    data-no-times-label="<c:out value='${timePickerNoTimes}'/>"
+    data-pick-end-label="<c:out value='${timePickerPickEnd}'/>"
+    data-pick-start-label="<c:out value='${timePickerPickStart}'/>"
+    data-minimum-duration-label="<c:out value='${timePickerMinimumDuration}'/>"
+    data-from-label="<c:out value='${timePickerFrom}'/>">
+  <c:forEach var="entry" items="${offeredTimesByDate}">
+    <c:forEach var="time" items="${entry.value}">
+      <span class="hidden"
+            data-offered-time
+            data-offered-time-date="<c:out value='${entry.key}'/>"
+            data-offered-time-value="<c:out value='${time}'/>"></span>
+    </c:forEach>
+  </c:forEach>
+  <c:forEach var="entry" items="${occupiedTimesByDate}">
+    <c:forEach var="time" items="${entry.value}">
+      <span class="hidden"
+            data-occupied-time
+            data-occupied-time-date="<c:out value='${entry.key}'/>"
+            data-occupied-time-value="<c:out value='${time}'/>"></span>
+    </c:forEach>
+  </c:forEach>
+  <input id="${id}-start" name="${startTimeFieldName}" type="hidden" value="<c:out value='${resolvedStartValue}'/>" data-time-start-input />
+  <input id="${id}-end" name="${endTimeFieldName}" type="hidden" value="<c:out value='${resolvedEndValue}'/>" data-time-end-input />
 
   <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
     <c:out value="${resolvedLabel}" />
@@ -87,7 +100,7 @@
       <button
           type="button"
           class="btn btn-ghost btn-xs btn-circle shrink-0 cursor-pointer text-primary ${empty resolvedStartValue && empty resolvedEndValue ? '!w-0 !min-w-0 !max-w-0 overflow-hidden !p-0 opacity-0 pointer-events-none !border-0' : ''}"
-          aria-label="${fn:escapeXml(clearLabel)}"
+          aria-label="<c:out value='${clearLabel}'/>"
           <c:if test="${empty resolvedStartValue && empty resolvedEndValue}">aria-hidden="true" tabindex="-1"</c:if>
           data-picker-trigger-clear>
         <span class="material-symbols-outlined text-base">close</span>
@@ -97,7 +110,7 @@
           tabindex="0"
           class="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md p-1 text-primary transition-transform duration-150 outline-none hover:bg-base-200/50 focus-visible:bg-base-200/50 focus-visible:ring-2 focus-visible:ring-primary/25"
           data-picker-chevron
-          aria-label="${fn:escapeXml(timePickerSelectTime)}">
+          aria-label="<c:out value='${timePickerSelectTime}'/>">
         <span class="material-symbols-outlined text-base leading-none">expand_more</span>
       </span>
     </div>
@@ -135,7 +148,7 @@
               type="button"
               class="btn btn-ghost btn-xs btn-circle shrink-0 text-on-surface-variant"
               data-picker-close
-              aria-label="${fn:escapeXml(timePickerClose)}">
+              aria-label="<c:out value='${timePickerClose}'/>">
             <span class="material-symbols-outlined text-base">close</span>
           </button>
         </div>

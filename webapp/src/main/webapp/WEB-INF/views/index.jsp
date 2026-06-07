@@ -73,8 +73,6 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             label="${dateLabel}"
             placeholder="${datePlaceholder}"
             restrictToAvailability="false"
-            offeredDatesJson="[]"
-            occupiedDatesJson="[]"
           />
         </div>
         <div class="hidden md:block w-px h-8 bg-outline-variant/20"></div>
@@ -88,8 +86,6 @@ charset=UTF-8" pageEncoding="UTF-8" %>
             label="${timeLabel}"
             placeholder="${timePlaceholder}"
             restrictToAvailability="false"
-            offeredTimesJson="{}"
-            occupiedTimesJson="{}"
           />
         </div>
         <div class="hidden md:block w-px h-8 bg-outline-variant/20"></div>

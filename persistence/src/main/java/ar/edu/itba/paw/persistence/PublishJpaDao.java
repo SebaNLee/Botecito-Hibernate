@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Media;
 import ar.edu.itba.paw.models.entity.Version;
+import java.util.List;
 import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -57,9 +58,21 @@ public class PublishJpaDao implements PublishDao {
                 .createQuery("DELETE FROM Availability a WHERE a.version.id = :vid")
                 .setParameter("vid", version.getId())
                 .executeUpdate();
-        entityManager
-                .createQuery("DELETE FROM Media m WHERE m.version.id = :vid")
-                .setParameter("vid", version.getId())
-                .executeUpdate();
+        if (version.getAvailabilities() != null) {
+            version.getAvailabilities().clear();
+        }
+
+        if (version.getMedia() != null && !version.getMedia().isEmpty()) {
+            for (final Media media : List.copyOf(version.getMedia())) {
+                entityManager.remove(media);
+            }
+            version.getMedia().clear();
+        } else {
+            entityManager
+                    .createQuery("DELETE FROM Media m WHERE m.version.id = :vid")
+                    .setParameter("vid", version.getId())
+                    .executeUpdate();
+        }
+        entityManager.flush();
     }
 }

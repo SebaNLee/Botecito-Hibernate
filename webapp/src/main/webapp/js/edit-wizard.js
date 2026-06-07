@@ -23,7 +23,54 @@
   }
 
   function bootstrapUrl(itemId) {
-    return "/edit/" + itemId;
+    return detailsUrl(itemId);
+  }
+
+  function collectAvailabilitySeed(root) {
+    var enabledDays = [];
+    var ranges = [];
+    root.querySelectorAll("[data-edit-seed-range]").forEach(function (node) {
+      var weekday = node.getAttribute("data-weekday") || "";
+      var start = node.getAttribute("data-start") || "";
+      var end = node.getAttribute("data-end") || "";
+      if (!weekday || !start || !end) {
+        return;
+      }
+      if (enabledDays.indexOf(weekday) === -1) {
+        enabledDays.push(weekday);
+      }
+      ranges.push(weekday + "|" + start + "|" + end);
+    });
+    return { enabledDays: enabledDays, ranges: ranges };
+  }
+
+  function collectImagesSeed(root) {
+    var images = [];
+    root.querySelectorAll("[data-edit-seed-image]").forEach(function (node) {
+      var id = node.getAttribute("data-id");
+      var url = node.getAttribute("data-url");
+      if (!id || !url) {
+        return;
+      }
+      images.push({ id: parseInt(id, 10), url: url });
+    });
+    return images;
+  }
+
+  function buildDraftFromServer(root, form) {
+    var itemId = readItemId(root);
+    var seedRoot = root.querySelector("[data-edit-wizard-seed]");
+    var versionRaw = seedRoot ? seedRoot.getAttribute("data-version-id") : "";
+    var versionId = versionRaw ? parseInt(versionRaw, 10) : null;
+    var draft = {
+      v: DRAFT_VERSION,
+      itemId: itemId,
+      versionId: Number.isNaN(versionId) ? null : versionId,
+    };
+    Object.assign(draft, collectStep1FromForm(form));
+    draft.availability = collectAvailabilitySeed(root);
+    draft.images = collectImagesSeed(root);
+    return draft;
   }
 
   function detailsUrl(itemId) {
@@ -202,15 +249,33 @@
     return enabledDaysFromRanges(availability.ranges);
   }
 
+  function applyExistingSlotsToGrid(grid, slots) {
+    if (!grid) {
+      return;
+    }
+    grid.querySelectorAll("[data-existing-slot]").forEach(function (node) {
+      node.remove();
+    });
+    (slots || []).forEach(function (slot) {
+      if (!slot || !slot.weekday) {
+        return;
+      }
+      var span = document.createElement("span");
+      span.className = "hidden";
+      span.setAttribute("data-existing-slot", "");
+      span.setAttribute("data-weekday", slot.weekday);
+      span.setAttribute("data-start", slot.startTime);
+      span.setAttribute("data-end", slot.endTime);
+      grid.insertBefore(span, grid.firstChild);
+    });
+  }
+
   function restoreStep2Availability(grid, availability, notifyGrid) {
     if (!grid || !availability) {
       return;
     }
 
-    var slots = rangesToExistingSlots(availability);
-    if (slots.length) {
-      grid.dataset.existingSlots = JSON.stringify(slots);
-    }
+    applyExistingSlotsToGrid(grid, rangesToExistingSlots(availability));
 
     resolveEnabledDays(availability).forEach(function (day) {
       var toggle = grid.querySelector('[data-day-toggle="' + day + '"]');
@@ -388,13 +453,11 @@
       return;
     }
     var draft = readDraftForRoot(root);
-    if (!draft) {
-      var itemId = readItemId(root);
-      window.location.assign(itemId == null ? "/my-boats" : bootstrapUrl(itemId));
-      return;
-    }
     if (draft) {
       restoreStep1Form(form, draft);
+    } else {
+      draft = buildDraftFromServer(root, form);
+      saveDraft(draft);
     }
     form.addEventListener("submit", function () {
       saveDraft(mergeDraft(readDraft(), collectStep1FromForm(form)));
@@ -405,7 +468,7 @@
     var draft = readDraftForRoot(root);
     var itemId = readItemId(root);
     if (!draft || !draft.title) {
-      window.location.assign(itemId == null ? "/my-boats" : bootstrapUrl(itemId));
+      window.location.assign(itemId == null ? "/my-boats" : detailsUrl(itemId));
       return;
     }
 

@@ -20,6 +20,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class MarketplaceJpaDao implements MarketplaceDao {
 
+    private static final String BOOKING_BLOCKING_STATUSES =
+            "CAST('PENDING' AS booking_status_enum), CAST('ACCEPTED' AS booking_status_enum), "
+                    + "CAST('PAID' AS booking_status_enum), CAST('CONFIRMED' AS booking_status_enum)";
+
     private static final String VERSION_FETCH_JPQL = "SELECT DISTINCT v FROM Version v "
             + "JOIN FETCH v.item JOIN FETCH v.location JOIN FETCH v.type "
             + "LEFT JOIN FETCH v.media m LEFT JOIN FETCH m.image "
@@ -162,6 +166,20 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             whereClauses.add(availabilityClause.append(')').toString());
         }
 
+        if (hasRequestedBookingRange(query)) {
+            whereClauses.add("NOT EXISTS (SELECT 1 FROM booking b"
+                    + " INNER JOIN version bv ON bv.id = b.version_id"
+                    + " WHERE bv.item_id = v.item_id"
+                    + " AND b.status IN (" + BOOKING_BLOCKING_STATUSES + ")"
+                    + " AND b.start <= ((CAST(:requestedDate AS date) + CAST(:requestedEnd AS time))"
+                    + " AT TIME ZONE COALESCE(NULLIF(TRIM(v.timezone), ''), 'UTC')) AT TIME ZONE 'UTC'"
+                    + " AND ((CAST(:requestedDate AS date) + CAST(:requestedStart AS time))"
+                    + " AT TIME ZONE COALESCE(NULLIF(TRIM(v.timezone), ''), 'UTC')) AT TIME ZONE 'UTC' <= b.\"end\")");
+            parameters.put("requestedDate", query.getRequestedDate());
+            parameters.put("requestedStart", query.getStartTime());
+            parameters.put("requestedEnd", query.getEndTime());
+        }
+
         if (!whereClauses.isEmpty()) {
             sql += "WHERE " + String.join(" AND ", whereClauses);
         }
@@ -217,6 +235,10 @@ public class MarketplaceJpaDao implements MarketplaceDao {
 
     private static boolean isEmpty(final String value) {
         return value == null || value.isBlank();
+    }
+
+    private static boolean hasRequestedBookingRange(final MarketplaceQueryModel query) {
+        return query.getRequestedDate() != null && query.getStartTime() != null && query.getEndTime() != null;
     }
 
     private long countReviewsForItem(final int itemId) {

@@ -114,6 +114,22 @@ charset=UTF-8" pageEncoding="UTF-8" %>
       </p>
     </div>
 
+    <div data-edit-wizard-seed hidden="hidden" data-version-id="<c:out value='${versionId}'/>">
+      <c:forEach var="range" items="${publishForm.availabilityRanges}">
+        <span class="hidden"
+              data-edit-seed-range
+              data-weekday="<c:out value='${range.weekday}'/>"
+              data-start="<c:out value='${range.startTime}'/>"
+              data-end="<c:out value='${range.endTime}'/>"></span>
+      </c:forEach>
+      <c:forEach var="image" items="${editGalleryImages}">
+        <span class="hidden"
+              data-edit-seed-image
+              data-id="<c:out value='${image.id}'/>"
+              data-url="<c:out value='${image.url}'/>"></span>
+      </c:forEach>
+    </div>
+
     <form:form
       action="${editDetailsUrl}"
       method="post"

@@ -93,8 +93,7 @@ public class ProfileController {
             return profilePresentation.profileReviewsErrors(viewer, profileUser, profileReviewsView, errors);
         }
 
-        final var reviewsPage = reviewService.findReviewsAboutHost(id, profileReviewsView.getPage());
-        final Double averageRating = reviewService.averageRatingAboutHost(id).orElse(null);
+        final var hostReviewsPage = reviewService.findHostReviewsPage(id, profileReviewsView.getPage());
 
         final boolean isSelf = viewer != null && viewer.getId() == profileUser.getId();
         final boolean isSubscribed =
@@ -102,6 +101,12 @@ public class ProfileController {
         final int followersCount = subscriptionService.countFollowers(id);
 
         return profilePresentation.profileReviews(
-                profileUser, reviewsPage, averageRating, followersCount, isSelf, isSubscribed, profileReviewsView);
+                profileUser,
+                hostReviewsPage.getReviews(),
+                hostReviewsPage.getAverageRating(),
+                followersCount,
+                isSelf,
+                isSubscribed,
+                profileReviewsView);
     }
 }

@@ -2,11 +2,11 @@ package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
 import ar.edu.itba.paw.models.dto.PageModel;
-import ar.edu.itba.paw.models.dto.ReviewSummary;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.TargetEnum;
 import ar.edu.itba.paw.models.entity.Version;
+import ar.edu.itba.paw.persistence.utils.ItemReviewSummaries;
 import ar.edu.itba.paw.persistence.utils.Paging;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -81,10 +81,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             items.add(item);
         }
 
-        // Populate review transients for marketplace cards.
-        for (final Item item : items) {
-            item.setReviewSummary(reviewSummaryForItem(item.getId()));
-        }
+        ItemReviewSummaries.populateReviewSummaries(em, items);
 
         return new PageModel<>(items, query.getPage(), query.getPageSize(), totalCount);
     }
@@ -134,11 +131,8 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             parameters.put("difficulty", query.getDifficulty());
         }
         if (query.getMinAvgRating() != null) {
-            whereClauses.add("(SELECT COALESCE(AVG(r.rating), 0) FROM review r"
-                    + " INNER JOIN booking b ON r.booking_id = b.id"
-                    + " INNER JOIN version v2 ON b.version_id = v2.id"
-                    + " WHERE r.target_type = CAST(:itemTargetType AS target_enum) AND v2.item_id = v.item_id)"
-                    + " >= :minAvgRating");
+            sql += ItemReviewSummaries.MARKETPLACE_REVIEW_AVERAGES_JOIN;
+            whereClauses.add("COALESCE(item_reviews.average_rating, 0) >= :minAvgRating");
             parameters.put("itemTargetType", TargetEnum.ITEM.name());
             parameters.put("minAvgRating", query.getMinAvgRating());
         }
@@ -236,31 +230,5 @@ public class MarketplaceJpaDao implements MarketplaceDao {
 
     private static boolean hasRequestedBookingRange(final MarketplaceQueryModel query) {
         return query.getRequestedDate() != null && query.getStartTime() != null && query.getEndTime() != null;
-    }
-
-    private ReviewSummary reviewSummaryForItem(final int itemId) {
-        final long totalReviews = countReviewsForItem(itemId);
-        final double averageRating = totalReviews > 0 ? averageRatingForItem(itemId) : 0.0;
-        return new ReviewSummary(totalReviews, averageRating);
-    }
-
-    private long countReviewsForItem(final int itemId) {
-        final Query query = em.createNativeQuery("SELECT COUNT(r.id) FROM review r "
-                + "INNER JOIN booking b ON r.booking_id = b.id "
-                + "INNER JOIN version v2 ON b.version_id = v2.id "
-                + "WHERE r.target_type = CAST(:target AS target_enum) AND v2.item_id = :itemId");
-        query.setParameter("target", TargetEnum.ITEM.name());
-        query.setParameter("itemId", itemId);
-        return ((Number) query.getSingleResult()).longValue();
-    }
-
-    private double averageRatingForItem(final int itemId) {
-        final Query query = em.createNativeQuery("SELECT COALESCE(AVG(r.rating), 0) FROM review r "
-                + "INNER JOIN booking b ON r.booking_id = b.id "
-                + "INNER JOIN version v2 ON b.version_id = v2.id "
-                + "WHERE r.target_type = CAST(:target AS target_enum) AND v2.item_id = :itemId");
-        query.setParameter("target", TargetEnum.ITEM.name());
-        query.setParameter("itemId", itemId);
-        return ((Number) query.getSingleResult()).doubleValue();
     }
 }

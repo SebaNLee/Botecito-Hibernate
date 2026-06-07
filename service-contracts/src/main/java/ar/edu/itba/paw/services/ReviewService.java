@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.HostReviewsPage;
 import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.TargetEnum;
 import java.util.List;
@@ -16,7 +16,5 @@ public interface ReviewService {
 
     Map<Integer, List<Review>> findReviewsByBookingIds(int reviewerUserId);
 
-    PageModel<Review> findReviewsAboutHost(int hostUserId, int page);
-
-    Optional<Double> averageRatingAboutHost(int hostUserId);
+    HostReviewsPage findHostReviewsPage(int hostUserId, int page);
 }

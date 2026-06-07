@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.dto.HostReviewStats;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.TargetEnum;
@@ -78,31 +79,19 @@ public class ReviewJpaDao implements ReviewDao {
     }
 
     @Override
-    public long countReviewsAboutHost(final int hostUserId) {
-        return ((Number) entityManager
-                        .createQuery("SELECT COUNT(r) FROM Review r "
-                                + "WHERE r.targetType = :target "
-                                + "  AND r.booking.version.item.host.id = :hostId "
-                                + "  AND r.sender.id <> :hostId")
-                        .setParameter("target", TargetEnum.USER)
-                        .setParameter("hostId", hostUserId)
-                        .getSingleResult())
-                .longValue();
-    }
-
-    @Override
-    public Optional<Double> averageRatingAboutHost(final int hostUserId) {
-        final Object raw = entityManager
-                .createQuery("SELECT AVG(r.rating) FROM Review r "
+    public HostReviewStats hostReviewStats(final int hostUserId) {
+        final Object[] row = (Object[]) entityManager
+                .createQuery("SELECT COUNT(r), AVG(r.rating) FROM Review r "
                         + "WHERE r.targetType = :target "
                         + "  AND r.booking.version.item.host.id = :hostId "
                         + "  AND r.sender.id <> :hostId")
                 .setParameter("target", TargetEnum.USER)
                 .setParameter("hostId", hostUserId)
                 .getSingleResult();
-        if (raw == null) {
-            return Optional.empty();
+        final long totalReviews = row[0] == null ? 0L : ((Number) row[0]).longValue();
+        if (totalReviews == 0L) {
+            return new HostReviewStats(0L, Optional.empty());
         }
-        return Optional.of(((Number) raw).doubleValue());
+        return new HostReviewStats(totalReviews, Optional.of(((Number) row[1]).doubleValue()));
     }
 }

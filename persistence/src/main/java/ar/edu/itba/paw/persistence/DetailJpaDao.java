@@ -7,6 +7,7 @@ import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.TargetEnum;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.models.paging.ReviewPaging;
+import ar.edu.itba.paw.persistence.utils.ItemReviewSummaries;
 import ar.edu.itba.paw.persistence.utils.Paging;
 import java.util.List;
 import java.util.Optional;
@@ -30,16 +31,6 @@ public class DetailJpaDao implements DetailDao {
             + "JOIN FETCH v.location JOIN FETCH v.type "
             + "LEFT JOIN FETCH v.media m LEFT JOIN FETCH m.image "
             + "WHERE v.id IN :ids";
-
-    private static final String SQL_REVIEW_COUNT_FOR_ITEM = "SELECT COUNT(r.id) FROM review r "
-            + "INNER JOIN booking b ON r.booking_id = b.id "
-            + "INNER JOIN version v2 ON b.version_id = v2.id "
-            + "WHERE r.target_type = CAST(:itemTargetType AS target_enum) AND v2.item_id = :itemId";
-
-    private static final String SQL_REVIEW_AVG_FOR_ITEM = "SELECT COALESCE(AVG(r.rating), 0) FROM review r "
-            + "INNER JOIN booking b ON r.booking_id = b.id "
-            + "INNER JOIN version v2 ON b.version_id = v2.id "
-            + "WHERE r.target_type = CAST(:itemTargetType AS target_enum) AND v2.item_id = :itemId";
 
     private static final String SQL_REVIEW_IDS_FOR_ITEM = "SELECT r.id FROM review r "
             + "INNER JOIN booking b ON r.booking_id = b.id "
@@ -93,26 +84,12 @@ public class DetailJpaDao implements DetailDao {
     }
 
     private void populateReviewTransients(final Item item, final int itemId, final int reviewPage) {
-        final long totalReviews = countReviewsForItem(itemId);
-        final double averageRating = averageRatingForItem(itemId);
+        final var reviewSummary = ItemReviewSummaries.reviewSummaryForItem(em, itemId);
         final List<Review> reviews = loadReviewsPage(itemId, reviewPage);
 
         item.setItemReviewPage(new ItemReviewPage(
-                new PageModel<>(reviews, reviewPage, ReviewPaging.DEFAULT_PAGE_SIZE, totalReviews), averageRating));
-    }
-
-    private long countReviewsForItem(final int itemId) {
-        final Query countQuery = em.createNativeQuery(SQL_REVIEW_COUNT_FOR_ITEM);
-        countQuery.setParameter("itemId", itemId);
-        countQuery.setParameter("itemTargetType", TargetEnum.ITEM.name());
-        return ((Number) countQuery.getSingleResult()).longValue();
-    }
-
-    private double averageRatingForItem(final int itemId) {
-        final Query avgQuery = em.createNativeQuery(SQL_REVIEW_AVG_FOR_ITEM);
-        avgQuery.setParameter("itemId", itemId);
-        avgQuery.setParameter("itemTargetType", TargetEnum.ITEM.name());
-        return ((Number) avgQuery.getSingleResult()).doubleValue();
+                new PageModel<>(reviews, reviewPage, ReviewPaging.DEFAULT_PAGE_SIZE, reviewSummary.getTotalReviews()),
+                reviewSummary.getAverageRating()));
     }
 
     private List<Review> loadReviewsPage(final int itemId, final int page) {

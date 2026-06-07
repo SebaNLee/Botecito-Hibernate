@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.dto.HostReviewStats;
 import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.TargetEnum;
 import java.util.List;
@@ -16,7 +17,5 @@ public interface ReviewDao {
 
     List<Review> findReviewsAboutHost(int hostUserId, int page, int pageSize);
 
-    long countReviewsAboutHost(int hostUserId);
-
-    Optional<Double> averageRatingAboutHost(int hostUserId);
+    HostReviewStats hostReviewStats(int hostUserId);
 }

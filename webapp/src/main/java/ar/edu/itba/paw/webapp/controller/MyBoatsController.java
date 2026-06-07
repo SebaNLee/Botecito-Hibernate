@@ -11,7 +11,6 @@ import ar.edu.itba.paw.webapp.form.SaveSelfBlocksForm;
 import ar.edu.itba.paw.webapp.presentation.AvailabilityPresentation;
 import ar.edu.itba.paw.webapp.presentation.MyBoatsActionsPresentation;
 import ar.edu.itba.paw.webapp.presentation.MyBoatsPresentation;
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -48,11 +47,10 @@ public class MyBoatsController {
     @RequestMapping(value = "/my-boats", method = RequestMethod.GET)
     public ModelAndView myBoats(
             @AuthenticationPrincipal final BotecitoUserDetails user,
-            final HttpServletRequest request,
             @Valid @ModelAttribute("myBoatsSearch") final MyBoatsSearchForm search,
             final BindingResult errors) {
         if (errors.hasErrors()) {
-            return myBoatsPresentation.myBoatsErrors(request, search, errors);
+            return myBoatsPresentation.myBoatsErrors(search, errors);
         }
         final SearchResult<Item> result = itemService.listOwnerItems(
                 user.getId(),
@@ -61,7 +59,7 @@ public class MyBoatsController {
                 search.getPage(),
                 search.getPageSize(),
                 search.getSortBy());
-        return myBoatsPresentation.myBoatsList(request, search, result.getPageElements(), result.getTotalCount());
+        return myBoatsPresentation.myBoatsList(search, result.getPageElements(), result.getTotalCount());
     }
 
     @RequestMapping(value = "/my-boats/{id:[0-9]+}/disable", method = RequestMethod.POST)

@@ -2,12 +2,15 @@ package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.AvailabilityWindow;
 import ar.edu.itba.paw.models.dto.ImageUpload;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
-import ar.edu.itba.paw.webapp.util.JsonForHtml;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import org.springframework.validation.BindingResult;
@@ -97,8 +100,58 @@ public final class PublishWizardMapping {
     }
 
     public static void addAvailabilityEditorData(final ModelAndView mav, final PublishBoatForm form) {
-        mav.addObject("existingSlotsJson", toExistingSlotsJson(form));
         mav.addObject("enabledWeekdays", buildEnabledWeekdaysModel(form));
+    }
+
+    public static PublishBoatForm fromVersion(final Version version) {
+        final PublishBoatForm form = new PublishBoatForm();
+        form.setTitle(version.getTitle());
+        form.setDescription(version.getDescription() == null ? "" : version.getDescription());
+        form.setItemTypeId(version.getType().getId());
+        form.setPricePerHour(version.getPrice().intValue());
+        form.setCapacity(version.getCapacity());
+        form.setWeight(version.getWeight());
+        form.setDifficulty(version.getDifficulty());
+        form.setLocationOptionId(version.getLocation().getId());
+
+        final LinkedHashSet<DayOfWeek> enabledDays = new LinkedHashSet<>();
+        final List<PublishBoatForm.AvailabilityRangeBinding> ranges = new ArrayList<>();
+        if (version.getAvailabilities() != null) {
+            for (final Availability availability : version.getAvailabilities()) {
+                if (availability.getWeekday() == null
+                        || availability.getStartTime() == null
+                        || availability.getEndTime() == null) {
+                    continue;
+                }
+                enabledDays.add(DayOfWeek.valueOf(availability.getWeekday().name()));
+                final PublishBoatForm.AvailabilityRangeBinding range = new PublishBoatForm.AvailabilityRangeBinding();
+                range.setWeekday(DayOfWeek.valueOf(availability.getWeekday().name()));
+                range.setStartTime(availability.getStartTime());
+                range.setEndTime(availability.getEndTime());
+                ranges.add(range);
+            }
+        }
+        form.setEnabledDays(new ArrayList<>(enabledDays));
+        form.setAvailabilityRanges(ranges);
+        return form;
+    }
+
+    public static List<EditGalleryImageSeed> buildEditGallerySeeds(final Version version, final String contextPath) {
+        if (version.getMedia() == null || version.getMedia().isEmpty()) {
+            return List.of();
+        }
+        final List<EditGalleryImageSeed> images = new ArrayList<>();
+        version.getMedia().stream()
+                .sorted(Comparator.comparingInt(m -> m.getId().getIndex()))
+                .forEach(media -> {
+                    if (media.getImage() == null || media.getImage().getId() == null) {
+                        return;
+                    }
+                    images.add(new EditGalleryImageSeed(
+                            media.getImage().getId(),
+                            contextPath + "/image/" + media.getImage().getId()));
+                });
+        return images;
     }
 
     public static boolean hasErrorsOutsideAvailability(final BindingResult errors) {
@@ -111,27 +164,6 @@ public final class PublishWizardMapping {
             model.put(weekday.name(), form.getEnabledDays().contains(weekday));
         }
         return model;
-    }
-
-    public static String toExistingSlotsJson(final PublishBoatForm form) {
-        if (form.getAvailabilityRanges() == null || form.getAvailabilityRanges().isEmpty()) {
-            return JsonForHtml.serialize(List.of());
-        }
-        final List<Map<String, String>> slots = new ArrayList<>();
-        for (final PublishBoatForm.AvailabilityRangeBinding range : form.getAvailabilityRanges()) {
-            if (range == null
-                    || range.getWeekday() == null
-                    || range.getStartTime() == null
-                    || range.getEndTime() == null) {
-                continue;
-            }
-            final Map<String, String> slot = new LinkedHashMap<>();
-            slot.put("weekday", range.getWeekday().name());
-            slot.put("startTime", range.getStartTime().toString());
-            slot.put("endTime", range.getEndTime().toString());
-            slots.add(slot);
-        }
-        return JsonForHtml.serialize(slots);
     }
 
     private static boolean isAvailabilityError(final String field) {

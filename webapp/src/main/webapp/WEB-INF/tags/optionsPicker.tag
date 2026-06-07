@@ -42,9 +42,9 @@
         class="fieldset w-full ${resolvedContainerClass}"
         data-options-picker
         data-options-url="<c:url value='${resolvedOptionsUrl}' />"
-        data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
-        data-required-message="${fn:escapeXml(resolvedRequiredMsg)}">
-      <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-option-value />
+        data-placeholder="<c:out value='${resolvedPlaceholder}'/>"
+        data-required-message="<c:out value='${resolvedRequiredMsg}'/>">
+      <input id="${id}" name="${name}" type="hidden" value="<c:out value='${resolvedValue}'/>" data-option-value />
       <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
         <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
@@ -59,14 +59,14 @@
               type="text"
               value=""
               class="min-w-0 grow bg-transparent border-none p-0 text-[0.95rem] font-bold text-on-surface placeholder:text-on-surface/60 outline-none focus:outline-none focus:ring-0 shadow-none"
-              placeholder="${fn:escapeXml(resolvedPlaceholder)}"
+              placeholder="<c:out value='${resolvedPlaceholder}'/>"
               autocomplete="off"
               spellcheck="false"
               data-option-query />
         <button
             type="button"
             class="btn btn-ghost btn-xs btn-circle ${lpText} opacity-0 pointer-events-none"
-            aria-label="${fn:escapeXml(defaultClearLabel)}"
+            aria-label="<c:out value='${defaultClearLabel}'/>"
             data-option-clear>
           <span class="material-symbols-outlined text-base">close</span>
         </button>
@@ -93,9 +93,9 @@
         class="fieldset w-full ${resolvedContainerClass}"
         data-options-picker
         data-options-url="<c:url value='${resolvedOptionsUrl}' />"
-        data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
-        data-required-message="${fn:escapeXml(resolvedRequiredMsg)}">
-      <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-option-value />
+        data-placeholder="<c:out value='${resolvedPlaceholder}'/>"
+        data-required-message="<c:out value='${resolvedRequiredMsg}'/>">
+      <input id="${id}" name="${name}" type="hidden" value="<c:out value='${resolvedValue}'/>" data-option-value />
       <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
         <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
@@ -110,14 +110,14 @@
               type="text"
               value=""
               class="min-w-0 grow bg-transparent border-none p-0 text-[0.95rem] font-bold text-on-surface placeholder:text-on-surface/60 outline-none focus:outline-none focus:ring-0 shadow-none"
-              placeholder="${fn:escapeXml(resolvedPlaceholder)}"
+              placeholder="<c:out value='${resolvedPlaceholder}'/>"
               autocomplete="off"
               spellcheck="false"
               data-option-query />
           <button
               type="button"
               class="btn btn-ghost btn-xs btn-circle ${lpText} opacity-0 pointer-events-none"
-              aria-label="${fn:escapeXml(defaultClearLabel)}"
+              aria-label="<c:out value='${defaultClearLabel}'/>"
               data-option-clear>
             <span class="material-symbols-outlined text-base">close</span>
           </button>

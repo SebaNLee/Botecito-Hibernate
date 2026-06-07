@@ -37,6 +37,7 @@ public final class MarketplaceImpl implements MarketplaceService {
         final MarketplaceQueryModel query = new MarketplaceQueryModel();
         final DayOfWeek weekday = ServiceUtils.dateToDayOfWeek(date);
         query.setSearchQuery(searchQuery);
+        query.setRequestedDate(date);
         query.setWeekday(weekday);
         query.setStartTime(startTime);
         query.setEndTime(endTime);

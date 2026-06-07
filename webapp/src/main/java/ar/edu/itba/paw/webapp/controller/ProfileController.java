@@ -13,7 +13,6 @@ import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ProfileViewForm;
 import ar.edu.itba.paw.webapp.presentation.ProfilePresentation;
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -53,12 +52,11 @@ public class ProfileController {
             @AuthenticationPrincipal final BotecitoUserDetails viewer,
             @PathVariable("id") final int id,
             @Valid @ModelAttribute("profileView") final ProfileViewForm profileView,
-            final BindingResult errors,
-            final HttpServletRequest request) {
+            final BindingResult errors) {
         final Users profileUser = userService.findById(id).orElseThrow(UserNotFoundException::new);
 
         if (errors.hasErrors()) {
-            return profilePresentation.profileErrors(viewer, profileUser, profileView, errors, request);
+            return profilePresentation.profileErrors(viewer, profileUser, profileView, errors);
         }
 
         final String activeTab = resolveActiveTab(profileView.getTab());
@@ -93,8 +91,7 @@ public class ProfileController {
                 followersCount,
                 isSelf,
                 isSubscribed,
-                profileView,
-                request);
+                profileView);
     }
 
     private static String resolveActiveTab(final String tab) {

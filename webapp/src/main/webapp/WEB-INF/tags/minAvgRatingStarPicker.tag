@@ -12,7 +12,7 @@
 <fieldset
     class="fieldset space-y-2"
     data-min-rating-picker
-    aria-label="${fn:escapeXml(label)}">
+    aria-label="<c:out value='${label}'/>">
   <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1 block">
     <c:out value="${label}" />
   </legend>
@@ -21,7 +21,7 @@
       type="hidden"
       id="${id}"
       name="${name}"
-      value="${fn:escapeXml(resolvedValue)}"
+      value="<c:out value='${resolvedValue}'/>"
       data-min-rating-value-input />
 
   <div class="flex flex-wrap items-center gap-3">

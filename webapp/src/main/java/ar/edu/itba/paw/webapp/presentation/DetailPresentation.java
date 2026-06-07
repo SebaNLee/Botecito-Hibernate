@@ -14,7 +14,6 @@ import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ItemDetailViewForm;
 import ar.edu.itba.paw.webapp.form.PreBookingForm;
 import ar.edu.itba.paw.webapp.form.ReportForm;
-import ar.edu.itba.paw.webapp.util.AvailabilityJsonHelper;
 import ar.edu.itba.paw.webapp.util.DetailAvailabilityPicker;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.time.format.DateTimeFormatter;
@@ -165,7 +164,10 @@ public class DetailPresentation {
         final String listingTz = version.getTimezone();
         final AvailabilityData detailData =
                 DetailAvailabilityPicker.build(availabilityWindows, itemBookings, listingTz);
-        AvailabilityJsonHelper.addAvailabilityPickerData(mav, MESSAGE_PREFIX, detailData);
+        mav.addObject("detailOfferedDates", detailData.getOfferedDates());
+        mav.addObject("detailOccupiedDates", detailData.getOccupiedDates());
+        mav.addObject("detailOfferedTimesByDate", detailData.getOfferedTimesByDate());
+        mav.addObject("detailOccupiedTimesByDate", detailData.getOccupiedTimesByDate());
         mav.addObject("detailListingTimezoneId", listingTz == null || listingTz.isBlank() ? "" : listingTz.trim());
         mav.addObject(
                 "detailListingTodayIso",

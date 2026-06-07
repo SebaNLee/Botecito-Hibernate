@@ -13,7 +13,7 @@
     <input type="hidden" name="page" value="${view.page}" />
   </c:if>
   <c:if test="${not empty view.sortBy && view.sortBy != 'newest'}">
-    <input type="hidden" name="sortBy" value="${fn:escapeXml(view.sortBy)}" />
+    <input type="hidden" name="sortBy" value="<c:out value='${view.sortBy}'/>" />
   </c:if>
   <c:if test="${view.pageSize != null && view.pageSize != 12}">
     <input type="hidden" name="pageSize" value="${view.pageSize}" />

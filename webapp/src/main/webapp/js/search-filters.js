@@ -214,6 +214,13 @@
     }
   }
 
+  function clearMarketplaceFiltersIfRequested() {
+    if (!document.querySelector('[data-clear-marketplace-filters="true"]')) {
+      return;
+    }
+    clearStoredStates();
+  }
+
   function parseInteger(value) {
     const parsed = Number.parseInt(String(value || "").trim(), 10);
     return Number.isFinite(parsed) ? parsed : null;
@@ -1580,6 +1587,7 @@
       new minAvgRatingPicker(root);
     });
 
+    clearMarketplaceFiltersIfRequested();
     initializeLandingFilters();
     initializeMarketplaceFilters();
     initializeItemDetailMarketplaceBack();

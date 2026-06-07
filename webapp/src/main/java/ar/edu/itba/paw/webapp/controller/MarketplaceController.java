@@ -5,7 +5,6 @@ import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.services.MarketplaceService;
 import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import ar.edu.itba.paw.webapp.presentation.MarketplacePresentation;
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -37,12 +36,11 @@ public class MarketplaceController {
 
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
     public ModelAndView marketplace(
-            final HttpServletRequest request,
             @Valid @ModelAttribute("marketplaceSearch") final MarketplaceSearchForm search,
             final BindingResult errors) {
 
         if (errors.hasErrors()) {
-            return marketplacePresentation.marketplaceErrors(request, search, errors);
+            return marketplacePresentation.marketplaceErrors(search, errors);
         }
 
         final SearchResult<Item> result = marketplaceService.searchMarketplace(
@@ -59,6 +57,6 @@ public class MarketplaceController {
                 search.getPage(),
                 search.getPageSize(),
                 search.getSortBy());
-        return marketplacePresentation.marketplace(request, search, result);
+        return marketplacePresentation.marketplace(search, result);
     }
 }

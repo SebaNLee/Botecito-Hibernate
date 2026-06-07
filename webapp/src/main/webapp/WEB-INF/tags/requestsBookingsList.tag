@@ -99,18 +99,16 @@
                 id="requests-${sidebarActive}-date"
                 dateFieldName="date"
                 label="${dateLabel}"
-                value="${fn:escapeXml(bookingSearch.date)}"
+                value="${bookingSearch.date}"
                 placeholder="${datePlaceholder}"
-                restrictToAvailability="false"
-                offeredDatesJson="[]"
-                occupiedDatesJson="[]" />
+                restrictToAvailability="false" />
           </div>
 
           <paw:optionsPicker
               id="requests-${sidebarActive}-status"
               name="status"
               label="${statusFilterLabel}"
-              value="${fn:escapeXml(bookingSearch.status)}"
+              value="${bookingSearch.status}"
               placeholder="${statusAnyPlaceholder}"
               icon="flag"
               variant="inline"
@@ -138,7 +136,7 @@
           <paw:searchBar
               formId="${filterFormId}"
               name="searchQuery"
-              value="${fn:escapeXml(bookingSearch.searchQuery)}"
+              value="${bookingSearch.searchQuery}"
               placeholder="${searchLabel}"
               ariaLabel="${searchLabel}"
               maxlength="100"
@@ -246,7 +244,7 @@
 
               <div class="flex flex-col md:flex-row w-full bg-base-100 rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden p-0">
                 <div class="relative flex flex-col md:flex-row flex-1 min-w-0 transition hover:bg-base-200">
-                  <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-l-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="${fn:escapeXml(b.version.title)}"></a>
+                  <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-l-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${b.version.title}'/>"></a>
 
                   <!-- Image Side -->
                   <div class="pointer-events-none relative z-0 flex w-full md:w-48 shrink-0 items-center justify-center bg-base-300 md:border-r border-outline-variant/20 p-4 h-32 md:h-auto overflow-hidden">
@@ -379,7 +377,7 @@
                           </div>
                           <div class="form-control w-full">
                             <label class="label block text-[11px] font-bold uppercase tracking-wider text-outline mb-1" for="guest-reply-${b.id}"><c:out value="${guestReplyLabel}" /></label>
-                            <textarea id="guest-reply-${b.id}" name="guestReply" rows="3" maxlength="255" class="textarea textarea-bordered w-full" placeholder="${fn:escapeXml(guestReplyPlaceholder)}"></textarea>
+                            <textarea id="guest-reply-${b.id}" name="guestReply" rows="3" maxlength="255" class="textarea textarea-bordered w-full" placeholder="<c:out value='${guestReplyPlaceholder}'/>"></textarea>
                           </div>
                           <paw:button type="submit" color="primary" text="${actionSubmitPaymentLabel}" submitLoading="true" />
                         </form>

@@ -1,6 +1,5 @@
 <%@ tag language="java" pageEncoding="UTF-8" %>
 <%@ attribute name="item" required="true" type="ar.edu.itba.paw.models.entity.Item" %>
-<%@ attribute name="coverSrc" required="true" %>
 <%@ attribute name="favourite" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="canFavourite" required="false" type="java.lang.Boolean" %>
 <%@ attribute name="favouritesSearch" required="false" type="ar.edu.itba.paw.webapp.form.FavouritesSearchForm" rtexprvalue="true" %>
@@ -26,9 +25,12 @@
 </c:choose>
 <spring:message code="favourite.add" var="favouriteAddLabel" />
 <spring:message code="favourite.remove" var="favouriteRemoveLabel" />
-<c:set var="resolvedCoverSrc" value="${coverSrc}" />
-<c:if test="${empty resolvedCoverSrc}">
-  <c:url var="resolvedCoverSrc" value="/css/boat-placeholder.svg" />
+<c:url var="resolvedCoverSrc" value="/css/boat-placeholder.svg" />
+<c:if test="${not empty item.latestVersion.media}">
+  <c:set var="coverMedia" value="${item.latestVersion.media[0]}" />
+  <c:if test="${not empty coverMedia.image}">
+    <c:url var="resolvedCoverSrc" value="/image/${coverMedia.image.id}" />
+  </c:if>
 </c:if>
 <c:set var="isFavourite" value="${favourite ne null ? favourite : false}" />
 <c:set var="isFavouriteAllowed" value="${canFavourite ne null ? canFavourite : false}" />
@@ -51,7 +53,7 @@
 
   <a href="${itemUrl}" data-marketplace-item-link class="block no-underline text-base-content">
     <figure class="aspect-[4/3] overflow-hidden">
-      <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="${fn:escapeXml(item.latestVersion.title)}" src="${resolvedCoverSrc}"/>
+      <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="<c:out value='${item.latestVersion.title}'/>" src="${resolvedCoverSrc}"/>
     </figure>
     <div class="card-body min-w-0 p-4 gap-3">
       <div class="flex justify-between items-start gap-3">

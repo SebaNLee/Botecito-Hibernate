@@ -69,7 +69,7 @@
           <paw:searchBar
               formId="favourites-filters-form"
               name="searchQuery"
-              value="${fn:escapeXml(favouritesSearch.searchQuery)}"
+              value="${favouritesSearch.searchQuery}"
               placeholder="${searchPlaceholder}"
               ariaLabel="${searchLabel}"
               inputId="favourites-search-query"
@@ -136,7 +136,6 @@
         <c:forEach items="${items}" var="item">
           <paw:listingCard
               item="${item}"
-              coverSrc="${imageUrlsByItemId[item.id]}"
               favourite="${favouriteByItemId[item.id]}"
               canFavourite="${canFavouriteByItemId[item.id]}"
               favouritesSearch="${favouritesSearch}" />

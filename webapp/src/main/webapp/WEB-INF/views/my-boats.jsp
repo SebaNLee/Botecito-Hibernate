@@ -88,7 +88,7 @@
           <paw:searchBar
               formId="my-boats-filters-form"
               name="searchQuery"
-              value="${fn:escapeXml(myBoatsSearch.searchQuery)}"
+              value="${myBoatsSearch.searchQuery}"
               placeholder="${searchPlaceholder}"
               ariaLabel="${searchLabel}"
               inputId="my-boats-search-query"
@@ -148,16 +148,22 @@
               <c:url var="disableItemUrl" value="/my-boats/${item.id}/disable" />
               <c:url var="enableItemUrl" value="/my-boats/${item.id}/enable" />
               <c:url var="deleteItemUrl" value="/my-boats/${item.id}/delete" />
-              <c:set var="publicationImageUrl" value="${imageUrlsByItemId[item.id]}" />
+              <c:url var="publicationImageUrl" value="/css/boat-placeholder.svg" />
+              <c:if test="${not empty version.media}">
+                <c:set var="coverMedia" value="${version.media[0]}" />
+                <c:if test="${not empty coverMedia.image}">
+                  <c:url var="publicationImageUrl" value="/image/${coverMedia.image.id}" />
+                </c:if>
+              </c:if>
               <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
               <c:set var="disableFormId" value="disable-publication-form-${item.id}" />
               <c:set var="enableFormId" value="enable-publication-form-${item.id}" />
               <form id="${disableFormId}" action="${disableItemUrl}" method="post" hidden></form>
               <form id="${enableFormId}" action="${enableItemUrl}" method="post" hidden></form>
               <div class="group relative flex h-full w-full max-w-sm flex-col rounded-xl bg-base-200 transition hover:bg-base-300 ${itemActive ? '' : 'opacity-75'}">
-                <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="${fn:escapeXml(version.title)}"></a>
+                <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${version.title}'/>"></a>
                 <div class="dropdown dropdown-end absolute right-1.5 top-1.5 z-20 pointer-events-auto">
-                  <button type="button" tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle bg-base-100/90 shadow-sm backdrop-blur-sm border border-outline-variant/20 hover:bg-base-100" aria-label="${fn:escapeXml(publicationActionsLabel)}">
+                  <button type="button" tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle bg-base-100/90 shadow-sm backdrop-blur-sm border border-outline-variant/20 hover:bg-base-100" aria-label="<c:out value='${publicationActionsLabel}'/>">
                     <span class="material-symbols-outlined text-base leading-none">more_vert</span>
                   </button>
                   <ul tabindex="0" class="dropdown-content menu z-30 mt-1 w-52 rounded-box border border-outline-variant/20 bg-base-100 p-2 shadow-md">
@@ -201,7 +207,7 @@
                 </div>
                 <div class="pointer-events-none flex flex-col gap-2 p-2 sm:p-3">
                   <div class="h-24 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:h-32">
-                    <img src="${publicationImageUrl}" alt="${fn:escapeXml(version.title)}" class="h-full w-full object-cover" loading="lazy" />
+                    <img src="${publicationImageUrl}" alt="<c:out value='${version.title}'/>" class="h-full w-full object-cover" loading="lazy" />
                   </div>
                   <div class="flex min-w-0 flex-1 flex-col gap-1">
                     <div class="flex min-w-0 items-start gap-1.5 pr-8">

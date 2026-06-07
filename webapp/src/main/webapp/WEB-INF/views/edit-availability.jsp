@@ -55,11 +55,18 @@
         </c:if>
         <div
             data-weekly-availability-grid
-            data-existing-slots='${fn:escapeXml(existingSlotsJson)}'
             data-min-duration="120"
-            data-no-ranges-text="${publishNoRangesLabel}"
-            data-delete-text="${publishDeleteRangeLabel}"
-            data-missing-range-text="${publishMissingRangeLabel}">
+            data-no-ranges-text="<c:out value='${publishNoRangesLabel}'/>"
+            data-delete-text="<c:out value='${publishDeleteRangeLabel}'/>"
+            data-missing-range-text="<c:out value='${publishMissingRangeLabel}'/>">
+
+          <c:forEach var="range" items="${publishForm.availabilityRanges}">
+            <span class="hidden"
+                  data-existing-slot
+                  data-weekday="<c:out value='${range.weekday}'/>"
+                  data-start="<c:out value='${range.startTime}'/>"
+                  data-end="<c:out value='${range.endTime}'/>"></span>
+          </c:forEach>
 
           <p class="text-xs text-outline m-0"><spring:message code="publish.step2.instructions" /></p>
 

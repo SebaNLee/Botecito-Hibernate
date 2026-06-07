@@ -2,9 +2,11 @@ package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.MyBoatsQueryModel;
 import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
+import ar.edu.itba.paw.models.entity.Media;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.persistence.utils.Paging;
 import java.util.ArrayList;
@@ -185,5 +187,58 @@ public class ItemJpaDao implements ItemDao {
     @Override
     public void deleteItem(final Item item) {
         em.remove(item);
+    }
+
+    @Override
+    public Item persistItem(final Item item) {
+        em.persist(item);
+        return item;
+    }
+
+    @Override
+    public Version persistVersion(final Version version) {
+        em.persist(version);
+        return version;
+    }
+
+    @Override
+    public Availability persistAvailability(final Availability availability) {
+        em.persist(availability);
+        return availability;
+    }
+
+    @Override
+    public Image persistImage(final Image image) {
+        em.persist(image);
+        return image;
+    }
+
+    @Override
+    public Media persistMedia(final Media media) {
+        em.persist(media);
+        return media;
+    }
+
+    @Override
+    public Optional<Version> findVersionById(final int versionId) {
+        return Optional.ofNullable(em.find(Version.class, versionId));
+    }
+
+    @Override
+    public void removeVersionChildren(final Version version) {
+        em.createQuery("DELETE FROM Availability a WHERE a.version.id = :vid")
+                .setParameter("vid", version.getId())
+                .executeUpdate();
+        if (version.getAvailabilities() != null) {
+            version.getAvailabilities().clear();
+        }
+
+        em.createQuery("DELETE FROM Media m WHERE m.version.id = :vid")
+                .setParameter("vid", version.getId())
+                .executeUpdate();
+        if (version.getMedia() != null) {
+            version.getMedia().clear();
+        }
+        em.flush();
     }
 }

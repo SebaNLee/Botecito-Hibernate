@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.form;
 
 import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
@@ -15,7 +16,8 @@ public class FavouritesSearchForm {
     @Size(max = 100, message = "{favourites.search.validation.searchQuery.size}")
     private String searchQuery;
 
-    @Pattern(regexp = "^$|^(newest|oldest|nameAsc|nameDesc)$", message = "{favourites.search.validation.sort.pattern}")
+    @NotBlank(message = "{favourites.search.validation.sort.pattern}")
+    @Pattern(regexp = "^(newest|oldest|nameAsc|nameDesc)$", message = "{favourites.search.validation.sort.pattern}")
     private String sortBy;
 
     @NotNull

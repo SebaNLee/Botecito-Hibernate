@@ -3,11 +3,9 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
-<input type="hidden" name="page" value="${bookingSearch.page != null ? bookingSearch.page : 1}" />
-<input type="hidden" name="pageSize" value="${bookingSearch.pageSize != null ? bookingSearch.pageSize : 12}" />
-<c:if test="${not empty bookingSearch.sortBy && bookingSearch.sortBy != 'newest'}">
-  <input type="hidden" name="sortBy" value="<c:out value='${bookingSearch.sortBy}'/>" />
-</c:if>
+<input type="hidden" name="page" value="${bookingSearch.page}" />
+<input type="hidden" name="pageSize" value="${bookingSearch.pageSize}" />
+<input type="hidden" name="sortBy" value="<c:out value='${bookingSearch.sortBy}'/>" />
 <c:if test="${not empty bookingSearch.searchQuery}">
   <input type="hidden" name="searchQuery" value="<c:out value='${bookingSearch.searchQuery}'/>" />
 </c:if>

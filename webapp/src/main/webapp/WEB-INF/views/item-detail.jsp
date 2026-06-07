@@ -444,7 +444,7 @@
         <jsp:body>
           <div class="flex min-w-0 flex-col gap-4">
             <c:if test="${itemOwner != null}">
-              <c:url var="itemOwnerProfileUrl" value="/profiles/${itemOwner.id}" />
+              <c:url var="itemOwnerProfileUrl" value="/profiles/${itemOwner.id}/listings" />
             </c:if>
             <c:choose>
               <c:when test="${itemOwner != null}">

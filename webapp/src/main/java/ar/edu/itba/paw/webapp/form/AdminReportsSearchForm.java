@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.form;
 
 import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import lombok.Getter;
@@ -11,7 +12,8 @@ import lombok.Setter;
 @Setter
 public class AdminReportsSearchForm {
 
-    @Pattern(regexp = "^$|^(newest|oldest)$", message = "{admin.reports.validation.sort.pattern}")
+    @NotBlank(message = "{admin.reports.validation.sort.pattern}")
+    @Pattern(regexp = "^(newest|oldest)$", message = "{admin.reports.validation.sort.pattern}")
     private String sortBy;
 
     @NotNull

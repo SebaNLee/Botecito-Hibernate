@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.MyBoatsQueryModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Version;
@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface ItemDao {
 
-    SearchResult<Item> listOwnerItems(MyBoatsQueryModel query);
+    PageModel<Item> listOwnerItems(MyBoatsQueryModel query);
 
     Optional<Item> findItemById(int id);
 

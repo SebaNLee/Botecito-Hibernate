@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.services.MarketplaceService;
 import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
@@ -21,10 +21,6 @@ public class MarketplaceController {
     private final MarketplaceService marketplaceService;
     private final MarketplacePresentation marketplacePresentation;
 
-    /**
-     * Defaults for GET /marketplace before request binding; omitted query params
-     * stay at these values.
-     */
     @ModelAttribute("marketplaceSearch")
     public MarketplaceSearchForm defaultMarketplaceSearch() {
         final MarketplaceSearchForm form = new MarketplaceSearchForm();
@@ -43,7 +39,7 @@ public class MarketplaceController {
             return marketplacePresentation.marketplaceErrors(search, errors);
         }
 
-        final SearchResult<Item> result = marketplaceService.searchMarketplace(
+        final PageModel<Item> itemPage = marketplaceService.searchMarketplace(
                 search.getSearchQuery(),
                 search.getDate(),
                 search.getStartTime(),
@@ -57,6 +53,6 @@ public class MarketplaceController {
                 search.getPage(),
                 search.getPageSize(),
                 search.getSortBy());
-        return marketplacePresentation.marketplace(search, result);
+        return marketplacePresentation.marketplace(search, itemPage);
     }
 }

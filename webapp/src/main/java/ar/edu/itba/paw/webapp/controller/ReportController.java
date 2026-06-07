@@ -6,6 +6,7 @@ import ar.edu.itba.paw.services.ReportService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ReportForm;
 import ar.edu.itba.paw.webapp.presentation.DetailPageFlags;
+import ar.edu.itba.paw.webapp.presentation.DetailPageFlagsFactory;
 import ar.edu.itba.paw.webapp.presentation.DetailPresentation;
 import ar.edu.itba.paw.webapp.presentation.ReportPresentation;
 import javax.servlet.http.HttpServletRequest;

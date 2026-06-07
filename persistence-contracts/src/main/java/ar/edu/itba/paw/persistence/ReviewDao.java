@@ -16,7 +16,7 @@ public interface ReviewDao {
 
     List<Review> findReviewsAboutHost(int hostUserId, int page, int pageSize);
 
-    int countReviewsAboutHost(int hostUserId);
+    long countReviewsAboutHost(int hostUserId);
 
     Optional<Double> averageRatingAboutHost(int hostUserId);
 }

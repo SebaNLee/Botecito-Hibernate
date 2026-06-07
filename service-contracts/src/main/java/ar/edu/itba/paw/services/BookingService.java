@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.dto.SelfBlockCreate;
 import ar.edu.itba.paw.models.dto.SelfBlockUpdate;
 import ar.edu.itba.paw.models.dto.SelfBookingData;
@@ -16,7 +16,7 @@ public interface BookingService {
 
     void createBooking(int itemId, LocalDate date, LocalTime startTime, LocalTime endTime, String message, int guestId);
 
-    SearchResult<Booking> searchBookings(
+    PageModel<Booking> searchBookings(
             int userId,
             boolean asHost,
             String searchQuery,

@@ -25,7 +25,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -37,6 +36,11 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+/**
+ * Maps controller-layer exceptions to either a shared HTTP error page
+ * ({@code forward:/errors})
+ * or a flash toast plus redirect for recoverable domain/validation failures.
+ */
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -46,37 +50,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ForbiddenOperationException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ModelAndView handleForbiddenOperation(final HttpServletRequest request) {
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
-        return new ModelAndView("forward:/errors");
+        return errorPage(request, HttpStatus.FORBIDDEN.value());
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ModelAndView handleNotFound(final HttpServletRequest request) {
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
-        return new ModelAndView("forward:/errors");
+        return errorPage(request, HttpStatus.NOT_FOUND.value());
     }
 
-    @ExceptionHandler(ItemNotFoundException.class)
+    @ExceptionHandler({ItemNotFoundException.class, UserNotFoundException.class, ReportNotFoundException.class})
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ModelAndView handleItemNotFound(final HttpServletRequest request) {
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
-        return new ModelAndView("forward:/errors");
-    }
-
-    @ExceptionHandler(UserNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ModelAndView handleUserNotFound(final HttpServletRequest request) {
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
-        return new ModelAndView("forward:/errors");
+    public ModelAndView handleResourceNotFound(final HttpServletRequest request) {
+        return errorPage(request, HttpStatus.NOT_FOUND.value());
     }
 
     @ExceptionHandler(ResponseStatusException.class)
     public ModelAndView handleResponseStatus(
             final HttpServletRequest request, final ResponseStatusException exception) {
-        request.setAttribute(
-                RequestDispatcher.ERROR_STATUS_CODE, exception.getStatus().value());
-        return new ModelAndView("forward:/errors");
+        return errorPage(request, exception.getStatus().value());
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -89,15 +81,13 @@ public class GlobalExceptionHandler {
             }
             return new ModelAndView("redirect:/publish/availability?availabilityAction=invalidMethod");
         }
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 405);
-        return new ModelAndView("forward:/errors");
+        return errorPage(request, HttpStatus.METHOD_NOT_ALLOWED.value());
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
     public ModelAndView handleUnsupportedMediaType(final HttpServletRequest request) {
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 415);
-        return new ModelAndView("forward:/errors");
+        return errorPage(request, HttpStatus.UNSUPPORTED_MEDIA_TYPE.value());
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
@@ -117,23 +107,14 @@ public class GlobalExceptionHandler {
                 return new ModelAndView("redirect:/edit/" + editImages.group(1) + "/images");
             }
         }
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 413);
-        return new ModelAndView("forward:/errors");
-    }
-
-    @ExceptionHandler(AccessDeniedException.class)
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ModelAndView handleAccessDenied(final HttpServletRequest request) {
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
-        return new ModelAndView("forward:/errors");
+        return errorPage(request, HttpStatus.PAYLOAD_TOO_LARGE.value());
     }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ModelAndView handleUnexpected(final HttpServletRequest request, final Exception exception) {
         LOGGER.error("Unhandled exception", exception);
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
-        return new ModelAndView("forward:/errors");
+        return errorPage(request, HttpStatus.INTERNAL_SERVER_ERROR.value());
     }
 
     @ExceptionHandler(NoAnticipationException.class)
@@ -190,13 +171,6 @@ public class GlobalExceptionHandler {
         return redirectToReferer(request);
     }
 
-    @ExceptionHandler(ReportNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ModelAndView handleReportNotFound(final HttpServletRequest request) {
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 404);
-        return new ModelAndView("forward:/errors");
-    }
-
     @ExceptionHandler(PastSlotException.class)
     public ModelAndView handlePastSlot(HttpServletRequest request, RedirectAttributes ra) {
         ToastSupport.error(ra, "manageAvailability.msg.invalid");
@@ -223,7 +197,14 @@ public class GlobalExceptionHandler {
             return redirectToReferer(request);
         }
         LOGGER.error("Unhandled IOException");
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
+        return errorPage(request, HttpStatus.INTERNAL_SERVER_ERROR.value());
+    }
+
+    private static ModelAndView errorPage(final HttpServletRequest request, final int status) {
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, status);
+        if (request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI) == null) {
+            request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
+        }
         return new ModelAndView("forward:/errors");
     }
 

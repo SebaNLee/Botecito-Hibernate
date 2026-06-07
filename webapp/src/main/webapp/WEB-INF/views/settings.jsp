@@ -29,8 +29,7 @@
 <spring:message code="subscription.unsubscribe" var="subscriptionUnsubscribeLabel" />
 <spring:message code="settings.viewPublicProfile" var="viewPublicProfileLabel" />
 
-<c:set var="subscriptionsPageSize" value="${settingsView.pageSize != null ? settingsView.pageSize : 6}" />
-<c:set var="hasActiveSubscriptionsFilters" value="${(settingsView.page != null && settingsView.page > 1) or subscriptionsPageSize != 6}" />
+<c:set var="hasActiveSubscriptionsFilters" value="${settingsView.page > 1 or settingsView.pageSize != 6}" />
 <c:set var="showSubscriptionsFilterEmpty" value="${hasValidationErrors or hasActiveSubscriptionsFilters or subscriptionsPage.totalItems > 0}" />
 <c:url var="clearSubscriptionsFiltersUrl" value="/settings">
   <c:if test="${settingsEdit}">
@@ -69,7 +68,7 @@
               </div>
             </div>
             <c:if test="${not settingsEdit}">
-              <c:url var="myPublicProfileUrl" value="/profiles/${user.id}" />
+              <c:url var="myPublicProfileUrl" value="/profiles/${user.id}/listings" />
               <div class="flex shrink-0 flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <paw:button href="${myPublicProfileUrl}" variant="outline" icon="person" text="${viewPublicProfileLabel}" cssClass="w-full sm:w-auto" />
                 <paw:button href="${settingsEditUrl}" color="primary" variant="outline" icon="edit" text="${settingsEditLabel}" cssClass="w-full sm:w-auto" />
@@ -148,7 +147,7 @@
               </h2>
             </div>
             <c:choose>
-              <c:when test="${empty subscriptions}">
+              <c:when test="${empty subscriptionsPage.content}">
                 <c:choose>
                   <c:when test="${showSubscriptionsFilterEmpty}">
                     <div class="card bg-base-100 shadow-sm">
@@ -175,12 +174,12 @@
               </c:when>
               <c:otherwise>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <c:forEach items="${subscriptions}" var="subscriptionUser">
+                  <c:forEach items="${subscriptionsPage.content}" var="subscriptionUser">
                     <c:set var="subscriptionFirstName" value="${subscriptionUser.firstName != null ? subscriptionUser.firstName : ''}" />
                     <c:set var="subscriptionLastName" value="${subscriptionUser.lastName != null ? subscriptionUser.lastName : ''}" />
                     <c:set var="subscriptionFirstNameTrimmed" value="${fn:trim(subscriptionFirstName)}" />
                     <c:set var="subscriptionLastNameTrimmed" value="${fn:trim(subscriptionLastName)}" />
-                    <c:url var="subscriptionProfileUrl" value="/profiles/${subscriptionUser.id}" />
+                    <c:url var="subscriptionProfileUrl" value="/profiles/${subscriptionUser.id}/listings" />
                     <div class="rounded-xl bg-base-200 p-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div class="min-w-0">
                         <a href="${subscriptionProfileUrl}" class="m-0 font-bold text-on-surface break-words no-underline hover:underline">

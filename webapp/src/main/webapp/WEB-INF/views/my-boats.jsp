@@ -33,31 +33,29 @@
 <spring:message code="myBoats.pageSize" var="pageSizeFieldLabel" />
 <spring:message code="myBoats.filter.empty.title" var="filterEmptyTitleLabel" />
 <spring:message code="myBoats.filter.empty.message" var="filterEmptyMessageLabel" />
-<c:set var="pageSize" value="${myBoatsSearch.pageSize != null ? myBoatsSearch.pageSize : 12}" />
-<c:set var="currentSortBy" value="${empty myBoatsSearch.sortBy ? 'newest' : myBoatsSearch.sortBy}" />
 <c:set var="hasActiveFilters" value="${not empty myBoatsSearch.searchQuery or not empty myBoatsSearch.status}" />
 
 <c:url var="clearFiltersUrl" value="/my-boats">
-  <c:if test="${currentSortBy != 'newest'}">
-    <c:param name="sortBy" value="${currentSortBy}" />
+  <c:if test="${myBoatsSearch.sortBy != 'newest'}">
+    <c:param name="sortBy" value="${myBoatsSearch.sortBy}" />
   </c:if>
-  <c:if test="${pageSize != 12}">
-    <c:param name="pageSize" value="${pageSize}" />
+  <c:if test="${myBoatsSearch.pageSize != 12}">
+    <c:param name="pageSize" value="${myBoatsSearch.pageSize}" />
   </c:if>
 </c:url>
 
 <c:if test="${itemPage.totalPages > 1}">
   <c:url var="previousPageUrl" value="/my-boats">
     <c:param name="page" value="${itemPage.previousPage}" />
-    <c:param name="sortBy" value="${currentSortBy}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${myBoatsSearch.sortBy}" />
+    <c:param name="pageSize" value="${myBoatsSearch.pageSize}" />
     <c:if test="${not empty myBoatsSearch.searchQuery}"><c:param name="searchQuery" value="${myBoatsSearch.searchQuery}" /></c:if>
     <c:if test="${not empty myBoatsSearch.status}"><c:param name="status" value="${myBoatsSearch.status}" /></c:if>
   </c:url>
   <c:url var="nextPageUrl" value="/my-boats">
     <c:param name="page" value="${itemPage.nextPage}" />
-    <c:param name="sortBy" value="${currentSortBy}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${myBoatsSearch.sortBy}" />
+    <c:param name="pageSize" value="${myBoatsSearch.pageSize}" />
     <c:if test="${not empty myBoatsSearch.searchQuery}"><c:param name="searchQuery" value="${myBoatsSearch.searchQuery}" /></c:if>
     <c:if test="${not empty myBoatsSearch.status}"><c:param name="status" value="${myBoatsSearch.status}" /></c:if>
   </c:url>
@@ -112,7 +110,7 @@
             name="sortBy"
             class="select select-sm w-32 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none sm:w-36"
             onchange="this.form.requestSubmit()">
-          <option value="newest" ${empty myBoatsSearch.sortBy || myBoatsSearch.sortBy == 'newest' ? 'selected="selected"' : ''}>
+          <option value="newest" ${myBoatsSearch.sortBy == 'newest' ? 'selected="selected"' : ''}>
             <spring:message code="marketplace.sort.newest" />
           </option>
           <option value="oldest" ${myBoatsSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}>
@@ -127,9 +125,9 @@
             name="pageSize"
             class="select select-sm w-20 font-bold text-primary"
             onchange="this.form.requestSubmit()">
-          <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-          <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-          <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+          <option value="6" ${myBoatsSearch.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+          <option value="12" ${myBoatsSearch.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+          <option value="18" ${myBoatsSearch.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
         </select>
         </div>
       </div>
@@ -137,9 +135,9 @@
 
     <div id="my-publications" class="scroll-mt-24 space-y-4">
       <c:choose>
-        <c:when test="${not empty ownedItems}">
+        <c:when test="${not empty itemPage.content}">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
-            <c:forEach var="item" items="${ownedItems}">
+            <c:forEach var="item" items="${itemPage.content}">
               <c:set var="version" value="${item.latestVersion}" />
               <c:set var="itemActive" value="${item.status == 'ACTIVE'}" />
               <c:url var="itemDetailUrl" value="/item/${item.id}" />

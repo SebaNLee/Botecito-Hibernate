@@ -19,22 +19,20 @@
 <spring:message code="admin.reports.deletePublication.confirm.confirm" var="deletePublicationConfirmConfirmLabel" />
 <spring:message code="settings.publications.delete.confirm.cancel" var="cancelLabel" />
 
-<c:set var="pageSize" value="${adminReportsSearch.pageSize != null ? adminReportsSearch.pageSize : 12}" />
-<c:set var="currentSortBy" value="${empty adminReportsSearch.sortBy ? 'newest' : adminReportsSearch.sortBy}" />
-<c:set var="hasActiveReportsFilters" value="${currentSortBy != 'newest' or pageSize != 12 or (adminReportsSearch.page != null && adminReportsSearch.page > 1)}" />
+<c:set var="hasActiveReportsFilters" value="${adminReportsSearch.sortBy != 'newest' or adminReportsSearch.pageSize != 12 or adminReportsSearch.page > 1}" />
 <c:set var="showReportsFilterEmpty" value="${hasValidationErrors or hasActiveReportsFilters or reportPage.totalItems > 0}" />
 <c:url var="clearReportsFiltersUrl" value="/admin/reports" />
 
 <c:if test="${reportPage.totalPages > 1}">
   <c:url var="previousPageUrl" value="/admin/reports">
     <c:param name="page" value="${reportPage.previousPage}" />
-    <c:param name="sortBy" value="${currentSortBy}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${adminReportsSearch.sortBy}" />
+    <c:param name="pageSize" value="${adminReportsSearch.pageSize}" />
   </c:url>
   <c:url var="nextPageUrl" value="/admin/reports">
     <c:param name="page" value="${reportPage.nextPage}" />
-    <c:param name="sortBy" value="${currentSortBy}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${adminReportsSearch.sortBy}" />
+    <c:param name="pageSize" value="${adminReportsSearch.pageSize}" />
   </c:url>
 </c:if>
 
@@ -56,8 +54,8 @@
           <spring:message code="admin.reports.sort.label" />
         </span>
         <select name="sortBy" class="select select-bordered select-sm">
-          <option value="newest" ${currentSortBy == 'newest' ? 'selected' : ''}><c:out value="${sortNewestLabel}" /></option>
-          <option value="oldest" ${currentSortBy == 'oldest' ? 'selected' : ''}><c:out value="${sortOldestLabel}" /></option>
+          <option value="newest" ${adminReportsSearch.sortBy == 'newest' ? 'selected' : ''}><c:out value="${sortNewestLabel}" /></option>
+          <option value="oldest" ${adminReportsSearch.sortBy == 'oldest' ? 'selected' : ''}><c:out value="${sortOldestLabel}" /></option>
         </select>
       </label>
       <label class="form-control w-full sm:w-auto">
@@ -65,9 +63,9 @@
           <spring:message code="admin.reports.pageSize.label" />
         </span>
         <select name="pageSize" class="select select-bordered select-sm">
-          <option value="6" ${pageSize == 6 ? 'selected' : ''}>6</option>
-          <option value="12" ${pageSize == 12 ? 'selected' : ''}>12</option>
-          <option value="18" ${pageSize == 18 ? 'selected' : ''}>18</option>
+          <option value="6" ${adminReportsSearch.pageSize == 6 ? 'selected' : ''}>6</option>
+          <option value="12" ${adminReportsSearch.pageSize == 12 ? 'selected' : ''}>12</option>
+          <option value="18" ${adminReportsSearch.pageSize == 18 ? 'selected' : ''}>18</option>
         </select>
       </label>
       <input type="hidden" name="page" value="1" />
@@ -176,8 +174,8 @@
                       <paw:confirmModal id="${dismissModalId}" title="${dismissConfirmTitle}" message="${dismissConfirmMessage}" confirmText="${dismissConfirmConfirmLabel}" cancelText="${cancelLabel}" confirmColor="primary" icon="flag">
                         <form action="<c:url value='/admin/reports/${report.id}/dismiss' />" method="post" class="m-0">
                           <input type="hidden" name="page" value="${reportPage.page}" />
-                          <input type="hidden" name="pageSize" value="${pageSize}" />
-                          <input type="hidden" name="sortBy" value="${currentSortBy}" />
+                          <input type="hidden" name="pageSize" value="${adminReportsSearch.pageSize}" />
+                          <input type="hidden" name="sortBy" value="${adminReportsSearch.sortBy}" />
                           <button type="submit" class="btn btn-primary min-h-11 whitespace-nowrap px-5">
                             <c:out value="${dismissConfirmConfirmLabel}" />
                           </button>
@@ -186,8 +184,8 @@
                       <paw:confirmModal id="${deletePublicationModalId}" title="${deletePublicationConfirmTitle}" message="${deletePublicationConfirmMessage}" confirmText="${deletePublicationConfirmConfirmLabel}" cancelText="${cancelLabel}" icon="delete">
                         <form action="<c:url value='/admin/reports/${report.id}/delete-publication' />" method="post" class="m-0">
                           <input type="hidden" name="page" value="${reportPage.page}" />
-                          <input type="hidden" name="pageSize" value="${pageSize}" />
-                          <input type="hidden" name="sortBy" value="${currentSortBy}" />
+                          <input type="hidden" name="pageSize" value="${adminReportsSearch.pageSize}" />
+                          <input type="hidden" name="sortBy" value="${adminReportsSearch.sortBy}" />
                           <button type="submit" class="btn btn-error min-h-11 whitespace-nowrap px-5">
                             <c:out value="${deletePublicationConfirmConfirmLabel}" />
                           </button>

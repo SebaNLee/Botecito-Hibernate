@@ -15,30 +15,28 @@
 <spring:message code="myBoats.pageSize" var="pageSizeFieldLabel" />
 <spring:message code="favourites.filter.empty.title" var="filterEmptyTitleLabel" />
 <spring:message code="favourites.filter.empty.message" var="filterEmptyMessageLabel" />
-<c:set var="pageSize" value="${favouritesSearch.pageSize != null ? favouritesSearch.pageSize : 12}" />
-<c:set var="currentSortBy" value="${empty favouritesSearch.sortBy ? 'newest' : favouritesSearch.sortBy}" />
 <c:set var="hasActiveFilters" value="${not empty favouritesSearch.searchQuery}" />
 
 <c:url var="clearFiltersUrl" value="/favourites">
-  <c:if test="${currentSortBy != 'newest'}">
-    <c:param name="sortBy" value="${currentSortBy}" />
+  <c:if test="${favouritesSearch.sortBy != 'newest'}">
+    <c:param name="sortBy" value="${favouritesSearch.sortBy}" />
   </c:if>
-  <c:if test="${pageSize != 12}">
-    <c:param name="pageSize" value="${pageSize}" />
+  <c:if test="${favouritesSearch.pageSize != 12}">
+    <c:param name="pageSize" value="${favouritesSearch.pageSize}" />
   </c:if>
 </c:url>
 
 <c:if test="${itemPage.totalPages > 1}">
   <c:url var="previousPageUrl" value="/favourites">
     <c:param name="page" value="${itemPage.previousPage}" />
-    <c:param name="sortBy" value="${currentSortBy}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${favouritesSearch.sortBy}" />
+    <c:param name="pageSize" value="${favouritesSearch.pageSize}" />
     <c:if test="${not empty favouritesSearch.searchQuery}"><c:param name="searchQuery" value="${favouritesSearch.searchQuery}" /></c:if>
   </c:url>
   <c:url var="nextPageUrl" value="/favourites">
     <c:param name="page" value="${itemPage.nextPage}" />
-    <c:param name="sortBy" value="${currentSortBy}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${favouritesSearch.sortBy}" />
+    <c:param name="pageSize" value="${favouritesSearch.pageSize}" />
     <c:if test="${not empty favouritesSearch.searchQuery}"><c:param name="searchQuery" value="${favouritesSearch.searchQuery}" /></c:if>
   </c:url>
 </c:if>
@@ -51,11 +49,11 @@
         <h1 class="text-4xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="favourites.title" /></h1>
         <p class="text-on-surface-variant mt-2 m-0">
           <c:choose>
-            <c:when test="${itemsCount == 1}">
+            <c:when test="${itemPage.totalItems == 1}">
               <spring:message code="favourites.results.count.singular" />
             </c:when>
             <c:otherwise>
-              <spring:message code="favourites.results.count.plural" arguments="${itemsCount}" />
+              <spring:message code="favourites.results.count.plural" arguments="${itemPage.totalItems}" />
             </c:otherwise>
           </c:choose>
         </p>
@@ -83,7 +81,7 @@
               name="sortBy"
               class="select select-sm w-32 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none sm:w-36"
               onchange="this.form.requestSubmit()">
-            <option value="newest" ${empty favouritesSearch.sortBy || favouritesSearch.sortBy == 'newest' ? 'selected="selected"' : ''}>
+            <option value="newest" ${favouritesSearch.sortBy == 'newest' ? 'selected="selected"' : ''}>
               <spring:message code="marketplace.sort.newest" />
             </option>
             <option value="oldest" ${favouritesSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}>
@@ -98,15 +96,15 @@
               name="pageSize"
               class="select select-sm w-20 font-bold text-primary"
               onchange="this.form.requestSubmit()">
-            <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-            <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-            <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+            <option value="6" ${favouritesSearch.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+            <option value="12" ${favouritesSearch.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+            <option value="18" ${favouritesSearch.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
           </select>
         </div>
       </div>
     </form>
 
-    <c:if test="${empty items}">
+    <c:if test="${empty itemPage.content}">
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body items-center gap-4 p-10 text-center">
           <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -131,9 +129,9 @@
       </div>
     </c:if>
 
-    <c:if test="${not empty items}">
+    <c:if test="${not empty itemPage.content}">
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <c:forEach items="${items}" var="item">
+        <c:forEach items="${itemPage.content}" var="item">
           <paw:listingCard
               item="${item}"
               favourite="${favouriteByItemId[item.id]}"

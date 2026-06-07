@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.form;
 
 import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
@@ -23,7 +24,8 @@ public class BookingSearchForm {
             message = "{bookingSearch.validation.status.pattern}")
     private String status;
 
-    @Pattern(regexp = "^$|^(newest|oldest|start_asc|start_desc)$", message = "{bookingSearch.validation.sort.pattern}")
+    @NotBlank(message = "{bookingSearch.validation.sort.pattern}")
+    @Pattern(regexp = "^(newest|oldest|start_asc|start_desc)$", message = "{bookingSearch.validation.sort.pattern}")
     private String sortBy;
 
     @NotNull

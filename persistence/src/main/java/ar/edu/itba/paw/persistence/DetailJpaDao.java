@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.TargetEnum;
 import ar.edu.itba.paw.models.entity.Version;
+import ar.edu.itba.paw.models.paging.ReviewPaging;
 import ar.edu.itba.paw.persistence.utils.Paging;
 import java.util.List;
 import java.util.Optional;
@@ -17,8 +18,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class DetailJpaDao implements DetailDao {
-
-    private static final int REVIEW_PAGE_SIZE = 5;
 
     private static final String SQL_LATEST_VERSION_ID_FOR_ITEM = "SELECT v.id FROM version v "
             + "INNER JOIN item i ON v.item_id = i.id "
@@ -99,7 +98,7 @@ public class DetailJpaDao implements DetailDao {
 
         item.setTotalReviews(totalReviews);
         item.setAverageRating(averageRating);
-        item.setReviewPage(new PageModel<>(reviews, reviewPage, REVIEW_PAGE_SIZE, (int) totalReviews));
+        item.setReviewPage(new PageModel<>(reviews, reviewPage, ReviewPaging.DEFAULT_PAGE_SIZE, totalReviews));
     }
 
     private long countReviewsForItem(final int itemId) {
@@ -120,7 +119,7 @@ public class DetailJpaDao implements DetailDao {
         final Query reviewIdsQuery = em.createNativeQuery(SQL_REVIEW_IDS_FOR_ITEM);
         reviewIdsQuery.setParameter("itemId", itemId);
         reviewIdsQuery.setParameter("itemTargetType", TargetEnum.ITEM.name());
-        Paging.apply(reviewIdsQuery, page, REVIEW_PAGE_SIZE);
+        Paging.apply(reviewIdsQuery, page, ReviewPaging.DEFAULT_PAGE_SIZE);
 
         final List<Integer> reviewIds = Paging.toIntegerIds(reviewIdsQuery.getResultList());
 

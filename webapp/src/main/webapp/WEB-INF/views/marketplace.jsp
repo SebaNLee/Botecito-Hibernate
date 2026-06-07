@@ -32,25 +32,19 @@
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
 <spring:message code="marketplace.field.pageSize" var="pageSizeFieldLabel" />
 <spring:message code="reviews.empty.short" var="reviewsEmptyShortLabel" />
-<c:set
-    var="pageSize"
-    value="${marketplaceSearch != null && marketplaceSearch.pageSize != null ? marketplaceSearch.pageSize : 12}" />
-<c:set
-    var="marketplaceSortBy"
-    value="${empty marketplaceSearch.sortBy ? 'newest' : marketplaceSearch.sortBy}" />
 <c:url var="clearMarketplaceFiltersUrl" value="/marketplace">
-  <c:if test="${marketplaceSortBy != 'newest'}">
-    <c:param name="sortBy" value="${marketplaceSortBy}" />
+  <c:if test="${marketplaceSearch.sortBy != 'newest'}">
+    <c:param name="sortBy" value="${marketplaceSearch.sortBy}" />
   </c:if>
-  <c:if test="${pageSize != 12}">
-    <c:param name="pageSize" value="${pageSize}" />
+  <c:if test="${marketplaceSearch.pageSize != 12}">
+    <c:param name="pageSize" value="${marketplaceSearch.pageSize}" />
   </c:if>
 </c:url>
 <c:if test="${itemPage.hasPrevious}">
   <c:url var="previousPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.previousPage}" />
-    <c:param name="sortBy" value="${marketplaceSortBy}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${marketplaceSearch.sortBy}" />
+    <c:param name="pageSize" value="${marketplaceSearch.pageSize}" />
     <c:if test="${not empty param.searchQuery}">
       <c:param name="searchQuery" value="${param.searchQuery}" />
     </c:if>
@@ -86,8 +80,8 @@
 <c:if test="${itemPage.hasNext}">
   <c:url var="nextPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.nextPage}" />
-    <c:param name="sortBy" value="${marketplaceSortBy}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${marketplaceSearch.sortBy}" />
+    <c:param name="pageSize" value="${marketplaceSearch.pageSize}" />
     <c:if test="${not empty param.searchQuery}">
       <c:param name="searchQuery" value="${param.searchQuery}" />
     </c:if>
@@ -135,7 +129,7 @@
         <jsp:attribute name="title"><spring:message code="marketplace.filters.title" /></jsp:attribute>
         <jsp:body>
           <form id="marketplace-filters-form" action="${marketplaceUrl}" method="get" class="space-y-6" data-filter-form="marketplace">
-            <input type="hidden" name="pageSize" value="${pageSize}" />
+            <input type="hidden" name="pageSize" value="${marketplaceSearch.pageSize}" />
             <paw:optionsPicker
                 id="marketplace-location"
                 name="location"
@@ -251,7 +245,7 @@
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
       <div class="min-w-0">
         <h1 class="text-4xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="marketplace.title" /></h1>
-        <p class="text-on-surface-variant mt-2 m-0"><spring:message code="marketplace.results.count" arguments="${itemsCount}" /></p>
+        <p class="text-on-surface-variant mt-2 m-0"><spring:message code="marketplace.results.count" arguments="${itemPage.totalItems}" /></p>
       </div>
 
       <form
@@ -272,21 +266,21 @@
         <input type="hidden" name="minAvgRating" value="<c:out value='${marketplaceSearch.minAvgRating}'/>" data-applied-filter-mirror />
         <label for="marketplace-sort" class="shrink-0"><spring:message code="marketplace.sort.label" /></label>
         <select id="marketplace-sort" name="sortBy" class="select select-sm font-bold text-primary">
-          <option value="newest" ${empty marketplaceSearch.sortBy || marketplaceSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.newest" /></option>
+          <option value="newest" ${marketplaceSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.newest" /></option>
           <option value="oldest" ${marketplaceSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.oldest" /></option>
           <option value="priceAsc" ${marketplaceSearch.sortBy == 'priceAsc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceAsc" /></option>
           <option value="priceDesc" ${marketplaceSearch.sortBy == 'priceDesc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceDesc" /></option>
         </select>
         <label for="marketplace-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
         <select id="marketplace-page-size" name="pageSize" class="select select-sm w-20 font-bold text-primary">
-            <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-            <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-            <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+            <option value="6" ${marketplaceSearch.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+            <option value="12" ${marketplaceSearch.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+            <option value="18" ${marketplaceSearch.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
         </select>
       </form>
     </div>
 
-    <c:if test="${empty items}">
+    <c:if test="${empty itemPage.content}">
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body items-center text-center gap-4 p-10">
           <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -304,7 +298,7 @@
     </c:if>
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-      <c:forEach items="${items}" var="item">
+      <c:forEach items="${itemPage.content}" var="item">
         <paw:listingCard item="${item}" />
       </c:forEach>
     </div>

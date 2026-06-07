@@ -3,7 +3,7 @@ package ar.edu.itba.paw.services;
 import static java.util.Map.entry;
 
 import ar.edu.itba.paw.models.dto.BookingQueryModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.dto.SelfBlockCreate;
 import ar.edu.itba.paw.models.dto.SelfBlockUpdate;
 import ar.edu.itba.paw.models.dto.SelfBookingData;
@@ -198,7 +198,7 @@ public class BookingImpl implements BookingService {
 
     @Override
     @Transactional(readOnly = true)
-    public SearchResult<Booking> searchBookings(
+    public PageModel<Booking> searchBookings(
             final int callerId,
             final boolean asHost,
             final String searchQuery,

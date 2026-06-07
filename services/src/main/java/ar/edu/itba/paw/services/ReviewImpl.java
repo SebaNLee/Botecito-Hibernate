@@ -6,6 +6,7 @@ import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.TargetEnum;
 import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.models.paging.ReviewPaging;
 import ar.edu.itba.paw.persistence.ReviewDao;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -105,8 +106,9 @@ public final class ReviewImpl implements ReviewService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageModel<Review> findReviewsAboutHost(final int hostUserId, final int page, final int pageSize) {
-        final int total = reviewDao.countReviewsAboutHost(hostUserId);
+    public PageModel<Review> findReviewsAboutHost(final int hostUserId, final int page) {
+        final int pageSize = ReviewPaging.DEFAULT_PAGE_SIZE;
+        final long total = reviewDao.countReviewsAboutHost(hostUserId);
         return new PageModel<>(reviewDao.findReviewsAboutHost(hostUserId, page, pageSize), page, pageSize, total);
     }
 

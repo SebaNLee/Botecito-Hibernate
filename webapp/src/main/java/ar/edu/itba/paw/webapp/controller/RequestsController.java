@@ -1,6 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import ar.edu.itba.paw.models.entity.Review;
@@ -216,7 +216,7 @@ public class RequestsController {
         return requestsPresentation.submitOutgoingPaymentResult(search, redirectAttributes);
     }
 
-    private SearchResult<Booking> searchOutgoing(final BotecitoUserDetails user, final BookingSearchForm search) {
+    private PageModel<Booking> searchOutgoing(final BotecitoUserDetails user, final BookingSearchForm search) {
         return bookingService.searchBookings(
                 user.getId(),
                 false,
@@ -228,7 +228,7 @@ public class RequestsController {
                 search.getSortBy());
     }
 
-    private SearchResult<Booking> searchIncoming(final BotecitoUserDetails user, final BookingSearchForm search) {
+    private PageModel<Booking> searchIncoming(final BotecitoUserDetails user, final BookingSearchForm search) {
         return bookingService.searchBookings(
                 user.getId(),
                 true,

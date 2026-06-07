@@ -1,4 +1,4 @@
-package ar.edu.itba.paw.webapp.controller;
+package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
@@ -7,7 +7,6 @@ import ar.edu.itba.paw.services.FavouriteService;
 import ar.edu.itba.paw.services.ReportService;
 import ar.edu.itba.paw.services.SubscriptionService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
-import ar.edu.itba.paw.webapp.presentation.DetailPageFlags;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

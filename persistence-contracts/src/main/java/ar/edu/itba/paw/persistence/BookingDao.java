@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.BookingQueryModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Item;
@@ -23,7 +23,7 @@ public interface BookingDao {
 
     Optional<Booking> findById(int bookingId);
 
-    SearchResult<Booking> searchBookings(final BookingQueryModel query);
+    PageModel<Booking> searchBookings(final BookingQueryModel query);
 
     void uploadPayment(PaymentProof paymentProof);
 

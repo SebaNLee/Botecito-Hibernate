@@ -35,7 +35,7 @@ public class AdminReportsPresentation {
         final ModelAndView mav = new ModelAndView("admin-reports", "adminReportsSearch", search);
         mav.addAllObjects(errors.getModel());
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
-        mav.addObject("reportPage", new PageModel<Report>(List.of(), 1, 12, 0));
+        mav.addObject("reportPage", new PageModel<Report>(List.of(), 1, 12, 0L));
         mav.addObject("reportDatesById", Map.of());
         mav.addObject("hasValidationErrors", true);
         return mav;
@@ -60,13 +60,9 @@ public class AdminReportsPresentation {
     }
 
     static void appendSearchParams(final StringBuilder target, final AdminReportsSearchForm search) {
-        final int page = search.getPage();
-        final int pageSize = search.getPageSize();
-        final String sortBy =
-                search.getSortBy() == null || search.getSortBy().isBlank() ? "newest" : search.getSortBy();
-        target.append("page=").append(page);
-        target.append("&pageSize=").append(pageSize);
-        target.append("&sortBy=").append(sortBy);
+        target.append("page=").append(search.getPage());
+        target.append("&pageSize=").append(search.getPageSize());
+        target.append("&sortBy=").append(search.getSortBy());
     }
 
     private static Map<Integer, String> formatReportDates(final List<Report> reports) {

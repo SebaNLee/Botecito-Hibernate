@@ -17,32 +17,19 @@ public class MyBoatsPresentation {
 
     private final ToastPresentation toastPresentation;
 
-    public ModelAndView myBoatsList(
-            final MyBoatsSearchForm search, final List<Item> ownedItems, final long totalCount) {
+    public ModelAndView myBoatsList(final MyBoatsSearchForm search, final PageModel<Item> itemPage) {
         final ModelAndView mav = new ModelAndView("my-boats", "myBoatsSearch", search);
-        addListingModelObjects(mav, search, ownedItems, totalCount);
+        mav.addObject("itemPage", itemPage);
         mav.addObject("hasValidationErrors", false);
         return mav;
     }
 
     public ModelAndView myBoatsErrors(final MyBoatsSearchForm search, final BindingResult errors) {
-        final List<Item> ownedItems = List.of();
         final ModelAndView mav = new ModelAndView("my-boats", "myBoatsSearch", search);
         mav.addAllObjects(errors.getModel());
-        mav.addObject("ownedItems", ownedItems);
-        mav.addObject("itemPage", new PageModel<>(ownedItems, 1, 12, 0));
+        mav.addObject("itemPage", new PageModel<>(List.of(), 1, 12, 0L));
         mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
         mav.addObject("hasValidationErrors", true);
         return mav;
-    }
-
-    private void addListingModelObjects(
-            final ModelAndView mav, final MyBoatsSearchForm search, final List<Item> ownedItems, final long total) {
-        final int page = search.getPage();
-        final int pageSize = search.getPageSize();
-        final int totalItems = total > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) total;
-
-        mav.addObject("ownedItems", ownedItems);
-        mav.addObject("itemPage", new PageModel<>(ownedItems, page, pageSize, totalItems));
     }
 }

@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.dto.PageModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
 import ar.edu.itba.paw.models.entity.Report;
 import ar.edu.itba.paw.services.ReportService;
 import ar.edu.itba.paw.webapp.form.AdminReportsSearchForm;
@@ -40,11 +39,8 @@ public class AdminReportsController {
         if (errors.hasErrors()) {
             return adminReportsPresentation.listReportsErrors(search, errors);
         }
-        final String sortBy =
-                search.getSortBy() == null || search.getSortBy().isBlank() ? "newest" : search.getSortBy();
-        final SearchResult<Report> result = reportService.searchReports(search.getPage(), search.getPageSize(), sortBy);
-        final PageModel<Report> reportPage = new PageModel<>(
-                result.getPageElements(), search.getPage(), search.getPageSize(), (int) result.getTotalCount());
+        final PageModel<Report> reportPage =
+                reportService.searchReports(search.getPage(), search.getPageSize(), search.getSortBy());
         return adminReportsPresentation.listReports(search, reportPage);
     }
 

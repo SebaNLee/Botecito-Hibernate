@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.MyBoatsQueryModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
@@ -27,7 +27,7 @@ public class ItemJpaDao implements ItemDao {
     private EntityManager em;
 
     @Override
-    public SearchResult<Item> listOwnerItems(MyBoatsQueryModel query) {
+    public PageModel<Item> listOwnerItems(MyBoatsQueryModel query) {
         final long totalCount = countOwnerItems(query);
 
         // Phase 1: native SQL for IDs with dynamic filters + ordering + pagination
@@ -64,7 +64,7 @@ public class ItemJpaDao implements ItemDao {
         final List<Integer> versionIds = Paging.toIntegerIds(nativeQuery.getResultList());
 
         if (versionIds.isEmpty()) {
-            return new SearchResult<>(List.of(), totalCount);
+            return new PageModel<>(List.of(), query.getPage(), query.getPageSize(), totalCount);
         }
 
         final String jpql = "SELECT DISTINCT v FROM Version v "
@@ -87,7 +87,7 @@ public class ItemJpaDao implements ItemDao {
             sortedItems.add(item);
         }
 
-        return new SearchResult<>(sortedItems, totalCount);
+        return new PageModel<>(sortedItems, query.getPage(), query.getPageSize(), totalCount);
     }
 
     private long countOwnerItems(MyBoatsQueryModel query) {

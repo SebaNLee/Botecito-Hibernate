@@ -88,19 +88,18 @@ public class FavouritePresentation {
 
     private static ModelAndView itemDetailRedirect(
             final ItemDetailViewForm view, final int itemId, final RedirectAttributes redirectAttributes) {
+        if (view == null || view.getItemId() == null) {
+            return new ModelAndView("redirect:/item/" + itemId);
+        }
         addItemDetailViewParams(redirectAttributes, view);
-        final int targetItemId = view != null && view.getItemId() != null ? view.getItemId() : itemId;
-        return new ModelAndView("redirect:/item/" + targetItemId);
+        return new ModelAndView("redirect:/item/" + view.getItemId());
     }
 
     private static void addFavouritesSearchParams(
             final RedirectAttributes redirectAttributes, final FavouritesSearchForm search) {
-        if (search == null) {
-            return;
-        }
         redirectAttributes.addAttribute("page", search.getPage());
         redirectAttributes.addAttribute("pageSize", search.getPageSize());
-        if (StringUtils.hasText(search.getSortBy()) && !"newest".equals(search.getSortBy())) {
+        if (!"newest".equals(search.getSortBy())) {
             redirectAttributes.addAttribute("sortBy", search.getSortBy());
         }
         if (StringUtils.hasText(search.getSearchQuery())) {
@@ -110,10 +109,10 @@ public class FavouritePresentation {
 
     private static void addItemDetailViewParams(
             final RedirectAttributes redirectAttributes, final ItemDetailViewForm view) {
-        if (view == null || view.getItemId() == null) {
+        if (view.getItemId() == null) {
             return;
         }
-        if (view.getPage() != null && view.getPage() > 1) {
+        if (view.getPage() > 1) {
             redirectAttributes.addAttribute("page", view.getPage());
         }
     }

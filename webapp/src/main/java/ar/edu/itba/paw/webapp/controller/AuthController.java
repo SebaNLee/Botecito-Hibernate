@@ -58,13 +58,12 @@ public class AuthController {
         if (errors.hasErrors()) {
             return new ModelAndView("register");
         }
-        form.setPreferredLanguage(request.getLocale().getLanguage());
         userService.register(
                 form.getGivenName(),
                 form.getLastName(),
                 form.getEmail(),
                 form.getPaymentAlias(),
-                languageFromInput(form.getPreferredLanguage()),
+                request.getLocale().getLanguage(),
                 form.getPassword());
         return authPresentation.registerSuccessRedirect();
     }
@@ -129,15 +128,5 @@ public class AuthController {
             return authPresentation.verifyEmailSuccessRedirect();
         }
         return authPresentation.verifyEmailInvalidRedirect();
-    }
-
-    private static String languageFromInput(final String preferredLanguage) {
-        if (preferredLanguage == null) {
-            return "ES";
-        }
-        return switch (preferredLanguage.trim().toUpperCase()) {
-            case "EN" -> "EN";
-            default -> "ES";
-        };
     }
 }

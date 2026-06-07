@@ -40,9 +40,8 @@ public class AdminReportsController {
         if (errors.hasErrors()) {
             return adminReportsPresentation.listReportsErrors(search, errors);
         }
-        final String sortBy =
-                search.getSortBy() == null || search.getSortBy().isBlank() ? "newest" : search.getSortBy();
-        final SearchResult<Report> result = reportService.searchReports(search.getPage(), search.getPageSize(), sortBy);
+        final SearchResult<Report> result =
+                reportService.searchReports(search.getPage(), search.getPageSize(), search.getSortBy());
         final PageModel<Report> reportPage = new PageModel<>(
                 result.getPageElements(), search.getPage(), search.getPageSize(), (int) result.getTotalCount());
         return adminReportsPresentation.listReports(search, reportPage);

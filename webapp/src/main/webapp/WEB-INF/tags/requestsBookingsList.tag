@@ -22,7 +22,6 @@
 <spring:message code="marketplace.filters.title" var="filtersTitleLabel" />
 <spring:message code="marketplace.sort.label" var="sortLabel" />
 <spring:message code="bookingSearch.field.pageSize" var="pageSizeFieldLabel" />
-<c:set var="pageSize" value="${bookingSearch.pageSize != null ? bookingSearch.pageSize : 12}" />
 <c:set var="pageHiddenId" value="requests-${sidebarActive}-page-hidden" />
 <c:set var="isIncoming" value="${listMode == 'incoming'}" />
 <c:set var="filterFormId" value="requests-${sidebarActive}-filters-form" />
@@ -57,27 +56,27 @@
 
 <c:url var="formAction" value="${formActionPath}" />
 <c:url var="clearFiltersUrl" value="${formActionPath}">
-  <c:if test="${sort != 'newest'}">
-    <c:param name="sortBy" value="${sort}" />
+  <c:if test="${bookingSearch.sortBy != 'newest'}">
+    <c:param name="sortBy" value="${bookingSearch.sortBy}" />
   </c:if>
-  <c:if test="${pageSize != 12}">
-    <c:param name="pageSize" value="${pageSize}" />
+  <c:if test="${bookingSearch.pageSize != 12}">
+    <c:param name="pageSize" value="${bookingSearch.pageSize}" />
   </c:if>
 </c:url>
 
 <c:if test="${bookingPage.totalPages > 1}">
   <c:url var="previousPageUrl" value="${formActionPath}">
     <c:param name="page" value="${bookingPage.previousPage}" />
-    <c:param name="sortBy" value="${sort}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${bookingSearch.sortBy}" />
+    <c:param name="pageSize" value="${bookingSearch.pageSize}" />
     <c:if test="${not empty bookingSearch.searchQuery}"><c:param name="searchQuery" value="${bookingSearch.searchQuery}" /></c:if>
     <c:if test="${not empty bookingSearch.date}"><c:param name="date" value="${bookingSearch.date}" /></c:if>
     <c:if test="${not empty bookingSearch.status}"><c:param name="status" value="${bookingSearch.status}" /></c:if>
   </c:url>
   <c:url var="nextPageUrl" value="${formActionPath}">
     <c:param name="page" value="${bookingPage.nextPage}" />
-    <c:param name="sortBy" value="${sort}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${bookingSearch.sortBy}" />
+    <c:param name="pageSize" value="${bookingSearch.pageSize}" />
     <c:if test="${not empty bookingSearch.searchQuery}"><c:param name="searchQuery" value="${bookingSearch.searchQuery}" /></c:if>
     <c:if test="${not empty bookingSearch.date}"><c:param name="date" value="${bookingSearch.date}" /></c:if>
     <c:if test="${not empty bookingSearch.status}"><c:param name="status" value="${bookingSearch.status}" /></c:if>
@@ -150,7 +149,7 @@
               form="${filterFormId}"
               class="select select-sm w-32 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none sm:w-36"
               onchange="document.getElementById('${pageHiddenId}').value='1'; this.form.requestSubmit();">
-            <option value="newest" ${empty bookingSearch.sortBy || bookingSearch.sortBy == 'newest' ? 'selected="selected"' : ''}>
+            <option value="newest" ${bookingSearch.sortBy == 'newest' ? 'selected="selected"' : ''}>
               <spring:message code="marketplace.sort.newest" />
             </option>
             <option value="oldest" ${bookingSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}>
@@ -170,9 +169,9 @@
               form="${filterFormId}"
               class="select select-sm w-20 font-bold text-primary"
               onchange="document.getElementById('${pageHiddenId}').value='1'; this.form.requestSubmit();">
-            <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-            <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-            <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+            <option value="6" ${bookingSearch.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+            <option value="12" ${bookingSearch.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+            <option value="18" ${bookingSearch.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
           </select>
         </div>
       </div>

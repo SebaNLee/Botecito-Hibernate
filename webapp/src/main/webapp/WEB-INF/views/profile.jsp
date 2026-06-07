@@ -24,22 +24,20 @@
 <spring:message code="myBoats.sort.nameDesc" var="sortNameDescLabel" />
 <spring:message code="myBoats.pageSize" var="pageSizeFieldLabel" />
 
-<c:set var="pageSize" value="${profileView.pageSize != null ? profileView.pageSize : 12}" />
-<c:set var="profileSortBy" value="${empty profileView.sortBy ? 'newest' : profileView.sortBy}" />
-<c:set var="hasActiveListingsFilters" value="${profileSortBy != 'newest' or pageSize != 12 or (profileView.page != null && profileView.page > 1)}" />
-<c:set var="hasActiveReviewsFilters" value="${profileView.page != null && profileView.page > 1}" />
+<c:set var="hasActiveListingsFilters" value="${profileView.sortBy != 'newest' or profileView.pageSize != 12 or profileView.page > 1}" />
+<c:set var="hasActiveReviewsFilters" value="${profileView.page > 1}" />
 <c:set var="showListingsFilterEmpty" value="${hasValidationErrors or hasActiveListingsFilters or listingsTotal > 0}" />
 <c:set var="showReviewsFilterEmpty" value="${hasValidationErrors or hasActiveReviewsFilters or reviewsTotal > 0}" />
 
 <c:url var="settingsUrl" value="/settings" />
 <c:url var="clearProfileListingsFiltersUrl" value="/profiles/${user.id}" />
 <c:url var="listingsTabUrl" value="/profiles/${user.id}">
-  <c:if test="${profileSortBy != 'newest'}"><c:param name="sortBy" value="${profileSortBy}" /></c:if>
-  <c:if test="${pageSize != 12}"><c:param name="pageSize" value="${pageSize}" /></c:if>
+  <c:if test="${profileView.sortBy != 'newest'}"><c:param name="sortBy" value="${profileView.sortBy}" /></c:if>
+  <c:if test="${profileView.pageSize != 12}"><c:param name="pageSize" value="${profileView.pageSize}" /></c:if>
 </c:url>
 <c:url var="reviewsTabUrl" value="/profiles/${user.id}">
   <c:param name="tab" value="reviews" />
-  <c:if test="${activeTab == 'reviews' && profileView.page != null && profileView.page > 1}">
+  <c:if test="${activeTab == 'reviews' && profileView.page > 1}">
     <c:param name="page" value="${profileView.page}" />
   </c:if>
 </c:url>
@@ -187,14 +185,14 @@
                       name="sortBy"
                       class="select select-sm w-32 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none sm:w-36"
                       onchange="this.form.requestSubmit()">
-                    <option value="newest" ${profileSortBy == 'newest' ? 'selected="selected"' : ''}>
+                    <option value="newest" ${profileView.sortBy == 'newest' ? 'selected="selected"' : ''}>
                       <spring:message code="marketplace.sort.newest" />
                     </option>
-                    <option value="oldest" ${profileSortBy == 'oldest' ? 'selected="selected"' : ''}>
+                    <option value="oldest" ${profileView.sortBy == 'oldest' ? 'selected="selected"' : ''}>
                       <spring:message code="marketplace.sort.oldest" />
                     </option>
-                    <option value="nameAsc" ${profileSortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
-                    <option value="nameDesc" ${profileSortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
+                    <option value="nameAsc" ${profileView.sortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
+                    <option value="nameDesc" ${profileView.sortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
                   </select>
                   <label for="profile-listings-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
                   <select
@@ -202,9 +200,9 @@
                       name="pageSize"
                       class="select select-sm w-20 font-bold text-primary"
                       onchange="this.form.requestSubmit()">
-                    <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-                    <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-                    <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+                    <option value="6" ${profileView.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+                    <option value="12" ${profileView.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+                    <option value="18" ${profileView.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
                   </select>
                 </div>
               </form>
@@ -244,12 +242,12 @@
                   <c:if test="${listingsPage.totalPages > 1}">
                     <c:url var="listingsPreviousPageUrl" value="/profiles/${user.id}">
                       <c:param name="page" value="${listingsPage.previousPage}" />
-                      <c:param name="sortBy" value="${profileSortBy}" />
+                      <c:param name="sortBy" value="${profileView.sortBy}" />
                       <c:param name="pageSize" value="${listingsPage.pageSize}" />
                     </c:url>
                     <c:url var="listingsNextPageUrl" value="/profiles/${user.id}">
                       <c:param name="page" value="${listingsPage.nextPage}" />
-                      <c:param name="sortBy" value="${profileSortBy}" />
+                      <c:param name="sortBy" value="${profileView.sortBy}" />
                       <c:param name="pageSize" value="${listingsPage.pageSize}" />
                     </c:url>
                     <nav class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">

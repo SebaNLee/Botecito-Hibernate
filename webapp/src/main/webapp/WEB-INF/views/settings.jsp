@@ -29,8 +29,7 @@
 <spring:message code="subscription.unsubscribe" var="subscriptionUnsubscribeLabel" />
 <spring:message code="settings.viewPublicProfile" var="viewPublicProfileLabel" />
 
-<c:set var="subscriptionsPageSize" value="${settingsView.pageSize != null ? settingsView.pageSize : 6}" />
-<c:set var="hasActiveSubscriptionsFilters" value="${(settingsView.page != null && settingsView.page > 1) or subscriptionsPageSize != 6}" />
+<c:set var="hasActiveSubscriptionsFilters" value="${settingsView.page > 1 or settingsView.pageSize != 6}" />
 <c:set var="showSubscriptionsFilterEmpty" value="${hasValidationErrors or hasActiveSubscriptionsFilters or subscriptionsPage.totalItems > 0}" />
 <c:url var="clearSubscriptionsFiltersUrl" value="/settings">
   <c:if test="${settingsEdit}">

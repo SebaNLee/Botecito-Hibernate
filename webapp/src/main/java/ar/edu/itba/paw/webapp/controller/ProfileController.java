@@ -63,9 +63,8 @@ public class ProfileController {
         final int listingsPage = "reviews".equals(activeTab) ? 1 : profileView.getPage();
         final int reviewsPage = "reviews".equals(activeTab) ? profileView.getPage() : 1;
 
-        final String sortBy = resolveSortBy(profileView.getSortBy());
-        final SearchResult<Item> listingsResult =
-                itemService.listOwnerItems(id, null, null, listingsPage, profileView.getPageSize(), sortBy);
+        final SearchResult<Item> listingsResult = itemService.listOwnerItems(
+                id, null, null, listingsPage, profileView.getPageSize(), profileView.getSortBy());
         final long total = listingsResult.getTotalCount();
         final int totalListings = total > LISTINGS_TOTAL_CAP ? LISTINGS_TOTAL_CAP : (int) total;
         final PageModel<Item> listingsPageModel = new PageModel<>(
@@ -96,12 +95,5 @@ public class ProfileController {
 
     private static String resolveActiveTab(final String tab) {
         return "reviews".equalsIgnoreCase(tab) ? "reviews" : "listings";
-    }
-
-    private static String resolveSortBy(final String sortBy) {
-        if (sortBy == null || sortBy.isBlank()) {
-            return "newest";
-        }
-        return sortBy;
     }
 }

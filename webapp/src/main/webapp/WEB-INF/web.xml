@@ -78,10 +78,6 @@
     <location>/errors</location>
   </error-page>
   <error-page>
-    <error-code>401</error-code>
-    <location>/errors</location>
-  </error-page>
-  <error-page>
     <error-code>403</error-code>
     <location>/errors</location>
   </error-page>

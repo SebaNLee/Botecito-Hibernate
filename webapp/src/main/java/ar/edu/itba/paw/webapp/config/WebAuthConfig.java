@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DisabledException;
@@ -232,12 +233,14 @@ public class WebAuthConfig {
         return exception instanceof DisabledException ? LOGIN_PATH + "?unverified=true" : LOGIN_PATH + "?error=true";
     }
 
+    /** Filter-chain authorization failures; business-level forbidden operations use {@code ForbiddenOperationException}. */
     private static void handleAccessDenied(
             final HttpServletRequest request,
             final HttpServletResponse response,
             final AccessDeniedException accessDeniedException)
             throws ServletException, IOException {
-        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 403);
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, HttpStatus.FORBIDDEN.value());
+        request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, request.getRequestURI());
         request.getRequestDispatcher(ERRORS_PATH).forward(request, response);
     }
 }

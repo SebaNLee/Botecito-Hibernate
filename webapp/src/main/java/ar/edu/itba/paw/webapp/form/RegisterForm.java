@@ -35,8 +35,6 @@ public class RegisterForm {
     @Size(max = 30, message = "{register.validation.paymentAlias.max}")
     private String paymentAlias;
 
-    private String preferredLanguage;
-
     @AssertTrue(message = "{register.validation.password.mismatch}")
     public boolean isPasswordConfirmationValid() {
         if (password == null || password.isBlank() || confirmPassword == null || confirmPassword.isBlank()) {

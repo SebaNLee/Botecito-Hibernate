@@ -21,10 +21,6 @@ public class MarketplaceController {
     private final MarketplaceService marketplaceService;
     private final MarketplacePresentation marketplacePresentation;
 
-    /**
-     * Defaults for GET /marketplace before request binding; omitted query params
-     * stay at these values.
-     */
     @ModelAttribute("marketplaceSearch")
     public MarketplaceSearchForm defaultMarketplaceSearch() {
         final MarketplaceSearchForm form = new MarketplaceSearchForm();

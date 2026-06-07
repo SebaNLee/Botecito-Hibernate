@@ -52,7 +52,6 @@ public final class SelectorsImpl implements SelectorsService {
     @Transactional(readOnly = true)
     public Map<String, String> getDifficultyOptions() {
         final Map<String, String> options = new LinkedHashMap<>();
-        // TODO hardcode, maybe create table in DB?
         options.put("1", "1 - Principiante");
         options.put("2", "2 - Basico");
         options.put("3", "3 - Intermedio");

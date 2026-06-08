@@ -3,8 +3,8 @@ package ar.edu.itba.paw.persistence;
 import static ar.edu.itba.paw.persistence.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.*;
-import java.time.LocalDateTime;
 import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -92,22 +92,30 @@ public class SubscriptionJpaDaoTest {
     @Test
     public void testListVerifiedSubscribersForPublisher() {
         Users verified = insertUser(em, "Verified", "User", "botecito.verified@gmail.com");
-        Users unverified = new Users();
-        unverified.setFirstName("Unverified");
-        unverified.setLastName("User");
-        unverified.setEmail("botecito.unverified@gmail.com");
-        unverified.setLanguage("en");
-        unverified.setVerified(false);
-        unverified.setAdmin(false);
-        unverified.setCreatedAt(LocalDateTime.now());
-        em.persist(unverified);
+        Users unverified = insertUnverifiedUser(em, "Unverified", "User", "botecito.unverified@gmail.com");
         em.flush();
         subscriptionDao.create(verified.getId(), publisher.getId());
         subscriptionDao.create(unverified.getId(), publisher.getId());
 
-        List<Users> result = subscriptionDao.listVerifiedSubscribersForPublisher(publisher.getId());
+        PageModel<Users> result = subscriptionDao.listVerifiedSubscribersForPublisher(publisher.getId(), 1, 10);
 
-        assertEquals(1, result.size());
-        assertEquals(verified.getId(), result.get(0).getId());
+        assertEquals(1, result.getContent().size());
+        assertEquals(verified.getId(), result.getContent().get(0).getId());
+        assertEquals(1, result.getTotalItems());
+    }
+
+    @Test
+    public void testCountVerifiedFollowers() {
+        Users verified1 = insertUser(em, "Verified", "One", "botecito.one@gmail.com");
+        Users verified2 = insertUser(em, "Verified", "Two", "botecito.two@gmail.com");
+        Users unverified = insertUnverifiedUser(em, "Unverified", "User", "botecito.unverified@gmail.com");
+        em.flush();
+        subscriptionDao.create(verified1.getId(), publisher.getId());
+        subscriptionDao.create(verified2.getId(), publisher.getId());
+        subscriptionDao.create(unverified.getId(), publisher.getId());
+
+        int count = subscriptionDao.countVerifiedFollowers(publisher.getId());
+
+        assertEquals(2, count);
     }
 }

@@ -48,12 +48,12 @@
                 <p th:if="${message != null and !#strings.isEmpty(message)}"
                   style="margin: 0 0 16px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: #475569; background-color: #f8fafc; border-left: 3px solid #005da7;"
                   th:text="${message}">Message</p>
-                <p th:if="${paymentReply != null and !#strings.isEmpty(paymentReply)}"
+                <p th:if="${guestMessage != null and !#strings.isEmpty(guestMessage)}"
                   style="margin: 0 0 16px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: #475569; background-color: #f8fafc; border-left: 3px solid #005da7;"
-                  th:text="${paymentReply}">Payment reply</p>
-                <p th:if="${refusalReason != null and !#strings.isEmpty(refusalReason)}"
+                  th:text="${guestMessage}">Guest message</p>
+                <p th:if="${hostMessage != null and !#strings.isEmpty(hostMessage)}"
                   style="margin: 0 0 16px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: #475569; background-color: #fff7ed; border-left: 3px solid #ae3123;"
-                  th:text="${refusalReason}">Refusal reason</p>
+                  th:text="${hostMessage}">Host message</p>
                 <table role="presentation" border="0" cellspacing="0" cellpadding="0">
                   <tr>
                     <td>

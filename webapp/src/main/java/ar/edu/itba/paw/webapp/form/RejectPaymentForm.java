@@ -7,15 +7,15 @@ import lombok.Setter;
 @Setter
 public class RejectPaymentForm {
 
-    @NotBlank(message = "{requests.booking.rejectPaymentReasonRequired}")
-    @Size(max = 255, message = "{requests.booking.rejectPaymentReasonRequired}")
-    private String reason;
+    @NotBlank(message = "{requests.booking.rejectPaymentHostMessageRequired}")
+    @Size(max = 255, message = "{requests.booking.rejectPaymentHostMessageRequired}")
+    private String hostMessage;
 
-    public String getReason() {
-        if (reason == null) {
+    public String getHostMessage() {
+        if (hostMessage == null) {
             return null;
         }
-        final String trimmed = reason.trim();
+        final String trimmed = hostMessage.trim();
         if (trimmed.isEmpty()) {
             return null;
         }

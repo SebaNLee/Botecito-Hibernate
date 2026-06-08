@@ -22,10 +22,13 @@
 <spring:message code="gallery.empty" var="galleryEmptyLabel" />
 <spring:message code="gallery.count.label" arguments="${imageCount},${maxImages}" var="galleryCountLabel" />
 <spring:message code="gallery.count.label" var="galleryCountMessageTemplate" />
+<spring:message code="publish.validation.images.size" var="galleryFileSizeMessage" />
 
 <div class="space-y-4"
      data-image-gallery
      data-max-images="${maxImages}"
+     data-max-file-bytes="${maxUploadFileBytes}"
+     data-max-file-message="<c:out value='${galleryFileSizeMessage}' />"
      data-gallery-count-template="<c:out value='${galleryCountMessageTemplate}' />"
      data-gallery-cover-badge="<c:out value='${galleryCoverBadge}' />"
      data-gallery-badge-class="${gaBadgeClass}"

@@ -23,6 +23,9 @@
     }
 
     const maxImages = parseInt(root.dataset.maxImages || '3', 10);
+    const maxFileBytes = parseInt(root.dataset.maxFileBytes || '0', 10);
+    const maxFileMessage =
+      root.dataset.maxFileMessage || 'Each image must be 5MB or smaller.';
     const coverBadge = root.dataset.galleryCoverBadge || '';
     const badgeClass = root.dataset.galleryBadgeClass || 'badge badge-primary badge-sm font-bold';
     const removeLabel = root.dataset.galleryRemoveLabel || 'Remove image';
@@ -272,6 +275,12 @@
         if (!file || !file.type || file.type.indexOf('image/') !== 0) {
           return;
         }
+        if (maxFileBytes > 0 && file.size > maxFileBytes) {
+          input.setCustomValidity(maxFileMessage);
+          input.reportValidity();
+          return;
+        }
+        input.setCustomValidity('');
         entries.push({ id: nextId++, file: file });
         remaining -= 1;
       });

@@ -107,7 +107,7 @@ public final class RequestsPresentation {
 
     public static ModelAndView rejectIncomingPaymentMissingReason(
             final BookingSearchForm search, final RedirectAttributes redirectAttributes) {
-        ToastSupport.error(redirectAttributes, "requests.booking.rejectPaymentReasonRequired");
+        ToastSupport.error(redirectAttributes, "requests.booking.rejectPaymentHostMessageRequired");
         addBookingSearchParams(redirectAttributes, search);
         return new ModelAndView(REDIRECT_INCOMING);
     }

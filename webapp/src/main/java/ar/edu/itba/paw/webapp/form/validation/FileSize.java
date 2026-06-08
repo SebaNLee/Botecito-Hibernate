@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.form.validation;
 
+import ar.edu.itba.paw.webapp.util.UploadLimits;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -17,5 +18,5 @@ public @interface FileSize {
 
     Class<? extends Payload>[] payload() default {};
 
-    long max() default 5242880; // 5MB
+    long max() default UploadLimits.MAX_FILE_BYTES;
 }

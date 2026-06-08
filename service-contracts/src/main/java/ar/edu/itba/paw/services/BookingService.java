@@ -48,7 +48,7 @@ public interface BookingService {
 
     void confirmPayment(int bookingId, int callerId);
 
-    void rejectPayment(int bookingId, int callerId, String reason);
+    void rejectPayment(int bookingId, int callerId, String hostMsg);
 
     void cancelBooking(int bookingId, int callerId);
 

@@ -172,7 +172,7 @@ public class RequestsController {
         if (rejectPaymentErrors.hasErrors()) {
             return RequestsPresentation.rejectIncomingPaymentMissingReason(search, redirectAttributes);
         }
-        bookingService.rejectPayment(bookingId, user.getId(), rejectPaymentForm.getReason());
+        bookingService.rejectPayment(bookingId, user.getId(), rejectPaymentForm.getHostMessage());
         return RequestsPresentation.rejectIncomingPaymentResult(search, redirectAttributes);
     }
 
@@ -203,7 +203,7 @@ public class RequestsController {
                 paymentProof.getFileName(),
                 paymentProof.getContentType(),
                 paymentProof.getFileBytes(),
-                paymentProof.getTrimmedGuestReply(),
+                paymentProof.getTrimmedGuestMessage(),
                 user.getId());
         return RequestsPresentation.submitOutgoingPaymentResult(search, redirectAttributes);
     }

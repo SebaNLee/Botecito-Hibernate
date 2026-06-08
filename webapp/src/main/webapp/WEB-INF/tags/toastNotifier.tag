@@ -3,8 +3,21 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <spring:message code="alert.dismiss" var="toastDismissLabel" htmlEscape="true" />
 
-<c:if test="${not empty toasts}">
+<c:set var="hasQueryToast" value="${not empty param.toastError}" />
+
+<c:if test="${hasQueryToast or not empty toasts}">
   <div class="toast toast-end toast-bottom z-[60]" data-paw-toast-container>
+    <c:if test="${hasQueryToast}">
+      <div role="status" data-paw-toast data-paw-toast-type="error" class="alert alert-error shadow-lg rounded-xl items-start gap-3 pr-11 max-w-sm">
+        <span class="material-symbols-outlined text-lg shrink-0">error</span>
+        <span class="min-w-0 flex-1 text-sm">
+          <spring:message code="${param.toastError}" />
+        </span>
+        <button type="button" class="btn btn-ghost btn-sm btn-square absolute top-1.5 right-1.5 shrink-0 h-7 w-7 min-h-0 p-0" data-paw-toast-dismiss aria-label="${toastDismissLabel}">
+          <span class="material-symbols-outlined text-base leading-none" aria-hidden="true">close</span>
+        </button>
+      </div>
+    </c:if>
     <c:forEach items="${toasts}" var="toast">
       <c:choose>
         <c:when test="${toast.type == 'error'}">

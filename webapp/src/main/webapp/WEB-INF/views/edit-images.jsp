@@ -7,6 +7,7 @@
 <c:url var="editAvailabilityUrl" value="/edit/${itemId}/availability" />
 <c:url var="editImagesUrl" value="/edit/${itemId}/images" />
 <spring:message code="editPublication.actions.save" var="editSubmitLabel" />
+<spring:message code="publish.validation.images.size" var="galleryFileSizeMessage" />
 <spring:message code="publish.back.imagesLost" var="publishBackImagesLostMsg" />
 <spring:bind path="publishForm.files">
   <c:set var="filesError" value="${status.errorMessage}" />
@@ -19,8 +20,9 @@
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"
   headerCtaVariant="rent"
-  scripts="edit-wizard,form-submit"
+  scripts="toast,edit-wizard,form-submit"
 >
+  <paw:toastNotifier />
   <div
     data-edit-wizard-root="step3"
     data-edit-availability-url="${editAvailabilityUrl}"
@@ -82,6 +84,8 @@
       enctype="multipart/form-data"
       class="space-y-8"
       data-submit-loading-form="true"
+      data-max-file-bytes="${maxUploadFileBytes}"
+      data-max-file-message="${galleryFileSizeMessage}"
     >
       <div data-edit-wizard-hidden-fields></div>
       <input type="hidden" name="galleryOrder" value="" data-edit-gallery-order-input />

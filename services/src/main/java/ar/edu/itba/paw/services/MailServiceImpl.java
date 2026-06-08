@@ -278,8 +278,8 @@ public class MailServiceImpl implements MailService {
             context.setVariable("bookingDate", bookingDate);
             context.setVariable("timezone", timezone);
             context.setVariable("message", booking.getMsg());
-            context.setVariable("paymentReply", proof == null ? null : proof.getReplyMsg());
-            context.setVariable("refusalReason", proof == null ? null : proof.getRefuseMsg());
+            context.setVariable("guestMessage", proof == null ? null : proof.getGuestMsg());
+            context.setVariable("hostMessage", proof == null ? null : proof.getHostMsg());
             context.setVariable("actionUrl", url);
             context.setVariable("heading", getMessage(messagePrefix + ".heading", locale));
             context.setVariable("body", getMessage(messagePrefix + ".body", locale, version.getTitle(), bookingDate));

@@ -50,11 +50,36 @@
     }
   }
 
+  function validateFileSizes(form) {
+    const maxBytes = parseInt(form.dataset.maxFileBytes || "0", 10);
+    if (!maxBytes) {
+      return true;
+    }
+    const message =
+      form.dataset.maxFileMessage || "The selected file is too large.";
+    const inputs = form.querySelectorAll("input[type='file']");
+    for (const input of inputs) {
+      input.setCustomValidity("");
+      for (const file of input.files || []) {
+        if (file.size > maxBytes) {
+          input.setCustomValidity(message);
+          input.reportValidity();
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
   function initSubmitLoadingState() {
     const forms = document.querySelectorAll("[data-submit-loading-form]");
     forms.forEach((form) => {
       resetLoadingState(form);
-      form.addEventListener("submit", function() {
+      form.addEventListener("submit", function(event) {
+        if (!validateFileSizes(form)) {
+          event.preventDefault();
+          return;
+        }
         setLoadingState(form);
       });
     });

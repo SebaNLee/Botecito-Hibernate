@@ -4,6 +4,7 @@ import static ar.edu.itba.paw.persistence.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.entity.*;
+import java.time.LocalDateTime;
 import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -74,5 +75,39 @@ public class SubscriptionJpaDaoTest {
         int count = subscriptionDao.countFollowers(publisher.getId());
 
         assertEquals(2, count);
+    }
+
+    @Test
+    public void testCountSubscriptions() {
+        Users publisher2 = insertUser(em, "Botecito", "Admin", "botecito.dev2@gmail.com");
+        em.flush();
+        subscriptionDao.create(subscriber.getId(), publisher.getId());
+        subscriptionDao.create(subscriber.getId(), publisher2.getId());
+
+        int count = subscriptionDao.countSubscriptions(subscriber.getId());
+
+        assertEquals(2, count);
+    }
+
+    @Test
+    public void testListVerifiedSubscribersForPublisher() {
+        Users verified = insertUser(em, "Verified", "User", "botecito.verified@gmail.com");
+        Users unverified = new Users();
+        unverified.setFirstName("Unverified");
+        unverified.setLastName("User");
+        unverified.setEmail("botecito.unverified@gmail.com");
+        unverified.setLanguage("en");
+        unverified.setVerified(false);
+        unverified.setAdmin(false);
+        unverified.setCreatedAt(LocalDateTime.now());
+        em.persist(unverified);
+        em.flush();
+        subscriptionDao.create(verified.getId(), publisher.getId());
+        subscriptionDao.create(unverified.getId(), publisher.getId());
+
+        List<Users> result = subscriptionDao.listVerifiedSubscribersForPublisher(publisher.getId());
+
+        assertEquals(1, result.size());
+        assertEquals(verified.getId(), result.get(0).getId());
     }
 }

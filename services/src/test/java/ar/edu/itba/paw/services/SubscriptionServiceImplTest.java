@@ -79,4 +79,21 @@ public class SubscriptionServiceImplTest {
         assertNotNull(result);
         assertEquals(1, result.getTotalItems());
     }
+
+    @Test
+    public void testCountFollowers() {
+        when(subscriptionDao.countFollowers(USER_ID)).thenReturn(3);
+
+        assertEquals(3, subscriptionService.countFollowers(USER_ID));
+    }
+
+    @Test
+    public void testListVerifiedSubscribersForPublisher() {
+        when(subscriptionDao.listVerifiedSubscribersForPublisher(USER_ID)).thenReturn(List.of(new Users()));
+
+        var result = subscriptionService.listVerifiedSubscribersForPublisher(USER_ID);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
 }

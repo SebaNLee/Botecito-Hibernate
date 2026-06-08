@@ -9,9 +9,11 @@ import ar.edu.itba.paw.webapp.form.PreBookingForm;
 import ar.edu.itba.paw.webapp.presentation.DetailPageFlags;
 import ar.edu.itba.paw.webapp.presentation.DetailPageFlagsFactory;
 import ar.edu.itba.paw.webapp.presentation.DetailPresentation;
+import ar.edu.itba.paw.webapp.presentation.ToastPresentation;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -26,10 +28,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class DetailController {
 
+    private static final String DETAIL_MESSAGE_PREFIX = "detail";
+
     private final DetailService detailService;
     private final BookingService bookingService;
     private final DetailPageFlagsFactory detailPageFlagsFactory;
-    private final DetailPresentation detailPresentation;
+    private final MessageSource messageSource;
 
     @ModelAttribute("itemDetailView")
     public ItemDetailViewForm defaultItemDetailView() {
@@ -49,12 +53,18 @@ public class DetailController {
         if (errors.hasErrors()) {
             final Item item = detailService.getItemDetail(itemId, 1);
             final DetailPageFlags flags = detailPageFlagsFactory.compute(item, user);
-            return detailPresentation.detailPageWithViewValidationErrors(
-                    item, user, flags, request, itemDetailView, errors);
+            return DetailPresentation.detailPageWithViewValidationErrors(
+                    item,
+                    user,
+                    flags,
+                    request,
+                    itemDetailView,
+                    errors,
+                    ToastPresentation.validationToasts(errors, DETAIL_MESSAGE_PREFIX, messageSource));
         }
         final Item item = detailService.getItemDetail(itemId, itemDetailView.getPage());
         final DetailPageFlags flags = detailPageFlagsFactory.compute(item, user);
-        return detailPresentation.detailPage(item, user, flags, request, itemDetailView);
+        return DetailPresentation.detailPage(item, user, flags, request, itemDetailView);
     }
 
     @RequestMapping(value = "/item/{id:[1-9]\\d*}", method = RequestMethod.POST)
@@ -68,10 +78,15 @@ public class DetailController {
         if (errors.hasErrors()) {
             final Item item = detailService.getItemDetail(itemId, 1);
             final DetailPageFlags flags = detailPageFlagsFactory.compute(item, user);
-            return detailPresentation.detailPageWithPreBookingValidationErrors(item, user, flags, request, errors);
+            return DetailPresentation.detailPageWithPreBookingValidationErrors(
+                    item,
+                    user,
+                    flags,
+                    request,
+                    ToastPresentation.validationToasts(errors, DETAIL_MESSAGE_PREFIX, messageSource));
         }
         bookingService.createBooking(
                 itemId, form.getDate(), form.getStartTime(), form.getEndTime(), form.getMessage(), user.getId());
-        return detailPresentation.submitPreBookingSuccess(itemId, redirectAttributes);
+        return DetailPresentation.submitPreBookingSuccess(itemId, redirectAttributes);
     }
 }

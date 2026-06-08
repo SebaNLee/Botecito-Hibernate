@@ -7,6 +7,7 @@ import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import ar.edu.itba.paw.webapp.presentation.MarketplacePresentation;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -19,7 +20,7 @@ import org.springframework.web.servlet.ModelAndView;
 public class MarketplaceController {
 
     private final MarketplaceService marketplaceService;
-    private final MarketplacePresentation marketplacePresentation;
+    private final MessageSource messageSource;
 
     @ModelAttribute("marketplaceSearch")
     public MarketplaceSearchForm defaultMarketplaceSearch() {
@@ -36,7 +37,7 @@ public class MarketplaceController {
             final BindingResult errors) {
 
         if (errors.hasErrors()) {
-            return marketplacePresentation.marketplaceErrors(search, errors);
+            return MarketplacePresentation.marketplaceErrors(search, errors, messageSource);
         }
 
         final PageModel<Item> itemPage = marketplaceService.searchMarketplace(
@@ -53,6 +54,6 @@ public class MarketplaceController {
                 search.getPage(),
                 search.getPageSize(),
                 search.getSortBy());
-        return marketplacePresentation.marketplace(search, itemPage);
+        return MarketplacePresentation.marketplace(search, itemPage);
     }
 }

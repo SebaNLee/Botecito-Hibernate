@@ -50,11 +50,11 @@ public class SaveSelfBlocksForm {
         this.blocks = blocks == null ? new ArrayList<>() : blocks;
     }
 
-    public List<Integer> deletedBlockIds() {
+    public List<Integer> getDeletedBlockIds() {
         return List.copyOf(deletedBlockIds);
     }
 
-    public List<SelfBlockUpdate> updates() {
+    public List<SelfBlockUpdate> getUpdates() {
         final List<SelfBlockUpdate> updates = new ArrayList<>();
         for (final UpdateBinding update : blockUpdates) {
             if (update == null
@@ -71,7 +71,7 @@ public class SaveSelfBlocksForm {
         return List.copyOf(updates);
     }
 
-    public List<SelfBlockCreate> creates() {
+    public List<SelfBlockCreate> getCreates() {
         final List<SelfBlockCreate> creates = new ArrayList<>();
         for (final CreateBinding create : blockCreates) {
             if (create == null || create.getStartTime() == null || create.getEndTime() == null) {

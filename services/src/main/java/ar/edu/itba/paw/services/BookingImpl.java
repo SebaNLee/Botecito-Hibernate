@@ -18,8 +18,6 @@ import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.models.exceptions.BookingCollisionException;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.models.exceptions.IllegalBookingOperationException;
-import ar.edu.itba.paw.models.exceptions.InvalidBookingStatusException;
-import ar.edu.itba.paw.models.exceptions.InvalidDateFormatException;
 import ar.edu.itba.paw.models.exceptions.InvalidPaymentProofException;
 import ar.edu.itba.paw.models.exceptions.InvalidSlotException;
 import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
@@ -207,14 +205,11 @@ public class BookingImpl implements BookingService {
             final int callerId,
             final boolean asHost,
             final String searchQuery,
-            final String rawDate,
-            final String rawStatus,
+            final LocalDate date,
+            final BookingStatusEnum status,
             final Integer page,
             final Integer pageSize,
             final String sortBy) {
-        final LocalDate date = parseDate(rawDate);
-        final BookingStatusEnum status = parseStatus(rawStatus);
-
         var query = BookingQueryModel.builder()
                 .callerId(callerId)
                 .asHost(asHost)
@@ -227,28 +222,6 @@ public class BookingImpl implements BookingService {
                 .build();
 
         return bookingDao.searchBookings(query);
-    }
-
-    private static LocalDate parseDate(final String raw) {
-        if (raw == null || raw.isBlank()) {
-            return null;
-        }
-        try {
-            return LocalDate.parse(raw.trim());
-        } catch (final Exception e) {
-            throw new InvalidDateFormatException(raw);
-        }
-    }
-
-    private static BookingStatusEnum parseStatus(final String raw) {
-        if (raw == null || raw.isBlank()) {
-            return null;
-        }
-        try {
-            return BookingStatusEnum.valueOf(raw.trim());
-        } catch (final IllegalArgumentException e) {
-            throw new InvalidBookingStatusException(raw);
-        }
     }
 
     public List<Booking> getUpcomingBookings(Item item) {

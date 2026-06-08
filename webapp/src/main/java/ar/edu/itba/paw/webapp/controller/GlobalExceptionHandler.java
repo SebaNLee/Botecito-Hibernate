@@ -4,8 +4,6 @@ import ar.edu.itba.paw.models.exceptions.BookingCollisionException;
 import ar.edu.itba.paw.models.exceptions.EmailAlreadyExistsException;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.models.exceptions.IllegalBookingOperationException;
-import ar.edu.itba.paw.models.exceptions.InvalidBookingStatusException;
-import ar.edu.itba.paw.models.exceptions.InvalidDateFormatException;
 import ar.edu.itba.paw.models.exceptions.InvalidPaymentProofException;
 import ar.edu.itba.paw.models.exceptions.InvalidSlotException;
 import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
@@ -150,18 +148,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ModelAndView handleEmailAlreadyExists(HttpServletRequest request, RedirectAttributes ra) {
         ToastSupport.error(ra, "register.validation.email.duplicate");
-        return redirectToReferer(request);
-    }
-
-    @ExceptionHandler(InvalidDateFormatException.class)
-    public ModelAndView handleInvalidDateFormat(HttpServletRequest request, RedirectAttributes ra) {
-        ToastSupport.error(ra, "bookingSearch.validation.date.invalid");
-        return redirectToReferer(request);
-    }
-
-    @ExceptionHandler(InvalidBookingStatusException.class)
-    public ModelAndView handleInvalidBookingStatus(HttpServletRequest request, RedirectAttributes ra) {
-        ToastSupport.error(ra, "bookingSearch.validation.status.invalid");
         return redirectToReferer(request);
     }
 

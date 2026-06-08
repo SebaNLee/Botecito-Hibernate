@@ -72,8 +72,7 @@ public final class ReviewImpl implements ReviewService {
             return Optional.empty();
         }
 
-        final Optional<Review> review =
-                reviewDao.createReview(bookingId, reviewerUserId, resolved, rating, normalizeComment(comment));
+        final Optional<Review> review = reviewDao.createReview(bookingId, reviewerUserId, resolved, rating, comment);
         review.ifPresent(r -> LOGGER.info(
                 "Review created: user {} reviewed booking {} with rating {} for {}",
                 reviewerUserId,
@@ -102,14 +101,6 @@ public final class ReviewImpl implements ReviewService {
             return TargetEnum.USER;
         }
         return null;
-    }
-
-    private static String normalizeComment(final String comment) {
-        if (comment == null) {
-            return null;
-        }
-        final String trimmed = comment.trim();
-        return trimmed.isEmpty() ? null : trimmed;
     }
 
     @Override

@@ -4,10 +4,8 @@ import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
-import lombok.Getter;
 import lombok.Setter;
 
-@Getter
 @Setter
 public class RegisterForm {
 
@@ -35,27 +33,39 @@ public class RegisterForm {
     @Size(max = 30, message = "{register.validation.paymentAlias.max}")
     private String paymentAlias;
 
+    public String getGivenName() {
+        return givenName == null ? null : givenName.trim();
+    }
+
+    public String getLastName() {
+        return lastName == null ? null : lastName.trim();
+    }
+
+    public String getEmail() {
+        return email == null ? null : email.trim().toLowerCase();
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public String getConfirmPassword() {
+        return confirmPassword;
+    }
+
+    public String getPaymentAlias() {
+        if (paymentAlias == null) {
+            return null;
+        }
+        final String trimmed = paymentAlias.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     @AssertTrue(message = "{register.validation.password.mismatch}")
     public boolean isPasswordConfirmationValid() {
         if (password == null || password.isBlank() || confirmPassword == null || confirmPassword.isBlank()) {
             return true;
         }
         return password.equals(confirmPassword);
-    }
-
-    public void setGivenName(final String givenName) {
-        this.givenName = givenName == null ? null : givenName.trim();
-    }
-
-    public void setLastName(final String lastName) {
-        this.lastName = lastName == null ? null : lastName.trim();
-    }
-
-    public void setEmail(final String email) {
-        this.email = email == null ? null : email.trim();
-    }
-
-    public void setPaymentAlias(final String paymentAlias) {
-        this.paymentAlias = paymentAlias == null ? null : paymentAlias.trim();
     }
 }

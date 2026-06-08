@@ -22,7 +22,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
-    private final SubscriptionPresentation subscriptionPresentation;
 
     @ModelAttribute("profileListingsView")
     public ProfileListingsViewForm defaultProfileListingsView() {
@@ -56,7 +55,7 @@ public class SubscriptionController {
             @ModelAttribute("profileListingsView") final ProfileListingsViewForm profileListingsView,
             final RedirectAttributes redirectAttributes) {
         final boolean success = subscriptionService.subscribe(user.getId(), profileUserId);
-        return subscriptionPresentation.subscribeFromProfileListingsResult(
+        return SubscriptionPresentation.subscribeFromProfileListingsResult(
                 profileListingsView, profileUserId, success, redirectAttributes);
     }
 
@@ -67,7 +66,7 @@ public class SubscriptionController {
             @ModelAttribute("profileListingsView") final ProfileListingsViewForm profileListingsView,
             final RedirectAttributes redirectAttributes) {
         final boolean success = subscriptionService.unsubscribe(user.getId(), profileUserId);
-        return subscriptionPresentation.unsubscribeFromProfileListingsResult(
+        return SubscriptionPresentation.unsubscribeFromProfileListingsResult(
                 profileListingsView, profileUserId, success, redirectAttributes);
     }
 
@@ -78,7 +77,7 @@ public class SubscriptionController {
             @ModelAttribute("profileReviewsView") final ProfileReviewsViewForm profileReviewsView,
             final RedirectAttributes redirectAttributes) {
         final boolean success = subscriptionService.subscribe(user.getId(), profileUserId);
-        return subscriptionPresentation.subscribeFromProfileReviewsResult(
+        return SubscriptionPresentation.subscribeFromProfileReviewsResult(
                 profileReviewsView, profileUserId, success, redirectAttributes);
     }
 
@@ -89,7 +88,7 @@ public class SubscriptionController {
             @ModelAttribute("profileReviewsView") final ProfileReviewsViewForm profileReviewsView,
             final RedirectAttributes redirectAttributes) {
         final boolean success = subscriptionService.unsubscribe(user.getId(), profileUserId);
-        return subscriptionPresentation.unsubscribeFromProfileReviewsResult(
+        return SubscriptionPresentation.unsubscribeFromProfileReviewsResult(
                 profileReviewsView, profileUserId, success, redirectAttributes);
     }
 
@@ -100,7 +99,7 @@ public class SubscriptionController {
             @ModelAttribute("itemDetailView") final ItemDetailViewForm itemDetailView,
             final RedirectAttributes redirectAttributes) {
         final boolean success = subscriptionService.subscribe(user.getId(), subscribedToId);
-        return subscriptionPresentation.subscribeFromItemDetailResult(itemDetailView, success, redirectAttributes);
+        return SubscriptionPresentation.subscribeFromItemDetailResult(itemDetailView, success, redirectAttributes);
     }
 
     @RequestMapping(value = "/users/{id:[1-9]\\d*}/unsubscribe", method = RequestMethod.POST)
@@ -110,7 +109,7 @@ public class SubscriptionController {
             @ModelAttribute("itemDetailView") final ItemDetailViewForm itemDetailView,
             final RedirectAttributes redirectAttributes) {
         final boolean success = subscriptionService.unsubscribe(user.getId(), subscribedToId);
-        return subscriptionPresentation.unsubscribeFromItemDetailResult(itemDetailView, success, redirectAttributes);
+        return SubscriptionPresentation.unsubscribeFromItemDetailResult(itemDetailView, success, redirectAttributes);
     }
 
     @RequestMapping(value = "/settings/subscriptions/{id:[1-9]\\d*}/unsubscribe", method = RequestMethod.POST)
@@ -120,6 +119,6 @@ public class SubscriptionController {
             @ModelAttribute("settingsView") final SettingsViewForm settingsView,
             final RedirectAttributes redirectAttributes) {
         final boolean success = subscriptionService.unsubscribe(user.getId(), subscribedToId);
-        return subscriptionPresentation.unsubscribeFromSettingsResult(settingsView, success, redirectAttributes);
+        return SubscriptionPresentation.unsubscribeFromSettingsResult(settingsView, success, redirectAttributes);
     }
 }

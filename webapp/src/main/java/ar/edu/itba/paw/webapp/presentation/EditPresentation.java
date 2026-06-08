@@ -1,103 +1,75 @@
 package ar.edu.itba.paw.webapp.presentation;
 
-import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.util.List;
-import javax.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-import org.springframework.validation.BindingResult;
+import java.util.Map;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
 
-@Component
-@RequiredArgsConstructor
-public class EditPresentation {
+public final class EditPresentation {
 
-    public ModelAndView editStepOne(final Version version, final int itemId, final HttpServletRequest request) {
-        final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
-        final PublishBoatForm form = PublishWizardMapping.fromVersion(version);
-        final ModelAndView mav = new ModelAndView("edit-details");
-        mav.addObject("itemId", itemId);
-        mav.addObject("versionId", version.getId());
-        mav.addObject("publishForm", form);
-        mav.addObject("editGalleryImages", PublishWizardMapping.buildEditGallerySeeds(version, contextPath));
-        return mav;
+    private EditPresentation() {}
+
+    public static ModelAndView editDetailsView(
+            final int itemId,
+            final int versionId,
+            final PublishBoatForm form,
+            final List<EditGalleryImageSeed> gallerySeeds) {
+        return new ModelAndView("edit-details")
+                .addObject("itemId", itemId)
+                .addObject("versionId", versionId)
+                .addObject("publishForm", form)
+                .addObject("editGalleryImages", gallerySeeds);
     }
 
-    public ModelAndView editStepOneSubmit(final int itemId, final PublishBoatForm form, final BindingResult errors) {
-        if (errors.hasErrors()) {
-            final ModelAndView mav = new ModelAndView("edit-details");
-            mav.addObject("itemId", itemId);
-            mav.addObject("publishForm", form);
-            return mav;
-        }
+    public static ModelAndView editStepOneErrors(final int itemId, final PublishBoatForm form) {
+        return new ModelAndView("edit-details").addObject("itemId", itemId).addObject("publishForm", form);
+    }
+
+    public static ModelAndView editStepOneSuccess(final int itemId) {
         return new ModelAndView("redirect:/edit/" + itemId + "/availability");
     }
 
-    public ModelAndView editStepTwo(final int itemId) {
-        final ModelAndView mav = new ModelAndView("edit-availability");
-        mav.addObject("itemId", itemId);
-        PublishWizardMapping.addAvailabilityEditorData(mav, new PublishBoatForm());
-        return mav;
+    public static ModelAndView editStepTwo(final int itemId, final Map<String, Boolean> enabledWeekdays) {
+        return new ModelAndView("edit-availability")
+                .addObject("itemId", itemId)
+                .addObject("enabledWeekdays", enabledWeekdays);
     }
 
-    public ModelAndView editStepTwoSubmit(final int itemId, final PublishBoatForm form, final BindingResult errors) {
-        if (errors.hasErrors()) {
-            if (PublishWizardMapping.hasErrorsOutsideAvailability(errors)) {
-                return redirectToEditDetails(itemId);
-            }
-            final ModelAndView mav = new ModelAndView("edit-availability");
-            mav.addObject("itemId", itemId);
-            mav.addObject("publishForm", form);
-            PublishWizardMapping.addAvailabilityEditorData(mav, form);
-            return mav;
-        }
+    public static ModelAndView editStepTwoErrors(
+            final int itemId, final PublishBoatForm form, final Map<String, Boolean> enabledWeekdays) {
+        return new ModelAndView("edit-availability")
+                .addObject("itemId", itemId)
+                .addObject("publishForm", form)
+                .addObject("enabledWeekdays", enabledWeekdays);
+    }
+
+    public static ModelAndView editStepTwoSuccess(final int itemId) {
         return new ModelAndView("redirect:/edit/" + itemId + "/images");
     }
 
-    public ModelAndView editStepThree(final int itemId) {
-        final ModelAndView mav = new ModelAndView("edit-images");
-        mav.addObject("itemId", itemId);
-        mav.addObject("galleryPreviewUrls", List.of());
-        return mav;
+    public static ModelAndView redirectToEditDetails(final int itemId) {
+        final RedirectView redirectView = new RedirectView("/edit/" + itemId + "/details", true);
+        redirectView.setExposeModelAttributes(false);
+        return new ModelAndView(redirectView);
     }
 
-    public ModelAndView editStepThreeSubmit(final int itemId, final PublishBoatForm form, final BindingResult errors) {
-        if (errors.hasErrors()) {
-            if (PublishWizardMapping.hasErrorsOutsideAvailability(errors)) {
-                return redirectToEditDetails(itemId);
-            }
-            return editImagesView(itemId);
-        }
-        return null;
+    public static ModelAndView editStepThree(final int itemId) {
+        return new ModelAndView("edit-images").addObject("itemId", itemId).addObject("galleryPreviewUrls", List.of());
     }
 
-    public ModelAndView editSavedRedirect(final boolean updated, final RedirectAttributes redirectAttributes) {
+    public static ModelAndView editStepThreeErrors(final int itemId) {
+        return new ModelAndView("edit-images").addObject("itemId", itemId).addObject("galleryPreviewUrls", List.of());
+    }
+
+    public static ModelAndView editSavedRedirect(final boolean updated, final RedirectAttributes redirectAttributes) {
         if (updated) {
             ToastSupport.success(redirectAttributes, "settings.publications.updated");
         } else {
             ToastSupport.info(redirectAttributes, "settings.publications.noChanges");
         }
         return new ModelAndView("redirect:/my-boats");
-    }
-
-    public int maxGalleryImages() {
-        return PublishBoatForm.MAX_GALLERY_IMAGES;
-    }
-
-    private static ModelAndView editImagesView(final int itemId) {
-        final ModelAndView mav = new ModelAndView("edit-images");
-        mav.addObject("itemId", itemId);
-        mav.addObject("galleryPreviewUrls", List.of());
-        return mav;
-    }
-
-    private static ModelAndView redirectToEditDetails(final int itemId) {
-        final RedirectView redirectView = new RedirectView("/edit/" + itemId + "/details", true);
-        redirectView.setExposeModelAttributes(false);
-        return new ModelAndView(redirectView);
     }
 }

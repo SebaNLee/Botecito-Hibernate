@@ -9,9 +9,9 @@
 <c:if test="${not empty bookingSearch.searchQuery}">
   <input type="hidden" name="searchQuery" value="<c:out value='${bookingSearch.searchQuery}'/>" />
 </c:if>
-<c:if test="${not empty bookingSearch.date}">
-  <input type="hidden" name="date" value="<c:out value='${bookingSearch.date}'/>" />
+<c:if test="${not empty bookingSearch.dateParam}">
+  <input type="hidden" name="date" value="<c:out value='${bookingSearch.dateParam}'/>" />
 </c:if>
-<c:if test="${not empty bookingSearch.status}">
-  <input type="hidden" name="status" value="<c:out value='${bookingSearch.status}'/>" />
+<c:if test="${not empty bookingSearch.statusParam}">
+  <input type="hidden" name="status" value="<c:out value='${bookingSearch.statusParam}'/>" />
 </c:if>

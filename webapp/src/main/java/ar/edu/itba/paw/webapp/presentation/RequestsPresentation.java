@@ -9,27 +9,24 @@ import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@Component
-@RequiredArgsConstructor
-public class RequestsPresentation {
+public final class RequestsPresentation {
 
     private static final String BOOKING_SEARCH_PREFIX = "bookingSearch";
     private static final String REDIRECT_INCOMING = "redirect:/requests/incoming";
     private static final String REDIRECT_OUTGOING = "redirect:/requests/outgoing";
 
-    private final ToastPresentation toastPresentation;
+    private RequestsPresentation() {}
 
-    public ModelAndView outgoing(
+    public static ModelAndView outgoing(
             final BookingSearchForm search,
             final PageModel<Booking> bookingPage,
             final Map<Integer, List<Review>> userReviews) {
@@ -39,15 +36,16 @@ public class RequestsPresentation {
         return mav;
     }
 
-    public ModelAndView outgoingErrors(final BookingSearchForm search, final BindingResult errors) {
+    public static ModelAndView outgoingErrors(
+            final BookingSearchForm search, final BindingResult errors, final MessageSource messageSource) {
         final ModelAndView mav = new ModelAndView("requests-outgoing", "bookingSearch", search);
         mav.addAllObjects(errors.getModel());
         mav.addObject("bookingPage", new PageModel<>(List.of(), 1, 12, 0L));
-        mav.addObject("toasts", toastPresentation.validationToasts(errors, BOOKING_SEARCH_PREFIX));
+        mav.addObject("toasts", ToastPresentation.validationToasts(errors, BOOKING_SEARCH_PREFIX, messageSource));
         return mav;
     }
 
-    public ModelAndView incoming(
+    public static ModelAndView incoming(
             final BookingSearchForm search,
             final PageModel<Booking> bookingPage,
             final Map<Integer, List<Review>> userReviews) {
@@ -57,15 +55,16 @@ public class RequestsPresentation {
         return mav;
     }
 
-    public ModelAndView incomingErrors(final BookingSearchForm search, final BindingResult errors) {
+    public static ModelAndView incomingErrors(
+            final BookingSearchForm search, final BindingResult errors, final MessageSource messageSource) {
         final ModelAndView mav = new ModelAndView("requests-incoming", "bookingSearch", search);
         mav.addObject("bookingPage", new PageModel<>(List.of(), 1, 12, 0L));
         mav.addAllObjects(errors.getModel());
-        mav.addObject("toasts", toastPresentation.validationToasts(errors, BOOKING_SEARCH_PREFIX));
+        mav.addObject("toasts", ToastPresentation.validationToasts(errors, BOOKING_SEARCH_PREFIX, messageSource));
         return mav;
     }
 
-    public ModelAndView outgoingAfterReview(
+    public static ModelAndView outgoingAfterReview(
             final BookingSearchForm search,
             final RedirectAttributes redirectAttributes,
             final boolean validationFailed,
@@ -75,7 +74,7 @@ public class RequestsPresentation {
         return new ModelAndView(REDIRECT_OUTGOING);
     }
 
-    public ModelAndView incomingAfterReview(
+    public static ModelAndView incomingAfterReview(
             final BookingSearchForm search,
             final RedirectAttributes redirectAttributes,
             final boolean validationFailed,
@@ -85,63 +84,63 @@ public class RequestsPresentation {
         return new ModelAndView(REDIRECT_INCOMING);
     }
 
-    public ModelAndView acceptIncomingBookingResult(
+    public static ModelAndView acceptIncomingBookingResult(
             final BookingSearchForm search, final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, "requests.booking.accepted");
         addBookingSearchParams(redirectAttributes, search);
         return new ModelAndView(REDIRECT_INCOMING);
     }
 
-    public ModelAndView rejectIncomingBookingResult(
+    public static ModelAndView rejectIncomingBookingResult(
             final BookingSearchForm search, final RedirectAttributes redirectAttributes) {
         ToastSupport.warning(redirectAttributes, "requests.booking.rejected");
         addBookingSearchParams(redirectAttributes, search);
         return new ModelAndView(REDIRECT_INCOMING);
     }
 
-    public ModelAndView confirmIncomingPaymentResult(
+    public static ModelAndView confirmIncomingPaymentResult(
             final BookingSearchForm search, final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, "requests.booking.paymentConfirmed");
         addBookingSearchParams(redirectAttributes, search);
         return new ModelAndView(REDIRECT_INCOMING);
     }
 
-    public ModelAndView rejectIncomingPaymentMissingReason(
+    public static ModelAndView rejectIncomingPaymentMissingReason(
             final BookingSearchForm search, final RedirectAttributes redirectAttributes) {
         ToastSupport.error(redirectAttributes, "requests.booking.rejectPaymentReasonRequired");
         addBookingSearchParams(redirectAttributes, search);
         return new ModelAndView(REDIRECT_INCOMING);
     }
 
-    public ModelAndView rejectIncomingPaymentResult(
+    public static ModelAndView rejectIncomingPaymentResult(
             final BookingSearchForm search, final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, "requests.booking.paymentRefused");
         addBookingSearchParams(redirectAttributes, search);
         return new ModelAndView(REDIRECT_INCOMING);
     }
 
-    public ModelAndView cancelOutgoingBookingResult(
+    public static ModelAndView cancelOutgoingBookingResult(
             final BookingSearchForm search, final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, "requests.booking.cancelled");
         addBookingSearchParams(redirectAttributes, search);
         return new ModelAndView(REDIRECT_OUTGOING);
     }
 
-    public ModelAndView submitOutgoingPaymentInvalidFile(
+    public static ModelAndView submitOutgoingPaymentInvalidFile(
             final BookingSearchForm search, final RedirectAttributes redirectAttributes) {
         ToastSupport.error(redirectAttributes, "requests.booking.paymentInvalidFile");
         addBookingSearchParams(redirectAttributes, search);
         return new ModelAndView(REDIRECT_OUTGOING);
     }
 
-    public ModelAndView submitOutgoingPaymentResult(
+    public static ModelAndView submitOutgoingPaymentResult(
             final BookingSearchForm search, final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, "requests.booking.paymentSubmitted");
         addBookingSearchParams(redirectAttributes, search);
         return new ModelAndView(REDIRECT_OUTGOING);
     }
 
-    public ResponseEntity<byte[]> paymentProofResponse(final PaymentProof proof) {
+    public static ResponseEntity<byte[]> paymentProofResponse(final PaymentProof proof) {
         if (proof.getFileData() == null || proof.getFileData().length == 0) {
             return ResponseEntity.notFound().build();
         }
@@ -167,11 +166,11 @@ public class RequestsPresentation {
         if (StringUtils.hasText(search.getSearchQuery())) {
             redirectAttributes.addAttribute("searchQuery", search.getSearchQuery());
         }
-        if (StringUtils.hasText(search.getDate())) {
-            redirectAttributes.addAttribute("date", search.getDate());
+        if (StringUtils.hasText(search.getDateParam())) {
+            redirectAttributes.addAttribute("date", search.getDateParam());
         }
-        if (StringUtils.hasText(search.getStatus())) {
-            redirectAttributes.addAttribute("status", search.getStatus());
+        if (StringUtils.hasText(search.getStatusParam())) {
+            redirectAttributes.addAttribute("status", search.getStatusParam());
         }
     }
 
@@ -186,7 +185,7 @@ public class RequestsPresentation {
         }
     }
 
-    private void addUserReviews(final ModelAndView mav, final Map<Integer, List<Review>> userReviews) {
+    private static void addUserReviews(final ModelAndView mav, final Map<Integer, List<Review>> userReviews) {
         mav.addObject(
                 "userReviews", userReviews == null || userReviews.isEmpty() ? Collections.emptyMap() : userReviews);
     }

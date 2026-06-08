@@ -1,13 +1,20 @@
 package ar.edu.itba.paw.webapp.form;
 
+import ar.edu.itba.paw.models.dto.AvailabilityWindow;
+import ar.edu.itba.paw.models.dto.ImageUpload;
+import ar.edu.itba.paw.models.entity.Availability;
+import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.webapp.form.validation.ImageGalleryUpload;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import javax.validation.constraints.AssertTrue;
@@ -20,6 +27,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.format.annotation.DateTimeFormat.ISO;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -95,6 +103,142 @@ public class PublishBoatForm {
 
     public void setAvailabilityRanges(final List<AvailabilityRangeBinding> availabilityRanges) {
         this.availabilityRanges = availabilityRanges == null ? new ArrayList<>() : availabilityRanges;
+    }
+
+    public String getTitle() {
+        return title == null ? null : title.trim();
+    }
+
+    public String getDescription() {
+        return description == null ? "" : description.trim();
+    }
+
+    public List<AvailabilityWindow> getAvailabilityWindows() {
+        final List<AvailabilityWindow> availabilities = new ArrayList<>();
+        for (final AvailabilityRangeBinding range : availabilityRanges) {
+            if (range == null
+                    || range.getWeekday() == null
+                    || range.getStartTime() == null
+                    || range.getEndTime() == null) {
+                continue;
+            }
+            final AvailabilityWindow window = new AvailabilityWindow();
+            window.setWeekday(range.getWeekday());
+            window.setStartTime(range.getStartTime());
+            window.setEndTime(range.getEndTime());
+            availabilities.add(window);
+        }
+        return availabilities;
+    }
+
+    public List<ImageUpload> getPublishImageUploads() {
+        if (files == null || files.isEmpty()) {
+            return List.of();
+        }
+        final List<ImageUpload> uploads = new ArrayList<>();
+        for (final MultipartFile file : files) {
+            if (file == null || file.isEmpty()) {
+                continue;
+            }
+            try {
+                final byte[] bytes = file.getBytes();
+                if (bytes.length > 0) {
+                    uploads.add(ImageUpload.ofNew(bytes, file.getContentType()));
+                }
+            } catch (final IOException ignored) {
+                // skip unreadable file
+            }
+        }
+        return uploads;
+    }
+
+    public List<ImageUpload> getEditImageUploads() {
+        if (galleryOrder == null || galleryOrder.isBlank()) {
+            return List.of();
+        }
+        final List<MultipartFile> uploaded = files == null ? List.of() : files;
+        int newFileIndex = 0;
+        final List<ImageUpload> images = new ArrayList<>();
+        for (final String token : galleryOrder.split(",")) {
+            final String trimmed = token.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            if (trimmed.startsWith("e:")) {
+                images.add(ImageUpload.ofExisting(Integer.parseInt(trimmed.substring(2))));
+                continue;
+            }
+            if (trimmed.startsWith("n:")) {
+                while (newFileIndex < uploaded.size()) {
+                    final MultipartFile file = uploaded.get(newFileIndex++);
+                    if (file == null || file.isEmpty()) {
+                        continue;
+                    }
+                    try {
+                        final byte[] bytes = file.getBytes();
+                        if (bytes.length > 0) {
+                            images.add(ImageUpload.ofNew(bytes, file.getContentType()));
+                        }
+                    } catch (final IOException ignored) {
+                        // skip unreadable file
+                    }
+                    break;
+                }
+            }
+        }
+        return images;
+    }
+
+    public Map<String, Boolean> getEnabledWeekdaysModel() {
+        final Map<String, Boolean> model = new LinkedHashMap<>();
+        for (final DayOfWeek weekday : DayOfWeek.values()) {
+            model.put(weekday.name(), enabledDays.contains(weekday));
+        }
+        return model;
+    }
+
+    public static boolean hasErrorsOutsideAvailability(final BindingResult errors) {
+        return errors.getFieldErrors().stream().anyMatch(error -> !isAvailabilityError(error.getField()));
+    }
+
+    public static PublishBoatForm fromVersion(final Version version) {
+        final PublishBoatForm form = new PublishBoatForm();
+        form.setTitle(version.getTitle());
+        form.setDescription(version.getDescription() == null ? "" : version.getDescription());
+        form.setItemTypeId(version.getType().getId());
+        form.setPricePerHour(version.getPrice().intValue());
+        form.setCapacity(version.getCapacity());
+        form.setWeight(version.getWeight());
+        form.setDifficulty(version.getDifficulty());
+        form.setLocationOptionId(version.getLocation().getId());
+
+        final LinkedHashSet<DayOfWeek> enabledDaysSet = new LinkedHashSet<>();
+        final List<AvailabilityRangeBinding> ranges = new ArrayList<>();
+        if (version.getAvailabilities() != null) {
+            for (final Availability availability : version.getAvailabilities()) {
+                if (availability.getWeekday() == null
+                        || availability.getStartTime() == null
+                        || availability.getEndTime() == null) {
+                    continue;
+                }
+                enabledDaysSet.add(DayOfWeek.valueOf(availability.getWeekday().name()));
+                final AvailabilityRangeBinding range = new AvailabilityRangeBinding();
+                range.setWeekday(DayOfWeek.valueOf(availability.getWeekday().name()));
+                range.setStartTime(availability.getStartTime());
+                range.setEndTime(availability.getEndTime());
+                ranges.add(range);
+            }
+        }
+        form.setEnabledDays(new ArrayList<>(enabledDaysSet));
+        form.setAvailabilityRanges(ranges);
+        return form;
+    }
+
+    private static boolean isAvailabilityError(final String field) {
+        if (field == null) {
+            return false;
+        }
+        return field.startsWith("availability") || "availabilityByWeekday".equals(field);
     }
 
     @AssertTrue(

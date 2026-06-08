@@ -30,7 +30,6 @@ public class AuthController {
 
     private final UserService userService;
     private final PostRegistrationAuthenticator postRegistrationAuthenticator;
-    private final AuthPresentation authPresentation;
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ModelAndView login(@ModelAttribute("loginForm") final LoginForm form, final HttpServletRequest request) {
@@ -42,12 +41,12 @@ public class AuthController {
                 request.getSession().removeAttribute("continueUrl");
             }
         }
-        return authPresentation.login(form);
+        return AuthPresentation.login(form);
     }
 
     @RequestMapping(value = "/register", method = RequestMethod.GET)
     public ModelAndView registerForm(@ModelAttribute("registerForm") final RegisterForm form) {
-        return authPresentation.registerForm(form);
+        return AuthPresentation.registerForm(form);
     }
 
     @RequestMapping(value = "/register", method = RequestMethod.POST)
@@ -65,13 +64,13 @@ public class AuthController {
                 form.getPaymentAlias(),
                 request.getLocale().getLanguage(),
                 form.getPassword());
-        return authPresentation.registerSuccessRedirect();
+        return AuthPresentation.registerSuccessRedirect();
     }
 
     @RequestMapping(value = "/password-recovery", method = RequestMethod.GET)
     public ModelAndView passwordRecoveryRequestForm(
             @ModelAttribute("passwordRecoveryRequestForm") final PasswordRecoveryRequestForm form) {
-        return authPresentation.passwordRecoveryRequestForm(form);
+        return AuthPresentation.passwordRecoveryRequestForm(form);
     }
 
     @RequestMapping(value = "/password-recovery", method = RequestMethod.POST)
@@ -82,16 +81,16 @@ public class AuthController {
             return new ModelAndView("password-recovery-request");
         }
         userService.requestPasswordRecovery(form.getEmail());
-        return authPresentation.passwordRecoveryRequestSuccessRedirect();
+        return AuthPresentation.passwordRecoveryRequestSuccessRedirect();
     }
 
     @RequestMapping(value = "/password-recovery/{token}", method = RequestMethod.GET)
     public ModelAndView passwordRecoveryResetForm(@PathVariable("token") final String token) {
         final Optional<Users> user = userService.findByPasswordRecoveryToken(token);
         if (user.isEmpty() || user.get().getMailTokenEmittedAt() != null) {
-            return authPresentation.passwordRecoveryResetInvalidTokenRedirect(token);
+            return AuthPresentation.passwordRecoveryResetInvalidTokenRedirect(token);
         }
-        return authPresentation.passwordRecoveryResetForm(token);
+        return AuthPresentation.passwordRecoveryResetForm(token);
     }
 
     @RequestMapping(value = "/password-recovery/{token}", method = RequestMethod.POST)
@@ -108,12 +107,12 @@ public class AuthController {
         final boolean tokenValid =
                 userService.findByPasswordRecoveryToken(token).isPresent();
         if (!tokenValid) {
-            return authPresentation.passwordRecoveryResetInvalidTokenView(token);
+            return AuthPresentation.passwordRecoveryResetInvalidTokenView(token);
         }
         if (!userService.resetPassword(token, form.getPassword())) {
-            return authPresentation.passwordRecoveryResetInvalidTokenRedirect(token);
+            return AuthPresentation.passwordRecoveryResetInvalidTokenRedirect(token);
         }
-        return authPresentation.passwordRecoveryResetSuccessRedirect();
+        return AuthPresentation.passwordRecoveryResetSuccessRedirect();
     }
 
     @RequestMapping(value = "/verify-email/{token}", method = RequestMethod.GET)
@@ -125,8 +124,8 @@ public class AuthController {
         if (verifiedUser.isPresent()) {
             postRegistrationAuthenticator.authenticateVerifiedUser(
                     verifiedUser.get().getEmail(), request, response);
-            return authPresentation.verifyEmailSuccessRedirect();
+            return AuthPresentation.verifyEmailSuccessRedirect();
         }
-        return authPresentation.verifyEmailInvalidRedirect();
+        return AuthPresentation.verifyEmailInvalidRedirect();
     }
 }

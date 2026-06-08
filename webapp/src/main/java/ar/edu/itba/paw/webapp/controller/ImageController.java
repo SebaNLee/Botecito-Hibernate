@@ -14,14 +14,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class ImageController {
 
     private final ItemService itemService;
-    private final ImagePresentation imagePresentation;
 
     @GetMapping("/image/{id:[1-9]\\d*}")
     public ResponseEntity<byte[]> imageById(@PathVariable("id") final int imageId) {
         return itemService
                 .findImageById(imageId)
                 .map(Image::getData)
-                .map(imagePresentation::imageResponse)
+                .map(ImagePresentation::imageResponse)
                 .orElse(ResponseEntity.notFound().build());
     }
 }

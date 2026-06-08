@@ -5,7 +5,6 @@ import ar.edu.itba.paw.services.SelectorsService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.PublishBoatForm;
 import ar.edu.itba.paw.webapp.presentation.PublishPresentation;
-import ar.edu.itba.paw.webapp.presentation.PublishWizardMapping;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,7 +23,6 @@ public class PublishController {
 
     private final PublishService publishService;
     private final SelectorsService selectorsService;
-    private final PublishPresentation publishPresentation;
 
     @ModelAttribute("publishForm")
     public PublishBoatForm publishForm() {
@@ -38,24 +36,27 @@ public class PublishController {
 
     @ModelAttribute("maxGalleryImages")
     public int maxGalleryImages() {
-        return publishPresentation.maxGalleryImages();
+        return PublishBoatForm.MAX_GALLERY_IMAGES;
     }
 
     @RequestMapping(value = "/publish", method = RequestMethod.GET)
     public ModelAndView publishStepOne() {
-        return publishPresentation.publishStepOne();
+        return PublishPresentation.publishStepOne();
     }
 
     @RequestMapping(value = "/publish", method = RequestMethod.POST)
     public ModelAndView publishStepOneSubmit(
             @Validated(PublishBoatForm.Step1.class) @ModelAttribute("publishForm") final PublishBoatForm form,
             final BindingResult errors) {
-        return publishPresentation.publishStepOneSubmit(form, errors);
+        if (errors.hasErrors()) {
+            return PublishPresentation.publishStepOneErrors();
+        }
+        return PublishPresentation.publishStepOneSuccess();
     }
 
     @RequestMapping(value = "/publish/availability", method = RequestMethod.GET)
-    public ModelAndView publishStepTwo() {
-        return publishPresentation.publishStepTwo();
+    public ModelAndView publishStepTwo(@ModelAttribute("publishForm") final PublishBoatForm form) {
+        return PublishPresentation.publishStepTwo(form.getEnabledWeekdaysModel());
     }
 
     @RequestMapping(value = "/publish/availability", method = RequestMethod.POST)
@@ -63,12 +64,18 @@ public class PublishController {
             @Validated({PublishBoatForm.Step1.class, PublishBoatForm.Step2.class}) @ModelAttribute("publishForm")
                     final PublishBoatForm form,
             final BindingResult errors) {
-        return publishPresentation.publishStepTwoSubmit(form, errors);
+        if (errors.hasErrors()) {
+            if (PublishBoatForm.hasErrorsOutsideAvailability(errors)) {
+                return PublishPresentation.redirectToPublish();
+            }
+            return PublishPresentation.publishStepTwoErrors(form, form.getEnabledWeekdaysModel());
+        }
+        return PublishPresentation.publishStepTwoSuccess();
     }
 
     @RequestMapping(value = "/publish/images", method = RequestMethod.GET)
     public ModelAndView publishStepThree() {
-        return publishPresentation.publishStepThree();
+        return PublishPresentation.publishStepThree();
     }
 
     @RequestMapping(value = "/publish/images", method = RequestMethod.POST)
@@ -79,22 +86,24 @@ public class PublishController {
                     final PublishBoatForm form,
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
-        final ModelAndView errorView = publishPresentation.publishStepThreeSubmit(form, errors);
-        if (errorView != null) {
-            return errorView;
+        if (errors.hasErrors()) {
+            if (PublishBoatForm.hasErrorsOutsideAvailability(errors)) {
+                return PublishPresentation.redirectToPublish();
+            }
+            return PublishPresentation.publishStepThreeErrors();
         }
         publishService.create(
                 user.getId(),
                 form.getItemTypeId(),
-                form.getTitle().trim(),
-                form.getDescription() == null ? "" : form.getDescription().trim(),
+                form.getTitle(),
+                form.getDescription(),
                 form.getPricePerHour(),
                 form.getCapacity(),
                 form.getWeight(),
                 form.getDifficulty(),
                 form.getLocationOptionId(),
-                PublishWizardMapping.toAvailabilityWindows(form),
-                PublishWizardMapping.toPublishImageUploads(form));
-        return publishPresentation.publishCreatedRedirect(redirectAttributes);
+                form.getAvailabilityWindows(),
+                form.getPublishImageUploads());
+        return PublishPresentation.publishCreatedRedirect(redirectAttributes);
     }
 }

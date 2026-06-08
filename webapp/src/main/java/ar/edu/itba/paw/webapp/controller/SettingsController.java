@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -27,7 +28,7 @@ public class SettingsController {
     private final UserService userService;
     private final SubscriptionService subscriptionService;
     private final SecurityContextRefresher securityContextRefresher;
-    private final SettingsPresentation settingsPresentation;
+    private final MessageSource messageSource;
 
     @ModelAttribute("settingsView")
     public SettingsViewForm defaultSettingsView() {
@@ -41,7 +42,7 @@ public class SettingsController {
     @RequestMapping(value = "/settings/password-recovery", method = RequestMethod.POST)
     public ModelAndView settingsPasswordRecoveryRequest(@AuthenticationPrincipal final BotecitoUserDetails user) {
         userService.requestPasswordRecovery(user.getEmail());
-        return settingsPresentation.passwordRecoverySentRedirect();
+        return SettingsPresentation.passwordRecoverySentRedirect();
     }
 
     @RequestMapping(value = "/settings", method = RequestMethod.GET)
@@ -52,12 +53,12 @@ public class SettingsController {
             @ModelAttribute("settingsForm") final SettingsForm form) {
         final Users currentUser = userService.findById(user.getId()).orElseThrow();
         if (viewErrors.hasErrors()) {
-            return settingsPresentation.settingsViewErrors(currentUser, form, settingsView, viewErrors);
+            return SettingsPresentation.settingsViewErrors(currentUser, form, settingsView, viewErrors, messageSource);
         }
         final var subscriptions =
                 subscriptionService.listSubscriptions(user.getId(), settingsView.getPage(), settingsView.getPageSize());
         final boolean edit = Boolean.TRUE.equals(settingsView.getEdit());
-        return settingsPresentation.settingsView(currentUser, form, edit, subscriptions);
+        return SettingsPresentation.settingsView(currentUser, form, edit, subscriptions);
     }
 
     @RequestMapping(value = "/settings", method = RequestMethod.POST)
@@ -73,13 +74,13 @@ public class SettingsController {
 
         final Users currentUser = userService.findById(user.getId()).orElseThrow();
         if (viewErrors.hasErrors()) {
-            return settingsPresentation.settingsViewErrors(currentUser, form, settingsView, viewErrors);
+            return SettingsPresentation.settingsViewErrors(currentUser, form, settingsView, viewErrors, messageSource);
         }
         final var subscriptions =
                 subscriptionService.listSubscriptions(user.getId(), settingsView.getPage(), settingsView.getPageSize());
 
         if (errors.hasErrors()) {
-            return settingsPresentation.settingsEditView(currentUser, subscriptions);
+            return SettingsPresentation.settingsEditView(currentUser, subscriptions);
         }
 
         final Users updatedUser = userService
@@ -94,15 +95,15 @@ public class SettingsController {
                 .orElse(null);
         if (updatedUser == null) {
             errors.rejectValue("email", "settings.validation.email.duplicate");
-            return settingsPresentation.settingsEditView(currentUser, subscriptions);
+            return SettingsPresentation.settingsEditView(currentUser, subscriptions);
         }
 
         if (!updatedUser.getEmail().equalsIgnoreCase(currentUser.getEmail())) {
             securityContextRefresher.refreshPrincipal(updatedUser.getEmail(), request, response);
         }
         if (updatedUser.getVerified() == null || !updatedUser.getVerified()) {
-            return settingsPresentation.settingsVerificationSentRedirect();
+            return SettingsPresentation.settingsVerificationSentRedirect();
         }
-        return settingsPresentation.settingsUpdatedRedirect();
+        return SettingsPresentation.settingsUpdatedRedirect();
     }
 }

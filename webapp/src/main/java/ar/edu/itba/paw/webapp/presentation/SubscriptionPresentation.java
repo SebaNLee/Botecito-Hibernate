@@ -5,16 +5,14 @@ import ar.edu.itba.paw.webapp.form.ProfileListingsViewForm;
 import ar.edu.itba.paw.webapp.form.ProfileReviewsViewForm;
 import ar.edu.itba.paw.webapp.form.SettingsViewForm;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@Component
-@RequiredArgsConstructor
-public class SubscriptionPresentation {
+public final class SubscriptionPresentation {
 
-    public ModelAndView subscribeFromProfileListingsResult(
+    private SubscriptionPresentation() {}
+
+    public static ModelAndView subscribeFromProfileListingsResult(
             final ProfileListingsViewForm view,
             final int profileUserId,
             final boolean success,
@@ -28,7 +26,7 @@ public class SubscriptionPresentation {
         return new ModelAndView("redirect:/profiles/" + profileUserId + "/listings");
     }
 
-    public ModelAndView unsubscribeFromProfileListingsResult(
+    public static ModelAndView unsubscribeFromProfileListingsResult(
             final ProfileListingsViewForm view,
             final int profileUserId,
             final boolean success,
@@ -42,7 +40,7 @@ public class SubscriptionPresentation {
         return new ModelAndView("redirect:/profiles/" + profileUserId + "/listings");
     }
 
-    public ModelAndView subscribeFromProfileReviewsResult(
+    public static ModelAndView subscribeFromProfileReviewsResult(
             final ProfileReviewsViewForm view,
             final int profileUserId,
             final boolean success,
@@ -56,7 +54,7 @@ public class SubscriptionPresentation {
         return new ModelAndView("redirect:/profiles/" + profileUserId + "/reviews");
     }
 
-    public ModelAndView unsubscribeFromProfileReviewsResult(
+    public static ModelAndView unsubscribeFromProfileReviewsResult(
             final ProfileReviewsViewForm view,
             final int profileUserId,
             final boolean success,
@@ -70,7 +68,7 @@ public class SubscriptionPresentation {
         return new ModelAndView("redirect:/profiles/" + profileUserId + "/reviews");
     }
 
-    public ModelAndView subscribeFromItemDetailResult(
+    public static ModelAndView subscribeFromItemDetailResult(
             final ItemDetailViewForm view, final boolean success, final RedirectAttributes redirectAttributes) {
         if (!success) {
             ToastSupport.error(redirectAttributes, "subscription.self.error");
@@ -80,7 +78,7 @@ public class SubscriptionPresentation {
         return itemDetailRedirect(view, redirectAttributes);
     }
 
-    public ModelAndView unsubscribeFromItemDetailResult(
+    public static ModelAndView unsubscribeFromItemDetailResult(
             final ItemDetailViewForm view, final boolean success, final RedirectAttributes redirectAttributes) {
         if (!success) {
             ToastSupport.error(redirectAttributes, "subscription.self.error");
@@ -90,7 +88,7 @@ public class SubscriptionPresentation {
         return itemDetailRedirect(view, redirectAttributes);
     }
 
-    public ModelAndView unsubscribeFromSettingsResult(
+    public static ModelAndView unsubscribeFromSettingsResult(
             final SettingsViewForm view, final boolean success, final RedirectAttributes redirectAttributes) {
         if (!success) {
             ToastSupport.error(redirectAttributes, "subscription.self.error");

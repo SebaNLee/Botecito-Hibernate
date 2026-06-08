@@ -1,26 +1,24 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.webapp.util.ToastSupport;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@Component
-@RequiredArgsConstructor
-public class MyBoatsActionsPresentation {
+public final class MyBoatsActionsPresentation {
 
-    public ModelAndView disablePublicationResult(final RedirectAttributes redirectAttributes) {
+    private MyBoatsActionsPresentation() {}
+
+    public static ModelAndView disablePublicationResult(final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, "settings.publications.disabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
-    public ModelAndView enablePublicationResult(final RedirectAttributes redirectAttributes) {
+    public static ModelAndView enablePublicationResult(final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, "settings.publications.enabled");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }
 
-    public ModelAndView hardDeletePublicationResult(final RedirectAttributes redirectAttributes) {
+    public static ModelAndView hardDeletePublicationResult(final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, "settings.publications.deleted");
         return new ModelAndView("redirect:/my-boats#my-publications");
     }

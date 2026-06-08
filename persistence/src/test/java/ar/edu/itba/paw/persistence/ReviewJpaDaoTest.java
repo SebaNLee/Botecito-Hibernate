@@ -146,8 +146,7 @@ public class ReviewJpaDaoTest {
         reviewDao.createReview(booking2.getId(), guest.getId(), TargetEnum.ITEM, 5.0, "Great");
         em.flush();
 
-        Map<Integer, ReviewSummary> result =
-                reviewDao.reviewSummariesForItems(List.of(item1.getId(), item2.getId()));
+        Map<Integer, ReviewSummary> result = reviewDao.reviewSummariesForItems(List.of(item1.getId(), item2.getId()));
 
         assertEquals(2, result.size());
         assertEquals(4.0, result.get(item1.getId()).getAverageRating(), 0.01);

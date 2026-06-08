@@ -242,7 +242,7 @@ public class ItemJpaDaoTest {
         assertNotNull(persisted.getId());
         assertNotNull(em.find(Image.class, persisted.getId()));
     }
-    
+
     @Test
     public void testPersistMedia() {
         Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);

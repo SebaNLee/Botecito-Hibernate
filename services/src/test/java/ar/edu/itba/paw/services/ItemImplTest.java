@@ -96,8 +96,7 @@ public class ItemImplTest {
         Item item = item(ITEM_ID, user(USER_ID));
         when(itemDao.findItemById(ITEM_ID)).thenReturn(Optional.of(item));
 
-        assertThrows(
-                ForbiddenOperationException.class, () -> itemService.requireOwnedItem(ITEM_ID, OTHER_USER_ID));
+        assertThrows(ForbiddenOperationException.class, () -> itemService.requireOwnedItem(ITEM_ID, OTHER_USER_ID));
     }
 
     @Test
@@ -147,15 +146,15 @@ public class ItemImplTest {
     public void testCreateNewVersion() {
         when(itemDao.persistVersion(any())).thenAnswer(i -> i.getArgument(0));
 
-        assertDoesNotThrow(() -> itemService.createNewVersion(
-                version(1), 1, "title", "desc", 100, 4, 50, 3, 1, List.of(), List.of()));
+        assertDoesNotThrow(() ->
+                itemService.createNewVersion(version(1), 1, "title", "desc", 100, 4, 50, 3, 1, List.of(), List.of()));
     }
 
     @Test
     public void testOverwriteVersion() {
         when(itemDao.findVersionById(1)).thenReturn(Optional.of(version(1)));
 
-        assertDoesNotThrow(() -> itemService.overwriteVersion(
-                1, 1, "title", "desc", 100, 4, 50, 3, 1, List.of(), List.of()));
+        assertDoesNotThrow(
+                () -> itemService.overwriteVersion(1, 1, "title", "desc", 100, 4, 50, 3, 1, List.of(), List.of()));
     }
 }

@@ -91,8 +91,7 @@ public class BookingImplTest {
     public void testFindByIdNotFound() {
         when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.empty());
 
-        assertThrows(
-                IllegalBookingOperationException.class, () -> bookingService.findById(BOOKING_ID));
+        assertThrows(IllegalBookingOperationException.class, () -> bookingService.findById(BOOKING_ID));
     }
 
     @Test
@@ -233,8 +232,8 @@ public class BookingImplTest {
         when(itemService.requireOwnedItem(ITEM_ID, OWNER_ID)).thenReturn(activeItem());
         when(bookingDao.findById(500)).thenReturn(Optional.of(b));
 
-        assertDoesNotThrow(() -> bookingService.saveSelfBlockChanges(
-                ITEM_ID, OWNER_ID, DATE, List.of(500), null, null));
+        assertDoesNotThrow(
+                () -> bookingService.saveSelfBlockChanges(ITEM_ID, OWNER_ID, DATE, List.of(500), null, null));
     }
 
     @Test
@@ -274,7 +273,7 @@ public class BookingImplTest {
 
         assertDoesNotThrow(() -> bookingService.bookingResolutionRoutine());
     }
-    
+
     private static Item activeItem() {
         var host = user(OWNER_ID);
         var item = Item.builder()

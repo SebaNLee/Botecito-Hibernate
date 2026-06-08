@@ -4,13 +4,13 @@ import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.Report;
 import ar.edu.itba.paw.models.entity.ReportEnum;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
-import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.exceptions.ReportAlreadyExistsException;
 import ar.edu.itba.paw.models.exceptions.ReportNotFoundException;
 import ar.edu.itba.paw.persistence.ReportDao;
@@ -128,7 +128,11 @@ public class ReportServiceImplTest {
         var host = user(HOST_ID, "host@mail.com", "Host", "User");
         var version = Version.builder().title("Item Title").build();
         var item = Item.builder().id(ITEM_ID).host(host).latestVersion(version).build();
-        var report = Report.builder().id(REPORT_ID).item(item).reason(ReportEnum.SPAM).build();
+        var report = Report.builder()
+                .id(REPORT_ID)
+                .item(item)
+                .reason(ReportEnum.SPAM)
+                .build();
         when(reportDao.findById(REPORT_ID)).thenReturn(Optional.of(report));
         when(reportDao.countReports(item)).thenReturn(0L);
 

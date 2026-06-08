@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Subscription;
 import ar.edu.itba.paw.models.entity.SubscriptionId;
 import ar.edu.itba.paw.models.entity.Users;
@@ -78,9 +79,10 @@ public class SubscriptionJpaDao implements SubscriptionDao {
                 .intValue();
     }
 
-    @Override
-    public List<Users> listVerifiedSubscribersForPublisher(final int publisherId) {
-        return entityManager
+@Override
+    public PageModel<Users> listVerifiedSubscribersForPublisher(final int publisherId, final int page, final int pageSize) {
+        final long totalCount = countVerifiedFollowers(publisherId);
+        final List<Users> content = entityManager
                 .createQuery(
                         "SELECT s.subscriber FROM Subscription s"
                                 + " WHERE s.subscribedTo.id = :publisherId"
@@ -89,6 +91,23 @@ public class SubscriptionJpaDao implements SubscriptionDao {
                                 + " ORDER BY s.createdAt ASC",
                         Users.class)
                 .setParameter("publisherId", publisherId)
+                .setFirstResult((page - 1) * pageSize)
+                .setMaxResults(pageSize)
                 .getResultList();
+        return new PageModel<>(content, page, pageSize, totalCount);
+    }
+
+    @Override
+    public int countVerifiedFollowers(final int publisherId) {
+        return entityManager
+                .createQuery(
+                        "SELECT COUNT(s) FROM Subscription s"
+                                + " WHERE s.subscribedTo.id = :publisherId"
+                                + " AND s.subscriber.verified = true"
+                                + " AND s.subscriber.email IS NOT NULL",
+                        Long.class)
+                .setParameter("publisherId", publisherId)
+                .getSingleResult()
+                .intValue();
     }
 }

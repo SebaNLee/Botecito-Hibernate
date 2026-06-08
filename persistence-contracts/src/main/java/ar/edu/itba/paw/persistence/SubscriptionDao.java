@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Users;
 import java.util.List;
 
@@ -17,5 +18,7 @@ public interface SubscriptionDao {
 
     int countFollowers(int userId);
 
-    List<Users> listVerifiedSubscribersForPublisher(int publisherId);
+    PageModel<Users> listVerifiedSubscribersForPublisher(int publisherId, int page, int pageSize);
+
+    int countVerifiedFollowers(int publisherId);
 }

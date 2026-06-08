@@ -3,7 +3,6 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.persistence.SubscriptionDao;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +65,13 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Users> listVerifiedSubscribersForPublisher(final int publisherId) {
-        return subscriptionDao.listVerifiedSubscribersForPublisher(publisherId);
+    public PageModel<Users> listVerifiedSubscribersForPublisher(final int publisherId, final int page, final int pageSize) {
+        return subscriptionDao.listVerifiedSubscribersForPublisher(publisherId, page, pageSize);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int countVerifiedFollowers(final int publisherId) {
+        return subscriptionDao.countVerifiedFollowers(publisherId);
     }
 }

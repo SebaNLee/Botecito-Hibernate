@@ -51,14 +51,14 @@ public class DetailJpaDaoTest {
         Item itemNoVersion = insertItem(em, host, ItemStatusEnum.ACTIVE);
         em.flush();
 
-        Optional<Item> result = detailDao.getItemDetail(itemNoVersion.getId(), 1);
+        Optional<Item> result = detailDao.getItemDetail(itemNoVersion.getId());
 
         assertFalse(result.isPresent());
     }
 
     @Test
     public void testGetItemDetailReturnsItem() {
-        Optional<Item> result = detailDao.getItemDetail(item.getId(), 1);
+        Optional<Item> result = detailDao.getItemDetail(item.getId());
 
         assertTrue(result.isPresent());
         assertEquals(item.getId(), result.get().getId());
@@ -79,7 +79,7 @@ public class DetailJpaDaoTest {
                 LocalDateTime.now().minusDays(10));
         em.flush();
 
-        Optional<Item> result = detailDao.getItemDetail(item.getId(), 1);
+        Optional<Item> result = detailDao.getItemDetail(item.getId());
 
         assertTrue(result.isPresent());
         assertEquals(version.getId(), result.get().getLatestVersion().getId());
@@ -91,9 +91,8 @@ public class DetailJpaDaoTest {
         insertReview(em, booking, guest, TargetEnum.ITEM, 4.5, "Botecito mejor app");
         em.flush();
 
-        Optional<Item> result = detailDao.getItemDetail(item.getId(), 1);
+        Optional<Item> result = detailDao.getItemDetail(item.getId());
 
         assertTrue(result.isPresent());
-        assertEquals(1, result.get().getTotalReviews());
     }
 }

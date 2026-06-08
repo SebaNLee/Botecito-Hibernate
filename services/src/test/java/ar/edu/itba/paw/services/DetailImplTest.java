@@ -31,12 +31,15 @@ public class DetailImplTest {
     @Mock
     private BookingService bookingService;
 
+    @Mock
+    private ReviewService reviewService;
+
     @InjectMocks
     private DetailImpl detailService;
 
     @Test
     public void detailReturnsItem() {
-        when(detailDao.getItemDetail(ITEM_ID, REVIEW_PAGE)).thenReturn(Optional.of(detailItem(HOST_ID, true)));
+        when(detailDao.getItemDetail(ITEM_ID)).thenReturn(Optional.of(detailItem(HOST_ID, true)));
 
         Item result = detailService.getItemDetail(ITEM_ID, REVIEW_PAGE);
 
@@ -46,7 +49,7 @@ public class DetailImplTest {
 
     @Test
     public void detailHostReturnsItem() {
-        when(detailDao.getItemDetail(ITEM_ID, REVIEW_PAGE)).thenReturn(Optional.of(detailItem(HOST_ID, true)));
+        when(detailDao.getItemDetail(ITEM_ID)).thenReturn(Optional.of(detailItem(HOST_ID, true)));
 
         Item result = detailService.getItemDetail(ITEM_ID, REVIEW_PAGE, HOST_ID);
 
@@ -56,14 +59,14 @@ public class DetailImplTest {
 
     @Test
     public void detailThrowsNotFoundWhenEmpty() {
-        when(detailDao.getItemDetail(ITEM_ID, REVIEW_PAGE)).thenReturn(Optional.empty());
+        when(detailDao.getItemDetail(ITEM_ID)).thenReturn(Optional.empty());
 
         assertThrows(ItemNotFoundException.class, () -> detailService.getItemDetail(ITEM_ID, REVIEW_PAGE));
     }
 
     @Test
     public void detailWrongHostThrowsForbidden() {
-        when(detailDao.getItemDetail(ITEM_ID, REVIEW_PAGE)).thenReturn(Optional.of(detailItem(HOST_ID, true)));
+        when(detailDao.getItemDetail(ITEM_ID)).thenReturn(Optional.of(detailItem(HOST_ID, true)));
 
         assertThrows(
                 ForbiddenOperationException.class,

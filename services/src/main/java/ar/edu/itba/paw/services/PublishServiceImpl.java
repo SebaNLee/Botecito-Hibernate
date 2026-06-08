@@ -56,7 +56,7 @@ public class PublishServiceImpl implements PublishService {
                 locationOptionId,
                 availabilities,
                 images);
-        
+
         LOGGER.info("User {} created item: version {}", ownerId, version.getId());
 
         sendPublishEmails(version);

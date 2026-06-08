@@ -119,4 +119,25 @@ public class FavouriteJpaDaoTest {
         assertEquals(2, result.getTotalItems());
         assertEquals(2, result.getContent().size());
     }
+
+    @Test
+    public void testCountFavourites() {
+        Item item1 = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        Item item2 = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        insertVersion(em, item1, itemType, location, "Boat 1");
+        insertVersion(em, item2, itemType, location, "Boat 2");
+        em.flush();
+        favouriteDao.create(user.getId(), item1.getId());
+        favouriteDao.create(user.getId(), item2.getId());
+
+        FavouritesQueryModel query = FavouritesQueryModel.builder()
+                .userId(user.getId())
+                .page(1)
+                .pageSize(12)
+                .build();
+
+        long count = favouriteDao.countFavourites(query);
+
+        assertEquals(2, count);
+    }
 }

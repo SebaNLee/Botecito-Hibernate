@@ -4,7 +4,7 @@ import static ar.edu.itba.paw.persistence.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.dto.BookingQueryModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.*;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
@@ -152,9 +152,9 @@ public class BookingJpaDaoTest {
                 .pageSize(12)
                 .build();
 
-        SearchResult<Booking> result = bookingDao.searchBookings(query);
+        PageModel<Booking> result = bookingDao.searchBookings(query);
 
-        assertEquals(guest.getId(), result.getPageElements().get(0).getGuest().getId());
+        assertEquals(guest.getId(), result.getContent().get(0).getGuest().getId());
     }
 
     @Test
@@ -172,9 +172,9 @@ public class BookingJpaDaoTest {
                 .pageSize(12)
                 .build();
 
-        SearchResult<Booking> result = bookingDao.searchBookings(query);
+        PageModel<Booking> result = bookingDao.searchBookings(query);
 
-        assertEquals(BookingStatusEnum.ACCEPTED, result.getPageElements().get(0).getStatus());
+        assertEquals(BookingStatusEnum.ACCEPTED, result.getContent().get(0).getStatus());
     }
 
     @Test

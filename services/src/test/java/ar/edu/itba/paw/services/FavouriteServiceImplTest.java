@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.persistence.FavouriteDao;
@@ -29,6 +29,9 @@ public class FavouriteServiceImplTest {
 
     @Mock
     private ItemService itemService;
+
+    @Mock
+    private ReviewService reviewService;
 
     @InjectMocks
     private FavouriteServiceImpl favouriteService;
@@ -71,7 +74,7 @@ public class FavouriteServiceImplTest {
 
     @Test
     public void testListFav() {
-        var searchResult = new SearchResult<Item>(List.of(), 0);
+        var searchResult = new PageModel<Item>(List.of(), 1, 12, 0);
         when(favouriteDao.listFavourites(any())).thenReturn(searchResult);
 
         var result = favouriteService.listFavourites(USER_ID, null, 1, 10, null);

@@ -4,7 +4,7 @@ import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.persistence.MarketplaceDao;
 import java.util.List;
@@ -20,21 +20,24 @@ public class MarketplaceImplTest {
     @Mock
     private MarketplaceDao marketplaceDao;
 
+    @Mock
+    private ReviewService reviewService;
+
     @InjectMocks
     private MarketplaceImpl marketplaceService;
 
     @Test
     public void searchMarketplaceReturnsItems() {
         Item item = item(1);
-        SearchResult<Item> expected = new SearchResult<>(List.of(item), 10);
+        PageModel<Item> expected = new PageModel<>(List.of(item), 1, 12, 10);
         when(marketplaceDao.searchMarketplace(any())).thenReturn(expected);
 
-        SearchResult<Item> result = marketplaceService.searchMarketplace(
+        PageModel<Item> result = marketplaceService.searchMarketplace(
                 null, null, null, null, null, null, null, null, null, null, null, null, null);
 
         assertNotNull(result);
-        assertEquals(1, result.getPageElements().size());
-        assertSame(item, result.getPageElements().get(0));
-        assertEquals(10, result.getTotalCount());
+        assertEquals(1, result.getContent().size());
+        assertSame(item, result.getContent().get(0));
+        assertEquals(10, result.getTotalItems());
     }
 }

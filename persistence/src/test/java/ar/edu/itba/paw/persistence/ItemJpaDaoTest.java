@@ -4,7 +4,7 @@ import static ar.edu.itba.paw.persistence.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.dto.MyBoatsQueryModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -56,11 +56,11 @@ public class ItemJpaDaoTest {
                 .pageSize(12)
                 .build();
 
-        SearchResult<Item> result = itemDao.listOwnerItems(query);
+        PageModel<Item> result = itemDao.listOwnerItems(query);
 
-        assertEquals(1, result.getTotalCount());
-        assertEquals(1, result.getPageElements().size());
-        assertEquals(item.getId(), result.getPageElements().get(0).getId());
+        assertEquals(1, result.getTotalItems());
+        assertEquals(1, result.getContent().size());
+        assertEquals(item.getId(), result.getContent().get(0).getId());
     }
 
     @Test
@@ -77,10 +77,10 @@ public class ItemJpaDaoTest {
                 .pageSize(12)
                 .build();
 
-        SearchResult<Item> result = itemDao.listOwnerItems(query);
+        PageModel<Item> result = itemDao.listOwnerItems(query);
 
-        assertEquals(1, result.getTotalCount());
-        assertEquals(active.getId(), result.getPageElements().get(0).getId());
+        assertEquals(1, result.getTotalItems());
+        assertEquals(active.getId(), result.getContent().get(0).getId());
     }
 
     @Test
@@ -99,10 +99,10 @@ public class ItemJpaDaoTest {
                 .pageSize(12)
                 .build();
 
-        SearchResult<Item> result = itemDao.listOwnerItems(query);
+        PageModel<Item> result = itemDao.listOwnerItems(query);
 
-        assertEquals(3, result.getTotalCount());
-        assertEquals(3, result.getPageElements().size());
+        assertEquals(3, result.getTotalItems());
+        assertEquals(3, result.getContent().size());
     }
 
     @Test

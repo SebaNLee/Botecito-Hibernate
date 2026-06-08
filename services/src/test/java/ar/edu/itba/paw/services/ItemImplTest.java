@@ -4,7 +4,7 @@ import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.persistence.ItemDao;
@@ -64,12 +64,12 @@ public class ItemImplTest {
 
     @Test
     public void listOwnerItemsReturnsResult() {
-        SearchResult<Item> expected = new SearchResult<>(List.of(), 0L);
+        PageModel<Item> expected = new PageModel<>(List.of(), 1, 12, 0L);
         when(itemDao.listOwnerItems(any())).thenReturn(expected);
 
-        SearchResult<Item> result = itemService.listOwnerItems(USER_ID, null, null, PAGE, PAGE_SIZE, null);
+        PageModel<Item> result = itemService.listOwnerItems(USER_ID, null, null, PAGE, PAGE_SIZE, null);
 
         assertNotNull(result);
-        assertEquals(expected.getPageElements(), result.getPageElements());
+        assertEquals(expected.getContent(), result.getContent());
     }
 }

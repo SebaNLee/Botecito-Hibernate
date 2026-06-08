@@ -65,7 +65,8 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageModel<Users> listVerifiedSubscribersForPublisher(final int publisherId, final int page, final int pageSize) {
+    public PageModel<Users> listVerifiedSubscribersForPublisher(
+            final int publisherId, final int page, final int pageSize) {
         return subscriptionDao.listVerifiedSubscribersForPublisher(publisherId, page, pageSize);
     }
 

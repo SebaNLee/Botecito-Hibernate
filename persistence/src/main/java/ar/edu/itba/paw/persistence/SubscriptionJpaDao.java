@@ -79,8 +79,9 @@ public class SubscriptionJpaDao implements SubscriptionDao {
                 .intValue();
     }
 
-@Override
-    public PageModel<Users> listVerifiedSubscribersForPublisher(final int publisherId, final int page, final int pageSize) {
+    @Override
+    public PageModel<Users> listVerifiedSubscribersForPublisher(
+            final int publisherId, final int page, final int pageSize) {
         final long totalCount = countVerifiedFollowers(publisherId);
         final List<Users> content = entityManager
                 .createQuery(

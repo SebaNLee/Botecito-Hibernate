@@ -5,7 +5,6 @@ import ar.edu.itba.paw.models.dto.ImageUpload;
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Media;
-import ar.edu.itba.paw.models.entity.Report;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.services.util.PagedProcessing;
@@ -16,7 +15,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
-
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,16 +135,16 @@ public class PublishServiceImpl implements PublishService {
         if (ownerId == null) {
             return;
         }
-        
-        notifySubscribers(ownerId,
-                subscriber -> mailService.sendFollowerPublishNotificationEmail(subscriber, version));
+
+        notifySubscribers(ownerId, subscriber -> mailService.sendFollowerPublishNotificationEmail(subscriber, version));
     }
 
     private void notifySubscribers(final int publisherId, final Consumer<Users> notifyAction) {
         PagedProcessing.batchAction(
                 20,
                 subscriptionService.countVerifiedFollowers(publisherId),
-                (page, pageSize) -> subscriptionService.listVerifiedSubscribersForPublisher(publisherId, page, pageSize),
+                (page, pageSize) ->
+                        subscriptionService.listVerifiedSubscribersForPublisher(publisherId, page, pageSize),
                 notifyAction);
     }
 

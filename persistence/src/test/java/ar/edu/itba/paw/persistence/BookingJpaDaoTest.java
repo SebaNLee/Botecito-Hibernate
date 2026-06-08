@@ -8,6 +8,7 @@ import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.*;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -243,5 +244,58 @@ public class BookingJpaDaoTest {
         em.flush();
 
         assertTrue(bookingDao.itemHasBookings(item));
+    }
+
+    @Test
+    public void testDeleteAllSelfBlocks() {
+        Users selfUser = insertUser(em, "Self", "User", "botecito.self@gmail.com");
+        Item selfItem = insertItem(em, selfUser, ItemStatusEnum.ACTIVE);
+        Version selfVersion = insertVersion(em, selfItem, itemType, location, "Self Boat");
+        em.flush();
+
+        Booking booking = insertBooking(em, selfVersion, selfUser, BookingStatusEnum.ACCEPTED);
+        em.flush();
+
+        bookingDao.deleteAllSelfBlocks(selfItem);
+        em.flush();
+        em.clear();
+
+        assertNull(em.find(Booking.class, booking.getId()));
+    }
+
+    @Test
+    public void testGetUpcomingBookings() {
+        LocalDateTime now = LocalDateTime.now();
+        Booking booking = insertBooking(em, version, guest, BookingStatusEnum.ACCEPTED);
+        em.flush();
+
+        List<Booking> result = bookingDao.getUpcomingBookings(item, now, now.plusDays(10));
+
+        assertFalse(result.isEmpty());
+        assertEquals(booking.getId(), result.get(0).getId());
+    }
+
+    @Test
+    public void testFindBookingsToFinalizeBefore() {
+        LocalDateTime pastEnd = LocalDateTime.now().minusDays(2);
+        em.persist(createBooking(version, guest, pastEnd.minusDays(1), pastEnd, BookingStatusEnum.CONFIRMED));
+        em.flush();
+
+        List<Booking> result = bookingDao.findBookingsToFinalizeBefore(LocalDateTime.now());
+
+        assertFalse(result.isEmpty());
+        assertEquals(BookingStatusEnum.CONFIRMED, result.get(0).getStatus());
+    }
+
+    @Test
+    public void testFindBookingsToExpireBefore() {
+        LocalDateTime pastStart = LocalDateTime.now().minusDays(2);
+        em.persist(createBooking(version, guest, pastStart, pastStart.plusDays(1), BookingStatusEnum.PENDING));
+        em.flush();
+
+        List<Booking> result = bookingDao.findBookingsToExpireBefore(LocalDateTime.now());
+
+        assertFalse(result.isEmpty());
+        assertEquals(BookingStatusEnum.PENDING, result.get(0).getStatus());
     }
 }

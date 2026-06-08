@@ -147,4 +147,27 @@ public class UserJpaDaoTest {
 
         assertEquals(2, found.size());
     }
+
+    @Test
+    public void testResetPasswordByRecoveryToken() {
+        String token = UUID.randomUUID().toString();
+        Users pwUser = new Users();
+        pwUser.setFirstName("Botecito");
+        pwUser.setLastName("User");
+        pwUser.setEmail("botecito.user@gmail.com");
+        pwUser.setLanguage("en");
+        pwUser.setVerified(true);
+        pwUser.setAdmin(false);
+        pwUser.setMailToken(token);
+        pwUser.setCreatedAt(LocalDateTime.now());
+        em.persist(pwUser);
+        em.flush();
+
+        boolean result = userDao.resetPasswordByRecoveryToken(token, "newhash", LocalDateTime.now());
+
+        assertTrue(result);
+        em.clear();
+        Users updated = em.find(Users.class, pwUser.getId());
+        assertEquals("newhash", updated.getPasswordHash());
+    }
 }

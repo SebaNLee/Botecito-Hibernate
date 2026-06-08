@@ -63,7 +63,7 @@ mvn jetty:run
 
 > App: `http://localhost:8080`
 
-### Usuarios (por nivel de autenticación)
+### Users (per authentication level)
 
 #### Admin user:
 

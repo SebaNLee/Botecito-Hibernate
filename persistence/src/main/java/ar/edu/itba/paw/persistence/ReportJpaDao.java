@@ -75,7 +75,7 @@ public class ReportJpaDao implements ReportDao {
 
     @Override
     public long countReports(final Item reportedItem) {
-        String sql = "SELECT COUNT(r) FROM reports r " + nativeWhereClause(reportedItem);
+        String sql = "SELECT COUNT(*) FROM reports r " + nativeWhereClause(reportedItem);
         var query = em.createNativeQuery(sql);
         if (reportedItem != null) query.setParameter("itemId", reportedItem.getId());
         return ((Number) query.getSingleResult()).longValue();

@@ -125,4 +125,15 @@ public class UserServiceImplTest {
         assertTrue(result.isPresent());
         assertTrue(result.get().getVerified());
     }
+
+    @Test
+    public void findByPasswordRecoveryTokenReturnsUser() {
+        Users user = new Users();
+        user.setMailTokenEmittedAt(null);
+        when(userDao.findByPasswordRecoveryToken(TOKEN)).thenReturn(Optional.of(user));
+
+        Optional<Users> result = userService.findByPasswordRecoveryToken(TOKEN);
+
+        assertTrue(result.isPresent());
+    }
 }

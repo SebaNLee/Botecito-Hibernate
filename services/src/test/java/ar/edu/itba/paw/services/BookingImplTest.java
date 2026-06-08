@@ -56,6 +56,18 @@ public class BookingImplTest {
     }
 
     @Test
+    public void testCreateThrowsOnCollision() {
+        when(userService.findById(GUEST_ID)).thenReturn(Optional.of(user(GUEST_ID)));
+        when(itemService.findItemById(ITEM_ID)).thenReturn(activeItem());
+        when(bookingDao.canInsertBooking(any(), any())).thenReturn(false);
+
+        assertThrows(
+                BookingCollisionException.class,
+                () -> bookingService.createBooking(
+                        ITEM_ID, DATE, LocalTime.of(10, 0), LocalTime.of(12, 0), "msg", GUEST_ID));
+    }
+
+    @Test
     public void testSearch() {
         var result = new PageModel<Booking>(List.of(), 1, 12, 0);
         when(bookingDao.searchBookings(any())).thenReturn(result);
@@ -66,15 +78,30 @@ public class BookingImplTest {
     }
 
     @Test
-    public void testCreateThrowsOnCollision() {
-        when(userService.findById(GUEST_ID)).thenReturn(Optional.of(user(GUEST_ID)));
-        when(itemService.findItemById(ITEM_ID)).thenReturn(activeItem());
-        when(bookingDao.canInsertBooking(any(), any())).thenReturn(false);
+    public void testFindById() {
+        var b = booking(BookingStatusEnum.PENDING);
+        when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.of(b));
 
-        assertThrows(
-                BookingCollisionException.class,
-                () -> bookingService.createBooking(
-                        ITEM_ID, DATE, LocalTime.of(10, 0), LocalTime.of(12, 0), "msg", GUEST_ID));
+        var result = bookingService.findById(BOOKING_ID);
+
+        assertEquals(b, result);
+    }
+
+    @Test
+    public void testFindByIdNotFound() {
+        when(bookingDao.findById(BOOKING_ID)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalBookingOperationException.class, () -> bookingService.findById(BOOKING_ID));
+    }
+
+    @Test
+    public void testGetUpcomingBookings() {
+        var bookings = List.of(booking(BookingStatusEnum.CONFIRMED));
+        when(bookingDao.getUpcomingBookings(any(), any(), any())).thenReturn(bookings);
+
+        var result = bookingService.getUpcomingBookings(item(ITEM_ID));
+
+        assertEquals(bookings, result);
     }
 
     @Test
@@ -186,6 +213,65 @@ public class BookingImplTest {
 
         assertThrows(
                 IllegalBookingOperationException.class, () -> bookingService.cancelBooking(BOOKING_ID, OTHER_USER_ID));
+    }
+
+    @Test
+    public void testGetSelfBlocks() {
+        when(itemService.requireOwnedItem(ITEM_ID, OWNER_ID)).thenReturn(activeItem());
+        when(bookingDao.getUpcomingBookings(any(), any(), any())).thenReturn(List.of());
+
+        var result = bookingService.getSelfBlocks(ITEM_ID, OWNER_ID, null);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    public void testSaveSelfBlockChangesRemoves() {
+        var b = booking(BookingStatusEnum.CONFIRMED);
+        b.setGuest(user(OWNER_ID));
+        when(itemService.requireOwnedItem(ITEM_ID, OWNER_ID)).thenReturn(activeItem());
+        when(bookingDao.findById(500)).thenReturn(Optional.of(b));
+
+        assertDoesNotThrow(
+                () -> bookingService.saveSelfBlockChanges(ITEM_ID, OWNER_ID, DATE, List.of(500), null, null));
+    }
+
+    @Test
+    public void testItemHasBookingsItemTrue() {
+        var it = item(ITEM_ID);
+        when(bookingDao.itemHasBookings(it)).thenReturn(true);
+
+        assertTrue(bookingService.itemHasBookings(it));
+    }
+
+    @Test
+    public void testItemHasBookingsItemFalse() {
+        var it = item(ITEM_ID);
+        when(bookingDao.itemHasBookings(it)).thenReturn(false);
+
+        assertFalse(bookingService.itemHasBookings(it));
+    }
+
+    @Test
+    public void testItemHasBookingsId() {
+        var it = item(ITEM_ID);
+        when(itemService.findItemById(ITEM_ID)).thenReturn(it);
+        when(bookingDao.itemHasBookings(it)).thenReturn(true);
+
+        assertTrue(bookingService.itemHasBookings(ITEM_ID));
+    }
+
+    @Test
+    public void testDeleteAllSelfBlocks() {
+        assertDoesNotThrow(() -> bookingService.deleteAllSelfBlocks(item(ITEM_ID)));
+    }
+
+    @Test
+    public void testBookingResolutionRoutine() {
+        when(bookingDao.findBookingsToFinalizeBefore(any())).thenReturn(List.of());
+        when(bookingDao.findBookingsToExpireBefore(any())).thenReturn(List.of());
+
+        assertDoesNotThrow(() -> bookingService.bookingResolutionRoutine());
     }
 
     private static Item activeItem() {

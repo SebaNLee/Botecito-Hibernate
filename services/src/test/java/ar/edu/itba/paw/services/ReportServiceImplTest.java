@@ -10,9 +10,11 @@ import ar.edu.itba.paw.models.entity.Report;
 import ar.edu.itba.paw.models.entity.ReportEnum;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.exceptions.ReportAlreadyExistsException;
 import ar.edu.itba.paw.models.exceptions.ReportNotFoundException;
 import ar.edu.itba.paw.persistence.ReportDao;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +41,9 @@ public class ReportServiceImplTest {
 
     @Mock
     private MailService mailService;
+
+    @Mock
+    private BookingService bookingService;
 
     @InjectMocks
     private ReportServiceImpl reportService;
@@ -99,6 +104,40 @@ public class ReportServiceImplTest {
         when(reportDao.findById(REPORT_ID)).thenReturn(Optional.empty());
 
         assertThrows(ReportNotFoundException.class, () -> reportService.dismissReport(REPORT_ID));
+    }
+
+    @Test
+    public void hasReportedReturnsTrue() {
+        when(reportDao.hasReported(SENDER_ID, ITEM_ID)).thenReturn(true);
+
+        assertTrue(reportService.hasReported(SENDER_ID, ITEM_ID));
+    }
+
+    @Test
+    public void searchReportsReturnsResult() {
+        var expected = new PageModel<Report>(List.of(), 1, 12, 0L);
+        when(reportDao.searchReports(1, 10, "newest")).thenReturn(expected);
+
+        var result = reportService.searchReports(1, 10, "newest");
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    public void deletePublicationForReportSucceeds() {
+        var host = user(HOST_ID, "host@mail.com", "Host", "User");
+        var version = Version.builder().title("Item Title").build();
+        var item = Item.builder().id(ITEM_ID).host(host).latestVersion(version).build();
+        var report = Report.builder().id(REPORT_ID).item(item).reason(ReportEnum.SPAM).build();
+        when(reportDao.findById(REPORT_ID)).thenReturn(Optional.of(report));
+        when(reportDao.countReports(item)).thenReturn(0L);
+
+        assertDoesNotThrow(() -> reportService.deletePublicationForReport(REPORT_ID));
+    }
+
+    @Test
+    public void deleteAllByItemIdSucceeds() {
+        assertDoesNotThrow(() -> reportService.deleteAllByItemId(ITEM_ID));
     }
 
     private static Item activeItem(final int hostId) {

@@ -3,6 +3,7 @@ package ar.edu.itba.paw.persistence;
 import static ar.edu.itba.paw.persistence.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.*;
 import java.time.LocalDateTime;
 import javax.persistence.EntityManager;
@@ -147,5 +148,53 @@ public class ReportJpaDaoTest {
         em.flush();
 
         assertTrue(reportDao.findById(report.getId()).isPresent());
+    }
+
+    @Test
+    public void testSearchReports() {
+        Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        insertVersion(em, item, itemType, location, "Boat");
+        em.flush();
+
+        Report report = Report.builder()
+                .sender(sender)
+                .item(item)
+                .reason(ReportEnum.INAPPROPRIATE)
+                .createdAt(LocalDateTime.now())
+                .build();
+        reportDao.create(report);
+        em.flush();
+
+        PageModel<Report> result = reportDao.searchReports(1, 12, "newest", item);
+
+        assertEquals(1, result.getTotalItems());
+        assertEquals(report.getId(), result.getContent().get(0).getId());
+    }
+
+    @Test
+    public void testCountReports() {
+        Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        insertVersion(em, item, itemType, location, "Boat");
+        em.flush();
+
+        Report report1 = Report.builder()
+                .sender(sender)
+                .item(item)
+                .reason(ReportEnum.INAPPROPRIATE)
+                .createdAt(LocalDateTime.now())
+                .build();
+        Report report2 = Report.builder()
+                .sender(sender)
+                .item(item)
+                .reason(ReportEnum.SPAM)
+                .createdAt(LocalDateTime.now())
+                .build();
+        reportDao.create(report1);
+        reportDao.create(report2);
+        em.flush();
+
+        long count = reportDao.countReports(item);
+
+        assertEquals(2, count);
     }
 }

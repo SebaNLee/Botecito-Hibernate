@@ -69,16 +69,16 @@
     <c:param name="sortBy" value="${bookingSearch.sortBy}" />
     <c:param name="pageSize" value="${bookingSearch.pageSize}" />
     <c:if test="${not empty bookingSearch.searchQuery}"><c:param name="searchQuery" value="${bookingSearch.searchQuery}" /></c:if>
-    <c:if test="${not empty bookingSearch.date}"><c:param name="date" value="${bookingSearch.date}" /></c:if>
-    <c:if test="${not empty bookingSearch.status}"><c:param name="status" value="${bookingSearch.status}" /></c:if>
+    <c:if test="${not empty bookingSearch.dateParam}"><c:param name="date" value="${bookingSearch.dateParam}" /></c:if>
+    <c:if test="${not empty bookingSearch.statusParam}"><c:param name="status" value="${bookingSearch.statusParam}" /></c:if>
   </c:url>
   <c:url var="nextPageUrl" value="${formActionPath}">
     <c:param name="page" value="${bookingPage.nextPage}" />
     <c:param name="sortBy" value="${bookingSearch.sortBy}" />
     <c:param name="pageSize" value="${bookingSearch.pageSize}" />
     <c:if test="${not empty bookingSearch.searchQuery}"><c:param name="searchQuery" value="${bookingSearch.searchQuery}" /></c:if>
-    <c:if test="${not empty bookingSearch.date}"><c:param name="date" value="${bookingSearch.date}" /></c:if>
-    <c:if test="${not empty bookingSearch.status}"><c:param name="status" value="${bookingSearch.status}" /></c:if>
+    <c:if test="${not empty bookingSearch.dateParam}"><c:param name="date" value="${bookingSearch.dateParam}" /></c:if>
+    <c:if test="${not empty bookingSearch.statusParam}"><c:param name="status" value="${bookingSearch.statusParam}" /></c:if>
   </c:url>
 </c:if>
 
@@ -97,7 +97,7 @@
                 id="requests-${sidebarActive}-date"
                 dateFieldName="date"
                 label="${dateLabel}"
-                value="${bookingSearch.date}"
+                value="${bookingSearch.dateParam}"
                 placeholder="${datePlaceholder}"
                 restrictToAvailability="false" />
           </div>
@@ -106,7 +106,7 @@
               id="requests-${sidebarActive}-status"
               name="status"
               label="${statusFilterLabel}"
-              value="${bookingSearch.status}"
+              value="${bookingSearch.statusParam}"
               placeholder="${statusAnyPlaceholder}"
               icon="flag"
               variant="inline"

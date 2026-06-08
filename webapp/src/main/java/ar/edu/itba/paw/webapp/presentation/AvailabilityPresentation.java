@@ -13,41 +13,37 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@Component
-@RequiredArgsConstructor
-public class AvailabilityPresentation {
+public final class AvailabilityPresentation {
 
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
     private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    private final ToastPresentation toastPresentation;
+    private AvailabilityPresentation() {}
 
-    public ModelAndView manageAvailabilityPage(final SelfBookingData model) {
-        return buildManageAvailabilityView(model);
+    public static ModelAndView manageAvailabilityPage(final SelfBookingData model) {
+        return buildManageAvailabilityView(model, null);
     }
 
-    public ModelAndView saveSelfBlocksErrors(final SelfBookingData model, final BindingResult errors) {
-        final ModelAndView mav = buildManageAvailabilityView(model);
-        mav.addObject("toasts", toastPresentation.validationToasts(errors, "saveSelfBlocks"));
-        return mav;
+    public static ModelAndView saveSelfBlocksErrors(
+            final SelfBookingData model, final List<Map<String, String>> toasts) {
+        return buildManageAvailabilityView(model, toasts);
     }
 
-    public ModelAndView saveSelfBlocksSuccess(
+    public static ModelAndView saveSelfBlocksSuccess(
             final int itemId, final String dateStr, final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, "manageAvailability.msg.saved");
         return availabilityRedirect(itemId, dateStr);
     }
 
-    private ModelAndView availabilityRedirect(final int itemId, final String dateStr) {
+    private static ModelAndView availabilityRedirect(final int itemId, final String dateStr) {
         final StringBuilder url =
                 new StringBuilder("redirect:/my-boats/").append(itemId).append("/availability");
         if (dateStr != null && !dateStr.isBlank()) {
@@ -56,7 +52,8 @@ public class AvailabilityPresentation {
         return new ModelAndView(url.toString());
     }
 
-    private ModelAndView buildManageAvailabilityView(final SelfBookingData model) {
+    private static ModelAndView buildManageAvailabilityView(
+            final SelfBookingData model, final List<Map<String, String>> toasts) {
         final ModelAndView mav = new ModelAndView("manage-availability");
         final String timezone = model.getTimezone();
         mav.addObject("item", model.getItem());
@@ -85,10 +82,13 @@ public class AvailabilityPresentation {
         mav.addObject("timelineSelfBlocks", timeline.selfBlocks());
         mav.addObject(
                 "hasTimelineAvailability", hasAvailabilityWindowsForDate(model.getSelectedDate(), availabilityWindows));
+        if (toasts != null) {
+            mav.addObject("toasts", toasts);
+        }
         return mav;
     }
 
-    static boolean hasAvailabilityWindowsForDate(
+    private static boolean hasAvailabilityWindowsForDate(
             final LocalDate selectedDate, final List<Availability> availabilities) {
         if (selectedDate == null || availabilities == null) {
             return false;
@@ -103,7 +103,7 @@ public class AvailabilityPresentation {
                         && a.getEndTime().isAfter(a.getStartTime()));
     }
 
-    static DayTimelineModel buildDayTimelineModel(
+    private static DayTimelineModel buildDayTimelineModel(
             final LocalDate selectedDate,
             final List<Availability> availabilities,
             final List<Booking> bookings,
@@ -188,17 +188,6 @@ public class AvailabilityPresentation {
                 || status == BookingStatusEnum.ACCEPTED
                 || status == BookingStatusEnum.PAID
                 || status == BookingStatusEnum.CONFIRMED;
-    }
-
-    public static LocalDate parseRequestedDate(final String raw) {
-        if (raw == null || raw.isBlank()) {
-            return null;
-        }
-        try {
-            return LocalDate.parse(raw.trim());
-        } catch (final Exception ignored) {
-            return null;
-        }
     }
 
     public record DayTimelineModel(

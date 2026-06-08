@@ -3,10 +3,8 @@ package ar.edu.itba.paw.webapp.form;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
-import lombok.Getter;
 import lombok.Setter;
 
-@Getter
 @Setter
 public class PasswordRecoveryRequestForm {
 
@@ -17,7 +15,11 @@ public class PasswordRecoveryRequestForm {
 
     private String sent;
 
-    public void setEmail(final String email) {
-        this.email = email == null ? null : email.trim();
+    public String getEmail() {
+        return email == null ? null : email.trim().toLowerCase();
+    }
+
+    public String getSent() {
+        return sent;
     }
 }

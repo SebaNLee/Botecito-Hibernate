@@ -9,9 +9,11 @@ import ar.edu.itba.paw.webapp.presentation.DetailPageFlags;
 import ar.edu.itba.paw.webapp.presentation.DetailPageFlagsFactory;
 import ar.edu.itba.paw.webapp.presentation.DetailPresentation;
 import ar.edu.itba.paw.webapp.presentation.ReportPresentation;
+import ar.edu.itba.paw.webapp.presentation.ToastPresentation;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -25,11 +27,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class ReportController {
 
+    private static final String REPORT_MESSAGE_PREFIX = "report";
+
     private final DetailService detailService;
     private final ReportService reportService;
     private final DetailPageFlagsFactory detailPageFlagsFactory;
-    private final DetailPresentation detailPresentation;
-    private final ReportPresentation reportPresentation;
+    private final MessageSource messageSource;
 
     @RequestMapping(value = "/item/{id:[1-9]\\d*}/report", method = RequestMethod.POST)
     public ModelAndView submitReport(
@@ -42,9 +45,15 @@ public class ReportController {
         if (errors.hasErrors()) {
             final Item item = detailService.getItemDetail(itemId, 1);
             final DetailPageFlags flags = detailPageFlagsFactory.compute(item, user);
-            return detailPresentation.detailPageWithReportValidationErrors(item, user, flags, request, form, errors);
+            return DetailPresentation.detailPageWithReportValidationErrors(
+                    item,
+                    user,
+                    flags,
+                    request,
+                    form,
+                    ToastPresentation.validationToasts(errors, REPORT_MESSAGE_PREFIX, messageSource));
         }
         reportService.createReport(itemId, user.getId(), form.getReason(), form.getDescription());
-        return reportPresentation.submitReportResult(itemId, redirectAttributes);
+        return ReportPresentation.submitReportResult(itemId, redirectAttributes);
     }
 }

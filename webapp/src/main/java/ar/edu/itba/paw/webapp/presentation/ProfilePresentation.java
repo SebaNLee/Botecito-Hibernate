@@ -9,20 +9,17 @@ import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ProfileListingsViewForm;
 import ar.edu.itba.paw.webapp.form.ProfileReviewsViewForm;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.context.MessageSource;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
 
-@Component
-@RequiredArgsConstructor
-public class ProfilePresentation {
+public final class ProfilePresentation {
 
     private static final String MESSAGE_PREFIX = "profile";
 
-    private final ToastPresentation toastPresentation;
+    private ProfilePresentation() {}
 
-    public ModelAndView profileListings(
+    public static ModelAndView profileListings(
             final Users profileUser,
             final PageModel<Item> listingsPage,
             final int followersCount,
@@ -41,7 +38,7 @@ public class ProfilePresentation {
         return mav;
     }
 
-    public ModelAndView profileReviews(
+    public static ModelAndView profileReviews(
             final Users profileUser,
             final PageModel<Review> reviewsPage,
             final Double averageRating,
@@ -62,16 +59,17 @@ public class ProfilePresentation {
         return mav;
     }
 
-    public ModelAndView profileListingsErrors(
+    public static ModelAndView profileListingsErrors(
             final BotecitoUserDetails viewer,
             final Users profileUser,
             final ProfileListingsViewForm profileListingsView,
-            final BindingResult errors) {
+            final BindingResult errors,
+            final MessageSource messageSource) {
         final boolean isSelf = viewer != null && viewer.getId() == profileUser.getId();
 
         final ModelAndView mav = new ModelAndView("profile");
         mav.addAllObjects(errors.getModel());
-        mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
+        mav.addObject("toasts", ToastPresentation.validationToasts(errors, MESSAGE_PREFIX, messageSource));
         mav.addObject("user", profileUser);
         mav.addObject("activeTab", "listings");
         mav.addObject("isSelf", isSelf);
@@ -83,16 +81,17 @@ public class ProfilePresentation {
         return mav;
     }
 
-    public ModelAndView profileReviewsErrors(
+    public static ModelAndView profileReviewsErrors(
             final BotecitoUserDetails viewer,
             final Users profileUser,
             final ProfileReviewsViewForm profileReviewsView,
-            final BindingResult errors) {
+            final BindingResult errors,
+            final MessageSource messageSource) {
         final boolean isSelf = viewer != null && viewer.getId() == profileUser.getId();
 
         final ModelAndView mav = new ModelAndView("profile");
         mav.addAllObjects(errors.getModel());
-        mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
+        mav.addObject("toasts", ToastPresentation.validationToasts(errors, MESSAGE_PREFIX, messageSource));
         mav.addObject("user", profileUser);
         mav.addObject("activeTab", "reviews");
         mav.addObject("isSelf", isSelf);

@@ -17,71 +17,63 @@ import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * Builds the item detail view and pre-booking/report redirect responses.
- */
-@Component
-@RequiredArgsConstructor
-public class DetailPresentation {
+public final class DetailPresentation {
 
-    private static final String MESSAGE_PREFIX = "detail";
     private static final String VIEW_NAME = "item-detail";
     private static final String IMAGE_PATH_PREFIX = "/image/";
     private static final String PLACEHOLDER_IMAGE_PATH = "/css/boat-placeholder.svg";
 
-    private final ToastPresentation toastPresentation;
+    private DetailPresentation() {}
 
-    public ModelAndView detailPage(
+    public static ModelAndView detailPage(
             final Item item,
             final BotecitoUserDetails viewer,
             final DetailPageFlags flags,
             final HttpServletRequest request,
             final ItemDetailViewForm itemDetailView) {
-        return buildDetailView(item, viewer, flags, request, itemDetailView);
+        return buildDetailView(item, viewer, flags, request, itemDetailView, null, null, null, false);
     }
 
-    public ModelAndView detailPageWithViewValidationErrors(
+    public static ModelAndView detailPageWithViewValidationErrors(
             final Item item,
             final BotecitoUserDetails viewer,
             final DetailPageFlags flags,
             final HttpServletRequest request,
             final ItemDetailViewForm itemDetailView,
-            final BindingResult errors) {
-        final ModelAndView mav = buildDetailView(item, viewer, flags, request, itemDetailView);
+            final BindingResult errors,
+            final List<Map<String, String>> toasts) {
+        final ModelAndView mav =
+                buildDetailView(item, viewer, flags, request, itemDetailView, null, toasts, null, false);
         mav.addAllObjects(errors.getModel());
-        mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
         return mav;
     }
 
-    public ModelAndView detailPageWithPreBookingValidationErrors(
+    public static ModelAndView detailPageWithPreBookingValidationErrors(
             final Item item,
             final BotecitoUserDetails viewer,
             final DetailPageFlags flags,
             final HttpServletRequest request,
-            final BindingResult errors) {
+            final List<Map<String, String>> toasts) {
         final ItemDetailViewForm itemDetailView = new ItemDetailViewForm();
         itemDetailView.setItemId(item.getId());
         itemDetailView.setPage(1);
-        final ModelAndView mav = buildDetailView(item, viewer, flags, request, itemDetailView);
-        mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
-        return mav;
+        return buildDetailView(item, viewer, flags, request, itemDetailView, null, toasts, null, false);
     }
 
-    public ModelAndView detailPageWithReportValidationErrors(
+    public static ModelAndView detailPageWithReportValidationErrors(
             final Item item,
             final BotecitoUserDetails viewer,
             final DetailPageFlags flags,
             final HttpServletRequest request,
             final ReportForm form,
-            final BindingResult errors) {
+            final List<Map<String, String>> toasts) {
         final ItemDetailViewForm itemDetailView = new ItemDetailViewForm();
         itemDetailView.setItemId(item.getId());
         if (item.getItemReviews() != null) {
@@ -89,24 +81,24 @@ public class DetailPresentation {
         } else {
             itemDetailView.setPage(1);
         }
-        final ModelAndView mav = buildDetailView(item, viewer, flags, request, itemDetailView);
-        mav.addObject("reportForm", form);
-        mav.addObject("openReportModal", true);
-        mav.addObject("toasts", toastPresentation.validationToasts(errors, "report"));
-        return mav;
+        return buildDetailView(item, viewer, flags, request, itemDetailView, form, toasts, null, true);
     }
 
-    public ModelAndView submitPreBookingSuccess(final int itemId, final RedirectAttributes redirectAttributes) {
-        ToastSupport.success(redirectAttributes, MESSAGE_PREFIX + ".preBooking.success");
+    public static ModelAndView submitPreBookingSuccess(final int itemId, final RedirectAttributes redirectAttributes) {
+        ToastSupport.success(redirectAttributes, "detail.preBooking.success");
         return new ModelAndView("redirect:/item/" + itemId);
     }
 
-    private ModelAndView buildDetailView(
+    private static ModelAndView buildDetailView(
             final Item item,
             final BotecitoUserDetails viewer,
             final DetailPageFlags flags,
             final HttpServletRequest request,
-            final ItemDetailViewForm itemDetailView) {
+            final ItemDetailViewForm itemDetailView,
+            final ReportForm reportForm,
+            final List<Map<String, String>> toasts,
+            final BindingResult errors,
+            final boolean openReportModal) {
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
         final Version version = item.getLatestVersion();
         final Users itemOwner = item.getHost();
@@ -144,12 +136,22 @@ public class DetailPresentation {
         addAvailabilityModel(mav, item, version);
         mav.addObject("showPreBookingPanel", isActive);
 
+        if (reportForm != null) {
+            mav.addObject("reportForm", reportForm);
+        }
+        if (openReportModal) {
+            mav.addObject("openReportModal", true);
+        }
+        if (toasts != null) {
+            mav.addObject("toasts", toasts);
+        }
+        if (errors != null) {
+            mav.addAllObjects(errors.getModel());
+        }
         return mav;
     }
 
-    // Date/time picker JSON and calendar bounds; occupied slots use all item
-    // bookings (every version).
-    private void addAvailabilityModel(final ModelAndView mav, final Item item, final Version version) {
+    private static void addAvailabilityModel(final ModelAndView mav, final Item item, final Version version) {
         final List<Availability> availabilityWindows =
                 version.getAvailabilities() == null ? List.of() : version.getAvailabilities();
         final List<Booking> itemBookings = item.getBookings() == null ? List.of() : item.getBookings();
@@ -183,13 +185,10 @@ public class DetailPresentation {
     }
 
     private static String ownerDisplayName(final Users itemOwner) {
-        // non-null, non-blank firstName and lastName.
         return itemOwner.getFirstName().trim() + " " + itemOwner.getLastName().trim();
     }
 
     private static String ownerInitials(final Users itemOwner) {
-        // Uses first character of the owner's first name and first character of the
-        // last name.
         return (itemOwner.getFirstName().trim().substring(0, 1)
                         + itemOwner.getLastName().trim().substring(0, 1))
                 .toUpperCase();

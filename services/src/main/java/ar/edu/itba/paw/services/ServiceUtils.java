@@ -21,12 +21,4 @@ public final class ServiceUtils {
         }
         return date.getDayOfWeek();
     }
-
-    public static String normalizeComment(final String comment) {
-        if (comment == null) {
-            return null;
-        }
-        final String trimmed = comment.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
 }

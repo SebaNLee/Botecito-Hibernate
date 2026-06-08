@@ -5,6 +5,7 @@ import ar.edu.itba.paw.models.dto.SelfBlockCreate;
 import ar.edu.itba.paw.models.dto.SelfBlockUpdate;
 import ar.edu.itba.paw.models.dto.SelfBookingData;
 import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import java.time.LocalDate;
@@ -20,8 +21,8 @@ public interface BookingService {
             int userId,
             boolean asHost,
             String searchQuery,
-            String rawDate,
-            String rawStatus,
+            LocalDate date,
+            BookingStatusEnum status,
             Integer page,
             Integer pageSize,
             String sortBy);

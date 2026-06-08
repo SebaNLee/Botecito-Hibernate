@@ -9,6 +9,7 @@ import ar.edu.itba.paw.webapp.form.ItemDetailViewForm;
 import ar.edu.itba.paw.webapp.presentation.FavouritePresentation;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -24,7 +25,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class FavouriteController {
 
     private final FavouriteService favouriteService;
-    private final FavouritePresentation favouritePresentation;
+    private final MessageSource messageSource;
 
     @ModelAttribute("favouritesSearch")
     public FavouritesSearchForm defaultFavouritesSearch() {
@@ -41,11 +42,11 @@ public class FavouriteController {
             @Valid @ModelAttribute("favouritesSearch") final FavouritesSearchForm search,
             final BindingResult errors) {
         if (errors.hasErrors()) {
-            return favouritePresentation.favouritesErrors(search, errors);
+            return FavouritePresentation.favouritesErrors(search, errors, messageSource);
         }
         final PageModel<Item> itemPage = favouriteService.listFavourites(
                 user.getId(), search.getSearchQuery(), search.getPage(), search.getPageSize(), search.getSortBy());
-        return favouritePresentation.favourites(search, itemPage);
+        return FavouritePresentation.favourites(search, itemPage);
     }
 
     @RequestMapping(value = "/favourites/items/{id:[1-9]\\d*}/favourite", method = RequestMethod.POST)
@@ -55,7 +56,7 @@ public class FavouriteController {
             @ModelAttribute("favouritesSearch") final FavouritesSearchForm favouritesSearch,
             final RedirectAttributes redirectAttributes) {
         final boolean success = favouriteService.addFavourite(user.getId(), itemId);
-        return favouritePresentation.addFavouriteFromFavouritesResult(favouritesSearch, success, redirectAttributes);
+        return FavouritePresentation.addFavouriteFromFavouritesResult(favouritesSearch, success, redirectAttributes);
     }
 
     @RequestMapping(value = "/favourites/items/{id:[1-9]\\d*}/unfavourite", method = RequestMethod.POST)
@@ -65,7 +66,7 @@ public class FavouriteController {
             @ModelAttribute("favouritesSearch") final FavouritesSearchForm favouritesSearch,
             final RedirectAttributes redirectAttributes) {
         favouriteService.removeFavourite(user.getId(), itemId);
-        return favouritePresentation.removeFavouriteFromFavouritesResult(favouritesSearch, redirectAttributes);
+        return FavouritePresentation.removeFavouriteFromFavouritesResult(favouritesSearch, redirectAttributes);
     }
 
     @RequestMapping(value = "/items/{id:[1-9]\\d*}/favourite", method = RequestMethod.POST)
@@ -75,7 +76,7 @@ public class FavouriteController {
             @ModelAttribute("itemDetailView") final ItemDetailViewForm itemDetailView,
             final RedirectAttributes redirectAttributes) {
         final boolean success = favouriteService.addFavourite(user.getId(), itemId);
-        return favouritePresentation.addFavouriteFromItemDetailResult(
+        return FavouritePresentation.addFavouriteFromItemDetailResult(
                 itemDetailView, itemId, success, redirectAttributes);
     }
 
@@ -86,6 +87,6 @@ public class FavouriteController {
             @ModelAttribute("itemDetailView") final ItemDetailViewForm itemDetailView,
             final RedirectAttributes redirectAttributes) {
         favouriteService.removeFavourite(user.getId(), itemId);
-        return favouritePresentation.removeFavouriteFromItemDetailResult(itemDetailView, itemId, redirectAttributes);
+        return FavouritePresentation.removeFavouriteFromItemDetailResult(itemDetailView, itemId, redirectAttributes);
     }
 }

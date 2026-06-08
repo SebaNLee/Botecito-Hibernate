@@ -8,46 +8,44 @@ import ar.edu.itba.paw.webapp.util.ToastSupport;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.context.MessageSource;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@Component
-@RequiredArgsConstructor
-public class FavouritePresentation {
+public final class FavouritePresentation {
 
     private static final String VIEW_NAME = "favourites";
     private static final String MESSAGE_PREFIX = "favourites";
 
-    private final ToastPresentation toastPresentation;
+    private FavouritePresentation() {}
 
-    public ModelAndView favourites(final FavouritesSearchForm search, final PageModel<Item> itemPage) {
+    public static ModelAndView favourites(final FavouritesSearchForm search, final PageModel<Item> itemPage) {
         final ModelAndView mav = new ModelAndView(VIEW_NAME, "favouritesSearch", search);
         addListingModelObjects(mav, itemPage);
         mav.addObject("hasValidationErrors", false);
         return mav;
     }
 
-    public ModelAndView favouritesErrors(final FavouritesSearchForm search, final BindingResult errors) {
+    public static ModelAndView favouritesErrors(
+            final FavouritesSearchForm search, final BindingResult errors, final MessageSource messageSource) {
         final ModelAndView mav = new ModelAndView(VIEW_NAME, "favouritesSearch", search);
         mav.addAllObjects(errors.getModel());
-        mav.addObject("toasts", toastPresentation.validationToasts(errors, MESSAGE_PREFIX));
+        mav.addObject("toasts", ToastPresentation.validationToasts(errors, MESSAGE_PREFIX, messageSource));
         addListingModelObjects(mav, new PageModel<>(List.of(), 1, 12, 0L));
         mav.addObject("hasValidationErrors", true);
         return mav;
     }
 
-    private void addListingModelObjects(final ModelAndView mav, final PageModel<Item> itemPage) {
+    private static void addListingModelObjects(final ModelAndView mav, final PageModel<Item> itemPage) {
         mav.addObject("itemPage", itemPage);
         mav.addObject("pageSize", itemPage.getPageSize());
         mav.addObject("favouriteByItemId", booleanMap(itemPage.getContent(), true));
         mav.addObject("canFavouriteByItemId", booleanMap(itemPage.getContent(), true));
     }
 
-    public ModelAndView addFavouriteFromFavouritesResult(
+    public static ModelAndView addFavouriteFromFavouritesResult(
             final FavouritesSearchForm search, final boolean success, final RedirectAttributes redirectAttributes) {
         if (!success) {
             ToastSupport.error(redirectAttributes, "favourite.add.error");
@@ -58,14 +56,14 @@ public class FavouritePresentation {
         return new ModelAndView("redirect:/favourites");
     }
 
-    public ModelAndView removeFavouriteFromFavouritesResult(
+    public static ModelAndView removeFavouriteFromFavouritesResult(
             final FavouritesSearchForm search, final RedirectAttributes redirectAttributes) {
         ToastSupport.info(redirectAttributes, "favourite.removed");
         addFavouritesSearchParams(redirectAttributes, search);
         return new ModelAndView("redirect:/favourites");
     }
 
-    public ModelAndView addFavouriteFromItemDetailResult(
+    public static ModelAndView addFavouriteFromItemDetailResult(
             final ItemDetailViewForm view,
             final int itemId,
             final boolean success,
@@ -78,7 +76,7 @@ public class FavouritePresentation {
         return itemDetailRedirect(view, itemId, redirectAttributes);
     }
 
-    public ModelAndView removeFavouriteFromItemDetailResult(
+    public static ModelAndView removeFavouriteFromItemDetailResult(
             final ItemDetailViewForm view, final int itemId, final RedirectAttributes redirectAttributes) {
         ToastSupport.info(redirectAttributes, "favourite.removed");
         return itemDetailRedirect(view, itemId, redirectAttributes);

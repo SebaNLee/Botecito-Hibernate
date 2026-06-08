@@ -7,6 +7,7 @@ import ar.edu.itba.paw.webapp.form.AdminReportsSearchForm;
 import ar.edu.itba.paw.webapp.presentation.AdminReportsPresentation;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -21,7 +22,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AdminReportsController {
 
     private final ReportService reportService;
-    private final AdminReportsPresentation adminReportsPresentation;
+    private final MessageSource messageSource;
 
     @ModelAttribute("adminReportsSearch")
     public AdminReportsSearchForm defaultAdminReportsSearch() {
@@ -37,11 +38,11 @@ public class AdminReportsController {
             @Valid @ModelAttribute("adminReportsSearch") final AdminReportsSearchForm search,
             final BindingResult errors) {
         if (errors.hasErrors()) {
-            return adminReportsPresentation.listReportsErrors(search, errors);
+            return AdminReportsPresentation.listReportsErrors(search, errors, messageSource);
         }
         final PageModel<Report> reportPage =
                 reportService.searchReports(search.getPage(), search.getPageSize(), search.getSortBy());
-        return adminReportsPresentation.listReports(search, reportPage);
+        return AdminReportsPresentation.listReports(search, reportPage);
     }
 
     @RequestMapping(value = "/admin/reports/{id:[1-9]\\d*}/dismiss", method = RequestMethod.POST)
@@ -50,7 +51,7 @@ public class AdminReportsController {
             @ModelAttribute("adminReportsSearch") final AdminReportsSearchForm search,
             final RedirectAttributes redirectAttributes) {
         reportService.dismissReport(reportId);
-        return adminReportsPresentation.dismissReportResult(search, redirectAttributes);
+        return AdminReportsPresentation.dismissReportResult(search, redirectAttributes);
     }
 
     @RequestMapping(value = "/admin/reports/{id:[1-9]\\d*}/delete-publication", method = RequestMethod.POST)
@@ -59,6 +60,6 @@ public class AdminReportsController {
             @ModelAttribute("adminReportsSearch") final AdminReportsSearchForm search,
             final RedirectAttributes redirectAttributes) {
         reportService.deletePublicationForReport(reportId);
-        return adminReportsPresentation.deletePublicationForReportResult(search, redirectAttributes);
+        return AdminReportsPresentation.deletePublicationForReportResult(search, redirectAttributes);
     }
 }

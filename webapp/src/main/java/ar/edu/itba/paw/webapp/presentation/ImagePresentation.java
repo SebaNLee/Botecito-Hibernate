@@ -4,15 +4,15 @@ import java.time.Duration;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 
-@Component
-public class ImagePresentation {
+public final class ImagePresentation {
 
     private static final Duration IMAGE_CACHE_MAX_AGE = Duration.ofHours(1);
     private static final MediaType IMAGE_WEBP = MediaType.parseMediaType("image/webp");
 
-    public ResponseEntity<byte[]> imageResponse(final byte[] data) {
+    private ImagePresentation() {}
+
+    public static ResponseEntity<byte[]> imageResponse(final byte[] data) {
         if (data == null || data.length == 0) {
             return ResponseEntity.notFound().build();
         }

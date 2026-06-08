@@ -5,33 +5,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 
-@Component
-@RequiredArgsConstructor
-public class ToastPresentation {
+public final class ToastPresentation {
 
-    private final MessageSource messageSource;
+    private ToastPresentation() {}
 
-    /**
-     * Builds error toasts from a {@link BindingResult}, using {@code messagePrefix} for i18n keys
-     * (e.g. {@code marketplace}, {@code detail}): {@code {prefix}.validation.toastFormat},
-     * {@code {prefix}.field.*}, {@code {prefix}.validation.bannerTitle}.
-     */
-    public List<Map<String, String>> validationToasts(final BindingResult errors, final String messagePrefix) {
+    public static List<Map<String, String>> validationToasts(
+            final BindingResult errors, final String messagePrefix, final MessageSource messageSource) {
         final Locale locale = LocaleContextHolder.getLocale();
         final List<Map<String, String>> toasts = new ArrayList<>();
         for (final ObjectError error : errors.getAllErrors()) {
             final Map<String, String> entry = new HashMap<>();
             entry.put("type", "error");
-            entry.put("text", validationToastText(error, messagePrefix, locale));
+            entry.put("text", validationToastText(error, messagePrefix, locale, messageSource));
             toasts.add(entry);
         }
         if (toasts.isEmpty()) {
@@ -43,18 +35,21 @@ public class ToastPresentation {
         return toasts;
     }
 
-    /** Single toast resolved from a message {@code code} (see {@code paw:toastNotifier}). */
-    public List<Map<String, String>> codeToasts(final String type, final String messageCode) {
+    public static List<Map<String, String>> codeToasts(final String type, final String messageCode) {
         return List.of(Map.of("type", type, "code", messageCode));
     }
 
-    public List<Map<String, String>> errorCodeToasts(final String messageCode) {
+    public static List<Map<String, String>> errorCodeToasts(final String messageCode) {
         return codeToasts("error", messageCode);
     }
 
-    private String validationToastText(final ObjectError error, final String messagePrefix, final Locale locale) {
-        final String fieldLabel = fieldLabel(error, messagePrefix, locale);
-        final String reason = resolveValidationReason(error, messagePrefix, locale);
+    private static String validationToastText(
+            final ObjectError error,
+            final String messagePrefix,
+            final Locale locale,
+            final MessageSource messageSource) {
+        final String fieldLabel = fieldLabel(error, messagePrefix, locale, messageSource);
+        final String reason = resolveValidationReason(error, messagePrefix, locale, messageSource);
         final String formatKey = messagePrefix + ".validation.toastFormat";
         try {
             return messageSource.getMessage(formatKey, new Object[] {fieldLabel, reason}, locale);
@@ -63,7 +58,11 @@ public class ToastPresentation {
         }
     }
 
-    private String fieldLabel(final ObjectError error, final String messagePrefix, final Locale locale) {
+    private static String fieldLabel(
+            final ObjectError error,
+            final String messagePrefix,
+            final Locale locale,
+            final MessageSource messageSource) {
         String field = null;
         if (error instanceof FieldError fe) {
             field = fe.getField();
@@ -86,7 +85,11 @@ public class ToastPresentation {
         }
     }
 
-    private String resolveValidationReason(final ObjectError error, final String messagePrefix, final Locale locale) {
+    private static String resolveValidationReason(
+            final ObjectError error,
+            final String messagePrefix,
+            final Locale locale,
+            final MessageSource messageSource) {
         try {
             return messageSource.getMessage(error, locale);
         } catch (final NoSuchMessageException ignored) {

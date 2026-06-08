@@ -15,4 +15,12 @@ public class ReportForm {
 
     @Size(max = 255, message = "{report.validation.description.size}")
     private String description;
+
+    public String getDescription() {
+        if (description == null) {
+            return null;
+        }
+        final String trimmed = description.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
 }

@@ -57,7 +57,7 @@ public class ReportServiceImpl implements ReportService {
                 .sender(sender)
                 .item(item)
                 .reason(reason)
-                .description(normalizeDescription(description))
+                .description(description)
                 .createdAt(DateTimeUtils.getCurrent())
                 .build();
 
@@ -135,13 +135,5 @@ public class ReportServiceImpl implements ReportService {
 
     private void notifyDismissal(final Report report) {
         mailService.sendReportDismissedEmail(MailServiceImpl.getReporterEmail(report));
-    }
-
-    private static String normalizeDescription(final String description) {
-        if (description == null) {
-            return null;
-        }
-        final String trimmed = description.trim();
-        return trimmed.isEmpty() ? null : trimmed;
     }
 }

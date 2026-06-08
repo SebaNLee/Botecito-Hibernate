@@ -11,6 +11,7 @@ import ar.edu.itba.paw.webapp.form.ProfileReviewsViewForm;
 import ar.edu.itba.paw.webapp.presentation.ProfilePresentation;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -27,7 +28,7 @@ public class ProfileController {
     private final UserService userService;
     private final ProfileService profileService;
     private final SubscriptionService subscriptionService;
-    private final ProfilePresentation profilePresentation;
+    private final MessageSource messageSource;
 
     @ModelAttribute("profileListingsView")
     public ProfileListingsViewForm defaultProfileListingsView() {
@@ -59,7 +60,8 @@ public class ProfileController {
         final Users profileUser = userService.findById(id).orElseThrow(UserNotFoundException::new);
 
         if (errors.hasErrors()) {
-            return profilePresentation.profileListingsErrors(viewer, profileUser, profileListingsView, errors);
+            return ProfilePresentation.profileListingsErrors(
+                    viewer, profileUser, profileListingsView, errors, messageSource);
         }
 
         final var listingsPage = profileService.listProfileListings(
@@ -70,7 +72,7 @@ public class ProfileController {
                 !isSelf && viewer != null && subscriptionService.isSubscribed(viewer.getId(), profileUser.getId());
         final int followersCount = subscriptionService.countFollowers(id);
 
-        return profilePresentation.profileListings(
+        return ProfilePresentation.profileListings(
                 profileUser, listingsPage, followersCount, isSelf, isSubscribed, profileListingsView);
     }
 
@@ -83,7 +85,8 @@ public class ProfileController {
         final Users profileUser = userService.findById(id).orElseThrow(UserNotFoundException::new);
 
         if (errors.hasErrors()) {
-            return profilePresentation.profileReviewsErrors(viewer, profileUser, profileReviewsView, errors);
+            return ProfilePresentation.profileReviewsErrors(
+                    viewer, profileUser, profileReviewsView, errors, messageSource);
         }
 
         final var hostReviewsPage = profileService.findHostReviewsPage(id, profileReviewsView.getPage());
@@ -93,7 +96,7 @@ public class ProfileController {
                 !isSelf && viewer != null && subscriptionService.isSubscribed(viewer.getId(), profileUser.getId());
         final int followersCount = subscriptionService.countFollowers(id);
 
-        return profilePresentation.profileReviews(
+        return ProfilePresentation.profileReviews(
                 profileUser,
                 hostReviewsPage.getReviews(),
                 hostReviewsPage.getAverageRating(),

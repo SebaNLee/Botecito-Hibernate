@@ -118,6 +118,17 @@ public class ItemJpaDaoTest {
     }
 
     @Test
+    public void testFindImageById() {
+        Image image = insertImage(em);
+        em.flush();
+
+        Optional<Image> found = itemDao.findImageById(image.getId());
+
+        assertTrue(found.isPresent());
+        assertEquals(image.getId(), found.get().getId());
+    }
+
+    @Test
     public void testGetVersionCount() {
         Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
         insertVersion(
@@ -221,6 +232,17 @@ public class ItemJpaDaoTest {
         assertNotNull(em.find(Availability.class, persisted.getId()));
     }
 
+    @Test
+    public void testPersistImage() {
+        Image image = new Image();
+        image.setData(new byte[] {1, 2, 3});
+
+        Image persisted = itemDao.persistImage(image);
+
+        assertNotNull(persisted.getId());
+        assertNotNull(em.find(Image.class, persisted.getId()));
+    }
+    
     @Test
     public void testPersistMedia() {
         Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);

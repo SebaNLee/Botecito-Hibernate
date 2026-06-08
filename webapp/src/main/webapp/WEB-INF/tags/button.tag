@@ -86,12 +86,31 @@
   </c:otherwise>
 </c:choose>
 
-<c:set var="btnWidthClass" value="${btnFullWidth ? 'btn-block' : ''}" />
+<c:choose>
+  <c:when test="${btnFullWidth}">
+    <c:set var="btnWidthClass" value="btn-block" />
+  </c:when>
+  <c:otherwise>
+    <c:set var="btnWidthClass" value="" />
+  </c:otherwise>
+</c:choose>
 <c:set var="btnClasses" value="btn ${btnColorClass} ${btnVariantClass} ${btnSizeClass} ${btnWidthClass} no-underline ${btnCssClass}" />
 
 <c:choose>
+  <c:when test="${btnSubmitLoading}">
+    <c:set var="btnSubmitLoadingRelativeClass" value="relative" />
+    <c:set var="btnSubmitLoadingContentClass" value="flex items-center justify-center gap-2" />
+  </c:when>
+  <c:otherwise>
+    <c:set var="btnSubmitLoadingRelativeClass" value="" />
+    <c:set var="btnSubmitLoadingContentClass" value="" />
+  </c:otherwise>
+</c:choose>
+<c:set var="btnSubmitLoadingButtonClass" value="${btnClasses} ${btnSubmitLoadingRelativeClass}" />
+
+<c:choose>
   <c:when test="${not empty href and not btnDisabled}">
-    <a href="${href}" class="${btnClasses}">
+    <a href="<c:out value='${href}' />" class="<c:out value='${btnClasses}' />">
       <c:if test="${not empty icon and not btnIconTrailing}">
         <span class="material-symbols-outlined text-base leading-none"><c:out value="${icon}" /></span>
       </c:if>
@@ -102,7 +121,7 @@
     </a>
   </c:when>
   <c:when test="${not empty href and btnDisabled}">
-    <span class="${btnClasses} btn-disabled" role="link" aria-disabled="true" tabindex="-1">
+    <span class="<c:out value='${btnClasses}' /> btn-disabled" role="link" aria-disabled="true" tabindex="-1">
       <c:if test="${not empty icon and not btnIconTrailing}">
         <span class="material-symbols-outlined text-base leading-none"><c:out value="${icon}" /></span>
       </c:if>
@@ -113,8 +132,8 @@
     </span>
   </c:when>
   <c:otherwise>
-    <button type="${btnType}" class="${btnClasses} ${btnSubmitLoading ? 'relative' : ''}" <c:if test="${btnDisabled}">disabled</c:if> <c:if test="${btnSubmitLoading}">data-submit-loading-button</c:if> <c:if test="${not empty loadingText}">data-loading-text="${loadingText}"</c:if>>
-      <span class="${btnSubmitLoading ? 'flex items-center justify-center gap-2' : ''}" <c:if test="${btnSubmitLoading}">data-submit-loading-content</c:if>>
+    <button type="<c:out value='${btnType}' />" class="<c:out value='${btnSubmitLoadingButtonClass}' />" <c:if test="${btnDisabled}">disabled</c:if> <c:if test="${btnSubmitLoading}">data-submit-loading-button</c:if> <c:if test="${not empty loadingText}">data-loading-text="<c:out value='${loadingText}' />"</c:if>>
+      <span class="<c:out value='${btnSubmitLoadingContentClass}' />" <c:if test="${btnSubmitLoading}">data-submit-loading-content</c:if>>
         <c:if test="${not empty icon and not btnIconTrailing}">
           <span class="material-symbols-outlined text-base leading-none"><c:out value="${icon}" /></span>
         </c:if>

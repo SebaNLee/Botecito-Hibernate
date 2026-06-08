@@ -27,7 +27,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
       <img
         class="w-full h-full object-cover"
         alt="<spring:message code='landing.hero.imageAlt' />"
-        src="${heroImageUrl}"
+        src="<c:out value='${heroImageUrl}' />"
       />
       <div
         class="absolute inset-0 bg-gradient-to-b from-on-background/40 via-on-background/10 to-background"
@@ -49,7 +49,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
       </p>
 
       <form
-        action="${marketplaceUrl}"
+        action="<c:out value='${marketplaceUrl}' />"
         method="get"
         data-filter-form="landing"
         class="bg-base-100/95 backdrop-blur-sm border border-base-200 p-2 md:p-3 rounded-2xl md:rounded-[2rem] shadow-xl w-full max-w-7xl mx-auto flex flex-col md:flex-row md:items-stretch items-center gap-2"

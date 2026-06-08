@@ -295,4 +295,42 @@ public class ItemJpaDaoTest {
         assertNull(em.find(Media.class, media.getId()));
         assertNotNull(em.find(Image.class, image.getId()));
     }
+
+    @Test
+    public void testRemoveVersionChildrenMediaAllowsReuseOfIndexesWhenLoadedInSession() {
+        Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        Version v = insertVersion(
+                em, item, itemType, location, "Boat", BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now());
+        em.flush();
+
+        Version managed = em.find(Version.class, v.getId());
+        Image image = insertImage(em);
+        Media media = insertMedia(em, managed, image, 0);
+        em.flush();
+
+        assertEquals(
+                1,
+                em.createQuery("SELECT m FROM Media m WHERE m.version.id = :vid", Media.class)
+                        .setParameter("vid", managed.getId())
+                        .getResultList()
+                        .size());
+        assertTrue(em.contains(media));
+
+        itemDao.removeVersionChildren(managed);
+        em.flush();
+
+        assertNull(em.find(Media.class, media.getId()));
+
+        Image replacement = insertImage(em);
+        Media replacementMedia = new Media();
+        replacementMedia.setId(new MediaId(managed.getId(), 0));
+        replacementMedia.setVersion(managed);
+        replacementMedia.setImage(replacement);
+        itemDao.persistMedia(replacementMedia);
+        em.flush();
+
+        Media found = em.find(Media.class, replacementMedia.getId());
+        assertNotNull(found);
+        assertEquals(replacement.getId(), found.getImage().getId());
+    }
 }

@@ -86,10 +86,10 @@
 
 <paw:toastNotifier />
 <div class="grid grid-cols-1 gap-8 md:grid-cols-[18rem_minmax(0,1fr)] lg:grid-cols-[20rem_minmax(0,1fr)] items-start w-full">
-  <form id="${filterFormId}" action="${formAction}" method="get" class="contents">
+  <form id="<c:out value='${filterFormId}' />" action="<c:out value='${formAction}' />" method="get" class="contents">
   <div class="sticky top-24 w-full min-w-0 space-y-6">
     <paw:requestsSidebar active="${sidebarActive}" />
-    <input type="hidden" name="page" value="1" id="${pageHiddenId}" />
+    <input type="hidden" name="page" value="1" id="<c:out value='${pageHiddenId}' />" />
     <paw:sectionCard icon="tune">
       <jsp:attribute name="title"><c:out value="${filtersTitleLabel}" /></jsp:attribute>
       <jsp:body>
@@ -119,7 +119,7 @@
 
           <div class="flex flex-col gap-3">
             <paw:button type="submit" color="primary" fullWidth="true" text="${filtersApplyLabel}" cssClass="js-apply-list-filters" />
-            <a href="${clearFiltersUrl}" data-clear-list-filters class="btn btn-outline btn-block no-underline">
+            <a href="<c:out value='${clearFiltersUrl}' />" data-clear-list-filters class="btn btn-outline btn-block no-underline">
               <c:out value="${filtersClearLabel}" />
             </a>
           </div>
@@ -147,19 +147,19 @@
           <select
               id="requests-${sidebarActive}-sort"
               name="sortBy"
-              form="${filterFormId}"
+              form="<c:out value='${filterFormId}' />"
               class="select select-sm w-32 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none sm:w-36"
               onchange="document.getElementById('${pageHiddenId}').value='1'; this.form.requestSubmit();">
-            <option value="newest" ${bookingSearch.sortBy == 'newest' ? 'selected="selected"' : ''}>
+            <option value="newest" <c:if test="${bookingSearch.sortBy == 'newest'}">selected="selected"</c:if>>
               <spring:message code="marketplace.sort.newest" />
             </option>
-            <option value="oldest" ${bookingSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}>
+            <option value="oldest" <c:if test="${bookingSearch.sortBy == 'oldest'}">selected="selected"</c:if>>
               <spring:message code="marketplace.sort.oldest" />
             </option>
-            <option value="start_asc" ${bookingSearch.sortBy == 'start_asc' ? 'selected="selected"' : ''}>
+            <option value="start_asc" <c:if test="${bookingSearch.sortBy == 'start_asc'}">selected="selected"</c:if>>
               <spring:message code="requests.outgoing.sort.startAsc" />
             </option>
-            <option value="start_desc" ${bookingSearch.sortBy == 'start_desc' ? 'selected="selected"' : ''}>
+            <option value="start_desc" <c:if test="${bookingSearch.sortBy == 'start_desc'}">selected="selected"</c:if>>
               <spring:message code="requests.outgoing.sort.startDesc" />
             </option>
           </select>
@@ -167,12 +167,12 @@
           <select
               id="requests-${sidebarActive}-page-size"
               name="pageSize"
-              form="${filterFormId}"
+              form="<c:out value='${filterFormId}' />"
               class="select select-sm w-20 font-bold text-primary"
               onchange="document.getElementById('${pageHiddenId}').value='1'; this.form.requestSubmit();">
-            <option value="6" ${bookingSearch.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-            <option value="12" ${bookingSearch.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-            <option value="18" ${bookingSearch.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+            <option value="6" <c:if test="${bookingSearch.pageSize == 6}">selected="selected"</c:if>>6</option>
+            <option value="12" <c:if test="${bookingSearch.pageSize == 12}">selected="selected"</c:if>>12</option>
+            <option value="18" <c:if test="${bookingSearch.pageSize == 18}">selected="selected"</c:if>>18</option>
           </select>
         </div>
       </div>
@@ -258,7 +258,7 @@
 
               <div class="flex flex-col md:flex-row w-full bg-base-100 rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden p-0">
                 <div class="relative flex flex-col md:flex-row flex-1 min-w-0 transition hover:bg-base-200">
-                  <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-l-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${b.version.title}'/>"></a>
+                  <a href="<c:out value='${itemDetailUrl}' />" class="absolute inset-0 z-0 rounded-l-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${b.version.title}'/>"></a>
 
                   <!-- Image Side -->
                   <div class="pointer-events-none relative z-0 flex w-full md:w-48 shrink-0 items-center justify-center bg-base-300 md:border-r border-outline-variant/20 p-4 h-32 md:h-auto overflow-hidden">
@@ -269,7 +269,7 @@
                         <c:url var="bookingCoverUrl" value="/image/${firstMedia.image.id}" />
                       </c:if>
                     </c:if>
-                    <img src="${bookingCoverUrl}" alt="" class="w-full h-full object-cover" loading="lazy" />
+                    <img src="<c:out value='${bookingCoverUrl}' />" alt="" class="w-full h-full object-cover" loading="lazy" />
                   </div>
 
                   <!-- Details Side -->
@@ -304,11 +304,11 @@
                           <c:choose>
                             <c:when test="${isIncoming}">
                               <c:url var="bookingPartyProfileUrl" value="/profiles/${b.guest.id}/listings" />
-                              <a href="${bookingPartyProfileUrl}" class="text-on-surface no-underline hover:underline"><c:out value="${b.guest.firstName}" /> <c:out value="${b.guest.lastName}" /></a>
+                              <a href="<c:out value='${bookingPartyProfileUrl}' />" class="text-on-surface no-underline hover:underline"><c:out value="${b.guest.firstName}" /> <c:out value="${b.guest.lastName}" /></a>
                             </c:when>
                             <c:otherwise>
                               <c:url var="bookingPartyProfileUrl" value="/profiles/${b.version.item.host.id}/listings" />
-                              <a href="${bookingPartyProfileUrl}" class="text-on-surface no-underline hover:underline"><c:out value="${b.version.item.host.firstName}" /> <c:out value="${b.version.item.host.lastName}" /></a>
+                              <a href="<c:out value='${bookingPartyProfileUrl}' />" class="text-on-surface no-underline hover:underline"><c:out value="${b.version.item.host.firstName}" /> <c:out value="${b.version.item.host.lastName}" /></a>
                             </c:otherwise>
                           </c:choose>
                         </p>
@@ -339,17 +339,17 @@
                 <!-- Actions Side -->
                 <div class="relative z-10 flex flex-col md:w-60 shrink-0 bg-base-200/50 p-4 border-t md:border-t-0 md:border-l border-outline-variant/20 gap-2 justify-center">
                   <c:if test="${isIncoming && b.status.name() == 'PENDING'}">
-                    <form action="${incomingAcceptUrl}" method="post" class="w-full">
+                    <form action="<c:out value='${incomingAcceptUrl}' />" method="post" class="w-full">
                       <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
                       <paw:button type="submit" color="primary" cssClass="w-full" size="sm" text="${actionAcceptLabel}" submitLoading="true" />
                     </form>
-                    <form action="${incomingRejectUrl}" method="post" class="w-full">
+                    <form action="<c:out value='${incomingRejectUrl}' />" method="post" class="w-full">
                       <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
                       <paw:button type="submit" color="danger" variant="outline" cssClass="w-full" size="sm" text="${actionRejectLabel}" submitLoading="true" />
                     </form>
                   </c:if>
                   <c:if test="${isIncoming && b.status.name() == 'PAID'}">
-                    <form action="${incomingConfirmPaymentUrl}" method="post" class="w-full">
+                    <form action="<c:out value='${incomingConfirmPaymentUrl}' />" method="post" class="w-full">
                       <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
                       <paw:button type="submit" color="primary" cssClass="w-full" size="sm" text="${actionConfirmPaymentLabel}" submitLoading="true" />
                     </form>
@@ -359,7 +359,7 @@
                     <!-- Reject Payment Modal -->
                     <paw:detailsModal id="${detailModalId}-reject" title="${actionRejectPaymentLabel}">
                       <jsp:body>
-                        <form action="${incomingRejectPaymentUrl}" method="post" class="space-y-4">
+                        <form action="<c:out value='${incomingRejectPaymentUrl}' />" method="post" class="space-y-4">
                           <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
                           <div class="form-control w-full">
                             <label class="label block text-[11px] font-bold uppercase tracking-wider text-outline" for="reject-pay-host-message-${b.id}"><c:out value="${hostMessageLabel}" /></label>
@@ -371,7 +371,7 @@
                     </paw:detailsModal>
                   </c:if>
                   <c:if test="${not isIncoming && (b.status.name() == 'PENDING' || b.status.name() == 'ACCEPTED' || b.status.name() == 'PAID' || b.status.name() == 'CONFIRMED' || b.status.name() == 'REFUSED')}">
-                    <form action="${outgoingCancelUrl}" method="post" class="w-full">
+                    <form action="<c:out value='${outgoingCancelUrl}' />" method="post" class="w-full">
                       <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
                       <paw:button type="submit" color="danger" variant="outline" cssClass="w-full" size="sm" text="${actionCancelLabel}" submitLoading="true" />
                     </form>
@@ -383,7 +383,7 @@
                     <!-- Submit Payment Modal -->
                     <paw:detailsModal id="${detailModalId}-pay" title="${actionSubmitPaymentLabel}">
                       <jsp:body>
-                        <form action="${outgoingPaymentUrl}" method="post" enctype="multipart/form-data" class="space-y-4" data-submit-loading-form="true" data-max-file-bytes="${maxUploadFileBytes}" data-max-file-message="${paymentFileSizeMessage}">
+                        <form action="<c:out value='${outgoingPaymentUrl}' />" method="post" enctype="multipart/form-data" class="space-y-4" data-submit-loading-form="true" data-max-file-bytes="<c:out value='${maxUploadFileBytes}' />" data-max-file-message="<c:out value='${paymentFileSizeMessage}' />">
                           <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
                           <div class="form-control w-full space-y-1">
                             <p class="block text-[11px] font-bold uppercase tracking-wider text-outline mb-1"><spring:message code="requests.payment.uploadLabel" /></p>
@@ -489,12 +489,12 @@
                           <c:choose>
                             <c:when test="${fn:startsWith(b.paymentProof.contentType, 'image/')}">
                               <div class="overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
-                                <img src="${paymentProofUrl}" alt="<spring:message code='requests.paymentProof.view' />" class="max-h-[60vh] w-full object-contain" loading="lazy" />
+                                <img src="<c:out value='${paymentProofUrl}' />" alt="<spring:message code='requests.paymentProof.view' />" class="max-h-[60vh] w-full object-contain" loading="lazy" />
                               </div>
                             </c:when>
                             <c:otherwise>
                               <div class="overflow-hidden rounded-lg border border-outline-variant/20 bg-base-200/40">
-                                <iframe src="${paymentProofUrl}#toolbar=0" class="h-[60vh] w-full border-0"></iframe>
+                                <iframe src="<c:out value='${paymentProofUrl}' />#toolbar=0" class="h-[60vh] w-full border-0"></iframe>
                               </div>
                             </c:otherwise>
                           </c:choose>
@@ -594,7 +594,7 @@
                   <c:otherwise><spring:message code="requests.outgoing.empty" /></c:otherwise>
                 </c:choose>
               </p>
-              <a href="${clearFiltersUrl}" data-clear-list-filters class="btn btn-primary btn-sm no-underline">
+              <a href="<c:out value='${clearFiltersUrl}' />" data-clear-list-filters class="btn btn-primary btn-sm no-underline">
                 <spring:message code="marketplace.filters.clear" />
               </a>
             </div>

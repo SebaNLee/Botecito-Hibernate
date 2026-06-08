@@ -388,7 +388,9 @@
   function initStep2(root) {
     var draft = readDraft();
     if (!draft || !draft.title) {
-      window.location.assign(root.dataset.publishUrl || "/publish");
+      if (root.dataset.publishUrl) {
+        window.location.assign(root.dataset.publishUrl);
+      }
       return;
     }
 
@@ -438,7 +440,9 @@
       !draft.availability.ranges ||
       !draft.availability.ranges.length
     ) {
-      window.location.assign(root.dataset.availabilityUrl || "/publish/availability");
+      if (root.dataset.availabilityUrl) {
+        window.location.assign(root.dataset.availabilityUrl);
+      }
       return;
     }
 

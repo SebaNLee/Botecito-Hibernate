@@ -7,7 +7,7 @@
 
 <c:set var="modalLayout" value="${empty layout ? 'single' : layout}" />
 
-<dialog id="${id}" class="modal">
+<dialog id="<c:out value='${id}' />" class="modal">
   <c:choose>
     <c:when test="${modalLayout == 'split'}">
       <div class="modal-box w-full max-w-5xl max-h-[90vh] overflow-y-auto">

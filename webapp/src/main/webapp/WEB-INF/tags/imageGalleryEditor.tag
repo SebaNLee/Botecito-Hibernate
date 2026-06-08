@@ -9,9 +9,18 @@
 
 <c:set var="imageCount" value="${empty imageUrls ? 0 : fn:length(imageUrls)}" />
 <c:set var="canAddMore" value="${imageCount < maxImages}" />
-<c:set var="gaBgTint" value="${hostAccent ne null and hostAccent ? 'bg-secondary/10' : 'bg-primary/10'}" />
-<c:set var="gaTextTint" value="${hostAccent ne null and hostAccent ? 'text-secondary' : 'text-primary'}" />
-<c:set var="gaBadgeClass" value="${hostAccent ne null and hostAccent ? 'badge badge-secondary badge-sm font-bold' : 'badge badge-primary badge-sm font-bold'}" />
+<c:choose>
+  <c:when test="${hostAccent ne null and hostAccent}">
+    <c:set var="gaBgTint" value="bg-secondary/10" />
+    <c:set var="gaTextTint" value="text-secondary" />
+    <c:set var="gaBadgeClass" value="badge badge-secondary badge-sm font-bold" />
+  </c:when>
+  <c:otherwise>
+    <c:set var="gaBgTint" value="bg-primary/10" />
+    <c:set var="gaTextTint" value="text-primary" />
+    <c:set var="gaBadgeClass" value="badge badge-primary badge-sm font-bold" />
+  </c:otherwise>
+</c:choose>
 <spring:message code="gallery.add.label" var="galleryAddLabel" />
 <spring:message code="gallery.add.helper" arguments="${maxImages}" var="galleryAddHelper" />
 <spring:message code="gallery.full" var="galleryFullLabel" />
@@ -26,12 +35,12 @@
 
 <div class="space-y-4"
      data-image-gallery
-     data-max-images="${maxImages}"
-     data-max-file-bytes="${maxUploadFileBytes}"
+     data-max-images="<c:out value='${maxImages}' />"
+     data-max-file-bytes="<c:out value='${maxUploadFileBytes}' />"
      data-max-file-message="<c:out value='${galleryFileSizeMessage}' />"
      data-gallery-count-template="<c:out value='${galleryCountMessageTemplate}' />"
      data-gallery-cover-badge="<c:out value='${galleryCoverBadge}' />"
-     data-gallery-badge-class="${gaBadgeClass}"
+     data-gallery-badge-class="<c:out value='${gaBadgeClass}' />"
      data-gallery-remove-label="<c:out value='${galleryRemoveLabel}' />"
      data-gallery-move-left-label="<c:out value='${galleryMoveLeftLabel}' />"
      data-gallery-move-right-label="<c:out value='${galleryMoveRightLabel}' />">
@@ -57,10 +66,10 @@
                multiple
                class="hidden"
                data-gallery-file-input />
-        <div class="w-12 h-12 ${gaBgTint} ${gaTextTint} rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+        <div class="w-12 h-12 <c:out value='${gaBgTint}' /> <c:out value='${gaTextTint}' /> rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
           <span class="material-symbols-outlined text-2xl">add_photo_alternate</span>
         </div>
-        <span class="font-bold text-base ${gaTextTint}"><c:out value="${galleryAddLabel}" /></span>
+        <span class="font-bold text-base <c:out value='${gaTextTint}' />"><c:out value="${galleryAddLabel}" /></span>
         <span class="text-xs text-outline mt-1"><c:out value="${galleryAddHelper}" /></span>
       </label>
     </c:when>

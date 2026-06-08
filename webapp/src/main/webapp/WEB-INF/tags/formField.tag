@@ -16,11 +16,21 @@
 
 <c:set var="isReadonly" value="${readonly ne null and readonly}" />
 <c:set var="inputType" value="${not empty type ? type : 'text'}" />
-<c:set var="inputCssClass" value="input w-full ${isReadonly ? 'cursor-default bg-base-200/30' : ''} ${not empty cssClass ? cssClass : ''}" />
+<c:choose>
+  <c:when test="${isReadonly}">
+    <c:set var="inputReadonlyClass" value="cursor-default bg-base-200/30" />
+  </c:when>
+  <c:otherwise>
+    <c:set var="inputReadonlyClass" value="" />
+  </c:otherwise>
+</c:choose>
+<c:set var="inputExtraCssClass" value="${not empty cssClass ? cssClass : ''}" />
+<c:set var="inputCssClass" value="input w-full ${inputReadonlyClass} ${inputExtraCssClass}" />
 <c:set var="inputErrorCssClass" value="${inputCssClass} input-error" />
-<c:set var="fieldContainerClass" value="fieldset ${not empty containerClass ? containerClass : ''}" />
+<c:set var="fieldExtraContainerClass" value="${not empty containerClass ? containerClass : ''}" />
+<c:set var="fieldContainerClass" value="fieldset ${fieldExtraContainerClass}" />
 
-<fieldset class="${fieldContainerClass}">
+<fieldset class="<c:out value='${fieldContainerClass}' />">
   <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
     <c:out value="${label}" />
     <c:if test="${required ne null and required}"><span class="text-error" aria-hidden="true">*</span></c:if>

@@ -69,8 +69,8 @@
             name="sortBy"
             class="select select-sm font-bold text-primary"
             onchange="this.form.requestSubmit()">
-          <option value="newest" ${adminReportsSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><c:out value="${sortNewestLabel}" /></option>
-          <option value="oldest" ${adminReportsSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><c:out value="${sortOldestLabel}" /></option>
+          <option value="newest" <c:if test="${adminReportsSearch.sortBy == 'newest'}">selected="selected"</c:if>><c:out value="${sortNewestLabel}" /></option>
+          <option value="oldest" <c:if test="${adminReportsSearch.sortBy == 'oldest'}">selected="selected"</c:if>><c:out value="${sortOldestLabel}" /></option>
         </select>
         <label for="admin-reports-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
         <select
@@ -78,9 +78,9 @@
             name="pageSize"
             class="select select-sm w-20 font-bold text-primary"
             onchange="this.form.requestSubmit()">
-          <option value="6" ${adminReportsSearch.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-          <option value="12" ${adminReportsSearch.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-          <option value="18" ${adminReportsSearch.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+          <option value="6" <c:if test="${adminReportsSearch.pageSize == 6}">selected="selected"</c:if>>6</option>
+          <option value="12" <c:if test="${adminReportsSearch.pageSize == 12}">selected="selected"</c:if>>12</option>
+          <option value="18" <c:if test="${adminReportsSearch.pageSize == 18}">selected="selected"</c:if>>18</option>
         </select>
       </form>
     </div>
@@ -98,7 +98,7 @@
                   <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><spring:message code="admin.reports.filter.empty.title" /></h2>
                   <p class="m-0 mt-2 text-on-surface-variant"><spring:message code="admin.reports.filter.empty.message" /></p>
                 </div>
-                <a href="${clearReportsFiltersUrl}" class="btn btn-primary no-underline" data-clear-list-filters>
+                <a href="<c:out value='${clearReportsFiltersUrl}' />" class="btn btn-primary no-underline" data-clear-list-filters>
                   <spring:message code="marketplace.empty.clear" />
                 </a>
               </div>
@@ -150,8 +150,15 @@
                   </td>
                   <td class="text-sm">
                     <c:url var="itemDetailUrl" value="/item/${report.item.id}" />
-                    <a href="${itemDetailUrl}" class="link link-primary font-semibold no-underline break-words">
-                      <c:out value="${not empty report.item.latestVersion.title ? report.item.latestVersion.title : report.item.id}" />
+                    <a href="<c:out value='${itemDetailUrl}' />" class="link link-primary font-semibold no-underline break-words">
+                      <c:choose>
+                        <c:when test="${not empty report.item.latestVersion.title}">
+                          <c:out value="${report.item.latestVersion.title}" />
+                        </c:when>
+                        <c:otherwise>
+                          <c:out value="${report.item.id}" />
+                        </c:otherwise>
+                      </c:choose>
                     </a>
                   </td>
                   <td class="text-sm break-words">

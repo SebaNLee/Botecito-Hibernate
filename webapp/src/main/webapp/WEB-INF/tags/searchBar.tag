@@ -11,6 +11,9 @@
 <%@ attribute name="cssClass" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+
+<spring:message code="searchBar.clear" var="clearLabel" />
 
 <c:set var="resolvedName" value="${not empty name ? name : 'searchQuery'}" />
 <c:set var="resolvedValue" value="${not empty value ? value : ''}" />
@@ -20,7 +23,7 @@
 <c:set var="resolvedCssClass" value="${not empty cssClass ? cssClass : ''}" />
 <c:set var="submitAriaLabel" value="${not empty resolvedAriaLabel ? resolvedAriaLabel : 'Search'}" />
 
-<label class="input ${inputSizeClass} flex w-full items-center gap-3 rounded-full bg-base-100 shadow-sm pr-1.5 ${resolvedCssClass}">
+<label class="input <c:out value='${inputSizeClass}'/> flex w-full items-center gap-3 rounded-full bg-base-100 shadow-sm pr-1.5 <c:out value='${resolvedCssClass}'/>" data-search-bar>
   <span class="material-symbols-outlined text-outline" aria-hidden="true">search</span>
   <input type="search"
     name="<c:out value='${resolvedName}'/>"
@@ -29,9 +32,16 @@
     <c:if test="${not empty placeholder}">placeholder="<c:out value='${placeholder}'/>"</c:if>
     <c:if test="${not empty resolvedAriaLabel}">aria-label="<c:out value='${resolvedAriaLabel}'/>"</c:if>
     <c:if test="${not empty inputId}">id="<c:out value='${inputId}'/>"</c:if>
-    <c:if test="${not empty maxlength}">maxlength="${maxlength}"</c:if>
+    <c:if test="${not empty maxlength}">maxlength="<c:out value='${maxlength}'/>"</c:if>
     ${extraAttributes}
     class="min-w-0 grow border-none bg-transparent p-0 text-on-surface placeholder:text-outline outline-none focus:outline-none focus-visible:outline-none focus:ring-0" />
+  <button
+    type="button"
+    class="btn btn-ghost btn-xs btn-circle shrink-0 text-outline opacity-0 pointer-events-none"
+    aria-label="<c:out value='${clearLabel}'/>"
+    data-search-clear>
+    <span class="material-symbols-outlined text-base">close</span>
+  </button>
   <button type="submit" form="<c:out value='${formId}'/>" class="btn btn-primary btn-sm btn-circle shrink-0" aria-label="<c:out value='${submitAriaLabel}'/>">
     <span class="material-symbols-outlined">search</span>
   </button>

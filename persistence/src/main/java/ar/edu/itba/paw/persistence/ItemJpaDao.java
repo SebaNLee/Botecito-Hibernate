@@ -224,18 +224,41 @@ public class ItemJpaDao implements ItemDao {
         return Optional.ofNullable(em.find(Version.class, versionId));
     }
 
+    /**
+     * Elimina disponibilidades e imágenes de una versión.
+     *
+     * <p>Se borra entidad por entidad con {@code em.remove()} en lugar de un {@code DELETE} JPQL
+     * masivo porque, en el flujo de edición, las colecciones ya pueden estar cargadas en el
+     * persistence context de Hibernate (p. ej. vía {@code requireOwnedFullData}). Un borrado masivo
+     * elimina las filas en la base pero deja instancias administradas en la sesión; al reinsertar
+     * {@code Media} con la misma clave compuesta {@code (version_id, index)} se produce
+     * {@code EntityExistsException}.
+     *
+     * <p>Peor caso: pocas entidades por versión (galería acotada a 3 imágenes y ventanas de
+     * disponibilidad limitadas), por lo que el costo extra de N {@code remove()} es despreciable
+     * frente a la corrección del estado de la sesión.
+     */
     @Override
     public void removeVersionChildren(final Version version) {
-        em.createQuery("DELETE FROM Availability a WHERE a.version.id = :vid")
-                .setParameter("vid", version.getId())
-                .executeUpdate();
+        final int versionId = version.getId();
+
+        final List<Availability> availabilities = em.createQuery(
+                        "SELECT a FROM Availability a WHERE a.version.id = :vid", Availability.class)
+                .setParameter("vid", versionId)
+                .getResultList();
+        for (final Availability availability : availabilities) {
+            em.remove(availability);
+        }
         if (version.getAvailabilities() != null) {
             version.getAvailabilities().clear();
         }
 
-        em.createQuery("DELETE FROM Media m WHERE m.version.id = :vid")
-                .setParameter("vid", version.getId())
-                .executeUpdate();
+        final List<Media> media = em.createQuery("SELECT m FROM Media m WHERE m.version.id = :vid", Media.class)
+                .setParameter("vid", versionId)
+                .getResultList();
+        for (final Media medium : media) {
+            em.remove(medium);
+        }
         if (version.getMedia() != null) {
             version.getMedia().clear();
         }

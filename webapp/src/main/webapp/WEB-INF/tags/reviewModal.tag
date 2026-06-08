@@ -38,17 +38,17 @@
     <paw:detailsModal id="${modalId}" title="${reviewLeaveLabel}">
       <jsp:body>
         <c:url var="reviewPostUrl" value="/requests/${listMode}/${bookingId}/review" />
-        <form action="${reviewPostUrl}" method="post" class="space-y-4">
+        <form action="<c:out value='${reviewPostUrl}' />" method="post" class="space-y-4">
           <paw:bookingSearchHiddenFields bookingSearch="${bookingSearch}" />
           <c:if test="${not empty targetType}">
-            <input type="hidden" name="targetType" value="${targetType}" />
+            <input type="hidden" name="targetType" value="<c:out value='${targetType}' />" />
           </c:if>
           <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
             <label class="text-xs font-bold uppercase tracking-wider text-outline" for="review-rating-${bookingId}"><c:out value="${reviewRatingLabel}" /></label>
             <div class="flex items-center gap-1" data-rating-stars>
               <input id="review-rating-${bookingId}" type="hidden" name="rating" value="" data-rating-value />
               <c:forEach var="starIndex" begin="1" end="5">
-                <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${reviewRatingLabel} ${starIndex}">
+                <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="<c:out value='${starIndex}' />" aria-label="<c:out value='${reviewRatingLabel} ${starIndex}' />">
                   <span class="material-symbols-outlined text-xl leading-none icon-star-outline">star</span>
                 </button>
               </c:forEach>

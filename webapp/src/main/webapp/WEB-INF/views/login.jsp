@@ -57,7 +57,7 @@
           <paw:alertMessage type="warning"><spring:message code="login.sessionExpired" /></paw:alertMessage>
         </c:if>
 
-        <form action="${loginUrl}" method="post" class="space-y-4">
+        <form action="<c:out value='${loginUrl}' />" method="post" class="space-y-4">
           <fieldset class="fieldset">
             <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant" for="j_username">
               <c:out value="${emailLabel}" />
@@ -95,14 +95,14 @@
         </form>
 
         <div class="text-center">
-          <a href="${passwordRecoveryUrl}" class="link link-hover text-sm text-primary font-semibold no-underline">
+          <a href="<c:out value='${passwordRecoveryUrl}' />" class="link link-hover text-sm text-primary font-semibold no-underline">
             <spring:message code="login.forgotPassword" />
           </a>
         </div>
 
         <p class="text-center text-sm text-on-surface-variant m-0">
           <spring:message code="login.noAccount" />
-          <a href="${registerUrl}" class="link link-hover text-primary font-semibold ml-1 no-underline">
+          <a href="<c:out value='${registerUrl}' />" class="link link-hover text-primary font-semibold ml-1 no-underline">
             <spring:message code="login.signUpLink" />
           </a>
         </p>

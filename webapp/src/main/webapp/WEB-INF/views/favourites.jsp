@@ -60,7 +60,7 @@
       </div>
     </div>
 
-    <form id="favourites-filters-form" action="${favouritesUrl}" method="get" class="w-full">
+    <form id="favourites-filters-form" action="<c:out value='${favouritesUrl}' />" method="get" class="w-full">
       <input type="hidden" name="page" value="1" />
       <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-4">
         <div class="min-w-0 w-full flex-1">
@@ -81,14 +81,14 @@
               name="sortBy"
               class="select select-sm w-32 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none sm:w-36"
               onchange="this.form.requestSubmit()">
-            <option value="newest" ${favouritesSearch.sortBy == 'newest' ? 'selected="selected"' : ''}>
+            <option value="newest" <c:if test="${favouritesSearch.sortBy == 'newest'}">selected="selected"</c:if>>
               <spring:message code="marketplace.sort.newest" />
             </option>
-            <option value="oldest" ${favouritesSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}>
+            <option value="oldest" <c:if test="${favouritesSearch.sortBy == 'oldest'}">selected="selected"</c:if>>
               <spring:message code="marketplace.sort.oldest" />
             </option>
-            <option value="nameAsc" ${favouritesSearch.sortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
-            <option value="nameDesc" ${favouritesSearch.sortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
+            <option value="nameAsc" <c:if test="${favouritesSearch.sortBy == 'nameAsc'}">selected="selected"</c:if>><c:out value="${sortNameAscLabel}" /></option>
+            <option value="nameDesc" <c:if test="${favouritesSearch.sortBy == 'nameDesc'}">selected="selected"</c:if>><c:out value="${sortNameDescLabel}" /></option>
           </select>
           <label for="favourites-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
           <select
@@ -96,9 +96,9 @@
               name="pageSize"
               class="select select-sm w-20 font-bold text-primary"
               onchange="this.form.requestSubmit()">
-            <option value="6" ${favouritesSearch.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-            <option value="12" ${favouritesSearch.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-            <option value="18" ${favouritesSearch.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+            <option value="6" <c:if test="${favouritesSearch.pageSize == 6}">selected="selected"</c:if>>6</option>
+            <option value="12" <c:if test="${favouritesSearch.pageSize == 12}">selected="selected"</c:if>>12</option>
+            <option value="18" <c:if test="${favouritesSearch.pageSize == 18}">selected="selected"</c:if>>18</option>
           </select>
         </div>
       </div>
@@ -122,7 +122,7 @@
               </c:otherwise>
             </c:choose>
           </div>
-          <a href="${clearFiltersUrl}" data-clear-list-filters class="btn btn-primary btn-sm no-underline">
+          <a href="<c:out value='${clearFiltersUrl}' />" data-clear-list-filters class="btn btn-primary btn-sm no-underline">
             <c:out value="${filtersClearLabel}" />
           </a>
         </div>

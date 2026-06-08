@@ -1,7 +1,6 @@
 package ar.edu.itba.paw.webapp.config;
 
 import ar.edu.itba.paw.services.UserService;
-import ar.edu.itba.paw.webapp.filter.MultipartUploadLimitFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -207,11 +206,6 @@ public class WebConfig implements WebMvcConfigurer {
     @Bean
     public org.springframework.web.multipart.support.StandardServletMultipartResolver multipartResolver() {
         return new org.springframework.web.multipart.support.StandardServletMultipartResolver();
-    }
-
-    @Bean(name = "multipartUploadLimitFilter")
-    public MultipartUploadLimitFilter multipartUploadLimitFilter() {
-        return new MultipartUploadLimitFilter();
     }
 
     @Bean(name = "mailTaskExecutor")

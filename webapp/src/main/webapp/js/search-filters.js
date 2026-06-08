@@ -436,7 +436,10 @@
     writeStoredState(DRAFT_FILTERS_KEY, snapshot);
     writeStoredState(APPLIED_FILTERS_KEY, snapshot);
     reflectAppliedState(snapshot);
-    const action = toolbarForm.getAttribute("action") || "/marketplace";
+    const action = toolbarForm.getAttribute("action");
+    if (!action) {
+      return;
+    }
     const merged = new URL(
       buildUrlWithFilters(action, snapshot),
       window.location.origin,
@@ -566,7 +569,10 @@
   }
 
   function fetchSelectableOptions(url, slugMode) {
-    const resolved = (url || "/location-options").trim() || "/location-options";
+    const resolved = (url || "").trim();
+    if (!resolved) {
+      return Promise.resolve([]);
+    }
     const baseKey = new URL(resolved, window.location.origin).href;
     const cacheKey = baseKey + (slugMode ? "#slug" : "#id");
     if (!selectableOptionsByUrl.has(cacheKey)) {
@@ -714,14 +720,13 @@
       const slugMode =
         this.hiddenInput.name === "location" ||
         this.hiddenInput.name === "itemType";
-      fetchSelectableOptions(
-        this.root.dataset.optionsUrl || "/location-options",
-        slugMode,
-      ).then((options) => {
-        this.options = options;
-        this.setSelectedValue(this.hiddenInput.value);
-        this.render();
-      });
+      fetchSelectableOptions(this.root.dataset.optionsUrl, slugMode).then(
+        (options) => {
+          this.options = options;
+          this.setSelectedValue(this.hiddenInput.value);
+          this.render();
+        },
+      );
     }
 
     getFilteredOptions() {
@@ -1267,7 +1272,10 @@
   }
 
   function buildMarketplaceClearHref(control) {
-    const href = control?.getAttribute("href") || "/marketplace";
+    const href = control?.getAttribute("href");
+    if (!href) {
+      return "";
+    }
     const url = new URL(href, window.location.origin);
     FILTER_KEYS.forEach((key) => url.searchParams.delete(key));
     url.searchParams.delete("page");
@@ -1322,7 +1330,10 @@
       const nextState = readFilterStateFromForm(form);
       writeStoredState(DRAFT_FILTERS_KEY, nextState);
       writeStoredState(APPLIED_FILTERS_KEY, nextState);
-      const action = form.getAttribute("action") || "/marketplace";
+      const action = form.getAttribute("action");
+      if (!action) {
+        return;
+      }
       window.location.assign(buildUrlWithFilters(action, nextState));
     });
   }
@@ -1358,7 +1369,10 @@
       return;
     }
 
-    const baseHref = backLink.getAttribute("href") || "/marketplace";
+    const baseHref = backLink.getAttribute("href");
+    if (!baseHref) {
+      return;
+    }
     backLink.setAttribute("href", buildUrlWithFilters(baseHref, state));
   }
 
@@ -1416,7 +1430,10 @@
       writeStoredState(DRAFT_FILTERS_KEY, nextState);
       writeStoredState(APPLIED_FILTERS_KEY, nextState);
       reflectAppliedState(nextState);
-      const action = form.getAttribute("action") || "/marketplace";
+      const action = form.getAttribute("action");
+      if (!action) {
+        return;
+      }
       const merged = new URL(
         buildUrlWithFilters(action, nextState),
         window.location.origin,

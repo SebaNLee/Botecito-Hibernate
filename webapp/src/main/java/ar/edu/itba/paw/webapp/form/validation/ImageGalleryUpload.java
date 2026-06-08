@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.form.validation;
 
+import ar.edu.itba.paw.webapp.util.UploadLimits;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -18,7 +19,7 @@ public @interface ImageGalleryUpload {
 
     Class<? extends Payload>[] payload() default {};
 
-    long maxBytesPerFile() default 5_242_880L;
+    long maxBytesPerFile() default UploadLimits.MAX_FILE_BYTES;
 
     int maxFiles() default 10;
 

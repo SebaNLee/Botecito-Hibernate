@@ -4,9 +4,11 @@
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
+<c:url var="myBoatsUrl" value="/my-boats" />
 <c:url var="editAvailabilityUrl" value="/edit/${itemId}/availability" />
 <c:url var="editImagesUrl" value="/edit/${itemId}/images" />
 <spring:message code="editPublication.actions.save" var="editSubmitLabel" />
+<spring:message code="publish.validation.images.size" var="galleryFileSizeMessage" />
 <spring:message code="publish.back.imagesLost" var="publishBackImagesLostMsg" />
 <spring:bind path="publishForm.files">
   <c:set var="filesError" value="${status.errorMessage}" />
@@ -19,18 +21,20 @@
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"
   headerCtaVariant="rent"
-  scripts="edit-wizard,form-submit"
+  scripts="toast,edit-wizard,form-submit"
 >
+  <paw:toastNotifier />
   <div
     data-edit-wizard-root="step3"
-    data-edit-availability-url="${editAvailabilityUrl}"
-    data-item-id="${itemId}"
-    data-images-lost-message="${publishBackImagesLostMsg}"
+    data-edit-availability-url="<c:out value='${editAvailabilityUrl}' />"
+    data-my-boats-url="<c:out value='${myBoatsUrl}' />"
+    data-item-id="<c:out value='${itemId}' />"
+    data-images-lost-message="<c:out value='${publishBackImagesLostMsg}' />"
     class="w-full"
   >
     <div class="mb-8">
       <a
-        href="${editAvailabilityUrl}"
+        href="<c:out value='${editAvailabilityUrl}' />"
         data-edit-wizard-back
         class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit"
       >
@@ -82,6 +86,8 @@
       enctype="multipart/form-data"
       class="space-y-8"
       data-submit-loading-form="true"
+      data-max-file-bytes="<c:out value='${maxUploadFileBytes}' />"
+      data-max-file-message="<c:out value='${galleryFileSizeMessage}' />"
     >
       <div data-edit-wizard-hidden-fields></div>
       <input type="hidden" name="galleryOrder" value="" data-edit-gallery-order-input />

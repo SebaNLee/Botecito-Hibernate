@@ -71,7 +71,7 @@
           <div class="flex min-w-0 items-center gap-4">
             <div class="avatar placeholder shrink-0">
               <div class="bg-primary text-primary-content rounded-full w-16 h-16 flex items-center justify-center">
-                <span class="font-bold text-2xl font-headline">${initials}</span>
+                <span class="font-bold text-2xl font-headline"><c:out value="${initials}" /></span>
               </div>
             </div>
             <div class="min-w-0">
@@ -136,7 +136,7 @@
                 <c:choose>
                   <c:when test="${activeTab == 'reviews'}">
                     <c:url var="unsubscribeProfileUrl" value="/profiles/${user.id}/reviews/unsubscribe" />
-                    <form action="${unsubscribeProfileUrl}" method="post" class="m-0">
+                    <form action="<c:out value='${unsubscribeProfileUrl}' />" method="post" class="m-0">
                       <paw:profileReviewsHiddenFields view="${profileReviewsView}" />
                       <paw:button type="submit" color="outline" icon="notifications_off"
                                   text="${subscriptionUnsubscribeLabel}" cssClass="w-full sm:w-auto" />
@@ -144,7 +144,7 @@
                   </c:when>
                   <c:otherwise>
                     <c:url var="unsubscribeProfileUrl" value="/profiles/${user.id}/listings/unsubscribe" />
-                    <form action="${unsubscribeProfileUrl}" method="post" class="m-0">
+                    <form action="<c:out value='${unsubscribeProfileUrl}' />" method="post" class="m-0">
                       <paw:profileListingsHiddenFields view="${profileListingsView}" />
                       <paw:button type="submit" color="outline" icon="notifications_off"
                                   text="${subscriptionUnsubscribeLabel}" cssClass="w-full sm:w-auto" />
@@ -156,7 +156,7 @@
                 <c:choose>
                   <c:when test="${activeTab == 'reviews'}">
                     <c:url var="subscribeProfileUrl" value="/profiles/${user.id}/reviews/subscribe" />
-                    <form action="${subscribeProfileUrl}" method="post" class="m-0">
+                    <form action="<c:out value='${subscribeProfileUrl}' />" method="post" class="m-0">
                       <paw:profileReviewsHiddenFields view="${profileReviewsView}" />
                       <paw:button type="submit" color="secondary" icon="notifications"
                                   text="${subscriptionSubscribeLabel}" cssClass="w-full sm:w-auto" />
@@ -164,7 +164,7 @@
                   </c:when>
                   <c:otherwise>
                     <c:url var="subscribeProfileUrl" value="/profiles/${user.id}/listings/subscribe" />
-                    <form action="${subscribeProfileUrl}" method="post" class="m-0">
+                    <form action="<c:out value='${subscribeProfileUrl}' />" method="post" class="m-0">
                       <paw:profileListingsHiddenFields view="${profileListingsView}" />
                       <paw:button type="submit" color="secondary" icon="notifications"
                                   text="${subscriptionSubscribeLabel}" cssClass="w-full sm:w-auto" />
@@ -183,16 +183,30 @@
       <div class="card-body p-0">
 
         <%-- Tab bar --%>
+        <c:choose>
+          <c:when test="${activeTab == 'listings'}">
+            <c:set var="listingsTabClass" value="border-primary text-primary" />
+          </c:when>
+          <c:otherwise>
+            <c:set var="listingsTabClass" value="border-transparent text-on-surface-variant hover:text-on-surface" />
+          </c:otherwise>
+        </c:choose>
+        <c:choose>
+          <c:when test="${activeTab == 'reviews'}">
+            <c:set var="reviewsTabClass" value="border-primary text-primary" />
+          </c:when>
+          <c:otherwise>
+            <c:set var="reviewsTabClass" value="border-transparent text-on-surface-variant hover:text-on-surface" />
+          </c:otherwise>
+        </c:choose>
         <div role="tablist" class="flex border-b border-outline-variant/20 px-2 pt-2">
-          <a role="tab" href="${listingsTabUrl}"
-             class="shrink-0 flex items-center justify-center gap-2 whitespace-nowrap px-6 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors
-                    ${activeTab == 'listings' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'}">
+          <a role="tab" href="<c:out value='${listingsTabUrl}' />"
+             class="shrink-0 flex items-center justify-center gap-2 whitespace-nowrap px-6 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors <c:out value='${listingsTabClass}' />">
             <span class="material-symbols-outlined text-base shrink-0">directions_boat</span>
             <c:out value="${listingsTabLabel}" />
           </a>
-          <a role="tab" href="${reviewsTabUrl}"
-             class="shrink-0 flex items-center justify-center gap-2 whitespace-nowrap px-6 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors
-                    ${activeTab == 'reviews' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'}">
+          <a role="tab" href="<c:out value='${reviewsTabUrl}' />"
+             class="shrink-0 flex items-center justify-center gap-2 whitespace-nowrap px-6 py-3 text-sm font-bold no-underline border-b-2 -mb-px transition-colors <c:out value='${reviewsTabClass}' />">
             <span class="material-symbols-outlined text-base shrink-0">star</span>
             <c:out value="${reviewsTabLabel}" />
           </a>
@@ -213,7 +227,7 @@
                   </c:otherwise>
                 </c:choose>
               </p>
-              <form id="profile-listings-filters-form" action="${profileListingsUrl}" method="get" class="mb-6 w-full">
+              <form id="profile-listings-filters-form" action="<c:out value='${profileListingsUrl}' />" method="get" class="mb-6 w-full">
                 <input type="hidden" name="page" value="1" />
                 <div class="flex shrink-0 flex-wrap items-center justify-end gap-2 text-sm font-medium text-on-surface-variant">
                   <label for="profile-listings-sort" class="shrink-0 whitespace-nowrap"><c:out value="${sortLabel}" /></label>
@@ -222,14 +236,14 @@
                       name="sortBy"
                       class="select select-sm w-32 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none sm:w-36"
                       onchange="this.form.requestSubmit()">
-                    <option value="newest" ${profileListingsView.sortBy == 'newest' ? 'selected="selected"' : ''}>
+                    <option value="newest" <c:if test="${profileListingsView.sortBy == 'newest'}">selected="selected"</c:if>>
                       <spring:message code="marketplace.sort.newest" />
                     </option>
-                    <option value="oldest" ${profileListingsView.sortBy == 'oldest' ? 'selected="selected"' : ''}>
+                    <option value="oldest" <c:if test="${profileListingsView.sortBy == 'oldest'}">selected="selected"</c:if>>
                       <spring:message code="marketplace.sort.oldest" />
                     </option>
-                    <option value="nameAsc" ${profileListingsView.sortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
-                    <option value="nameDesc" ${profileListingsView.sortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
+                    <option value="nameAsc" <c:if test="${profileListingsView.sortBy == 'nameAsc'}">selected="selected"</c:if>><c:out value="${sortNameAscLabel}" /></option>
+                    <option value="nameDesc" <c:if test="${profileListingsView.sortBy == 'nameDesc'}">selected="selected"</c:if>><c:out value="${sortNameDescLabel}" /></option>
                   </select>
                   <label for="profile-listings-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
                   <select
@@ -237,9 +251,9 @@
                       name="pageSize"
                       class="select select-sm w-20 font-bold text-primary"
                       onchange="this.form.requestSubmit()">
-                    <option value="6" ${profileListingsView.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-                    <option value="12" ${profileListingsView.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-                    <option value="18" ${profileListingsView.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+                    <option value="6" <c:if test="${profileListingsView.pageSize == 6}">selected="selected"</c:if>>6</option>
+                    <option value="12" <c:if test="${profileListingsView.pageSize == 12}">selected="selected"</c:if>>12</option>
+                    <option value="18" <c:if test="${profileListingsView.pageSize == 18}">selected="selected"</c:if>>18</option>
                   </select>
                 </div>
               </form>
@@ -257,7 +271,7 @@
                             <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><c:out value="${listingsFilterEmptyTitleLabel}" /></h2>
                             <p class="m-0 mt-2 text-on-surface-variant"><c:out value="${listingsFilterEmptyMessageLabel}" /></p>
                           </div>
-                          <a href="${clearProfileListingsFiltersUrl}" class="btn btn-primary no-underline" data-clear-list-filters>
+                          <a href="<c:out value='${clearProfileListingsFiltersUrl}' />" class="btn btn-primary no-underline" data-clear-list-filters>
                             <c:out value="${filterEmptyClearLabel}" />
                           </a>
                         </div>
@@ -323,7 +337,7 @@
                             <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><c:out value="${reviewsFilterEmptyTitleLabel}" /></h2>
                             <p class="m-0 mt-2 text-on-surface-variant"><c:out value="${reviewsFilterEmptyMessageLabel}" /></p>
                           </div>
-                          <a href="${reviewsTabUrl}" class="btn btn-primary no-underline" data-clear-list-filters>
+                          <a href="<c:out value='${reviewsTabUrl}' />" class="btn btn-primary no-underline" data-clear-list-filters>
                             <c:out value="${filterEmptyClearLabel}" />
                           </a>
                         </div>

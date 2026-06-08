@@ -19,8 +19,8 @@
 
   <input
       type="hidden"
-      id="${id}"
-      name="${name}"
+      id="<c:out value='${id}'/>"
+      name="<c:out value='${name}'/>"
       value="<c:out value='${resolvedValue}'/>"
       data-min-rating-value-input />
 
@@ -35,19 +35,19 @@
         <span class="relative inline-flex h-9 w-9 shrink-0 items-center justify-center">
           <span
               class="pointer-events-none material-symbols-outlined text-3xl leading-none icon-star-outline transition-colors duration-150"
-              data-min-rating-icon="${star}">star</span>
+              data-min-rating-icon="<c:out value='${star}'/>">star</span>
           <button
               type="button"
               tabindex="-1"
               class="absolute inset-y-0 left-0 z-10 w-1/2 cursor-pointer rounded-l-md border-0 bg-transparent p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              data-min-rating-step="${leftStep}"
-              title="${leftStep}"></button>
+              data-min-rating-step="<c:out value='${leftStep}'/>"
+              title="<c:out value='${leftStep}'/>"></button>
           <button
               type="button"
               tabindex="-1"
               class="absolute inset-y-0 right-0 z-10 w-1/2 cursor-pointer rounded-r-md border-0 bg-transparent p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              data-min-rating-step="${star}"
-              title="${star}"></button>
+              data-min-rating-step="<c:out value='${star}'/>"
+              title="<c:out value='${star}'/>"></button>
         </span>
       </c:forEach>
     </div>

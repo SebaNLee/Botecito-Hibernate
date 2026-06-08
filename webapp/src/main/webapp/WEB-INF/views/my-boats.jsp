@@ -80,14 +80,14 @@
             </c:choose>
           </p>
         </div>
-        <a href="${publishUrl}" class="btn btn-secondary shrink-0 no-underline">
+        <a href="<c:out value='${publishUrl}' />" class="btn btn-secondary shrink-0 no-underline">
           <span class="material-symbols-outlined text-base">add</span>
           <c:out value="${publishCtaLabel}" />
         </a>
       </div>
     </div>
 
-    <form id="my-boats-filters-form" action="${myBoatsUrl}" method="get" class="w-full">
+    <form id="my-boats-filters-form" action="<c:out value='${myBoatsUrl}' />" method="get" class="w-full">
       <input type="hidden" name="page" value="1" />
       <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-4">
         <div class="min-w-0 w-full flex-1">
@@ -108,9 +108,9 @@
             name="status"
             class="select select-sm w-28 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none"
             onchange="this.form.requestSubmit()">
-          <option value="" ${empty myBoatsSearch.status ? 'selected="selected"' : ''}><c:out value="${statusAnyLabel}" /></option>
-          <option value="ACTIVE" ${myBoatsSearch.status == 'ACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusActiveLabel}" /></option>
-          <option value="INACTIVE" ${myBoatsSearch.status == 'INACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusInactiveLabel}" /></option>
+          <option value="" <c:if test="${empty myBoatsSearch.status}">selected="selected"</c:if>><c:out value="${statusAnyLabel}" /></option>
+          <option value="ACTIVE" <c:if test="${myBoatsSearch.status == 'ACTIVE'}">selected="selected"</c:if>><c:out value="${statusActiveLabel}" /></option>
+          <option value="INACTIVE" <c:if test="${myBoatsSearch.status == 'INACTIVE'}">selected="selected"</c:if>><c:out value="${statusInactiveLabel}" /></option>
         </select>
         <label for="my-boats-sort" class="shrink-0 whitespace-nowrap ml-2"><c:out value="${sortLabel}" /></label>
         <select
@@ -118,14 +118,14 @@
             name="sortBy"
             class="select select-sm w-32 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none sm:w-36"
             onchange="this.form.requestSubmit()">
-          <option value="newest" ${myBoatsSearch.sortBy == 'newest' ? 'selected="selected"' : ''}>
+          <option value="newest" <c:if test="${myBoatsSearch.sortBy == 'newest'}">selected="selected"</c:if>>
             <spring:message code="marketplace.sort.newest" />
           </option>
-          <option value="oldest" ${myBoatsSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}>
+          <option value="oldest" <c:if test="${myBoatsSearch.sortBy == 'oldest'}">selected="selected"</c:if>>
             <spring:message code="marketplace.sort.oldest" />
           </option>
-          <option value="nameAsc" ${myBoatsSearch.sortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
-          <option value="nameDesc" ${myBoatsSearch.sortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
+          <option value="nameAsc" <c:if test="${myBoatsSearch.sortBy == 'nameAsc'}">selected="selected"</c:if>><c:out value="${sortNameAscLabel}" /></option>
+          <option value="nameDesc" <c:if test="${myBoatsSearch.sortBy == 'nameDesc'}">selected="selected"</c:if>><c:out value="${sortNameDescLabel}" /></option>
         </select>
         <label for="my-boats-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
         <select
@@ -133,9 +133,9 @@
             name="pageSize"
             class="select select-sm w-20 font-bold text-primary"
             onchange="this.form.requestSubmit()">
-          <option value="6" ${myBoatsSearch.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-          <option value="12" ${myBoatsSearch.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-          <option value="18" ${myBoatsSearch.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+          <option value="6" <c:if test="${myBoatsSearch.pageSize == 6}">selected="selected"</c:if>>6</option>
+          <option value="12" <c:if test="${myBoatsSearch.pageSize == 12}">selected="selected"</c:if>>12</option>
+          <option value="18" <c:if test="${myBoatsSearch.pageSize == 18}">selected="selected"</c:if>>18</option>
         </select>
         </div>
       </div>
@@ -164,23 +164,31 @@
               <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
               <c:set var="disableFormId" value="disable-publication-form-${item.id}" />
               <c:set var="enableFormId" value="enable-publication-form-${item.id}" />
-              <form id="${disableFormId}" action="${disableItemUrl}" method="post" hidden></form>
-              <form id="${enableFormId}" action="${enableItemUrl}" method="post" hidden></form>
-              <div class="group relative flex h-full w-full max-w-sm flex-col rounded-xl bg-base-200 transition hover:bg-base-300 ${itemActive ? '' : 'opacity-75'}">
-                <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${version.title}'/>"></a>
+              <form id="${disableFormId}" action="<c:out value='${disableItemUrl}' />" method="post" hidden></form>
+              <form id="${enableFormId}" action="<c:out value='${enableItemUrl}' />" method="post" hidden></form>
+              <c:choose>
+                <c:when test="${itemActive}">
+                  <c:set var="publicationCardOpacityClass" value="" />
+                </c:when>
+                <c:otherwise>
+                  <c:set var="publicationCardOpacityClass" value="opacity-75" />
+                </c:otherwise>
+              </c:choose>
+              <div class="group relative flex h-full w-full max-w-sm flex-col rounded-xl bg-base-200 transition hover:bg-base-300 <c:out value='${publicationCardOpacityClass}' />">
+                <a href="<c:out value='${itemDetailUrl}' />" class="absolute inset-0 z-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${version.title}'/>"></a>
                 <div class="dropdown dropdown-end absolute right-1.5 top-1.5 z-20 pointer-events-auto">
                   <button type="button" tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle bg-base-100/90 shadow-sm backdrop-blur-sm border border-outline-variant/20 hover:bg-base-100" aria-label="<c:out value='${publicationActionsLabel}'/>">
                     <span class="material-symbols-outlined text-base leading-none">more_vert</span>
                   </button>
                   <ul tabindex="0" class="dropdown-content menu z-30 mt-1 w-52 rounded-box border border-outline-variant/20 bg-base-100 p-2 shadow-md">
                     <li>
-                      <a href="${editItemUrl}" class="gap-2 no-underline">
+                      <a href="<c:out value='${editItemUrl}' />" class="gap-2 no-underline">
                         <span class="material-symbols-outlined text-base">edit</span>
                         <c:out value="${editLabel}" />
                       </a>
                     </li>
                     <li>
-                      <a href="${manageAvailabilityItemUrl}" class="gap-2 no-underline">
+                      <a href="<c:out value='${manageAvailabilityItemUrl}' />" class="gap-2 no-underline">
                         <span class="material-symbols-outlined text-base">event_available</span>
                         <c:out value="${manageAvailabilityLabel}" />
                       </a>
@@ -213,15 +221,30 @@
                 </div>
                 <div class="pointer-events-none flex flex-col gap-2 p-2 sm:p-3">
                   <div class="h-24 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:h-32">
-                    <img src="${publicationImageUrl}" alt="<c:out value='${version.title}'/>" class="h-full w-full object-cover" loading="lazy" />
+                    <img src="<c:out value='${publicationImageUrl}' />" alt="<c:out value='${version.title}'/>" class="h-full w-full object-cover" loading="lazy" />
                   </div>
                   <div class="flex min-w-0 flex-1 flex-col gap-1">
                     <div class="flex min-w-0 items-start gap-1.5 pr-8">
                       <p class="m-0 min-w-0 flex-1 break-words text-xs font-extrabold text-on-surface line-clamp-2 sm:text-sm">
                         <c:out value="${version.title}" />
                       </p>
-                      <span class="badge ${itemActive ? 'badge-success' : 'badge-ghost'} badge-xs shrink-0 font-bold">
-                        <spring:message code="${itemActive ? 'settings.publications.status.active' : 'settings.publications.status.inactive'}" />
+                      <c:choose>
+                        <c:when test="${itemActive}">
+                          <c:set var="publicationStatusBadgeClass" value="badge-success" />
+                        </c:when>
+                        <c:otherwise>
+                          <c:set var="publicationStatusBadgeClass" value="badge-ghost" />
+                        </c:otherwise>
+                      </c:choose>
+                      <span class="badge <c:out value='${publicationStatusBadgeClass}' /> badge-xs shrink-0 font-bold">
+                        <c:choose>
+                          <c:when test="${itemActive}">
+                            <spring:message code="settings.publications.status.active" />
+                          </c:when>
+                          <c:otherwise>
+                            <spring:message code="settings.publications.status.inactive" />
+                          </c:otherwise>
+                        </c:choose>
                       </span>
                     </div>
                     <p class="m-0 mt-auto text-[11px] font-bold text-on-surface sm:text-xs">
@@ -232,7 +255,7 @@
                 </div>
               </div>
               <paw:confirmModal id="${deleteModalId}" title="${deleteConfirmTitle}" message="${deleteConfirmMessage}" confirmText="${deleteConfirmConfirm}" cancelText="${deleteConfirmCancel}" confirmColor="danger" icon="delete_forever">
-                <form action="${deleteItemUrl}" method="post" class="m-0">
+                <form action="<c:out value='${deleteItemUrl}' />" method="post" class="m-0">
                   <paw:button type="submit" color="danger" cssClass="w-full sm:w-auto" text="${deleteConfirmConfirm}" />
                 </form>
               </paw:confirmModal>
@@ -251,7 +274,7 @@
                     <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><c:out value="${filterEmptyTitleLabel}" /></h2>
                     <p class="m-0 mt-2 text-on-surface-variant"><c:out value="${filterEmptyMessageLabel}" /></p>
                   </div>
-                  <a href="${clearFiltersUrl}" data-clear-list-filters class="btn btn-primary btn-sm no-underline">
+                  <a href="<c:out value='${clearFiltersUrl}' />" data-clear-list-filters class="btn btn-primary btn-sm no-underline">
                     <c:out value="${filtersClearLabel}" />
                   </a>
                 </c:when>

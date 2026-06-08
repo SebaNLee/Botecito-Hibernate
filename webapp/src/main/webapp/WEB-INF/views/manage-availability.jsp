@@ -37,7 +37,7 @@
   <paw:toastNotifier />
 
   <div class="mb-8">
-    <a href="${myBoatsUrl}" data-nav-filter-page="myBoats" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
+    <a href="<c:out value='${myBoatsUrl}' />" data-nav-filter-page="myBoats" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
       <span class="material-symbols-outlined">arrow_back</span>
       <span><c:out value="${manageAvailabilityBackMyBoatsLabel}" /></span>
     </a>
@@ -60,7 +60,7 @@
     <jsp:body>
       <p class="text-sm text-on-surface-variant m-0 mb-4"><c:out value="${calendarHint}" /></p>
 
-      <form method="get" action="${pageUrl}" data-manage-availability-date-form class="mb-6">
+      <form method="get" action="<c:out value='${pageUrl}' />" data-manage-availability-date-form class="mb-6">
         <paw:datePicker
             id="manageAvailabilityDate"
             dateFieldName="date"
@@ -149,8 +149,11 @@
                       <c:forEach var="tickHour" begin="0" end="23">
                         <c:set var="tickStep" value="${tickHour * 2}" />
                         <c:set var="tickLeft" value="${(tickStep * 100.0) / 47}" />
-                        <c:set var="tickClass" value="${tickStep % 4 == 0 ? 'bg-outline-variant/45' : 'bg-outline-variant/25'}" />
-                        <span class="absolute top-0 h-8 w-px ${tickClass}" data-tick-left-pct="${tickLeft}"></span>
+                        <c:set var="tickClass" value="bg-outline-variant/25" />
+                        <c:if test="${tickStep % 4 == 0}">
+                          <c:set var="tickClass" value="bg-outline-variant/45" />
+                        </c:if>
+                        <span class="absolute top-0 h-8 w-px <c:out value='${tickClass}' />" data-tick-left-pct="<c:out value='${tickLeft}' />"></span>
                       </c:forEach>
                     </div>
                     <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 pointer-events-none">
@@ -176,8 +179,8 @@
                   </div>
                 </template>
 
-                <form action="${saveUrl}" method="post" data-timeline-save-form class="mt-6 flex justify-end">
-                  <input type="hidden" name="date" value="${selectedDate}" />
+                <form action="<c:out value='${saveUrl}' />" method="post" data-timeline-save-form class="mt-6 flex justify-end">
+                  <input type="hidden" name="date" value="<c:out value='${selectedDate}' />" />
                   <div data-timeline-save-hidden-fields></div>
                   <paw:button
                       type="submit"

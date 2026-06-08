@@ -33,26 +33,38 @@
 </c:if>
 <c:set var="isFavourite" value="${favourite ne null ? favourite : false}" />
 <c:set var="isFavouriteAllowed" value="${canFavourite ne null ? canFavourite : false}" />
+<c:choose>
+  <c:when test="${isFavourite}">
+    <c:set var="favouriteActionUrl" value="${unfavouriteUrl}" />
+    <c:set var="favouriteActionLabel" value="${favouriteRemoveLabel}" />
+    <c:set var="favouriteIconClass" value="material-symbols-outlined text-lg icon-heart-filled" />
+  </c:when>
+  <c:otherwise>
+    <c:set var="favouriteActionUrl" value="${favouriteUrl}" />
+    <c:set var="favouriteActionLabel" value="${favouriteAddLabel}" />
+    <c:set var="favouriteIconClass" value="material-symbols-outlined text-lg icon-heart-outline" />
+  </c:otherwise>
+</c:choose>
 
 <div class="group card relative min-w-0 bg-base-100 shadow-sm overflow-hidden text-base-content transition duration-200 hover:-translate-y-0.5 hover:shadow-md">
   <c:if test="${isFavouriteAllowed}">
-    <form action="${isFavourite ? unfavouriteUrl : favouriteUrl}" method="post" class="absolute right-3 top-3 z-10 m-0">
+    <form action="<c:out value='${favouriteActionUrl}' />" method="post" class="absolute right-3 top-3 z-10 m-0">
       <c:if test="${favouritesSearch != null}">
         <paw:favouritesSearchHiddenFields search="${favouritesSearch}" />
       </c:if>
       <button
           type="submit"
           class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 hover:bg-base-100"
-          aria-label="${isFavourite ? favouriteRemoveLabel : favouriteAddLabel}"
-          title="${isFavourite ? favouriteRemoveLabel : favouriteAddLabel}">
-        <span class="material-symbols-outlined text-lg ${isFavourite ? 'icon-heart-filled' : 'icon-heart-outline'}">favorite</span>
+          aria-label="<c:out value='${favouriteActionLabel}' />"
+          title="<c:out value='${favouriteActionLabel}' />">
+        <span class="<c:out value='${favouriteIconClass}' />">favorite</span>
       </button>
     </form>
   </c:if>
 
-  <a href="${itemUrl}" data-marketplace-item-link class="block no-underline text-base-content">
+  <a href="<c:out value='${itemUrl}' />" data-marketplace-item-link class="block no-underline text-base-content">
     <figure class="aspect-[4/3] overflow-hidden">
-      <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="<c:out value='${item.latestVersion.title}'/>" src="${resolvedCoverSrc}"/>
+      <img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="<c:out value='${item.latestVersion.title}'/>" src="<c:out value='${resolvedCoverSrc}' />"/>
     </figure>
     <div class="card-body min-w-0 p-4 gap-3">
       <div class="flex justify-between items-start gap-3">

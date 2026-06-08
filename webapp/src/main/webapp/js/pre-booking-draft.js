@@ -136,7 +136,10 @@
       );
       loginButton.addEventListener("click", function () {
         saveDraft(itemId, collectDraft(form));
-        const loginBase = root.dataset.loginUrl || "/login";
+        const loginBase = root.dataset.loginUrl;
+        if (!loginBase) {
+          return;
+        }
         const nextPath = "/item/" + itemId;
         const sep = loginBase.indexOf("?") >= 0 ? "&" : "?";
         window.location.assign(

@@ -36,29 +36,30 @@
 <c:set var="resolvedAllowEmpty" value="${empty allowEmpty ? false : allowEmpty}" />
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
 <c:set var="peopleClearInitiallyHidden" value="${empty resolvedValue}" />
+<c:set var="peopleClearHiddenClass" value="${peopleClearInitiallyHidden ? 'hidden' : ''}" />
 <c:set var="pcText" value="${hostAccent ne null and hostAccent ? 'text-secondary' : 'text-primary'}" />
 
 <c:choose>
   <c:when test="${resolvedVariant == 'inline'}">
     <fieldset
-        class="fieldset w-full ${resolvedContainerClass}"
+        class="fieldset w-full <c:out value='${resolvedContainerClass}'/>"
         data-people-count
-        data-min="${resolvedMin}"
-        data-max="${resolvedMax}"
-        data-step="${resolvedStep}"
+        data-min="<c:out value='${resolvedMin}'/>"
+        data-max="<c:out value='${resolvedMax}'/>"
+        data-step="<c:out value='${resolvedStep}'/>"
         data-placeholder="<c:out value='${resolvedPlaceholder}'/>"
-        data-allow-empty="${resolvedAllowEmpty}">
-      <input id="${id}" name="${name}" type="hidden" value="<c:out value='${resolvedValue}'/>" data-people-input />
+        data-allow-empty="<c:out value='${resolvedAllowEmpty}'/>">
+      <input id="<c:out value='${id}'/>" name="<c:out value='${name}'/>" type="hidden" value="<c:out value='${resolvedValue}'/>" data-people-input />
       <legend class="fieldset-legend block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
         <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
       </legend>
       <div class="min-w-0 flex flex-col gap-2">
         <div class="input input-bordered input-sm flex h-10 min-h-10 max-h-10 w-full min-w-0 items-center gap-1 overflow-hidden px-2 py-0">
-          <span class="material-symbols-outlined shrink-0 ${pcText} text-xl"><c:out value="${resolvedIcon}" /></span>
+          <span class="material-symbols-outlined shrink-0 <c:out value='${pcText}'/> text-xl"><c:out value="${resolvedIcon}" /></span>
           <button
               type="button"
-              class="btn btn-ghost btn-xs btn-circle shrink-0 ${pcText}"
+              class="btn btn-ghost btn-xs btn-circle shrink-0 <c:out value='${pcText}'/>"
               aria-label="<c:out value='${peopleDecrementLabel}'/>"
               data-people-decrement>
             <span class="material-symbols-outlined text-base">remove</span>
@@ -75,7 +76,7 @@
                 data-people-field />
             <button
                 type="button"
-                class="btn btn-ghost btn-xs btn-circle ${pcText} ${peopleClearInitiallyHidden ? 'hidden' : ''}"
+                class="btn btn-ghost btn-xs btn-circle <c:out value='${pcText}'/> <c:out value='${peopleClearHiddenClass}'/>"
                 aria-label="<c:out value='${peopleClearLabel}'/>"
                 data-people-clear>
               <span class="material-symbols-outlined text-base">close</span>
@@ -83,7 +84,7 @@
           </div>
           <button
               type="button"
-              class="btn btn-ghost btn-xs btn-circle shrink-0 ${pcText}"
+              class="btn btn-ghost btn-xs btn-circle shrink-0 <c:out value='${pcText}'/>"
               aria-label="<c:out value='${peopleIncrementLabel}'/>"
               data-people-increment>
             <span class="material-symbols-outlined text-base">add</span>
@@ -94,23 +95,23 @@
   </c:when>
   <c:otherwise>
     <fieldset
-        class="fieldset w-full ${resolvedContainerClass}"
+        class="fieldset w-full <c:out value='${resolvedContainerClass}'/>"
         data-people-count
-        data-min="${resolvedMin}"
-        data-max="${resolvedMax}"
-        data-step="${resolvedStep}"
+        data-min="<c:out value='${resolvedMin}'/>"
+        data-max="<c:out value='${resolvedMax}'/>"
+        data-step="<c:out value='${resolvedStep}'/>"
         data-placeholder="<c:out value='${resolvedPlaceholder}'/>"
-        data-allow-empty="${resolvedAllowEmpty}">
-      <input id="${id}" name="${name}" type="hidden" value="<c:out value='${resolvedValue}'/>" data-people-input />
+        data-allow-empty="<c:out value='${resolvedAllowEmpty}'/>">
+      <input id="<c:out value='${id}'/>" name="<c:out value='${name}'/>" type="hidden" value="<c:out value='${resolvedValue}'/>" data-people-input />
       <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
         <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
       </legend>
       <div class="input input-bordered input-sm flex h-10 min-h-10 max-h-10 w-full min-w-0 items-center gap-1 overflow-hidden px-2 py-0">
-        <span class="material-symbols-outlined shrink-0 ${pcText} text-xl"><c:out value="${resolvedIcon}" /></span>
+        <span class="material-symbols-outlined shrink-0 <c:out value='${pcText}'/> text-xl"><c:out value="${resolvedIcon}" /></span>
         <button
             type="button"
-            class="btn btn-ghost btn-xs btn-circle shrink-0 ${pcText}"
+            class="btn btn-ghost btn-xs btn-circle shrink-0 <c:out value='${pcText}'/>"
             aria-label="<c:out value='${peopleDecrementLabel}'/>"
             data-people-decrement>
           <span class="material-symbols-outlined text-base">remove</span>
@@ -127,7 +128,7 @@
               data-people-field />
           <button
               type="button"
-              class="btn btn-ghost btn-xs btn-circle ${pcText} ${peopleClearInitiallyHidden ? 'hidden' : ''}"
+              class="btn btn-ghost btn-xs btn-circle <c:out value='${pcText}'/> <c:out value='${peopleClearHiddenClass}'/>"
               aria-label="<c:out value='${peopleClearLabel}'/>"
               data-people-clear>
             <span class="material-symbols-outlined text-base">close</span>
@@ -135,7 +136,7 @@
         </div>
         <button
             type="button"
-            class="btn btn-ghost btn-xs btn-circle shrink-0 ${pcText}"
+            class="btn btn-ghost btn-xs btn-circle shrink-0 <c:out value='${pcText}'/>"
             aria-label="<c:out value='${peopleIncrementLabel}'/>"
             data-people-increment>
           <span class="material-symbols-outlined text-base">add</span>

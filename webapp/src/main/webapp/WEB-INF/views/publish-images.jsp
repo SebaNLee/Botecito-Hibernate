@@ -7,6 +7,7 @@
 <c:url var="stepTwoUrl" value="/publish/availability" />
 <c:url var="stepThreeUrl" value="/publish/images" />
 <spring:message code="publish.actions.submit" var="publishSubmitLabel" />
+<spring:message code="publish.validation.images.size" var="galleryFileSizeMessage" />
 <spring:message code="publish.back.imagesLost" var="publishBackImagesLostMsg" />
 <spring:bind path="publishForm.files">
   <c:set var="filesError" value="${status.errorMessage}" />
@@ -19,17 +20,18 @@
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"
   headerCtaVariant="rent"
-  scripts="publish-wizard,image-gallery,form-submit"
+  scripts="toast,publish-wizard,image-gallery,form-submit"
 >
+  <paw:toastNotifier />
   <div
     data-publish-wizard-root="step3"
-    data-availability-url="/publish/availability"
-    data-images-lost-message="${publishBackImagesLostMsg}"
+    data-availability-url="<c:out value='${stepTwoUrl}' />"
+    data-images-lost-message="<c:out value='${publishBackImagesLostMsg}' />"
     class="w-full"
   >
     <div class="mb-8">
       <a
-        href="${stepTwoUrl}"
+        href="<c:out value='${stepTwoUrl}' />"
         data-publish-wizard-back
         class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit"
       >
@@ -81,6 +83,8 @@
       enctype="multipart/form-data"
       class="space-y-8"
       data-submit-loading-form="true"
+      data-max-file-bytes="<c:out value='${maxUploadFileBytes}' />"
+      data-max-file-message="<c:out value='${galleryFileSizeMessage}' />"
     >
       <div data-publish-wizard-hidden-fields></div>
 

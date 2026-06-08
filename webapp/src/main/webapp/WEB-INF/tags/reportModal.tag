@@ -40,7 +40,7 @@
           rows="3"
           maxlength="255"
           class="textarea textarea-bordered w-full"
-          placeholder="${reportDescriptionPlaceholder}"
+          placeholder="<c:out value='${reportDescriptionPlaceholder}' />"
         ></textarea>
       </div>
       <paw:button type="submit" color="primary" text="${reportSubmitLabel}" submitLoading="true" />

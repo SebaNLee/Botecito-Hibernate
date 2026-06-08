@@ -22,10 +22,6 @@
     return Number.isNaN(parsed) ? null : parsed;
   }
 
-  function bootstrapUrl(itemId) {
-    return detailsUrl(itemId);
-  }
-
   function collectAvailabilitySeed(root) {
     var enabledDays = [];
     var ranges = [];
@@ -71,10 +67,6 @@
     draft.availability = collectAvailabilitySeed(root);
     draft.images = collectImagesSeed(root);
     return draft;
-  }
-
-  function detailsUrl(itemId) {
-    return "/edit/" + itemId + "/details";
   }
 
   function draftMatchesItem(draft, itemId) {
@@ -468,7 +460,11 @@
     var draft = readDraftForRoot(root);
     var itemId = readItemId(root);
     if (!draft || !draft.title) {
-      window.location.assign(itemId == null ? "/my-boats" : detailsUrl(itemId));
+      const redirectUrl =
+        root.dataset.editDetailsUrl || root.dataset.myBoatsUrl;
+      if (redirectUrl) {
+        window.location.assign(redirectUrl);
+      }
       return;
     }
 
@@ -798,11 +794,11 @@
       !draft.availability.ranges ||
       !draft.availability.ranges.length
     ) {
-      window.location.assign(
-        itemId == null
-          ? "/my-boats"
-          : root.dataset.editAvailabilityUrl || "/edit/" + itemId + "/availability",
-      );
+      const redirectUrl =
+        root.dataset.editAvailabilityUrl || root.dataset.myBoatsUrl;
+      if (redirectUrl) {
+        window.location.assign(redirectUrl);
+      }
       return;
     }
 

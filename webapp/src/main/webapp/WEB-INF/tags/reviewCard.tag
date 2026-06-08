@@ -11,10 +11,24 @@
   <div class="flex items-center justify-between gap-3 flex-wrap">
     <c:choose>
       <c:when test="${showReviewer}">
-        <c:set var="reviewerFirstName" value="${review.sender.firstName != null ? fn:trim(review.sender.firstName) : ''}" />
-        <c:set var="reviewerLastName" value="${review.sender.lastName != null ? fn:trim(review.sender.lastName) : ''}" />
+        <c:choose>
+          <c:when test="${review.sender.firstName != null}">
+            <c:set var="reviewerFirstName" value="${fn:trim(review.sender.firstName)}" />
+          </c:when>
+          <c:otherwise>
+            <c:set var="reviewerFirstName" value="" />
+          </c:otherwise>
+        </c:choose>
+        <c:choose>
+          <c:when test="${review.sender.lastName != null}">
+            <c:set var="reviewerLastName" value="${fn:trim(review.sender.lastName)}" />
+          </c:when>
+          <c:otherwise>
+            <c:set var="reviewerLastName" value="" />
+          </c:otherwise>
+        </c:choose>
         <c:url var="reviewerProfileUrl" value="/profiles/${review.sender.id}/reviews" />
-        <a href="${reviewerProfileUrl}" class="font-bold text-on-surface no-underline hover:underline break-words">
+        <a href="<c:out value='${reviewerProfileUrl}' />" class="font-bold text-on-surface no-underline hover:underline break-words">
           <c:choose>
             <c:when test="${not empty reviewerFirstName or not empty reviewerLastName}">
               <c:out value="${reviewerFirstName}" />

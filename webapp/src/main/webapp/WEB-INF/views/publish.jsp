@@ -84,7 +84,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
   >
     <div class="mb-8">
       <a
-        href="${myBoatsUrl}"
+        href="<c:out value='${myBoatsUrl}' />"
         class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit"
       >
         <span class="material-symbols-outlined">arrow_back</span>
@@ -204,9 +204,15 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                 <span class="text-error" aria-hidden="true">*</span>
               </legend>
               <spring:bind path="publishForm.weight">
-                <label
-                  class="input w-full ${status.error ? 'input-error' : ''}"
-                >
+                <c:choose>
+                  <c:when test="${status.error}">
+                    <c:set var="weightInputClass" value="input w-full input-error" />
+                  </c:when>
+                  <c:otherwise>
+                    <c:set var="weightInputClass" value="input w-full" />
+                  </c:otherwise>
+                </c:choose>
+                <label class="<c:out value='${weightInputClass}' />">
                   <form:input
                     path="weight"
                     id="weight"

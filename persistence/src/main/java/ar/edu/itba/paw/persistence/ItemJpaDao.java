@@ -224,18 +224,35 @@ public class ItemJpaDao implements ItemDao {
         return Optional.ofNullable(em.find(Version.class, versionId));
     }
 
+    /**
+     * Elimina disponibilidades e imágenes de una versión.
+     *
+     * <p>{@code Availability} usa {@code DELETE} JPQL masivo: al reinsertar se generan IDs nuevos
+     * con secuencia, por lo que no hay conflicto aunque queden instancias viejas en la sesión.
+     *
+     * <p>{@code Media} se borra con {@code em.remove()} entidad por entidad porque, en el flujo de
+     * edición, la colección ya puede estar cargada en el persistence context (p. ej. vía
+     * {@code requireOwnedFullData}). Un borrado masivo elimina las filas en la base pero deja
+     * instancias administradas en la sesión; al reinsertar con la misma clave compuesta
+     * {@code (version_id, index)} se produce {@code EntityExistsException}.
+     */
     @Override
     public void removeVersionChildren(final Version version) {
+        final int versionId = version.getId();
+
         em.createQuery("DELETE FROM Availability a WHERE a.version.id = :vid")
-                .setParameter("vid", version.getId())
+                .setParameter("vid", versionId)
                 .executeUpdate();
         if (version.getAvailabilities() != null) {
             version.getAvailabilities().clear();
         }
 
-        em.createQuery("DELETE FROM Media m WHERE m.version.id = :vid")
-                .setParameter("vid", version.getId())
-                .executeUpdate();
+        final List<Media> media = em.createQuery("SELECT m FROM Media m WHERE m.version.id = :vid", Media.class)
+                .setParameter("vid", versionId)
+                .getResultList();
+        for (final Media medium : media) {
+            em.remove(medium);
+        }
         if (version.getMedia() != null) {
             version.getMedia().clear();
         }

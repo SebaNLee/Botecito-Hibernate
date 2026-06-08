@@ -42,6 +42,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +51,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class BookingImpl implements BookingService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BookingImpl.class);
 
     private final BookingDao bookingDao;
     private final ItemService itemService;
@@ -186,6 +190,7 @@ public class BookingImpl implements BookingService {
 
         if (canInsert) {
             bookingDao.insertBooking(booking);
+            LOGGER.info("Booking created: item {}, guest {}, {} - {}", itemId, guestId, utcStart, utcEnd);
             if (!isOwner) {
                 mailService.sendPreBookingMail(booking);
             }
@@ -294,6 +299,7 @@ public class BookingImpl implements BookingService {
     public void acceptBooking(int bookingId, int callerId) {
         Booking booking = findById(bookingId);
         updateStatus(booking, callerId, true, BookingStatusEnum.ACCEPTED);
+        LOGGER.info("Booking {} accepted by user {}", bookingId, callerId);
         mailService.sendAcceptMail(booking);
     }
 
@@ -302,6 +308,7 @@ public class BookingImpl implements BookingService {
     public void rejectBooking(int bookingId, int callerId) {
         Booking booking = findById(bookingId);
         updateStatus(booking, callerId, true, BookingStatusEnum.REJECTED);
+        LOGGER.info("Booking {} rejected by user {}", bookingId, callerId);
         mailService.sendRejectMail(booking);
     }
 
@@ -332,6 +339,7 @@ public class BookingImpl implements BookingService {
         var payment = builder.build();
         bookingDao.uploadPayment(payment);
         booking.setPaymentProof(payment);
+        LOGGER.info("Payment uploaded for booking {}", bookingId);
         mailService.sendPaymentMail(booking);
     }
 
@@ -359,6 +367,7 @@ public class BookingImpl implements BookingService {
         payment.setFileData(fileData);
         payment.setReplyMsg(guestMsg);
         payment.setRepliedAt(currentDateTime());
+        LOGGER.info("Payment resubmitted for booking {}", bookingId);
         mailService.sendPaymentMail(booking);
     }
 
@@ -379,6 +388,7 @@ public class BookingImpl implements BookingService {
     public void confirmPayment(int bookingId, int callerId) {
         Booking booking = findById(bookingId);
         updateStatus(booking, callerId, true, BookingStatusEnum.CONFIRMED);
+        LOGGER.info("Payment confirmed for booking {} by user {}", bookingId, callerId);
         mailService.sendBookingConfirmedMail(booking);
     }
 
@@ -391,6 +401,7 @@ public class BookingImpl implements BookingService {
 
         payment.setRefuseMsg(reason);
         payment.setRefusedAt(currentDateTime());
+        LOGGER.info("Payment rejected for booking {} by user {}", bookingId, callerId);
         mailService.sendRefusedPaymentMail(booking);
     }
 
@@ -399,6 +410,7 @@ public class BookingImpl implements BookingService {
     public void cancelBooking(int bookingId, int callerId) {
         Booking booking = findById(bookingId);
         updateStatus(booking, callerId, false, BookingStatusEnum.CANCELLED, false);
+        LOGGER.info("Booking {} cancelled by user {}", bookingId, callerId);
         mailService.sendBookingCancelledMail(booking);
     }
 
@@ -492,6 +504,7 @@ public class BookingImpl implements BookingService {
         var ownerId = booking.getVersion().getItem().getHost().getId().intValue();
         if (ownerId != callerId || ownerId != booking.getGuest().getId().intValue()) return false;
         bookingDao.deleteBooking(bookingId);
+        LOGGER.info("Self-block {} removed by user {}", bookingId, callerId);
         return true;
     }
 

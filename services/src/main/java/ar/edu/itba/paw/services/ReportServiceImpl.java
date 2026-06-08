@@ -16,12 +16,16 @@ import ar.edu.itba.paw.services.util.DateTimeUtils;
 import ar.edu.itba.paw.services.util.PagedProcessing;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class ReportServiceImpl implements ReportService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReportServiceImpl.class);
 
     private final ReportDao reportDao;
     private final ItemService itemService;
@@ -58,6 +62,7 @@ public class ReportServiceImpl implements ReportService {
                 .build();
 
         reportDao.create(report);
+        LOGGER.info("User {} reported item {} for {}", senderId, itemId, reason);
     }
 
     @Override
@@ -84,6 +89,7 @@ public class ReportServiceImpl implements ReportService {
         final Report report = findById(reportId);
         notifyDismissal(report);
         reportDao.deleteById(reportId);
+        LOGGER.info("Report {} dismissed", reportId);
     }
 
     @Override
@@ -99,6 +105,9 @@ public class ReportServiceImpl implements ReportService {
         }
 
         reportDao.deleteAllByItemId(item.getId());
+
+        LOGGER.info("Item {} deleted for report {}", item.getId(), reportId);
+
         boolean isSoft = itemService.getVersionCount(item.getId()) > 1 || bookingService.itemHasBookings(item);
         itemService.deleteItem(item, isSoft);
     }
@@ -106,6 +115,7 @@ public class ReportServiceImpl implements ReportService {
     @Override
     @Transactional
     public void deleteAllByItemId(int itemId) {
+        LOGGER.info("All reports deleted for item {}", itemId);
         reportDao.deleteAllByItemId(itemId);
     }
 

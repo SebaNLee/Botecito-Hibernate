@@ -65,7 +65,8 @@ public class ReportJpaDao implements ReportDao {
 
         if (ids.isEmpty()) return new PageModel<>(List.of(), page, pageSize, totalCount);
 
-        String jpql = "SELECT DISTINCT r FROM Report r JOIN FETCH r.sender JOIN FETCH r.item WHERE r.id IN :ids ";
+        String jpql =
+                "SELECT DISTINCT r FROM Report r JOIN FETCH r.sender JOIN FETCH r.item i LEFT JOIN FETCH i.latestVersion WHERE r.id IN :ids ";
         var query = em.createQuery(jpql + jpqlOrderBy(sortBy), Report.class);
         query.setParameter("ids", ids);
 

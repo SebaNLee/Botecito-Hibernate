@@ -4,12 +4,10 @@ import static ar.edu.itba.paw.services.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemType;
 import ar.edu.itba.paw.models.entity.Location;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
-import ar.edu.itba.paw.persistence.PublishDao;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -33,9 +31,6 @@ public class PublishServiceImplTest {
     private static final int LOCATION_ID = 2;
 
     @Mock
-    private PublishDao publishDao;
-
-    @Mock
     private MailService mailService;
 
     @Mock
@@ -52,9 +47,9 @@ public class PublishServiceImplTest {
 
     @Test
     public void createWorksOk() {
-        Item item = item(1);
-        when(publishDao.persistItem(any())).thenReturn(item);
-        when(publishDao.persistVersion(any())).thenReturn(version(1, item));
+        when(itemService.create(
+                        anyInt(), anyInt(), any(), any(), anyInt(), anyInt(), anyInt(), any(), anyInt(), any(), any()))
+                .thenReturn(version(1, item(1)));
 
         assertDoesNotThrow(() -> publishService.create(
                 OWNER_ID,
@@ -115,7 +110,6 @@ public class PublishServiceImplTest {
         current.setTitle("Old Title");
         when(itemService.requireOwnedFullData(ITEM_ID, OWNER_ID)).thenReturn(current);
         when(bookingService.itemHasBookings(ITEM_ID)).thenReturn(true);
-        when(publishDao.persistVersion(any())).thenReturn(version(99));
 
         boolean result = publishService.edit(
                 ITEM_ID,

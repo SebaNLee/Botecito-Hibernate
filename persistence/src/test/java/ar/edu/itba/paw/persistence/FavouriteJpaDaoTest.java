@@ -4,7 +4,7 @@ import static ar.edu.itba.paw.persistence.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.dto.FavouritesQueryModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.*;
 import java.util.List;
 import java.util.Set;
@@ -114,9 +114,9 @@ public class FavouriteJpaDaoTest {
                 .pageSize(12)
                 .build();
 
-        SearchResult<Item> result = favouriteDao.listFavourites(query);
+        PageModel<Item> result = favouriteDao.listFavourites(query);
 
-        assertEquals(2, result.getTotalCount());
-        assertEquals(2, result.getPageElements().size());
+        assertEquals(2, result.getTotalItems());
+        assertEquals(2, result.getContent().size());
     }
 }

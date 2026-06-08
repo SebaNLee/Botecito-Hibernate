@@ -5,5 +5,5 @@ import java.util.Optional;
 
 public interface DetailDao {
 
-    Optional<Item> getItemDetail(int itemId, int reviewPage);
+    Optional<Item> getItemDetail(int itemId);
 }

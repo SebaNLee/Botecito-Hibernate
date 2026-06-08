@@ -5,10 +5,11 @@
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<fmt:setLocale value="es_AR" />
 <spring:message code="page.title.adminReports" var="titleAdminReports" />
 <spring:message code="admin.reports.sort.newest" var="sortNewestLabel" />
 <spring:message code="admin.reports.sort.oldest" var="sortOldestLabel" />
+<spring:message code="marketplace.sort.label" var="sortLabel" />
+<spring:message code="marketplace.field.pageSize" var="pageSizeFieldLabel" />
 <spring:message code="admin.reports.dismiss" var="dismissLabel" />
 <spring:message code="admin.reports.deletePublication" var="deletePublicationLabel" />
 <spring:message code="admin.reports.dismiss.confirm.title" var="dismissConfirmTitle" />
@@ -39,40 +40,50 @@
 <paw:layout title="${titleAdminReports} - Botecito" mainClass="pt-24 pb-14 w-full max-w-7xl mx-auto px-6" scripts="toast">
   <paw:toastNotifier />
   <section class="min-w-0 space-y-6">
-    <div class="flex flex-col gap-2">
-      <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words">
-        <spring:message code="admin.reports.title" />
-      </h1>
-      <p class="text-on-surface-variant m-0">
-        <spring:message code="admin.reports.subtitle" />
-      </p>
-    </div>
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div class="min-w-0">
+        <h1 class="text-4xl font-extrabold tracking-tight text-on-background m-0 break-words">
+          <spring:message code="admin.reports.title" />
+        </h1>
+        <p class="text-on-surface-variant mt-2 m-0">
+          <c:choose>
+            <c:when test="${reportPage.totalItems == 1}">
+              <spring:message code="admin.reports.results.count.singular" />
+            </c:when>
+            <c:otherwise>
+              <spring:message code="admin.reports.results.count.plural" arguments="${reportPage.totalItems}" />
+            </c:otherwise>
+          </c:choose>
+        </p>
+      </div>
 
-    <form action="<c:url value='/admin/reports' />" method="get" class="flex flex-wrap items-end gap-3">
-      <label class="form-control w-full sm:w-auto">
-        <span class="label-text text-xs font-bold uppercase tracking-wider text-outline">
-          <spring:message code="admin.reports.sort.label" />
-        </span>
-        <select name="sortBy" class="select select-bordered select-sm">
-          <option value="newest" ${adminReportsSearch.sortBy == 'newest' ? 'selected' : ''}><c:out value="${sortNewestLabel}" /></option>
-          <option value="oldest" ${adminReportsSearch.sortBy == 'oldest' ? 'selected' : ''}><c:out value="${sortOldestLabel}" /></option>
+      <form
+          id="admin-reports-filters-form"
+          action="<c:url value='/admin/reports' />"
+          method="get"
+          class="flex items-center gap-3 text-sm font-medium text-on-surface-variant">
+        <input type="hidden" name="page" value="1" />
+        <label for="admin-reports-sort" class="shrink-0"><c:out value="${sortLabel}" /></label>
+        <select
+            id="admin-reports-sort"
+            name="sortBy"
+            class="select select-sm font-bold text-primary"
+            onchange="this.form.requestSubmit()">
+          <option value="newest" ${adminReportsSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><c:out value="${sortNewestLabel}" /></option>
+          <option value="oldest" ${adminReportsSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><c:out value="${sortOldestLabel}" /></option>
         </select>
-      </label>
-      <label class="form-control w-full sm:w-auto">
-        <span class="label-text text-xs font-bold uppercase tracking-wider text-outline">
-          <spring:message code="admin.reports.pageSize.label" />
-        </span>
-        <select name="pageSize" class="select select-bordered select-sm">
-          <option value="6" ${adminReportsSearch.pageSize == 6 ? 'selected' : ''}>6</option>
-          <option value="12" ${adminReportsSearch.pageSize == 12 ? 'selected' : ''}>12</option>
-          <option value="18" ${adminReportsSearch.pageSize == 18 ? 'selected' : ''}>18</option>
+        <label for="admin-reports-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
+        <select
+            id="admin-reports-page-size"
+            name="pageSize"
+            class="select select-sm w-20 font-bold text-primary"
+            onchange="this.form.requestSubmit()">
+          <option value="6" ${adminReportsSearch.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
+          <option value="12" ${adminReportsSearch.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
+          <option value="18" ${adminReportsSearch.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
         </select>
-      </label>
-      <input type="hidden" name="page" value="1" />
-      <button type="submit" class="btn btn-primary btn-sm">
-        <spring:message code="admin.reports.applyFilters" />
-      </button>
-    </form>
+      </form>
+    </div>
 
     <c:choose>
       <c:when test="${empty reportPage.content}">
@@ -118,7 +129,11 @@
               <c:forEach items="${reportPage.content}" var="report">
                 <tr>
                   <td class="whitespace-nowrap text-sm">
-                    <c:out value="${reportDatesById[report.id]}" />
+                    <c:if test="${not empty report.createdAt}">
+                      <fmt:parseDate value="${fn:substring(report.createdAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedReportDate" />
+                      <fmt:formatDate value="${parsedReportDate}" pattern="dd/MM/yyyy HH:mm" var="formattedReportDate" />
+                    </c:if>
+                    <c:out value="${formattedReportDate}" />
                   </td>
                   <td class="text-sm">
                     <spring:message code="report.reason.${report.reason}" />
@@ -136,7 +151,7 @@
                   <td class="text-sm">
                     <c:url var="itemDetailUrl" value="/item/${report.item.id}" />
                     <a href="${itemDetailUrl}" class="link link-primary font-semibold no-underline break-words">
-                      <c:out value="${not empty report.itemTitle ? report.itemTitle : report.item.id}" />
+                      <c:out value="${not empty report.item.latestVersion.title ? report.item.latestVersion.title : report.item.id}" />
                     </a>
                   </td>
                   <td class="text-sm break-words">
@@ -198,45 +213,15 @@
             </tbody>
           </table>
         </div>
-
-        <c:if test="${reportPage.totalPages > 1}">
-          <nav class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
-            <c:choose>
-              <c:when test="${reportPage.hasPrevious}">
-                <a href="${previousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                  <span class="material-symbols-outlined text-sm">arrow_back</span>
-                  <spring:message code="marketplace.pagination.previous" />
-                </a>
-              </c:when>
-              <c:otherwise>
-                <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                  <span class="material-symbols-outlined text-sm">arrow_back</span>
-                  <spring:message code="marketplace.pagination.previous" />
-                </span>
-              </c:otherwise>
-            </c:choose>
-
-            <span>
-              <spring:message code="marketplace.pagination.page" arguments="${reportPage.page},${reportPage.totalPages}" />
-            </span>
-
-            <c:choose>
-              <c:when test="${reportPage.hasNext}">
-                <a href="${nextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                  <spring:message code="marketplace.pagination.next" />
-                  <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                </a>
-              </c:when>
-              <c:otherwise>
-                <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                  <spring:message code="marketplace.pagination.next" />
-                  <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                </span>
-              </c:otherwise>
-            </c:choose>
-          </nav>
-        </c:if>
       </c:otherwise>
     </c:choose>
+
+    <paw:pagination
+        currentPage="${reportPage.page}"
+        totalPages="${reportPage.totalPages}"
+        hasPrevious="${reportPage.hasPrevious}"
+        hasNext="${reportPage.hasNext}"
+        previousPageUrl="${previousPageUrl}"
+        nextPageUrl="${nextPageUrl}" />
   </section>
 </paw:layout>

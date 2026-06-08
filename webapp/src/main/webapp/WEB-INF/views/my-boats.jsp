@@ -5,7 +5,6 @@
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<fmt:setLocale value="es_AR" />
 <c:url var="myBoatsUrl" value="/my-boats" />
 <c:url var="publishUrl" value="/publish" />
 <spring:message code="nav.publishCta" var="publishCtaLabel" />
@@ -70,7 +69,16 @@
       <div class="flex items-end justify-between mb-4">
         <div class="min-w-0">
           <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="myBoats.title" /></h1>
-          <p class="text-on-surface-variant mt-2 m-0"><spring:message code="myBoats.subtitle" /></p>
+          <p class="text-on-surface-variant mt-2 m-0">
+            <c:choose>
+              <c:when test="${itemPage.totalItems == 1}">
+                <spring:message code="myBoats.results.count.singular" />
+              </c:when>
+              <c:otherwise>
+                <spring:message code="myBoats.results.count.plural" arguments="${itemPage.totalItems}" />
+              </c:otherwise>
+            </c:choose>
+          </p>
         </div>
         <a href="${publishUrl}" class="btn btn-secondary shrink-0 no-underline">
           <span class="material-symbols-outlined text-base">add</span>
@@ -159,7 +167,7 @@
               <form id="${disableFormId}" action="${disableItemUrl}" method="post" hidden></form>
               <form id="${enableFormId}" action="${enableItemUrl}" method="post" hidden></form>
               <div class="group relative flex h-full w-full max-w-sm flex-col rounded-xl bg-base-200 transition hover:bg-base-300 ${itemActive ? '' : 'opacity-75'}">
-                <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${version.title}'/>"></a>
+                <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${version.title}'/>"></a>
                 <div class="dropdown dropdown-end absolute right-1.5 top-1.5 z-20 pointer-events-auto">
                   <button type="button" tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle bg-base-100/90 shadow-sm backdrop-blur-sm border border-outline-variant/20 hover:bg-base-100" aria-label="<c:out value='${publicationActionsLabel}'/>">
                     <span class="material-symbols-outlined text-base leading-none">more_vert</span>
@@ -256,41 +264,14 @@
         </c:otherwise>
       </c:choose>
 
-      <c:if test="${itemPage.totalPages > 1}">
-        <nav class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
-          <c:choose>
-            <c:when test="${itemPage.hasPrevious}">
-              <a href="${previousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                <span class="material-symbols-outlined text-sm">arrow_back</span>
-                <spring:message code="marketplace.pagination.previous" />
-              </a>
-            </c:when>
-            <c:otherwise>
-              <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                <span class="material-symbols-outlined text-sm">arrow_back</span>
-                <spring:message code="marketplace.pagination.previous" />
-              </span>
-            </c:otherwise>
-          </c:choose>
-          <span>
-            <spring:message code="marketplace.pagination.page" arguments="${itemPage.page},${itemPage.totalPages}" />
-          </span>
-          <c:choose>
-            <c:when test="${itemPage.hasNext}">
-              <a href="${nextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                <spring:message code="marketplace.pagination.next" />
-                <span class="material-symbols-outlined text-sm">arrow_forward</span>
-              </a>
-            </c:when>
-            <c:otherwise>
-              <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                <spring:message code="marketplace.pagination.next" />
-                <span class="material-symbols-outlined text-sm">arrow_forward</span>
-              </span>
-            </c:otherwise>
-          </c:choose>
-        </nav>
-      </c:if>
+      <paw:pagination
+          currentPage="${itemPage.page}"
+          totalPages="${itemPage.totalPages}"
+          hasPrevious="${itemPage.hasPrevious}"
+          hasNext="${itemPage.hasNext}"
+          previousPageUrl="${previousPageUrl}"
+          nextPageUrl="${nextPageUrl}"
+          navClass="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant" />
     </div>
   </section>
 </paw:layout>

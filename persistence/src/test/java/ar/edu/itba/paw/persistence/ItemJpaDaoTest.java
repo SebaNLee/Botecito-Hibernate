@@ -4,10 +4,11 @@ import static ar.edu.itba.paw.persistence.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.dto.MyBoatsQueryModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -56,11 +57,11 @@ public class ItemJpaDaoTest {
                 .pageSize(12)
                 .build();
 
-        SearchResult<Item> result = itemDao.listOwnerItems(query);
+        PageModel<Item> result = itemDao.listOwnerItems(query);
 
-        assertEquals(1, result.getTotalCount());
-        assertEquals(1, result.getPageElements().size());
-        assertEquals(item.getId(), result.getPageElements().get(0).getId());
+        assertEquals(1, result.getTotalItems());
+        assertEquals(1, result.getContent().size());
+        assertEquals(item.getId(), result.getContent().get(0).getId());
     }
 
     @Test
@@ -77,10 +78,10 @@ public class ItemJpaDaoTest {
                 .pageSize(12)
                 .build();
 
-        SearchResult<Item> result = itemDao.listOwnerItems(query);
+        PageModel<Item> result = itemDao.listOwnerItems(query);
 
-        assertEquals(1, result.getTotalCount());
-        assertEquals(active.getId(), result.getPageElements().get(0).getId());
+        assertEquals(1, result.getTotalItems());
+        assertEquals(active.getId(), result.getContent().get(0).getId());
     }
 
     @Test
@@ -99,10 +100,10 @@ public class ItemJpaDaoTest {
                 .pageSize(12)
                 .build();
 
-        SearchResult<Item> result = itemDao.listOwnerItems(query);
+        PageModel<Item> result = itemDao.listOwnerItems(query);
 
-        assertEquals(3, result.getTotalCount());
-        assertEquals(3, result.getPageElements().size());
+        assertEquals(3, result.getTotalItems());
+        assertEquals(3, result.getContent().size());
     }
 
     @Test
@@ -164,5 +165,134 @@ public class ItemJpaDaoTest {
         em.flush();
 
         assertNull(em.find(Version.class, versionId));
+    }
+
+    @Test
+    public void testPersistItem() {
+        Item item = new Item();
+        item.setHost(host);
+        item.setStatus(ItemStatusEnum.ACTIVE);
+        item.setCreatedAt(LocalDateTime.now());
+
+        Item persisted = itemDao.persistItem(item);
+
+        assertNotNull(persisted.getId());
+        assertNotNull(em.find(Item.class, persisted.getId()));
+    }
+
+    @Test
+    public void testPersistVersion() {
+        Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        em.flush();
+
+        Version v = new Version();
+        v.setItem(item);
+        v.setType(itemType);
+        v.setLocation(location);
+        v.setTitle("Boat");
+        v.setPrice(BigDecimal.valueOf(100));
+        v.setCapacity(4);
+        v.setWeight(200);
+        v.setDifficulty(2);
+        v.setTimezone("America/Argentina/Buenos_Aires");
+        v.setCreatedAt(LocalDateTime.now());
+
+        Version persisted = itemDao.persistVersion(v);
+
+        assertNotNull(persisted.getId());
+        assertNotNull(em.find(Version.class, persisted.getId()));
+    }
+
+    @Test
+    public void testPersistAvailability() {
+        Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        Version v = insertVersion(em, item, itemType, location, "Boat");
+        em.flush();
+
+        Availability availability = new Availability();
+        availability.setVersion(v);
+        availability.setWeekday(WeekdayEnum.MONDAY);
+        availability.setStartTime(LocalTime.of(9, 0));
+        availability.setEndTime(LocalTime.of(17, 0));
+
+        Availability persisted = itemDao.persistAvailability(availability);
+
+        assertNotNull(persisted.getId());
+        assertNotNull(em.find(Availability.class, persisted.getId()));
+    }
+
+    @Test
+    public void testPersistMedia() {
+        Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        Version v = insertVersion(em, item, itemType, location, "Boat");
+        Image image = insertImage(em);
+        em.flush();
+
+        Media media = new Media();
+        media.setId(new MediaId(v.getId(), 0));
+        media.setVersion(v);
+        media.setImage(image);
+
+        Media persisted = itemDao.persistMedia(media);
+
+        assertNotNull(em.find(Media.class, persisted.getId()));
+    }
+
+    @Test
+    public void testFindVersionByIdFound() {
+        Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        Version v = insertVersion(
+                em, item, itemType, location, "Boat", BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now());
+        em.flush();
+
+        Optional<Version> result = itemDao.findVersionById(v.getId());
+
+        assertTrue(result.isPresent());
+        assertEquals(v.getId(), result.get().getId());
+        assertEquals("Boat", result.get().getTitle());
+    }
+
+    @Test
+    public void testRemoveVersionChildrenAvailabilities() {
+        Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        Version v = insertVersion(
+                em, item, itemType, location, "Boat", BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now());
+        em.flush();
+
+        Version managed = em.find(Version.class, v.getId());
+        Availability availability =
+                insertAvailability(em, managed, WeekdayEnum.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0));
+        em.flush();
+        em.clear();
+
+        managed = em.find(Version.class, v.getId());
+        itemDao.removeVersionChildren(managed);
+        em.flush();
+
+        assertNull(em.find(Availability.class, availability.getId()));
+    }
+
+    @Test
+    public void testRemoveVersionChildrenMedia() {
+        Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
+        Version v = insertVersion(
+                em, item, itemType, location, "Boat", BigDecimal.valueOf(100), 4, 200, 2, LocalDateTime.now());
+        em.flush();
+
+        Version managed = em.find(Version.class, v.getId());
+        Availability availability =
+                insertAvailability(em, managed, WeekdayEnum.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0));
+        Image image = insertImage(em);
+        Media media = insertMedia(em, managed, image, 0);
+        em.flush();
+        em.clear();
+
+        managed = em.find(Version.class, v.getId());
+        itemDao.removeVersionChildren(managed);
+        em.flush();
+
+        assertNull(em.find(Availability.class, availability.getId()));
+        assertNull(em.find(Media.class, media.getId()));
+        assertNotNull(em.find(Image.class, image.getId()));
     }
 }

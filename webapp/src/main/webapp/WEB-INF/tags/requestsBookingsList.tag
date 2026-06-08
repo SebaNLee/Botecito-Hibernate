@@ -4,7 +4,6 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 
-<fmt:setLocale value="es_AR" />
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ attribute name="formActionPath" required="true" type="java.lang.String" %>
 <%@ attribute name="sidebarActive" required="true" type="java.lang.String" %>
@@ -195,10 +194,24 @@
         <p class="text-on-surface-variant mt-2 m-0">
           <c:choose>
             <c:when test="${isIncoming}">
-              <spring:message code="requests.incoming.resultsCount" arguments="${bookingPage.totalItems}" />
+              <c:choose>
+                <c:when test="${bookingPage.totalItems == 1}">
+                  <spring:message code="requests.incoming.resultsCount.singular" />
+                </c:when>
+                <c:otherwise>
+                  <spring:message code="requests.incoming.resultsCount.plural" arguments="${bookingPage.totalItems}" />
+                </c:otherwise>
+              </c:choose>
             </c:when>
             <c:otherwise>
-              <spring:message code="requests.outgoing.resultsCount" arguments="${bookingPage.totalItems}" />
+              <c:choose>
+                <c:when test="${bookingPage.totalItems == 1}">
+                  <spring:message code="requests.outgoing.resultsCount.singular" />
+                </c:when>
+                <c:otherwise>
+                  <spring:message code="requests.outgoing.resultsCount.plural" arguments="${bookingPage.totalItems}" />
+                </c:otherwise>
+              </c:choose>
             </c:otherwise>
           </c:choose>
         </p>
@@ -243,7 +256,7 @@
 
               <div class="flex flex-col md:flex-row w-full bg-base-100 rounded-xl border border-outline-variant/30 shadow-sm overflow-hidden p-0">
                 <div class="relative flex flex-col md:flex-row flex-1 min-w-0 transition hover:bg-base-200">
-                  <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-l-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${b.version.title}'/>"></a>
+                  <a href="${itemDetailUrl}" class="absolute inset-0 z-0 rounded-l-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${b.version.title}'/>"></a>
 
                   <!-- Image Side -->
                   <div class="pointer-events-none relative z-0 flex w-full md:w-48 shrink-0 items-center justify-center bg-base-300 md:border-r border-outline-variant/20 p-4 h-32 md:h-auto overflow-hidden">
@@ -523,23 +536,14 @@
         </c:otherwise>
       </c:choose>
 
-      <c:if test="${bookingPage.totalPages > 1}">
-        <nav class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
-          <c:choose>
-            <c:when test="${bookingPage.hasPrevious}">
-              <a href="${previousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2"><span class="material-symbols-outlined text-sm">arrow_back</span><spring:message code="marketplace.pagination.previous" /></a>
-            </c:when>
-            <c:otherwise><span class="btn btn-outline btn-sm btn-disabled gap-2"><span class="material-symbols-outlined text-sm">arrow_back</span><spring:message code="marketplace.pagination.previous" /></span></c:otherwise>
-          </c:choose>
-          <span><spring:message code="marketplace.pagination.page" arguments="${bookingPage.page},${bookingPage.totalPages}" /></span>
-          <c:choose>
-            <c:when test="${bookingPage.hasNext}">
-              <a href="${nextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2"><spring:message code="marketplace.pagination.next" /><span class="material-symbols-outlined text-sm">arrow_forward</span></a>
-            </c:when>
-            <c:otherwise><span class="btn btn-outline btn-sm btn-disabled gap-2"><spring:message code="marketplace.pagination.next" /><span class="material-symbols-outlined text-sm">arrow_forward</span></span></c:otherwise>
-          </c:choose>
-        </nav>
-      </c:if>
+      <paw:pagination
+          currentPage="${bookingPage.page}"
+          totalPages="${bookingPage.totalPages}"
+          hasPrevious="${bookingPage.hasPrevious}"
+          hasNext="${bookingPage.hasNext}"
+          previousPageUrl="${previousPageUrl}"
+          nextPageUrl="${nextPageUrl}"
+          navClass="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant" />
     </div>
   </section>
 </div>

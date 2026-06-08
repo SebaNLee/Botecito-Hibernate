@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.*;
 import ar.edu.itba.paw.models.exceptions.*;
 import ar.edu.itba.paw.persistence.BookingDao;
@@ -57,7 +57,7 @@ public class BookingImplTest {
 
     @Test
     public void testSearch() {
-        var result = new SearchResult<Booking>(List.of(), 0);
+        var result = new PageModel<Booking>(List.of(), 1, 12, 0);
         when(bookingDao.searchBookings(any())).thenReturn(result);
 
         var actual = bookingService.searchBookings(OWNER_ID, true, null, null, null, 1, 10, null);

@@ -2,8 +2,7 @@ package ar.edu.itba.paw.webapp.controller;
 
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.exceptions.UserNotFoundException;
-import ar.edu.itba.paw.services.ItemService;
-import ar.edu.itba.paw.services.ReviewService;
+import ar.edu.itba.paw.services.ProfileService;
 import ar.edu.itba.paw.services.SubscriptionService;
 import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
@@ -26,8 +25,7 @@ import org.springframework.web.servlet.ModelAndView;
 public class ProfileController {
 
     private final UserService userService;
-    private final ItemService itemService;
-    private final ReviewService reviewService;
+    private final ProfileService profileService;
     private final SubscriptionService subscriptionService;
     private final ProfilePresentation profilePresentation;
 
@@ -64,13 +62,8 @@ public class ProfileController {
             return profilePresentation.profileListingsErrors(viewer, profileUser, profileListingsView, errors);
         }
 
-        final var listingsPage = itemService.listOwnerItems(
-                id,
-                null,
-                null,
-                profileListingsView.getPage(),
-                profileListingsView.getPageSize(),
-                profileListingsView.getSortBy());
+        final var listingsPage = profileService.listProfileListings(
+                id, profileListingsView.getPage(), profileListingsView.getPageSize(), profileListingsView.getSortBy());
 
         final boolean isSelf = viewer != null && viewer.getId() == profileUser.getId();
         final boolean isSubscribed =
@@ -93,8 +86,7 @@ public class ProfileController {
             return profilePresentation.profileReviewsErrors(viewer, profileUser, profileReviewsView, errors);
         }
 
-        final var reviewsPage = reviewService.findReviewsAboutHost(id, profileReviewsView.getPage());
-        final Double averageRating = reviewService.averageRatingAboutHost(id).orElse(null);
+        final var hostReviewsPage = profileService.findHostReviewsPage(id, profileReviewsView.getPage());
 
         final boolean isSelf = viewer != null && viewer.getId() == profileUser.getId();
         final boolean isSubscribed =
@@ -102,6 +94,12 @@ public class ProfileController {
         final int followersCount = subscriptionService.countFollowers(id);
 
         return profilePresentation.profileReviews(
-                profileUser, reviewsPage, averageRating, followersCount, isSelf, isSubscribed, profileReviewsView);
+                profileUser,
+                hostReviewsPage.getReviews(),
+                hostReviewsPage.getAverageRating(),
+                followersCount,
+                isSelf,
+                isSubscribed,
+                profileReviewsView);
     }
 }

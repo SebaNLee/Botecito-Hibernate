@@ -50,6 +50,13 @@
       paramKeys: ["searchQuery", "date", "status", "sortBy", "pageSize"],
       sidebarParamKeys: ["date", "status"],
     },
+    {
+      id: "adminReports",
+      pathSuffix: "/admin/reports",
+      formSelector: "#admin-reports-filters-form",
+      storageKey: "paw.adminReportsFilters",
+      paramKeys: ["sortBy", "pageSize"],
+    },
   ];
 
   const NAV_LINK_SELECTOR = "[data-nav-filter-page]";
@@ -295,6 +302,44 @@
     }
   }
 
+  function syncListPageUrlFromStorageIfNeeded(preset) {
+    const urlState = readUrlParams(preset.paramKeys);
+    if (hasAnyParam(urlState, preset.paramKeys)) {
+      return false;
+    }
+
+    const stored = readStoredState(preset.storageKey, preset.paramKeys);
+    if (!hasAnyParam(stored, preset.paramKeys)) {
+      return false;
+    }
+
+    let target = buildUrlWithParams(window.location.pathname, stored, preset.paramKeys);
+    const currentPage = trimParam(new URL(window.location.href, window.location.origin).searchParams.get("page"));
+    if (currentPage) {
+      const targetUrl = new URL(target, window.location.origin);
+      targetUrl.searchParams.set("page", currentPage);
+      target = targetUrl.pathname + targetUrl.search;
+    }
+    if (pathAndSearch(window.location.href) !== pathAndSearch(target)) {
+      window.location.replace(target);
+      return true;
+    }
+    return false;
+  }
+
+  function persistApplied() {
+    const preset = findActiveListPreset();
+    if (!preset) {
+      return;
+    }
+    const form = document.querySelector(preset.formSelector);
+    if (!form) {
+      return;
+    }
+    const snapshot = readFormParams(form, preset.paramKeys);
+    writeStoredState(preset.storageKey, snapshot, preset.paramKeys);
+  }
+
   function bindClearListFiltersLinks() {
     document.querySelectorAll("[data-clear-list-filters]").forEach((link) => {
       link.addEventListener("click", () => {
@@ -440,6 +485,9 @@
   function initializeListPages() {
     const preset = findActiveListPreset();
     if (!preset) {
+      return;
+    }
+    if (syncListPageUrlFromStorageIfNeeded(preset)) {
       return;
     }
     syncListPageStorageFromUrl(preset);

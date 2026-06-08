@@ -6,7 +6,6 @@ import ar.edu.itba.paw.models.entity.Favourite;
 import ar.edu.itba.paw.models.entity.FavouriteId;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
-import ar.edu.itba.paw.models.entity.TargetEnum;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.persistence.utils.Paging;
@@ -118,7 +117,6 @@ public class FavouriteJpaDao implements FavouriteDao {
             item.setLatestVersion(version);
             items.add(item);
         }
-        populateReviewTransients(items);
         return new PageModel<>(items, query.getPage(), query.getPageSize(), totalCount);
     }
 
@@ -187,35 +185,5 @@ public class FavouriteJpaDao implements FavouriteDao {
 
     private static boolean isEmpty(final String value) {
         return value == null || value.isBlank();
-    }
-
-    private void populateReviewTransients(final List<Item> items) {
-        for (final Item item : items) {
-            final long totalReviews = countReviewsForItem(item.getId());
-            item.setTotalReviews(totalReviews);
-            if (totalReviews > 0) {
-                item.setAverageRating(averageRatingForItem(item.getId()));
-            }
-        }
-    }
-
-    private long countReviewsForItem(final int itemId) {
-        final Query query = em.createNativeQuery("SELECT COUNT(r.id) FROM review r "
-                + "INNER JOIN booking b ON r.booking_id = b.id "
-                + "INNER JOIN version v2 ON b.version_id = v2.id "
-                + "WHERE r.target_type = CAST(:target AS target_enum) AND v2.item_id = :itemId");
-        query.setParameter("target", TargetEnum.ITEM.name());
-        query.setParameter("itemId", itemId);
-        return ((Number) query.getSingleResult()).longValue();
-    }
-
-    private double averageRatingForItem(final int itemId) {
-        final Query query = em.createNativeQuery("SELECT COALESCE(AVG(r.rating), 0) FROM review r "
-                + "INNER JOIN booking b ON r.booking_id = b.id "
-                + "INNER JOIN version v2 ON b.version_id = v2.id "
-                + "WHERE r.target_type = CAST(:target AS target_enum) AND v2.item_id = :itemId");
-        query.setParameter("target", TargetEnum.ITEM.name());
-        query.setParameter("itemId", itemId);
-        return ((Number) query.getSingleResult()).doubleValue();
     }
 }

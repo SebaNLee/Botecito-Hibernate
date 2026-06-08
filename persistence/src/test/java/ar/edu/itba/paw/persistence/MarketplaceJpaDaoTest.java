@@ -4,7 +4,7 @@ import static ar.edu.itba.paw.persistence.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
-import ar.edu.itba.paw.models.dto.SearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.*;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -54,10 +54,10 @@ public class MarketplaceJpaDaoTest {
         query.setPageSize(12);
         query.setSortBy("newest");
 
-        SearchResult<Item> result = marketplaceDao.searchMarketplace(query);
+        PageModel<Item> result = marketplaceDao.searchMarketplace(query);
 
-        assertEquals(1, result.getTotalCount());
-        assertEquals(item.getId(), result.getPageElements().get(0).getId());
+        assertEquals(1, result.getTotalItems());
+        assertEquals(item.getId(), result.getContent().get(0).getId());
     }
 
     @Test
@@ -74,10 +74,10 @@ public class MarketplaceJpaDaoTest {
         query.setPageSize(12);
         query.setSortBy("newest");
 
-        SearchResult<Item> result = marketplaceDao.searchMarketplace(query);
+        PageModel<Item> result = marketplaceDao.searchMarketplace(query);
 
-        assertEquals(1, result.getTotalCount());
-        assertEquals(itemA.getId(), result.getPageElements().get(0).getId());
+        assertEquals(1, result.getTotalItems());
+        assertEquals(itemA.getId(), result.getContent().get(0).getId());
     }
 
     @Test
@@ -94,10 +94,10 @@ public class MarketplaceJpaDaoTest {
         query.setPageSize(12);
         query.setSortBy("newest");
 
-        SearchResult<Item> result = marketplaceDao.searchMarketplace(query);
+        PageModel<Item> result = marketplaceDao.searchMarketplace(query);
 
-        assertEquals(1, result.getTotalCount());
-        assertEquals(paddleItem.getId(), result.getPageElements().get(0).getId());
+        assertEquals(1, result.getTotalItems());
+        assertEquals(paddleItem.getId(), result.getContent().get(0).getId());
     }
 
     @Test
@@ -113,9 +113,9 @@ public class MarketplaceJpaDaoTest {
         query.setPageSize(12);
         query.setSortBy("newest");
 
-        SearchResult<Item> result = marketplaceDao.searchMarketplace(query);
+        PageModel<Item> result = marketplaceDao.searchMarketplace(query);
 
-        assertEquals(14, result.getTotalCount());
-        assertEquals(12, result.getPageElements().size());
+        assertEquals(14, result.getTotalItems());
+        assertEquals(12, result.getContent().size());
     }
 }

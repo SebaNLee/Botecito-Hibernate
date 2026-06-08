@@ -98,7 +98,7 @@ public class SubscriptionPresentation {
             ToastSupport.info(redirectAttributes, "subscription.removed");
         }
         addSettingsViewParams(redirectAttributes, view);
-        return new ModelAndView("redirect:/settings");
+        return new ModelAndView("redirect:/settings#settings-subscriptions");
     }
 
     private static ModelAndView itemDetailRedirect(
@@ -112,37 +112,37 @@ public class SubscriptionPresentation {
 
     private static void addItemDetailViewParams(
             final RedirectAttributes redirectAttributes, final ItemDetailViewForm view) {
-        if (view.getPage() > 1) {
+        if (view.getPage() != null && view.getPage() > 1) {
             redirectAttributes.addAttribute("page", view.getPage());
         }
     }
 
     private static void addProfileListingsViewParams(
             final RedirectAttributes redirectAttributes, final ProfileListingsViewForm view) {
-        if (view.getPage() > 1) {
+        if (view.getPage() != null && view.getPage() > 1) {
             redirectAttributes.addAttribute("page", view.getPage());
         }
         if (!"newest".equals(view.getSortBy())) {
             redirectAttributes.addAttribute("sortBy", view.getSortBy());
         }
-        if (view.getPageSize() != 12) {
+        if (view.getPageSize() != null && view.getPageSize() != 12) {
             redirectAttributes.addAttribute("pageSize", view.getPageSize());
         }
     }
 
     private static void addProfileReviewsViewParams(
             final RedirectAttributes redirectAttributes, final ProfileReviewsViewForm view) {
-        if (view.getPage() > 1) {
+        if (view.getPage() != null && view.getPage() > 1) {
             redirectAttributes.addAttribute("page", view.getPage());
         }
     }
 
     private static void addSettingsViewParams(
             final RedirectAttributes redirectAttributes, final SettingsViewForm view) {
-        if (view.getPage() > 1) {
+        if (view.getPage() != null && view.getPage() > 1) {
             redirectAttributes.addAttribute("page", view.getPage());
         }
-        if (view.getPageSize() != 6) {
+        if (view.getPageSize() != null && view.getPageSize() != 6) {
             redirectAttributes.addAttribute("pageSize", view.getPageSize());
         }
         if (Boolean.TRUE.equals(view.getEdit())) {

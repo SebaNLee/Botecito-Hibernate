@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.models.entity;
 
 import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.ReviewSummary;
 import java.time.LocalDateTime;
 import java.util.List;
 import javax.persistence.Column;
@@ -64,12 +65,8 @@ public class Item {
     private List<Booking> bookings;
 
     @Transient
-    private PageModel<Review> reviewPage;
-
-    // TODO: See if it can be removed if we use the PageModel
-    @Transient
-    private long totalReviews;
+    private ReviewSummary reviewSummary;
 
     @Transient
-    private double averageRating;
+    private PageModel<Review> itemReviews;
 }

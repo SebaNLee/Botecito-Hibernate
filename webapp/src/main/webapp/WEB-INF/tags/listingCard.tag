@@ -10,7 +10,6 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 
-<fmt:setLocale value="es_AR" />
 <spring:message code="reviews.empty.short" var="reviewsEmptyShortLabel" />
 <c:url var="itemUrl" value="/item/${item.id}" />
 <c:choose>
@@ -66,10 +65,17 @@
       <div class="flex items-center gap-1 text-sm font-semibold text-on-surface-variant">
         <span class="material-symbols-outlined text-base icon-star-filled">star</span>
         <c:choose>
-          <c:when test="${item.totalReviews > 0}">
-            <fmt:formatNumber value="${item.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
+          <c:when test="${item.reviewSummary != null and item.reviewSummary.totalReviews > 0}">
+            <fmt:formatNumber value="${item.reviewSummary.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
             <span class="text-outline">
-              (<spring:message code="itemDetail.reviews.count" arguments="${item.totalReviews}" />)
+              (<c:choose>
+                <c:when test="${item.reviewSummary.totalReviews == 1}">
+                  <spring:message code="itemDetail.reviews.count.singular" />
+                </c:when>
+                <c:otherwise>
+                  <spring:message code="itemDetail.reviews.count.plural" arguments="${item.reviewSummary.totalReviews}" />
+                </c:otherwise>
+              </c:choose>)
             </span>
           </c:when>
           <c:otherwise>

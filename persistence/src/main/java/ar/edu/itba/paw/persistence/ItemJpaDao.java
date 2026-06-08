@@ -227,28 +227,22 @@ public class ItemJpaDao implements ItemDao {
     /**
      * Elimina disponibilidades e imágenes de una versión.
      *
-     * <p>Se borra entidad por entidad con {@code em.remove()} en lugar de un {@code DELETE} JPQL
-     * masivo porque, en el flujo de edición, las colecciones ya pueden estar cargadas en el
-     * persistence context de Hibernate (p. ej. vía {@code requireOwnedFullData}). Un borrado masivo
-     * elimina las filas en la base pero deja instancias administradas en la sesión; al reinsertar
-     * {@code Media} con la misma clave compuesta {@code (version_id, index)} se produce
-     * {@code EntityExistsException}.
+     * <p>{@code Availability} usa {@code DELETE} JPQL masivo: al reinsertar se generan IDs nuevos
+     * con secuencia, por lo que no hay conflicto aunque queden instancias viejas en la sesión.
      *
-     * <p>Peor caso: pocas entidades por versión (galería acotada a 3 imágenes y ventanas de
-     * disponibilidad limitadas), por lo que el costo extra de N {@code remove()} es despreciable
-     * frente a la corrección del estado de la sesión.
+     * <p>{@code Media} se borra con {@code em.remove()} entidad por entidad porque, en el flujo de
+     * edición, la colección ya puede estar cargada en el persistence context (p. ej. vía
+     * {@code requireOwnedFullData}). Un borrado masivo elimina las filas en la base pero deja
+     * instancias administradas en la sesión; al reinsertar con la misma clave compuesta
+     * {@code (version_id, index)} se produce {@code EntityExistsException}.
      */
     @Override
     public void removeVersionChildren(final Version version) {
         final int versionId = version.getId();
 
-        final List<Availability> availabilities = em.createQuery(
-                        "SELECT a FROM Availability a WHERE a.version.id = :vid", Availability.class)
+        em.createQuery("DELETE FROM Availability a WHERE a.version.id = :vid")
                 .setParameter("vid", versionId)
-                .getResultList();
-        for (final Availability availability : availabilities) {
-            em.remove(availability);
-        }
+                .executeUpdate();
         if (version.getAvailabilities() != null) {
             version.getAvailabilities().clear();
         }

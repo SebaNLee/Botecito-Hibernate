@@ -9,7 +9,7 @@
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 
-<fmt:setLocale value="${pageContext.response.locale}" />
+<fmt:setLocale value="${pageContext.response.locale}" scope="request" />
 <c:set var="resolvedMainClass" value="${not empty mainClass ? mainClass : 'relative min-h-screen flex flex-col pt-20'}" />
 <c:set var="resolvedLang" value="${not empty pageContext.response.locale.language ? pageContext.response.locale.language : 'es'}" />
 

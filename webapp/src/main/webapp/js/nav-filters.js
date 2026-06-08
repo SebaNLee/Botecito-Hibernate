@@ -313,7 +313,13 @@
       return false;
     }
 
-    const target = buildUrlWithParams(window.location.pathname, stored, preset.paramKeys);
+    let target = buildUrlWithParams(window.location.pathname, stored, preset.paramKeys);
+    const currentPage = trimParam(new URL(window.location.href, window.location.origin).searchParams.get("page"));
+    if (currentPage) {
+      const targetUrl = new URL(target, window.location.origin);
+      targetUrl.searchParams.set("page", currentPage);
+      target = targetUrl.pathname + targetUrl.search;
+    }
     if (pathAndSearch(window.location.href) !== pathAndSearch(target)) {
       window.location.replace(target);
       return true;

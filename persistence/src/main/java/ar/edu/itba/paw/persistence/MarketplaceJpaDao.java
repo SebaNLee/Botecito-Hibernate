@@ -6,7 +6,6 @@ import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.TargetEnum;
 import ar.edu.itba.paw.models.entity.Version;
-import ar.edu.itba.paw.persistence.utils.ItemReviewSql;
 import ar.edu.itba.paw.persistence.utils.Paging;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,6 +28,13 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             + "JOIN FETCH v.item JOIN FETCH v.location JOIN FETCH v.type "
             + "LEFT JOIN FETCH v.media m LEFT JOIN FETCH m.image "
             + "WHERE v.id IN :ids";
+
+    private static final String MIN_AVG_RATING_FILTER = "v.item_id IN (SELECT v2.item_id FROM review r "
+            + "INNER JOIN booking b ON r.booking_id = b.id "
+            + "INNER JOIN version v2 ON b.version_id = v2.id "
+            + "WHERE r.target_type = CAST(:itemTargetType AS target_enum) "
+            + "GROUP BY v2.item_id "
+            + "HAVING COALESCE(AVG(r.rating), 0) >= :minAvgRating)";
 
     @PersistenceContext
     private EntityManager em;
@@ -129,8 +135,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             parameters.put("difficulty", query.getDifficulty());
         }
         if (query.getMinAvgRating() != null) {
-            sql += ItemReviewSql.MARKETPLACE_REVIEW_AVERAGES_JOIN;
-            whereClauses.add("COALESCE(item_reviews.average_rating, 0) >= :minAvgRating");
+            whereClauses.add(MIN_AVG_RATING_FILTER);
             parameters.put("itemTargetType", TargetEnum.ITEM.name());
             parameters.put("minAvgRating", query.getMinAvgRating());
         }

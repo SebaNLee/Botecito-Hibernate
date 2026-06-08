@@ -125,7 +125,7 @@ public class SubscriptionPresentation {
         if (!"newest".equals(view.getSortBy())) {
             redirectAttributes.addAttribute("sortBy", view.getSortBy());
         }
-        if (view.getPageSize() != 12) {
+        if (view.getPageSize() != null && view.getPageSize() != 12) {
             redirectAttributes.addAttribute("pageSize", view.getPageSize());
         }
     }
@@ -142,7 +142,7 @@ public class SubscriptionPresentation {
         if (view.getPage() != null && view.getPage() > 1) {
             redirectAttributes.addAttribute("page", view.getPage());
         }
-        if (view.getPageSize() != 6) {
+        if (view.getPageSize() != null && view.getPageSize() != 6) {
             redirectAttributes.addAttribute("pageSize", view.getPageSize());
         }
         if (Boolean.TRUE.equals(view.getEdit())) {

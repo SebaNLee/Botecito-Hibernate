@@ -40,6 +40,15 @@ public class SubscriptionController {
         return form;
     }
 
+    @ModelAttribute("settingsView")
+    public SettingsViewForm defaultSettingsView() {
+        final SettingsViewForm form = new SettingsViewForm();
+        form.setPage(1);
+        form.setPageSize(6);
+        form.setEdit(false);
+        return form;
+    }
+
     @RequestMapping(value = "/profiles/{id:[1-9]\\d*}/listings/subscribe", method = RequestMethod.POST)
     public ModelAndView subscribeFromProfileListings(
             @AuthenticationPrincipal final BotecitoUserDetails user,

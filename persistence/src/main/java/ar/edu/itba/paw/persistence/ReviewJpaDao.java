@@ -41,11 +41,11 @@ public class ReviewJpaDao implements ReviewDao {
             + "INNER JOIN booking b ON r.booking_id = b.id "
             + "INNER JOIN version v2 ON b.version_id = v2.id "
             + "WHERE r.target_type = CAST(:itemTargetType AS target_enum) AND v2.item_id = :itemId "
-            + "ORDER BY r.created_at DESC";
+            + "ORDER BY r.created_at DESC, r.id DESC";
 
     private static final String REVIEW_FETCH_JPQL =
             "FROM Review r JOIN FETCH r.booking b LEFT JOIN FETCH r.sender WHERE r.id IN :ids "
-                    + "ORDER BY r.createdAt DESC";
+                    + "ORDER BY r.createdAt DESC, r.id DESC";
 
     @PersistenceContext
     private EntityManager entityManager;

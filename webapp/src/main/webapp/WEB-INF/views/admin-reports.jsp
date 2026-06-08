@@ -62,7 +62,7 @@
           action="<c:url value='/admin/reports' />"
           method="get"
           class="flex items-center gap-3 text-sm font-medium text-on-surface-variant">
-        <input type="hidden" name="page" value="${adminReportsSearch.page}" />
+        <input type="hidden" name="page" value="1" />
         <label for="admin-reports-sort" class="shrink-0"><c:out value="${sortLabel}" /></label>
         <select
             id="admin-reports-sort"

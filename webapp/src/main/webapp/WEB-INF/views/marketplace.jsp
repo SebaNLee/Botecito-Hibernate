@@ -117,7 +117,7 @@
   <paw:toastNotifier />
   <aside class="relative z-40 w-full md:min-w-0">
     <div class="space-y-6">
-      <a href="${homeUrl}" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
+      <a href="<c:out value='${homeUrl}' />" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
         <span class="material-symbols-outlined">arrow_back</span>
         <span><spring:message code="marketplace.back.home" /></span>
       </a>
@@ -125,7 +125,7 @@
       <paw:sectionCard element="aside" icon="tune">
         <jsp:attribute name="title"><spring:message code="marketplace.filters.title" /></jsp:attribute>
         <jsp:body>
-          <form id="marketplace-filters-form" action="${marketplaceUrl}" method="get" class="space-y-6" data-filter-form="marketplace">
+          <form id="marketplace-filters-form" action="<c:out value='${marketplaceUrl}' />" method="get" class="space-y-6" data-filter-form="marketplace">
             <input type="hidden" name="page" value="1" />
             <input type="hidden" name="pageSize" value="${marketplaceSearch.pageSize}" />
             <paw:optionsPicker
@@ -184,12 +184,12 @@
                 <c:out value="${difficultyFilterLabel}" />
               </label>
               <select id="marketplace-difficulty" name="difficulty" class="select select-bordered w-full font-semibold text-on-surface">
-                <option value="" ${empty param.difficulty ? 'selected="selected"' : ''}><c:out value="${difficultyAnyLabel}" /></option>
-                <option value="1" ${param.difficulty == '1' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.1" /></option>
-                <option value="2" ${param.difficulty == '2' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.2" /></option>
-                <option value="3" ${param.difficulty == '3' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.3" /></option>
-                <option value="4" ${param.difficulty == '4' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.4" /></option>
-                <option value="5" ${param.difficulty == '5' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.5" /></option>
+                <option value="" <c:if test="${empty param.difficulty}">selected="selected"</c:if>><c:out value="${difficultyAnyLabel}" /></option>
+                <option value="1" <c:if test="${param.difficulty == '1'}">selected="selected"</c:if>><spring:message code="publish.difficulty.1" /></option>
+                <option value="2" <c:if test="${param.difficulty == '2'}">selected="selected"</c:if>><spring:message code="publish.difficulty.2" /></option>
+                <option value="3" <c:if test="${param.difficulty == '3'}">selected="selected"</c:if>><spring:message code="publish.difficulty.3" /></option>
+                <option value="4" <c:if test="${param.difficulty == '4'}">selected="selected"</c:if>><spring:message code="publish.difficulty.4" /></option>
+                <option value="5" <c:if test="${param.difficulty == '5'}">selected="selected"</c:if>><spring:message code="publish.difficulty.5" /></option>
               </select>
             </div>
 
@@ -214,7 +214,7 @@
             <div class="flex flex-col gap-3">
               <paw:button type="submit" color="primary" fullWidth="true" text="${filtersApplyLabel}" />
               <a
-                  href="${clearMarketplaceFiltersUrl}"
+                  href="<c:out value='${clearMarketplaceFiltersUrl}' />"
                   class="btn btn-outline btn-block no-underline"
                   data-clear-marketplace-filters>
                 <c:out value="${filtersClearLabel}" />
@@ -256,7 +256,7 @@
       </div>
 
       <form
-          action="${marketplaceUrl}"
+          action="<c:out value='${marketplaceUrl}' />"
           method="get"
           class="flex items-center gap-3 text-sm font-medium text-on-surface-variant"
           data-marketplace-toolbar-form>
@@ -273,16 +273,16 @@
         <input type="hidden" name="minAvgRating" value="<c:out value='${marketplaceSearch.minAvgRating}'/>" data-applied-filter-mirror />
         <label for="marketplace-sort" class="shrink-0"><spring:message code="marketplace.sort.label" /></label>
         <select id="marketplace-sort" name="sortBy" class="select select-sm font-bold text-primary">
-          <option value="newest" ${marketplaceSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.newest" /></option>
-          <option value="oldest" ${marketplaceSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.oldest" /></option>
-          <option value="priceAsc" ${marketplaceSearch.sortBy == 'priceAsc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceAsc" /></option>
-          <option value="priceDesc" ${marketplaceSearch.sortBy == 'priceDesc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceDesc" /></option>
+          <option value="newest" <c:if test="${marketplaceSearch.sortBy == 'newest'}">selected="selected"</c:if>><spring:message code="marketplace.sort.newest" /></option>
+          <option value="oldest" <c:if test="${marketplaceSearch.sortBy == 'oldest'}">selected="selected"</c:if>><spring:message code="marketplace.sort.oldest" /></option>
+          <option value="priceAsc" <c:if test="${marketplaceSearch.sortBy == 'priceAsc'}">selected="selected"</c:if>><spring:message code="marketplace.sort.priceAsc" /></option>
+          <option value="priceDesc" <c:if test="${marketplaceSearch.sortBy == 'priceDesc'}">selected="selected"</c:if>><spring:message code="marketplace.sort.priceDesc" /></option>
         </select>
         <label for="marketplace-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
         <select id="marketplace-page-size" name="pageSize" class="select select-sm w-20 font-bold text-primary">
-            <option value="6" ${marketplaceSearch.pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-            <option value="12" ${marketplaceSearch.pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-            <option value="18" ${marketplaceSearch.pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+            <option value="6" <c:if test="${marketplaceSearch.pageSize == 6}">selected="selected"</c:if>>6</option>
+            <option value="12" <c:if test="${marketplaceSearch.pageSize == 12}">selected="selected"</c:if>>12</option>
+            <option value="18" <c:if test="${marketplaceSearch.pageSize == 18}">selected="selected"</c:if>>18</option>
         </select>
       </form>
     </div>
@@ -297,7 +297,7 @@
             <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><spring:message code="marketplace.empty.title" /></h2>
             <p class="m-0 mt-2 text-on-surface-variant"><spring:message code="marketplace.empty.message" /></p>
           </div>
-          <a href="${clearMarketplaceFiltersUrl}" class="btn btn-primary no-underline" data-clear-marketplace-filters>
+          <a href="<c:out value='${clearMarketplaceFiltersUrl}' />" class="btn btn-primary no-underline" data-clear-marketplace-filters>
             <spring:message code="marketplace.empty.clear" />
           </a>
         </div>

@@ -35,7 +35,7 @@ import org.springframework.web.servlet.view.InternalResourceViewResolver;
 @EnableAsync
 @EnableScheduling
 @EnableTransactionManagement
-@Import(MailConfig.class)
+@Import({MailConfig.class, GlobalModelAdvice.class})
 @ComponentScan({
     "ar.edu.itba.paw.webapp.controller",
     "ar.edu.itba.paw.webapp.presentation",

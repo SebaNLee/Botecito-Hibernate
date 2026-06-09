@@ -11,10 +11,10 @@
 
 <c:if test="${totalPages > 1}">
   <c:set var="resolvedNavClass" value="${not empty navClass ? navClass : 'mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant'}" />
-  <nav class="${resolvedNavClass}">
+  <nav class="<c:out value='${resolvedNavClass}' />">
     <c:choose>
       <c:when test="${hasPrevious}">
-        <a href="${previousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
+        <a href="<c:out value='${previousPageUrl}' />" class="btn btn-outline btn-sm no-underline gap-2">
           <span class="material-symbols-outlined text-sm">arrow_back</span>
           <spring:message code="marketplace.pagination.previous" />
         </a>
@@ -33,7 +33,7 @@
 
     <c:choose>
       <c:when test="${hasNext}">
-        <a href="${nextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
+        <a href="<c:out value='${nextPageUrl}' />" class="btn btn-outline btn-sm no-underline gap-2">
           <spring:message code="marketplace.pagination.next" />
           <span class="material-symbols-outlined text-sm">arrow_forward</span>
         </a>

@@ -56,7 +56,7 @@
             <div class="flex min-w-0 items-center gap-4">
               <div class="avatar placeholder shrink-0">
                 <div class="bg-primary text-primary-content rounded-full w-16 h-16 flex items-center justify-center">
-                  <span class="font-bold text-2xl font-headline">${initials}</span>
+                  <span class="font-bold text-2xl font-headline"><c:out value="${initials}" /></span>
                 </div>
               </div>
               <div class="min-w-0">
@@ -107,11 +107,19 @@
                   <spring:message code="settings.preferredLanguage" />
                   <c:if test="${settingsEdit}"><span class="text-error" aria-hidden="true">*</span></c:if>
                 </legend>
+                <c:choose>
+                  <c:when test="${not settingsEdit}">
+                    <c:set var="preferredLanguageSelectClass" value="select w-full select-disabled cursor-default opacity-90" />
+                  </c:when>
+                  <c:otherwise>
+                    <c:set var="preferredLanguageSelectClass" value="select w-full" />
+                  </c:otherwise>
+                </c:choose>
                 <form:select
                     path="preferredLanguage"
                     id="preferredLanguage"
                     disabled="${not settingsEdit}"
-                    cssClass="select w-full ${not settingsEdit ? 'select-disabled cursor-default opacity-90' : ''}"
+                    cssClass="${preferredLanguageSelectClass}"
                     cssErrorClass="select select-error w-full"
                 >
                   <form:option value="es" label="${spanishLabel}" />
@@ -179,7 +187,7 @@
                           <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><c:out value="${filterEmptyTitleLabel}" /></h2>
                           <p class="m-0 mt-2 text-on-surface-variant"><c:out value="${filterEmptyMessageLabel}" /></p>
                         </div>
-                        <a href="${clearSubscriptionsFiltersUrl}" class="btn btn-primary no-underline" data-clear-list-filters>
+                        <a href="<c:out value='${clearSubscriptionsFiltersUrl}' />" class="btn btn-primary no-underline" data-clear-list-filters>
                           <c:out value="${filterEmptyClearLabel}" />
                         </a>
                       </div>
@@ -195,14 +203,20 @@
               <c:otherwise>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <c:forEach items="${subscriptionsPage.content}" var="subscriptionUser">
-                    <c:set var="subscriptionFirstName" value="${subscriptionUser.firstName != null ? subscriptionUser.firstName : ''}" />
-                    <c:set var="subscriptionLastName" value="${subscriptionUser.lastName != null ? subscriptionUser.lastName : ''}" />
+                    <c:set var="subscriptionFirstName" value="" />
+                    <c:if test="${subscriptionUser.firstName != null}">
+                      <c:set var="subscriptionFirstName" value="${subscriptionUser.firstName}" />
+                    </c:if>
+                    <c:set var="subscriptionLastName" value="" />
+                    <c:if test="${subscriptionUser.lastName != null}">
+                      <c:set var="subscriptionLastName" value="${subscriptionUser.lastName}" />
+                    </c:if>
                     <c:set var="subscriptionFirstNameTrimmed" value="${fn:trim(subscriptionFirstName)}" />
                     <c:set var="subscriptionLastNameTrimmed" value="${fn:trim(subscriptionLastName)}" />
                     <c:url var="subscriptionProfileUrl" value="/profiles/${subscriptionUser.id}/listings" />
                     <div class="rounded-xl bg-base-200 p-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div class="min-w-0">
-                        <a href="${subscriptionProfileUrl}" class="m-0 font-bold text-on-surface break-words no-underline hover:underline">
+                        <a href="<c:out value='${subscriptionProfileUrl}' />" class="m-0 font-bold text-on-surface break-words no-underline hover:underline">
                           <c:choose>
                             <c:when test="${not empty subscriptionFirstNameTrimmed or not empty subscriptionLastNameTrimmed}">
                               <c:out value="${subscriptionFirstNameTrimmed}" />
@@ -215,7 +229,7 @@
                         <p class="m-0 mt-1 text-xs text-on-surface-variant break-all"><c:out value="${subscriptionUser.email}" /></p>
                       </div>
                       <c:url var="unsubscribeSettingsUrl" value="/settings/subscriptions/${subscriptionUser.id}/unsubscribe" />
-                      <form action="${unsubscribeSettingsUrl}" method="post" class="m-0 shrink-0">
+                      <form action="<c:out value='${unsubscribeSettingsUrl}' />" method="post" class="m-0 shrink-0">
                         <paw:settingsViewHiddenFields view="${settingsView}" />
                         <paw:button type="submit" color="outline" icon="notifications_off" text="${subscriptionUnsubscribeLabel}" cssClass="w-full sm:w-auto" />
                       </form>
@@ -252,10 +266,10 @@
           <div class="border-b border-outline-variant/20"></div>
 
           <div class="flex flex-wrap items-center gap-3">
-            <form action="${settingsPasswordRecoveryUrl}" method="post" class="m-0">
+            <form action="<c:out value='${settingsPasswordRecoveryUrl}' />" method="post" class="m-0">
               <paw:button type="submit" color="secondary" icon="mail" text="${passwordRecoverySendLabel}" />
             </form>
-            <form action="${logoutUrl}" method="post" class="m-0">
+            <form action="<c:out value='${logoutUrl}' />" method="post" class="m-0">
               <paw:button type="submit" variant="outline" icon="logout" text="${logoutLabel}" />
             </form>
           </div>

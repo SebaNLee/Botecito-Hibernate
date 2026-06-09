@@ -27,11 +27,11 @@
             <c:set var="iconWrapClass" value="bg-error/15 text-error" />
           </c:otherwise>
         </c:choose>
-        <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto ${iconWrapClass}">
-          <span class="material-symbols-outlined text-3xl">${iconName}</span>
+        <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto <c:out value='${iconWrapClass}' />">
+          <span class="material-symbols-outlined text-3xl"><c:out value="${iconName}" /></span>
         </div>
         <div class="flex flex-wrap items-center justify-center gap-2">
-          <span class="badge badge-neutral badge-lg font-mono font-semibold">${httpStatus}</span>
+          <span class="badge badge-neutral badge-lg font-mono font-semibold"><c:out value="${httpStatus}" /></span>
         </div>
         <h1 class="text-2xl font-extrabold tracking-tight text-on-background m-0">
           <spring:message code="${errorTitleCode}" />
@@ -42,7 +42,7 @@
         <c:if test="${not empty failedPath}">
           <p class="text-sm text-on-surface-variant/80 m-0 break-all">
             <span class="font-medium"><spring:message code="error.page.requestedPath" /></span>
-            <code class="text-xs bg-base-200 px-2 py-1 rounded-md align-middle">${failedPath}</code>
+            <code class="text-xs bg-base-200 px-2 py-1 rounded-md align-middle"><c:out value="${failedPath}" /></code>
           </p>
         </c:if>
         <div class="card-actions justify-center flex-wrap gap-2 mt-2">

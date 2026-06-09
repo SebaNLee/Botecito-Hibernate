@@ -35,15 +35,16 @@
 <c:set var="resolvedAnchorTodayIso" value="${not empty anchorTodayIso ? anchorTodayIso : ''}" />
 <c:set var="resolvedAnchorMaxDateIso" value="${not empty anchorMaxDateIso ? anchorMaxDateIso : ''}" />
 <c:set var="resolvedCivilCalendar" value="${empty civilCalendar ? 'false' : civilCalendar}" />
+<c:set var="pickerClearHiddenClass" value="${empty resolvedValue ? '!w-0 !min-w-0 !max-w-0 overflow-hidden !p-0 opacity-0 pointer-events-none !border-0' : ''}" />
 
 <fieldset
-    class="fieldset min-w-0 max-w-full w-full ${resolvedContainerClass}"
+    class="fieldset min-w-0 max-w-full w-full <c:out value='${resolvedContainerClass}'/>"
     data-date-picker
     data-anchor-today-iso="<c:out value='${resolvedAnchorTodayIso}'/>"
     data-anchor-max-date-iso="<c:out value='${resolvedAnchorMaxDateIso}'/>"
     data-civil-calendar="<c:out value='${resolvedCivilCalendar}'/>"
     data-placeholder="<c:out value='${resolvedPlaceholder}'/>"
-    data-restrict-to-availability="${resolvedRestrictToAvailability}"
+    data-restrict-to-availability="<c:out value='${resolvedRestrictToAvailability}'/>"
     data-availability-label="<c:out value='${datePickerAvailability}'/>"
     data-select-date-label="<c:out value='${datePickerSelectDate}'/>"
     data-available-label="<c:out value='${datePickerAvailable}'/>"
@@ -54,7 +55,7 @@
   <c:forEach var="date" items="${occupiedDates}">
     <span class="hidden" data-occupied-date="<c:out value='${date}'/>"></span>
   </c:forEach>
-  <input id="${id}" name="${dateFieldName}" type="hidden" value="<c:out value='${resolvedValue}'/>" data-picker-input />
+  <input id="<c:out value='${id}'/>" name="<c:out value='${dateFieldName}'/>" type="hidden" value="<c:out value='${resolvedValue}'/>" data-picker-input />
 
   <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
     <c:out value="${resolvedLabel}" />
@@ -68,14 +69,14 @@
           class="flex min-h-0 min-w-0 flex-1 items-center gap-2 bg-transparent py-0 pl-0.5 pr-0 text-left text-on-surface outline-none cursor-pointer"
           data-picker-trigger
           aria-expanded="false"
-          aria-controls="${id}-panel"
+          aria-controls="<c:out value='${id}'/>-panel"
           aria-haspopup="dialog">
         <span class="material-symbols-outlined shrink-0 text-primary text-xl"><c:out value="${resolvedIcon}" /></span>
         <span class="min-w-0 flex-1 text-sm font-bold leading-tight text-on-surface tabular-nums" data-picker-value><c:out value="${resolvedPlaceholder}" /></span>
       </button>
       <button
           type="button"
-          class="btn btn-ghost btn-xs btn-circle shrink-0 cursor-pointer text-primary ${empty resolvedValue ? '!w-0 !min-w-0 !max-w-0 overflow-hidden !p-0 opacity-0 pointer-events-none !border-0' : ''}"
+          class="btn btn-ghost btn-xs btn-circle shrink-0 cursor-pointer text-primary <c:out value='${pickerClearHiddenClass}'/>"
           aria-label="<c:out value='${clearLabel}'/>"
           <c:if test="${empty resolvedValue}">aria-hidden="true" tabindex="-1"</c:if>
           data-picker-trigger-clear>
@@ -92,7 +93,7 @@
     </div>
 
   <div
-      id="${id}-panel"
+      id="<c:out value='${id}'/>-panel"
       class="card bg-base-100 fixed z-[240] hidden flex-col overflow-y-auto overflow-x-hidden px-1 pt-0.5 pb-1 shadow-xl"
       data-panel-width="328"
       data-picker-panel

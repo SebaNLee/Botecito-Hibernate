@@ -41,14 +41,15 @@
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
 <c:set var="resolvedRestrictToAvailability" value="${empty restrictToAvailability ? true : restrictToAvailability}" />
 <c:set var="resolvedMinimumDurationMinutes" value="${empty minimumDurationMinutes ? 120 : minimumDurationMinutes}" />
+<c:set var="timeClearHiddenClass" value="${empty resolvedStartValue && empty resolvedEndValue ? '!w-0 !min-w-0 !max-w-0 overflow-hidden !p-0 opacity-0 pointer-events-none !border-0' : ''}" />
 
 <fieldset
-    class="fieldset min-w-0 max-w-full w-full ${resolvedContainerClass}"
+    class="fieldset min-w-0 max-w-full w-full <c:out value='${resolvedContainerClass}'/>"
     data-time-range-picker
     data-date-input-id="<c:out value='${dateInputId}'/>"
     data-placeholder="<c:out value='${resolvedPlaceholder}'/>"
-    data-restrict-to-availability="${resolvedRestrictToAvailability}"
-    data-minimum-duration-minutes="${resolvedMinimumDurationMinutes}"
+    data-restrict-to-availability="<c:out value='${resolvedRestrictToAvailability}'/>"
+    data-minimum-duration-minutes="<c:out value='${resolvedMinimumDurationMinutes}'/>"
     data-availability-label="<c:out value='${timePickerAvailability}'/>"
     data-select-time-label="<c:out value='${timePickerSelectTime}'/>"
     data-available-label="<c:out value='${timePickerAvailable}'/>"
@@ -77,8 +78,8 @@
             data-occupied-time-value="<c:out value='${time}'/>"></span>
     </c:forEach>
   </c:forEach>
-  <input id="${id}-start" name="${startTimeFieldName}" type="hidden" value="<c:out value='${resolvedStartValue}'/>" data-time-start-input />
-  <input id="${id}-end" name="${endTimeFieldName}" type="hidden" value="<c:out value='${resolvedEndValue}'/>" data-time-end-input />
+  <input id="<c:out value='${id}'/>-start" name="<c:out value='${startTimeFieldName}'/>" type="hidden" value="<c:out value='${resolvedStartValue}'/>" data-time-start-input />
+  <input id="<c:out value='${id}'/>-end" name="<c:out value='${endTimeFieldName}'/>" type="hidden" value="<c:out value='${resolvedEndValue}'/>" data-time-end-input />
 
   <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
     <c:out value="${resolvedLabel}" />
@@ -92,14 +93,14 @@
           class="flex min-h-0 min-w-0 flex-1 items-center gap-2 bg-transparent py-0 pl-0.5 pr-0 text-left text-on-surface outline-none cursor-pointer"
           data-picker-trigger
           aria-expanded="false"
-          aria-controls="${id}-panel"
+          aria-controls="<c:out value='${id}'/>-panel"
           aria-haspopup="dialog">
         <span class="material-symbols-outlined shrink-0 text-primary text-xl"><c:out value="${resolvedIcon}" /></span>
         <span class="min-w-0 flex-1 text-sm font-bold leading-tight text-on-surface tabular-nums" data-time-value><c:out value="${resolvedPlaceholder}" /></span>
       </button>
       <button
           type="button"
-          class="btn btn-ghost btn-xs btn-circle shrink-0 cursor-pointer text-primary ${empty resolvedStartValue && empty resolvedEndValue ? '!w-0 !min-w-0 !max-w-0 overflow-hidden !p-0 opacity-0 pointer-events-none !border-0' : ''}"
+          class="btn btn-ghost btn-xs btn-circle shrink-0 cursor-pointer text-primary <c:out value='${timeClearHiddenClass}'/>"
           aria-label="<c:out value='${clearLabel}'/>"
           <c:if test="${empty resolvedStartValue && empty resolvedEndValue}">aria-hidden="true" tabindex="-1"</c:if>
           data-picker-trigger-clear>
@@ -116,7 +117,7 @@
     </div>
 
     <div
-        id="${id}-panel"
+        id="<c:out value='${id}'/>-panel"
         class="card bg-base-100 fixed z-[240] hidden flex-col overflow-y-auto overflow-x-hidden px-1 pt-0.5 pb-1 shadow-xl"
         data-panel-width="360"
         data-picker-panel

@@ -57,7 +57,7 @@
 
         <p class="text-center text-sm text-on-surface-variant m-0">
           <spring:message code="register.hasAccount" />
-          <a href="${loginUrl}" class="link link-hover text-primary font-semibold ml-1 no-underline">
+          <a href="<c:out value='${loginUrl}' />" class="link link-hover text-primary font-semibold ml-1 no-underline">
             <spring:message code="register.loginLink" />
           </a>
         </p>

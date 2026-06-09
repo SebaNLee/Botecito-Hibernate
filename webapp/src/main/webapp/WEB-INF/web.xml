@@ -56,6 +56,7 @@
       <param-value>org.springframework.web.context.support.AnnotationConfigWebApplicationContext</param-value>
     </init-param>
     <load-on-startup>1</load-on-startup>
+    <!-- Keep in sync with ar.edu.itba.paw.webapp.util.UploadLimits -->
     <multipart-config>
         <location>/tmp</location>
         <max-file-size>5242880</max-file-size>

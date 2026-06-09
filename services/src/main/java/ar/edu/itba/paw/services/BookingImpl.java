@@ -306,7 +306,7 @@ public class BookingImpl implements BookingService {
                 .fileData(fileData);
 
         if (guestMsg != null) {
-            builder.replyMsg(guestMsg).repliedAt(now);
+            builder.guestMsg(guestMsg).guestAt(now);
         }
 
         var payment = builder.build();
@@ -338,8 +338,10 @@ public class BookingImpl implements BookingService {
         payment.setFilename(fileName);
         payment.setContentType(contentType);
         payment.setFileData(fileData);
-        payment.setReplyMsg(guestMsg);
-        payment.setRepliedAt(currentDateTime());
+        payment.setGuestMsg(guestMsg);
+        payment.setGuestAt(currentDateTime());
+        payment.setHostMsg(null);
+        payment.setHostAt(null);
         LOGGER.info("Payment resubmitted for booking {}", bookingId);
         mailService.sendPaymentMail(booking);
     }
@@ -360,6 +362,11 @@ public class BookingImpl implements BookingService {
     @Transactional
     public void confirmPayment(int bookingId, int callerId) {
         Booking booking = findById(bookingId);
+        final PaymentProof payment = booking.getPaymentProof();
+        if (payment != null) {
+            payment.setHostMsg(null);
+            payment.setHostAt(null);
+        }
         updateStatus(booking, callerId, true, BookingStatusEnum.CONFIRMED);
         LOGGER.info("Payment confirmed for booking {} by user {}", bookingId, callerId);
         mailService.sendBookingConfirmedMail(booking);
@@ -367,13 +374,13 @@ public class BookingImpl implements BookingService {
 
     @Override
     @Transactional
-    public void rejectPayment(int bookingId, int callerId, String reason) {
+    public void rejectPayment(int bookingId, int callerId, String hostMsg) {
         Booking booking = findById(bookingId);
         PaymentProof payment = booking.getPaymentProof();
         updateStatus(booking, callerId, true, BookingStatusEnum.REFUSED);
 
-        payment.setRefuseMsg(reason);
-        payment.setRefusedAt(currentDateTime());
+        payment.setHostMsg(hostMsg);
+        payment.setHostAt(currentDateTime());
         LOGGER.info("Payment rejected for booking {} by user {}", bookingId, callerId);
         mailService.sendRefusedPaymentMail(booking);
     }

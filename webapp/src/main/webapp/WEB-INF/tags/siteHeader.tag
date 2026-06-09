@@ -9,7 +9,14 @@
 <c:set var="resolvedCtaMessageCode" value="${not empty ctaMessageCode ? ctaMessageCode : 'nav.publishCta'}" />
 <c:set var="resolvedCtaHref" value="${not empty ctaHref ? ctaHref : '/publish'}" />
 <c:set var="resolvedCtaVariant" value="${not empty ctaVariant ? ctaVariant : 'publish'}" />
-<c:set var="resolvedCtaClass" value="${resolvedCtaVariant == 'rent' ? 'btn btn-primary btn-sm no-underline' : 'btn btn-secondary btn-sm no-underline'}" />
+<c:choose>
+  <c:when test="${resolvedCtaVariant == 'rent'}">
+    <c:set var="resolvedCtaClass" value="btn btn-primary btn-sm no-underline" />
+  </c:when>
+  <c:otherwise>
+    <c:set var="resolvedCtaClass" value="btn btn-secondary btn-sm no-underline" />
+  </c:otherwise>
+</c:choose>
 
 <header class="fixed top-0 w-full z-50 navbar bg-base-100 border-b border-outline-variant/20 shadow-sm px-6 min-h-16">
   <div class="flex justify-between items-center w-full max-w-7xl mx-auto">
@@ -47,7 +54,7 @@
       <c:choose>
         <c:when test="${resolvedCtaVariant == 'publish'}">
           <sec:authorize access="isAnonymous()">
-            <a href="<c:url value='${resolvedCtaHref}' />" class="${resolvedCtaClass}">
+            <a href="<c:url value='${resolvedCtaHref}' />" class="<c:out value='${resolvedCtaClass}' />">
               <spring:message code="${resolvedCtaMessageCode}" />
             </a>
           </sec:authorize>
@@ -55,7 +62,7 @@
         <c:when test="${resolvedCtaVariant == 'rent'}">
         </c:when>
         <c:otherwise>
-          <a href="<c:url value='${resolvedCtaHref}' />" class="${resolvedCtaClass}">
+          <a href="<c:url value='${resolvedCtaHref}' />" class="<c:out value='${resolvedCtaClass}' />">
             <spring:message code="${resolvedCtaMessageCode}" />
           </a>
         </c:otherwise>

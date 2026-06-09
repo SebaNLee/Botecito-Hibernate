@@ -41,7 +41,7 @@
           <c:otherwise>
             <paw:alertMessage type="error"><spring:message code="passwordRecovery.reset.invalid" /></paw:alertMessage>
             <p class="text-center text-sm text-on-surface-variant m-0">
-              <a href="${loginUrl}" class="link link-hover text-primary font-semibold no-underline">
+              <a href="<c:out value='${loginUrl}' />" class="link link-hover text-primary font-semibold no-underline">
                 <spring:message code="passwordRecovery.request.backToLogin" />
               </a>
             </p>

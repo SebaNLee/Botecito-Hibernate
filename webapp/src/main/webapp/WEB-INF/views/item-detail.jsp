@@ -70,7 +70,7 @@
   </c:if>
   <paw:toastNotifier />
       <div class="w-full">
-        <a href="${marketplaceUrl}" data-detail-marketplace-back data-nav-filter-page="marketplace" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
+        <a href="<c:out value='${marketplaceUrl}' />" data-detail-marketplace-back data-nav-filter-page="marketplace" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
           <span class="material-symbols-outlined">arrow_back</span>
           <span><c:out value="${detailBackMarketplaceLabel}" /></span>
         </a>
@@ -212,35 +212,35 @@
                 <c:choose>
                   <c:when test="${viewer == null}">
                     <c:url var="favouriteLoginUrl" value="/login" />
-                    <a href="${favouriteLoginUrl}"
+                    <a href="<c:out value='${favouriteLoginUrl}' />"
                        class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 hover:bg-base-100"
-                       aria-label="${favouriteLoginToAddLabel}"
-                       title="${favouriteLoginToAddLabel}">
+                       aria-label="<c:out value='${favouriteLoginToAddLabel}' />"
+                       title="<c:out value='${favouriteLoginToAddLabel}' />">
                       <span class="material-symbols-outlined text-lg icon-heart-outline">favorite</span>
                     </a>
                   </c:when>
                   <c:when test="${favouriteItem}">
                     <c:url var="unfavouriteItemUrl" value="/items/${item.id}/unfavourite" />
-                    <form action="${unfavouriteItemUrl}" method="post" class="m-0">
+                    <form action="<c:out value='${unfavouriteItemUrl}' />" method="post" class="m-0">
                       <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
                       <button
                           type="submit"
                           class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 hover:bg-base-100"
-                          aria-label="${favouriteRemoveLabel}"
-                          title="${favouriteRemoveLabel}">
+                          aria-label="<c:out value='${favouriteRemoveLabel}' />"
+                          title="<c:out value='${favouriteRemoveLabel}' />">
                         <span class="material-symbols-outlined text-lg icon-heart-filled">favorite</span>
                       </button>
                     </form>
                   </c:when>
                   <c:otherwise>
                     <c:url var="favouriteItemUrl" value="/items/${item.id}/favourite" />
-                    <form action="${favouriteItemUrl}" method="post" class="m-0">
+                    <form action="<c:out value='${favouriteItemUrl}' />" method="post" class="m-0">
                       <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
                       <button
                           type="submit"
                           class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 hover:bg-base-100"
-                          aria-label="${favouriteAddLabel}"
-                          title="${favouriteAddLabel}">
+                          aria-label="<c:out value='${favouriteAddLabel}' />"
+                          title="<c:out value='${favouriteAddLabel}' />">
                         <span class="material-symbols-outlined text-lg icon-heart-outline">favorite</span>
                       </button>
                     </form>
@@ -262,7 +262,7 @@
 
           <c:if test="${canReport}">
             <c:set var="reportModalId" value="report-item-modal-${item.id}" />
-            <button type="button" class="btn btn-outline btn-error btn-sm w-full gap-2" onclick="document.getElementById('${reportModalId}').showModal()">
+            <button type="button" class="btn btn-outline btn-error btn-sm w-full gap-2" onclick="document.getElementById('<c:out value='${reportModalId}' />').showModal()">
               <span class="material-symbols-outlined text-base">flag</span>
               <c:out value="${itemDetailReportButtonLabel}" />
             </button>
@@ -299,15 +299,19 @@
                 </div>
               </c:when>
               <c:otherwise>
+              <c:set var="viewerLoggedIn" value="false" />
+              <c:if test="${viewer != null}">
+                <c:set var="viewerLoggedIn" value="true" />
+              </c:if>
               <div
                   data-prebook-draft-root
-                  data-item-id="${item.id}"
-                  data-viewer-logged-in="${viewer != null ? 'true' : 'false'}"
-                  data-login-url="<c:out value="${prebookLoginUrl}" />">
+                  data-item-id="<c:out value='${item.id}' />"
+                  data-viewer-logged-in="<c:out value='${viewerLoggedIn}' />"
+                  data-login-url="<c:out value='${prebookLoginUrl}' />">
                 <div
                     class="hidden rounded-2xl bg-base-200 px-4 py-4"
                     data-reservation-price-summary
-                    data-price-per-hour="${version.price}"
+                    data-price-per-hour="<c:out value='${version.price}' />"
                     data-currency-symbol="$"
                     data-price-pending="<c:out value='${itemDetailPricePendingLabel}'/>"
                     data-price-pending-help="<c:out value='${itemDetailPricePendingHelpLabel}'/>"
@@ -371,15 +375,19 @@
                   <form:errors path="startTime" element="p" cssClass="text-error text-xs mt-1" />
                   <form:errors path="endTime" element="p" cssClass="text-error text-xs mt-1" />
 
+                  <c:set var="prebookMessagePanelClass" value="" />
+                  <c:if test="${empty preBookingForm.message}">
+                    <c:set var="prebookMessagePanelClass" value="hidden" />
+                  </c:if>
                   <label class="label cursor-pointer justify-start gap-3 rounded-xl bg-base-200 px-4 py-3">
                     <input
                         type="checkbox"
                         class="checkbox checkbox-primary checkbox-sm"
                         data-optional-toggle="detail-prebook-message-panel"
-                        ${not empty preBookingForm.message ? 'checked="checked"' : ''} />
+                        <c:if test="${not empty preBookingForm.message}">checked="checked"</c:if> />
                     <span class="label-text font-bold text-on-surface"><c:out value="${itemDetailAddMessageLabel}" /></span>
                   </label>
-                  <div id="detail-prebook-message-panel" class="${empty preBookingForm.message ? 'hidden' : ''}" data-optional-panel>
+                  <div id="detail-prebook-message-panel" class="<c:out value='${prebookMessagePanelClass}' />" data-optional-panel>
                     <paw:textareaField
                         path="message"
                         label="${itemDetailRequestMessageLabel}"
@@ -432,7 +440,7 @@
             </c:if>
             <c:choose>
               <c:when test="${itemOwner != null}">
-                <a href="${itemOwnerProfileUrl}" class="group flex min-w-0 items-center gap-4 no-underline rounded-xl transition-colors hover:bg-base-200/60 -m-2 p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25">
+                <a href="<c:out value='${itemOwnerProfileUrl}' />" class="group flex min-w-0 items-center gap-4 no-underline rounded-xl transition-colors hover:bg-base-200/60 -m-2 p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25">
                   <div class="avatar placeholder shrink-0">
                     <div class="bg-primary/10 text-primary rounded-full w-14 h-14 flex items-center justify-center">
                       <span class="font-extrabold text-xl"><c:out value="${ownerInitials}" /></span>
@@ -467,8 +475,12 @@
               </c:otherwise>
             </c:choose>
             <div class="flex w-full flex-col gap-2">
+              <c:set var="ownerContactEmail" value="" />
+              <c:if test="${itemOwner != null}">
+                <c:set var="ownerContactEmail" value="${itemOwner.email}" />
+              </c:if>
               <paw:button
-                href="mailto:${itemOwner != null ? itemOwner.email : ''}"
+                href="mailto:${ownerContactEmail}"
                 color="outline"
                 icon="mail"
                 cssClass="w-full sm:w-auto"
@@ -489,7 +501,7 @@
                   </c:when>
                   <c:when test="${subscribedToOwner}">
                     <c:url var="unsubscribeOwnerUrl" value="/users/${itemOwner.id}/unsubscribe" />
-                    <form action="${unsubscribeOwnerUrl}" method="post" class="m-0">
+                    <form action="<c:out value='${unsubscribeOwnerUrl}' />" method="post" class="m-0">
                       <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
                       <paw:button
                         type="submit"
@@ -502,7 +514,7 @@
                   </c:when>
                   <c:otherwise>
                     <c:url var="subscribeOwnerUrl" value="/users/${itemOwner.id}/subscribe" />
-                    <form action="${subscribeOwnerUrl}" method="post" class="m-0">
+                    <form action="<c:out value='${subscribeOwnerUrl}' />" method="post" class="m-0">
                       <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
                       <paw:button
                         type="submit"
@@ -526,20 +538,20 @@
   <dialog
     class="modal"
     data-item-unavailable-alert
-    data-marketplace-url="${marketplaceUrl}"
-    data-item-location-option-id="${version.location.id}"
-    data-item-location-slug="${itemLocationSlug}"
-    data-item-capacity="${version.capacity}"
-    data-item-weight="${version.weight}"
-    data-item-difficulty="${version.difficulty}"
-    data-mismatch-prefix="${unavailableMismatchPrefix}"
-    data-mismatch-suffix="${unavailableMismatchSuffix}"
-    data-mismatch-join="${andLabel}"
-    data-mismatch-location="${unavailableReasonLocation}"
-    data-mismatch-capacity="${unavailableReasonCapacity}"
-    data-mismatch-weight="${unavailableReasonWeight}"
-    data-mismatch-date-time="${unavailableReasonDateTime}"
-    data-mismatch-difficulty="${unavailableReasonDifficulty}"
+    data-marketplace-url="<c:out value='${marketplaceUrl}' />"
+    data-item-location-option-id="<c:out value='${version.location.id}' />"
+    data-item-location-slug="<c:out value='${itemLocationSlug}' />"
+    data-item-capacity="<c:out value='${version.capacity}' />"
+    data-item-weight="<c:out value='${version.weight}' />"
+    data-item-difficulty="<c:out value='${version.difficulty}' />"
+    data-mismatch-prefix="<c:out value='${unavailableMismatchPrefix}' />"
+    data-mismatch-suffix="<c:out value='${unavailableMismatchSuffix}' />"
+    data-mismatch-join="<c:out value='${andLabel}' />"
+    data-mismatch-location="<c:out value='${unavailableReasonLocation}' />"
+    data-mismatch-capacity="<c:out value='${unavailableReasonCapacity}' />"
+    data-mismatch-weight="<c:out value='${unavailableReasonWeight}' />"
+    data-mismatch-date-time="<c:out value='${unavailableReasonDateTime}' />"
+    data-mismatch-difficulty="<c:out value='${unavailableReasonDifficulty}' />"
     hidden
   >
     <div class="modal-box max-w-lg p-0 bg-transparent shadow-none">
@@ -570,7 +582,7 @@
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">
-      <button aria-label="${unavailableBackLabel}">close</button>
+      <button aria-label="<c:out value='${unavailableBackLabel}' />">close</button>
     </form>
   </dialog>
 </paw:layout>

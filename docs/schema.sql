@@ -75,10 +75,10 @@ table payment_proof {
     content_type VARCHAR(100) NN,
     file_data BYTEA NN,
     created_at TIMESTAMP NN,
-    refuse_msg VARCHAR(255),
-    refused_at TIMESTAMP,
-    reply_msg VARCHAR(255),
-    replied_at TIMESTAMP
+    host_msg VARCHAR(255),
+    host_at TIMESTAMP,
+    guest_msg VARCHAR(255),
+    guest_at TIMESTAMP
 }
 
 table booking {

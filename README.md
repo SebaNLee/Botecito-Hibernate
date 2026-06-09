@@ -63,13 +63,20 @@ mvn jetty:run
 
 > App: `http://localhost:8080`
 
-### Usuarios (por nivel de autenticación)
+### Users (per authentication level)
 
-#### Usuario loggeado:
+#### Admin user:
 
 ```
 botecito.dev@gmail.com
 oakrmirkfcudrwes
+```
+
+#### Logged user:
+
+```
+botecito.user@gmail.com
+BotecitoMejorApp
 ```
 
 ### Deployment

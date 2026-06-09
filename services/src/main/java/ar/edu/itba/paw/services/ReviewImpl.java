@@ -1,11 +1,15 @@
 package ar.edu.itba.paw.services;
 
+import ar.edu.itba.paw.models.dto.HostReviewsPage;
 import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.dto.ReviewSummary;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
+import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Review;
 import ar.edu.itba.paw.models.entity.TargetEnum;
-import ar.edu.itba.paw.persistence.BookingDao;
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.models.paging.ReviewPaging;
 import ar.edu.itba.paw.persistence.ReviewDao;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -14,6 +18,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,8 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public final class ReviewImpl implements ReviewService {
 
-    private final BookingDao bookingDao;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReviewImpl.class);
+
     private final ReviewDao reviewDao;
+    private final BookingService bookingService;
 
     @Override
     @Transactional
@@ -43,18 +51,17 @@ public final class ReviewImpl implements ReviewService {
             return Optional.empty();
         }
 
-        final Optional<Booking> booking = bookingDao.findById(bookingId);
-        if (booking.isEmpty() || !isReviewWindowOpen(booking.get())) {
+        final Booking booking = bookingService.findById(bookingId);
+        if (!isReviewWindowOpen(booking)) {
             return Optional.empty();
         }
 
-        final Optional<Integer> ownerId =
-                booking.map(b -> b.getVersion().getItem().getHost().getId());
-        if (ownerId.isEmpty()) {
+        final Users owner = booking.getVersion().getItem().getHost();
+        if (owner == null) {
             return Optional.empty();
         }
 
-        final TargetEnum resolved = resolveTarget(booking.get(), ownerId.get(), reviewerUserId, targetType);
+        final TargetEnum resolved = resolveTarget(booking, owner.getId(), reviewerUserId, targetType);
         if (resolved == null) {
             return Optional.empty();
         }
@@ -65,7 +72,14 @@ public final class ReviewImpl implements ReviewService {
             return Optional.empty();
         }
 
-        return reviewDao.createReview(bookingId, reviewerUserId, resolved, rating, normalizeComment(comment));
+        final Optional<Review> review = reviewDao.createReview(bookingId, reviewerUserId, resolved, rating, comment);
+        review.ifPresent(r -> LOGGER.info(
+                "Review created: user {} reviewed booking {} with rating {} for {}",
+                reviewerUserId,
+                bookingId,
+                rating,
+                resolved));
+        return review;
     }
 
     private static TargetEnum resolveTarget(
@@ -89,14 +103,6 @@ public final class ReviewImpl implements ReviewService {
         return null;
     }
 
-    private static String normalizeComment(final String comment) {
-        if (comment == null) {
-            return null;
-        }
-        final String trimmed = comment.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
     @Override
     @Transactional(readOnly = true)
     public Map<Integer, List<Review>> findReviewsByBookingIds(final int reviewerUserId) {
@@ -106,18 +112,36 @@ public final class ReviewImpl implements ReviewService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageModel<Review> findReviewsAboutHost(final int hostUserId, final int page, final int pageSize) {
-        final int safePage = Math.max(1, page);
-        final int safePageSize = Math.max(1, pageSize);
-        final int total = reviewDao.countReviewsAboutHost(hostUserId);
-        return new PageModel<>(
-                reviewDao.findReviewsAboutHost(hostUserId, safePage, safePageSize), safePage, safePageSize, total);
+    public HostReviewsPage findHostReviewsPage(final int hostUserId, final int page) {
+        final int pageSize = ReviewPaging.DEFAULT_PAGE_SIZE;
+        final var stats = reviewDao.hostReviewStats(hostUserId);
+        final var reviews = reviewDao.findReviewsAboutHost(hostUserId, page, pageSize);
+        return new HostReviewsPage(
+                new PageModel<>(reviews, page, pageSize, stats.getTotalReviews()),
+                stats.getAverageRating().orElse(null));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Double> averageRatingAboutHost(final int hostUserId) {
-        return reviewDao.averageRatingAboutHost(hostUserId);
+    public void attachReviewSummaries(final List<Item> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        final var itemIds = items.stream().map(Item::getId).toList();
+        final var summaryByItemId = reviewDao.reviewSummariesForItems(itemIds);
+        for (final Item item : items) {
+            item.setReviewSummary(summaryByItemId.getOrDefault(item.getId(), ReviewSummary.EMPTY));
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void attachItemReviews(final Item item, final int itemId, final int page) {
+        final int pageSize = ReviewPaging.DEFAULT_PAGE_SIZE;
+        final var reviewSummary = reviewDao.reviewSummaryForItem(itemId);
+        final var reviews = reviewDao.findReviewsAboutItem(itemId, page, pageSize);
+        item.setReviewSummary(reviewSummary);
+        item.setItemReviews(new PageModel<>(reviews, page, pageSize, reviewSummary.getTotalReviews()));
     }
 
     private static boolean isReviewWindowOpen(final Booking booking) {

@@ -96,6 +96,33 @@
     }
   }
 
+  function readDateSet(root, selector) {
+    const dates = [];
+    root.querySelectorAll(selector).forEach((node) => {
+      const date = node.getAttribute(selector === "[data-offered-date]" ? "data-offered-date" : "data-occupied-date");
+      if (date) {
+        dates.push(date);
+      }
+    });
+    return new Set(dates);
+  }
+
+  function readTimesMap(root, selector, dateAttribute, timeAttribute) {
+    const map = {};
+    root.querySelectorAll(selector).forEach((node) => {
+      const date = node.getAttribute(dateAttribute);
+      const time = node.getAttribute(timeAttribute);
+      if (!date || !time) {
+        return;
+      }
+      if (!map[date]) {
+        map[date] = [];
+      }
+      map[date].push(time);
+    });
+    return map;
+  }
+
   function parseBoolean(value, fallback) {
     if (value === "true") {
       return true;
@@ -541,7 +568,6 @@
     "pageSize",
     "page",
     "reviewPage",
-    "returnTo",
   ];
 
   function buildUrlWithFilters(baseUrl, state) {
@@ -578,8 +604,8 @@
     return url.toString();
   }
 
-  function buildMarketplaceReturnPath(state) {
-    const url = new URL("/marketplace", window.location.origin);
+  function buildItemDetailHref(baseHref, state) {
+    const url = new URL(baseHref, window.location.origin);
     const stored = readStoredFilters() || {};
     const preservedKeys = [
       "searchQuery",
@@ -592,6 +618,11 @@
       "sortBy",
       "pageSize",
     ];
+
+    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
+      url.searchParams.delete(key);
+    });
+
     preservedKeys.forEach((key) => {
       const value = stored[key];
       if (value != null && String(value).trim() !== "") {
@@ -605,28 +636,6 @@
       }
     });
 
-    const pageInput = document.querySelector(
-      '[data-marketplace-toolbar-form] input[name="page"]',
-    );
-    const pageValue =
-      pageInput?.value ||
-      new URLSearchParams(window.location.search).get("page") ||
-      "";
-    if (pageValue) {
-      url.searchParams.set("page", pageValue);
-    }
-
-    return url.pathname + url.search;
-  }
-
-  function buildItemDetailHref(baseHref, state) {
-    const url = new URL(baseHref, window.location.origin);
-
-    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
-      url.searchParams.delete(key);
-    });
-
-    url.searchParams.set("returnTo", buildMarketplaceReturnPath(state));
     return url.pathname + url.search;
   }
 
@@ -813,8 +822,8 @@
       this.calendar = root.querySelector("[data-picker-calendar]");
       this.placeholder = root.dataset.placeholder || "";
       this.availabilityLabel = root.dataset.availabilityLabel || "";
-      this.offeredDates = new Set(parseJson(root.dataset.offeredDates, []));
-      this.occupiedDates = new Set(parseJson(root.dataset.occupiedDates, []));
+      this.offeredDates = readDateSet(root, "[data-offered-date]");
+      this.occupiedDates = readDateSet(root, "[data-occupied-date]");
       this.restrictToAvailability = parseBoolean(
         root.dataset.restrictToAvailability,
         true,
@@ -1043,8 +1052,18 @@
       this.pickEndLabel = root.dataset.pickEndLabel || "";
       this.pickStartLabel = root.dataset.pickStartLabel || "";
       this.fromLabel = root.dataset.fromLabel || "";
-      this.offeredTimes = parseJson(root.dataset.offeredTimes, {});
-      this.occupiedTimes = parseJson(root.dataset.occupiedTimes, {});
+      this.offeredTimes = readTimesMap(
+        root,
+        "[data-offered-time]",
+        "data-offered-time-date",
+        "data-offered-time-value",
+      );
+      this.occupiedTimes = readTimesMap(
+        root,
+        "[data-occupied-time]",
+        "data-occupied-time-date",
+        "data-occupied-time-value",
+      );
       this.restrictToAvailability = parseBoolean(
         root.dataset.restrictToAvailability,
         true,
@@ -1630,6 +1649,14 @@
     const path = window.location.pathname;
     const isMarketplacePage = path.endsWith("/marketplace");
     const isItemPage = /\/item\/\d+$/.test(path);
+    const isLandingPage =
+      document.querySelector('[data-filter-form="landing"]') != null;
+    const isRequestsPage = /\/requests\/(outgoing|incoming)$/.test(path);
+
+    if (isMarketplacePage || isLandingPage || isRequestsPage) {
+      return;
+    }
+
     const storedState = readStoredFilters();
     const pageState = currentPickerState(controls);
 
@@ -1644,18 +1671,6 @@
         storedState.endTime,
       );
       syncPersistentFilters(currentPickerState(controls));
-
-      if (isMarketplacePage && storedState.date) {
-        const syncedUrl = buildUrlWithFilters(
-          window.location.href,
-          storedState,
-        );
-
-        if (syncedUrl !== window.location.href) {
-          window.location.replace(syncedUrl);
-          return;
-        }
-      }
     } else {
       syncPersistentFilters(pageState);
     }

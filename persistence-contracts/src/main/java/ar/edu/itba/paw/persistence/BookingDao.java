@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
 import ar.edu.itba.paw.models.dto.BookingQueryModel;
-import ar.edu.itba.paw.models.dto.BookingSearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Booking;
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Item;
@@ -23,7 +23,7 @@ public interface BookingDao {
 
     Optional<Booking> findById(int bookingId);
 
-    BookingSearchResult searchBookings(final BookingQueryModel query);
+    PageModel<Booking> searchBookings(final BookingQueryModel query);
 
     void uploadPayment(PaymentProof paymentProof);
 
@@ -34,6 +34,8 @@ public interface BookingDao {
     void deleteSelfBlocksBefore(LocalDateTime minEndTime);
 
     void deleteAllSelfBlocks(Item item);
+
+    boolean itemHasBookings(Item item);
 
     List<Booking> getUpcomingBookings(Item item, LocalDateTime minDate, LocalDateTime maxDate);
 

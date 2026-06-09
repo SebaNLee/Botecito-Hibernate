@@ -9,7 +9,14 @@
 <c:set var="resolvedCtaMessageCode" value="${not empty ctaMessageCode ? ctaMessageCode : 'nav.publishCta'}" />
 <c:set var="resolvedCtaHref" value="${not empty ctaHref ? ctaHref : '/publish'}" />
 <c:set var="resolvedCtaVariant" value="${not empty ctaVariant ? ctaVariant : 'publish'}" />
-<c:set var="resolvedCtaClass" value="${resolvedCtaVariant == 'rent' ? 'btn btn-primary btn-sm no-underline' : 'btn btn-secondary btn-sm no-underline'}" />
+<c:choose>
+  <c:when test="${resolvedCtaVariant == 'rent'}">
+    <c:set var="resolvedCtaClass" value="btn btn-primary btn-sm no-underline" />
+  </c:when>
+  <c:otherwise>
+    <c:set var="resolvedCtaClass" value="btn btn-secondary btn-sm no-underline" />
+  </c:otherwise>
+</c:choose>
 
 <header class="fixed top-0 w-full z-50 navbar bg-base-100 border-b border-outline-variant/20 shadow-sm px-6 min-h-16">
   <div class="flex justify-between items-center w-full max-w-7xl mx-auto">
@@ -17,7 +24,7 @@
       Botecito
     </a>
     <div class="flex items-center gap-2">
-      <a href="<c:url value='/marketplace' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+      <a href="<c:url value='/marketplace' />" data-nav-filter-page="marketplace" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
         <spring:message code="nav.marketplace" />
       </a>
       <sec:authorize access="isAnonymous()">
@@ -26,12 +33,20 @@
         </a>
       </sec:authorize>
       <sec:authorize access="isAuthenticated()">
-        <a href="<c:url value='/my-boats' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+        <a href="<c:url value='/favourites' />" data-nav-filter-page="favourites" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+          <spring:message code="account.nav.favourites" />
+        </a>
+        <a href="<c:url value='/my-boats' />" data-nav-filter-page="myBoats" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
           <spring:message code="account.nav.myBoats" />
         </a>
-        <a href="<c:url value='/requests/outgoing' />" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
+        <a href="<c:url value='/requests/outgoing' />" data-nav-filter-page="requestsOutgoing" class="btn btn-outline btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200">
           <spring:message code="account.nav.bookings" />
         </a>
+        <sec:authorize access="hasRole('ADMIN')">
+          <a href="<c:url value='/admin/reports' />" data-nav-filter-page="adminReports" class="btn btn-outline btn-error btn-sm no-underline">
+            <spring:message code="nav.adminReports" />
+          </a>
+        </sec:authorize>
         <a href="<c:url value='/settings' />" class="btn btn-outline btn-circle btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200" title="<sec:authentication property='name' />" aria-label="Settings">
           <span class="material-symbols-outlined text-xl">account_circle</span>
         </a>
@@ -39,7 +54,7 @@
       <c:choose>
         <c:when test="${resolvedCtaVariant == 'publish'}">
           <sec:authorize access="isAnonymous()">
-            <a href="<c:url value='${resolvedCtaHref}' />" class="${resolvedCtaClass}">
+            <a href="<c:url value='${resolvedCtaHref}' />" class="<c:out value='${resolvedCtaClass}' />">
               <spring:message code="${resolvedCtaMessageCode}" />
             </a>
           </sec:authorize>
@@ -47,7 +62,7 @@
         <c:when test="${resolvedCtaVariant == 'rent'}">
         </c:when>
         <c:otherwise>
-          <a href="<c:url value='${resolvedCtaHref}' />" class="${resolvedCtaClass}">
+          <a href="<c:url value='${resolvedCtaHref}' />" class="<c:out value='${resolvedCtaClass}' />">
             <spring:message code="${resolvedCtaMessageCode}" />
           </a>
         </c:otherwise>

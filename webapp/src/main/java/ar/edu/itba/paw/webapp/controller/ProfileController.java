@@ -1,34 +1,108 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.models.exceptions.UserNotFoundException;
+import ar.edu.itba.paw.services.ProfileService;
+import ar.edu.itba.paw.services.SubscriptionService;
+import ar.edu.itba.paw.services.UserService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
+import ar.edu.itba.paw.webapp.form.ProfileListingsViewForm;
+import ar.edu.itba.paw.webapp.form.ProfileReviewsViewForm;
 import ar.edu.itba.paw.webapp.presentation.ProfilePresentation;
-import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller
 @RequiredArgsConstructor
 public class ProfileController {
 
-    private final ProfilePresentation profilePresentation;
+    private final UserService userService;
+    private final ProfileService profileService;
+    private final SubscriptionService subscriptionService;
+    private final MessageSource messageSource;
+
+    @ModelAttribute("profileListingsView")
+    public ProfileListingsViewForm defaultProfileListingsView() {
+        final ProfileListingsViewForm form = new ProfileListingsViewForm();
+        form.setPage(1);
+        form.setPageSize(12);
+        form.setSortBy("newest");
+        return form;
+    }
+
+    @ModelAttribute("profileReviewsView")
+    public ProfileReviewsViewForm defaultProfileReviewsView() {
+        final ProfileReviewsViewForm form = new ProfileReviewsViewForm();
+        form.setPage(1);
+        return form;
+    }
 
     @RequestMapping(value = "/profiles/{id:[1-9]\\d*}", method = RequestMethod.GET)
-    public ModelAndView profile(
+    public ModelAndView profileRedirect(@PathVariable("id") final int id) {
+        return new ModelAndView("redirect:/profiles/" + id + "/listings");
+    }
+
+    @RequestMapping(value = "/profiles/{id:[1-9]\\d*}/listings", method = RequestMethod.GET)
+    public ModelAndView profileListings(
             @AuthenticationPrincipal final BotecitoUserDetails viewer,
             @PathVariable("id") final int id,
-            @RequestParam(value = "tab", defaultValue = "listings") final String tab,
-            @RequestParam(value = "listingsPage", defaultValue = "1") final int listingsPage,
-            @RequestParam(value = "listingsPageSize", defaultValue = "6") final int listingsPageSize,
-            @RequestParam(value = "reviewsPage", defaultValue = "1") final int reviewsPage,
-            @RequestParam(value = "reviewsPageSize", defaultValue = "5") final int reviewsPageSize,
-            final HttpServletRequest request) {
-        return profilePresentation.profile(
-                viewer, id, tab, listingsPage, listingsPageSize, reviewsPage, reviewsPageSize, request);
+            @Valid @ModelAttribute("profileListingsView") final ProfileListingsViewForm profileListingsView,
+            final BindingResult errors) {
+        final Users profileUser = userService.findById(id).orElseThrow(UserNotFoundException::new);
+
+        if (errors.hasErrors()) {
+            return ProfilePresentation.profileListingsErrors(
+                    viewer, profileUser, profileListingsView, errors, messageSource);
+        }
+
+        final var listingsPage = profileService.listProfileListings(
+                id, profileListingsView.getPage(), profileListingsView.getPageSize(), profileListingsView.getSortBy());
+
+        final boolean isSelf = viewer != null && viewer.getId() == profileUser.getId();
+        final boolean isSubscribed =
+                !isSelf && viewer != null && subscriptionService.isSubscribed(viewer.getId(), profileUser.getId());
+        final int followersCount = subscriptionService.countFollowers(id);
+
+        return ProfilePresentation.profileListings(
+                profileUser, listingsPage, followersCount, isSelf, isSubscribed, profileListingsView);
+    }
+
+    @RequestMapping(value = "/profiles/{id:[1-9]\\d*}/reviews", method = RequestMethod.GET)
+    public ModelAndView profileReviews(
+            @AuthenticationPrincipal final BotecitoUserDetails viewer,
+            @PathVariable("id") final int id,
+            @Valid @ModelAttribute("profileReviewsView") final ProfileReviewsViewForm profileReviewsView,
+            final BindingResult errors) {
+        final Users profileUser = userService.findById(id).orElseThrow(UserNotFoundException::new);
+
+        if (errors.hasErrors()) {
+            return ProfilePresentation.profileReviewsErrors(
+                    viewer, profileUser, profileReviewsView, errors, messageSource);
+        }
+
+        final var hostReviewsPage = profileService.findHostReviewsPage(id, profileReviewsView.getPage());
+
+        final boolean isSelf = viewer != null && viewer.getId() == profileUser.getId();
+        final boolean isSubscribed =
+                !isSelf && viewer != null && subscriptionService.isSubscribed(viewer.getId(), profileUser.getId());
+        final int followersCount = subscriptionService.countFollowers(id);
+
+        return ProfilePresentation.profileReviews(
+                profileUser,
+                hostReviewsPage.getReviews(),
+                hostReviewsPage.getAverageRating(),
+                followersCount,
+                isSelf,
+                isSubscribed,
+                profileReviewsView);
     }
 }

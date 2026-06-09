@@ -44,20 +44,20 @@
 
         <form:form action="${registerUrl}" method="post" modelAttribute="registerForm" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <paw:formField path="givenName" label="${givenNameLabel}" placeholder="${givenNamePlaceholder}" />
-            <paw:formField path="lastName" label="${lastNameLabel}" placeholder="${lastNamePlaceholder}" />
+            <paw:formField path="givenName" label="${givenNameLabel}" placeholder="${givenNamePlaceholder}" maxlength="100" />
+            <paw:formField path="lastName" label="${lastNameLabel}" placeholder="${lastNamePlaceholder}" maxlength="100" />
           </div>
-          <paw:formField path="email" type="email" label="${emailLabel}" placeholder="${emailPlaceholder}" />
-          <paw:formField path="paymentAlias" label="${paymentAliasLabel}" placeholder="${paymentAliasPlaceholder}" />
-          <paw:formField path="password" type="password" label="${passwordLabel}" placeholder="${passwordPlaceholder}" />
-          <paw:formField path="confirmPassword" type="password" label="${confirmPasswordLabel}" placeholder="${confirmPasswordPlaceholder}" />
+          <paw:formField path="email" type="email" label="${emailLabel}" placeholder="${emailPlaceholder}" maxlength="100" />
+          <paw:formField path="paymentAlias" label="${paymentAliasLabel}" placeholder="${paymentAliasPlaceholder}" maxlength="30" />
+          <paw:formField path="password" type="password" label="${passwordLabel}" placeholder="${passwordPlaceholder}" maxlength="100" />
+          <paw:formField path="confirmPassword" type="password" label="${confirmPasswordLabel}" placeholder="${confirmPasswordPlaceholder}" maxlength="100" />
           <form:errors path="passwordConfirmationValid" cssClass="text-error text-xs mt-1" element="p" />
           <paw:button type="submit" fullWidth="true" color="primary" text="${registerSubmitLabel}" />
         </form:form>
 
         <p class="text-center text-sm text-on-surface-variant m-0">
           <spring:message code="register.hasAccount" />
-          <a href="${loginUrl}" class="link link-hover text-primary font-semibold ml-1 no-underline">
+          <a href="<c:out value='${loginUrl}' />" class="link link-hover text-primary font-semibold ml-1 no-underline">
             <spring:message code="register.loginLink" />
           </a>
         </p>

@@ -1,10 +1,12 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.dto.MyBoatsQueryModel;
+import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
+import ar.edu.itba.paw.models.entity.Media;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.persistence.utils.Paging;
 import java.util.ArrayList;
@@ -27,7 +29,7 @@ public class ItemJpaDao implements ItemDao {
     private EntityManager em;
 
     @Override
-    public ItemSearchResult listOwnerItems(MyBoatsQueryModel query) {
+    public PageModel<Item> listOwnerItems(MyBoatsQueryModel query) {
         final long totalCount = countOwnerItems(query);
 
         // Phase 1: native SQL for IDs with dynamic filters + ordering + pagination
@@ -51,10 +53,6 @@ public class ItemJpaDao implements ItemDao {
             whereClauses.add("i.status = CAST(:status AS item_status_enum)");
             parameters.put("status", query.getStatus());
         }
-        if (!isEmpty(query.getLocationSlug())) {
-            whereClauses.add("EXISTS (SELECT 1 FROM location l WHERE l.id = v.location_id AND l.slug = :location)");
-            parameters.put("location", query.getLocationSlug());
-        }
 
         sql += " WHERE " + String.join(" AND ", whereClauses);
         sql += " ORDER BY " + nativeOrderBy(query);
@@ -68,7 +66,7 @@ public class ItemJpaDao implements ItemDao {
         final List<Integer> versionIds = Paging.toIntegerIds(nativeQuery.getResultList());
 
         if (versionIds.isEmpty()) {
-            return new ItemSearchResult(List.of(), totalCount);
+            return new PageModel<>(List.of(), query.getPage(), query.getPageSize(), totalCount);
         }
 
         final String jpql = "SELECT DISTINCT v FROM Version v "
@@ -91,7 +89,7 @@ public class ItemJpaDao implements ItemDao {
             sortedItems.add(item);
         }
 
-        return new ItemSearchResult(sortedItems, totalCount);
+        return new PageModel<>(sortedItems, query.getPage(), query.getPageSize(), totalCount);
     }
 
     private long countOwnerItems(MyBoatsQueryModel query) {
@@ -105,8 +103,7 @@ public class ItemJpaDao implements ItemDao {
         parameters.put("deleted", ItemStatusEnum.DELETED.name());
 
         String sql = "SELECT COUNT(DISTINCT i.id) FROM item i";
-        boolean needsVersionJoin =
-                !isEmpty(query.getSearchQuery()) || !isEmpty(query.getLocationSlug()) || isNameSort(query.getSortBy());
+        boolean needsVersionJoin = !isEmpty(query.getSearchQuery()) || isNameSort(query.getSortBy());
 
         if (needsVersionJoin) {
             sql +=
@@ -120,10 +117,6 @@ public class ItemJpaDao implements ItemDao {
         if (!isEmpty(query.getStatus())) {
             whereClauses.add("i.status = CAST(:status AS item_status_enum)");
             parameters.put("status", query.getStatus());
-        }
-        if (!isEmpty(query.getLocationSlug())) {
-            whereClauses.add("EXISTS (SELECT 1 FROM location l WHERE l.id = v.location_id AND l.slug = :location)");
-            parameters.put("location", query.getLocationSlug());
         }
 
         sql += " WHERE " + String.join(" AND ", whereClauses);
@@ -176,5 +169,93 @@ public class ItemJpaDao implements ItemDao {
     @Override
     public Optional<Image> findImageById(int id) {
         return Optional.ofNullable(em.find(Image.class, id));
+    }
+
+    @Override
+    public int getVersionCount(final int itemId) {
+        final Long count = em.createQuery("SELECT COUNT(v) FROM Version v WHERE v.item.id = :itemId", Long.class)
+                .setParameter("itemId", itemId)
+                .getSingleResult();
+        return count == null ? 0 : count.intValue();
+    }
+
+    @Override
+    public void deleteVersion(final Version version) {
+        em.remove(version);
+    }
+
+    @Override
+    public void deleteItem(final Item item) {
+        em.remove(item);
+    }
+
+    @Override
+    public Item persistItem(final Item item) {
+        em.persist(item);
+        return item;
+    }
+
+    @Override
+    public Version persistVersion(final Version version) {
+        em.persist(version);
+        return version;
+    }
+
+    @Override
+    public Availability persistAvailability(final Availability availability) {
+        em.persist(availability);
+        return availability;
+    }
+
+    @Override
+    public Image persistImage(final Image image) {
+        em.persist(image);
+        return image;
+    }
+
+    @Override
+    public Media persistMedia(final Media media) {
+        em.persist(media);
+        return media;
+    }
+
+    @Override
+    public Optional<Version> findVersionById(final int versionId) {
+        return Optional.ofNullable(em.find(Version.class, versionId));
+    }
+
+    /**
+     * Elimina disponibilidades e imágenes de una versión.
+     *
+     * <p>{@code Availability} usa {@code DELETE} JPQL masivo: al reinsertar se generan IDs nuevos
+     * con secuencia, por lo que no hay conflicto aunque queden instancias viejas en la sesión.
+     *
+     * <p>{@code Media} se borra con {@code em.remove()} entidad por entidad porque, en el flujo de
+     * edición, la colección ya puede estar cargada en el persistence context (p. ej. vía
+     * {@code requireOwnedFullData}). Un borrado masivo elimina las filas en la base pero deja
+     * instancias administradas en la sesión; al reinsertar con la misma clave compuesta
+     * {@code (version_id, index)} se produce {@code EntityExistsException}.
+     */
+    @Override
+    public void removeVersionChildren(final Version version) {
+        final int versionId = version.getId();
+
+        em.createQuery("DELETE FROM Availability a WHERE a.version.id = :vid")
+                .setParameter("vid", versionId)
+                .executeUpdate();
+        if (version.getAvailabilities() != null) {
+            version.getAvailabilities().clear();
+        }
+
+        final List<Media> media = em.createQuery("SELECT m FROM Media m WHERE m.version.id = :vid", Media.class)
+                .setParameter("vid", versionId)
+                .getResultList();
+        for (final Media medium : media) {
+            em.remove(medium);
+        }
+        if (version.getMedia() != null) {
+            version.getMedia().clear();
+        }
+        em.flush();
     }
 }

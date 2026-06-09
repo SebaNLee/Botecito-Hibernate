@@ -48,15 +48,15 @@ public class PaymentProof {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "refuse_msg", length = 255)
-    private String refuseMsg;
+    @Column(name = "host_msg", length = 255)
+    private String hostMsg;
 
-    @Column(name = "refused_at")
-    private LocalDateTime refusedAt;
+    @Column(name = "host_at")
+    private LocalDateTime hostAt;
 
-    @Column(name = "reply_msg", length = 255)
-    private String replyMsg;
+    @Column(name = "guest_msg", length = 255)
+    private String guestMsg;
 
-    @Column(name = "replied_at")
-    private LocalDateTime repliedAt;
+    @Column(name = "guest_at")
+    private LocalDateTime guestAt;
 }

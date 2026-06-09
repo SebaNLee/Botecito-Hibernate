@@ -2,7 +2,6 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Users;
-import java.util.List;
 
 public interface SubscriptionService {
 
@@ -16,5 +15,5 @@ public interface SubscriptionService {
 
     int countFollowers(int userId);
 
-    List<Users> listVerifiedSubscribersForPublisher(int publisherId);
+    PageModel<Users> listFollowers(int userId, int page, int pageSize);
 }

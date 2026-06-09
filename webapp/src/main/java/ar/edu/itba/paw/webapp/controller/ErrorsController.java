@@ -8,6 +8,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
+/**
+ * Central renderer for HTTP error pages. Reached from {@code web.xml}
+ * error-page entries,
+ * {@link GlobalExceptionHandler} forwards, and the Spring Security
+ * access-denied handler.
+ */
 @Controller
 public class ErrorsController {
 
@@ -18,7 +24,7 @@ public class ErrorsController {
             @RequestParam(value = "status", required = false) final String statusParam) {
         final int status = resolveStatus(request, statusParam);
         response.setStatus(status);
-        return errorModelAndView(status);
+        return errorModelAndView(request, status);
     }
 
     private static int resolveStatus(final HttpServletRequest request, final String statusParam) {
@@ -39,12 +45,29 @@ public class ErrorsController {
         return 404;
     }
 
-    private static ModelAndView errorModelAndView(final int status) {
-        return new ModelAndView("error")
+    private static ModelAndView errorModelAndView(final HttpServletRequest request, final int status) {
+        final ModelAndView modelAndView = new ModelAndView("error")
                 .addObject("httpStatus", status)
                 .addObject("errorTitleCode", titleMessageCode(status))
                 .addObject("errorMessageCode", bodyMessageCode(status))
                 .addObject("clientSideError", status >= 400 && status < 500);
+        final String failedPath = resolveFailedPath(request);
+        if (failedPath != null) {
+            modelAndView.addObject("failedPath", failedPath);
+        }
+        return modelAndView;
+    }
+
+    private static String resolveFailedPath(final HttpServletRequest request) {
+        final Object errorUri = request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI);
+        if (errorUri instanceof String uri && !uri.isBlank() && !ERRORS_PATH.equals(uri)) {
+            return uri;
+        }
+        final String requestUri = request.getRequestURI();
+        if (requestUri != null && !requestUri.isBlank() && !ERRORS_PATH.equals(requestUri)) {
+            return requestUri;
+        }
+        return null;
     }
 
     private static String titleMessageCode(final int status) {
@@ -82,4 +105,6 @@ public class ErrorsController {
             default -> status >= 400 && status < 500 ? "error.4xx.message" : "error.5xx.message";
         };
     }
+
+    private static final String ERRORS_PATH = "/errors";
 }

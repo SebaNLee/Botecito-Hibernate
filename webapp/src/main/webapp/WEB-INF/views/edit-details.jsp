@@ -71,7 +71,7 @@ charset=UTF-8" pageEncoding="UTF-8" %>
 <spring:message code="page.title.edit" var="titleEdit" />
 <paw:layout
   title="${titleEdit} - Botecito"
-  mainClass="pt-24 pb-14 max-w-3xl mx-auto px-6"
+  mainClass="pt-24 pb-14 w-full max-w-6xl mx-auto px-6"
   headerCtaMessageCode="nav.rent"
   headerCtaHref="/marketplace"
   headerCtaVariant="rent"
@@ -79,16 +79,18 @@ charset=UTF-8" pageEncoding="UTF-8" %>
   <div
     data-edit-wizard-root="step1"
     data-edit-wizard-step1-form="true"
-    data-item-id="${itemId}"
-    class="max-w-3xl"
+    data-item-id="<c:out value='${itemId}' />"
+    data-edit-details-url="<c:out value='${editDetailsUrl}' />"
+    data-my-boats-url="<c:out value='${myBoatsUrl}' />"
+    class="w-full"
   >
     <div class="mb-8">
       <a
-        href="${myBoatsUrl}"
+        href="<c:out value='${myBoatsUrl}' />"
         class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit"
       >
         <span class="material-symbols-outlined">arrow_back</span>
-        <span><spring:message code="common.back" /></span>
+        <span><spring:message code="manageAvailability.back.myBoats" /></span>
       </a>
     </div>
 
@@ -112,6 +114,22 @@ charset=UTF-8" pageEncoding="UTF-8" %>
       <p class="text-on-surface-variant mt-2 text-lg m-0">
         <spring:message code="editPublication.step1.subtitle" />
       </p>
+    </div>
+
+    <div data-edit-wizard-seed hidden="hidden" data-version-id="<c:out value='${versionId}'/>">
+      <c:forEach var="range" items="${publishForm.availabilityRanges}">
+        <span class="hidden"
+              data-edit-seed-range
+              data-weekday="<c:out value='${range.weekday}'/>"
+              data-start="<c:out value='${range.startTime}'/>"
+              data-end="<c:out value='${range.endTime}'/>"></span>
+      </c:forEach>
+      <c:forEach var="image" items="${editGalleryImages}">
+        <span class="hidden"
+              data-edit-seed-image
+              data-id="<c:out value='${image.id}'/>"
+              data-url="<c:out value='${image.url}'/>"></span>
+      </c:forEach>
     </div>
 
     <form:form
@@ -204,9 +222,15 @@ charset=UTF-8" pageEncoding="UTF-8" %>
                 <span class="text-error" aria-hidden="true">*</span>
               </legend>
               <spring:bind path="publishForm.weight">
-                <label
-                  class="input w-full ${status.error ? 'input-error' : ''}"
-                >
+                <c:choose>
+                  <c:when test="${status.error}">
+                    <c:set var="weightInputClass" value="input w-full input-error" />
+                  </c:when>
+                  <c:otherwise>
+                    <c:set var="weightInputClass" value="input w-full" />
+                  </c:otherwise>
+                </c:choose>
+                <label class="<c:out value='${weightInputClass}' />">
                   <form:input
                     path="weight"
                     id="weight"

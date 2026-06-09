@@ -5,7 +5,6 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<fmt:setLocale value="es_AR" />
 <c:url var="publishUrl" value="/publish" />
 <c:url var="homeUrl" value="/" />
 <c:url var="marketplaceUrl" value="/marketplace" />
@@ -30,19 +29,21 @@
 <spring:message code="landing.hero.search" var="searchLabel" />
 <spring:message code="marketplace.filters.apply" var="filtersApplyLabel" />
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
+<spring:message code="marketplace.field.pageSize" var="pageSizeFieldLabel" />
 <spring:message code="reviews.empty.short" var="reviewsEmptyShortLabel" />
-<c:set
-    var="pageSize"
-    value="${marketplaceSearch != null && marketplaceSearch.pageSize != null ? marketplaceSearch.pageSize : 12}" />
-<c:set
-    var="marketplaceSortBy"
-    value="${empty marketplaceSearch.sortBy ? 'newest' : marketplaceSearch.sortBy}" />
-<c:url var="clearMarketplaceFiltersUrl" value="/marketplace" />
-<c:if test="${itemPage.hasPrevious}">
+<c:url var="clearMarketplaceFiltersUrl" value="/marketplace">
+  <c:if test="${marketplaceSearch.sortBy != 'newest'}">
+    <c:param name="sortBy" value="${marketplaceSearch.sortBy}" />
+  </c:if>
+  <c:if test="${marketplaceSearch.pageSize != 12}">
+    <c:param name="pageSize" value="${marketplaceSearch.pageSize}" />
+  </c:if>
+</c:url>
+<c:if test="${itemPage.totalPages > 1}">
   <c:url var="previousPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.previousPage}" />
-    <c:param name="sortBy" value="${marketplaceSortBy}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${marketplaceSearch.sortBy}" />
+    <c:param name="pageSize" value="${marketplaceSearch.pageSize}" />
     <c:if test="${not empty param.searchQuery}">
       <c:param name="searchQuery" value="${param.searchQuery}" />
     </c:if>
@@ -74,12 +75,10 @@
       <c:param name="minAvgRating" value="${param.minAvgRating}" />
     </c:if>
   </c:url>
-</c:if>
-<c:if test="${itemPage.hasNext}">
   <c:url var="nextPageUrl" value="/marketplace">
     <c:param name="page" value="${itemPage.nextPage}" />
-    <c:param name="sortBy" value="${marketplaceSortBy}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${marketplaceSearch.sortBy}" />
+    <c:param name="pageSize" value="${marketplaceSearch.pageSize}" />
     <c:if test="${not empty param.searchQuery}">
       <c:param name="searchQuery" value="${param.searchQuery}" />
     </c:if>
@@ -118,16 +117,17 @@
   <paw:toastNotifier />
   <aside class="relative z-40 w-full md:min-w-0">
     <div class="space-y-6">
-      <a href="${homeUrl}" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
+      <a href="<c:out value='${homeUrl}' />" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
         <span class="material-symbols-outlined">arrow_back</span>
-        <span><spring:message code="common.back" /></span>
+        <span><spring:message code="marketplace.back.home" /></span>
       </a>
 
       <paw:sectionCard element="aside" icon="tune">
         <jsp:attribute name="title"><spring:message code="marketplace.filters.title" /></jsp:attribute>
         <jsp:body>
-          <form id="marketplace-filters-form" action="${marketplaceUrl}" method="get" class="space-y-6" data-filter-form="marketplace">
-            <input type="hidden" name="pageSize" value="${pageSize}" />
+          <form id="marketplace-filters-form" action="<c:out value='${marketplaceUrl}' />" method="get" class="space-y-6" data-filter-form="marketplace">
+            <input type="hidden" name="page" value="1" />
+            <input type="hidden" name="pageSize" value="${marketplaceSearch.pageSize}" />
             <paw:optionsPicker
                 id="marketplace-location"
                 name="location"
@@ -144,9 +144,7 @@
                   label="${dateLabel}"
                   value="${param.date}"
                   placeholder="${datePlaceholder}"
-                  restrictToAvailability="false"
-                  offeredDatesJson="[]"
-                  occupiedDatesJson="[]" />
+                  restrictToAvailability="false" />
               <paw:timeRangePicker
                   id="marketplace-time-range"
                   dateInputId="marketplace-date"
@@ -156,9 +154,7 @@
                   startValue="${param.startTime}"
                   endValue="${param.endTime}"
                   placeholder="${timePlaceholder}"
-                  restrictToAvailability="false"
-                  offeredTimesJson="{}"
-                  occupiedTimesJson="{}" />
+                  restrictToAvailability="false" />
             </div>
 
             <paw:peopleCount
@@ -188,12 +184,12 @@
                 <c:out value="${difficultyFilterLabel}" />
               </label>
               <select id="marketplace-difficulty" name="difficulty" class="select select-bordered w-full font-semibold text-on-surface">
-                <option value="" ${empty param.difficulty ? 'selected="selected"' : ''}><c:out value="${difficultyAnyLabel}" /></option>
-                <option value="1" ${param.difficulty == '1' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.1" /></option>
-                <option value="2" ${param.difficulty == '2' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.2" /></option>
-                <option value="3" ${param.difficulty == '3' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.3" /></option>
-                <option value="4" ${param.difficulty == '4' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.4" /></option>
-                <option value="5" ${param.difficulty == '5' ? 'selected="selected"' : ''}><spring:message code="publish.difficulty.5" /></option>
+                <option value="" <c:if test="${empty param.difficulty}">selected="selected"</c:if>><c:out value="${difficultyAnyLabel}" /></option>
+                <option value="1" <c:if test="${param.difficulty == '1'}">selected="selected"</c:if>><spring:message code="publish.difficulty.1" /></option>
+                <option value="2" <c:if test="${param.difficulty == '2'}">selected="selected"</c:if>><spring:message code="publish.difficulty.2" /></option>
+                <option value="3" <c:if test="${param.difficulty == '3'}">selected="selected"</c:if>><spring:message code="publish.difficulty.3" /></option>
+                <option value="4" <c:if test="${param.difficulty == '4'}">selected="selected"</c:if>><spring:message code="publish.difficulty.4" /></option>
+                <option value="5" <c:if test="${param.difficulty == '5'}">selected="selected"</c:if>><spring:message code="publish.difficulty.5" /></option>
               </select>
             </div>
 
@@ -218,7 +214,7 @@
             <div class="flex flex-col gap-3">
               <paw:button type="submit" color="primary" fullWidth="true" text="${filtersApplyLabel}" />
               <a
-                  href="${clearMarketplaceFiltersUrl}"
+                  href="<c:out value='${clearMarketplaceFiltersUrl}' />"
                   class="btn btn-outline btn-block no-underline"
                   data-clear-marketplace-filters>
                 <c:out value="${filtersClearLabel}" />
@@ -239,6 +235,7 @@
           placeholder="${searchLabel}"
           ariaLabel="${searchLabel}"
           inputId="marketplace-search-query"
+          maxlength="100"
           extraAttributes="data-marketplace-search-input"
           size="lg" />
     </div>
@@ -246,42 +243,51 @@
     <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
       <div class="min-w-0">
         <h1 class="text-4xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="marketplace.title" /></h1>
-        <p class="text-on-surface-variant mt-2 m-0"><spring:message code="marketplace.results.count" arguments="${itemsCount}" /></p>
+        <p class="text-on-surface-variant mt-2 m-0">
+          <c:choose>
+            <c:when test="${itemPage.totalItems == 1}">
+              <spring:message code="marketplace.results.count.singular" />
+            </c:when>
+            <c:otherwise>
+              <spring:message code="marketplace.results.count.plural" arguments="${itemPage.totalItems}" />
+            </c:otherwise>
+          </c:choose>
+        </p>
       </div>
 
       <form
-          action="${marketplaceUrl}"
+          action="<c:out value='${marketplaceUrl}' />"
           method="get"
           class="flex items-center gap-3 text-sm font-medium text-on-surface-variant"
           data-marketplace-toolbar-form>
         <input type="hidden" name="page" value="${marketplaceSearch.page}" />
-        <input type="hidden" name="searchQuery" value="${fn:escapeXml(param.searchQuery)}" data-applied-filter-mirror />
-        <input type="hidden" name="location" value="${fn:escapeXml(marketplaceSearch.location)}" data-applied-filter-mirror />
-        <input type="hidden" name="itemType" value="${fn:escapeXml(marketplaceSearch.itemType)}" data-applied-filter-mirror />
-        <input type="hidden" name="date" value="${fn:escapeXml(param.date)}" data-applied-filter-mirror />
-        <input type="hidden" name="startTime" value="${fn:escapeXml(param.startTime)}" data-applied-filter-mirror />
-        <input type="hidden" name="endTime" value="${fn:escapeXml(param.endTime)}" data-applied-filter-mirror />
-        <input type="hidden" name="capacity" value="${fn:escapeXml(param.capacity)}" data-applied-filter-mirror />
-        <input type="hidden" name="weight" value="${fn:escapeXml(param.weight)}" data-applied-filter-mirror />
-        <input type="hidden" name="difficulty" value="${fn:escapeXml(param.difficulty)}" data-applied-filter-mirror />
-        <input type="hidden" name="minAvgRating" value="${fn:escapeXml(marketplaceSearch.minAvgRating)}" data-applied-filter-mirror />
+        <input type="hidden" name="searchQuery" value="<c:out value='${param.searchQuery}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="location" value="<c:out value='${marketplaceSearch.location}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="itemType" value="<c:out value='${marketplaceSearch.itemType}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="date" value="<c:out value='${param.date}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="startTime" value="<c:out value='${param.startTime}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="endTime" value="<c:out value='${param.endTime}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="capacity" value="<c:out value='${param.capacity}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="weight" value="<c:out value='${param.weight}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="difficulty" value="<c:out value='${param.difficulty}'/>" data-applied-filter-mirror />
+        <input type="hidden" name="minAvgRating" value="<c:out value='${marketplaceSearch.minAvgRating}'/>" data-applied-filter-mirror />
         <label for="marketplace-sort" class="shrink-0"><spring:message code="marketplace.sort.label" /></label>
         <select id="marketplace-sort" name="sortBy" class="select select-sm font-bold text-primary">
-          <option value="newest" ${empty marketplaceSearch.sortBy || marketplaceSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.newest" /></option>
-          <option value="oldest" ${marketplaceSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.oldest" /></option>
-          <option value="priceAsc" ${marketplaceSearch.sortBy == 'priceAsc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceAsc" /></option>
-          <option value="priceDesc" ${marketplaceSearch.sortBy == 'priceDesc' ? 'selected="selected"' : ''}><spring:message code="marketplace.sort.priceDesc" /></option>
+          <option value="newest" <c:if test="${marketplaceSearch.sortBy == 'newest'}">selected="selected"</c:if>><spring:message code="marketplace.sort.newest" /></option>
+          <option value="oldest" <c:if test="${marketplaceSearch.sortBy == 'oldest'}">selected="selected"</c:if>><spring:message code="marketplace.sort.oldest" /></option>
+          <option value="priceAsc" <c:if test="${marketplaceSearch.sortBy == 'priceAsc'}">selected="selected"</c:if>><spring:message code="marketplace.sort.priceAsc" /></option>
+          <option value="priceDesc" <c:if test="${marketplaceSearch.sortBy == 'priceDesc'}">selected="selected"</c:if>><spring:message code="marketplace.sort.priceDesc" /></option>
         </select>
-        <label for="marketplace-page-size" class="shrink-0 ml-2">Páginas:</label>
+        <label for="marketplace-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
         <select id="marketplace-page-size" name="pageSize" class="select select-sm w-20 font-bold text-primary">
-            <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-            <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-            <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+            <option value="6" <c:if test="${marketplaceSearch.pageSize == 6}">selected="selected"</c:if>>6</option>
+            <option value="12" <c:if test="${marketplaceSearch.pageSize == 12}">selected="selected"</c:if>>12</option>
+            <option value="18" <c:if test="${marketplaceSearch.pageSize == 18}">selected="selected"</c:if>>18</option>
         </select>
       </form>
     </div>
 
-    <c:if test="${empty items}">
+    <c:if test="${empty itemPage.content}">
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body items-center text-center gap-4 p-10">
           <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -291,60 +297,25 @@
             <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><spring:message code="marketplace.empty.title" /></h2>
             <p class="m-0 mt-2 text-on-surface-variant"><spring:message code="marketplace.empty.message" /></p>
           </div>
-          <a href="${clearMarketplaceFiltersUrl}" class="btn btn-primary no-underline" data-clear-marketplace-filters>
+          <a href="<c:out value='${clearMarketplaceFiltersUrl}' />" class="btn btn-primary no-underline" data-clear-marketplace-filters>
             <spring:message code="marketplace.empty.clear" />
           </a>
         </div>
       </div>
     </c:if>
 
-    <c:set var="marketplaceReturnTo" value="/marketplace" />
-    <c:if test="${not empty pageContext.request.queryString}">
-      <c:set var="marketplaceReturnTo" value="/marketplace?${pageContext.request.queryString}" />
-    </c:if>
-
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-      <c:forEach items="${items}" var="item">
-        <paw:listingCard item="${item}" coverSrc="${imageUrlsByItemId[item.id]}" returnTo="${marketplaceReturnTo}" />
+      <c:forEach items="${itemPage.content}" var="item">
+        <paw:listingCard item="${item}" />
       </c:forEach>
     </div>
 
-    <c:if test="${itemPage.totalPages > 1}">
-      <nav class="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
-        <c:choose>
-          <c:when test="${itemPage.hasPrevious}">
-            <a href="${previousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-              <span class="material-symbols-outlined text-sm">arrow_back</span>
-              <spring:message code="marketplace.pagination.previous" />
-            </a>
-          </c:when>
-          <c:otherwise>
-            <span class="btn btn-outline btn-sm btn-disabled gap-2">
-              <span class="material-symbols-outlined text-sm">arrow_back</span>
-              <spring:message code="marketplace.pagination.previous" />
-            </span>
-          </c:otherwise>
-        </c:choose>
-
-        <span>
-          <spring:message code="marketplace.pagination.page" arguments="${itemPage.page},${itemPage.totalPages}" />
-        </span>
-
-        <c:choose>
-          <c:when test="${itemPage.hasNext}">
-            <a href="${nextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-              <spring:message code="marketplace.pagination.next" />
-              <span class="material-symbols-outlined text-sm">arrow_forward</span>
-            </a>
-          </c:when>
-          <c:otherwise>
-            <span class="btn btn-outline btn-sm btn-disabled gap-2">
-              <spring:message code="marketplace.pagination.next" />
-              <span class="material-symbols-outlined text-sm">arrow_forward</span>
-            </span>
-          </c:otherwise>
-        </c:choose>
-      </nav>
-    </c:if>
+    <paw:pagination
+        currentPage="${itemPage.page}"
+        totalPages="${itemPage.totalPages}"
+        hasPrevious="${itemPage.hasPrevious}"
+        hasNext="${itemPage.hasNext}"
+        previousPageUrl="${previousPageUrl}"
+        nextPageUrl="${nextPageUrl}" />
   </section>
 </paw:layout>

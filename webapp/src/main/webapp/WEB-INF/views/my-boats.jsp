@@ -5,7 +5,6 @@
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<fmt:setLocale value="es_AR" />
 <c:url var="myBoatsUrl" value="/my-boats" />
 <c:url var="publishUrl" value="/publish" />
 <spring:message code="nav.publishCta" var="publishCtaLabel" />
@@ -18,48 +17,46 @@
 <spring:message code="settings.publications.delete.confirm.message" var="deleteConfirmMessage" />
 <spring:message code="settings.publications.delete.confirm.confirm" var="deleteConfirmConfirm" />
 <spring:message code="settings.publications.delete.confirm.cancel" var="deleteConfirmCancel" />
-<spring:message code="settings.publications.viewDetail" var="publicationViewDetailLabel" />
+<spring:message code="settings.publications.actions" var="publicationActionsLabel" />
 <spring:message code="page.title.myBoats" var="titleMyBoats" />
 <spring:message code="landing.hero.search" var="searchLabel" />
 <spring:message code="myBoats.search.placeholder" var="searchPlaceholder" />
-<spring:message code="myBoats.sort.newest" var="sortNewestLabel" />
-<spring:message code="myBoats.sort.oldest" var="sortOldestLabel" />
 <spring:message code="myBoats.sort.nameAsc" var="sortNameAscLabel" />
 <spring:message code="myBoats.sort.nameDesc" var="sortNameDescLabel" />
+<spring:message code="myBoats.filter.status.placeholder" var="statusFilterLabel" />
+<spring:message code="myBoats.filter.status.any" var="statusAnyLabel" />
 <spring:message code="myBoats.filter.status.active" var="statusActiveLabel" />
 <spring:message code="myBoats.filter.status.inactive" var="statusInactiveLabel" />
-<spring:message code="myBoats.filter.location.placeholder" var="locationPlaceholder" />
 <spring:message code="marketplace.filters.clear" var="filtersClearLabel" />
-<spring:message code="myBoats.filter.empty" var="filterEmptyLabel" />
-<c:set var="pageSize" value="${myBoatsSearch.pageSize != null ? myBoatsSearch.pageSize : 12}" />
-<c:set var="currentSortBy" value="${empty myBoatsSearch.sortBy ? 'newest' : myBoatsSearch.sortBy}" />
-<c:set var="hasActiveFilters" value="${not empty myBoatsSearch.searchQuery or not empty myBoatsSearch.status or not empty myBoatsSearch.location}" />
+<spring:message code="marketplace.sort.label" var="sortLabel" />
+<spring:message code="myBoats.pageSize" var="pageSizeFieldLabel" />
+<spring:message code="myBoats.filter.empty.title" var="filterEmptyTitleLabel" />
+<spring:message code="myBoats.filter.empty.message" var="filterEmptyMessageLabel" />
+<c:set var="hasActiveFilters" value="${not empty myBoatsSearch.searchQuery or not empty myBoatsSearch.status}" />
 
 <c:url var="clearFiltersUrl" value="/my-boats">
-  <c:if test="${currentSortBy != 'newest'}">
-    <c:param name="sortBy" value="${currentSortBy}" />
+  <c:if test="${myBoatsSearch.sortBy != 'newest'}">
+    <c:param name="sortBy" value="${myBoatsSearch.sortBy}" />
   </c:if>
-  <c:if test="${pageSize != 12}">
-    <c:param name="pageSize" value="${pageSize}" />
+  <c:if test="${myBoatsSearch.pageSize != 12}">
+    <c:param name="pageSize" value="${myBoatsSearch.pageSize}" />
   </c:if>
 </c:url>
 
 <c:if test="${itemPage.totalPages > 1}">
   <c:url var="previousPageUrl" value="/my-boats">
     <c:param name="page" value="${itemPage.previousPage}" />
-    <c:param name="sortBy" value="${currentSortBy}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${myBoatsSearch.sortBy}" />
+    <c:param name="pageSize" value="${myBoatsSearch.pageSize}" />
     <c:if test="${not empty myBoatsSearch.searchQuery}"><c:param name="searchQuery" value="${myBoatsSearch.searchQuery}" /></c:if>
     <c:if test="${not empty myBoatsSearch.status}"><c:param name="status" value="${myBoatsSearch.status}" /></c:if>
-    <c:if test="${not empty myBoatsSearch.location}"><c:param name="location" value="${myBoatsSearch.location}" /></c:if>
   </c:url>
   <c:url var="nextPageUrl" value="/my-boats">
     <c:param name="page" value="${itemPage.nextPage}" />
-    <c:param name="sortBy" value="${currentSortBy}" />
-    <c:param name="pageSize" value="${pageSize}" />
+    <c:param name="sortBy" value="${myBoatsSearch.sortBy}" />
+    <c:param name="pageSize" value="${myBoatsSearch.pageSize}" />
     <c:if test="${not empty myBoatsSearch.searchQuery}"><c:param name="searchQuery" value="${myBoatsSearch.searchQuery}" /></c:if>
     <c:if test="${not empty myBoatsSearch.status}"><c:param name="status" value="${myBoatsSearch.status}" /></c:if>
-    <c:if test="${not empty myBoatsSearch.location}"><c:param name="location" value="${myBoatsSearch.location}" /></c:if>
   </c:url>
 </c:if>
 
@@ -72,54 +69,73 @@
       <div class="flex items-end justify-between mb-4">
         <div class="min-w-0">
           <h1 class="text-3xl font-extrabold tracking-tight text-on-background m-0 break-words"><spring:message code="myBoats.title" /></h1>
-          <p class="text-on-surface-variant mt-2 m-0"><spring:message code="myBoats.subtitle" /></p>
+          <p class="text-on-surface-variant mt-2 m-0">
+            <c:choose>
+              <c:when test="${itemPage.totalItems == 1}">
+                <spring:message code="myBoats.results.count.singular" />
+              </c:when>
+              <c:otherwise>
+                <spring:message code="myBoats.results.count.plural" arguments="${itemPage.totalItems}" />
+              </c:otherwise>
+            </c:choose>
+          </p>
         </div>
-        <a href="${publishUrl}" class="btn btn-secondary shrink-0 no-underline">
+        <a href="<c:out value='${publishUrl}' />" class="btn btn-secondary shrink-0 no-underline">
           <span class="material-symbols-outlined text-base">add</span>
           <c:out value="${publishCtaLabel}" />
         </a>
       </div>
     </div>
 
-    <form id="my-boats-filters-form" action="${myBoatsUrl}" method="get" class="w-full">
+    <form id="my-boats-filters-form" action="<c:out value='${myBoatsUrl}' />" method="get" class="w-full">
       <input type="hidden" name="page" value="1" />
-      <div class="flex items-center justify-between gap-2 text-sm font-medium text-on-surface-variant">
-        <div class="max-w-sm">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-4">
+        <div class="min-w-0 w-full flex-1">
           <paw:searchBar
               formId="my-boats-filters-form"
               name="searchQuery"
-              value="${fn:escapeXml(myBoatsSearch.searchQuery)}"
+              value="${myBoatsSearch.searchQuery}"
               placeholder="${searchPlaceholder}"
               ariaLabel="${searchLabel}"
+              inputId="my-boats-search-query"
               maxlength="100"
-              size="sm" />
+              size="lg" />
         </div>
-
-        <div class="flex items-center gap-2">
-        <select id="my-boats-location" name="location" class="select select-xs w-28 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
-          <option value="" disabled selected hidden><c:out value="${locationPlaceholder}" /></option>
-          <c:forEach var="loc" items="${locationOptions}">
-            <option value="${loc.slug}" ${myBoatsSearch.location == loc.slug ? 'selected="selected"' : ''}><c:out value="${loc.name}" /></option>
-          </c:forEach>
+        <div class="flex shrink-0 flex-wrap items-center gap-2 text-sm font-medium text-on-surface-variant lg:flex-nowrap lg:justify-end">
+        <label for="my-boats-status" class="shrink-0 whitespace-nowrap"><c:out value="${statusFilterLabel}" /></label>
+        <select
+            id="my-boats-status"
+            name="status"
+            class="select select-sm w-28 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none"
+            onchange="this.form.requestSubmit()">
+          <option value="" <c:if test="${empty myBoatsSearch.status}">selected="selected"</c:if>><c:out value="${statusAnyLabel}" /></option>
+          <option value="ACTIVE" <c:if test="${myBoatsSearch.status == 'ACTIVE'}">selected="selected"</c:if>><c:out value="${statusActiveLabel}" /></option>
+          <option value="INACTIVE" <c:if test="${myBoatsSearch.status == 'INACTIVE'}">selected="selected"</c:if>><c:out value="${statusInactiveLabel}" /></option>
         </select>
-
-        <select id="my-boats-status" name="status" class="select select-xs w-24 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
-          <option value="" disabled selected hidden><spring:message code="myBoats.filter.status.placeholder" /></option>
-          <option value="ACTIVE" ${myBoatsSearch.status == 'ACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusActiveLabel}" /></option>
-          <option value="INACTIVE" ${myBoatsSearch.status == 'INACTIVE' ? 'selected="selected"' : ''}><c:out value="${statusInactiveLabel}" /></option>
+        <label for="my-boats-sort" class="shrink-0 whitespace-nowrap ml-2"><c:out value="${sortLabel}" /></label>
+        <select
+            id="my-boats-sort"
+            name="sortBy"
+            class="select select-sm w-32 max-w-[40vw] shrink-0 font-bold text-primary sm:max-w-none sm:w-36"
+            onchange="this.form.requestSubmit()">
+          <option value="newest" <c:if test="${myBoatsSearch.sortBy == 'newest'}">selected="selected"</c:if>>
+            <spring:message code="marketplace.sort.newest" />
+          </option>
+          <option value="oldest" <c:if test="${myBoatsSearch.sortBy == 'oldest'}">selected="selected"</c:if>>
+            <spring:message code="marketplace.sort.oldest" />
+          </option>
+          <option value="nameAsc" <c:if test="${myBoatsSearch.sortBy == 'nameAsc'}">selected="selected"</c:if>><c:out value="${sortNameAscLabel}" /></option>
+          <option value="nameDesc" <c:if test="${myBoatsSearch.sortBy == 'nameDesc'}">selected="selected"</c:if>><c:out value="${sortNameDescLabel}" /></option>
         </select>
-
-        <select id="my-boats-sort" name="sortBy" class="select select-xs w-28 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
-          <option value="newest" ${empty myBoatsSearch.sortBy || myBoatsSearch.sortBy == 'newest' ? 'selected="selected"' : ''}><c:out value="${sortNewestLabel}" /></option>
-          <option value="oldest" ${myBoatsSearch.sortBy == 'oldest' ? 'selected="selected"' : ''}><c:out value="${sortOldestLabel}" /></option>
-          <option value="nameAsc" ${myBoatsSearch.sortBy == 'nameAsc' ? 'selected="selected"' : ''}><c:out value="${sortNameAscLabel}" /></option>
-          <option value="nameDesc" ${myBoatsSearch.sortBy == 'nameDesc' ? 'selected="selected"' : ''}><c:out value="${sortNameDescLabel}" /></option>
-        </select>
-
-        <select id="my-boats-page-size" name="pageSize" class="select select-xs w-16 font-bold text-primary shrink-0" onchange="this.form.requestSubmit()">
-          <option value="6" ${pageSize == 6 ? 'selected="selected"' : ''}>6</option>
-          <option value="12" ${pageSize == 12 ? 'selected="selected"' : ''}>12</option>
-          <option value="18" ${pageSize == 18 ? 'selected="selected"' : ''}>18</option>
+        <label for="my-boats-page-size" class="shrink-0 ml-2"><c:out value="${pageSizeFieldLabel}" /></label>
+        <select
+            id="my-boats-page-size"
+            name="pageSize"
+            class="select select-sm w-20 font-bold text-primary"
+            onchange="this.form.requestSubmit()">
+          <option value="6" <c:if test="${myBoatsSearch.pageSize == 6}">selected="selected"</c:if>>6</option>
+          <option value="12" <c:if test="${myBoatsSearch.pageSize == 12}">selected="selected"</c:if>>12</option>
+          <option value="18" <c:if test="${myBoatsSearch.pageSize == 18}">selected="selected"</c:if>>18</option>
         </select>
         </div>
       </div>
@@ -127,110 +143,119 @@
 
     <div id="my-publications" class="scroll-mt-24 space-y-4">
       <c:choose>
-        <c:when test="${not empty ownedItems}">
+        <c:when test="${not empty itemPage.content}">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3">
-            <c:forEach var="item" items="${ownedItems}">
+            <c:forEach var="item" items="${itemPage.content}">
               <c:set var="version" value="${item.latestVersion}" />
               <c:set var="itemActive" value="${item.status == 'ACTIVE'}" />
               <c:url var="itemDetailUrl" value="/item/${item.id}" />
               <c:url var="editItemUrl" value="/edit/${item.id}" />
-              <c:url var="manageAvailabilityItemUrl" value="/my-boats/${item.id}/availability">
-                <c:param name="return" value="/my-boats" />
-              </c:url>
+              <c:url var="manageAvailabilityItemUrl" value="/my-boats/${item.id}/availability" />
               <c:url var="disableItemUrl" value="/my-boats/${item.id}/disable" />
               <c:url var="enableItemUrl" value="/my-boats/${item.id}/enable" />
               <c:url var="deleteItemUrl" value="/my-boats/${item.id}/delete" />
-              <c:set var="publicationImageUrl" value="${imageUrlsByItemId[item.id]}" />
-              <c:set var="detailsModalId" value="publication-details-modal-${item.id}" />
-              <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
-              <button type="button" class="flex h-full w-full max-w-sm flex-col gap-2 rounded-xl bg-base-200 p-2 text-left transition hover:bg-base-300 sm:p-3 ${itemActive ? '' : 'opacity-75'}" onclick="document.getElementById('${detailsModalId}').showModal()">
-                <div class="h-24 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:h-32">
-                  <img src="${publicationImageUrl}" alt="${fn:escapeXml(version.title)}" class="h-full w-full object-cover" loading="lazy" />
-                </div>
-                <div class="flex min-w-0 flex-1 flex-col gap-1">
-                  <div class="flex min-w-0 items-start gap-1.5">
-                    <p class="m-0 min-w-0 flex-1 break-words text-xs font-extrabold text-on-surface line-clamp-2 sm:text-sm">
-                      <c:out value="${version.title}" />
-                    </p>
-                    <span class="badge ${itemActive ? 'badge-success' : 'badge-ghost'} badge-xs shrink-0 font-bold">
-                      <spring:message code="${itemActive ? 'settings.publications.status.active' : 'settings.publications.status.inactive'}" />
-                    </span>
-                  </div>
-                  <p class="m-0 mt-auto text-[11px] font-bold text-on-surface sm:text-xs">
-                    $<fmt:formatNumber value="${version.price}" type="number" groupingUsed="true" maxFractionDigits="0" />
-                    <span class="font-normal text-on-surface-variant"> &middot; <spring:message code="marketplace.card.perHour" /></span>
-                  </p>
-                </div>
-              </button>
-              <paw:detailsModal id="${detailsModalId}" title="${version.title}">
-                <div class="overflow-hidden rounded-lg bg-base-100">
-                  <img src="${publicationImageUrl}" alt="${fn:escapeXml(version.title)}" class="h-56 w-full object-cover" loading="lazy" />
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                  <span class="badge ${itemActive ? 'badge-success' : 'badge-ghost'} font-bold">
-                    <spring:message code="${itemActive ? 'settings.publications.status.active' : 'settings.publications.status.inactive'}" />
-                  </span>
-                </div>
-                <c:if test="${not empty version.location}">
-                  <p class="m-0 flex items-center gap-1.5 text-sm text-on-surface-variant">
-                    <span class="material-symbols-outlined text-base leading-none text-primary">location_on</span>
-                    <span class="break-words"><c:out value="${version.location.name}" /></span>
-                  </p>
+              <c:url var="publicationImageUrl" value="/css/boat-placeholder.svg" />
+              <c:if test="${not empty version.media}">
+                <c:set var="coverMedia" value="${version.media[0]}" />
+                <c:if test="${not empty coverMedia.image}">
+                  <c:url var="publicationImageUrl" value="/image/${coverMedia.image.id}" />
                 </c:if>
-                <div class="grid grid-cols-2 gap-2">
-                  <div class="rounded-lg bg-base-100 p-3 space-y-1">
-                    <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="item.capacityPeople" /></p>
-                    <p class="m-0 flex items-center gap-1 text-sm font-bold text-on-surface">
-                      <span class="material-symbols-outlined text-base leading-none text-primary">groups</span>
-                      <spring:message code="marketplace.card.people" arguments="${version.capacity}" />
-                    </p>
-                  </div>
-                  <div class="rounded-lg bg-base-100 p-3 space-y-1">
-                    <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><spring:message code="settings.publications.pricePerHour.label" /></p>
-                    <p class="m-0 text-sm font-bold">
-                      $<fmt:formatNumber value="${version.price}" type="number" groupingUsed="true" maxFractionDigits="0" />
-                    </p>
-                  </div>
-                </div>
-                <div class="flex flex-wrap gap-2 border-t border-outline-variant/20 pt-4">
-                  <a href="${itemDetailUrl}" class="btn btn-outline btn-sm no-underline">
-                    <span class="material-symbols-outlined text-base">open_in_new</span>
-                    <spring:message code="common.viewListing" />
-                  </a>
-                  <a href="${editItemUrl}" class="btn btn-outline btn-sm no-underline">
-                    <span class="material-symbols-outlined text-base">edit</span>
-                    <c:out value="${editLabel}" />
-                  </a>
-                  <a href="${manageAvailabilityItemUrl}" class="btn btn-outline btn-sm no-underline">
-                    <span class="material-symbols-outlined text-base">event_available</span>
-                    <c:out value="${manageAvailabilityLabel}" />
-                  </a>
-                  <c:choose>
-                    <c:when test="${itemActive}">
-                      <form action="${disableItemUrl}" method="post" class="m-0">
-                        <button type="submit" class="btn btn-outline btn-sm">
-                          <span class="material-symbols-outlined text-base">visibility_off</span>
-                          <c:out value="${disableLabel}" />
-                        </button>
-                      </form>
-                    </c:when>
-                    <c:otherwise>
-                      <form action="${enableItemUrl}" method="post" class="m-0">
-                        <button type="submit" class="btn btn-outline btn-sm">
-                          <span class="material-symbols-outlined text-base">visibility</span>
-                          <c:out value="${enableLabel}" />
-                        </button>
-                      </form>
-                    </c:otherwise>
-                  </c:choose>
-                  <button type="button" class="btn btn-outline btn-sm text-error" onclick="document.getElementById('${deleteModalId}').showModal()">
-                    <span class="material-symbols-outlined text-base">delete</span>
-                    <c:out value="${deleteLabel}" />
+              </c:if>
+              <c:set var="deleteModalId" value="delete-publication-modal-${item.id}" />
+              <c:set var="disableFormId" value="disable-publication-form-${item.id}" />
+              <c:set var="enableFormId" value="enable-publication-form-${item.id}" />
+              <form id="${disableFormId}" action="<c:out value='${disableItemUrl}' />" method="post" hidden></form>
+              <form id="${enableFormId}" action="<c:out value='${enableItemUrl}' />" method="post" hidden></form>
+              <c:choose>
+                <c:when test="${itemActive}">
+                  <c:set var="publicationCardOpacityClass" value="" />
+                </c:when>
+                <c:otherwise>
+                  <c:set var="publicationCardOpacityClass" value="opacity-75" />
+                </c:otherwise>
+              </c:choose>
+              <div class="group relative flex h-full w-full max-w-sm flex-col rounded-xl bg-base-200 transition hover:bg-base-300 <c:out value='${publicationCardOpacityClass}' />">
+                <a href="<c:out value='${itemDetailUrl}' />" class="absolute inset-0 z-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" aria-label="<c:out value='${version.title}'/>"></a>
+                <div class="dropdown dropdown-end absolute right-1.5 top-1.5 z-20 pointer-events-auto">
+                  <button type="button" tabindex="0" role="button" class="btn btn-ghost btn-xs btn-circle bg-base-100/90 shadow-sm backdrop-blur-sm border border-outline-variant/20 hover:bg-base-100" aria-label="<c:out value='${publicationActionsLabel}'/>">
+                    <span class="material-symbols-outlined text-base leading-none">more_vert</span>
                   </button>
+                  <ul tabindex="0" class="dropdown-content menu z-30 mt-1 w-52 rounded-box border border-outline-variant/20 bg-base-100 p-2 shadow-md">
+                    <li>
+                      <a href="<c:out value='${editItemUrl}' />" class="gap-2 no-underline">
+                        <span class="material-symbols-outlined text-base">edit</span>
+                        <c:out value="${editLabel}" />
+                      </a>
+                    </li>
+                    <li>
+                      <a href="<c:out value='${manageAvailabilityItemUrl}' />" class="gap-2 no-underline">
+                        <span class="material-symbols-outlined text-base">event_available</span>
+                        <c:out value="${manageAvailabilityLabel}" />
+                      </a>
+                    </li>
+                    <c:choose>
+                      <c:when test="${itemActive}">
+                        <li>
+                          <button type="submit" form="${disableFormId}" class="gap-2">
+                            <span class="material-symbols-outlined text-base">visibility_off</span>
+                            <c:out value="${disableLabel}" />
+                          </button>
+                        </li>
+                      </c:when>
+                      <c:otherwise>
+                        <li>
+                          <button type="submit" form="${enableFormId}" class="gap-2">
+                            <span class="material-symbols-outlined text-base">visibility</span>
+                            <c:out value="${enableLabel}" />
+                          </button>
+                        </li>
+                      </c:otherwise>
+                    </c:choose>
+                    <li>
+                      <button type="button" class="gap-2 text-error" onclick="document.getElementById('${deleteModalId}').showModal()">
+                        <span class="material-symbols-outlined text-base">delete</span>
+                        <c:out value="${deleteLabel}" />
+                      </button>
+                    </li>
+                  </ul>
                 </div>
-              </paw:detailsModal>
+                <div class="pointer-events-none flex flex-col gap-2 p-2 sm:p-3">
+                  <div class="h-24 w-full shrink-0 overflow-hidden rounded-lg bg-base-100 sm:h-32">
+                    <img src="<c:out value='${publicationImageUrl}' />" alt="<c:out value='${version.title}'/>" class="h-full w-full object-cover" loading="lazy" />
+                  </div>
+                  <div class="flex min-w-0 flex-1 flex-col gap-1">
+                    <div class="flex min-w-0 items-start gap-1.5 pr-8">
+                      <p class="m-0 min-w-0 flex-1 break-words text-xs font-extrabold text-on-surface line-clamp-2 sm:text-sm">
+                        <c:out value="${version.title}" />
+                      </p>
+                      <c:choose>
+                        <c:when test="${itemActive}">
+                          <c:set var="publicationStatusBadgeClass" value="badge-success" />
+                        </c:when>
+                        <c:otherwise>
+                          <c:set var="publicationStatusBadgeClass" value="badge-ghost" />
+                        </c:otherwise>
+                      </c:choose>
+                      <span class="badge <c:out value='${publicationStatusBadgeClass}' /> badge-xs shrink-0 font-bold">
+                        <c:choose>
+                          <c:when test="${itemActive}">
+                            <spring:message code="settings.publications.status.active" />
+                          </c:when>
+                          <c:otherwise>
+                            <spring:message code="settings.publications.status.inactive" />
+                          </c:otherwise>
+                        </c:choose>
+                      </span>
+                    </div>
+                    <p class="m-0 mt-auto text-[11px] font-bold text-on-surface sm:text-xs">
+                      $<fmt:formatNumber value="${version.price}" type="number" groupingUsed="true" maxFractionDigits="0" />
+                      <span class="font-normal text-on-surface-variant"> &middot; <spring:message code="marketplace.card.perHour" /></span>
+                    </p>
+                  </div>
+                </div>
+              </div>
               <paw:confirmModal id="${deleteModalId}" title="${deleteConfirmTitle}" message="${deleteConfirmMessage}" confirmText="${deleteConfirmConfirm}" cancelText="${deleteConfirmCancel}" confirmColor="danger" icon="delete_forever">
-                <form action="${deleteItemUrl}" method="post" class="m-0">
+                <form action="<c:out value='${deleteItemUrl}' />" method="post" class="m-0">
                   <paw:button type="submit" color="danger" cssClass="w-full sm:w-auto" text="${deleteConfirmConfirm}" />
                 </form>
               </paw:confirmModal>
@@ -238,57 +263,38 @@
           </div>
         </c:when>
         <c:otherwise>
-          <div class="mx-1 rounded-xl bg-base-200 px-4 py-6 text-center sm:mx-3">
-            <c:choose>
-              <c:when test="${hasActiveFilters}">
-                <p class="m-0 text-sm text-on-surface-variant"><c:out value="${filterEmptyLabel}" /></p>
-                <a href="${clearFiltersUrl}" class="btn btn-outline btn-sm mt-4 no-underline">
-                  <c:out value="${filtersClearLabel}" />
-                </a>
-              </c:when>
-              <c:otherwise>
-                <p class="m-0 text-sm text-on-surface-variant"><spring:message code="settings.publications.empty" /></p>
-              </c:otherwise>
-            </c:choose>
+          <div class="card bg-base-100 shadow-sm">
+            <div class="card-body items-center gap-4 p-10 text-center">
+              <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <span class="material-symbols-outlined text-4xl" aria-hidden="true">sailing</span>
+              </div>
+              <c:choose>
+                <c:when test="${hasValidationErrors or hasActiveFilters or itemPage.totalItems > 0}">
+                  <div class="max-w-lg">
+                    <h2 class="m-0 text-2xl font-extrabold tracking-tight text-on-background"><c:out value="${filterEmptyTitleLabel}" /></h2>
+                    <p class="m-0 mt-2 text-on-surface-variant"><c:out value="${filterEmptyMessageLabel}" /></p>
+                  </div>
+                  <a href="<c:out value='${clearFiltersUrl}' />" data-clear-list-filters class="btn btn-primary btn-sm no-underline">
+                    <c:out value="${filtersClearLabel}" />
+                  </a>
+                </c:when>
+                <c:otherwise>
+                  <p class="m-0 max-w-lg text-on-surface-variant"><spring:message code="settings.publications.empty" /></p>
+                </c:otherwise>
+              </c:choose>
+            </div>
           </div>
         </c:otherwise>
       </c:choose>
 
-      <c:if test="${itemPage.totalPages > 1}">
-        <nav class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant">
-          <c:choose>
-            <c:when test="${itemPage.hasPrevious}">
-              <a href="${previousPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                <span class="material-symbols-outlined text-sm">arrow_back</span>
-                <spring:message code="marketplace.pagination.previous" />
-              </a>
-            </c:when>
-            <c:otherwise>
-              <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                <span class="material-symbols-outlined text-sm">arrow_back</span>
-                <spring:message code="marketplace.pagination.previous" />
-              </span>
-            </c:otherwise>
-          </c:choose>
-          <span>
-            <spring:message code="marketplace.pagination.page" arguments="${itemPage.page},${itemPage.totalPages}" />
-          </span>
-          <c:choose>
-            <c:when test="${itemPage.hasNext}">
-              <a href="${nextPageUrl}" class="btn btn-outline btn-sm no-underline gap-2">
-                <spring:message code="marketplace.pagination.next" />
-                <span class="material-symbols-outlined text-sm">arrow_forward</span>
-              </a>
-            </c:when>
-            <c:otherwise>
-              <span class="btn btn-outline btn-sm btn-disabled gap-2">
-                <spring:message code="marketplace.pagination.next" />
-                <span class="material-symbols-outlined text-sm">arrow_forward</span>
-              </span>
-            </c:otherwise>
-          </c:choose>
-        </nav>
-      </c:if>
+      <paw:pagination
+          currentPage="${itemPage.page}"
+          totalPages="${itemPage.totalPages}"
+          hasPrevious="${itemPage.hasPrevious}"
+          hasNext="${itemPage.hasNext}"
+          previousPageUrl="${previousPageUrl}"
+          nextPageUrl="${nextPageUrl}"
+          navClass="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant" />
     </div>
   </section>
 </paw:layout>

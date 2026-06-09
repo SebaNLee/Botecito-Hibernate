@@ -1,7 +1,7 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.TargetEnum;
@@ -20,18 +20,27 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class MarketplaceJpaDao implements MarketplaceDao {
 
-    private static final int DEFAULT_PAGE_SIZE = 12;
+    private static final String BOOKING_BLOCKING_STATUSES =
+            "CAST('PENDING' AS booking_status_enum), CAST('ACCEPTED' AS booking_status_enum), "
+                    + "CAST('PAID' AS booking_status_enum), CAST('CONFIRMED' AS booking_status_enum)";
 
     private static final String VERSION_FETCH_JPQL = "SELECT DISTINCT v FROM Version v "
             + "JOIN FETCH v.item JOIN FETCH v.location JOIN FETCH v.type "
             + "LEFT JOIN FETCH v.media m LEFT JOIN FETCH m.image "
             + "WHERE v.id IN :ids";
 
+    private static final String MIN_AVG_RATING_FILTER = "v.item_id IN (SELECT v2.item_id FROM review r "
+            + "INNER JOIN booking b ON r.booking_id = b.id "
+            + "INNER JOIN version v2 ON b.version_id = v2.id "
+            + "WHERE r.target_type = CAST(:itemTargetType AS target_enum) "
+            + "GROUP BY v2.item_id "
+            + "HAVING COALESCE(AVG(r.rating), 0) >= :minAvgRating)";
+
     @PersistenceContext
     private EntityManager em;
 
     @Override
-    public ItemSearchResult searchMarketplace(final MarketplaceQueryModel query) {
+    public PageModel<Item> searchMarketplace(final MarketplaceQueryModel query) {
         // Total matching rows (ignoring page limits) for pagination UI.
         final long totalCount = countMarketplaceResults(query);
 
@@ -48,14 +57,12 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             nativeQuery.setParameter(entry.getKey(), entry.getValue());
         }
 
-        final int pageSize = resolvePageSize(query);
-        final int page = resolvePage(query);
-        Paging.apply(nativeQuery, page, pageSize);
+        Paging.apply(nativeQuery, query.getPage(), query.getPageSize());
 
         final List<Integer> idList = Paging.toIntegerIds(nativeQuery.getResultList());
 
         if (idList.isEmpty()) {
-            return new ItemSearchResult(List.of(), totalCount);
+            return new PageModel<>(List.of(), query.getPage(), query.getPageSize(), totalCount);
         }
 
         // Phase 2 (JPQL): load full entities for this page only (one row per item, already latest).
@@ -80,16 +87,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             items.add(item);
         }
 
-        // Populate review transients for marketplace cards.
-        for (final Item item : items) {
-            final long totalReviews = countReviewsForItem(item.getId());
-            if (totalReviews > 0) {
-                item.setTotalReviews(totalReviews);
-                item.setAverageRating(averageRatingForItem(item.getId()));
-            }
-        }
-
-        return new ItemSearchResult(items, totalCount);
+        return new PageModel<>(items, query.getPage(), query.getPageSize(), totalCount);
     }
 
     private long countMarketplaceResults(final MarketplaceQueryModel query) {
@@ -137,11 +135,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             parameters.put("difficulty", query.getDifficulty());
         }
         if (query.getMinAvgRating() != null) {
-            whereClauses.add("(SELECT COALESCE(AVG(r.rating), 0) FROM review r"
-                    + " INNER JOIN booking b ON r.booking_id = b.id"
-                    + " INNER JOIN version v2 ON b.version_id = v2.id"
-                    + " WHERE r.target_type = CAST(:itemTargetType AS target_enum) AND v2.item_id = v.item_id)"
-                    + " >= :minAvgRating");
+            whereClauses.add(MIN_AVG_RATING_FILTER);
             parameters.put("itemTargetType", TargetEnum.ITEM.name());
             parameters.put("minAvgRating", query.getMinAvgRating());
         }
@@ -164,6 +158,20 @@ public class MarketplaceJpaDao implements MarketplaceDao {
                 parameters.put("requestedEnd", query.getEndTime());
             }
             whereClauses.add(availabilityClause.append(')').toString());
+        }
+
+        if (hasRequestedBookingRange(query)) {
+            whereClauses.add("NOT EXISTS (SELECT 1 FROM booking b"
+                    + " INNER JOIN version bv ON bv.id = b.version_id"
+                    + " WHERE bv.item_id = v.item_id"
+                    + " AND b.status IN (" + BOOKING_BLOCKING_STATUSES + ")"
+                    + " AND b.start <= ((CAST(:requestedDate AS date) + CAST(:requestedEnd AS time))"
+                    + " AT TIME ZONE COALESCE(NULLIF(TRIM(v.timezone), ''), 'UTC')) AT TIME ZONE 'UTC'"
+                    + " AND ((CAST(:requestedDate AS date) + CAST(:requestedStart AS time))"
+                    + " AT TIME ZONE COALESCE(NULLIF(TRIM(v.timezone), ''), 'UTC')) AT TIME ZONE 'UTC' <= b.\"end\")");
+            parameters.put("requestedDate", query.getRequestedDate());
+            parameters.put("requestedStart", query.getStartTime());
+            parameters.put("requestedEnd", query.getEndTime());
         }
 
         if (!whereClauses.isEmpty()) {
@@ -207,20 +215,6 @@ public class MarketplaceJpaDao implements MarketplaceDao {
         return query.getSortBy();
     }
 
-    private static int resolvePage(final MarketplaceQueryModel query) {
-        if (query == null) {
-            return Paging.DEFAULT_PAGE;
-        }
-        return Paging.resolvePage(query.getPage());
-    }
-
-    private static int resolvePageSize(final MarketplaceQueryModel query) {
-        if (query == null) {
-            return DEFAULT_PAGE_SIZE;
-        }
-        return Paging.resolvePageSize(query.getPageSize(), DEFAULT_PAGE_SIZE, 6, 12, 18);
-    }
-
     // Escape LIKE wildcards and turn spaces into % so "foo bar" matches titles containing both words.
     private static String setupSearchQuery(final String searchQuery) {
         final String queryWithWildcards = searchQuery
@@ -237,23 +231,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
         return value == null || value.isBlank();
     }
 
-    private long countReviewsForItem(final int itemId) {
-        final Query query = em.createNativeQuery("SELECT COUNT(r.id) FROM review r "
-                + "INNER JOIN booking b ON r.booking_id = b.id "
-                + "INNER JOIN version v2 ON b.version_id = v2.id "
-                + "WHERE r.target_type = CAST(:target AS target_enum) AND v2.item_id = :itemId");
-        query.setParameter("target", TargetEnum.ITEM.name());
-        query.setParameter("itemId", itemId);
-        return ((Number) query.getSingleResult()).longValue();
-    }
-
-    private double averageRatingForItem(final int itemId) {
-        final Query query = em.createNativeQuery("SELECT COALESCE(AVG(r.rating), 0) FROM review r "
-                + "INNER JOIN booking b ON r.booking_id = b.id "
-                + "INNER JOIN version v2 ON b.version_id = v2.id "
-                + "WHERE r.target_type = CAST(:target AS target_enum) AND v2.item_id = :itemId");
-        query.setParameter("target", TargetEnum.ITEM.name());
-        query.setParameter("itemId", itemId);
-        return ((Number) query.getSingleResult()).doubleValue();
+    private static boolean hasRequestedBookingRange(final MarketplaceQueryModel query) {
+        return query.getRequestedDate() != null && query.getStartTime() != null && query.getEndTime() != null;
     }
 }

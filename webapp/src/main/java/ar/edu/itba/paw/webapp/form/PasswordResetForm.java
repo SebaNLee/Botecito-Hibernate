@@ -15,6 +15,7 @@ public class PasswordResetForm {
     private String password;
 
     @NotBlank(message = "{passwordRecovery.reset.validation.confirmPassword.required}")
+    @Size(max = 100, message = "{passwordRecovery.reset.validation.password.size}")
     private String confirmPassword;
 
     private String token;

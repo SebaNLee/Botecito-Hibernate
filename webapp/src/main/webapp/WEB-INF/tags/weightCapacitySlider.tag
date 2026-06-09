@@ -26,9 +26,9 @@
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
 
 <fieldset
-    class="fieldset space-y-3 ${resolvedContainerClass}"
+    class="fieldset space-y-3 <c:out value='${resolvedContainerClass}'/>"
     data-weight-slider
-    data-unit="${fn:escapeXml(resolvedUnit)}">
+    data-unit="<c:out value='${resolvedUnit}'/>">
   <div class="flex items-center justify-between gap-4">
     <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
       <c:out value="${resolvedLabel}" />
@@ -38,15 +38,15 @@
     </span>
   </div>
 
-  <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-weight-value-input />
+  <input id="<c:out value='${id}'/>" name="<c:out value='${name}'/>" type="hidden" value="<c:out value='${resolvedValue}'/>" data-weight-value-input />
 
   <input
-      id="${id}-range"
+      id="<c:out value='${id}'/>-range"
       type="range"
-      min="${resolvedMin}"
-      max="${resolvedMax}"
-      step="${resolvedStep}"
-      value="${fn:escapeXml(resolvedDisplayValue)}"
+      min="<c:out value='${resolvedMin}'/>"
+      max="<c:out value='${resolvedMax}'/>"
+      step="<c:out value='${resolvedStep}'/>"
+      value="<c:out value='${resolvedDisplayValue}'/>"
       class="range range-primary range-sm w-full"
       data-weight-input />
 

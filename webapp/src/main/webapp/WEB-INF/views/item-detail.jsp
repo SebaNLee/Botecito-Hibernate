@@ -6,8 +6,9 @@
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<fmt:setLocale value="es_AR" />
+<c:url var="marketplaceUrl" value="/marketplace" />
 <c:url var="publishUrl" value="/publish" />
+<spring:message code="detail.back.marketplace" var="detailBackMarketplaceLabel" />
 <spring:message code="itemDetail.unavailable.mismatchPrefix" var="unavailableMismatchPrefix" />
 <spring:message code="itemDetail.unavailable.mismatchSuffix" var="unavailableMismatchSuffix" />
 <spring:message code="common.and" var="andLabel" />
@@ -21,12 +22,11 @@
 <spring:message code="subscription.subscribe" var="subscriptionSubscribeLabel" />
 <spring:message code="subscription.unsubscribe" var="subscriptionUnsubscribeLabel" />
 <spring:message code="subscription.loginToSubscribe" var="subscriptionLoginToSubscribeLabel" />
+<spring:message code="favourite.add" var="favouriteAddLabel" />
+<spring:message code="favourite.remove" var="favouriteRemoveLabel" />
+<spring:message code="favourite.loginToAdd" var="favouriteLoginToAddLabel" />
 <spring:message code="itemDetail.reviews.title" var="itemReviewsTitle" />
 <spring:message code="itemDetail.reviews.empty" var="itemReviewsEmpty" />
-<spring:message code="itemDetail.reviews.count" var="itemReviewsCountLabel" />
-<spring:message code="itemDetail.reviews.leave" var="itemReviewLeaveLabel" />
-<spring:message code="itemDetail.reviews.rating" var="itemReviewRatingLabel" />
-<spring:message code="itemDetail.reviews.comment" var="itemReviewCommentLabel" />
 <spring:message code="reviews.empty.short" var="reviewsEmptyShortLabel" />
 <spring:message code="itemDetail.description.empty" var="itemDescriptionEmptyLabel" />
 <spring:message code="detail.preBooking.subtitle" var="detailPreBookingSubtitle" />
@@ -50,18 +50,29 @@
 <spring:message code="itemDetail.price.hours" var="itemDetailPriceHoursLabel" />
 <spring:message code="detail.reviews.anonymous" var="detailReviewAnonymousLabel" />
 <spring:message code="contact.sendEmail" var="contactSendEmailLabel" />
-<spring:message code="itemDetail.contact.viewProfile" var="viewProfileLabel" />
 <spring:message code="itemDetail.owner.ownPublicationNotice" var="itemDetailOwnerNoticeLabel" />
 <spring:message code="itemDetail.owner.blockButton" var="itemDetailOwnerBlockButtonLabel" />
 <spring:message code="itemDetail.owner.incomingRequestsButton" var="itemDetailOwnerIncomingRequestsButtonLabel" />
+<spring:message code="itemDetail.report.button" var="itemDetailReportButtonLabel" />
+<spring:message code="itemDetail.report.alreadyReported" var="itemDetailReportAlreadyReportedLabel" />
 <spring:message code="page.title.itemDetail" var="titleItemDetail" />
 
+<c:set var="clearMarketplaceFiltersOnLoad" value="false" />
+<c:forEach items="${toasts}" var="toast">
+  <c:if test="${toast.code == 'detail.preBooking.success'}">
+    <c:set var="clearMarketplaceFiltersOnLoad" value="true" />
+  </c:if>
+</c:forEach>
+
 <paw:layout title="${titleItemDetail} - Botecito" mainClass="pt-24 pb-12 w-full max-w-7xl mx-auto px-6 flex flex-col gap-8" scripts="toast,search-filters,date-time,form-submit,pre-booking-draft,image-carousel,rating-stars">
+  <c:if test="${clearMarketplaceFiltersOnLoad}">
+    <div hidden data-clear-marketplace-filters="true"></div>
+  </c:if>
   <paw:toastNotifier />
       <div class="w-full">
-        <a href="<c:out value="${marketplaceBackHref}" />" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
+        <a href="<c:out value='${marketplaceUrl}' />" data-detail-marketplace-back data-nav-filter-page="marketplace" class="link link-hover inline-flex items-center gap-2 text-primary font-bold font-headline no-underline w-fit">
           <span class="material-symbols-outlined">arrow_back</span>
-          <span><spring:message code="common.back" /></span>
+          <span><c:out value="${detailBackMarketplaceLabel}" /></span>
         </a>
       </div>
 
@@ -129,55 +140,38 @@
           </ul>
         </jsp:body>
       </paw:sectionCard>
+      <div id="item-reviews" class="scroll-mt-24">
       <paw:sectionCard icon="star">
         <jsp:attribute name="title"><c:out value="${itemReviewsTitle}" /></jsp:attribute>
         <jsp:body>
           <div class="space-y-5">
             <div class="rounded-2xl bg-base-200 px-4 py-3 flex items-center justify-between gap-3">
               <div class="flex items-center gap-2 text-lg font-black text-on-surface">
-                <span class="material-symbols-outlined text-warning">star</span>
+                <span class="material-symbols-outlined icon-star-filled">star</span>
                 <c:choose>
-                  <c:when test="${totalReviews > 0}">
-                    <fmt:formatNumber value="${averageRating}" minFractionDigits="1" maxFractionDigits="1" />
+                  <c:when test="${item.reviewSummary != null and item.reviewSummary.totalReviews > 0}">
+                    <fmt:formatNumber value="${item.reviewSummary.averageRating}" minFractionDigits="1" maxFractionDigits="1" />
                   </c:when>
                   <c:otherwise><c:out value="${reviewsEmptyShortLabel}" /></c:otherwise>
                 </c:choose>
               </div>
               <p class="m-0 text-xs text-on-surface-variant">
-                <spring:message code="itemDetail.reviews.count" arguments="${totalReviews}" />
+                <c:choose>
+                  <c:when test="${item.reviewSummary != null and item.reviewSummary.totalReviews == 1}">
+                    <spring:message code="itemDetail.reviews.count.singular" />
+                  </c:when>
+                  <c:otherwise>
+                    <spring:message code="itemDetail.reviews.count.plural" arguments="${item.reviewSummary.totalReviews}" />
+                  </c:otherwise>
+                </c:choose>
               </p>
             </div>
 
-            <c:if test="${pendingItemReviewAction != null}">
-              <c:url var="createItemReviewUrl" value="/reviews/booking/${pendingItemReviewAction.bookingId}" />
-              <form action="${createItemReviewUrl}" method="post" class="rounded-2xl bg-base-200 p-4 space-y-3">
-                <input type="hidden" name="returnTo" value="item" />
-                <input type="hidden" name="itemId" value="${item.id}" />
-                <h3 class="m-0 text-sm font-bold text-on-surface"><c:out value="${itemReviewLeaveLabel}" /></h3>
-                <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3 items-center">
-                  <label class="text-xs font-bold uppercase tracking-wider text-outline" for="item-review-rating"><c:out value="${itemReviewRatingLabel}" /></label>
-                  <div class="flex items-center gap-1" data-rating-stars>
-                    <input id="item-review-rating" type="hidden" name="rating" value="" data-rating-value />
-                    <c:forEach var="starIndex" begin="1" end="5">
-                      <button type="button" class="btn btn-ghost btn-sm btn-square min-h-9 h-9 w-9 p-0" data-rating-star="${starIndex}" aria-label="${itemReviewRatingLabel} ${starIndex}">
-                        <span class="material-symbols-outlined text-xl leading-none text-outline" style="opacity: 0.35;">star</span>
-                      </button>
-                    </c:forEach>
-                  </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)] gap-3">
-                  <label class="text-xs font-bold uppercase tracking-wider text-outline pt-2" for="item-review-comment"><c:out value="${itemReviewCommentLabel}" /></label>
-                  <textarea id="item-review-comment" name="comment" rows="3" maxlength="1000" class="textarea textarea-bordered w-full"></textarea>
-                </div>
-                <paw:button type="submit" color="primary" size="sm" text="${itemReviewLeaveLabel}" />
-              </form>
-            </c:if>
-
             <c:choose>
-              <c:when test="${not empty reviewPage.content}">
+              <c:when test="${itemReviews != null and not empty itemReviews.content}">
                 <div class="space-y-3">
-                  <c:forEach items="${reviewPage.content}" var="review">
-                    <paw:reviewCard review="${review}" reviewDate="${reviewDatesById[review.id]}" showReviewer="false" anonymousLabel="${detailReviewAnonymousLabel}" />
+                  <c:forEach items="${itemReviews.content}" var="review">
+                    <paw:reviewCard review="${review}" showReviewer="false" anonymousLabel="${detailReviewAnonymousLabel}" />
                   </c:forEach>
                 </div>
               </c:when>
@@ -186,60 +180,75 @@
               </c:otherwise>
             </c:choose>
 
-            <c:if test="${reviewPage.totalPages > 1}">
-              <div class="flex items-center justify-between gap-3 pt-2">
-                <c:url var="reviewPrevUrl" value="/item/${item.id}">
-                  <c:param name="reviewPage" value="${reviewPage.previousPage}" />
-                  <c:if test="${not empty param.returnTo}">
-                    <c:param name="returnTo" value="${param.returnTo}" />
-                  </c:if>
-                </c:url>
-                <c:url var="reviewNextUrl" value="/item/${item.id}">
-                  <c:param name="reviewPage" value="${reviewPage.nextPage}" />
-                  <c:if test="${not empty param.returnTo}">
-                    <c:param name="returnTo" value="${param.returnTo}" />
-                  </c:if>
-                </c:url>
-                <c:choose>
-                  <c:when test="${reviewPage.hasPrevious}">
-                    <a href="${reviewPrevUrl}" class="btn btn-outline btn-xs no-underline">
-                      <spring:message code="marketplace.pagination.previous" />
-                    </a>
-                  </c:when>
-                  <c:otherwise>
-                    <span class="btn btn-outline btn-xs btn-disabled">
-                      <spring:message code="marketplace.pagination.previous" />
-                    </span>
-                  </c:otherwise>
-                </c:choose>
-                <span class="text-xs text-on-surface-variant">
-                  <spring:message code="marketplace.pagination.page" arguments="${reviewPage.page},${reviewPage.totalPages}" />
-                </span>
-                <c:choose>
-                  <c:when test="${reviewPage.hasNext}">
-                    <a href="${reviewNextUrl}" class="btn btn-outline btn-xs no-underline">
-                      <spring:message code="marketplace.pagination.next" />
-                    </a>
-                  </c:when>
-                  <c:otherwise>
-                    <span class="btn btn-outline btn-xs btn-disabled">
-                      <spring:message code="marketplace.pagination.next" />
-                    </span>
-                  </c:otherwise>
-                </c:choose>
-              </div>
-            </c:if>
+            <c:url var="reviewPreviousPageUrl" value="/item/${item.id}">
+              <c:param name="page" value="${itemReviews.previousPage}" />
+            </c:url>
+            <c:url var="reviewNextPageUrl" value="/item/${item.id}">
+              <c:param name="page" value="${itemReviews.nextPage}" />
+            </c:url>
+            <paw:pagination
+                currentPage="${itemReviews.page}"
+                totalPages="${itemReviews.totalPages}"
+                hasPrevious="${itemReviews.hasPrevious}"
+                hasNext="${itemReviews.hasNext}"
+                previousPageUrl="${reviewPreviousPageUrl}#item-reviews"
+                nextPageUrl="${reviewNextPageUrl}#item-reviews"
+                navClass="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm font-bold text-on-surface-variant" />
           </div>
         </jsp:body>
       </paw:sectionCard>
+      </div>
     </section>
 
     <aside class="order-1 lg:order-2 w-full min-w-0 space-y-6">
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body p-8 gap-4">
-          <h1 class="text-3xl font-extrabold tracking-tight m-0 break-words">
-            <c:out value="${version.title}" />
-          </h1>
+          <div class="flex items-start justify-between gap-4">
+            <h1 class="text-3xl font-extrabold tracking-tight m-0 break-words">
+              <c:out value="${version.title}" />
+            </h1>
+            <c:if test="${canFavouriteItem}">
+              <div class="shrink-0 pt-1">
+                <c:choose>
+                  <c:when test="${viewer == null}">
+                    <c:url var="favouriteLoginUrl" value="/login" />
+                    <a href="<c:out value='${favouriteLoginUrl}' />"
+                       class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 hover:bg-base-100"
+                       aria-label="<c:out value='${favouriteLoginToAddLabel}' />"
+                       title="<c:out value='${favouriteLoginToAddLabel}' />">
+                      <span class="material-symbols-outlined text-lg icon-heart-outline">favorite</span>
+                    </a>
+                  </c:when>
+                  <c:when test="${favouriteItem}">
+                    <c:url var="unfavouriteItemUrl" value="/items/${item.id}/unfavourite" />
+                    <form action="<c:out value='${unfavouriteItemUrl}' />" method="post" class="m-0">
+                      <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
+                      <button
+                          type="submit"
+                          class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 hover:bg-base-100"
+                          aria-label="<c:out value='${favouriteRemoveLabel}' />"
+                          title="<c:out value='${favouriteRemoveLabel}' />">
+                        <span class="material-symbols-outlined text-lg icon-heart-filled">favorite</span>
+                      </button>
+                    </form>
+                  </c:when>
+                  <c:otherwise>
+                    <c:url var="favouriteItemUrl" value="/items/${item.id}/favourite" />
+                    <form action="<c:out value='${favouriteItemUrl}' />" method="post" class="m-0">
+                      <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
+                      <button
+                          type="submit"
+                          class="btn btn-circle btn-sm shadow-sm bg-base-100/95 border-outline-variant/40 hover:bg-base-100"
+                          aria-label="<c:out value='${favouriteAddLabel}' />"
+                          title="<c:out value='${favouriteAddLabel}' />">
+                        <span class="material-symbols-outlined text-lg icon-heart-outline">favorite</span>
+                      </button>
+                    </form>
+                  </c:otherwise>
+                </c:choose>
+              </div>
+            </c:if>
+          </div>
           <div class="flex min-w-0 items-center text-on-surface-variant text-sm gap-1">
             <span class="material-symbols-outlined text-primary text-lg">location_on</span>
             <span class="min-w-0 break-words"><c:out value="${version.location.name}" /></span>
@@ -251,14 +260,26 @@
             <span class="text-xs font-bold uppercase tracking-wider text-outline"><spring:message code="marketplace.card.perHour" /></span>
           </div>
 
+          <c:if test="${canReport}">
+            <c:set var="reportModalId" value="report-item-modal-${item.id}" />
+            <button type="button" class="btn btn-outline btn-error btn-sm w-full gap-2" onclick="document.getElementById('<c:out value='${reportModalId}' />').showModal()">
+              <span class="material-symbols-outlined text-base">flag</span>
+              <c:out value="${itemDetailReportButtonLabel}" />
+            </button>
+            <paw:reportModal itemId="${item.id}" modalId="${reportModalId}" />
+          </c:if>
+          <c:if test="${alreadyReported}">
+            <p class="m-0 text-sm text-on-surface-variant italic">
+              <c:out value="${itemDetailReportAlreadyReportedLabel}" />
+            </p>
+          </c:if>
+
           <c:if test="${showPreBookingPanel}">
             <c:choose>
               <c:when test="${isOwner}">
                 <div class="space-y-4">
                   <paw:alertMessage type="info"><c:out value="${itemDetailOwnerNoticeLabel}" /></paw:alertMessage>
-                  <c:url var="manageAvailabilityUrl" value="/my-boats/${item.id}/availability">
-                    <c:param name="return" value="${detailReturnPath}" />
-                  </c:url>
+                  <c:url var="manageAvailabilityUrl" value="/my-boats/${item.id}/availability" />
                   <c:url var="incomingRequestsUrl" value="/requests/incoming" />
                   <paw:button
                       href="${manageAvailabilityUrl}"
@@ -278,22 +299,26 @@
                 </div>
               </c:when>
               <c:otherwise>
+              <c:set var="viewerLoggedIn" value="false" />
+              <c:if test="${viewer != null}">
+                <c:set var="viewerLoggedIn" value="true" />
+              </c:if>
               <div
                   data-prebook-draft-root
-                  data-item-id="${item.id}"
-                  data-viewer-logged-in="${viewer != null ? 'true' : 'false'}"
-                  data-login-url="<c:out value="${prebookLoginUrl}" />">
+                  data-item-id="<c:out value='${item.id}' />"
+                  data-viewer-logged-in="<c:out value='${viewerLoggedIn}' />"
+                  data-login-url="<c:out value='${prebookLoginUrl}' />">
                 <div
                     class="hidden rounded-2xl bg-base-200 px-4 py-4"
                     data-reservation-price-summary
-                    data-price-per-hour="${version.price}"
+                    data-price-per-hour="<c:out value='${version.price}' />"
                     data-currency-symbol="$"
-                    data-price-pending="${fn:escapeXml(itemDetailPricePendingLabel)}"
-                    data-price-pending-help="${fn:escapeXml(itemDetailPricePendingHelpLabel)}"
-                    data-price-pick-end="${fn:escapeXml(itemDetailPricePickEndLabel)}"
-                    data-price-for-label="${fn:escapeXml(itemDetailPriceForLabel)}"
-                    data-price-hour-label="${fn:escapeXml(itemDetailPriceHourLabel)}"
-                    data-price-hours-label="${fn:escapeXml(itemDetailPriceHoursLabel)}">
+                    data-price-pending="<c:out value='${itemDetailPricePendingLabel}'/>"
+                    data-price-pending-help="<c:out value='${itemDetailPricePendingHelpLabel}'/>"
+                    data-price-pick-end="<c:out value='${itemDetailPricePickEndLabel}'/>"
+                    data-price-for-label="<c:out value='${itemDetailPriceForLabel}'/>"
+                    data-price-hour-label="<c:out value='${itemDetailPriceHourLabel}'/>"
+                    data-price-hours-label="<c:out value='${itemDetailPriceHoursLabel}'/>">
                   <div class="flex items-baseline justify-between gap-3">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-outline"><c:out value="${itemDetailPriceTotalLabel}" /></span>
                     <span class="text-2xl font-black text-primary" data-price-total><c:out value="${itemDetailPricePendingLabel}" /></span>
@@ -322,9 +347,6 @@
                     </p>
                   </c:if>
                   <form:hidden path="versionId" />
-                  <c:if test="${not empty param.returnTo}">
-                    <input type="hidden" name="returnTo" value="<c:out value="${param.returnTo}" />" />
-                  </c:if>
                   <paw:datePicker
                       id="detail-prebook-date"
                       dateFieldName="date"
@@ -332,8 +354,8 @@
                       value="${preBookingForm.date}"
                       placeholder="${itemDetailDatePlaceholder}"
                       restrictToAvailability="true"
-                      offeredDatesJson="${detailOfferedDatesJson}"
-                      occupiedDatesJson="${detailOccupiedDatesJson}"
+                      offeredDates="${detailOfferedDates}"
+                      occupiedDates="${detailOccupiedDates}"
                       anchorTodayIso="${detailListingTodayIso}"
                       anchorMaxDateIso="${detailListingMaxDateIso}"
                       civilCalendar="true" />
@@ -348,20 +370,24 @@
                       endValue="${preBookingForm.endTime}"
                       placeholder="${itemDetailTimePlaceholder}"
                       restrictToAvailability="true"
-                      offeredTimesJson="${detailOfferedTimesJson}"
-                      occupiedTimesJson="${detailOccupiedTimesJson}" />
+                      offeredTimesByDate="${detailOfferedTimesByDate}"
+                      occupiedTimesByDate="${detailOccupiedTimesByDate}" />
                   <form:errors path="startTime" element="p" cssClass="text-error text-xs mt-1" />
                   <form:errors path="endTime" element="p" cssClass="text-error text-xs mt-1" />
 
+                  <c:set var="prebookMessagePanelClass" value="" />
+                  <c:if test="${empty preBookingForm.message}">
+                    <c:set var="prebookMessagePanelClass" value="hidden" />
+                  </c:if>
                   <label class="label cursor-pointer justify-start gap-3 rounded-xl bg-base-200 px-4 py-3">
                     <input
                         type="checkbox"
                         class="checkbox checkbox-primary checkbox-sm"
                         data-optional-toggle="detail-prebook-message-panel"
-                        ${not empty preBookingForm.message ? 'checked="checked"' : ''} />
+                        <c:if test="${not empty preBookingForm.message}">checked="checked"</c:if> />
                     <span class="label-text font-bold text-on-surface"><c:out value="${itemDetailAddMessageLabel}" /></span>
                   </label>
-                  <div id="detail-prebook-message-panel" class="${empty preBookingForm.message ? 'hidden' : ''}" data-optional-panel>
+                  <div id="detail-prebook-message-panel" class="<c:out value='${prebookMessagePanelClass}' />" data-optional-panel>
                     <paw:textareaField
                         path="message"
                         label="${itemDetailRequestMessageLabel}"
@@ -400,6 +426,8 @@
               </c:otherwise>
             </c:choose>
           </c:if>
+
+
         </div>
       </div>
 
@@ -407,42 +435,52 @@
         <jsp:attribute name="title"><spring:message code="itemDetail.contact.host" /></jsp:attribute>
         <jsp:body>
           <div class="flex min-w-0 flex-col gap-4">
-            <div class="flex min-w-0 items-center gap-4">
-              <div class="avatar placeholder shrink-0">
-                <div class="bg-primary/10 text-primary rounded-full w-14 h-14 flex items-center justify-center">
-                  <span class="font-extrabold text-xl"><c:out value="${ownerInitials}" /></span>
+            <c:if test="${itemOwner != null}">
+              <c:url var="itemOwnerProfileUrl" value="/profiles/${itemOwner.id}/listings" />
+            </c:if>
+            <c:choose>
+              <c:when test="${itemOwner != null}">
+                <a href="<c:out value='${itemOwnerProfileUrl}' />" class="group flex min-w-0 items-center gap-4 no-underline rounded-xl transition-colors hover:bg-base-200/60 -m-2 p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25">
+                  <div class="avatar placeholder shrink-0">
+                    <div class="bg-primary/10 text-primary rounded-full w-14 h-14 flex items-center justify-center">
+                      <span class="font-extrabold text-xl"><c:out value="${ownerInitials}" /></span>
+                    </div>
+                  </div>
+                  <div class="min-w-0">
+                    <h3 class="font-extrabold text-lg m-0 break-words text-on-background group-hover:underline">
+                      <c:out value="${itemOwnerDisplayName}" />
+                    </h3>
+                    <div class="break-all text-xs text-on-surface-variant">
+                      <c:out value="${itemOwner.email}" />
+                    </div>
+                  </div>
+                </a>
+              </c:when>
+              <c:otherwise>
+                <div class="flex min-w-0 items-center gap-4">
+                  <div class="avatar placeholder shrink-0">
+                    <div class="bg-primary/10 text-primary rounded-full w-14 h-14 flex items-center justify-center">
+                      <span class="font-extrabold text-xl"><c:out value="${ownerInitials}" /></span>
+                    </div>
+                  </div>
+                  <div class="min-w-0">
+                    <h3 class="font-extrabold text-lg m-0 break-words">
+                      <spring:message code="itemDetail.owner.none" />
+                    </h3>
+                    <div class="break-all text-xs text-on-surface-variant">
+                      <spring:message code="itemDetail.owner.noEmail" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div class="min-w-0">
-                <h3 class="font-extrabold text-lg m-0 break-words">
-                  <c:choose>
-                    <c:when test="${itemOwner != null}">
-                      <c:url var="itemOwnerProfileUrl" value="/profiles/${itemOwner.id}" />
-                      <a href="${itemOwnerProfileUrl}" class="no-underline text-on-background hover:underline"><c:out value="${itemOwnerDisplayName}" /></a>
-                    </c:when>
-                    <c:otherwise><spring:message code="itemDetail.owner.none" /></c:otherwise>
-                  </c:choose>
-                </h3>
-                <div class="break-all text-xs text-on-surface-variant">
-                  <c:choose>
-                    <c:when test="${itemOwner != null}"><c:out value="${itemOwner.email}" /></c:when>
-                    <c:otherwise><spring:message code="itemDetail.owner.noEmail" /></c:otherwise>
-                  </c:choose>
-                </div>
-              </div>
-            </div>
+              </c:otherwise>
+            </c:choose>
             <div class="flex w-full flex-col gap-2">
+              <c:set var="ownerContactEmail" value="" />
               <c:if test="${itemOwner != null}">
-                <paw:button
-                  href="${itemOwnerProfileUrl}"
-                  color="outline"
-                  icon="person"
-                  cssClass="w-full sm:w-auto"
-                  text="${viewProfileLabel}"
-                />
+                <c:set var="ownerContactEmail" value="${itemOwner.email}" />
               </c:if>
               <paw:button
-                href="mailto:${itemOwner != null ? itemOwner.email : ''}"
+                href="mailto:${ownerContactEmail}"
                 color="outline"
                 icon="mail"
                 cssClass="w-full sm:w-auto"
@@ -463,8 +501,8 @@
                   </c:when>
                   <c:when test="${subscribedToOwner}">
                     <c:url var="unsubscribeOwnerUrl" value="/users/${itemOwner.id}/unsubscribe" />
-                    <form action="${unsubscribeOwnerUrl}" method="post" class="m-0">
-                      <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                    <form action="<c:out value='${unsubscribeOwnerUrl}' />" method="post" class="m-0">
+                      <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
                       <paw:button
                         type="submit"
                         color="outline"
@@ -476,8 +514,8 @@
                   </c:when>
                   <c:otherwise>
                     <c:url var="subscribeOwnerUrl" value="/users/${itemOwner.id}/subscribe" />
-                    <form action="${subscribeOwnerUrl}" method="post" class="m-0">
-                      <input type="hidden" name="return" value="${fn:escapeXml(detailReturnPath)}" />
+                    <form action="<c:out value='${subscribeOwnerUrl}' />" method="post" class="m-0">
+                      <paw:itemDetailViewHiddenFields view="${itemDetailView}" />
                       <paw:button
                         type="submit"
                         color="secondary"
@@ -500,20 +538,20 @@
   <dialog
     class="modal"
     data-item-unavailable-alert
-    data-marketplace-url="<c:out value="${marketplaceBackHref}" />"
-    data-item-location-option-id="${version.location.id}"
-    data-item-location-slug="${itemLocationSlug}"
-    data-item-capacity="${version.capacity}"
-    data-item-weight="${version.weight}"
-    data-item-difficulty="${version.difficulty}"
-    data-mismatch-prefix="${unavailableMismatchPrefix}"
-    data-mismatch-suffix="${unavailableMismatchSuffix}"
-    data-mismatch-join="${andLabel}"
-    data-mismatch-location="${unavailableReasonLocation}"
-    data-mismatch-capacity="${unavailableReasonCapacity}"
-    data-mismatch-weight="${unavailableReasonWeight}"
-    data-mismatch-date-time="${unavailableReasonDateTime}"
-    data-mismatch-difficulty="${unavailableReasonDifficulty}"
+    data-marketplace-url="<c:out value='${marketplaceUrl}' />"
+    data-item-location-option-id="<c:out value='${version.location.id}' />"
+    data-item-location-slug="<c:out value='${itemLocationSlug}' />"
+    data-item-capacity="<c:out value='${version.capacity}' />"
+    data-item-weight="<c:out value='${version.weight}' />"
+    data-item-difficulty="<c:out value='${version.difficulty}' />"
+    data-mismatch-prefix="<c:out value='${unavailableMismatchPrefix}' />"
+    data-mismatch-suffix="<c:out value='${unavailableMismatchSuffix}' />"
+    data-mismatch-join="<c:out value='${andLabel}' />"
+    data-mismatch-location="<c:out value='${unavailableReasonLocation}' />"
+    data-mismatch-capacity="<c:out value='${unavailableReasonCapacity}' />"
+    data-mismatch-weight="<c:out value='${unavailableReasonWeight}' />"
+    data-mismatch-date-time="<c:out value='${unavailableReasonDateTime}' />"
+    data-mismatch-difficulty="<c:out value='${unavailableReasonDifficulty}' />"
     hidden
   >
     <div class="modal-box max-w-lg p-0 bg-transparent shadow-none">
@@ -544,7 +582,7 @@
       </div>
     </div>
     <form method="dialog" class="modal-backdrop">
-      <button aria-label="${unavailableBackLabel}">close</button>
+      <button aria-label="<c:out value='${unavailableBackLabel}' />">close</button>
     </form>
   </dialog>
 </paw:layout>

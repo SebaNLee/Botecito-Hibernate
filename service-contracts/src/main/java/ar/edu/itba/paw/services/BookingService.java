@@ -1,10 +1,11 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.BookingSearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.dto.SelfBlockCreate;
 import ar.edu.itba.paw.models.dto.SelfBlockUpdate;
 import ar.edu.itba.paw.models.dto.SelfBookingData;
 import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.PaymentProof;
 import java.time.LocalDate;
@@ -16,15 +17,17 @@ public interface BookingService {
 
     void createBooking(int itemId, LocalDate date, LocalTime startTime, LocalTime endTime, String message, int guestId);
 
-    BookingSearchResult searchBookings(
+    PageModel<Booking> searchBookings(
             int userId,
             boolean asHost,
             String searchQuery,
-            String rawDate,
-            String rawStatus,
+            LocalDate date,
+            BookingStatusEnum status,
             Integer page,
             Integer pageSize,
             String sortBy);
+
+    Booking findById(int bookingId);
 
     List<Booking> getUpcomingBookings(Item item);
 
@@ -45,7 +48,7 @@ public interface BookingService {
 
     void confirmPayment(int bookingId, int callerId);
 
-    void rejectPayment(int bookingId, int callerId, String reason);
+    void rejectPayment(int bookingId, int callerId, String hostMsg);
 
     void cancelBooking(int bookingId, int callerId);
 
@@ -58,6 +61,12 @@ public interface BookingService {
             List<Integer> deletedBlockIds,
             List<SelfBlockUpdate> updates,
             List<SelfBlockCreate> creates);
+
+    boolean itemHasBookings(Item item);
+
+    boolean itemHasBookings(int itemId);
+
+    void deleteAllSelfBlocks(Item item);
 
     // cron job
     void bookingResolutionRoutine();

@@ -1,7 +1,8 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
+import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.persistence.MarketplaceDao;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -15,10 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 public final class MarketplaceImpl implements MarketplaceService {
 
     private final MarketplaceDao marketplaceDao;
+    private final ReviewService reviewService;
 
     @Override
     @Transactional(readOnly = true)
-    public ItemSearchResult searchMarketplace(
+    public PageModel<Item> searchMarketplace(
             final String searchQuery,
             final LocalDate date,
             final LocalTime startTime,
@@ -35,6 +37,7 @@ public final class MarketplaceImpl implements MarketplaceService {
         final MarketplaceQueryModel query = new MarketplaceQueryModel();
         final DayOfWeek weekday = ServiceUtils.dateToDayOfWeek(date);
         query.setSearchQuery(searchQuery);
+        query.setRequestedDate(date);
         query.setWeekday(weekday);
         query.setStartTime(startTime);
         query.setEndTime(endTime);
@@ -47,6 +50,8 @@ public final class MarketplaceImpl implements MarketplaceService {
         query.setPage(page);
         query.setPageSize(pageSize);
         query.setSortBy(sortBy);
-        return marketplaceDao.searchMarketplace(query);
+        final PageModel<Item> results = marketplaceDao.searchMarketplace(query);
+        reviewService.attachReviewSummaries(results.getContent());
+        return results;
     }
 }

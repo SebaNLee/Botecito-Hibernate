@@ -3,14 +3,17 @@ package ar.edu.itba.paw.services;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.persistence.SubscriptionDao;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class SubscriptionServiceImpl implements SubscriptionService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionServiceImpl.class);
 
     private final SubscriptionDao subscriptionDao;
 
@@ -20,7 +23,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         if (subscriberId == subscribedToId) {
             return false;
         }
-        return subscriptionDao.create(subscriberId, subscribedToId);
+        final boolean created = subscriptionDao.create(subscriberId, subscribedToId);
+        if (created) {
+            LOGGER.info("User {} subscribed to user {}", subscriberId, subscribedToId);
+        }
+        return created;
     }
 
     @Override
@@ -29,8 +36,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
         if (subscriberId == subscribedToId) {
             return false;
         }
-        subscriptionDao.delete(subscriberId, subscribedToId);
-        return true;
+        final boolean deleted = subscriptionDao.delete(subscriberId, subscribedToId);
+        if (deleted) {
+            LOGGER.info("User {} unsubscribed from user {}", subscriberId, subscribedToId);
+        }
+        return deleted;
     }
 
     @Override
@@ -42,14 +52,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Override
     @Transactional(readOnly = true)
     public PageModel<Users> listSubscriptions(final int subscriberId, final int page, final int pageSize) {
-        final int safePage = Math.max(1, page);
-        final int safePageSize = Math.max(1, pageSize);
-        final int totalItems = subscriptionDao.countSubscriptions(subscriberId);
+        final long totalItems = subscriptionDao.countSubscriptions(subscriberId);
         return new PageModel<>(
-                subscriptionDao.listSubscriptions(subscriberId, safePage, safePageSize),
-                safePage,
-                safePageSize,
-                totalItems);
+                subscriptionDao.listSubscriptions(subscriberId, page, pageSize), page, pageSize, totalItems);
     }
 
     @Override
@@ -60,7 +65,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Users> listVerifiedSubscribersForPublisher(final int publisherId) {
-        return subscriptionDao.listVerifiedSubscribersForPublisher(publisherId);
+    public PageModel<Users> listFollowers(final int userId, final int page, final int pageSize) {
+        return subscriptionDao.listFollowers(userId, page, pageSize);
     }
 }

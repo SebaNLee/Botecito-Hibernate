@@ -1,8 +1,9 @@
 package ar.edu.itba.paw.persistence;
 
-import ar.edu.itba.paw.models.dto.ItemSearchResult;
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
+import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.entity.Item;
 
 public interface MarketplaceDao {
-    ItemSearchResult searchMarketplace(MarketplaceQueryModel query);
+    PageModel<Item> searchMarketplace(MarketplaceQueryModel query);
 }

@@ -4,15 +4,12 @@
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
-<c:url var="pageUrl" value="/my-boats/${item.id}/availability">
-  <c:if test="${not empty manageAvailabilityReturnPath}">
-    <c:param name="return" value="${manageAvailabilityReturnPath}" />
-  </c:if>
-</c:url>
+<c:url var="pageUrl" value="/my-boats/${item.id}/availability" />
 <c:url var="saveUrl" value="/my-boats/${item.id}/availability/save" />
-<c:url var="manageAvailabilityBackUrl" value="${manageAvailabilityBackPath}" />
+<c:url var="myBoatsUrl" value="/my-boats" />
 
 <spring:message code="manageAvailability.title" var="pageTitle" />
+<spring:message code="manageAvailability.back.myBoats" var="manageAvailabilityBackMyBoatsLabel" />
 <spring:message code="manageAvailability.subtitle" var="pageSubtitle" />
 <spring:message code="manageAvailability.calendar.title" var="calendarTitle" />
 <spring:message code="manageAvailability.calendar.hint" var="calendarHint" />
@@ -40,9 +37,9 @@
   <paw:toastNotifier />
 
   <div class="mb-8">
-    <a href="${manageAvailabilityBackUrl}" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
+    <a href="<c:out value='${myBoatsUrl}' />" data-nav-filter-page="myBoats" class="link link-hover inline-flex items-center gap-2 text-secondary font-bold font-headline no-underline w-fit">
       <span class="material-symbols-outlined">arrow_back</span>
-      <span><spring:message code="common.back" /></span>
+      <span><c:out value="${manageAvailabilityBackMyBoatsLabel}" /></span>
     </a>
   </div>
 
@@ -63,12 +60,11 @@
     <jsp:body>
       <p class="text-sm text-on-surface-variant m-0 mb-4"><c:out value="${calendarHint}" /></p>
 
-      <form method="get" action="${pageUrl}" data-manage-availability-date-form class="mb-6">
+      <form method="get" action="<c:out value='${pageUrl}' />" data-manage-availability-date-form class="mb-6">
         <paw:datePicker
             id="manageAvailabilityDate"
             dateFieldName="date"
-            offeredDatesJson="${offeredDatesJson}"
-            occupiedDatesJson="[]"
+            offeredDates="${offeredDates}"
             label="${datePickerLabel}"
             value="${selectedDate}"
             anchorTodayIso="${manageAvailabilityTodayIso}"
@@ -112,13 +108,31 @@
               <div
                   class="space-y-4"
                   data-manage-availability-timeline
-                  data-selected-date="${selectedDate}"
+                  data-selected-date="<c:out value='${selectedDate}'/>"
                   data-min-duration="120"
                   data-min-separation="30"
-                  data-delete-text="${deleteRangeLabel}"
-                  data-unsaved-confirm="${unsavedConfirmLabel}">
+                  data-delete-text="<c:out value='${deleteRangeLabel}'/>"
+                  data-unsaved-confirm="<c:out value='${unsavedConfirmLabel}'/>">
 
-                <script type="application/json" id="manage-day-timeline-json">${dayTimelineJson}</script>
+                <c:forEach var="range" items="${timelineAvailableRanges}">
+                  <span class="hidden"
+                        data-timeline-available-range
+                        data-start="<c:out value='${range.startTime}'/>"
+                        data-end="<c:out value='${range.endTime}'/>"></span>
+                </c:forEach>
+                <c:forEach var="range" items="${timelineBookedRanges}">
+                  <span class="hidden"
+                        data-timeline-booked-range
+                        data-start="<c:out value='${range.startTime}'/>"
+                        data-end="<c:out value='${range.endTime}'/>"></span>
+                </c:forEach>
+                <c:forEach var="block" items="${timelineSelfBlocks}">
+                  <span class="hidden"
+                        data-timeline-self-block
+                        data-id="<c:out value='${block.id}'/>"
+                        data-start="<c:out value='${block.startTime}'/>"
+                        data-end="<c:out value='${block.endTime}'/>"></span>
+                </c:forEach>
 
                 <p class="text-xs text-outline m-0"><c:out value="${timelineInstructions}" /></p>
 
@@ -135,8 +149,11 @@
                       <c:forEach var="tickHour" begin="0" end="23">
                         <c:set var="tickStep" value="${tickHour * 2}" />
                         <c:set var="tickLeft" value="${(tickStep * 100.0) / 47}" />
-                        <c:set var="tickClass" value="${tickStep % 4 == 0 ? 'bg-outline-variant/45' : 'bg-outline-variant/25'}" />
-                        <span class="absolute top-0 h-8 w-px ${tickClass}" data-tick-left-pct="${tickLeft}"></span>
+                        <c:set var="tickClass" value="bg-outline-variant/25" />
+                        <c:if test="${tickStep % 4 == 0}">
+                          <c:set var="tickClass" value="bg-outline-variant/45" />
+                        </c:if>
+                        <span class="absolute top-0 h-8 w-px <c:out value='${tickClass}' />" data-tick-left-pct="<c:out value='${tickLeft}' />"></span>
                       </c:forEach>
                     </div>
                     <div class="absolute inset-x-1 top-1/2 h-8 -translate-y-1/2 pointer-events-none">
@@ -162,11 +179,8 @@
                   </div>
                 </template>
 
-                <form action="${saveUrl}" method="post" data-timeline-save-form class="mt-6 flex justify-end">
-                  <c:if test="${not empty manageAvailabilityReturnPath}">
-                    <input type="hidden" name="return" value="<c:out value='${manageAvailabilityReturnPath}' />" />
-                  </c:if>
-                  <input type="hidden" name="date" value="${selectedDate}" />
+                <form action="<c:out value='${saveUrl}' />" method="post" data-timeline-save-form class="mt-6 flex justify-end">
+                  <input type="hidden" name="date" value="<c:out value='${selectedDate}' />" />
                   <div data-timeline-save-hidden-fields></div>
                   <paw:button
                       type="submit"

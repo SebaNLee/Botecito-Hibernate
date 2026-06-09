@@ -109,6 +109,81 @@
     }
   }
 
+  /** Applied filters only (set on Apply or toolbar navigation). */
+  function readAppliedMarketplaceFilters() {
+    return readStoredState(APPLIED_FILTERS_KEY);
+  }
+
+  /** Active listing filters come from the URL; sidebar inputs may still hold an unapplied draft. */
+  function readAppliedMarketplaceSnapshot() {
+    const params = new URLSearchParams(window.location.search);
+    const state = FILTER_KEYS.reduce((acc, key) => {
+      acc[key] = params.get(key) || "";
+      return acc;
+    }, {});
+    MARKETPLACE_TOOLBAR_KEYS.forEach((key) => {
+      if (params.has(key)) {
+        state[key] = params.get(key) || "";
+      }
+    });
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
+    if (toolbarForm) {
+      const sortBy = toolbarForm.querySelector('[name="sortBy"]')?.value?.trim();
+      const pageSize = toolbarForm
+        .querySelector('[name="pageSize"]')
+        ?.value?.trim();
+      if (sortBy) {
+        state.sortBy = sortBy;
+      }
+      if (pageSize) {
+        state.pageSize = pageSize;
+      }
+    }
+    return normalizeState(state);
+  }
+
+  function pathAndSearchFromHref(href) {
+    const url = new URL(href, window.location.origin);
+    return url.pathname + url.search;
+  }
+
+  function isMarketplacePage() {
+    return window.location.pathname.endsWith("/marketplace");
+  }
+
+  function syncMarketplaceUrlFromStorageIfNeeded() {
+    if (!isMarketplacePage()) {
+      return false;
+    }
+
+    const urlSnapshot = readAppliedMarketplaceSnapshot();
+    if (
+      hasAnyFilter(urlSnapshot) ||
+      hasPersistableMarketplaceDraft(urlSnapshot)
+    ) {
+      writeStoredState(APPLIED_FILTERS_KEY, urlSnapshot);
+      writeStoredState(DRAFT_FILTERS_KEY, urlSnapshot);
+      return false;
+    }
+
+    const stored = readAppliedMarketplaceFilters();
+    if (!hasAnyFilter(stored) && !hasPersistableMarketplaceDraft(stored)) {
+      return false;
+    }
+
+    const target = buildUrlWithFilters(window.location.pathname, stored);
+    if (
+      pathAndSearchFromHref(window.location.href) !==
+      pathAndSearchFromHref(target)
+    ) {
+      window.location.replace(target);
+      return true;
+    }
+    return false;
+  }
+
   function writeStoredState(storageKey, state) {
     let merged = {};
     try {
@@ -139,6 +214,13 @@
     }
   }
 
+  function clearMarketplaceFiltersIfRequested() {
+    if (!document.querySelector('[data-clear-marketplace-filters="true"]')) {
+      return;
+    }
+    clearStoredStates();
+  }
+
   function parseInteger(value) {
     const parsed = Number.parseInt(String(value || "").trim(), 10);
     return Number.isFinite(parsed) ? parsed : null;
@@ -149,7 +231,6 @@
     ...MARKETPLACE_TOOLBAR_KEYS,
     "page",
     "reviewPage",
-    "returnTo",
   ];
 
   function buildUrlWithFilters(baseUrl, state) {
@@ -178,9 +259,13 @@
     return url.toString();
   }
 
-  function buildMarketplaceReturnPath(state) {
-    const url = new URL("/marketplace", window.location.origin);
+  function buildItemDetailHref(baseHref, state) {
+    const url = new URL(baseHref, window.location.origin);
     const normalized = normalizeState(state);
+
+    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
+      url.searchParams.delete(key);
+    });
 
     FILTER_KEYS.forEach((key) => {
       if (normalized[key]) {
@@ -197,28 +282,6 @@
       }
     });
 
-    const pageInput = document.querySelector(
-      '[data-marketplace-toolbar-form] input[name="page"]',
-    );
-    const pageValue =
-      pageInput?.value ||
-      new URLSearchParams(window.location.search).get("page") ||
-      "";
-    if (pageValue) {
-      url.searchParams.set("page", pageValue);
-    }
-
-    return url.pathname + url.search;
-  }
-
-  function buildItemDetailHref(baseHref, state) {
-    const url = new URL(baseHref, window.location.origin);
-
-    ITEM_DETAIL_QUERY_KEYS.forEach((key) => {
-      url.searchParams.delete(key);
-    });
-
-    url.searchParams.set("returnTo", buildMarketplaceReturnPath(state));
     return url.pathname + url.search;
   }
 
@@ -362,11 +425,21 @@
   }
 
   function navigateMarketplaceToolbar(toolbarForm) {
-    const snapshot = readMarketplacePersistSnapshot();
+    const applied = readAppliedMarketplaceSnapshot();
+    const sortBy = toolbarForm.querySelector('[name="sortBy"]')?.value?.trim();
+    const pageSize = toolbarForm.querySelector('[name="pageSize"]')?.value?.trim();
+    const snapshot = normalizeState({
+      ...applied,
+      ...(sortBy ? { sortBy } : {}),
+      ...(pageSize ? { pageSize } : {}),
+    });
     writeStoredState(DRAFT_FILTERS_KEY, snapshot);
     writeStoredState(APPLIED_FILTERS_KEY, snapshot);
     reflectAppliedState(snapshot);
-    const action = toolbarForm.getAttribute("action") || "/marketplace";
+    const action = toolbarForm.getAttribute("action");
+    if (!action) {
+      return;
+    }
     const merged = new URL(
       buildUrlWithFilters(action, snapshot),
       window.location.origin,
@@ -496,7 +569,10 @@
   }
 
   function fetchSelectableOptions(url, slugMode) {
-    const resolved = (url || "/location-options").trim() || "/location-options";
+    const resolved = (url || "").trim();
+    if (!resolved) {
+      return Promise.resolve([]);
+    }
     const baseKey = new URL(resolved, window.location.origin).href;
     const cacheKey = baseKey + (slugMode ? "#slug" : "#id");
     if (!selectableOptionsByUrl.has(cacheKey)) {
@@ -644,14 +720,13 @@
       const slugMode =
         this.hiddenInput.name === "location" ||
         this.hiddenInput.name === "itemType";
-      fetchSelectableOptions(
-        this.root.dataset.optionsUrl || "/location-options",
-        slugMode,
-      ).then((options) => {
-        this.options = options;
-        this.setSelectedValue(this.hiddenInput.value);
-        this.render();
-      });
+      fetchSelectableOptions(this.root.dataset.optionsUrl, slugMode).then(
+        (options) => {
+          this.options = options;
+          this.setSelectedValue(this.hiddenInput.value);
+          this.render();
+        },
+      );
     }
 
     getFilteredOptions() {
@@ -1008,15 +1083,10 @@
           }
         }
         icon.textContent = symbol;
-        if (filled) {
-          icon.className = `${baseIcon} text-warning opacity-100`;
-          icon.style.fontVariationSettings =
-            '"FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24';
-        } else {
-          icon.className = `${baseIcon} text-outline opacity-35`;
-          icon.style.fontVariationSettings =
-            '"FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24';
-        }
+        icon.className = filled
+          ? `${baseIcon} icon-star-filled`
+          : `${baseIcon} icon-star-outline`;
+        icon.style.fontVariationSettings = "";
       }
     }
 
@@ -1178,6 +1248,40 @@
     }
   }
 
+  function readMarketplaceToolbarPrefs() {
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
+    const params = new URLSearchParams(window.location.search);
+    const sortBy =
+      trimParam(toolbarForm?.querySelector('[name="sortBy"]')?.value) ||
+      trimParam(params.get("sortBy"));
+    const pageSize =
+      trimParam(toolbarForm?.querySelector('[name="pageSize"]')?.value) ||
+      trimParam(params.get("pageSize"));
+    const prefs = {};
+
+    if (sortBy && sortBy !== "newest") {
+      prefs.sortBy = sortBy;
+    }
+    if (pageSize && pageSize !== "12") {
+      prefs.pageSize = pageSize;
+    }
+
+    return prefs;
+  }
+
+  function buildMarketplaceClearHref(control) {
+    const href = control?.getAttribute("href");
+    if (!href) {
+      return "";
+    }
+    const url = new URL(href, window.location.origin);
+    FILTER_KEYS.forEach((key) => url.searchParams.delete(key));
+    url.searchParams.delete("page");
+    return buildUrlWithFilters(url.pathname, readMarketplaceToolbarPrefs());
+  }
+
   function bindMarketplaceReset(control) {
     if (!control) {
       return;
@@ -1186,9 +1290,7 @@
     control.addEventListener("click", (event) => {
       event.preventDefault();
       clearStoredStates();
-      window.location.assign(
-        control.href || buildUrlWithFilters(window.location.href, {}),
-      );
+      window.location.assign(buildMarketplaceClearHref(control));
     });
   }
 
@@ -1228,53 +1330,95 @@
       const nextState = readFilterStateFromForm(form);
       writeStoredState(DRAFT_FILTERS_KEY, nextState);
       writeStoredState(APPLIED_FILTERS_KEY, nextState);
-      const action = form.getAttribute("action") || "/marketplace";
+      const action = form.getAttribute("action");
+      if (!action) {
+        return;
+      }
       window.location.assign(buildUrlWithFilters(action, nextState));
     });
   }
 
-  function initializeMarketplaceFilters() {
-    const toolbarForm = document.querySelector(
-      "[data-marketplace-toolbar-form]",
-    );
-    bindMarketplaceToolbarForm(toolbarForm);
+  function bindMarketplaceItemLinkPersistence() {
+    document
+      .querySelectorAll("[data-marketplace-item-link]")
+      .forEach((link) => {
+        link.addEventListener(
+          "click",
+          () => {
+            const applied = readAppliedMarketplaceSnapshot();
+            const baseHref =
+              link.dataset.baseHref || link.getAttribute("href") || "";
+            const nextHref = buildItemDetailHref(baseHref, applied);
+            if (link.getAttribute("href") !== nextHref) {
+              link.setAttribute("href", nextHref);
+            }
+          },
+          true,
+        );
+      });
+  }
 
+  function initializeItemDetailMarketplaceBack() {
+    const backLink = document.querySelector("[data-detail-marketplace-back]");
+    if (!backLink) {
+      return;
+    }
+
+    const state = readAppliedMarketplaceFilters();
+    if (!hasAnyFilter(state) && !hasPersistableMarketplaceDraft(state)) {
+      return;
+    }
+
+    const baseHref = backLink.getAttribute("href");
+    if (!baseHref) {
+      return;
+    }
+    backLink.setAttribute("href", buildUrlWithFilters(baseHref, state));
+  }
+
+  function initializeMarketplaceFilters() {
     const form = document.querySelector('[data-filter-form="marketplace"]');
     if (!form) {
       return;
     }
+
+    if (syncMarketplaceUrlFromStorageIfNeeded()) {
+      return;
+    }
+
+    const toolbarForm = document.querySelector(
+      "[data-marketplace-toolbar-form]",
+    );
+    bindMarketplaceToolbarForm(toolbarForm);
     const resetControls = document.querySelectorAll(
       "[data-clear-marketplace-filters]",
     );
 
-    const snapshot = readMarketplacePersistSnapshot();
+    const appliedSnapshot = readAppliedMarketplaceSnapshot();
     const draftState = readStoredState(DRAFT_FILTERS_KEY);
 
-    if (hasAnyFilter(snapshot)) {
-      hydrateForm(form, snapshot);
-      writeStoredState(DRAFT_FILTERS_KEY, snapshot);
-      writeStoredState(APPLIED_FILTERS_KEY, snapshot);
-      reflectAppliedState(snapshot);
+    if (
+      hasAnyFilter(appliedSnapshot) ||
+      hasPersistableMarketplaceDraft(appliedSnapshot)
+    ) {
+      hydrateForm(form, appliedSnapshot);
+      writeStoredState(DRAFT_FILTERS_KEY, appliedSnapshot);
+      writeStoredState(APPLIED_FILTERS_KEY, appliedSnapshot);
+      reflectAppliedState(appliedSnapshot);
     } else if (hasPersistableMarketplaceDraft(draftState)) {
       if (hasAnyFilter(draftState)) {
         hydrateForm(form, draftState);
       }
       hydrateMarketplaceToolbar(toolbarForm, draftState);
-      writeStoredState(APPLIED_FILTERS_KEY, draftState);
-      reflectAppliedState(draftState);
+      reflectAppliedState({});
     } else {
-      hydrateMarketplaceToolbar(toolbarForm, snapshot);
-      if (hasPersistableMarketplaceDraft(snapshot)) {
-        writeStoredState(DRAFT_FILTERS_KEY, snapshot);
-        writeStoredState(APPLIED_FILTERS_KEY, snapshot);
-        reflectAppliedState(snapshot);
-      } else {
-        writeStoredState(APPLIED_FILTERS_KEY, {});
-        reflectAppliedState({});
-      }
+      hydrateMarketplaceToolbar(toolbarForm, appliedSnapshot);
+      writeStoredState(APPLIED_FILTERS_KEY, {});
+      reflectAppliedState({});
     }
 
     bindDraftPersistence(form);
+    bindMarketplaceItemLinkPersistence();
     resetControls.forEach(bindMarketplaceReset);
     syncMarketplaceOptionsPickersFromDom(form);
     form.addEventListener("submit", (event) => {
@@ -1286,7 +1430,10 @@
       writeStoredState(DRAFT_FILTERS_KEY, nextState);
       writeStoredState(APPLIED_FILTERS_KEY, nextState);
       reflectAppliedState(nextState);
-      const action = form.getAttribute("action") || "/marketplace";
+      const action = form.getAttribute("action");
+      if (!action) {
+        return;
+      }
       const merged = new URL(
         buildUrlWithFilters(action, nextState),
         window.location.origin,
@@ -1302,10 +1449,8 @@
       return;
     }
 
-    const appliedState = normalizeState({
-      ...readStoredState(APPLIED_FILTERS_KEY),
-      ...readUrlState(),
-    });
+    const appliedState = readAppliedMarketplaceFilters();
+
     const messageNode = alertRoot.querySelector(
       "[data-item-unavailable-message]",
     );
@@ -1459,8 +1604,10 @@
       new minAvgRatingPicker(root);
     });
 
+    clearMarketplaceFiltersIfRequested();
     initializeLandingFilters();
     initializeMarketplaceFilters();
+    initializeItemDetailMarketplaceBack();
     initializeItemAvailabilityAlert();
   });
 })();

@@ -35,13 +35,11 @@
     this.previewStart = null;
     this.dragState = null;
     this.saving = false;
+    this.skipLeaveWarning = false;
     this.nextTempId = -1;
     this.deletedIds = {};
 
-    var timelineJsonEl = document.getElementById("manage-day-timeline-json");
-    var timeline = parseTimeline(
-      timelineJsonEl ? timelineJsonEl.textContent : root.dataset.timeline,
-    );
+    var timeline = readTimelineFromDom(this.root);
     this.availableRanges = timeline.availableRanges;
     this.bookedRanges = timeline.bookedRanges;
     this.selfBlocks = timeline.selfBlocks.map(function (block) {
@@ -493,10 +491,26 @@
         event.preventDefault();
         return;
       }
+      self.skipLeaveWarning = true;
       self.saving = true;
       self.updateSaveButtonState();
       self.injectSaveFormFields();
     });
+  };
+
+  ManageAvailabilityTimeline.prototype.shouldWarnBeforeLeaving = function () {
+    return !this.skipLeaveWarning && !this.saving && this.hasUnsavedChanges();
+  };
+
+  ManageAvailabilityTimeline.prototype.confirmLeaveWithoutSaving = function () {
+    if (!this.hasUnsavedChanges()) {
+      return true;
+    }
+    if (!window.confirm(this.unsavedConfirmText)) {
+      return false;
+    }
+    this.skipLeaveWarning = true;
+    return true;
   };
 
   ManageAvailabilityTimeline.prototype.bindUnsavedNavigationGuard = function () {
@@ -504,19 +518,18 @@
     var dateForm = document.querySelector("[data-manage-availability-date-form]");
     if (dateForm) {
       dateForm.addEventListener("submit", function (event) {
-        if (self.hasUnsavedChanges()) {
-          var confirmed = window.confirm(self.unsavedConfirmText);
-          if (!confirmed) {
-            event.preventDefault();
-          }
+        if (!self.confirmLeaveWithoutSaving()) {
+          event.preventDefault();
         }
       });
     }
+
     window.addEventListener("beforeunload", function (event) {
-      if (self.hasUnsavedChanges()) {
-        event.preventDefault();
-        event.returnValue = "";
+      if (!self.shouldWarnBeforeLeaving()) {
+        return;
       }
+      event.preventDefault();
+      event.returnValue = "";
     });
   };
 
@@ -753,20 +766,37 @@
     });
   };
 
-  function parseTimeline(raw) {
-    if (!raw) {
-      return { availableRanges: [], bookedRanges: [], selfBlocks: [] };
+  function readTimelineFromDom(root) {
+    var availableRanges = [];
+    var bookedRanges = [];
+    var selfBlocks = [];
+    if (!root) {
+      return { availableRanges: availableRanges, bookedRanges: bookedRanges, selfBlocks: selfBlocks };
     }
-    try {
-      var parsed = JSON.parse(raw);
-      return {
-        availableRanges: parsed.availableRanges || [],
-        bookedRanges: parsed.bookedRanges || [],
-        selfBlocks: parsed.selfBlocks || [],
-      };
-    } catch (ignored) {
-      return { availableRanges: [], bookedRanges: [], selfBlocks: [] };
-    }
+    root.querySelectorAll("[data-timeline-available-range]").forEach(function (node) {
+      availableRanges.push({
+        startTime: node.getAttribute("data-start") || "",
+        endTime: node.getAttribute("data-end") || "",
+      });
+    });
+    root.querySelectorAll("[data-timeline-booked-range]").forEach(function (node) {
+      bookedRanges.push({
+        startTime: node.getAttribute("data-start") || "",
+        endTime: node.getAttribute("data-end") || "",
+      });
+    });
+    root.querySelectorAll("[data-timeline-self-block]").forEach(function (node) {
+      selfBlocks.push({
+        id: parseInt(node.getAttribute("data-id") || "0", 10),
+        startTime: node.getAttribute("data-start") || "",
+        endTime: node.getAttribute("data-end") || "",
+      });
+    });
+    return {
+      availableRanges: availableRanges,
+      bookedRanges: bookedRanges,
+      selfBlocks: selfBlocks,
+    };
   }
 
   function parseTimeToStep(value, isEnd) {

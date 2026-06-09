@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.dto.ItemSearchResult;
+import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.entity.Item;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -10,7 +11,7 @@ public interface MarketplaceService {
      * {@code endTime}; in that case results are filtered by weekday only. When both times are
      * present, availability must cover the requested interval on that weekday.
      */
-    ItemSearchResult searchMarketplace(
+    PageModel<Item> searchMarketplace(
             String searchQuery,
             LocalDate date,
             LocalTime startTime,

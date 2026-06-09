@@ -32,12 +32,12 @@
         </c:if>
 
         <form:form action="${passwordRecoveryUrl}" method="post" modelAttribute="passwordRecoveryRequestForm" class="space-y-4">
-          <paw:formField path="email" type="email" label="${emailLabel}" placeholder="${emailPlaceholder}" />
+          <paw:formField path="email" type="email" label="${emailLabel}" placeholder="${emailPlaceholder}" maxlength="100" />
           <paw:button type="submit" fullWidth="true" color="primary" text="${submitLabel}" />
         </form:form>
 
         <p class="text-center text-sm text-on-surface-variant m-0">
-          <a href="${loginUrl}" class="link link-hover text-primary font-semibold no-underline">
+          <a href="<c:out value='${loginUrl}' />" class="link link-hover text-primary font-semibold no-underline">
             <spring:message code="passwordRecovery.request.backToLogin" />
           </a>
         </p>

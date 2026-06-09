@@ -29,11 +29,11 @@
 </c:choose>
 <c:set var="resolvedIcon" value="${not empty icon ? icon : 'warning'}" />
 
-<dialog id="${id}" class="modal">
+<dialog id="<c:out value='${id}' />" class="modal">
   <div class="modal-box max-w-lg">
     <div class="flex items-start gap-4">
-      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${iconTintClass}">
-        <span class="material-symbols-outlined">${resolvedIcon}</span>
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full <c:out value='${iconTintClass}' />">
+        <span class="material-symbols-outlined"><c:out value="${resolvedIcon}" /></span>
       </div>
       <div class="space-y-2">
         <h3 class="text-xl font-extrabold tracking-tight m-0">

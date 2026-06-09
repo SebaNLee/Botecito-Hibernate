@@ -2,10 +2,9 @@ package ar.edu.itba.paw.services;
 
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
-import ar.edu.itba.paw.persistence.BookingDao;
-import ar.edu.itba.paw.persistence.EditDao;
-import ar.edu.itba.paw.persistence.ManageItemDao;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,28 +12,24 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ManageItemServiceImpl implements ManageItemService {
 
-    private final ManageItemDao manageItemDao;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ManageItemServiceImpl.class);
+
     private final ItemService itemService;
-    private final EditDao editDao;
-    private final BookingDao bookingDao;
+    private final BookingService bookingService;
+    private final ReportService reportService;
 
     @Override
     @Transactional
     public void deleteItem(final int itemId, final int ownerId) {
         final Item item = itemService.requireOwnedItem(itemId, ownerId);
 
-        bookingDao.deleteAllSelfBlocks(item);
+        LOGGER.info("User {} deleted item {}", ownerId, itemId);
 
-        if (manageItemDao.countVersionsByItemId(itemId) > 1) {
-            applySoftDelete(item);
-            return;
-        }
+        bookingService.deleteAllSelfBlocks(item);
+        reportService.deleteAllByItemId(itemId);
 
-        if (editDao.itemHasBookings(itemId)) {
-            applySoftDelete(item);
-        } else {
-            manageItemDao.deleteItem(item);
-        }
+        boolean isSoft = itemService.getVersionCount(itemId) > 1 || bookingService.itemHasBookings(itemId);
+        itemService.deleteItem(item, isSoft);
     }
 
     @Override
@@ -42,12 +37,6 @@ public class ManageItemServiceImpl implements ManageItemService {
     public void setEnabled(final int itemId, final int ownerId, final boolean enabled) {
         final Item item = itemService.requireOwnedItem(itemId, ownerId);
         item.setStatus(enabled ? ItemStatusEnum.ACTIVE : ItemStatusEnum.INACTIVE);
-    }
-
-    private void applySoftDelete(final Item item) {
-        item.setStatus(ItemStatusEnum.DELETED);
-        if (!editDao.itemHasBookings(item.getId())) {
-            manageItemDao.findLatestVersionIdByItemId(item.getId()).ifPresent(manageItemDao::deleteVersion);
-        }
+        LOGGER.info("User {} {} item {}", ownerId, enabled ? "enabled" : "disabled", itemId);
     }
 }

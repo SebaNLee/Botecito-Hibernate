@@ -1,10 +1,13 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.services.MarketplaceService;
 import ar.edu.itba.paw.webapp.form.MarketplaceSearchForm;
 import ar.edu.itba.paw.webapp.presentation.MarketplacePresentation;
-import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -16,12 +19,9 @@ import org.springframework.web.servlet.ModelAndView;
 @RequiredArgsConstructor
 public class MarketplaceController {
 
-    private final MarketplacePresentation marketplacePresentation;
+    private final MarketplaceService marketplaceService;
+    private final MessageSource messageSource;
 
-    /**
-     * Defaults for GET /marketplace before request binding; omitted query params
-     * stay at these values.
-     */
     @ModelAttribute("marketplaceSearch")
     public MarketplaceSearchForm defaultMarketplaceSearch() {
         final MarketplaceSearchForm form = new MarketplaceSearchForm();
@@ -33,10 +33,27 @@ public class MarketplaceController {
 
     @RequestMapping(value = "/marketplace", method = RequestMethod.GET)
     public ModelAndView marketplace(
-            final HttpServletRequest request,
             @Valid @ModelAttribute("marketplaceSearch") final MarketplaceSearchForm search,
             final BindingResult errors) {
 
-        return marketplacePresentation.marketplace(request, search, errors);
+        if (errors.hasErrors()) {
+            return MarketplacePresentation.marketplaceErrors(search, errors, messageSource);
+        }
+
+        final PageModel<Item> itemPage = marketplaceService.searchMarketplace(
+                search.getSearchQuery(),
+                search.getDate(),
+                search.getStartTime(),
+                search.getEndTime(),
+                search.getCapacity(),
+                search.getWeight(),
+                search.getDifficulty(),
+                search.getMinAvgRating(),
+                search.getLocation(),
+                search.getItemType(),
+                search.getPage(),
+                search.getPageSize(),
+                search.getSortBy());
+        return MarketplacePresentation.marketplace(search, itemPage);
     }
 }

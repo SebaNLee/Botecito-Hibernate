@@ -3,6 +3,16 @@
 
   var STORAGE_KEY = "botecito.publishDraft.v1";
   var DRAFT_VERSION = 1;
+  var MAX_TITLE_LENGTH = 100;
+  var MAX_DESCRIPTION_LENGTH = 1000;
+
+  function truncateText(value, max) {
+    if (value === null || value === undefined) {
+      return value;
+    }
+    var text = String(value);
+    return text.length > max ? text.slice(0, max) : text;
+  }
 
   function readDraft() {
     try {
@@ -43,8 +53,8 @@
       return {};
     }
     return {
-      title: fieldValue(form, "title"),
-      description: fieldValue(form, "description"),
+      title: truncateText(fieldValue(form, "title"), MAX_TITLE_LENGTH),
+      description: truncateText(fieldValue(form, "description"), MAX_DESCRIPTION_LENGTH),
       itemTypeId: fieldValue(form, "itemTypeId"),
       pricePerHour: fieldValue(form, "pricePerHour"),
       capacity: fieldValue(form, "capacity"),
@@ -94,8 +104,8 @@
     if (!form || !draft) {
       return;
     }
-    setFieldValue(form, "title", draft.title);
-    setFieldValue(form, "description", draft.description);
+    setFieldValue(form, "title", truncateText(draft.title, MAX_TITLE_LENGTH));
+    setFieldValue(form, "description", truncateText(draft.description, MAX_DESCRIPTION_LENGTH));
     setFieldValue(form, "itemTypeId", draft.itemTypeId);
     setFieldValue(form, "pricePerHour", draft.pricePerHour);
     setFieldValue(form, "capacity", draft.capacity);
@@ -163,15 +173,33 @@
     return enabledDaysFromRanges(availability.ranges);
   }
 
+  function applyExistingSlotsToGrid(grid, slots) {
+    if (!grid) {
+      return;
+    }
+    grid.querySelectorAll("[data-existing-slot]").forEach(function (node) {
+      node.remove();
+    });
+    (slots || []).forEach(function (slot) {
+      if (!slot || !slot.weekday) {
+        return;
+      }
+      var span = document.createElement("span");
+      span.className = "hidden";
+      span.setAttribute("data-existing-slot", "");
+      span.setAttribute("data-weekday", slot.weekday);
+      span.setAttribute("data-start", slot.startTime);
+      span.setAttribute("data-end", slot.endTime);
+      grid.insertBefore(span, grid.firstChild);
+    });
+  }
+
   function restoreStep2Availability(grid, availability, notifyGrid) {
     if (!grid || !availability) {
       return;
     }
 
-    var slots = rangesToExistingSlots(availability);
-    if (slots.length) {
-      grid.dataset.existingSlots = JSON.stringify(slots);
-    }
+    applyExistingSlotsToGrid(grid, rangesToExistingSlots(availability));
 
     resolveEnabledDays(availability).forEach(function (day) {
       var toggle = grid.querySelector('[data-day-toggle="' + day + '"]');
@@ -249,8 +277,8 @@
       return;
     }
     container.innerHTML = "";
-    appendHiddenField(container, "title", draft.title);
-    appendHiddenField(container, "description", draft.description);
+    appendHiddenField(container, "title", truncateText(draft.title, MAX_TITLE_LENGTH));
+    appendHiddenField(container, "description", truncateText(draft.description, MAX_DESCRIPTION_LENGTH));
     appendHiddenField(container, "itemTypeId", draft.itemTypeId);
     appendHiddenField(container, "pricePerHour", draft.pricePerHour);
     appendHiddenField(container, "capacity", draft.capacity);
@@ -360,7 +388,9 @@
   function initStep2(root) {
     var draft = readDraft();
     if (!draft || !draft.title) {
-      window.location.assign(root.dataset.publishUrl || "/publish");
+      if (root.dataset.publishUrl) {
+        window.location.assign(root.dataset.publishUrl);
+      }
       return;
     }
 
@@ -410,7 +440,9 @@
       !draft.availability.ranges ||
       !draft.availability.ranges.length
     ) {
-      window.location.assign(root.dataset.availabilityUrl || "/publish/availability");
+      if (root.dataset.availabilityUrl) {
+        window.location.assign(root.dataset.availabilityUrl);
+      }
       return;
     }
 

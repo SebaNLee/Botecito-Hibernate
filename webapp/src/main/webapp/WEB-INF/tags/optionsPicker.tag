@@ -39,12 +39,12 @@
 <c:choose>
   <c:when test="${resolvedVariant == 'inline'}">
     <fieldset
-        class="fieldset w-full ${resolvedContainerClass}"
+        class="fieldset w-full <c:out value='${resolvedContainerClass}'/>"
         data-options-picker
         data-options-url="<c:url value='${resolvedOptionsUrl}' />"
-        data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
-        data-required-message="${fn:escapeXml(resolvedRequiredMsg)}">
-      <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-option-value />
+        data-placeholder="<c:out value='${resolvedPlaceholder}'/>"
+        data-required-message="<c:out value='${resolvedRequiredMsg}'/>">
+      <input id="<c:out value='${id}'/>" name="<c:out value='${name}'/>" type="hidden" value="<c:out value='${resolvedValue}'/>" data-option-value />
       <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
         <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
@@ -53,24 +53,24 @@
         <label
             class="input input-bordered flex h-10 min-h-10 max-h-10 w-full min-w-0 items-center gap-1 overflow-hidden px-2 py-0 cursor-text"
             data-option-trigger>
-          <span class="material-symbols-outlined shrink-0 ${lpText} text-xl"><c:out value="${resolvedIcon}" /></span>
+          <span class="material-symbols-outlined shrink-0 <c:out value='${lpText}'/> text-xl"><c:out value="${resolvedIcon}" /></span>
           <input
-              id="${id}-query"
+              id="<c:out value='${id}'/>-query"
               type="text"
               value=""
               class="min-w-0 grow bg-transparent border-none p-0 text-[0.95rem] font-bold text-on-surface placeholder:text-on-surface/60 outline-none focus:outline-none focus:ring-0 shadow-none"
-              placeholder="${fn:escapeXml(resolvedPlaceholder)}"
+              placeholder="<c:out value='${resolvedPlaceholder}'/>"
               autocomplete="off"
               spellcheck="false"
               data-option-query />
         <button
             type="button"
-            class="btn btn-ghost btn-xs btn-circle ${lpText} opacity-0 pointer-events-none"
-            aria-label="${fn:escapeXml(defaultClearLabel)}"
+            class="btn btn-ghost btn-xs btn-circle <c:out value='${lpText}'/> opacity-0 pointer-events-none"
+            aria-label="<c:out value='${defaultClearLabel}'/>"
             data-option-clear>
           <span class="material-symbols-outlined text-base">close</span>
         </button>
-          <span class="material-symbols-outlined shrink-0 ${lpText} text-base transition-transform duration-150" data-option-chevron>expand_more</span>
+          <span class="material-symbols-outlined shrink-0 <c:out value='${lpText}'/> text-base transition-transform duration-150" data-option-chevron>expand_more</span>
         </label>
 
         <div
@@ -90,12 +90,12 @@
   </c:when>
   <c:otherwise>
     <fieldset
-        class="fieldset w-full ${resolvedContainerClass}"
+        class="fieldset w-full <c:out value='${resolvedContainerClass}'/>"
         data-options-picker
         data-options-url="<c:url value='${resolvedOptionsUrl}' />"
-        data-placeholder="${fn:escapeXml(resolvedPlaceholder)}"
-        data-required-message="${fn:escapeXml(resolvedRequiredMsg)}">
-      <input id="${id}" name="${name}" type="hidden" value="${fn:escapeXml(resolvedValue)}" data-option-value />
+        data-placeholder="<c:out value='${resolvedPlaceholder}'/>"
+        data-required-message="<c:out value='${resolvedRequiredMsg}'/>">
+      <input id="<c:out value='${id}'/>" name="<c:out value='${name}'/>" type="hidden" value="<c:out value='${resolvedValue}'/>" data-option-value />
       <legend class="fieldset-legend text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
         <c:out value="${resolvedLabel}" />
         <c:if test="${required}"><span class="text-error" aria-hidden="true">*</span></c:if>
@@ -104,24 +104,24 @@
         <label
             class="input input-bordered flex h-10 min-h-10 max-h-10 w-full min-w-0 items-center gap-1 overflow-hidden px-2 py-0 cursor-text"
             data-option-trigger>
-          <span class="material-symbols-outlined shrink-0 ${lpText} text-xl"><c:out value="${resolvedIcon}" /></span>
+          <span class="material-symbols-outlined shrink-0 <c:out value='${lpText}'/> text-xl"><c:out value="${resolvedIcon}" /></span>
           <input
-              id="${id}-query"
+              id="<c:out value='${id}'/>-query"
               type="text"
               value=""
               class="min-w-0 grow bg-transparent border-none p-0 text-[0.95rem] font-bold text-on-surface placeholder:text-on-surface/60 outline-none focus:outline-none focus:ring-0 shadow-none"
-              placeholder="${fn:escapeXml(resolvedPlaceholder)}"
+              placeholder="<c:out value='${resolvedPlaceholder}'/>"
               autocomplete="off"
               spellcheck="false"
               data-option-query />
           <button
               type="button"
-              class="btn btn-ghost btn-xs btn-circle ${lpText} opacity-0 pointer-events-none"
-              aria-label="${fn:escapeXml(defaultClearLabel)}"
+              class="btn btn-ghost btn-xs btn-circle <c:out value='${lpText}'/> opacity-0 pointer-events-none"
+              aria-label="<c:out value='${defaultClearLabel}'/>"
               data-option-clear>
             <span class="material-symbols-outlined text-base">close</span>
           </button>
-          <span class="material-symbols-outlined shrink-0 ${lpText} text-base transition-transform duration-150" data-option-chevron>expand_more</span>
+          <span class="material-symbols-outlined shrink-0 <c:out value='${lpText}'/> text-base transition-transform duration-150" data-option-chevron>expand_more</span>
         </label>
 
         <div

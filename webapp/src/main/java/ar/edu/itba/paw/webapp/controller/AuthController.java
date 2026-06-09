@@ -1,11 +1,15 @@
 package ar.edu.itba.paw.webapp.controller;
 
+import ar.edu.itba.paw.models.entity.Users;
+import ar.edu.itba.paw.services.UserService;
+import ar.edu.itba.paw.webapp.auth.PostRegistrationAuthenticator;
 import ar.edu.itba.paw.webapp.form.LoginForm;
 import ar.edu.itba.paw.webapp.form.PasswordRecoveryRequestForm;
 import ar.edu.itba.paw.webapp.form.PasswordResetForm;
 import ar.edu.itba.paw.webapp.form.RegisterForm;
 import ar.edu.itba.paw.webapp.presentation.AuthPresentation;
 import ar.edu.itba.paw.webapp.util.PostLoginRedirectSupport;
+import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -24,24 +28,25 @@ public class AuthController {
 
     private static final String PASSWORD_RECOVERY_RESET_VIEW = "password-recovery-reset";
 
-    private final AuthPresentation authPresentation;
+    private final UserService userService;
+    private final PostRegistrationAuthenticator postRegistrationAuthenticator;
 
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ModelAndView login(@ModelAttribute("loginForm") final LoginForm form, final HttpServletRequest request) {
         final String next = form.getNext();
         if (next != null) {
             if (PostLoginRedirectSupport.isSafeInternalRedirect(next)) {
-                request.getSession().setAttribute(PostLoginRedirectSupport.SESSION_ATTR, next.trim());
+                request.getSession().setAttribute("continueUrl", next.trim());
             } else {
-                request.getSession().removeAttribute(PostLoginRedirectSupport.SESSION_ATTR);
+                request.getSession().removeAttribute("continueUrl");
             }
         }
-        return authPresentation.login(form);
+        return AuthPresentation.login(form);
     }
 
     @RequestMapping(value = "/register", method = RequestMethod.GET)
     public ModelAndView registerForm(@ModelAttribute("registerForm") final RegisterForm form) {
-        return authPresentation.registerForm(form);
+        return AuthPresentation.registerForm(form);
     }
 
     @RequestMapping(value = "/register", method = RequestMethod.POST)
@@ -52,14 +57,20 @@ public class AuthController {
         if (errors.hasErrors()) {
             return new ModelAndView("register");
         }
-        form.setPreferredLanguage(request.getLocale().getLanguage());
-        return authPresentation.registerSubmit(form, errors);
+        userService.register(
+                form.getGivenName(),
+                form.getLastName(),
+                form.getEmail(),
+                form.getPaymentAlias(),
+                request.getLocale().getLanguage(),
+                form.getPassword());
+        return AuthPresentation.registerSuccessRedirect();
     }
 
     @RequestMapping(value = "/password-recovery", method = RequestMethod.GET)
     public ModelAndView passwordRecoveryRequestForm(
             @ModelAttribute("passwordRecoveryRequestForm") final PasswordRecoveryRequestForm form) {
-        return authPresentation.passwordRecoveryRequestForm(form);
+        return AuthPresentation.passwordRecoveryRequestForm(form);
     }
 
     @RequestMapping(value = "/password-recovery", method = RequestMethod.POST)
@@ -69,12 +80,17 @@ public class AuthController {
         if (errors.hasErrors()) {
             return new ModelAndView("password-recovery-request");
         }
-        return authPresentation.passwordRecoveryRequestSubmit(form);
+        userService.requestPasswordRecovery(form.getEmail());
+        return AuthPresentation.passwordRecoveryRequestSuccessRedirect();
     }
 
     @RequestMapping(value = "/password-recovery/{token}", method = RequestMethod.GET)
     public ModelAndView passwordRecoveryResetForm(@PathVariable("token") final String token) {
-        return authPresentation.passwordRecoveryResetForm(token);
+        final Optional<Users> user = userService.findByPasswordRecoveryToken(token);
+        if (user.isEmpty() || user.get().getMailTokenEmittedAt() != null) {
+            return AuthPresentation.passwordRecoveryResetInvalidTokenRedirect(token);
+        }
+        return AuthPresentation.passwordRecoveryResetForm(token);
     }
 
     @RequestMapping(value = "/password-recovery/{token}", method = RequestMethod.POST)
@@ -88,7 +104,15 @@ public class AuthController {
                     .addObject("tokenValid", true)
                     .addObject("org.springframework.validation.BindingResult.passwordResetForm", errors);
         }
-        return authPresentation.passwordRecoveryResetSubmit(token, form.getPassword());
+        final boolean tokenValid =
+                userService.findByPasswordRecoveryToken(token).isPresent();
+        if (!tokenValid) {
+            return AuthPresentation.passwordRecoveryResetInvalidTokenView(token);
+        }
+        if (!userService.resetPassword(token, form.getPassword())) {
+            return AuthPresentation.passwordRecoveryResetInvalidTokenRedirect(token);
+        }
+        return AuthPresentation.passwordRecoveryResetSuccessRedirect();
     }
 
     @RequestMapping(value = "/verify-email/{token}", method = RequestMethod.GET)
@@ -96,6 +120,12 @@ public class AuthController {
             @PathVariable("token") final String token,
             final HttpServletRequest request,
             final HttpServletResponse response) {
-        return authPresentation.verifyEmail(token, request, response);
+        final Optional<Users> verifiedUser = userService.verifyEmail(token);
+        if (verifiedUser.isPresent()) {
+            postRegistrationAuthenticator.authenticateVerifiedUser(
+                    verifiedUser.get().getEmail(), request, response);
+            return AuthPresentation.verifyEmailSuccessRedirect();
+        }
+        return AuthPresentation.verifyEmailInvalidRedirect();
     }
 }

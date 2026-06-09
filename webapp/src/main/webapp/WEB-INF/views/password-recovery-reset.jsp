@@ -32,8 +32,8 @@
               <paw:alertMessage type="error"><spring:message code="passwordRecovery.reset.invalid" /></paw:alertMessage>
             </c:if>
             <form:form action="${resetUrl}" method="post" modelAttribute="passwordResetForm" class="space-y-4">
-              <paw:formField path="password" type="password" label="${passwordLabel}" placeholder="${passwordPlaceholder}" />
-              <paw:formField path="confirmPassword" type="password" label="${confirmPasswordLabel}" placeholder="${confirmPasswordPlaceholder}" />
+              <paw:formField path="password" type="password" label="${passwordLabel}" placeholder="${passwordPlaceholder}" maxlength="100" />
+              <paw:formField path="confirmPassword" type="password" label="${confirmPasswordLabel}" placeholder="${confirmPasswordPlaceholder}" maxlength="100" />
               <form:errors path="passwordConfirmationValid" cssClass="text-error text-xs mt-1" element="p" />
               <paw:button type="submit" fullWidth="true" color="primary" text="${submitLabel}" />
             </form:form>
@@ -41,7 +41,7 @@
           <c:otherwise>
             <paw:alertMessage type="error"><spring:message code="passwordRecovery.reset.invalid" /></paw:alertMessage>
             <p class="text-center text-sm text-on-surface-variant m-0">
-              <a href="${loginUrl}" class="link link-hover text-primary font-semibold no-underline">
+              <a href="<c:out value='${loginUrl}' />" class="link link-hover text-primary font-semibold no-underline">
                 <spring:message code="passwordRecovery.request.backToLogin" />
               </a>
             </p>

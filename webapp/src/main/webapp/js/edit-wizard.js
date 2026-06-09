@@ -3,6 +3,16 @@
 
   var STORAGE_KEY = "botecito.editDraft.v1";
   var DRAFT_VERSION = 1;
+  var MAX_TITLE_LENGTH = 100;
+  var MAX_DESCRIPTION_LENGTH = 1000;
+
+  function truncateText(value, max) {
+    if (value === null || value === undefined) {
+      return value;
+    }
+    var text = String(value);
+    return text.length > max ? text.slice(0, max) : text;
+  }
 
   function readItemId(root) {
     if (!root || !root.dataset.itemId) {
@@ -12,12 +22,51 @@
     return Number.isNaN(parsed) ? null : parsed;
   }
 
-  function bootstrapUrl(itemId) {
-    return "/edit/" + itemId;
+  function collectAvailabilitySeed(root) {
+    var enabledDays = [];
+    var ranges = [];
+    root.querySelectorAll("[data-edit-seed-range]").forEach(function (node) {
+      var weekday = node.getAttribute("data-weekday") || "";
+      var start = node.getAttribute("data-start") || "";
+      var end = node.getAttribute("data-end") || "";
+      if (!weekday || !start || !end) {
+        return;
+      }
+      if (enabledDays.indexOf(weekday) === -1) {
+        enabledDays.push(weekday);
+      }
+      ranges.push(weekday + "|" + start + "|" + end);
+    });
+    return { enabledDays: enabledDays, ranges: ranges };
   }
 
-  function detailsUrl(itemId) {
-    return "/edit/" + itemId + "/details";
+  function collectImagesSeed(root) {
+    var images = [];
+    root.querySelectorAll("[data-edit-seed-image]").forEach(function (node) {
+      var id = node.getAttribute("data-id");
+      var url = node.getAttribute("data-url");
+      if (!id || !url) {
+        return;
+      }
+      images.push({ id: parseInt(id, 10), url: url });
+    });
+    return images;
+  }
+
+  function buildDraftFromServer(root, form) {
+    var itemId = readItemId(root);
+    var seedRoot = root.querySelector("[data-edit-wizard-seed]");
+    var versionRaw = seedRoot ? seedRoot.getAttribute("data-version-id") : "";
+    var versionId = versionRaw ? parseInt(versionRaw, 10) : null;
+    var draft = {
+      v: DRAFT_VERSION,
+      itemId: itemId,
+      versionId: Number.isNaN(versionId) ? null : versionId,
+    };
+    Object.assign(draft, collectStep1FromForm(form));
+    draft.availability = collectAvailabilitySeed(root);
+    draft.images = collectImagesSeed(root);
+    return draft;
   }
 
   function draftMatchesItem(draft, itemId) {
@@ -72,8 +121,8 @@
       return {};
     }
     return {
-      title: fieldValue(form, "title"),
-      description: fieldValue(form, "description"),
+      title: truncateText(fieldValue(form, "title"), MAX_TITLE_LENGTH),
+      description: truncateText(fieldValue(form, "description"), MAX_DESCRIPTION_LENGTH),
       itemTypeId: fieldValue(form, "itemTypeId"),
       pricePerHour: fieldValue(form, "pricePerHour"),
       capacity: fieldValue(form, "capacity"),
@@ -123,8 +172,8 @@
     if (!form || !draft) {
       return;
     }
-    setFieldValue(form, "title", draft.title);
-    setFieldValue(form, "description", draft.description);
+    setFieldValue(form, "title", truncateText(draft.title, MAX_TITLE_LENGTH));
+    setFieldValue(form, "description", truncateText(draft.description, MAX_DESCRIPTION_LENGTH));
     setFieldValue(form, "itemTypeId", draft.itemTypeId);
     setFieldValue(form, "pricePerHour", draft.pricePerHour);
     setFieldValue(form, "capacity", draft.capacity);
@@ -192,15 +241,33 @@
     return enabledDaysFromRanges(availability.ranges);
   }
 
+  function applyExistingSlotsToGrid(grid, slots) {
+    if (!grid) {
+      return;
+    }
+    grid.querySelectorAll("[data-existing-slot]").forEach(function (node) {
+      node.remove();
+    });
+    (slots || []).forEach(function (slot) {
+      if (!slot || !slot.weekday) {
+        return;
+      }
+      var span = document.createElement("span");
+      span.className = "hidden";
+      span.setAttribute("data-existing-slot", "");
+      span.setAttribute("data-weekday", slot.weekday);
+      span.setAttribute("data-start", slot.startTime);
+      span.setAttribute("data-end", slot.endTime);
+      grid.insertBefore(span, grid.firstChild);
+    });
+  }
+
   function restoreStep2Availability(grid, availability, notifyGrid) {
     if (!grid || !availability) {
       return;
     }
 
-    var slots = rangesToExistingSlots(availability);
-    if (slots.length) {
-      grid.dataset.existingSlots = JSON.stringify(slots);
-    }
+    applyExistingSlotsToGrid(grid, rangesToExistingSlots(availability));
 
     resolveEnabledDays(availability).forEach(function (day) {
       var toggle = grid.querySelector('[data-day-toggle="' + day + '"]');
@@ -278,8 +345,8 @@
       return;
     }
     container.innerHTML = "";
-    appendHiddenField(container, "title", draft.title);
-    appendHiddenField(container, "description", draft.description);
+    appendHiddenField(container, "title", truncateText(draft.title, MAX_TITLE_LENGTH));
+    appendHiddenField(container, "description", truncateText(draft.description, MAX_DESCRIPTION_LENGTH));
     appendHiddenField(container, "itemTypeId", draft.itemTypeId);
     appendHiddenField(container, "pricePerHour", draft.pricePerHour);
     appendHiddenField(container, "capacity", draft.capacity);
@@ -378,13 +445,11 @@
       return;
     }
     var draft = readDraftForRoot(root);
-    if (!draft) {
-      var itemId = readItemId(root);
-      window.location.assign(itemId == null ? "/my-boats" : bootstrapUrl(itemId));
-      return;
-    }
     if (draft) {
       restoreStep1Form(form, draft);
+    } else {
+      draft = buildDraftFromServer(root, form);
+      saveDraft(draft);
     }
     form.addEventListener("submit", function () {
       saveDraft(mergeDraft(readDraft(), collectStep1FromForm(form)));
@@ -395,7 +460,11 @@
     var draft = readDraftForRoot(root);
     var itemId = readItemId(root);
     if (!draft || !draft.title) {
-      window.location.assign(itemId == null ? "/my-boats" : bootstrapUrl(itemId));
+      const redirectUrl =
+        root.dataset.editDetailsUrl || root.dataset.myBoatsUrl;
+      if (redirectUrl) {
+        window.location.assign(redirectUrl);
+      }
       return;
     }
 
@@ -595,13 +664,6 @@
 
       var hasEntries = entries.length > 0;
       previewList.classList.toggle("hidden", !hasEntries);
-      previewList.classList.toggle("grid", hasEntries);
-      previewList.classList.toggle("grid-cols-1", hasEntries);
-      previewList.classList.toggle("sm:grid-cols-2", hasEntries);
-      previewList.classList.toggle("gap-3", hasEntries);
-      previewList.classList.toggle("list-none", hasEntries);
-      previewList.classList.toggle("p-0", hasEntries);
-      previewList.classList.toggle("m-0", hasEntries);
       if (emptyState) {
         emptyState.classList.toggle("hidden", hasEntries);
       }
@@ -732,11 +794,11 @@
       !draft.availability.ranges ||
       !draft.availability.ranges.length
     ) {
-      window.location.assign(
-        itemId == null
-          ? "/my-boats"
-          : root.dataset.editAvailabilityUrl || "/edit/" + itemId + "/availability",
-      );
+      const redirectUrl =
+        root.dataset.editAvailabilityUrl || root.dataset.myBoatsUrl;
+      if (redirectUrl) {
+        window.location.assign(redirectUrl);
+      }
       return;
     }
 

@@ -90,32 +90,14 @@ public class SubscriptionJpaDaoTest {
     }
 
     @Test
-    public void testListVerifiedSubscribersForPublisher() {
-        Users verified = insertUser(em, "Verified", "User", "botecito.verified@gmail.com");
-        Users unverified = insertUnverifiedUser(em, "Unverified", "User", "botecito.unverified@gmail.com");
+    public void testListFollowers() {
+        Users subscriber2 = insertUser(em, "Botecito", "User", "botecito.user2@gmail.com");
         em.flush();
-        subscriptionDao.create(verified.getId(), publisher.getId());
-        subscriptionDao.create(unverified.getId(), publisher.getId());
+        subscriptionDao.create(subscriber.getId(), publisher.getId());
+        subscriptionDao.create(subscriber2.getId(), publisher.getId());
 
-        PageModel<Users> result = subscriptionDao.listVerifiedSubscribersForPublisher(publisher.getId(), 1, 10);
+        PageModel<Users> followers = subscriptionDao.listFollowers(publisher.getId(), 1, 12);
 
-        assertEquals(1, result.getContent().size());
-        assertEquals(verified.getId(), result.getContent().get(0).getId());
-        assertEquals(1, result.getTotalItems());
-    }
-
-    @Test
-    public void testCountVerifiedFollowers() {
-        Users verified1 = insertUser(em, "Verified", "One", "botecito.one@gmail.com");
-        Users verified2 = insertUser(em, "Verified", "Two", "botecito.two@gmail.com");
-        Users unverified = insertUnverifiedUser(em, "Unverified", "User", "botecito.unverified@gmail.com");
-        em.flush();
-        subscriptionDao.create(verified1.getId(), publisher.getId());
-        subscriptionDao.create(verified2.getId(), publisher.getId());
-        subscriptionDao.create(unverified.getId(), publisher.getId());
-
-        int count = subscriptionDao.countVerifiedFollowers(publisher.getId());
-
-        assertEquals(2, count);
+        assertEquals(2, followers.getContent().size());
     }
 }

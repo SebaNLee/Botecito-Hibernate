@@ -142,9 +142,8 @@ public class PublishServiceImpl implements PublishService {
     private void notifySubscribers(final int publisherId, final Consumer<Users> notifyAction) {
         PagedProcessing.batchAction(
                 20,
-                subscriptionService.countVerifiedFollowers(publisherId),
-                (page, pageSize) ->
-                        subscriptionService.listVerifiedSubscribersForPublisher(publisherId, page, pageSize),
+                subscriptionService.countFollowers(publisherId),
+                (page, pageSize) -> subscriptionService.listFollowers(publisherId, page, pageSize),
                 notifyAction);
     }
 

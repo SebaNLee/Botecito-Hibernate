@@ -18,7 +18,5 @@ public interface SubscriptionDao {
 
     int countFollowers(int userId);
 
-    PageModel<Users> listVerifiedSubscribersForPublisher(int publisherId, int page, int pageSize);
-
-    int countVerifiedFollowers(int publisherId);
+    PageModel<Users> listFollowers(int userId, int page, int pageSize);
 }

@@ -80,35 +80,18 @@ public class SubscriptionJpaDao implements SubscriptionDao {
     }
 
     @Override
-    public PageModel<Users> listVerifiedSubscribersForPublisher(
-            final int publisherId, final int page, final int pageSize) {
-        final long totalCount = countVerifiedFollowers(publisherId);
+    public PageModel<Users> listFollowers(final int userId, final int page, final int pageSize) {
+        final long totalCount = countFollowers(userId);
         final List<Users> content = entityManager
                 .createQuery(
                         "SELECT s.subscriber FROM Subscription s"
-                                + " WHERE s.subscribedTo.id = :publisherId"
-                                + " AND s.subscriber.verified = true"
-                                + " AND s.subscriber.email IS NOT NULL"
+                                + " WHERE s.subscribedTo.id = :userId"
                                 + " ORDER BY s.createdAt ASC",
                         Users.class)
-                .setParameter("publisherId", publisherId)
+                .setParameter("userId", userId)
                 .setFirstResult((page - 1) * pageSize)
                 .setMaxResults(pageSize)
                 .getResultList();
         return new PageModel<>(content, page, pageSize, totalCount);
-    }
-
-    @Override
-    public int countVerifiedFollowers(final int publisherId) {
-        return entityManager
-                .createQuery(
-                        "SELECT COUNT(s) FROM Subscription s"
-                                + " WHERE s.subscribedTo.id = :publisherId"
-                                + " AND s.subscriber.verified = true"
-                                + " AND s.subscriber.email IS NOT NULL",
-                        Long.class)
-                .setParameter("publisherId", publisherId)
-                .getSingleResult()
-                .intValue();
     }
 }

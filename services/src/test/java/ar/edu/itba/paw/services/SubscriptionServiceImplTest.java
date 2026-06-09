@@ -89,18 +89,11 @@ public class SubscriptionServiceImplTest {
     }
 
     @Test
-    public void testCountVerifiedFollowers() {
-        when(subscriptionDao.countVerifiedFollowers(USER_ID)).thenReturn(3);
-
-        assertEquals(3, subscriptionService.countVerifiedFollowers(USER_ID));
-    }
-
-    @Test
-    public void testListVerifiedSubscribersForPublisherPaginated() {
+    public void testListFollowersPaginated() {
         PageModel<Users> expected = new PageModel<>(List.of(new Users(), new Users()), 1, 2, 3);
-        when(subscriptionDao.listVerifiedSubscribersForPublisher(USER_ID, 1, 2)).thenReturn(expected);
+        when(subscriptionDao.listFollowers(USER_ID, 1, 2)).thenReturn(expected);
 
-        PageModel<Users> result = subscriptionService.listVerifiedSubscribersForPublisher(USER_ID, 1, 2);
+        PageModel<Users> result = subscriptionService.listFollowers(USER_ID, 1, 2);
 
         assertSame(expected, result);
     }

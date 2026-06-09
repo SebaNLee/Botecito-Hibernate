@@ -4,15 +4,19 @@ import ar.edu.itba.paw.models.dto.AvailabilityWindow;
 import ar.edu.itba.paw.models.dto.ImageUpload;
 import ar.edu.itba.paw.models.entity.Availability;
 import ar.edu.itba.paw.models.entity.Image;
+import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.Media;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
+import ar.edu.itba.paw.services.util.PagedProcessing;
 import java.time.DayOfWeek;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +33,7 @@ public class PublishServiceImpl implements PublishService {
     private final SubscriptionService subscriptionService;
     private final ItemService itemService;
     private final BookingService bookingService;
+    private final UserService userService;
 
     @Override
     @Transactional
@@ -127,15 +132,28 @@ public class PublishServiceImpl implements PublishService {
 
     private void sendPublishEmails(final Version version) {
         mailService.sendPublishConfirmationEmail(version);
-        final Integer ownerId = version.getItem() == null || version.getItem().getHost() == null
-                ? null
-                : version.getItem().getHost().getId();
-        if (ownerId == null) {
+
+        final Item item = version.getItem();
+        if (item == null || item.getHost() == null) {
             return;
         }
-        for (final Users subscriber : subscriptionService.listVerifiedSubscribersForPublisher(ownerId)) {
-            mailService.sendFollowerPublishNotificationEmail(subscriber, version);
+
+        final int ownerId = item.getHost().getId();
+
+        final Optional<Users> fullOwner = userService.findById(ownerId);
+        if (fullOwner.isPresent()) {
+            item.setHost(fullOwner.get());
         }
+
+        notifySubscribers(ownerId, subscriber -> mailService.sendFollowerPublishNotificationEmail(subscriber, version));
+    }
+
+    private void notifySubscribers(final int publisherId, final Consumer<Users> notifyAction) {
+        PagedProcessing.batchAction(
+                20,
+                subscriptionService.countFollowers(publisherId),
+                (page, pageSize) -> subscriptionService.listFollowers(publisherId, page, pageSize),
+                notifyAction);
     }
 
     private static boolean hasChanges(

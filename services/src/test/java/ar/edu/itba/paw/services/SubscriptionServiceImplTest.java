@@ -3,6 +3,7 @@ package ar.edu.itba.paw.services;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.persistence.SubscriptionDao;
 import java.util.List;
@@ -88,12 +89,12 @@ public class SubscriptionServiceImplTest {
     }
 
     @Test
-    public void testListVerifiedSubscribersForPublisher() {
-        when(subscriptionDao.listVerifiedSubscribersForPublisher(USER_ID)).thenReturn(List.of(new Users()));
+    public void testListFollowersPaginated() {
+        PageModel<Users> expected = new PageModel<>(List.of(new Users(), new Users()), 1, 2, 3);
+        when(subscriptionDao.listFollowers(USER_ID, 1, 2)).thenReturn(expected);
 
-        var result = subscriptionService.listVerifiedSubscribersForPublisher(USER_ID);
+        PageModel<Users> result = subscriptionService.listFollowers(USER_ID, 1, 2);
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
+        assertSame(expected, result);
     }
 }

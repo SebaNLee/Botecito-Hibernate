@@ -10,6 +10,20 @@ public final class TestUtils {
 
     private TestUtils() {}
 
+    public static Users insertUnverifiedUser(
+            final EntityManager em, final String firstName, final String lastName, final String email) {
+        final Users user = new Users();
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setEmail(email);
+        user.setLanguage("en");
+        user.setVerified(false);
+        user.setAdmin(false);
+        user.setCreatedAt(LocalDateTime.now());
+        em.persist(user);
+        return user;
+    }
+
     public static Users insertUser(
             final EntityManager em, final String firstName, final String lastName, final String email) {
         final Users user = new Users();

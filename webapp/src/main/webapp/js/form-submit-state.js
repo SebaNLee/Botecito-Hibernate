@@ -1,4 +1,4 @@
-(function() {
+(function () {
   function setLoadingState(form) {
     const button = findSubmitButton(form);
     if (!button || button.disabled) {
@@ -75,7 +75,7 @@
     const forms = document.querySelectorAll("[data-submit-loading-form]");
     forms.forEach((form) => {
       resetLoadingState(form);
-      form.addEventListener("submit", function(event) {
+      form.addEventListener("submit", function (event) {
         if (!validateFileSizes(form)) {
           event.preventDefault();
           return;

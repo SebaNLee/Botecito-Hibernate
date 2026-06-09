@@ -1,6 +1,5 @@
 package ar.edu.itba.paw.webapp.util;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -8,11 +7,16 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.view.RedirectView;
 
+/**
+ * Redirect targets and {@code toastError} URLs for oversized multipart uploads handled by
+ * {@link org.springframework.web.multipart.MaxUploadSizeExceededException}. Enforcement
+ * relies on servlet {@code multipart-config} limits (see {@link UploadLimits}), which stop
+ * reading after the configured cap instead of consuming the entire request body.
+ */
 public final class UploadLimitRedirects {
 
     public static final String TOAST_ERROR_PARAM = "toastError";
@@ -22,29 +26,6 @@ public final class UploadLimitRedirects {
     private UploadLimitRedirects() {}
 
     public record Decision(String targetPath, String messageCode) {}
-
-    public static Optional<Decision> earlyRejectDecision(final HttpServletRequest request, final long contentLength) {
-        if (contentLength < 0) {
-            return Optional.empty();
-        }
-        final String requestUri = request.getRequestURI();
-        if (requestUri == null) {
-            return Optional.empty();
-        }
-        if (requestUri.contains("/payment") && contentLength > UploadLimits.maxPaymentContentLength()) {
-            return Optional.of(new Decision(
-                    refererPath(request).orElse("/requests/outgoing"), "paymentProof.validation.file.size"));
-        }
-        if (requestUri.contains("/publish/images") && contentLength > UploadLimits.MAX_REQUEST_BYTES) {
-            return Optional.of(new Decision("/publish/images", "publish.validation.images.size"));
-        }
-        final Matcher editImages = EDIT_IMAGES_URI.matcher(requestUri);
-        if (editImages.find() && contentLength > UploadLimits.MAX_REQUEST_BYTES) {
-            return Optional.of(
-                    new Decision("/edit/" + editImages.group(1) + "/images", "publish.validation.images.size"));
-        }
-        return Optional.empty();
-    }
 
     public static Optional<Decision> exceededUploadDecision(final HttpServletRequest request) {
         final String requestUri = request == null ? null : request.getRequestURI();
@@ -73,15 +54,6 @@ public final class UploadLimitRedirects {
                 + TOAST_ERROR_PARAM
                 + "="
                 + URLEncoder.encode(messageCode, StandardCharsets.UTF_8);
-    }
-
-    public static void sendRedirectWithToast(
-            final HttpServletRequest request, final HttpServletResponse response, final Decision decision)
-            throws IOException {
-        final String location =
-                request.getContextPath() + appendToastError(decision.targetPath(), decision.messageCode());
-        response.setStatus(HttpServletResponse.SC_SEE_OTHER);
-        response.setHeader("Location", location);
     }
 
     public static ModelAndView redirectWithToast(final Decision decision) {

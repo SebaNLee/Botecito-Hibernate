@@ -4,7 +4,6 @@
 <%@ attribute name="anonymousLabel" required="false" type="java.lang.String" rtexprvalue="true" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 
 <div class="rounded-xl bg-base-200 p-4 flex flex-col gap-2">
@@ -48,11 +47,7 @@
   <c:if test="${not empty review.comment}">
     <p class="m-0 text-sm text-on-surface-variant break-words"><c:out value="${review.comment}" /></p>
   </c:if>
-  <c:if test="${not empty review.createdAt}">
-    <fmt:parseDate value="${fn:substring(review.createdAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedReviewDate" />
-    <fmt:formatDate value="${parsedReviewDate}" pattern="dd/MM/yyyy" var="formattedReviewDate" />
-  </c:if>
   <p class="m-0 text-xs text-outline">
-    <c:out value="${formattedReviewDate}" />
+    <paw:utcDateTime value="${review.createdAt}" format="date" />
   </p>
 </div>

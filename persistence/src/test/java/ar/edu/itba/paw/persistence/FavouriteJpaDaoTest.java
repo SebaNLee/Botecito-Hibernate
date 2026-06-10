@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ar.edu.itba.paw.models.dto.FavouritesQueryModel;
 import ar.edu.itba.paw.models.dto.PageModel;
-import ar.edu.itba.paw.models.entity.*;
 import ar.edu.itba.paw.models.entity.Favourite;
 import ar.edu.itba.paw.models.entity.FavouriteId;
 import ar.edu.itba.paw.models.entity.Item;

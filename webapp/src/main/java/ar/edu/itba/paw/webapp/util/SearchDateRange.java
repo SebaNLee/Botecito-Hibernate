@@ -16,7 +16,7 @@ public final class SearchDateRange {
     }
 
     public static LocalDate maxInclusive() {
-        return LocalDate.now().plusMonths(BookingBlockingStatuses.LISTING_PICKER_MONTHS_AROUND_TODAY);
+        return LocalDate.now().plusDays(BookingBlockingStatuses.LISTING_PICKER_DAYS_AHEAD);
     }
 
     public static boolean isWithinRange(final LocalDate date) {

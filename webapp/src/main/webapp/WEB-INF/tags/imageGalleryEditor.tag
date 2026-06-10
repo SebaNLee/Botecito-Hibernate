@@ -51,6 +51,7 @@
   <c:if test="${not empty errorMessage}">
     <p class="m-0 text-error text-sm"><c:out value="${errorMessage}" /></p>
   </c:if>
+  <p class="m-0 text-error text-sm hidden" data-gallery-file-error role="alert" aria-live="polite"></p>
 
   <div data-gallery-empty class="rounded-xl bg-base-200 p-6 text-center text-sm text-on-surface-variant">
     <c:out value="${galleryEmptyLabel}" />

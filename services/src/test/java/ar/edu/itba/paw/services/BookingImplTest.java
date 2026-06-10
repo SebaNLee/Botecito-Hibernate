@@ -226,7 +226,7 @@ public class BookingImplTest {
         when(availabilityService.buildDayTimeline(any(), any(), any(), any(), any()))
                 .thenReturn(new DayTimelineData(List.of(), List.of(), List.of()));
         when(availabilityService.listingCalendarToday(any())).thenReturn(DATE);
-        when(availabilityService.listingCalendarMaxInclusive(any())).thenReturn(DATE.plusMonths(2));
+        when(availabilityService.listingCalendarMaxInclusive(any())).thenReturn(DATE.plusDays(60));
         when(availabilityService.hasAvailabilityWindowsForDate(any(), any())).thenReturn(true);
 
         var result = bookingService.getSelfBlocks(ITEM_ID, OWNER_ID, null);

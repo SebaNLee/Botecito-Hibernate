@@ -46,7 +46,7 @@ public class EditController {
 
     @RequestMapping(value = "/edit/{itemId:[0-9]+}", method = RequestMethod.GET)
     public ModelAndView editEntry(@PathVariable("itemId") final int itemId) {
-        return new ModelAndView("redirect:/edit/" + itemId + "/details");
+        return EditPresentation.editEntryRedirect(itemId);
     }
 
     @RequestMapping(value = "/edit/{itemId:[0-9]+}/details", method = RequestMethod.GET)

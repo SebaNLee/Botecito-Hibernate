@@ -11,7 +11,6 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -229,9 +228,7 @@ public final class AvailabilityImpl implements AvailabilityService {
     }
 
     private static LocalDate pickerEndDate(final LocalDate rangeStart) {
-        return rangeStart
-                .plusMonths(BookingBlockingStatuses.LISTING_PICKER_MONTHS_AROUND_TODAY)
-                .with(TemporalAdjusters.lastDayOfMonth());
+        return rangeStart.plusDays(BookingBlockingStatuses.LISTING_PICKER_DAYS_AHEAD);
     }
 
     private static Map<LocalDate, TreeSet<LocalTime>> buildBookedTimesByDate(

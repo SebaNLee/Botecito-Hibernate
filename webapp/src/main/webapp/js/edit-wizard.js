@@ -559,6 +559,9 @@
     input = freshInput;
 
     var maxImages = parseInt(root.dataset.maxImages || "3", 10);
+    var maxFileBytes = parseInt(root.dataset.maxFileBytes || "0", 10);
+    var maxFileMessage =
+      root.dataset.maxFileMessage || "Each image must be 5MB or smaller.";
     var coverBadge = root.dataset.galleryCoverBadge || "";
     var badgeClass = root.dataset.galleryBadgeClass || "badge badge-primary badge-sm font-bold";
     var removeLabel = root.dataset.galleryRemoveLabel || "Remove image";
@@ -789,12 +792,20 @@
       var picked = Array.prototype.slice.call(input.files || []);
       input.value = "";
       var remaining = maxImages - entries.length;
+      var hadSizeError = false;
       picked.forEach(function (file) {
         if (remaining <= 0) {
           return;
         }
         if (!file || !file.type || file.type.indexOf("image/") !== 0) {
           return;
+        }
+        if (maxFileBytes > 0 && file.size > maxFileBytes) {
+          hadSizeError = true;
+          return;
+        }
+        if (window.pawGalleryFileError) {
+          window.pawGalleryFileError.clear(root);
         }
         var key = "n:" + nextNewId++;
         var previewUrl =
@@ -804,6 +815,9 @@
         entries.push({ type: "new", file: file, key: key, previewUrl: previewUrl });
         remaining -= 1;
       });
+      if (hadSizeError && window.pawGalleryFileError) {
+        window.pawGalleryFileError.show(root, maxFileMessage);
+      }
       render();
     });
 

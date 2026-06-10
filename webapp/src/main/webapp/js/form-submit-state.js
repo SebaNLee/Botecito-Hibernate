@@ -57,16 +57,24 @@
     }
     const message =
       form.dataset.maxFileMessage || "The selected file is too large.";
+    const gallery = form.querySelector("[data-image-gallery]");
     const inputs = form.querySelectorAll("input[type='file']");
     for (const input of inputs) {
       input.setCustomValidity("");
       for (const file of input.files || []) {
         if (file.size > maxBytes) {
-          input.setCustomValidity(message);
-          input.reportValidity();
+          if (gallery && window.pawGalleryFileError) {
+            window.pawGalleryFileError.show(gallery, message);
+          } else {
+            input.setCustomValidity(message);
+            input.reportValidity();
+          }
           return false;
         }
       }
+    }
+    if (gallery && window.pawGalleryFileError) {
+      window.pawGalleryFileError.clear(gallery);
     }
     return true;
   }

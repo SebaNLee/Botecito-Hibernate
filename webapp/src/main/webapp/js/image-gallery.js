@@ -290,6 +290,7 @@
       const picked = Array.prototype.slice.call(input.files || []);
       input.value = "";
       let remaining = maxImages - entries.length;
+      let hadSizeError = false;
       picked.forEach(function (file) {
         if (remaining <= 0) {
           return;
@@ -298,14 +299,18 @@
           return;
         }
         if (maxFileBytes > 0 && file.size > maxFileBytes) {
-          input.setCustomValidity(maxFileMessage);
-          input.reportValidity();
+          hadSizeError = true;
           return;
         }
-        input.setCustomValidity("");
+        if (window.pawGalleryFileError) {
+          window.pawGalleryFileError.clear(root);
+        }
         entries.push({ id: nextId++, file: file });
         remaining -= 1;
       });
+      if (hadSizeError && window.pawGalleryFileError) {
+        window.pawGalleryFileError.show(root, maxFileMessage);
+      }
       render();
     });
 

@@ -224,6 +224,9 @@ public class BookingImpl implements BookingService {
         return bookingDao.searchBookings(query);
     }
 
+    // Retorna una lista finita con cota superior (desde hoy hasta
+    // BOOKING_LOOKAHEAD_DAYS) de bookings para un item. Los profes en la práctica
+    // nos permitieron no paginarla por este motivo.
     public List<Booking> getUpcomingBookings(Item item) {
         LocalDateTime now = currentDateTime();
         return bookingDao.getUpcomingBookings(item, now, now.plusDays(BOOKING_LOOKAHEAD_DAYS));
@@ -544,6 +547,9 @@ public class BookingImpl implements BookingService {
         booking.setUpdatedAt(currentDateTime());
     }
 
+    // Retorna una lista finita con cota superior (desde hoy hasta
+    // BOOKING_LOOKAHEAD_DAYS) de fechas con disponibilidad para un item. Los profes
+    // en la práctica nos permitieron no paginarla por este motivo.
     private static List<LocalDate> buildOfferedDates(final List<Availability> availabilities, final String timezone) {
         final ZoneId zone = ZoneId.of(timezone);
         final LocalDate today = LocalDate.now(zone);

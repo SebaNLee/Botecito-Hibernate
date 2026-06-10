@@ -99,7 +99,8 @@
                 label="${dateLabel}"
                 value="${bookingSearch.dateParam}"
                 placeholder="${datePlaceholder}"
-                restrictToAvailability="false" />
+                restrictToAvailability="false"
+                restrictDateRange="false" />
           </div>
 
           <paw:optionsPicker

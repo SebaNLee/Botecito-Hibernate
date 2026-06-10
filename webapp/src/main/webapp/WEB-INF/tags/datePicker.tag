@@ -9,6 +9,7 @@
 <%@ attribute name="icon" required="false" %>
 <%@ attribute name="containerClass" required="false" %>
 <%@ attribute name="restrictToAvailability" required="false" %>
+<%@ attribute name="restrictDateRange" required="false" %>
 <%@ attribute name="anchorTodayIso" required="false" %>
 <%@ attribute name="anchorMaxDateIso" required="false" %>
 <%@ attribute name="civilCalendar" required="false" %>
@@ -31,6 +32,7 @@
 <c:set var="resolvedIcon" value="${not empty icon ? icon : 'calendar_today'}" />
 <c:set var="resolvedContainerClass" value="${not empty containerClass ? containerClass : ''}" />
 <c:set var="resolvedRestrictToAvailability" value="${empty restrictToAvailability ? true : restrictToAvailability}" />
+<c:set var="resolvedRestrictDateRange" value="${empty restrictDateRange ? true : restrictDateRange}" />
 <c:set var="resolvedLocale" value="${not empty pageContext.response.locale.language ? pageContext.response.locale.language : 'es'}" />
 <c:set var="resolvedAnchorTodayIso" value="${not empty anchorTodayIso ? anchorTodayIso : ''}" />
 <c:set var="resolvedAnchorMaxDateIso" value="${not empty anchorMaxDateIso ? anchorMaxDateIso : ''}" />
@@ -45,6 +47,7 @@
     data-civil-calendar="<c:out value='${resolvedCivilCalendar}'/>"
     data-placeholder="<c:out value='${resolvedPlaceholder}'/>"
     data-restrict-to-availability="<c:out value='${resolvedRestrictToAvailability}'/>"
+    data-restrict-date-range="<c:out value='${resolvedRestrictDateRange}'/>"
     data-availability-label="<c:out value='${datePickerAvailability}'/>"
     data-select-date-label="<c:out value='${datePickerSelectDate}'/>"
     data-available-label="<c:out value='${datePickerAvailable}'/>"

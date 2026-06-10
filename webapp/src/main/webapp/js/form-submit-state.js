@@ -71,10 +71,23 @@
     return true;
   }
 
+  function bindFileValidityReset(form) {
+    form.querySelectorAll("input[type='file']").forEach((input) => {
+      if (input.dataset.validityClearBound) {
+        return;
+      }
+      input.dataset.validityClearBound = "true";
+      input.addEventListener("change", function () {
+        input.setCustomValidity("");
+      });
+    });
+  }
+
   function initSubmitLoadingState() {
     const forms = document.querySelectorAll("[data-submit-loading-form]");
     forms.forEach((form) => {
       resetLoadingState(form);
+      bindFileValidityReset(form);
       form.addEventListener("submit", function (event) {
         if (!validateFileSizes(form)) {
           event.preventDefault();

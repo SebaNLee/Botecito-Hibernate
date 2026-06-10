@@ -59,7 +59,10 @@ public class ReportJpaDaoTest {
         em.clear();
 
         assertNotNull(report.getId());
-        assertNotNull(em.find(Report.class, report.getId()));
+        Report persisted = em.find(Report.class, report.getId());
+        assertNotNull(persisted);
+        assertEquals(ReportEnum.INAPPROPRIATE, persisted.getReason());
+        assertEquals("Not ok", persisted.getDescription());
     }
 
     @Test
@@ -69,8 +72,15 @@ public class ReportJpaDaoTest {
         em.flush();
         insertReport(em, sender, item, ReportEnum.INAPPROPRIATE, "Not ok");
         em.flush();
+        em.clear();
 
-        assertTrue(reportDao.hasReported(sender.getId(), item.getId()));
+        Long count = em.createQuery(
+                        "SELECT COUNT(r) FROM Report r WHERE r.sender.id = :senderId AND r.item.id = :itemId",
+                        Long.class)
+                .setParameter("senderId", sender.getId())
+                .setParameter("itemId", item.getId())
+                .getSingleResult();
+        assertEquals(1L, count);
     }
 
     @Test

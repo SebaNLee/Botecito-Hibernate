@@ -11,7 +11,7 @@ code should follow these rules directly.
 - JSP + JSTL + Spring form tags
 - Tailwind CSS
 - Minimal JavaScript
-- JDBC
+- JPA (Hibernate)
 - PostgreSQL in runtime
 - Flyway migrations
 - JUnit 5, Mockito, Spring Test, HSQLDB in tests
@@ -22,7 +22,7 @@ code should follow these rules directly.
 webapp/                presentation layer
 services/              service implementations
 service-contracts/     service interfaces
-persistence/           JDBC implementations, migrations, persistence tests
+persistence/           JPA implementations, migrations, persistence tests
 persistence-contracts/ DAO interfaces
 models/                domain model
 ```
@@ -151,14 +151,15 @@ modules.
 ## Persistence layer
 
 - DAO interfaces live in `persistence-contracts`.
-- JDBC implementations live in `persistence`.
+- JPA implementations live in `persistence`.
 - Interface naming uses `*Dao`.
-- JDBC implementation naming uses `*JdbcDao`.
-- Use `JdbcTemplate` and `SimpleJdbcInsert`.
-- Keep `RowMapper` definitions as `static final` fields.
+- JPA implementation naming uses `*JpaDao`.
+- Use `EntityManager`, JPQL, and typed queries.
 - Return `Optional<T>` when a row may not exist.
 - Do not place business logic in DAOs.
 - Do not access web-layer classes from persistence code.
+- Persistence tests should seed data via `EntityManager` and assert final table
+  state independently of the DAO read path under test.
 
 ## Database and migrations
 

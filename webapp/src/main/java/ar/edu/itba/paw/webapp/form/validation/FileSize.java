@@ -9,7 +9,7 @@ import javax.validation.Constraint;
 import javax.validation.Payload;
 
 @Target({ElementType.FIELD, ElementType.METHOD})
-@Retention(RetentionPolicy.RUNTIME) // TODO we do not want image local persist in the future
+@Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = FileSizeValidator.class)
 public @interface FileSize {
     String message() default "{file.upload.sizeError}";

@@ -1,10 +1,10 @@
 package ar.edu.itba.paw.services;
 
-import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.models.dto.ItemDetailPageData;
 
 public interface DetailService {
 
-    Item getItemDetail(int itemId, int reviewPage);
+    ItemDetailPageData getItemDetailPage(int itemId, int reviewPage, Integer viewerId);
 
-    Item getItemDetail(int itemId, int reviewPage, int hostId);
+    ItemDetailPageData getItemDetailPage(int itemId, int reviewPage, int hostId, Integer viewerId);
 }

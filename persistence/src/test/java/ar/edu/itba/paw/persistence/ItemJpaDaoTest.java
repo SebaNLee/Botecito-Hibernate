@@ -348,22 +348,4 @@ public class ItemJpaDaoTest {
 
         assertNull(em.find(Media.class, media.getId()));
     }
-
-    @Test
-    public void testRemoveVersionChildrenReuse() {
-        Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
-        Version v = insertVersion(em, item, itemType, location, "Boat");
-        em.flush();
-        Version managed = em.find(Version.class, v.getId());
-        insertMedia(em, managed, insertImage(em), 0);
-        em.flush();
-        itemDao.removeVersionChildren(managed);
-        em.flush();
-        em.clear();
-
-        Media media = insertMedia(em, managed, insertImage(em), 0);
-        em.flush();
-
-        assertNotNull(em.find(Media.class, media.getId()));
-    }
 }

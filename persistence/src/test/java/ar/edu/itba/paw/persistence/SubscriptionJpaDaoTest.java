@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.*;
-import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,10 +51,9 @@ public class SubscriptionJpaDaoTest {
         em.flush();
 
         boolean deleted = subscriptionDao.delete(subscriber.getId(), publisher.getId());
-
-        assertTrue(deleted);
         em.flush();
         em.clear();
+        assertTrue(deleted);
 
         assertNull(em.find(Subscription.class, new SubscriptionId(subscriber.getId(), publisher.getId())));
     }
@@ -68,9 +66,10 @@ public class SubscriptionJpaDaoTest {
         insertSubscription(em, subscriber, publisher2);
         em.flush();
 
-        List<Users> subscriptions = subscriptionDao.listSubscriptions(subscriber.getId(), 1, 12);
+        PageModel<Users> subscriptions = subscriptionDao.listSubscriptions(subscriber.getId(), 1, 12);
 
-        assertEquals(2, subscriptions.size());
+        assertEquals(2, subscriptions.getContent().size());
+        assertEquals(2, subscriptions.getTotalItems());
     }
 
     @Test

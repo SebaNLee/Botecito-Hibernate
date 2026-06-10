@@ -52,9 +52,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Override
     @Transactional(readOnly = true)
     public PageModel<Users> listSubscriptions(final int subscriberId, final int page, final int pageSize) {
-        final long totalItems = subscriptionDao.countSubscriptions(subscriberId);
-        return new PageModel<>(
-                subscriptionDao.listSubscriptions(subscriberId, page, pageSize), page, pageSize, totalItems);
+        return subscriptionDao.listSubscriptions(subscriberId, page, pageSize);
     }
 
     @Override

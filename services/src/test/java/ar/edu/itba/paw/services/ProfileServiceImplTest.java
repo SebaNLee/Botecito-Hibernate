@@ -52,4 +52,16 @@ public class ProfileServiceImplTest {
 
         assertEquals(expected, result);
     }
+
+    @Test
+    public void testListProfileListingsEmpty() {
+        var expected = new PageModel<Item>(List.of(), PAGE, PAGE_SIZE, 0);
+        when(itemService.listOwnerItems(anyInt(), isNull(), isNull(), anyInt(), anyInt(), isNull()))
+                .thenReturn(expected);
+
+        var result = profileService.listProfileListings(OWNER_ID, PAGE, PAGE_SIZE, null);
+
+        assertNotNull(result);
+        assertTrue(result.getContent().isEmpty());
+    }
 }

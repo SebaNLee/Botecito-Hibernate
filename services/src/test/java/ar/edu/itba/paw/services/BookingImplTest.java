@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import ar.edu.itba.paw.models.dto.DayTimelineData;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.*;
 import ar.edu.itba.paw.models.exceptions.*;
@@ -41,6 +42,9 @@ public class BookingImplTest {
 
     @Mock
     private MailService mailService;
+
+    @Mock
+    private AvailabilityService availabilityService;
 
     @InjectMocks
     private BookingImpl bookingService;
@@ -217,19 +221,34 @@ public class BookingImplTest {
 
     @Test
     public void testGetSelfBlocks() {
-        when(itemService.requireOwnedItem(ITEM_ID, OWNER_ID)).thenReturn(activeItem());
+        when(itemService.requireOwnedActiveItem(ITEM_ID, OWNER_ID)).thenReturn(activeItem());
         when(bookingDao.getUpcomingBookings(any(), any(), any())).thenReturn(List.of());
+        when(availabilityService.buildDayTimeline(any(), any(), any(), any(), any()))
+                .thenReturn(new DayTimelineData(List.of(), List.of(), List.of()));
+        when(availabilityService.listingCalendarToday(any())).thenReturn(DATE);
+        when(availabilityService.listingCalendarMaxInclusive(any())).thenReturn(DATE.plusMonths(2));
+        when(availabilityService.hasAvailabilityWindowsForDate(any(), any())).thenReturn(true);
 
         var result = bookingService.getSelfBlocks(ITEM_ID, OWNER_ID, null);
 
         assertNotNull(result);
+        assertNotNull(result.getDayTimeline());
+        assertNotNull(result.getListingCalendarToday());
+        assertTrue(result.isHasTimelineAvailability());
+    }
+
+    @Test
+    public void testGetSelfBlocksInactiveItemThrows() {
+        when(itemService.requireOwnedActiveItem(ITEM_ID, OWNER_ID)).thenThrow(InactiveItemException.class);
+
+        assertThrows(InactiveItemException.class, () -> bookingService.getSelfBlocks(ITEM_ID, OWNER_ID, null));
     }
 
     @Test
     public void testSaveSelfBlockChangesRemoves() {
         var b = booking(BookingStatusEnum.CONFIRMED);
         b.setGuest(user(OWNER_ID));
-        when(itemService.requireOwnedItem(ITEM_ID, OWNER_ID)).thenReturn(activeItem());
+        when(itemService.requireOwnedActiveItem(ITEM_ID, OWNER_ID)).thenReturn(activeItem());
         when(bookingDao.findById(500)).thenReturn(Optional.of(b));
 
         assertDoesNotThrow(

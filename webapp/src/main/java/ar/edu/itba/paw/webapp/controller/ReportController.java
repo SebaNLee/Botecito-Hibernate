@@ -1,12 +1,9 @@
 package ar.edu.itba.paw.webapp.controller;
 
-import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.services.DetailService;
 import ar.edu.itba.paw.services.ReportService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ReportForm;
-import ar.edu.itba.paw.webapp.presentation.DetailPageFlags;
-import ar.edu.itba.paw.webapp.presentation.DetailPageFlagsFactory;
 import ar.edu.itba.paw.webapp.presentation.DetailPresentation;
 import ar.edu.itba.paw.webapp.presentation.ReportPresentation;
 import ar.edu.itba.paw.webapp.presentation.ToastPresentation;
@@ -31,7 +28,6 @@ public class ReportController {
 
     private final DetailService detailService;
     private final ReportService reportService;
-    private final DetailPageFlagsFactory detailPageFlagsFactory;
     private final MessageSource messageSource;
 
     @RequestMapping(value = "/item/{id:[1-9]\\d*}/report", method = RequestMethod.POST)
@@ -43,12 +39,10 @@ public class ReportController {
             final HttpServletRequest request,
             final RedirectAttributes redirectAttributes) {
         if (errors.hasErrors()) {
-            final Item item = detailService.getItemDetail(itemId, 1);
-            final DetailPageFlags flags = detailPageFlagsFactory.compute(item, user);
+            final var pageData = detailService.getItemDetailPage(itemId, 1, user.getId());
             return DetailPresentation.detailPageWithReportValidationErrors(
-                    item,
+                    pageData,
                     user,
-                    flags,
                     request,
                     form,
                     ToastPresentation.validationToasts(errors, REPORT_MESSAGE_PREFIX, messageSource));

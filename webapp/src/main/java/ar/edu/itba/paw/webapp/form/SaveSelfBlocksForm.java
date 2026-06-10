@@ -63,10 +63,7 @@ public class SaveSelfBlocksForm {
                     || update.getEndTime() == null) {
                 continue;
             }
-            updates.add(new SelfBlockUpdate(
-                    update.getBookingId(),
-                    update.getStartTime().trim(),
-                    update.getEndTime().trim()));
+            updates.add(new SelfBlockUpdate(update.getBookingId(), update.getStartTime(), update.getEndTime()));
         }
         return List.copyOf(updates);
     }
@@ -77,8 +74,7 @@ public class SaveSelfBlocksForm {
             if (create == null || create.getStartTime() == null || create.getEndTime() == null) {
                 continue;
             }
-            creates.add(new SelfBlockCreate(
-                    create.getStartTime().trim(), create.getEndTime().trim()));
+            creates.add(new SelfBlockCreate(create.getStartTime(), create.getEndTime()));
         }
         return List.copyOf(creates);
     }
@@ -191,14 +187,30 @@ public class SaveSelfBlocksForm {
     @Setter
     public static class UpdateBinding {
         private Integer bookingId;
-        private String startTime;
-        private String endTime;
+
+        @DateTimeFormat(
+                iso = ISO.TIME,
+                fallbackPatterns = {"H:mm", "HH:mm"})
+        private LocalTime startTime;
+
+        @DateTimeFormat(
+                iso = ISO.TIME,
+                fallbackPatterns = {"H:mm", "HH:mm"})
+        private LocalTime endTime;
     }
 
     @Getter
     @Setter
     public static class CreateBinding {
-        private String startTime;
-        private String endTime;
+
+        @DateTimeFormat(
+                iso = ISO.TIME,
+                fallbackPatterns = {"H:mm", "HH:mm"})
+        private LocalTime startTime;
+
+        @DateTimeFormat(
+                iso = ISO.TIME,
+                fallbackPatterns = {"H:mm", "HH:mm"})
+        private LocalTime endTime;
     }
 }

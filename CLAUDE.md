@@ -20,7 +20,7 @@ architecture. Treat them as established project rules.
 
 - Controllers belong in `webapp`.
 - Services belong in `services`.
-- JDBC DAOs belong in `persistence`.
+- JPA DAOs belong in `persistence`.
 - Domain entities belong in `models`.
 - Inject contracts, not concrete implementations.
 - Do not skip layers.
@@ -128,13 +128,14 @@ architecture. Treat them as established project rules.
 ## Persistence layer
 
 - DAO interfaces live in `persistence-contracts`.
-- JDBC implementations live in `persistence`.
-- Use `*Dao` for interfaces and `*JdbcDao` for implementations.
-- Use `JdbcTemplate` and `SimpleJdbcInsert`.
-- Keep `RowMapper` as `static final` fields.
+- JPA implementations live in `persistence`.
+- Use `*Dao` for interfaces and `*JpaDao` for implementations.
+- Use `EntityManager`, JPQL, and typed queries.
 - Return `Optional<T>` when data may not exist.
 - Keep business logic out of DAOs.
 - Do not access web-layer classes from persistence code.
+- Persistence tests should seed via `EntityManager` and verify persisted state
+  independently of the DAO method being exercised.
 
 ## Database and tests
 

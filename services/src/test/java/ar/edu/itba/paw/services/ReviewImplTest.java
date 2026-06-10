@@ -79,22 +79,38 @@ public class ReviewImplTest {
     public void testFindByBookingIds() {
         var review = new Review();
         review.setBooking(finishedBooking());
-        when(reviewDao.findReviewsBySender(GUEST_ID)).thenReturn(List.of(review));
+        when(reviewDao.findReviewsBySenderAndBookingIds(eq(GUEST_ID), any())).thenReturn(List.of(review));
 
-        var result = reviewService.findReviewsByBookingIds(GUEST_ID);
+        var result = reviewService.findReviewsByBookingIds(GUEST_ID, List.of(BOOKING_ID));
 
         assertEquals(1, result.size());
     }
 
     @Test
-    public void testCreateReviewWithTargetEnumUser() {
+    public void testFindByBookingIdsEmptyInputReturnsEmptyMap() {
+        var result = reviewService.findReviewsByBookingIds(GUEST_ID, List.of());
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void testCreateReviewHostCannotReviewGuest() {
         when(bookingService.findById(BOOKING_ID)).thenReturn(finishedBooking());
-        when(reviewDao.findReviewByBookingSenderAndTargetType(BOOKING_ID, OWNER_ID, TargetEnum.USER))
+
+        var result = reviewService.createReviewForBooking(BOOKING_ID, OWNER_ID, 4, "Good guest", TargetEnum.USER);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void testCreateReviewGuestCanReviewHost() {
+        when(bookingService.findById(BOOKING_ID)).thenReturn(finishedBooking());
+        when(reviewDao.findReviewByBookingSenderAndTargetType(BOOKING_ID, GUEST_ID, TargetEnum.USER))
                 .thenReturn(Optional.empty());
         when(reviewDao.createReview(anyInt(), anyInt(), any(), anyDouble(), any()))
                 .thenReturn(Optional.of(new Review()));
 
-        var result = reviewService.createReviewForBooking(BOOKING_ID, OWNER_ID, 4, "Good guest", TargetEnum.USER);
+        var result = reviewService.createReviewForBooking(BOOKING_ID, GUEST_ID, 4, "Great host", TargetEnum.USER);
 
         assertTrue(result.isPresent());
     }

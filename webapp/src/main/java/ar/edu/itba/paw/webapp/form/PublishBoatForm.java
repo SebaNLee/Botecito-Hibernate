@@ -39,6 +39,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class PublishBoatForm {
 
     public static final int MAX_GALLERY_IMAGES = 3;
+    public static final int MAX_PRICE_PER_HOUR = 9_999_999;
     private static final int MIN_RANGE_MINUTES = 120;
     private static final int MIN_SEPARATION_MINUTES = 30;
 
@@ -70,6 +71,7 @@ public class PublishBoatForm {
 
     @NotNull(groups = Step1.class, message = "{publish.validation.price.required}")
     @Min(value = 1, groups = Step1.class, message = "{publish.validation.price.positive}")
+    @Max(value = MAX_PRICE_PER_HOUR, groups = Step1.class, message = "{publish.validation.price.max}")
     private Integer pricePerHour;
 
     @NotNull(groups = Step1.class, message = "{publish.validation.difficulty.required}")

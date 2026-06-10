@@ -1,8 +1,8 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.AvailabilityData;
-import ar.edu.itba.paw.models.entity.Availability;
-import ar.edu.itba.paw.models.entity.Booking;
+import ar.edu.itba.paw.models.dto.DetailPageFlags;
+import ar.edu.itba.paw.models.dto.ItemDetailPageData;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.Media;
@@ -12,8 +12,8 @@ import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ItemDetailViewForm;
 import ar.edu.itba.paw.webapp.form.PreBookingForm;
 import ar.edu.itba.paw.webapp.form.ReportForm;
-import ar.edu.itba.paw.webapp.util.DetailAvailabilityPicker;
 import ar.edu.itba.paw.webapp.util.ToastSupport;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
@@ -29,59 +29,55 @@ public final class DetailPresentation {
     private static final String VIEW_NAME = "item-detail";
     private static final String IMAGE_PATH_PREFIX = "/image/";
     private static final String PLACEHOLDER_IMAGE_PATH = "/css/boat-placeholder.svg";
+    private static final DateTimeFormatter ISO_DATE = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private DetailPresentation() {}
 
     public static ModelAndView detailPage(
-            final Item item,
+            final ItemDetailPageData pageData,
             final BotecitoUserDetails viewer,
-            final DetailPageFlags flags,
             final HttpServletRequest request,
             final ItemDetailViewForm itemDetailView) {
-        return buildDetailView(item, viewer, flags, request, itemDetailView, null, null, null, false);
+        return buildDetailView(pageData, viewer, request, itemDetailView, null, null, null, false);
     }
 
     public static ModelAndView detailPageWithViewValidationErrors(
-            final Item item,
+            final ItemDetailPageData pageData,
             final BotecitoUserDetails viewer,
-            final DetailPageFlags flags,
             final HttpServletRequest request,
             final ItemDetailViewForm itemDetailView,
             final BindingResult errors,
             final List<Map<String, String>> toasts) {
-        final ModelAndView mav =
-                buildDetailView(item, viewer, flags, request, itemDetailView, null, toasts, null, false);
+        final ModelAndView mav = buildDetailView(pageData, viewer, request, itemDetailView, null, toasts, null, false);
         mav.addAllObjects(errors.getModel());
         return mav;
     }
 
     public static ModelAndView detailPageWithPreBookingValidationErrors(
-            final Item item,
+            final ItemDetailPageData pageData,
             final BotecitoUserDetails viewer,
-            final DetailPageFlags flags,
             final HttpServletRequest request,
             final List<Map<String, String>> toasts) {
         final ItemDetailViewForm itemDetailView = new ItemDetailViewForm();
-        itemDetailView.setItemId(item.getId());
+        itemDetailView.setItemId(pageData.getItem().getId());
         itemDetailView.setPage(1);
-        return buildDetailView(item, viewer, flags, request, itemDetailView, null, toasts, null, false);
+        return buildDetailView(pageData, viewer, request, itemDetailView, null, toasts, null, false);
     }
 
     public static ModelAndView detailPageWithReportValidationErrors(
-            final Item item,
+            final ItemDetailPageData pageData,
             final BotecitoUserDetails viewer,
-            final DetailPageFlags flags,
             final HttpServletRequest request,
             final ReportForm form,
             final List<Map<String, String>> toasts) {
         final ItemDetailViewForm itemDetailView = new ItemDetailViewForm();
-        itemDetailView.setItemId(item.getId());
-        if (item.getItemReviews() != null) {
-            itemDetailView.setPage(item.getItemReviews().getPage());
+        itemDetailView.setItemId(pageData.getItem().getId());
+        if (pageData.getItem().getItemReviews() != null) {
+            itemDetailView.setPage(pageData.getItem().getItemReviews().getPage());
         } else {
             itemDetailView.setPage(1);
         }
-        return buildDetailView(item, viewer, flags, request, itemDetailView, form, toasts, null, true);
+        return buildDetailView(pageData, viewer, request, itemDetailView, form, toasts, null, true);
     }
 
     public static ModelAndView submitPreBookingSuccess(final int itemId, final RedirectAttributes redirectAttributes) {
@@ -90,24 +86,21 @@ public final class DetailPresentation {
     }
 
     private static ModelAndView buildDetailView(
-            final Item item,
+            final ItemDetailPageData pageData,
             final BotecitoUserDetails viewer,
-            final DetailPageFlags flags,
             final HttpServletRequest request,
             final ItemDetailViewForm itemDetailView,
             final ReportForm reportForm,
             final List<Map<String, String>> toasts,
             final BindingResult errors,
             final boolean openReportModal) {
+        final Item item = pageData.getItem();
+        final DetailPageFlags flags = pageData.getFlags();
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
         final Version version = item.getLatestVersion();
         final Users itemOwner = item.getHost();
         final boolean isActive = item.getStatus() == ItemStatusEnum.ACTIVE;
-
-        final boolean isOwner = viewer != null && itemOwner != null && itemOwner.getId() == viewer.getId();
-        final boolean canFavouriteItem = itemOwner == null || viewer == null || itemOwner.getId() != viewer.getId();
-        final boolean canReport = viewer != null && isActive && !isOwner;
-        final boolean canSubscribeToOwner = itemOwner != null && !isOwner;
+        final boolean canReport = viewer != null && isActive && !flags.isOwner() && !flags.isAlreadyReported();
 
         final ModelAndView mav = new ModelAndView(VIEW_NAME);
         mav.addObject("item", item);
@@ -115,13 +108,13 @@ public final class DetailPresentation {
         mav.addObject("viewer", viewer);
         mav.addObject("listingInactiveNotice", !isActive);
         mav.addObject("itemOwner", itemOwner);
-        mav.addObject("isOwner", isOwner);
-        mav.addObject("canFavouriteItem", canFavouriteItem);
-        mav.addObject("favouriteItem", flags.favouriteItem());
-        mav.addObject("canReport", canReport && !flags.alreadyReported());
-        mav.addObject("alreadyReported", flags.alreadyReported());
-        mav.addObject("canSubscribeToOwner", canSubscribeToOwner);
-        mav.addObject("subscribedToOwner", flags.subscribedToOwner());
+        mav.addObject("isOwner", flags.isOwner());
+        mav.addObject("canFavouriteItem", flags.isCanFavouriteItem());
+        mav.addObject("favouriteItem", flags.isFavouriteItem());
+        mav.addObject("canReport", canReport);
+        mav.addObject("alreadyReported", flags.isAlreadyReported());
+        mav.addObject("canSubscribeToOwner", flags.isCanSubscribeToOwner());
+        mav.addObject("subscribedToOwner", flags.isSubscribedToOwner());
         mav.addObject("itemImageUrls", imageUrls(version, contextPath));
         mav.addObject("itemOwnerDisplayName", itemOwner != null ? ownerDisplayName(itemOwner) : "");
         mav.addObject("ownerInitials", itemOwner != null ? ownerInitials(itemOwner) : "");
@@ -133,7 +126,12 @@ public final class DetailPresentation {
         preBookingForm.setVersionId(version.getId());
         mav.addObject("preBookingForm", preBookingForm);
 
-        addAvailabilityModel(mav, item, version);
+        addAvailabilityModel(
+                mav,
+                pageData.getAvailabilityData(),
+                version.getTimezone(),
+                pageData.getListingCalendarToday(),
+                pageData.getListingCalendarMaxInclusive());
         mav.addObject("showPreBookingPanel", isActive);
 
         if (reportForm != null) {
@@ -151,25 +149,19 @@ public final class DetailPresentation {
         return mav;
     }
 
-    private static void addAvailabilityModel(final ModelAndView mav, final Item item, final Version version) {
-        final List<Availability> availabilityWindows =
-                version.getAvailabilities() == null ? List.of() : version.getAvailabilities();
-        final List<Booking> itemBookings = item.getBookings() == null ? List.of() : item.getBookings();
-        final String listingTz = version.getTimezone();
-        final AvailabilityData detailData =
-                DetailAvailabilityPicker.build(availabilityWindows, itemBookings, listingTz);
+    private static void addAvailabilityModel(
+            final ModelAndView mav,
+            final AvailabilityData detailData,
+            final String listingTz,
+            final LocalDate listingCalendarToday,
+            final LocalDate listingCalendarMaxInclusive) {
         mav.addObject("detailOfferedDates", detailData.getOfferedDates());
         mav.addObject("detailOccupiedDates", detailData.getOccupiedDates());
         mav.addObject("detailOfferedTimesByDate", detailData.getOfferedTimesByDate());
         mav.addObject("detailOccupiedTimesByDate", detailData.getOccupiedTimesByDate());
         mav.addObject("detailListingTimezoneId", listingTz == null || listingTz.isBlank() ? "" : listingTz.trim());
-        mav.addObject(
-                "detailListingTodayIso",
-                DetailAvailabilityPicker.listingCalendarToday(listingTz).format(DateTimeFormatter.ISO_LOCAL_DATE));
-        mav.addObject(
-                "detailListingMaxDateIso",
-                DetailAvailabilityPicker.listingCalendarMaxInclusive(listingTz)
-                        .format(DateTimeFormatter.ISO_LOCAL_DATE));
+        mav.addObject("detailListingTodayIso", listingCalendarToday.format(ISO_DATE));
+        mav.addObject("detailListingMaxDateIso", listingCalendarMaxInclusive.format(ISO_DATE));
     }
 
     private static List<String> imageUrls(final Version version, final String contextPath) {

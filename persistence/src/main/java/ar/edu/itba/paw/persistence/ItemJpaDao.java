@@ -234,13 +234,21 @@ public class ItemJpaDao implements ItemDao {
     /**
      * Elimina disponibilidades e imágenes de una versión.
      *
-     * <p>{@code Availability} usa {@code DELETE} JPQL masivo: al reinsertar se generan IDs nuevos
-     * con secuencia, por lo que no hay conflicto aunque queden instancias viejas en la sesión.
+     * <p>
+     * {@code Availability} usa {@code DELETE} JPQL masivo: al reinsertar se generan
+     * IDs nuevos
+     * con secuencia, por lo que no hay conflicto aunque queden instancias viejas en
+     * la sesión.
      *
-     * <p>{@code Media} se borra con {@code em.remove()} entidad por entidad porque, en el flujo de
-     * edición, la colección ya puede estar cargada en el persistence context (p. ej. vía
-     * {@code requireOwnedFullData}). Un borrado masivo elimina las filas en la base pero deja
-     * instancias administradas en la sesión; al reinsertar con la misma clave compuesta
+     * <p>
+     * {@code Media} se borra con {@code em.remove()} entidad por entidad porque, en
+     * el flujo de
+     * edición, la colección ya puede estar cargada en el persistence context (p.
+     * ej. vía
+     * {@code requireOwnedFullData}). Un borrado masivo elimina las filas en la base
+     * pero deja
+     * instancias administradas en la sesión; al reinsertar con la misma clave
+     * compuesta
      * {@code (version_id, index)} se produce {@code EntityExistsException}.
      */
     @Override

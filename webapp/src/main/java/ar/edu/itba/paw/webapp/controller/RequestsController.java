@@ -74,7 +74,7 @@ public class RequestsController {
         if (errors.hasErrors()) {
             return RequestsPresentation.incomingErrors(search, errors, messageSource);
         }
-        return RequestsPresentation.incoming(search, searchIncoming(user, search), userReviews(user));
+        return RequestsPresentation.incoming(search, searchIncoming(user, search));
     }
 
     @PostMapping("/requests/outgoing/{bookingId}/review")
@@ -97,28 +97,6 @@ public class RequestsController {
                         reviewForm.getTargetTypeEnum())
                 .isPresent();
         return RequestsPresentation.outgoingAfterReview(search, redirectAttributes, false, created);
-    }
-
-    @PostMapping("/requests/incoming/{bookingId}/review")
-    public ModelAndView submitIncomingReview(
-            @AuthenticationPrincipal final BotecitoUserDetails user,
-            @PathVariable("bookingId") final int bookingId,
-            @ModelAttribute("bookingSearch") final BookingSearchForm search,
-            @Valid @ModelAttribute("reviewForm") final ReviewForm reviewForm,
-            final BindingResult reviewErrors,
-            final RedirectAttributes redirectAttributes) {
-        if (reviewErrors.hasErrors()) {
-            return RequestsPresentation.incomingAfterReview(search, redirectAttributes, true, false);
-        }
-        final boolean created = reviewService
-                .createReviewForBooking(
-                        bookingId,
-                        user.getId(),
-                        reviewForm.getRating(),
-                        reviewForm.getComment(),
-                        reviewForm.getTargetTypeEnum())
-                .isPresent();
-        return RequestsPresentation.incomingAfterReview(search, redirectAttributes, false, created);
     }
 
     @GetMapping("/requests/bookings/{bookingId}/payment-proof")

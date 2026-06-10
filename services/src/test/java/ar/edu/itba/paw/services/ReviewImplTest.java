@@ -87,14 +87,23 @@ public class ReviewImplTest {
     }
 
     @Test
-    public void testCreateReviewWithTargetEnumUser() {
+    public void testCreateReviewHostCannotReviewGuest() {
         when(bookingService.findById(BOOKING_ID)).thenReturn(finishedBooking());
-        when(reviewDao.findReviewByBookingSenderAndTargetType(BOOKING_ID, OWNER_ID, TargetEnum.USER))
+
+        var result = reviewService.createReviewForBooking(BOOKING_ID, OWNER_ID, 4, "Good guest", TargetEnum.USER);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void testCreateReviewGuestCanReviewHost() {
+        when(bookingService.findById(BOOKING_ID)).thenReturn(finishedBooking());
+        when(reviewDao.findReviewByBookingSenderAndTargetType(BOOKING_ID, GUEST_ID, TargetEnum.USER))
                 .thenReturn(Optional.empty());
         when(reviewDao.createReview(anyInt(), anyInt(), any(), anyDouble(), any()))
                 .thenReturn(Optional.of(new Review()));
 
-        var result = reviewService.createReviewForBooking(BOOKING_ID, OWNER_ID, 4, "Good guest", TargetEnum.USER);
+        var result = reviewService.createReviewForBooking(BOOKING_ID, GUEST_ID, 4, "Great host", TargetEnum.USER);
 
         assertTrue(result.isPresent());
     }

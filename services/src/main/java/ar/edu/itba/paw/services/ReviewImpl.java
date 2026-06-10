@@ -85,22 +85,16 @@ public final class ReviewImpl implements ReviewService {
     private static TargetEnum resolveTarget(
             final Booking booking, final int ownerId, final int reviewerUserId, final TargetEnum explicit) {
         final int guestId = booking.getGuest() != null ? booking.getGuest().getId() : 0;
+        if (guestId != reviewerUserId || ownerId == reviewerUserId) {
+            return null;
+        }
         if (explicit != null) {
-            if (explicit == TargetEnum.ITEM && guestId == reviewerUserId) {
-                return explicit;
-            }
-            if (explicit == TargetEnum.USER && (guestId == reviewerUserId || ownerId == reviewerUserId)) {
+            if (explicit == TargetEnum.ITEM || explicit == TargetEnum.USER) {
                 return explicit;
             }
             return null;
         }
-        if (guestId == reviewerUserId && ownerId != reviewerUserId) {
-            return TargetEnum.ITEM;
-        }
-        if (ownerId == reviewerUserId && guestId != reviewerUserId) {
-            return TargetEnum.USER;
-        }
-        return null;
+        return TargetEnum.ITEM;
     }
 
     @Override

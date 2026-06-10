@@ -449,7 +449,6 @@ public class BookingImpl implements BookingService {
             final List<SelfBlockUpdate> updates,
             final List<SelfBlockCreate> creates) {
         itemService.requireOwnedActiveItem(itemId, callerId);
-        final String dateStr = date.toString();
         if (deletedBlockIds != null) {
             for (final Integer blockId : deletedBlockIds) {
                 if (blockId != null) {
@@ -462,7 +461,7 @@ public class BookingImpl implements BookingService {
                 if (update == null) {
                     continue;
                 }
-                updateSelfBlock(update.getBookingId(), callerId, dateStr, update.getStartTime(), update.getEndTime());
+                updateSelfBlock(update.getBookingId(), callerId, date, update.getStartTime(), update.getEndTime());
             }
         }
         if (creates != null) {
@@ -470,28 +469,22 @@ public class BookingImpl implements BookingService {
                 if (create == null) {
                     continue;
                 }
-                insertSelfBlock(itemId, callerId, dateStr, create.getStartTime(), create.getEndTime());
+                insertSelfBlock(itemId, callerId, date, create.getStartTime(), create.getEndTime());
             }
         }
     }
 
     private void insertSelfBlock(
-            final int itemId, final int callerId, final String date, final String startTime, final String endTime) {
+            final int itemId,
+            final int callerId,
+            final LocalDate date,
+            final LocalTime startTime,
+            final LocalTime endTime) {
         if (date == null || startTime == null || endTime == null) {
             throw new InvalidSlotException();
         }
-        final LocalDate parsedDate;
-        final LocalTime parsedStart;
-        final LocalTime parsedEnd;
-        try {
-            parsedDate = LocalDate.parse(date);
-            parsedStart = LocalTime.parse(startTime);
-            parsedEnd = LocalTime.parse(endTime);
-        } catch (final Exception e) {
-            throw new InvalidSlotException();
-        }
 
-        insertBooking(itemId, parsedDate, parsedStart, parsedEnd, "", callerId, false);
+        insertBooking(itemId, date, startTime, endTime, "", callerId, false);
     }
 
     private boolean removeSelfBlock(final int bookingId, final int callerId) {
@@ -504,18 +497,12 @@ public class BookingImpl implements BookingService {
     }
 
     private void updateSelfBlock(
-            final int bookingId, final int callerId, final String date, final String startTime, final String endTime) {
-        final LocalDate parsedDate;
-        final LocalTime parsedStart;
-        final LocalTime parsedEnd;
-        try {
-            parsedDate = LocalDate.parse(date);
-            parsedStart = LocalTime.parse(startTime);
-            parsedEnd = LocalTime.parse(endTime);
-        } catch (final Exception e) {
-            throw new InvalidSlotException();
-        }
-        if (!parsedStart.isBefore(parsedEnd)) {
+            final int bookingId,
+            final int callerId,
+            final LocalDate date,
+            final LocalTime startTime,
+            final LocalTime endTime) {
+        if (date == null || startTime == null || endTime == null || !startTime.isBefore(endTime)) {
             throw new InvalidSlotException();
         }
 
@@ -528,20 +515,20 @@ public class BookingImpl implements BookingService {
         final Version version = booking.getVersion();
         final String timezone = version.getTimezone();
         final ZoneId zoneId = ZoneId.of(timezone.trim());
-        final LocalDateTime localStart = LocalDateTime.of(parsedDate, parsedStart);
+        final LocalDateTime localStart = LocalDateTime.of(date, startTime);
 
         final DayOfWeek dayOfWeek = localStart.getDayOfWeek();
         final List<Availability> availabilities = version.getAvailabilities();
         final boolean withinAvailability = availabilities.stream()
                 .anyMatch(a -> a.getWeekday().name().equals(dayOfWeek.name())
-                        && !a.getStartTime().isAfter(parsedStart)
-                        && !a.getEndTime().isBefore(parsedEnd));
+                        && !a.getStartTime().isAfter(startTime)
+                        && !a.getEndTime().isBefore(endTime));
         if (!withinAvailability) {
             throw new OutsideAvailabilityException();
         }
 
         final ZonedDateTime zonedStart = localStart.atZone(zoneId);
-        final ZonedDateTime zonedEnd = LocalDateTime.of(parsedDate, parsedEnd).atZone(zoneId);
+        final ZonedDateTime zonedEnd = LocalDateTime.of(date, endTime).atZone(zoneId);
         final LocalDateTime utcStart = LocalDateTime.ofInstant(zonedStart.toInstant(), ZoneOffset.UTC);
         final LocalDateTime utcEnd = LocalDateTime.ofInstant(zonedEnd.toInstant(), ZoneOffset.UTC);
         if (utcStart.isBefore(currentDateTime())) {

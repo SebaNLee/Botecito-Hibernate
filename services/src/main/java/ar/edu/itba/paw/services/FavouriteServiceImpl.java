@@ -5,8 +5,6 @@ import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.persistence.FavouriteDao;
-import java.util.Collection;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,12 +45,6 @@ public class FavouriteServiceImpl implements FavouriteService {
     @Transactional(readOnly = true)
     public boolean isFavourite(final int userId, final int itemId) {
         return favouriteDao.exists(userId, itemId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Set<Integer> findFavouriteItemIds(final int userId, final Collection<Integer> itemIds) {
-        return favouriteDao.findFavouriteItemIds(userId, itemIds);
     }
 
     @Override

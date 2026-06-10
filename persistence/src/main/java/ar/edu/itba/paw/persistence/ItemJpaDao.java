@@ -14,8 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
@@ -72,24 +70,20 @@ public class ItemJpaDao implements ItemDao {
         final String jpql = "SELECT DISTINCT v FROM Version v "
                 + "JOIN FETCH v.item JOIN FETCH v.location JOIN FETCH v.type "
                 + "LEFT JOIN FETCH v.media m LEFT JOIN FETCH m.image "
-                + "WHERE v.id IN :ids";
+                + "WHERE v.id IN :ids ORDER BY "
+                + jpqlOrderBy(query);
         final TypedQuery<Version> versionQuery = em.createQuery(jpql, Version.class);
         versionQuery.setParameter("ids", versionIds);
         final List<Version> versions = versionQuery.getResultList();
 
-        final Map<Integer, Version> versionById =
-                versions.stream().collect(Collectors.toMap(Version::getId, Function.identity()));
-
-        final List<Item> sortedItems = new ArrayList<>(versionIds.size());
-        for (final Integer versionId : versionIds) {
-            final Version v = versionById.get(versionId);
-            if (v == null) continue;
-            final Item item = v.getItem();
-            item.setLatestVersion(v);
-            sortedItems.add(item);
+        final List<Item> items = new ArrayList<>(versions.size());
+        for (final Version version : versions) {
+            final Item item = version.getItem();
+            item.setLatestVersion(version);
+            items.add(item);
         }
 
-        return new PageModel<>(sortedItems, query.getPage(), query.getPageSize(), totalCount);
+        return new PageModel<>(items, query.getPage(), query.getPageSize(), totalCount);
     }
 
     private long countOwnerItems(MyBoatsQueryModel query) {
@@ -139,6 +133,19 @@ public class ItemJpaDao implements ItemDao {
             case "nameAsc" -> "v.title ASC, i.id ASC";
             case "nameDesc" -> "v.title DESC, i.id DESC";
             default -> "i.created_at DESC, i.id DESC";
+        };
+    }
+
+    private static String jpqlOrderBy(final MyBoatsQueryModel query) {
+        final String sortBy = query.getSortBy();
+        if (sortBy == null || sortBy.isBlank()) {
+            return "v.item.createdAt DESC, v.item.id DESC";
+        }
+        return switch (sortBy) {
+            case "oldest" -> "v.item.createdAt ASC, v.item.id ASC";
+            case "nameAsc" -> "v.title ASC, v.item.id ASC";
+            case "nameDesc" -> "v.title DESC, v.item.id DESC";
+            default -> "v.item.createdAt DESC, v.item.id DESC";
         };
     }
 

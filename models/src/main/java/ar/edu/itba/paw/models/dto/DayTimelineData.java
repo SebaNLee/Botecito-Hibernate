@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.models.dto;
 
+import java.time.LocalTime;
 import java.util.List;
 import lombok.Value;
 
@@ -14,14 +15,14 @@ public record DayTimelineData(
 
     @Value
     public static class TimeRangeRow {
-        String startTime;
-        String endTime;
+        LocalTime startTime;
+        LocalTime endTime;
     }
 
     @Value
     public static class SelfBlockRow {
         int id;
-        String startTime;
-        String endTime;
+        LocalTime startTime;
+        LocalTime endTime;
     }
 }

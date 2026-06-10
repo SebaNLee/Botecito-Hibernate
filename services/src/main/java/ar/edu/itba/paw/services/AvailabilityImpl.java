@@ -11,7 +11,6 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -26,10 +25,6 @@ import org.springframework.stereotype.Service;
 @Service
 public final class AvailabilityImpl implements AvailabilityService {
 
-    private static final DateTimeFormatter INPUT_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final DateTimeFormatter RESERVATION_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
-
     @Override
     public AvailabilityData buildAvailabilityData(
             final List<Availability> availabilityWindows, final List<Booking> bookings, final String versionTimezone) {
@@ -39,7 +34,7 @@ public final class AvailabilityImpl implements AvailabilityService {
         final ZoneId zoneId = listingZoneOrUtc(versionTimezone);
         final LocalDate rangeStart = listingCalendarToday(versionTimezone);
         final LocalDate rangeEnd = listingCalendarMaxInclusive(versionTimezone);
-        final Map<String, TreeSet<String>> scheduledTimesByDate = new TreeMap<>();
+        final Map<LocalDate, TreeSet<LocalTime>> scheduledTimesByDate = new TreeMap<>();
         for (final Availability window : availabilityWindows) {
             if (!isUsableWindow(window)) {
                 continue;
@@ -51,17 +46,17 @@ public final class AvailabilityImpl implements AvailabilityService {
         if (scheduledTimesByDate.isEmpty()) {
             return emptyData();
         }
-        final Map<String, TreeSet<String>> bookedTimesByDate =
+        final Map<LocalDate, TreeSet<LocalTime>> bookedTimesByDate =
                 buildBookedTimesByDate(bookings == null ? List.of() : bookings, zoneId, rangeStart, rangeEnd);
-        final Map<String, TreeSet<String>> availableTimesByDate =
+        final Map<LocalDate, TreeSet<LocalTime>> availableTimesByDate =
                 subtractTimes(scheduledTimesByDate, bookedTimesByDate);
-        final Map<String, TreeSet<String>> occupiedTimesByDate =
+        final Map<LocalDate, TreeSet<LocalTime>> occupiedTimesByDate =
                 subtractTimes(scheduledTimesByDate, availableTimesByDate);
 
-        final List<String> offeredDates = new ArrayList<>();
-        final List<String> occupiedDates = new ArrayList<>();
-        for (final Map.Entry<String, TreeSet<String>> scheduledTimesEntry : scheduledTimesByDate.entrySet()) {
-            final String date = scheduledTimesEntry.getKey();
+        final List<LocalDate> offeredDates = new ArrayList<>();
+        final List<LocalDate> occupiedDates = new ArrayList<>();
+        for (final Map.Entry<LocalDate, TreeSet<LocalTime>> scheduledTimesEntry : scheduledTimesByDate.entrySet()) {
+            final LocalDate date = scheduledTimesEntry.getKey();
             if (!availableTimesByDate.getOrDefault(date, new TreeSet<>()).isEmpty()) {
                 offeredDates.add(date);
             } else if (!scheduledTimesEntry.getValue().isEmpty()) {
@@ -106,9 +101,8 @@ public final class AvailabilityImpl implements AvailabilityService {
                         || !availability.getEndTime().isAfter(availability.getStartTime())) {
                     continue;
                 }
-                availableRanges.add(new DayTimelineData.TimeRangeRow(
-                        availability.getStartTime().format(TIME_FMT),
-                        availability.getEndTime().format(TIME_FMT)));
+                availableRanges.add(
+                        new DayTimelineData.TimeRangeRow(availability.getStartTime(), availability.getEndTime()));
             }
         }
 
@@ -132,13 +126,11 @@ public final class AvailabilityImpl implements AvailabilityService {
                         booking.getStart()
                                 .atZone(ZoneOffset.UTC)
                                 .withZoneSameInstant(zone)
-                                .toLocalTime()
-                                .format(TIME_FMT),
+                                .toLocalTime(),
                         booking.getEnd()
                                 .atZone(ZoneOffset.UTC)
                                 .withZoneSameInstant(zone)
-                                .toLocalTime()
-                                .format(TIME_FMT)));
+                                .toLocalTime()));
             }
         }
 
@@ -160,13 +152,11 @@ public final class AvailabilityImpl implements AvailabilityService {
                         block.getStart()
                                 .atZone(ZoneOffset.UTC)
                                 .withZoneSameInstant(zone)
-                                .toLocalTime()
-                                .format(TIME_FMT),
+                                .toLocalTime(),
                         block.getEnd()
                                 .atZone(ZoneOffset.UTC)
                                 .withZoneSameInstant(zone)
-                                .toLocalTime()
-                                .format(TIME_FMT)));
+                                .toLocalTime()));
             }
         }
         return new DayTimelineData(availableRanges, bookedRanges, selfBlocks);
@@ -222,7 +212,7 @@ public final class AvailabilityImpl implements AvailabilityService {
     }
 
     private static void mergeOfferedTimesForWindow(
-            final Map<String, TreeSet<String>> collectedTimesByDate,
+            final Map<LocalDate, TreeSet<LocalTime>> collectedTimesByDate,
             final DayOfWeek weekday,
             final LocalTime startTime,
             final LocalTime endTime,
@@ -234,7 +224,7 @@ public final class AvailabilityImpl implements AvailabilityService {
             if (currentDate.getDayOfWeek() != weekday) {
                 continue;
             }
-            addTimeRange(collectedTimesByDate, currentDate.format(INPUT_DATE_FORMAT), startTime, endTime);
+            addTimeRange(collectedTimesByDate, currentDate, startTime, endTime);
         }
     }
 
@@ -244,9 +234,9 @@ public final class AvailabilityImpl implements AvailabilityService {
                 .with(TemporalAdjusters.lastDayOfMonth());
     }
 
-    private static Map<String, TreeSet<String>> buildBookedTimesByDate(
+    private static Map<LocalDate, TreeSet<LocalTime>> buildBookedTimesByDate(
             final List<Booking> bookings, final ZoneId zoneId, final LocalDate rangeStart, final LocalDate rangeEnd) {
-        final Map<String, TreeSet<String>> collectedTimesByDate = new TreeMap<>();
+        final Map<LocalDate, TreeSet<LocalTime>> collectedTimesByDate = new TreeMap<>();
         for (final Booking booking : bookings) {
             if (!BookingBlockingStatuses.isDisplayBlocking(booking.getStatus())
                     || booking.getStart() == null
@@ -265,8 +255,8 @@ public final class AvailabilityImpl implements AvailabilityService {
                 final LocalDate currentDate = currentZ.toLocalDate();
                 if (!currentDate.isBefore(rangeStart) && !currentDate.isAfter(rangeEnd)) {
                     collectedTimesByDate
-                            .computeIfAbsent(currentDate.format(INPUT_DATE_FORMAT), ignored -> new TreeSet<>())
-                            .add(currentZ.toLocalTime().format(RESERVATION_TIME_FORMAT));
+                            .computeIfAbsent(currentDate, ignored -> new TreeSet<>())
+                            .add(currentZ.toLocalTime());
                 }
                 currentZ = currentZ.plusMinutes(BookingBlockingStatuses.TIME_SLOT_STEP_MINUTES);
             }
@@ -275,8 +265,8 @@ public final class AvailabilityImpl implements AvailabilityService {
     }
 
     private static void addTimeRange(
-            final Map<String, TreeSet<String>> collectedTimesByDate,
-            final String date,
+            final Map<LocalDate, TreeSet<LocalTime>> collectedTimesByDate,
+            final LocalDate date,
             final LocalTime startTime,
             final LocalTime endTime) {
         final int startMinute = startTime.toSecondOfDay() / 60;
@@ -285,16 +275,16 @@ public final class AvailabilityImpl implements AvailabilityService {
             final LocalTime currentTime = LocalTime.ofSecondOfDay((long) minute * 60);
             collectedTimesByDate
                     .computeIfAbsent(date, ignored -> new TreeSet<>())
-                    .add(currentTime.format(RESERVATION_TIME_FORMAT));
+                    .add(currentTime);
         }
     }
 
-    private static Map<String, TreeSet<String>> subtractTimes(
-            final Map<String, TreeSet<String>> baseTimesByDate,
-            final Map<String, TreeSet<String>> excludedTimesByDate) {
-        final Map<String, TreeSet<String>> filteredTimesByDate = new TreeMap<>();
-        for (final Map.Entry<String, TreeSet<String>> entry : baseTimesByDate.entrySet()) {
-            final TreeSet<String> remainingTimes = new TreeSet<>(entry.getValue());
+    private static Map<LocalDate, TreeSet<LocalTime>> subtractTimes(
+            final Map<LocalDate, TreeSet<LocalTime>> baseTimesByDate,
+            final Map<LocalDate, TreeSet<LocalTime>> excludedTimesByDate) {
+        final Map<LocalDate, TreeSet<LocalTime>> filteredTimesByDate = new TreeMap<>();
+        for (final Map.Entry<LocalDate, TreeSet<LocalTime>> entry : baseTimesByDate.entrySet()) {
+            final TreeSet<LocalTime> remainingTimes = new TreeSet<>(entry.getValue());
             remainingTimes.removeAll(excludedTimesByDate.getOrDefault(entry.getKey(), new TreeSet<>()));
             if (!remainingTimes.isEmpty()) {
                 filteredTimesByDate.put(entry.getKey(), remainingTimes);
@@ -303,9 +293,10 @@ public final class AvailabilityImpl implements AvailabilityService {
         return filteredTimesByDate;
     }
 
-    private static Map<String, List<String>> toImmutableTimesByDate(final Map<String, TreeSet<String>> timesByDate) {
-        final Map<String, List<String>> immutableTimesByDate = new LinkedHashMap<>();
-        for (final Map.Entry<String, TreeSet<String>> entry : timesByDate.entrySet()) {
+    private static Map<LocalDate, List<LocalTime>> toImmutableTimesByDate(
+            final Map<LocalDate, TreeSet<LocalTime>> timesByDate) {
+        final Map<LocalDate, List<LocalTime>> immutableTimesByDate = new LinkedHashMap<>();
+        for (final Map.Entry<LocalDate, TreeSet<LocalTime>> entry : timesByDate.entrySet()) {
             immutableTimesByDate.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         return Map.copyOf(immutableTimesByDate);

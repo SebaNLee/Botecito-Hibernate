@@ -87,7 +87,7 @@ public class DetailImpl implements DetailService {
                 canFavouriteItem && viewerId != null && favouriteService.isFavourite(viewerId, item.getId());
         final boolean alreadyReported =
                 viewerId != null && isActive && !isOwner && reportService.hasReported(viewerId, item.getId());
-        final boolean canSubscribeToOwner = viewerId != null && ownerId != null && !isOwner;
+        final boolean canSubscribeToOwner = ownerId != null && !isOwner;
         final boolean subscribedToOwner;
         if (viewerId != null && ownerId != null && !isOwner) {
             subscribedToOwner = subscriptionService.isSubscribed(viewerId, ownerId);

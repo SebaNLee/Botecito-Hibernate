@@ -489,7 +489,9 @@
               <c:if test="${canSubscribeToOwner}">
                 <c:choose>
                   <c:when test="${viewer == null}">
-                    <c:url var="subscriptionLoginUrl" value="/login" />
+                    <c:url var="subscriptionLoginUrl" value="/login">
+                      <c:param name="next" value="/item/${item.id}" />
+                    </c:url>
                     <paw:button
                       href="${subscriptionLoginUrl}"
                       color="secondary"

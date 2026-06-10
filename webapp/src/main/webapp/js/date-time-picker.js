@@ -1236,6 +1236,34 @@
       return false;
     }
 
+    canServeAsValidEndForSomeStart(date, endTime) {
+      const endIndex = ALL_TIMES.indexOf(endTime);
+
+      if (endIndex < 0) {
+        return false;
+      }
+
+      for (let index = 0; index < endIndex; index += 1) {
+        if (this.isContinuousRangeForDate(date, ALL_TIMES[index], endTime)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    occupiedSlotDisplayState(date, time) {
+      if (!this.getOccupiedTimesForDate(date).has(time)) {
+        return null;
+      }
+
+      if (this.canServeAsValidEndForSomeStart(date, time)) {
+        return "unavailable";
+      }
+
+      return "occupied";
+    }
+
     hasOccupiedBoundaryInRange(date, startTime, endTime) {
       const occupiedTimes = this.getOccupiedTimesForDate(date);
       const startIndex = ALL_TIMES.indexOf(startTime);
@@ -1504,14 +1532,14 @@
     baseStartState(time) {
       const date = this.currentDate();
       const offeredTimes = this.getOfferedTimesForDate(date);
-      const occupiedTimes = this.getOccupiedTimesForDate(date);
 
       if (!offeredTimes.has(time)) {
         return "unavailable";
       }
 
-      if (occupiedTimes.has(time)) {
-        return "occupied";
+      const occupiedState = this.occupiedSlotDisplayState(date, time);
+      if (occupiedState) {
+        return occupiedState;
       }
 
       if (!this.hasBookableEndFrom(date, time)) {
@@ -1524,7 +1552,6 @@
     buttonState(time) {
       const date = this.currentDate();
       const offeredTimes = this.getOfferedTimesForDate(date);
-      const occupiedTimes = this.getOccupiedTimesForDate(date);
 
       if (isBlank(date)) {
         return "unavailable";
@@ -1543,8 +1570,18 @@
         return "range";
       }
 
-      if (occupiedTimes.has(time)) {
-        return "occupied";
+      if (
+        this.startInput.value &&
+        !this.endInput.value &&
+        compareTimes(time, this.startInput.value) > 0 &&
+        this.isContinuousRangeForDate(date, this.startInput.value, time)
+      ) {
+        return "available";
+      }
+
+      const occupiedState = this.occupiedSlotDisplayState(date, time);
+      if (occupiedState) {
+        return occupiedState;
       }
 
       if (!this.startInput.value || this.endInput.value) {
@@ -1553,10 +1590,6 @@
 
       if (compareTimes(time, this.startInput.value) <= 0) {
         return this.baseStartState(time);
-      }
-
-      if (this.isContinuousRangeForDate(date, this.startInput.value, time)) {
-        return "available";
       }
 
       if (!offeredTimes.has(time)) {

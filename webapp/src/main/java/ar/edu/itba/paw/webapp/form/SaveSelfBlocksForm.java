@@ -2,6 +2,7 @@ package ar.edu.itba.paw.webapp.form;
 
 import ar.edu.itba.paw.models.dto.SelfBlockCreate;
 import ar.edu.itba.paw.models.dto.SelfBlockUpdate;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -50,8 +51,9 @@ public class SaveSelfBlocksForm {
         this.blocks = blocks == null ? new ArrayList<>() : blocks;
     }
 
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Spring indexed form binding")
     public List<Integer> getDeletedBlockIds() {
-        return List.copyOf(deletedBlockIds);
+        return deletedBlockIds;
     }
 
     public List<SelfBlockUpdate> getUpdates() {

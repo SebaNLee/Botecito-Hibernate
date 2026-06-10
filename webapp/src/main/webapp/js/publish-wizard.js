@@ -371,6 +371,38 @@
     );
   }
 
+  function pendingOptionsPickers(form) {
+    return Array.prototype.slice
+      .call(form.querySelectorAll("[data-options-picker]"))
+      .map(function (root) {
+        return root.__optionsPicker;
+      })
+      .filter(function (picker) {
+        return picker && typeof picker.whenReady === "function" && !picker.isOptionsLoaded();
+      });
+  }
+
+  function waitForOptionsPickersThenSubmit(form, event) {
+    var pending = pendingOptionsPickers(form);
+    if (!pending.length) {
+      return false;
+    }
+
+    event.preventDefault();
+    Promise.all(
+      pending.map(function (picker) {
+        return picker.whenReady();
+      }),
+    ).then(function () {
+      if (typeof form.requestSubmit === "function") {
+        form.requestSubmit(event.submitter || undefined);
+      } else {
+        form.submit();
+      }
+    });
+    return true;
+  }
+
   function initStep1(root) {
     var form = findWizardForm(root);
     if (!form) {
@@ -380,7 +412,10 @@
     if (draft) {
       restoreStep1Form(form, draft);
     }
-    form.addEventListener("submit", function () {
+    form.addEventListener("submit", function (event) {
+      if (waitForOptionsPickersThenSubmit(form, event)) {
+        return;
+      }
       saveDraft(mergeDraft(readDraft(), collectStep1FromForm(form)));
     });
   }

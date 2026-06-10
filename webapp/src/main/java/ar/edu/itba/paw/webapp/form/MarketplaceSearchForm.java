@@ -82,6 +82,14 @@ public class MarketplaceSearchForm {
         return startTime.isBefore(endTime);
     }
 
+    @AssertTrue(message = "{marketplace.validation.timesRequireDate}")
+    public boolean isSearchDateRequiredForTimes() {
+        if (date != null) {
+            return true;
+        }
+        return startTime == null && endTime == null;
+    }
+
     @AssertTrue(message = "{marketplace.validation.minAvgRating.pattern}")
     public boolean isMinAvgRatingValid() {
         return minAvgRating == null || (minAvgRating >= 0.5 && minAvgRating <= 5 && minAvgRating % 0.5 == 0);

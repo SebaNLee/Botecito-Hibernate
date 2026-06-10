@@ -1311,36 +1311,10 @@
       const date = this.currentDate();
 
       if (isBlank(date)) {
-        if (this.restrictToAvailability) {
+        if (this.startInput.value || this.endInput.value) {
           this.startInput.value = "";
           this.endInput.value = "";
-          return;
-        }
-
-        if (
-          this.startInput.value &&
-          !this.endInput.value &&
-          !this.hasBookableEndFrom(date, this.startInput.value)
-        ) {
-          this.startInput.value = "";
-          this.endInput.value = "";
-          return;
-        }
-
-        if (
-          this.startInput.value &&
-          this.endInput.value &&
-          !this.isContinuousRangeForDate(
-            date,
-            this.startInput.value,
-            this.endInput.value,
-          )
-        ) {
-          this.endInput.value = "";
-        }
-
-        if (!this.startInput.value) {
-          this.endInput.value = "";
+          this.dispatchSelectionChange();
         }
         return;
       }

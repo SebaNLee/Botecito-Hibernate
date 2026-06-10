@@ -82,6 +82,11 @@
           : "";
     });
 
+    if (!normalized.date) {
+      normalized.startTime = "";
+      normalized.endTime = "";
+    }
+
     return normalized;
   }
 
@@ -328,6 +333,15 @@
       startTime: controls.startInput ? controls.startInput.value || "" : "",
       endTime: controls.endInput ? controls.endInput.value || "" : "",
     };
+  }
+
+  function syncDateTimeFiltersBeforeSubmit(form) {
+    const controls = getDateTimeControls(form);
+    if (!controls || controls.dateInput?.value) {
+      return;
+    }
+
+    controls.timePicker?.clear();
   }
 
   function setDateTimeState(scope, state) {
@@ -631,10 +645,20 @@
       this.optionsContainer = root.querySelector("[data-option-options]");
       this.emptyState = root.querySelector("[data-option-empty]");
       this.options = [];
+      this._optionsLoaded = false;
+      this._optionsReadyPromise = Promise.resolve();
       this.root.__optionsPicker = this;
       this.bind();
       this.bindSubmitToForm();
       this.loadOptions();
+    }
+
+    isOptionsLoaded() {
+      return this._optionsLoaded;
+    }
+
+    whenReady() {
+      return this._optionsReadyPromise || Promise.resolve();
     }
 
     /** Sync hidden location id before submit; optionally require a selection (publish). */
@@ -720,13 +744,20 @@
       const slugMode =
         this.hiddenInput.name === "location" ||
         this.hiddenInput.name === "itemType";
-      fetchSelectableOptions(this.root.dataset.optionsUrl, slugMode).then(
-        (options) => {
-          this.options = options;
-          this.setSelectedValue(this.hiddenInput.value);
-          this.render();
-        },
-      );
+      const optionsUrl = (this.root.dataset.optionsUrl || "").trim();
+      if (!optionsUrl) {
+        this._optionsLoaded = true;
+        return;
+      }
+      this._optionsReadyPromise = fetchSelectableOptions(
+        optionsUrl,
+        slugMode,
+      ).then((options) => {
+        this.options = options;
+        this._optionsLoaded = true;
+        this.setSelectedValue(this.hiddenInput.value);
+        this.render();
+      });
     }
 
     getFilteredOptions() {
@@ -768,12 +799,36 @@
     }
 
     prepareForSubmit() {
-      const exactMatch = this.findExact(this.queryInput.value);
-      const raw = exactMatch ? exactMatch.value : "";
-      this.hiddenInput.value = trimParam(raw);
-      this.queryInput.value = exactMatch
-        ? exactMatch.name
-        : this.queryInput.value || "";
+      const query = (this.queryInput.value || "").trim();
+      const hiddenValue = trimParam(this.hiddenInput.value);
+      const exactFromQuery = query ? this.findExact(query) : null;
+
+      if (exactFromQuery) {
+        this.hiddenInput.value = trimParam(exactFromQuery.value);
+        this.queryInput.value = exactFromQuery.name;
+        return;
+      }
+
+      if (hiddenValue) {
+        const exactFromHidden = this.options.find(
+          (option) => String(option.value) === String(hiddenValue),
+        );
+        if (exactFromHidden) {
+          this.hiddenInput.value = hiddenValue;
+          this.queryInput.value = exactFromHidden.name;
+          return;
+        }
+        if (!this._optionsLoaded) {
+          return;
+        }
+      }
+
+      if (query) {
+        this.hiddenInput.value = "";
+        return;
+      }
+
+      this.hiddenInput.value = "";
     }
 
     open() {
@@ -1324,6 +1379,7 @@
     bindDraftPersistence(form);
     form.addEventListener("submit", (event) => {
       event.preventDefault();
+      syncDateTimeFiltersBeforeSubmit(form);
       form.querySelectorAll("[data-options-picker]").forEach((root) => {
         root.__optionsPicker?.prepareForSubmit();
       });
@@ -1423,6 +1479,7 @@
     syncMarketplaceOptionsPickersFromDom(form);
     form.addEventListener("submit", (event) => {
       event.preventDefault();
+      syncDateTimeFiltersBeforeSubmit(form);
       form.querySelectorAll("[data-options-picker]").forEach((root) => {
         root.__optionsPicker?.prepareForSubmit();
       });

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import ar.edu.itba.paw.models.dto.FavouritesQueryModel;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.*;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import javax.persistence.EntityManager;
@@ -50,9 +51,11 @@ public class FavouriteJpaDaoTest {
         em.flush();
 
         boolean created = favouriteDao.create(user.getId(), item.getId());
-
         assertTrue(created);
-        assertTrue(favouriteDao.exists(user.getId(), item.getId()));
+        em.flush();
+        em.clear();
+
+        assertNotNull(em.find(Favourite.class, new FavouriteId(user.getId(), item.getId())));
     }
 
     @Test
@@ -60,8 +63,9 @@ public class FavouriteJpaDaoTest {
         Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
         insertVersion(em, item, itemType, location, "Boat");
         em.flush();
+        insertFav(item, user);
+        em.flush();
 
-        assertTrue(favouriteDao.create(user.getId(), item.getId()));
         assertFalse(favouriteDao.create(user.getId(), item.getId()));
     }
 
@@ -70,12 +74,15 @@ public class FavouriteJpaDaoTest {
         Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
         insertVersion(em, item, itemType, location, "Boat");
         em.flush();
-        favouriteDao.create(user.getId(), item.getId());
+        insertFav(item, user);
+        em.flush();
 
         boolean deleted = favouriteDao.delete(user.getId(), item.getId());
-
         assertTrue(deleted);
-        assertFalse(favouriteDao.exists(user.getId(), item.getId()));
+        em.flush();
+        em.clear();
+
+        assertNull(em.find(Favourite.class, new FavouriteId(user.getId(), item.getId())));
     }
 
     @Test
@@ -89,8 +96,9 @@ public class FavouriteJpaDaoTest {
         insertVersion(em, item3, itemType, location, "Boat 3");
         insertVersion(em, item4, itemType, location, "Boat 4");
         em.flush();
-        favouriteDao.create(user.getId(), item1.getId());
-        favouriteDao.create(user.getId(), item3.getId());
+        insertFav(item1, user);
+        insertFav(item3, user);
+        em.flush();
 
         Set<Integer> favIds = favouriteDao.findFavouriteItemIds(
                 user.getId(), List.of(item1.getId(), item2.getId(), item3.getId(), item4.getId()));
@@ -105,8 +113,9 @@ public class FavouriteJpaDaoTest {
         insertVersion(em, item1, itemType, location, "Boat 1");
         insertVersion(em, item2, itemType, location, "Boat 2");
         em.flush();
-        favouriteDao.create(user.getId(), item1.getId());
-        favouriteDao.create(user.getId(), item2.getId());
+        insertFav(item1, user);
+        insertFav(item2, user);
+        em.flush();
 
         FavouritesQueryModel query = FavouritesQueryModel.builder()
                 .userId(user.getId())
@@ -127,8 +136,9 @@ public class FavouriteJpaDaoTest {
         insertVersion(em, item1, itemType, location, "Boat 1");
         insertVersion(em, item2, itemType, location, "Boat 2");
         em.flush();
-        favouriteDao.create(user.getId(), item1.getId());
-        favouriteDao.create(user.getId(), item2.getId());
+        insertFav(item1, user);
+        insertFav(item2, user);
+        em.flush();
 
         FavouritesQueryModel query = FavouritesQueryModel.builder()
                 .userId(user.getId())
@@ -139,5 +149,15 @@ public class FavouriteJpaDaoTest {
         long count = favouriteDao.countFavourites(query);
 
         assertEquals(2, count);
+    }
+
+    private Favourite insertFav(final Item item, final Users user) {
+        Favourite fav = new Favourite();
+        fav.setId(new FavouriteId(user.getId(), item.getId()));
+        fav.setUser(user);
+        fav.setItem(item);
+        fav.setCreatedAt(LocalDateTime.now());
+        em.persist(fav);
+        return fav;
     }
 }

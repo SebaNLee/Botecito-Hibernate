@@ -160,6 +160,7 @@ public class ItemJpaDaoTest {
         Item managed = em.find(Item.class, itemId);
         itemDao.deleteItem(managed);
         em.flush();
+        em.clear();
 
         assertNull(em.find(Item.class, itemId));
     }
@@ -174,6 +175,7 @@ public class ItemJpaDaoTest {
         Version managed = em.find(Version.class, versionId);
         itemDao.deleteVersion(managed);
         em.flush();
+        em.clear();
 
         assertNull(em.find(Version.class, versionId));
     }
@@ -186,8 +188,10 @@ public class ItemJpaDaoTest {
         item.setCreatedAt(LocalDateTime.now());
 
         Item persisted = itemDao.persistItem(item);
-
         assertNotNull(persisted.getId());
+        em.flush();
+        em.clear();
+
         assertNotNull(em.find(Item.class, persisted.getId()));
     }
 
@@ -209,8 +213,10 @@ public class ItemJpaDaoTest {
         v.setCreatedAt(LocalDateTime.now());
 
         Version persisted = itemDao.persistVersion(v);
-
         assertNotNull(persisted.getId());
+        em.flush();
+        em.clear();
+
         assertNotNull(em.find(Version.class, persisted.getId()));
     }
 
@@ -227,8 +233,10 @@ public class ItemJpaDaoTest {
         availability.setEndTime(LocalTime.of(17, 0));
 
         Availability persisted = itemDao.persistAvailability(availability);
-
         assertNotNull(persisted.getId());
+        em.flush();
+        em.clear();
+
         assertNotNull(em.find(Availability.class, persisted.getId()));
     }
 
@@ -238,8 +246,10 @@ public class ItemJpaDaoTest {
         image.setData(new byte[] {1, 2, 3});
 
         Image persisted = itemDao.persistImage(image);
-
         assertNotNull(persisted.getId());
+        em.flush();
+        em.clear();
+
         assertNotNull(em.find(Image.class, persisted.getId()));
     }
 
@@ -256,6 +266,9 @@ public class ItemJpaDaoTest {
         media.setImage(image);
 
         Media persisted = itemDao.persistMedia(media);
+        assertNotNull(persisted.getId());
+        em.flush();
+        em.clear();
 
         assertNotNull(em.find(Media.class, persisted.getId()));
     }
@@ -290,6 +303,7 @@ public class ItemJpaDaoTest {
         managed = em.find(Version.class, v.getId());
         itemDao.removeVersionChildren(managed);
         em.flush();
+        em.clear();
 
         assertNull(em.find(Availability.class, availability.getId()));
     }
@@ -312,6 +326,7 @@ public class ItemJpaDaoTest {
         managed = em.find(Version.class, v.getId());
         itemDao.removeVersionChildren(managed);
         em.flush();
+        em.clear();
 
         assertNull(em.find(Availability.class, availability.getId()));
         assertNull(em.find(Media.class, media.getId()));
@@ -329,6 +344,7 @@ public class ItemJpaDaoTest {
 
         itemDao.removeVersionChildren(managed);
         em.flush();
+        em.clear();
 
         assertNull(em.find(Media.class, media.getId()));
     }
@@ -343,6 +359,7 @@ public class ItemJpaDaoTest {
         em.flush();
         itemDao.removeVersionChildren(managed);
         em.flush();
+        em.clear();
 
         Media media = insertMedia(em, managed, insertImage(em), 0);
         em.flush();

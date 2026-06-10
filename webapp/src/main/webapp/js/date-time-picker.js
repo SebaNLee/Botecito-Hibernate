@@ -439,16 +439,13 @@
     return toIsoDate(today.getFullYear(), today.getMonth(), today.getDate());
   }
 
-  /** Keep in sync with BookingBlockingStatuses.LISTING_PICKER_MONTHS_AROUND_TODAY. */
-  const SEARCH_FILTER_MONTHS_AHEAD = 2;
+  /** Keep in sync with BookingBlockingStatuses.LISTING_PICKER_DAYS_AHEAD. */
+  const SEARCH_FILTER_DAYS_AHEAD = 60;
 
   function visibleRangeEndIsoDate() {
     const today = new Date();
-    const maxDate = new Date(
-      today.getFullYear(),
-      today.getMonth() + SEARCH_FILTER_MONTHS_AHEAD,
-      today.getDate(),
-    );
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + SEARCH_FILTER_DAYS_AHEAD);
     return dateObjectToIsoDate(maxDate);
   }
 
@@ -463,7 +460,9 @@
   function clampMonthRange() {
     const today = new Date();
     const startMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const endMonth = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+    const rangeEnd = new Date(today);
+    rangeEnd.setDate(rangeEnd.getDate() + SEARCH_FILTER_DAYS_AHEAD);
+    const endMonth = new Date(rangeEnd.getFullYear(), rangeEnd.getMonth(), 1);
     const monthKeys = [];
     const cursor = new Date(startMonth);
 

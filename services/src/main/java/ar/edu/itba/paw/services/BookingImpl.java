@@ -60,7 +60,6 @@ public class BookingImpl implements BookingService {
     private final AvailabilityService availabilityService;
 
     private static final int MIN_ANTICIPATION_MINUTES = 120;
-    private static final int BOOKING_LOOKAHEAD_DAYS = 60;
 
     private static final Map<BookingStatusEnum, EnumSet<BookingStatusEnum>> VALID_TRANSITIONS = Map.ofEntries(
             entry(
@@ -220,12 +219,13 @@ public class BookingImpl implements BookingService {
     }
 
     // Retorna una lista finita con cota superior (desde hoy hasta
-    // BOOKING_LOOKAHEAD_DAYS) de bookings para un item. Los profes en la práctica
+    // LISTING_PICKER_DAYS_AHEAD) de bookings para un item. Los profes en la práctica
     // nos permitieron no paginarla por este motivo.
     @Transactional(readOnly = true)
     public List<Booking> getUpcomingBookings(Item item) {
         LocalDateTime now = currentDateTime();
-        return bookingDao.getUpcomingBookings(item, now, now.plusDays(BOOKING_LOOKAHEAD_DAYS));
+        return bookingDao.getUpcomingBookings(
+                item, now, now.plusDays(BookingBlockingStatuses.LISTING_PICKER_DAYS_AHEAD));
     }
 
     @Transactional
@@ -547,13 +547,13 @@ public class BookingImpl implements BookingService {
     }
 
     // Retorna una lista finita con cota superior (desde hoy hasta
-    // BOOKING_LOOKAHEAD_DAYS) de fechas con disponibilidad para un item. Los profes
+    // LISTING_PICKER_DAYS_AHEAD) de fechas con disponibilidad para un item. Los profes
     // en la práctica nos permitieron no paginarla por este motivo.
     private static List<LocalDate> buildOfferedDates(final List<Availability> availabilities, final String timezone) {
         final List<Availability> windows = availabilities == null ? List.of() : availabilities;
         final ZoneId zone = ZoneId.of(timezone);
         final LocalDate today = LocalDate.now(zone);
-        final LocalDate end = today.plusDays(BOOKING_LOOKAHEAD_DAYS);
+        final LocalDate end = today.plusDays(BookingBlockingStatuses.LISTING_PICKER_DAYS_AHEAD);
         final List<LocalDate> dates = new ArrayList<>();
         LocalDate cursor = today;
         while (!cursor.isAfter(end)) {

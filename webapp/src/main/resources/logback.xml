@@ -10,19 +10,7 @@
       <pattern>${defaultPattern:-}</pattern>
     </encoder>
   </appender>
-  <appender name="paw-appender" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-      <maxHistory>5</maxHistory>
-      <fileNamePattern>logs/paw.%d{yyyy-MM-dd}.log</fileNamePattern>
-    </rollingPolicy>
-    <encoder>
-      <pattern>${defaultPattern:-}</pattern>
-    </encoder>
-  </appender>
   <root level="INFO">
     <appender-ref ref="root-appender" />
   </root>
-  <logger name="ar.edu.itba" level="DEBUG">
-    <appender-ref ref="paw-appender"/>
-  </logger>
 </configuration>

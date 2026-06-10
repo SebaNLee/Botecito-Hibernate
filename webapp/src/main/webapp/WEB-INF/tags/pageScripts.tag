@@ -6,6 +6,7 @@
 <c:set var="resolvedBundles" value=",${bundles}," />
 
 <script src="<c:url value='/js/dismissible-alerts.js' />"></script>
+<script src="<c:url value='/js/utc-datetime.js' />"></script>
 <script src="<c:url value='/js/nav-filters.js' />"></script>
 <script src="<c:url value='/js/search-bar.js' />"></script>
 

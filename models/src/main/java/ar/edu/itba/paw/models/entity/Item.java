@@ -23,8 +23,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JoinFormula;
-import org.hibernate.annotations.NotFound;
-import org.hibernate.annotations.NotFoundAction;
 import org.hibernate.annotations.Type;
 
 @AllArgsConstructor
@@ -54,7 +52,6 @@ public class Item {
     private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @NotFound(action = NotFoundAction.IGNORE)
     @JoinFormula(
             value = "(SELECT v.id FROM version v WHERE v.item_id = id"
                     + " AND v.created_at = (SELECT MAX(v2.created_at) FROM version v2 WHERE v2.item_id = id)"

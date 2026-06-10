@@ -24,7 +24,6 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.annotation.web.configurers.FormLoginConfigurer;
 import org.springframework.security.config.annotation.web.configurers.RememberMeConfigurer;
@@ -122,13 +121,6 @@ public class WebAuthConfig {
         return http.build();
     }
 
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return web -> web.ignoring()
-                .requestMatchers(
-                        antMatcher("/css/**"), antMatcher("/js/**"), antMatcher("/img/**"), antMatcher("/favicon.ico"));
-    }
-
     private void configureAuthorization(
             final AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
         // Use AntPathRequestMatcher so Spring Security does not pick MvcRequestMatcher (Servlet 4).
@@ -143,6 +135,8 @@ public class WebAuthConfig {
                 .requestMatchers(antMatcher("/verify-email/**"))
                 .permitAll()
                 .requestMatchers(publicResourceMatchers())
+                .permitAll()
+                .requestMatchers(staticResourceMatchers())
                 .permitAll()
                 .requestMatchers(antMatcher("/admin/**"))
                 .hasRole("ADMIN")
@@ -166,6 +160,12 @@ public class WebAuthConfig {
     private static RequestMatcher[] publicResourceMatchers() {
         return new RequestMatcher[] {
             antMatcher(HttpMethod.GET, "/image/*"), antMatcher(HttpMethod.GET, "/item/*"),
+        };
+    }
+
+    private static RequestMatcher[] staticResourceMatchers() {
+        return new RequestMatcher[] {
+            antMatcher("/css/**"), antMatcher("/js/**"), antMatcher("/img/**"), antMatcher("/favicon.ico"),
         };
     }
 

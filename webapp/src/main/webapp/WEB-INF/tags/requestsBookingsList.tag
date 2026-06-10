@@ -229,18 +229,19 @@
               <c:if test="${b.status.name() == 'REJECTED' || b.status.name() == 'CANCELLED' || b.status.name() == 'REFUSED'}"><c:set var="badgeClass" value="badge-error" /></c:if>
               <c:if test="${b.status.name() == 'FINISHED'}"><c:set var="badgeClass" value="badge-ghost" /></c:if>
 
+              <c:set var="bookingTimezoneId" value="" />
+              <c:if test="${not empty b.version.timezone}">
+                <c:set var="bookingTimezoneId" value="${fn:trim(b.version.timezone)}" />
+              </c:if>
+              <c:set var="bookingDisplayTimezone" value="${not empty bookingTimezoneId ? bookingTimezoneId : 'UTC'}" />
               <c:if test="${not empty b.start}">
-                <fmt:parseDate value="${fn:substring(b.start, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedStart" />
+                <fmt:parseDate value="${fn:substring(b.start, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" timeZone="UTC" var="parsedStart" />
               </c:if>
               <c:if test="${not empty b.end}">
-                <fmt:parseDate value="${fn:substring(b.end, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedEnd" />
+                <fmt:parseDate value="${fn:substring(b.end, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" timeZone="UTC" var="parsedEnd" />
               </c:if>
-              <c:if test="${not empty b.updatedAt}">
-                <fmt:parseDate value="${fn:substring(b.updatedAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedUpdate" />
-              </c:if>
-              <fmt:formatDate value="${parsedStart}" pattern="dd MMM yyyy, HH:mm" var="fmtStart" />
-              <fmt:formatDate value="${parsedEnd}" pattern="dd MMM yyyy, HH:mm" var="fmtEnd" />
-              <fmt:formatDate value="${parsedUpdate}" pattern="dd MMM yyyy, HH:mm" var="fmtUpdate" />
+              <fmt:formatDate value="${parsedStart}" pattern="dd MMM yyyy, HH:mm" timeZone="${bookingDisplayTimezone}" var="fmtStart" />
+              <fmt:formatDate value="${parsedEnd}" pattern="dd MMM yyyy, HH:mm" timeZone="${bookingDisplayTimezone}" var="fmtEnd" />
 
               <c:url var="incomingAcceptUrl" value="/requests/incoming/${b.id}/accept" />
               <c:url var="incomingRejectUrl" value="/requests/incoming/${b.id}/reject" />
@@ -283,6 +284,11 @@
                           <span class="material-symbols-outlined text-[14px]">calendar_today</span>
                           <c:out value="${fmtStart}" /> &rarr; <c:out value="${fmtEnd}" />
                         </p>
+                        <c:if test="${not empty bookingTimezoneId}">
+                          <p class="m-0 text-[10px] font-semibold text-on-surface-variant mt-1">
+                            <spring:message code="requests.detail.bookingTimezoneNotice" arguments="${bookingTimezoneId}" />
+                          </p>
+                        </c:if>
                         <p class="m-0 text-xs font-semibold text-on-surface-variant flex items-center gap-1 mt-1">
                           <span class="material-symbols-outlined text-[14px]">attach_money</span>
                           $<fmt:formatNumber value="${bookingTotalPrice}" type="number" groupingUsed="true" maxFractionDigits="0" />
@@ -314,7 +320,9 @@
                       </div>
                       <div>
                         <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-outline"><c:out value="${updatedLabel}" /></p>
-                        <p class="m-0 text-xs font-mono text-on-surface-variant mt-0.5"><c:out value="${fmtUpdate}" /></p>
+                        <p class="m-0 text-xs font-mono text-on-surface-variant mt-0.5">
+                          <paw:utcDateTime value="${b.updatedAt}" format="datetime-medium" />
+                        </p>
                       </div>
                     </div>
 
@@ -426,17 +434,9 @@
                             <c:set var="hasGuestMessage" value="${not empty pp.guestMsg}" />
                             <c:set var="hasHostMessage" value="${not empty pp.hostMsg}" />
                             <c:if test="${hasGuestMessage || hasHostMessage}">
-                              <c:if test="${hasGuestMessage && not empty pp.guestAt}">
-                                <fmt:parseDate value="${fn:substring(pp.guestAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedGuestMessageAt" />
-                                <fmt:formatDate value="${parsedGuestMessageAt}" pattern="dd MMM yyyy, HH:mm" var="fmtGuestMessageAt" />
-                              </c:if>
-                              <c:if test="${hasHostMessage && not empty pp.hostAt}">
-                                <fmt:parseDate value="${fn:substring(pp.hostAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedHostMessageAt" />
-                                <fmt:formatDate value="${parsedHostMessageAt}" pattern="dd MMM yyyy, HH:mm" var="fmtHostMessageAt" />
-                              </c:if>
                               <c:choose>
                                 <c:when test="${hasGuestMessage && hasHostMessage}">
-                                  <c:set var="hostMessageFirst" value="${parsedHostMessageAt.time < parsedGuestMessageAt.time}" />
+                                  <c:set var="hostMessageFirst" value="${pp.hostAt < pp.guestAt}" />
                                 </c:when>
                                 <c:otherwise>
                                   <c:set var="hostMessageFirst" value="${hasHostMessage && !hasGuestMessage}" />
@@ -448,7 +448,7 @@
                                     <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error space-y-1">
                                       <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error"><c:out value="${hostMessageLabel}" /></p>
-                                        <c:if test="${not empty fmtHostMessageAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><c:out value="${fmtHostMessageAt}" /></p></c:if>
+                                        <c:if test="${not empty pp.hostAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><paw:utcDateTime value="${pp.hostAt}" format="datetime-medium" /></p></c:if>
                                       </div>
                                       <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${pp.hostMsg}" /></p>
                                     </div>
@@ -457,7 +457,7 @@
                                     <div class="rounded-lg bg-base-100 p-3 border-l-4 border-primary space-y-1">
                                       <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${guestMessageDisplayLabel}" /></p>
-                                        <c:if test="${not empty fmtGuestMessageAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><c:out value="${fmtGuestMessageAt}" /></p></c:if>
+                                        <c:if test="${not empty pp.guestAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><paw:utcDateTime value="${pp.guestAt}" format="datetime-medium" /></p></c:if>
                                       </div>
                                       <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${pp.guestMsg}" /></p>
                                     </div>
@@ -468,7 +468,7 @@
                                     <div class="rounded-lg bg-base-100 p-3 border-l-4 border-primary space-y-1">
                                       <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${guestMessageDisplayLabel}" /></p>
-                                        <c:if test="${not empty fmtGuestMessageAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><c:out value="${fmtGuestMessageAt}" /></p></c:if>
+                                        <c:if test="${not empty pp.guestAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><paw:utcDateTime value="${pp.guestAt}" format="datetime-medium" /></p></c:if>
                                       </div>
                                       <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${pp.guestMsg}" /></p>
                                     </div>
@@ -477,7 +477,7 @@
                                     <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error space-y-1">
                                       <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error"><c:out value="${hostMessageLabel}" /></p>
-                                        <c:if test="${not empty fmtHostMessageAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><c:out value="${fmtHostMessageAt}" /></p></c:if>
+                                        <c:if test="${not empty pp.hostAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><paw:utcDateTime value="${pp.hostAt}" format="datetime-medium" /></p></c:if>
                                       </div>
                                       <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${pp.hostMsg}" /></p>
                                     </div>

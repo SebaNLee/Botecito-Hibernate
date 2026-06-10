@@ -5,8 +5,6 @@
 <%@ attribute name="targetType" required="false" type="java.lang.String" rtexprvalue="true" %>
 <%@ attribute name="existingReview" required="false" type="ar.edu.itba.paw.models.entity.Review" rtexprvalue="true" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 
@@ -25,11 +23,7 @@
           <c:if test="${not empty existingReview.comment}">
             <p class="m-0 text-sm text-on-surface-variant break-words whitespace-pre-line"><c:out value="${existingReview.comment}" /></p>
           </c:if>
-          <c:if test="${not empty existingReview.createdAt}">
-            <fmt:parseDate value="${fn:substring(existingReview.createdAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedReviewDate" />
-            <fmt:formatDate value="${parsedReviewDate}" pattern="dd/MM/yyyy" var="formattedReviewDate" />
-          </c:if>
-          <p class="m-0 text-xs text-outline"><c:out value="${formattedReviewDate}" /></p>
+          <p class="m-0 text-xs text-outline"><paw:utcDateTime value="${existingReview.createdAt}" format="date" /></p>
         </div>
       </jsp:body>
     </paw:detailsModal>

@@ -3,7 +3,6 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 
 <c:url var="settingsUrl" value="/settings" />
@@ -133,11 +132,7 @@
                   <spring:message code="settings.memberSince" />
                 </p>
                 <p class="text-base font-bold text-on-surface mt-1 mb-0">
-                  <c:if test="${not empty user.createdAt}">
-                    <fmt:parseDate value="${fn:substring(user.createdAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedMemberSince" />
-                    <fmt:formatDate value="${parsedMemberSince}" pattern="dd/MM/yyyy" var="formattedMemberSince" />
-                  </c:if>
-                  <c:out value="${formattedMemberSince}" />
+                  <paw:utcDateTime value="${user.createdAt}" format="date" />
                 </p>
               </div>
 

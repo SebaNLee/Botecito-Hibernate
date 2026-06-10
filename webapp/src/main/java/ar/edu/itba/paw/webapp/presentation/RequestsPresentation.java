@@ -45,13 +45,9 @@ public final class RequestsPresentation {
         return mav;
     }
 
-    public static ModelAndView incoming(
-            final BookingSearchForm search,
-            final PageModel<Booking> bookingPage,
-            final Map<Integer, List<Review>> userReviews) {
+    public static ModelAndView incoming(final BookingSearchForm search, final PageModel<Booking> bookingPage) {
         final ModelAndView mav = new ModelAndView("requests-incoming", "bookingSearch", search);
         mav.addObject("bookingPage", bookingPage);
-        addUserReviews(mav, userReviews);
         return mav;
     }
 
@@ -72,16 +68,6 @@ public final class RequestsPresentation {
         addBookingSearchParams(redirectAttributes, search);
         addReviewFlash(redirectAttributes, validationFailed, created);
         return new ModelAndView(REDIRECT_OUTGOING);
-    }
-
-    public static ModelAndView incomingAfterReview(
-            final BookingSearchForm search,
-            final RedirectAttributes redirectAttributes,
-            final boolean validationFailed,
-            final boolean created) {
-        addBookingSearchParams(redirectAttributes, search);
-        addReviewFlash(redirectAttributes, validationFailed, created);
-        return new ModelAndView(REDIRECT_INCOMING);
     }
 
     public static ModelAndView acceptIncomingBookingResult(

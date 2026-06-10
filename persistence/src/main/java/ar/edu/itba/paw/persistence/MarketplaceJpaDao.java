@@ -1,16 +1,20 @@
 package ar.edu.itba.paw.persistence;
 
+import ar.edu.itba.paw.models.booking.BookingBlockingStatuses;
 import ar.edu.itba.paw.models.dto.MarketplaceQueryModel;
 import ar.edu.itba.paw.models.dto.PageModel;
+import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.entity.TargetEnum;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.persistence.utils.Paging;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
@@ -19,10 +23,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class MarketplaceJpaDao implements MarketplaceDao {
-
-    private static final String BOOKING_BLOCKING_STATUSES =
-            "CAST('PENDING' AS booking_status_enum), CAST('ACCEPTED' AS booking_status_enum), "
-                    + "CAST('PAID' AS booking_status_enum), CAST('CONFIRMED' AS booking_status_enum)";
 
     private static final String VERSION_FETCH_JPQL = "SELECT DISTINCT v FROM Version v "
             + "JOIN FETCH v.item JOIN FETCH v.location JOIN FETCH v.type "
@@ -164,7 +164,7 @@ public class MarketplaceJpaDao implements MarketplaceDao {
             whereClauses.add("NOT EXISTS (SELECT 1 FROM booking b"
                     + " INNER JOIN version bv ON bv.id = b.version_id"
                     + " WHERE bv.item_id = v.item_id"
-                    + " AND b.status IN (" + BOOKING_BLOCKING_STATUSES + ")"
+                    + " AND b.status IN (" + displayBlockingStatusesSqlLiteral() + ")"
                     + " AND b.start <= ((CAST(:requestedDate AS date) + CAST(:requestedEnd AS time))"
                     + " AT TIME ZONE COALESCE(NULLIF(TRIM(v.timezone), ''), 'UTC')) AT TIME ZONE 'UTC'"
                     + " AND ((CAST(:requestedDate AS date) + CAST(:requestedStart AS time))"
@@ -233,5 +233,15 @@ public class MarketplaceJpaDao implements MarketplaceDao {
 
     private static boolean hasRequestedBookingRange(final MarketplaceQueryModel query) {
         return query.getRequestedDate() != null && query.getStartTime() != null && query.getEndTime() != null;
+    }
+
+    private static String displayBlockingStatusesSqlLiteral() {
+        return toBookingStatusEnumSqlLiterals(BookingBlockingStatuses.displayBlockingStates());
+    }
+
+    private static String toBookingStatusEnumSqlLiterals(final EnumSet<BookingStatusEnum> statuses) {
+        return statuses.stream()
+                .map(status -> "CAST('" + status.name() + "' AS booking_status_enum)")
+                .collect(Collectors.joining(", "));
     }
 }

@@ -16,6 +16,7 @@ import ar.edu.itba.paw.models.entity.Users;
 import ar.edu.itba.paw.models.entity.Version;
 import ar.edu.itba.paw.models.entity.WeekdayEnum;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
+import ar.edu.itba.paw.models.exceptions.InactiveItemException;
 import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.math.BigDecimal;
@@ -96,8 +97,18 @@ public class ItemImpl implements ItemService {
 
     @Override
     @Transactional(readOnly = true)
+    public Item requireOwnedActiveItem(final int itemId, final int userId) {
+        final Item item = requireOwnedItem(itemId, userId);
+        if (item.getStatus() != ItemStatusEnum.ACTIVE) {
+            throw new InactiveItemException();
+        }
+        return item;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Version requireOwnedFullData(int itemId, int userId) {
-        var version = requireOwnedItem(itemId, userId).getLatestVersion();
+        var version = requireOwnedActiveItem(itemId, userId).getLatestVersion();
         var avail = version.getAvailabilities();
         var media = version.getMedia();
 

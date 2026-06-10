@@ -109,7 +109,7 @@ public class PublishServiceImplTest {
         Version current = matchingVersion();
         current.setTitle("Old Title");
         when(itemService.requireOwnedFullData(ITEM_ID, OWNER_ID)).thenReturn(current);
-        when(bookingService.itemHasBookings(ITEM_ID)).thenReturn(true);
+        when(bookingService.itemHasBookings(current.getItem())).thenReturn(true);
 
         boolean result = publishService.edit(
                 ITEM_ID,

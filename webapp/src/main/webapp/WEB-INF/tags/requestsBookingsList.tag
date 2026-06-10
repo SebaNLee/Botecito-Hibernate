@@ -47,10 +47,8 @@
 <spring:message code="itemDetail.reviews.comment" var="reviewCommentLabel" />
 <spring:message code="settings.reviews.submit" var="reviewSubmitLabel" />
 <spring:message code="settings.reviews.target.item" var="reviewItemLabel" />
-<spring:message code="settings.reviews.target.user" var="reviewUserLabel" />
 <spring:message code="settings.reviews.view" var="reviewViewLabel" />
 <spring:message code="settings.reviews.view.item" var="reviewViewItemLabel" />
-<spring:message code="settings.reviews.view.user" var="reviewViewUserLabel" />
 <spring:message code="settings.reviews.view.owner" var="reviewViewOwnerLabel" />
 <spring:message code="settings.reviews.target.owner" var="reviewOwnerLabel" />
 <spring:message code="itemDetail.price.total" var="bookingTotalPriceLabel" />
@@ -101,7 +99,8 @@
                 label="${dateLabel}"
                 value="${bookingSearch.dateParam}"
                 placeholder="${datePlaceholder}"
-                restrictToAvailability="false" />
+                restrictToAvailability="false"
+                restrictDateRange="false" />
           </div>
 
           <paw:optionsPicker
@@ -230,18 +229,19 @@
               <c:if test="${b.status.name() == 'REJECTED' || b.status.name() == 'CANCELLED' || b.status.name() == 'REFUSED'}"><c:set var="badgeClass" value="badge-error" /></c:if>
               <c:if test="${b.status.name() == 'FINISHED'}"><c:set var="badgeClass" value="badge-ghost" /></c:if>
 
+              <c:set var="bookingTimezoneId" value="" />
+              <c:if test="${not empty b.version.timezone}">
+                <c:set var="bookingTimezoneId" value="${fn:trim(b.version.timezone)}" />
+              </c:if>
+              <c:set var="bookingDisplayTimezone" value="${not empty bookingTimezoneId ? bookingTimezoneId : 'UTC'}" />
               <c:if test="${not empty b.start}">
-                <fmt:parseDate value="${fn:substring(b.start, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedStart" />
+                <fmt:parseDate value="${fn:substring(b.start, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" timeZone="UTC" var="parsedStart" />
               </c:if>
               <c:if test="${not empty b.end}">
-                <fmt:parseDate value="${fn:substring(b.end, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedEnd" />
+                <fmt:parseDate value="${fn:substring(b.end, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" timeZone="UTC" var="parsedEnd" />
               </c:if>
-              <c:if test="${not empty b.updatedAt}">
-                <fmt:parseDate value="${fn:substring(b.updatedAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedUpdate" />
-              </c:if>
-              <fmt:formatDate value="${parsedStart}" pattern="dd MMM yyyy, HH:mm" var="fmtStart" />
-              <fmt:formatDate value="${parsedEnd}" pattern="dd MMM yyyy, HH:mm" var="fmtEnd" />
-              <fmt:formatDate value="${parsedUpdate}" pattern="dd MMM yyyy, HH:mm" var="fmtUpdate" />
+              <fmt:formatDate value="${parsedStart}" pattern="dd MMM yyyy, HH:mm" timeZone="${bookingDisplayTimezone}" var="fmtStart" />
+              <fmt:formatDate value="${parsedEnd}" pattern="dd MMM yyyy, HH:mm" timeZone="${bookingDisplayTimezone}" var="fmtEnd" />
 
               <c:url var="incomingAcceptUrl" value="/requests/incoming/${b.id}/accept" />
               <c:url var="incomingRejectUrl" value="/requests/incoming/${b.id}/reject" />
@@ -284,6 +284,11 @@
                           <span class="material-symbols-outlined text-[14px]">calendar_today</span>
                           <c:out value="${fmtStart}" /> &rarr; <c:out value="${fmtEnd}" />
                         </p>
+                        <c:if test="${not empty bookingTimezoneId}">
+                          <p class="m-0 text-[10px] font-semibold text-on-surface-variant mt-1">
+                            <spring:message code="requests.detail.bookingTimezoneNotice" arguments="${bookingTimezoneId}" />
+                          </p>
+                        </c:if>
                         <p class="m-0 text-xs font-semibold text-on-surface-variant flex items-center gap-1 mt-1">
                           <span class="material-symbols-outlined text-[14px]">attach_money</span>
                           $<fmt:formatNumber value="${bookingTotalPrice}" type="number" groupingUsed="true" maxFractionDigits="0" />
@@ -315,7 +320,9 @@
                       </div>
                       <div>
                         <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-outline"><c:out value="${updatedLabel}" /></p>
-                        <p class="m-0 text-xs font-mono text-on-surface-variant mt-0.5"><c:out value="${fmtUpdate}" /></p>
+                        <p class="m-0 text-xs font-mono text-on-surface-variant mt-0.5">
+                          <paw:utcDateTime value="${b.updatedAt}" format="datetime-medium" />
+                        </p>
                       </div>
                     </div>
 
@@ -323,7 +330,7 @@
                       <div class="mt-1 bg-base-200/50 p-2 rounded flex items-center justify-between border border-outline-variant/10">
                         <div class="flex-1">
                            <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-outline">
-                              <c:out value="${aliasLabel}" default="Payment Alias" />
+                              <c:out value="${aliasLabel}" />
                            </p>
                             <p class="m-0 text-sm font-mono text-on-surface-variant select-all"><c:out value="${b.version.item.host.alias}" /></p>
                         </div>
@@ -427,17 +434,9 @@
                             <c:set var="hasGuestMessage" value="${not empty pp.guestMsg}" />
                             <c:set var="hasHostMessage" value="${not empty pp.hostMsg}" />
                             <c:if test="${hasGuestMessage || hasHostMessage}">
-                              <c:if test="${hasGuestMessage && not empty pp.guestAt}">
-                                <fmt:parseDate value="${fn:substring(pp.guestAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedGuestMessageAt" />
-                                <fmt:formatDate value="${parsedGuestMessageAt}" pattern="dd MMM yyyy, HH:mm" var="fmtGuestMessageAt" />
-                              </c:if>
-                              <c:if test="${hasHostMessage && not empty pp.hostAt}">
-                                <fmt:parseDate value="${fn:substring(pp.hostAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedHostMessageAt" />
-                                <fmt:formatDate value="${parsedHostMessageAt}" pattern="dd MMM yyyy, HH:mm" var="fmtHostMessageAt" />
-                              </c:if>
                               <c:choose>
                                 <c:when test="${hasGuestMessage && hasHostMessage}">
-                                  <c:set var="hostMessageFirst" value="${parsedHostMessageAt.time < parsedGuestMessageAt.time}" />
+                                  <c:set var="hostMessageFirst" value="${pp.hostAt < pp.guestAt}" />
                                 </c:when>
                                 <c:otherwise>
                                   <c:set var="hostMessageFirst" value="${hasHostMessage && !hasGuestMessage}" />
@@ -449,7 +448,7 @@
                                     <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error space-y-1">
                                       <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error"><c:out value="${hostMessageLabel}" /></p>
-                                        <c:if test="${not empty fmtHostMessageAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><c:out value="${fmtHostMessageAt}" /></p></c:if>
+                                        <c:if test="${not empty pp.hostAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><paw:utcDateTime value="${pp.hostAt}" format="datetime-medium" /></p></c:if>
                                       </div>
                                       <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${pp.hostMsg}" /></p>
                                     </div>
@@ -458,7 +457,7 @@
                                     <div class="rounded-lg bg-base-100 p-3 border-l-4 border-primary space-y-1">
                                       <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${guestMessageDisplayLabel}" /></p>
-                                        <c:if test="${not empty fmtGuestMessageAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><c:out value="${fmtGuestMessageAt}" /></p></c:if>
+                                        <c:if test="${not empty pp.guestAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><paw:utcDateTime value="${pp.guestAt}" format="datetime-medium" /></p></c:if>
                                       </div>
                                       <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${pp.guestMsg}" /></p>
                                     </div>
@@ -469,7 +468,7 @@
                                     <div class="rounded-lg bg-base-100 p-3 border-l-4 border-primary space-y-1">
                                       <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-outline"><c:out value="${guestMessageDisplayLabel}" /></p>
-                                        <c:if test="${not empty fmtGuestMessageAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><c:out value="${fmtGuestMessageAt}" /></p></c:if>
+                                        <c:if test="${not empty pp.guestAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><paw:utcDateTime value="${pp.guestAt}" format="datetime-medium" /></p></c:if>
                                       </div>
                                       <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${pp.guestMsg}" /></p>
                                     </div>
@@ -478,7 +477,7 @@
                                     <div class="rounded-lg bg-error/10 p-3 border-l-4 border-error space-y-1">
                                       <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
                                         <p class="m-0 text-[11px] font-bold uppercase tracking-wider text-error"><c:out value="${hostMessageLabel}" /></p>
-                                        <c:if test="${not empty fmtHostMessageAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><c:out value="${fmtHostMessageAt}" /></p></c:if>
+                                        <c:if test="${not empty pp.hostAt}"><p class="m-0 text-[10px] font-mono text-on-surface-variant"><paw:utcDateTime value="${pp.hostAt}" format="datetime-medium" /></p></c:if>
                                       </div>
                                       <p class="m-0 break-words text-sm text-on-surface whitespace-pre-line"><c:out value="${pp.hostMsg}" /></p>
                                     </div>
@@ -501,7 +500,7 @@
                         </jsp:body>
                       </paw:detailsModal>
                   </c:if>
-                  <c:if test="${b.status.name() == 'FINISHED'}">
+                  <c:if test="${!isIncoming && b.status.name() == 'FINISHED'}">
                     <c:set var="reviewsForBooking" value="${userReviews[b.id]}" />
                     <c:set var="hasItemReview" value="${false}" />
                     <c:set var="hasUserReview" value="${false}" />
@@ -519,56 +518,36 @@
                         </c:if>
                       </c:forEach>
                     </c:if>
-                    <c:choose>
-                      <c:when test="${isIncoming}">
-                        <c:choose>
-                          <c:when test="${hasUserReview}">
-                            <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review').showModal()">
-                              <span class="material-symbols-outlined text-sm">visibility</span> <c:out value="${reviewViewUserLabel}" />
-                            </button>
-                            <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review" listMode="${listMode}" existingReview="${userReview}" />
-                          </c:when>
-                          <c:otherwise>
-                            <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review').showModal()">
-                              <c:out value="${reviewUserLabel}" />
-                            </button>
-                            <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review" listMode="${listMode}" />
-                          </c:otherwise>
-                        </c:choose>
-                      </c:when>
-                      <c:otherwise>
-                        <div class="flex flex-col gap-2">
-                          <c:choose>
-                            <c:when test="${hasItemReview}">
-                              <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-item').showModal()">
-                                <span class="material-symbols-outlined text-sm">visibility</span> <c:out value="${reviewViewItemLabel}" />
-                              </button>
-                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-item" listMode="${listMode}" existingReview="${itemReview}" />
-                            </c:when>
-                            <c:otherwise>
-                              <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-item').showModal()">
-                                <c:out value="${reviewItemLabel}" />
-                              </button>
-                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-item" listMode="${listMode}" targetType="ITEM" />
-                            </c:otherwise>
-                          </c:choose>
-                          <c:choose>
-                            <c:when test="${hasUserReview}">
-                              <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-user').showModal()">
-                                <span class="material-symbols-outlined text-sm">visibility</span> <c:out value="${reviewViewOwnerLabel}" />
-                              </button>
-                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-user" listMode="${listMode}" existingReview="${userReview}" />
-                            </c:when>
-                            <c:otherwise>
-                              <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-user').showModal()">
-                                <c:out value="${reviewOwnerLabel}" />
-                              </button>
-                              <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-user" listMode="${listMode}" targetType="USER" />
-                            </c:otherwise>
-                          </c:choose>
-                        </div>
-                      </c:otherwise>
-                    </c:choose>
+                    <div class="flex flex-col gap-2">
+                      <c:choose>
+                        <c:when test="${hasItemReview}">
+                          <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-item').showModal()">
+                            <span class="material-symbols-outlined text-sm">visibility</span> <c:out value="${reviewViewItemLabel}" />
+                          </button>
+                          <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-item" listMode="${listMode}" existingReview="${itemReview}" />
+                        </c:when>
+                        <c:otherwise>
+                          <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-item').showModal()">
+                            <c:out value="${reviewItemLabel}" />
+                          </button>
+                          <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-item" listMode="${listMode}" targetType="ITEM" />
+                        </c:otherwise>
+                      </c:choose>
+                      <c:choose>
+                        <c:when test="${hasUserReview}">
+                          <button type="button" class="btn btn-outline btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-user').showModal()">
+                            <span class="material-symbols-outlined text-sm">visibility</span> <c:out value="${reviewViewOwnerLabel}" />
+                          </button>
+                          <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-user" listMode="${listMode}" existingReview="${userReview}" />
+                        </c:when>
+                        <c:otherwise>
+                          <button type="button" class="btn btn-primary btn-sm w-full" onclick="document.getElementById('${detailModalId}-review-user').showModal()">
+                            <c:out value="${reviewOwnerLabel}" />
+                          </button>
+                          <paw:reviewModal bookingId="${b.id}" modalId="${detailModalId}-review-user" listMode="${listMode}" targetType="USER" />
+                        </c:otherwise>
+                      </c:choose>
+                    </div>
                   </c:if>
                 </div>
               </div>

@@ -1,6 +1,4 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
-<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <%@ taglib prefix="paw" tagdir="/WEB-INF/tags" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
@@ -129,11 +127,7 @@
               <c:forEach items="${reportPage.content}" var="report">
                 <tr>
                   <td class="whitespace-nowrap text-sm">
-                    <c:if test="${not empty report.createdAt}">
-                      <fmt:parseDate value="${fn:substring(report.createdAt, 0, 16)}" pattern="yyyy-MM-dd'T'HH:mm" var="parsedReportDate" />
-                      <fmt:formatDate value="${parsedReportDate}" pattern="dd/MM/yyyy HH:mm" var="formattedReportDate" />
-                    </c:if>
-                    <c:out value="${formattedReportDate}" />
+                    <paw:utcDateTime value="${report.createdAt}" format="datetime" />
                   </td>
                   <td class="text-sm">
                     <spring:message code="report.reason.${report.reason}" />

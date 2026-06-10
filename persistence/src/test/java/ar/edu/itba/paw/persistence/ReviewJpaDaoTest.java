@@ -53,13 +53,14 @@ public class ReviewJpaDaoTest {
 
         Optional<Review> created =
                 reviewDao.createReview(booking.getId(), guest.getId(), TargetEnum.ITEM, 4.5, "Great!");
-
-        assertTrue(created.isPresent());
-        assertEquals(4.5, created.get().getRating().doubleValue(), 0.01);
         em.flush();
         em.clear();
 
-        assertNotNull(em.find(Review.class, created.get().getId()));
+        assertTrue(created.isPresent());
+        Review persisted = em.find(Review.class, created.get().getId());
+        assertNotNull(persisted);
+        assertEquals(4.5, persisted.getRating().doubleValue(), 0.01);
+        assertEquals("Great!", persisted.getComment());
     }
 
     @Test
@@ -78,7 +79,7 @@ public class ReviewJpaDaoTest {
     }
 
     @Test
-    public void testFindReviewsBySender() {
+    public void testFindReviewsBySenderAndBookingIds() {
         Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
         Version version = insertVersion(em, item, itemType, location, "Boat");
         Booking booking = insertBooking(em, version, guest, BookingStatusEnum.FINISHED);
@@ -87,7 +88,7 @@ public class ReviewJpaDaoTest {
         insertReview(em, booking, guest, TargetEnum.USER, 5.0, "Second");
         em.flush();
 
-        List<Review> reviews = reviewDao.findReviewsBySender(guest.getId());
+        List<Review> reviews = reviewDao.findReviewsBySenderAndBookingIds(guest.getId(), List.of(booking.getId()));
 
         assertEquals(2, reviews.size());
     }

@@ -4,6 +4,7 @@ import ar.edu.itba.paw.models.exceptions.BookingCollisionException;
 import ar.edu.itba.paw.models.exceptions.EmailAlreadyExistsException;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
 import ar.edu.itba.paw.models.exceptions.IllegalBookingOperationException;
+import ar.edu.itba.paw.models.exceptions.InactiveItemException;
 import ar.edu.itba.paw.models.exceptions.InvalidPaymentProofException;
 import ar.edu.itba.paw.models.exceptions.InvalidSlotException;
 import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
@@ -48,6 +49,12 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ModelAndView handleForbiddenOperation(final HttpServletRequest request) {
         return errorPage(request, HttpStatus.FORBIDDEN.value());
+    }
+
+    @ExceptionHandler(InactiveItemException.class)
+    public ModelAndView handleInactiveItem(final RedirectAttributes redirectAttributes) {
+        ToastSupport.error(redirectAttributes, "settings.publications.inactiveAction");
+        return postRedirect("/my-boats");
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)

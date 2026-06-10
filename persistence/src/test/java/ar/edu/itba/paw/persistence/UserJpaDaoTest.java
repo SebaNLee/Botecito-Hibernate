@@ -38,23 +38,24 @@ public class UserJpaDaoTest {
 
     @Test
     public void testCreateUser() {
-        Users newUser = new Users();
-        newUser.setFirstName("Botecito");
-        newUser.setLastName("User");
-        newUser.setEmail("botecito.user@gmail.com");
-        newUser.setLanguage("en");
-        newUser.setVerified(false);
-        newUser.setAdmin(false);
-        newUser.setCreatedAt(LocalDateTime.now());
+        Users user = new Users();
+        user.setFirstName("Botecito");
+        user.setLastName("User");
+        user.setEmail("botecito.user@gmail.com");
+        user.setLanguage("en");
+        user.setVerified(false);
+        user.setAdmin(false);
+        user.setCreatedAt(LocalDateTime.now());
 
-        Users created = userDao.createUser(newUser);
-        assertNotNull(created.getId());
-        assertEquals("botecito.user@gmail.com", created.getEmail());
-
+        Users created = userDao.createUser(user);
         em.flush();
         em.clear();
-        Users found = em.find(Users.class, created.getId());
-        assertEquals("botecito.user@gmail.com", found.getEmail());
+        assertNotNull(created.getId());
+
+        Users persisted = em.find(Users.class, created.getId());
+        assertNotNull(persisted);
+        assertEquals("botecito.user@gmail.com", persisted.getEmail());
+        assertEquals("Botecito", persisted.getFirstName());
     }
 
     @Test

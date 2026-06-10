@@ -181,17 +181,37 @@
                     <span class="material-symbols-outlined text-base leading-none">more_vert</span>
                   </button>
                   <ul tabindex="0" class="dropdown-content menu z-30 mt-1 w-52 rounded-box border border-outline-variant/20 bg-base-100 p-2 shadow-md">
-                    <li>
-                      <a href="<c:out value='${editItemUrl}' />" class="gap-2 no-underline">
-                        <span class="material-symbols-outlined text-base">edit</span>
-                        <c:out value="${editLabel}" />
-                      </a>
+                    <li <c:if test="${not itemActive}">class="disabled"</c:if>>
+                      <c:choose>
+                        <c:when test="${itemActive}">
+                          <a href="<c:out value='${editItemUrl}' />" class="gap-2 no-underline">
+                            <span class="material-symbols-outlined text-base">edit</span>
+                            <c:out value="${editLabel}" />
+                          </a>
+                        </c:when>
+                        <c:otherwise>
+                          <span class="gap-2 opacity-50 cursor-not-allowed" aria-disabled="true">
+                            <span class="material-symbols-outlined text-base">edit</span>
+                            <c:out value="${editLabel}" />
+                          </span>
+                        </c:otherwise>
+                      </c:choose>
                     </li>
-                    <li>
-                      <a href="<c:out value='${manageAvailabilityItemUrl}' />" class="gap-2 no-underline">
-                        <span class="material-symbols-outlined text-base">event_available</span>
-                        <c:out value="${manageAvailabilityLabel}" />
-                      </a>
+                    <li <c:if test="${not itemActive}">class="disabled"</c:if>>
+                      <c:choose>
+                        <c:when test="${itemActive}">
+                          <a href="<c:out value='${manageAvailabilityItemUrl}' />" class="gap-2 no-underline">
+                            <span class="material-symbols-outlined text-base">event_available</span>
+                            <c:out value="${manageAvailabilityLabel}" />
+                          </a>
+                        </c:when>
+                        <c:otherwise>
+                          <span class="gap-2 opacity-50 cursor-not-allowed" aria-disabled="true">
+                            <span class="material-symbols-outlined text-base">event_available</span>
+                            <c:out value="${manageAvailabilityLabel}" />
+                          </span>
+                        </c:otherwise>
+                      </c:choose>
                     </li>
                     <c:choose>
                       <c:when test="${itemActive}">

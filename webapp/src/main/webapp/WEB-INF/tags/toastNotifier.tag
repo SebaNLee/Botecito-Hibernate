@@ -3,7 +3,7 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
 <spring:message code="alert.dismiss" var="toastDismissLabel" htmlEscape="true" />
 
-<c:set var="hasQueryToast" value="${not empty param.toastError}" />
+<c:set var="hasQueryToast" value="${not empty param.toastError and allowedToastCodes[param.toastError]}" />
 
 <c:if test="${hasQueryToast or not empty toasts}">
   <div class="toast toast-end toast-bottom z-[60]" data-paw-toast-container>

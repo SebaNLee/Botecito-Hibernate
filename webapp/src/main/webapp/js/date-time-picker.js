@@ -439,11 +439,14 @@
     return toIsoDate(today.getFullYear(), today.getMonth(), today.getDate());
   }
 
+  /** Keep in sync with BookingBlockingStatuses.LISTING_PICKER_MONTHS_AROUND_TODAY. */
+  const SEARCH_FILTER_MONTHS_AHEAD = 2;
+
   function visibleRangeEndIsoDate() {
     const today = new Date();
     const maxDate = new Date(
       today.getFullYear(),
-      today.getMonth() + 2,
+      today.getMonth() + SEARCH_FILTER_MONTHS_AHEAD,
       today.getDate(),
     );
     return dateObjectToIsoDate(maxDate);
@@ -828,10 +831,15 @@
         root.dataset.restrictToAvailability,
         true,
       );
+      this.restrictDateRange = parseBoolean(
+        root.dataset.restrictDateRange,
+        true,
+      );
       const anchorToday = (root.dataset.anchorTodayIso || "").trim();
       const anchorMax = (root.dataset.anchorMaxDateIso || "").trim();
       this.civilCalendar = parseBoolean(root.dataset.civilCalendar, false);
-      this.useAnchorRange = Boolean(anchorToday && anchorMax);
+      this.useAnchorRange =
+        this.restrictDateRange && Boolean(anchorToday && anchorMax);
       this.today = this.useAnchorRange ? anchorToday : todayIsoDate();
       this.maxDate = this.useAnchorRange ? anchorMax : visibleRangeEndIsoDate();
       this.root.__datePicker = this;
@@ -912,8 +920,13 @@
 
       this.calendar.value = this.input.value || "";
       this.calendar.today = this.today;
-      this.calendar.min = this.today;
-      this.calendar.max = this.maxDate;
+      if (this.restrictDateRange) {
+        this.calendar.min = this.today;
+        this.calendar.max = this.maxDate;
+      } else {
+        this.calendar.removeAttribute("min");
+        this.calendar.removeAttribute("max");
+      }
       this.calendar.locale =
         document.documentElement.lang || navigator.language || "es";
       this.calendar.isDateDisallowed = (date) =>
@@ -957,12 +970,14 @@
     }
 
     getDayState(isoDate) {
-      if (isoDate < this.today) {
-        return "unavailable";
-      }
+      if (this.restrictDateRange) {
+        if (isoDate < this.today) {
+          return "unavailable";
+        }
 
-      if (isoDate > this.maxDate) {
-        return "unavailable";
+        if (isoDate > this.maxDate) {
+          return "unavailable";
+        }
       }
 
       if (!this.restrictToAvailability) {
@@ -1311,36 +1326,10 @@
       const date = this.currentDate();
 
       if (isBlank(date)) {
-        if (this.restrictToAvailability) {
+        if (this.startInput.value || this.endInput.value) {
           this.startInput.value = "";
           this.endInput.value = "";
-          return;
-        }
-
-        if (
-          this.startInput.value &&
-          !this.endInput.value &&
-          !this.hasBookableEndFrom(date, this.startInput.value)
-        ) {
-          this.startInput.value = "";
-          this.endInput.value = "";
-          return;
-        }
-
-        if (
-          this.startInput.value &&
-          this.endInput.value &&
-          !this.isContinuousRangeForDate(
-            date,
-            this.startInput.value,
-            this.endInput.value,
-          )
-        ) {
-          this.endInput.value = "";
-        }
-
-        if (!this.startInput.value) {
-          this.endInput.value = "";
+          this.dispatchSelectionChange();
         }
         return;
       }

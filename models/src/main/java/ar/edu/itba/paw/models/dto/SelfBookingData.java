@@ -17,4 +17,8 @@ public final class SelfBookingData {
     private final List<LocalDate> blockedDates;
     private final LocalDate selectedDate;
     private final String timezone;
+    private final DayTimelineData dayTimeline;
+    private final LocalDate listingCalendarToday;
+    private final LocalDate listingCalendarMaxInclusive;
+    private final boolean hasTimelineAvailability;
 }

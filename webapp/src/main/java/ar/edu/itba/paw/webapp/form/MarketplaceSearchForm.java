@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.webapp.form;
 
+import ar.edu.itba.paw.webapp.util.SearchDateRange;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import javax.validation.constraints.AssertTrue;
@@ -80,6 +81,19 @@ public class MarketplaceSearchForm {
             return true;
         }
         return startTime.isBefore(endTime);
+    }
+
+    @AssertTrue(message = "{marketplace.validation.timesRequireDate}")
+    public boolean isSearchDateRequiredForTimes() {
+        if (date != null) {
+            return true;
+        }
+        return startTime == null && endTime == null;
+    }
+
+    @AssertTrue(message = "{marketplace.validation.date.range}")
+    public boolean isSearchDateWithinRange() {
+        return SearchDateRange.isWithinRange(date);
     }
 
     @AssertTrue(message = "{marketplace.validation.minAvgRating.pattern}")

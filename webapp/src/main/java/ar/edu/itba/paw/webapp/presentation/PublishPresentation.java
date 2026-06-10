@@ -21,7 +21,7 @@ public final class PublishPresentation {
     }
 
     public static ModelAndView publishStepOneSuccess() {
-        return new ModelAndView("redirect:/publish/availability");
+        return redirect("/publish/availability");
     }
 
     public static ModelAndView publishStepTwo(final Map<String, Boolean> enabledWeekdays) {
@@ -36,13 +36,11 @@ public final class PublishPresentation {
     }
 
     public static ModelAndView publishStepTwoSuccess() {
-        return new ModelAndView("redirect:/publish/images");
+        return redirect("/publish/images");
     }
 
     public static ModelAndView redirectToPublish() {
-        final RedirectView redirectView = new RedirectView("/publish", true);
-        redirectView.setExposeModelAttributes(false);
-        return new ModelAndView(redirectView);
+        return redirect("/publish");
     }
 
     public static ModelAndView publishStepThree() {
@@ -55,6 +53,12 @@ public final class PublishPresentation {
 
     public static ModelAndView publishCreatedRedirect(final RedirectAttributes redirectAttributes) {
         ToastSupport.success(redirectAttributes, "settings.publications.created");
-        return new ModelAndView("redirect:/my-boats#my-publications");
+        return redirect("/my-boats#my-publications");
+    }
+
+    private static ModelAndView redirect(final String target) {
+        final RedirectView redirectView = new RedirectView(target, true);
+        redirectView.setExposeModelAttributes(false);
+        return new ModelAndView(redirectView);
     }
 }

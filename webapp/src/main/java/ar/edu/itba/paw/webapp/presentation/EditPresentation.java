@@ -29,7 +29,11 @@ public final class EditPresentation {
     }
 
     public static ModelAndView editStepOneSuccess(final int itemId) {
-        return new ModelAndView("redirect:/edit/" + itemId + "/availability");
+        return redirect("/edit/" + itemId + "/availability");
+    }
+
+    public static ModelAndView editEntryRedirect(final int itemId) {
+        return redirect("/edit/" + itemId + "/details");
     }
 
     public static ModelAndView editStepTwo(final int itemId, final Map<String, Boolean> enabledWeekdays) {
@@ -47,13 +51,11 @@ public final class EditPresentation {
     }
 
     public static ModelAndView editStepTwoSuccess(final int itemId) {
-        return new ModelAndView("redirect:/edit/" + itemId + "/images");
+        return redirect("/edit/" + itemId + "/images");
     }
 
     public static ModelAndView redirectToEditDetails(final int itemId) {
-        final RedirectView redirectView = new RedirectView("/edit/" + itemId + "/details", true);
-        redirectView.setExposeModelAttributes(false);
-        return new ModelAndView(redirectView);
+        return redirect("/edit/" + itemId + "/details");
     }
 
     public static ModelAndView editStepThree(final int itemId) {
@@ -70,6 +72,12 @@ public final class EditPresentation {
         } else {
             ToastSupport.info(redirectAttributes, "settings.publications.noChanges");
         }
-        return new ModelAndView("redirect:/my-boats");
+        return redirect("/my-boats");
+    }
+
+    private static ModelAndView redirect(final String target) {
+        final RedirectView redirectView = new RedirectView(target, true);
+        redirectView.setExposeModelAttributes(false);
+        return new ModelAndView(redirectView);
     }
 }

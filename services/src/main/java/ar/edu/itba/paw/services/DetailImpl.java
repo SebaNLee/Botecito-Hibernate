@@ -77,6 +77,7 @@ public class DetailImpl implements DetailService {
                 computeDetailPageFlags(item, viewerId));
     }
 
+    // Recibido OK de los profes presencialmente el 03/06/2026 (lo movimos a un Service)
     private DetailPageFlags computeDetailPageFlags(final Item item, final Integer viewerId) {
         final Users itemOwner = item.getHost();
         final boolean isActive = item.getStatus() == ItemStatusEnum.ACTIVE;

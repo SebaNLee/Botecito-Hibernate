@@ -8,7 +8,7 @@ Welcome to Botecito, a web application for renting and hosting nautical equipmen
 
 ## Stack
 
-Java 21 · Spring · JSP/JSTL · Tailwind · JDBC · PostgreSQL · Jetty · Flyway · JUnit · Mockito · HSQLDB · Lombok · Spotless · Spotbugs
+Java 21 · Spring · JSP/JSTL · Tailwind · JDBC · Hibernate · PostgreSQL · Jetty · Flyway · JUnit · Mockito · HSQLDB · Lombok · Spotless · Spotbugs
 
 ## Devs
 
@@ -40,10 +40,10 @@ sudo -u postgres psql -c "CREATE DATABASE paw;"
 
 ### Running the app
 
-A `run.sh` script is provided to run the project locally:
+A `run-jetty.sh` script is provided to run the project locally:
 
 ```bash
-./run.sh start | stop | restart | status | logs [jetty|tailwind|both]
+./run-jetty.sh
 ```
 
 Or you could also (in separate terminals):

@@ -10,7 +10,7 @@ import java.util.EnumSet;
 public final class BookingBlockingStatuses {
 
     public static final int BOOKING_CLEARANCE_MINUTES = 30;
-    public static final int LISTING_PICKER_MONTHS_AROUND_TODAY = 2;
+    public static final int LISTING_PICKER_DAYS_AHEAD = 60;
     public static final int TIME_SLOT_STEP_MINUTES = 30;
 
     private static final EnumSet<BookingStatusEnum> DISPLAY_BLOCKING = EnumSet.of(

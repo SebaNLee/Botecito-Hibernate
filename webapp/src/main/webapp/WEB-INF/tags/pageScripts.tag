@@ -26,8 +26,11 @@
 <c:if test="${fn:contains(resolvedBundles, ',publish-wizard,')}">
   <script src="<c:url value='/js/publish-wizard.js?v=4' />"></script>
 </c:if>
+<c:if test="${fn:contains(resolvedBundles, ',form-submit,') or fn:contains(resolvedBundles, ',image-gallery,') or fn:contains(resolvedBundles, ',edit-wizard,')}">
+  <script src="<c:url value='/js/gallery-file-error.js' />"></script>
+</c:if>
 <c:if test="${fn:contains(resolvedBundles, ',edit-wizard,')}">
-  <script src="<c:url value='/js/edit-wizard.js?v=9' />"></script>
+  <script src="<c:url value='/js/edit-wizard.js?v=10' />"></script>
 </c:if>
 <c:if test="${fn:contains(resolvedBundles, ',form-submit,')}">
   <script src="<c:url value='/js/form-submit-state.js' />"></script>
@@ -36,7 +39,7 @@
   <script src="<c:url value='/js/weekly-availability.js?v=2' />"></script>
 </c:if>
 <c:if test="${fn:contains(resolvedBundles, ',image-gallery,')}">
-  <script src="<c:url value='/js/image-gallery.js?v=11' />"></script>
+  <script src="<c:url value='/js/image-gallery.js?v=12' />"></script>
 </c:if>
 <c:if test="${fn:contains(resolvedBundles, ',image-carousel,')}">
   <script src="<c:url value='/js/image-carousel.js' />"></script>

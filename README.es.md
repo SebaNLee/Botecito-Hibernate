@@ -8,7 +8,7 @@
 
 ## Stack
 
-Java 21 · Spring · JSP/JSTL · Tailwind · JDBC · PostgreSQL · Jetty · Flyway · JUnit · Mockito · HSQLDB · Lombok · Spotless · Spotbugs
+Java 21 · Spring · JSP/JSTL · Tailwind · JDBC · Hibernate · PostgreSQL · Jetty · Flyway · JUnit · Mockito · HSQLDB · Lombok · Spotless · Spotbugs
 
 ## Devs
 
@@ -40,10 +40,10 @@ sudo -u postgres psql -c "CREATE DATABASE paw;"
 
 ### Ejecutar
 
-Se provee el script `run.sh` para levantar el proyecto localmente:
+Se provee el script `run-jetty.sh` para levantar el proyecto localmente:
 
 ```bash
-./run.sh start | stop | restart | status | logs [jetty|tailwind|both]
+./run-jetty.sh
 ```
 
 O, alternativamente (en diferentes terminales):

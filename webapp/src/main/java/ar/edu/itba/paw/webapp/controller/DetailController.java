@@ -5,7 +5,6 @@ import ar.edu.itba.paw.services.DetailService;
 import ar.edu.itba.paw.webapp.auth.BotecitoUserDetails;
 import ar.edu.itba.paw.webapp.form.ItemDetailViewForm;
 import ar.edu.itba.paw.webapp.form.PreBookingForm;
-import ar.edu.itba.paw.webapp.presentation.DetailPageFlagsFactory;
 import ar.edu.itba.paw.webapp.presentation.DetailPresentation;
 import ar.edu.itba.paw.webapp.presentation.ToastPresentation;
 import javax.servlet.http.HttpServletRequest;
@@ -30,7 +29,6 @@ public class DetailController {
 
     private final DetailService detailService;
     private final BookingService bookingService;
-    private final DetailPageFlagsFactory detailPageFlagsFactory;
     private final MessageSource messageSource;
 
     @ModelAttribute("itemDetailView")
@@ -48,21 +46,19 @@ public class DetailController {
             @Valid @ModelAttribute("itemDetailView") final ItemDetailViewForm itemDetailView,
             final BindingResult errors) {
         itemDetailView.setItemId(itemId);
+        final Integer viewerId = user != null ? user.getId() : null;
         if (errors.hasErrors()) {
-            final var pageData = detailService.getItemDetailPage(itemId, 1);
-            final var flags = detailPageFlagsFactory.compute(pageData.getItem(), user);
+            final var pageData = detailService.getItemDetailPage(itemId, 1, viewerId);
             return DetailPresentation.detailPageWithViewValidationErrors(
                     pageData,
                     user,
-                    flags,
                     request,
                     itemDetailView,
                     errors,
                     ToastPresentation.validationToasts(errors, DETAIL_MESSAGE_PREFIX, messageSource));
         }
-        final var pageData = detailService.getItemDetailPage(itemId, itemDetailView.getPage());
-        final var flags = detailPageFlagsFactory.compute(pageData.getItem(), user);
-        return DetailPresentation.detailPage(pageData, user, flags, request, itemDetailView);
+        final var pageData = detailService.getItemDetailPage(itemId, itemDetailView.getPage(), viewerId);
+        return DetailPresentation.detailPage(pageData, user, request, itemDetailView);
     }
 
     @RequestMapping(value = "/item/{id:[1-9]\\d*}", method = RequestMethod.POST)
@@ -74,12 +70,10 @@ public class DetailController {
             final BindingResult errors,
             final RedirectAttributes redirectAttributes) {
         if (errors.hasErrors()) {
-            final var pageData = detailService.getItemDetailPage(itemId, 1);
-            final var flags = detailPageFlagsFactory.compute(pageData.getItem(), user);
+            final var pageData = detailService.getItemDetailPage(itemId, 1, user != null ? user.getId() : null);
             return DetailPresentation.detailPageWithPreBookingValidationErrors(
                     pageData,
                     user,
-                    flags,
                     request,
                     ToastPresentation.validationToasts(errors, DETAIL_MESSAGE_PREFIX, messageSource));
         }

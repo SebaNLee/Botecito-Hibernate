@@ -10,4 +10,5 @@ public class ItemDetailPageData {
     AvailabilityData availabilityData;
     LocalDate listingCalendarToday;
     LocalDate listingCalendarMaxInclusive;
+    DetailPageFlags flags;
 }

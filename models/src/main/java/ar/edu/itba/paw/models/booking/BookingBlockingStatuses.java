@@ -2,8 +2,6 @@ package ar.edu.itba.paw.models.booking;
 
 import ar.edu.itba.paw.models.entity.BookingStatusEnum;
 import java.util.EnumSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Single source of truth for which booking statuses block availability display vs collision checks.
@@ -15,7 +13,7 @@ public final class BookingBlockingStatuses {
     public static final int LISTING_PICKER_MONTHS_AROUND_TODAY = 2;
     public static final int TIME_SLOT_STEP_MINUTES = 30;
 
-    private static final Set<BookingStatusEnum> DISPLAY_BLOCKING = EnumSet.of(
+    private static final EnumSet<BookingStatusEnum> DISPLAY_BLOCKING = EnumSet.of(
             BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED, BookingStatusEnum.PAID, BookingStatusEnum.CONFIRMED);
 
     private static final EnumSet<BookingStatusEnum> COLLISION_BLOCKING = EnumSet.of(
@@ -31,14 +29,11 @@ public final class BookingBlockingStatuses {
         return status != null && DISPLAY_BLOCKING.contains(status);
     }
 
-    public static EnumSet<BookingStatusEnum> collisionBlockingStates() {
-        return EnumSet.copyOf(COLLISION_BLOCKING);
+    public static EnumSet<BookingStatusEnum> displayBlockingStates() {
+        return EnumSet.copyOf(DISPLAY_BLOCKING);
     }
 
-    /** SQL literal list for native queries, e.g. {@code CAST('PENDING' AS booking_status_enum), ...}. */
-    public static String displayBlockingStatusesSqlLiteral() {
-        return DISPLAY_BLOCKING.stream()
-                .map(status -> "CAST('" + status.name() + "' AS booking_status_enum)")
-                .collect(Collectors.joining(", "));
+    public static EnumSet<BookingStatusEnum> collisionBlockingStates() {
+        return EnumSet.copyOf(COLLISION_BLOCKING);
     }
 }

@@ -1,6 +1,7 @@
 package ar.edu.itba.paw.webapp.presentation;
 
 import ar.edu.itba.paw.models.dto.AvailabilityData;
+import ar.edu.itba.paw.models.dto.DetailPageFlags;
 import ar.edu.itba.paw.models.dto.ItemDetailPageData;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
@@ -35,22 +36,19 @@ public final class DetailPresentation {
     public static ModelAndView detailPage(
             final ItemDetailPageData pageData,
             final BotecitoUserDetails viewer,
-            final DetailPageFlags flags,
             final HttpServletRequest request,
             final ItemDetailViewForm itemDetailView) {
-        return buildDetailView(pageData, viewer, flags, request, itemDetailView, null, null, null, false);
+        return buildDetailView(pageData, viewer, request, itemDetailView, null, null, null, false);
     }
 
     public static ModelAndView detailPageWithViewValidationErrors(
             final ItemDetailPageData pageData,
             final BotecitoUserDetails viewer,
-            final DetailPageFlags flags,
             final HttpServletRequest request,
             final ItemDetailViewForm itemDetailView,
             final BindingResult errors,
             final List<Map<String, String>> toasts) {
-        final ModelAndView mav =
-                buildDetailView(pageData, viewer, flags, request, itemDetailView, null, toasts, null, false);
+        final ModelAndView mav = buildDetailView(pageData, viewer, request, itemDetailView, null, toasts, null, false);
         mav.addAllObjects(errors.getModel());
         return mav;
     }
@@ -58,19 +56,17 @@ public final class DetailPresentation {
     public static ModelAndView detailPageWithPreBookingValidationErrors(
             final ItemDetailPageData pageData,
             final BotecitoUserDetails viewer,
-            final DetailPageFlags flags,
             final HttpServletRequest request,
             final List<Map<String, String>> toasts) {
         final ItemDetailViewForm itemDetailView = new ItemDetailViewForm();
         itemDetailView.setItemId(pageData.getItem().getId());
         itemDetailView.setPage(1);
-        return buildDetailView(pageData, viewer, flags, request, itemDetailView, null, toasts, null, false);
+        return buildDetailView(pageData, viewer, request, itemDetailView, null, toasts, null, false);
     }
 
     public static ModelAndView detailPageWithReportValidationErrors(
             final ItemDetailPageData pageData,
             final BotecitoUserDetails viewer,
-            final DetailPageFlags flags,
             final HttpServletRequest request,
             final ReportForm form,
             final List<Map<String, String>> toasts) {
@@ -81,7 +77,7 @@ public final class DetailPresentation {
         } else {
             itemDetailView.setPage(1);
         }
-        return buildDetailView(pageData, viewer, flags, request, itemDetailView, form, toasts, null, true);
+        return buildDetailView(pageData, viewer, request, itemDetailView, form, toasts, null, true);
     }
 
     public static ModelAndView submitPreBookingSuccess(final int itemId, final RedirectAttributes redirectAttributes) {
@@ -92,7 +88,6 @@ public final class DetailPresentation {
     private static ModelAndView buildDetailView(
             final ItemDetailPageData pageData,
             final BotecitoUserDetails viewer,
-            final DetailPageFlags flags,
             final HttpServletRequest request,
             final ItemDetailViewForm itemDetailView,
             final ReportForm reportForm,
@@ -100,15 +95,12 @@ public final class DetailPresentation {
             final BindingResult errors,
             final boolean openReportModal) {
         final Item item = pageData.getItem();
+        final DetailPageFlags flags = pageData.getFlags();
         final String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
         final Version version = item.getLatestVersion();
         final Users itemOwner = item.getHost();
         final boolean isActive = item.getStatus() == ItemStatusEnum.ACTIVE;
-
-        final boolean isOwner = viewer != null && itemOwner != null && itemOwner.getId() == viewer.getId();
-        final boolean canFavouriteItem = itemOwner == null || viewer == null || itemOwner.getId() != viewer.getId();
-        final boolean canReport = viewer != null && isActive && !isOwner;
-        final boolean canSubscribeToOwner = itemOwner != null && !isOwner;
+        final boolean canReport = viewer != null && isActive && !flags.isOwner() && !flags.isAlreadyReported();
 
         final ModelAndView mav = new ModelAndView(VIEW_NAME);
         mav.addObject("item", item);
@@ -116,13 +108,13 @@ public final class DetailPresentation {
         mav.addObject("viewer", viewer);
         mav.addObject("listingInactiveNotice", !isActive);
         mav.addObject("itemOwner", itemOwner);
-        mav.addObject("isOwner", isOwner);
-        mav.addObject("canFavouriteItem", canFavouriteItem);
-        mav.addObject("favouriteItem", flags.favouriteItem());
-        mav.addObject("canReport", canReport && !flags.alreadyReported());
-        mav.addObject("alreadyReported", flags.alreadyReported());
-        mav.addObject("canSubscribeToOwner", canSubscribeToOwner);
-        mav.addObject("subscribedToOwner", flags.subscribedToOwner());
+        mav.addObject("isOwner", flags.isOwner());
+        mav.addObject("canFavouriteItem", flags.isCanFavouriteItem());
+        mav.addObject("favouriteItem", flags.isFavouriteItem());
+        mav.addObject("canReport", canReport);
+        mav.addObject("alreadyReported", flags.isAlreadyReported());
+        mav.addObject("canSubscribeToOwner", flags.isCanSubscribeToOwner());
+        mav.addObject("subscribedToOwner", flags.isSubscribedToOwner());
         mav.addObject("itemImageUrls", imageUrls(version, contextPath));
         mav.addObject("itemOwnerDisplayName", itemOwner != null ? ownerDisplayName(itemOwner) : "");
         mav.addObject("ownerInitials", itemOwner != null ? ownerInitials(itemOwner) : "");

@@ -1,16 +1,13 @@
 package ar.edu.itba.paw.webapp.util;
 
+import ar.edu.itba.paw.models.booking.BookingBlockingStatuses;
 import java.time.LocalDate;
 
 /**
  * Inclusive search-filter date window for marketplace and landing filters. Keep
- * in sync with
- * {@code visibleRangeEndIsoDate} in {@code date-time-picker.js}.
+ * in sync with {@code visibleRangeEndIsoDate} in {@code date-time-picker.js}.
  */
 public final class SearchDateRange {
-
-    /** Months ahead of today for the inclusive maximum filter date. */
-    public static final int MONTHS_AHEAD = 2;
 
     private SearchDateRange() {}
 
@@ -19,7 +16,7 @@ public final class SearchDateRange {
     }
 
     public static LocalDate maxInclusive() {
-        return LocalDate.now().plusMonths(MONTHS_AHEAD);
+        return LocalDate.now().plusMonths(BookingBlockingStatuses.LISTING_PICKER_MONTHS_AROUND_TODAY);
     }
 
     public static boolean isWithinRange(final LocalDate date) {

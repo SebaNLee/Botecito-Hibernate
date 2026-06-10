@@ -27,6 +27,7 @@ public class DetailImplTest {
 
     private static final int ITEM_ID = 1;
     private static final int HOST_ID = 10;
+    private static final int VIEWER_ID = 30;
     private static final int WRONG_HOST_ID = 20;
     private static final int REVIEW_PAGE = 0;
 
@@ -42,6 +43,15 @@ public class DetailImplTest {
     @Mock
     private AvailabilityService availabilityService;
 
+    @Mock
+    private FavouriteService favouriteService;
+
+    @Mock
+    private ReportService reportService;
+
+    @Mock
+    private SubscriptionService subscriptionService;
+
     @InjectMocks
     private DetailImpl detailService;
 
@@ -52,12 +62,18 @@ public class DetailImplTest {
                 .thenReturn(new AvailabilityData(List.of(), List.of(), Map.of(), Map.of()));
         when(availabilityService.listingCalendarToday(any())).thenReturn(LocalDate.of(2026, 6, 10));
         when(availabilityService.listingCalendarMaxInclusive(any())).thenReturn(LocalDate.of(2026, 8, 31));
+        when(favouriteService.isFavourite(VIEWER_ID, ITEM_ID)).thenReturn(true);
+        when(reportService.hasReported(VIEWER_ID, ITEM_ID)).thenReturn(false);
+        when(subscriptionService.isSubscribed(VIEWER_ID, HOST_ID)).thenReturn(true);
 
-        var result = detailService.getItemDetailPage(ITEM_ID, REVIEW_PAGE);
+        var result = detailService.getItemDetailPage(ITEM_ID, REVIEW_PAGE, VIEWER_ID);
 
         assertNotNull(result);
         assertEquals(ITEM_ID, result.getItem().getId());
         assertNotNull(result.getAvailabilityData());
+        assertFalse(result.getFlags().isOwner());
+        assertTrue(result.getFlags().isFavouriteItem());
+        assertTrue(result.getFlags().isSubscribedToOwner());
     }
 
     @Test
@@ -68,16 +84,19 @@ public class DetailImplTest {
         when(availabilityService.listingCalendarToday(any())).thenReturn(LocalDate.of(2026, 6, 10));
         when(availabilityService.listingCalendarMaxInclusive(any())).thenReturn(LocalDate.of(2026, 8, 31));
 
-        var result = detailService.getItemDetailPage(ITEM_ID, REVIEW_PAGE, HOST_ID);
+        var result = detailService.getItemDetailPage(ITEM_ID, REVIEW_PAGE, HOST_ID, HOST_ID);
 
         assertEquals(ITEM_ID, result.getItem().getId());
+        assertTrue(result.getFlags().isOwner());
+        assertFalse(result.getFlags().isCanFavouriteItem());
+        verifyNoInteractions(favouriteService, reportService, subscriptionService);
     }
 
     @Test
     public void detailPageThrowsNotFoundWhenEmpty() {
         when(detailDao.getItemDetail(ITEM_ID)).thenReturn(Optional.empty());
 
-        assertThrows(ItemNotFoundException.class, () -> detailService.getItemDetailPage(ITEM_ID, REVIEW_PAGE));
+        assertThrows(ItemNotFoundException.class, () -> detailService.getItemDetailPage(ITEM_ID, REVIEW_PAGE, null));
     }
 
     @Test
@@ -86,7 +105,7 @@ public class DetailImplTest {
 
         assertThrows(
                 ForbiddenOperationException.class,
-                () -> detailService.getItemDetailPage(ITEM_ID, REVIEW_PAGE, WRONG_HOST_ID));
+                () -> detailService.getItemDetailPage(ITEM_ID, REVIEW_PAGE, WRONG_HOST_ID, null));
     }
 
     private static Item detailItem(final int hostId, final boolean withVersion) {

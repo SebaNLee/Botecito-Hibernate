@@ -439,7 +439,7 @@
     return toIsoDate(today.getFullYear(), today.getMonth(), today.getDate());
   }
 
-  /** Keep in sync with SearchDateRange.MONTHS_AHEAD on the server. */
+  /** Keep in sync with BookingBlockingStatuses.LISTING_PICKER_MONTHS_AROUND_TODAY. */
   const SEARCH_FILTER_MONTHS_AHEAD = 2;
 
   function visibleRangeEndIsoDate() {

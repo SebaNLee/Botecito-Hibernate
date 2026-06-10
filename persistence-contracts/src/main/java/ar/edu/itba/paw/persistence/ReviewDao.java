@@ -16,7 +16,7 @@ public interface ReviewDao {
 
     Optional<Review> findReviewByBookingSenderAndTargetType(int bookingId, int senderUserId, TargetEnum targetType);
 
-    List<Review> findReviewsBySender(int senderUserId);
+    List<Review> findReviewsBySenderAndBookingIds(int senderUserId, Collection<Integer> bookingIds);
 
     List<Review> findReviewsAboutHost(int hostUserId, int page, int pageSize);
 

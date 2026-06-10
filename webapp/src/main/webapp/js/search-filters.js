@@ -922,7 +922,7 @@
       this.max = parseInteger(root.dataset.max) ?? 20;
       this.step = parseInteger(root.dataset.step) ?? 1;
       this.allowEmpty = root.dataset.allowEmpty === "true";
-      this.placeholder = root.dataset.placeholder || "Cuantos?";
+      this.placeholder = root.dataset.placeholder || "";
       this.root.__peopleCount = this;
       this.bind();
       this.syncDisplay();

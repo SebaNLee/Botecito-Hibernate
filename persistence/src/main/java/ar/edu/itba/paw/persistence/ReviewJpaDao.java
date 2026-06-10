@@ -82,10 +82,17 @@ public class ReviewJpaDao implements ReviewDao {
     }
 
     @Override
-    public List<Review> findReviewsBySender(final int senderUserId) {
+    public List<Review> findReviewsBySenderAndBookingIds(final int senderUserId, final Collection<Integer> bookingIds) {
+        if (bookingIds == null || bookingIds.isEmpty()) {
+            return List.of();
+        }
         return entityManager
-                .createQuery("SELECT r FROM Review r JOIN FETCH r.booking WHERE r.sender.id = :senderId", Review.class)
+                .createQuery(
+                        "SELECT r FROM Review r JOIN FETCH r.booking "
+                                + "WHERE r.sender.id = :senderId AND r.booking.id IN :bookingIds",
+                        Review.class)
                 .setParameter("senderId", senderUserId)
+                .setParameter("bookingIds", bookingIds)
                 .getResultList();
     }
 

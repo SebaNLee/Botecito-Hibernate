@@ -8,7 +8,10 @@ import static org.mockito.Mockito.*;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Image;
 import ar.edu.itba.paw.models.entity.Item;
+import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.models.exceptions.ForbiddenOperationException;
+import ar.edu.itba.paw.models.exceptions.InactiveItemException;
+import ar.edu.itba.paw.models.exceptions.ItemNotFoundException;
 import ar.edu.itba.paw.persistence.ItemDao;
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +60,13 @@ public class ItemImplTest {
     }
 
     @Test
+    public void findItemByIdNotFoundThrows() {
+        when(itemDao.findItemById(ITEM_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ItemNotFoundException.class, () -> itemService.findItemById(ITEM_ID));
+    }
+
+    @Test
     public void findImageByIdReturnsImage() {
         Image image = new Image();
         image.setId(IMAGE_ID);
@@ -100,8 +110,26 @@ public class ItemImplTest {
     }
 
     @Test
+    public void requireOwnedActiveItemReturnsItem() {
+        Item item = item(ITEM_ID, user(USER_ID), ItemStatusEnum.ACTIVE);
+        when(itemDao.findItemById(ITEM_ID)).thenReturn(Optional.of(item));
+
+        Item result = itemService.requireOwnedActiveItem(ITEM_ID, USER_ID);
+
+        assertEquals(ITEM_ID, result.getId());
+    }
+
+    @Test
+    public void requireOwnedActiveItemInactiveThrows() {
+        Item item = item(ITEM_ID, user(USER_ID), ItemStatusEnum.INACTIVE);
+        when(itemDao.findItemById(ITEM_ID)).thenReturn(Optional.of(item));
+
+        assertThrows(InactiveItemException.class, () -> itemService.requireOwnedActiveItem(ITEM_ID, USER_ID));
+    }
+
+    @Test
     public void requireOwnedFullDataVersion() {
-        Item item = item(ITEM_ID, user(USER_ID));
+        Item item = item(ITEM_ID, user(USER_ID), ItemStatusEnum.ACTIVE);
         var v = version(1);
         v.setAvailabilities(List.of());
         v.setMedia(List.of());
@@ -155,6 +183,15 @@ public class ItemImplTest {
         when(itemDao.findVersionById(1)).thenReturn(Optional.of(version(1)));
 
         assertDoesNotThrow(
+                () -> itemService.overwriteVersion(1, 1, "title", "desc", 100, 4, 50, 3, 1, List.of(), List.of()));
+    }
+
+    @Test
+    public void testOverwriteVersionNotFoundThrows() {
+        when(itemDao.findVersionById(1)).thenReturn(Optional.empty());
+
+        assertThrows(
+                IllegalStateException.class,
                 () -> itemService.overwriteVersion(1, 1, "title", "desc", 100, 4, 50, 3, 1, List.of(), List.of()));
     }
 }

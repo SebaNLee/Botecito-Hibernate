@@ -99,7 +99,7 @@ public class PublishServiceImpl implements PublishService {
             return false;
         }
 
-        if (bookingService.itemHasBookings(itemId)) {
+        if (bookingService.itemHasBookings(current.getItem())) {
             itemService.createNewVersion(
                     current,
                     typeId,

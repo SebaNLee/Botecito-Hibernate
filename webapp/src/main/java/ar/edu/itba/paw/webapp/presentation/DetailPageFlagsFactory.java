@@ -21,16 +21,16 @@ public class DetailPageFlagsFactory {
     public DetailPageFlags compute(final Item item, final BotecitoUserDetails viewer) {
         final Users itemOwner = item.getHost();
         final boolean isActive = item.getStatus() == ItemStatusEnum.ACTIVE;
-        final boolean isOwner = viewer != null && itemOwner != null && itemOwner.getId() == viewer.getId();
-        final boolean canFavouriteItem = itemOwner == null || viewer == null || itemOwner.getId() != viewer.getId();
+        final Integer viewerId = viewer != null ? viewer.getId() : null;
+        final Integer ownerId = itemOwner != null ? itemOwner.getId() : null;
+        final boolean isOwner = viewerId != null && ownerId != null && ownerId.equals(viewerId);
+        final boolean canFavouriteItem = ownerId == null || viewerId == null || !ownerId.equals(viewerId);
         final boolean favouriteItem =
-                canFavouriteItem && viewer != null && favouriteService.isFavourite(viewer.getId(), item.getId());
-        final boolean canReport = viewer != null && isActive && !isOwner;
-        final boolean alreadyReported = canReport && reportService.hasReported(viewer.getId(), item.getId());
-        final boolean canSubscribeToOwner = itemOwner != null && !isOwner;
-        final boolean subscribedToOwner = canSubscribeToOwner
-                && viewer != null
-                && subscriptionService.isSubscribed(viewer.getId(), itemOwner.getId());
+                canFavouriteItem && viewerId != null && favouriteService.isFavourite(viewerId, item.getId());
+        final boolean alreadyReported =
+                viewerId != null && isActive && !isOwner && reportService.hasReported(viewerId, item.getId());
+        final boolean subscribedToOwner =
+                ownerId != null && !isOwner && viewerId != null && subscriptionService.isSubscribed(viewerId, ownerId);
         return new DetailPageFlags(favouriteItem, alreadyReported, subscribedToOwner);
     }
 }

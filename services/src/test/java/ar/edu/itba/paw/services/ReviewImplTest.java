@@ -79,11 +79,19 @@ public class ReviewImplTest {
     public void testFindByBookingIds() {
         var review = new Review();
         review.setBooking(finishedBooking());
-        when(reviewDao.findReviewsBySender(GUEST_ID)).thenReturn(List.of(review));
+        when(reviewDao.findReviewsBySenderAndBookingIds(eq(GUEST_ID), any())).thenReturn(List.of(review));
 
-        var result = reviewService.findReviewsByBookingIds(GUEST_ID);
+        var result = reviewService.findReviewsByBookingIds(GUEST_ID, List.of(BOOKING_ID));
 
         assertEquals(1, result.size());
+    }
+
+    @Test
+    public void testFindByBookingIdsEmptyInputReturnsEmptyMap() {
+        var result = reviewService.findReviewsByBookingIds(GUEST_ID, List.of());
+
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(reviewDao);
     }
 
     @Test

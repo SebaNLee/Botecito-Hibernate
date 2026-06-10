@@ -322,7 +322,7 @@
                       <div class="mt-1 bg-base-200/50 p-2 rounded flex items-center justify-between border border-outline-variant/10">
                         <div class="flex-1">
                            <p class="m-0 text-[10px] font-bold uppercase tracking-wider text-outline">
-                              <c:out value="${aliasLabel}" default="Payment Alias" />
+                              <c:out value="${aliasLabel}" />
                            </p>
                             <p class="m-0 text-sm font-mono text-on-surface-variant select-all"><c:out value="${b.version.item.host.alias}" /></p>
                         </div>

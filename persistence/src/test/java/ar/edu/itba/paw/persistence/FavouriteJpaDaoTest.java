@@ -50,9 +50,11 @@ public class FavouriteJpaDaoTest {
         em.flush();
 
         boolean created = favouriteDao.create(user.getId(), item.getId());
+        em.flush();
+        em.clear();
 
         assertTrue(created);
-        assertTrue(favouriteDao.exists(user.getId(), item.getId()));
+        assertNotNull(em.find(Favourite.class, new FavouriteId(user.getId(), item.getId())));
     }
 
     @Test
@@ -74,8 +76,11 @@ public class FavouriteJpaDaoTest {
 
         boolean deleted = favouriteDao.delete(user.getId(), item.getId());
 
+        em.flush();
+        em.clear();
+
         assertTrue(deleted);
-        assertFalse(favouriteDao.exists(user.getId(), item.getId()));
+        assertNull(em.find(Favourite.class, new FavouriteId(user.getId(), item.getId())));
     }
 
     @Test

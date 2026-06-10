@@ -13,6 +13,7 @@ import ar.edu.itba.paw.models.paging.ReviewPaging;
 import ar.edu.itba.paw.persistence.ReviewDao;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -99,8 +100,12 @@ public final class ReviewImpl implements ReviewService {
 
     @Override
     @Transactional(readOnly = true)
-    public Map<Integer, List<Review>> findReviewsByBookingIds(final int reviewerUserId) {
-        return reviewDao.findReviewsBySender(reviewerUserId).stream()
+    public Map<Integer, List<Review>> findReviewsByBookingIds(
+            final int reviewerUserId, final Collection<Integer> bookingIds) {
+        if (bookingIds == null || bookingIds.isEmpty()) {
+            return Map.of();
+        }
+        return reviewDao.findReviewsBySenderAndBookingIds(reviewerUserId, bookingIds).stream()
                 .collect(Collectors.groupingBy(r -> r.getBooking().getId()));
     }
 

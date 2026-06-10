@@ -40,7 +40,10 @@ public class SubscriptionJpaDaoTest {
     @Test
     public void testCreate() {
         assertTrue(subscriptionDao.create(subscriber.getId(), publisher.getId()));
-        assertTrue(subscriptionDao.exists(subscriber.getId(), publisher.getId()));
+        em.flush();
+        em.clear();
+
+        assertNotNull(em.find(Subscription.class, new SubscriptionId(subscriber.getId(), publisher.getId())));
     }
 
     @Test
@@ -49,8 +52,11 @@ public class SubscriptionJpaDaoTest {
 
         boolean deleted = subscriptionDao.delete(subscriber.getId(), publisher.getId());
 
+        em.flush();
+        em.clear();
+
         assertTrue(deleted);
-        assertFalse(subscriptionDao.exists(subscriber.getId(), publisher.getId()));
+        assertNull(em.find(Subscription.class, new SubscriptionId(subscriber.getId(), publisher.getId())));
     }
 
     @Test

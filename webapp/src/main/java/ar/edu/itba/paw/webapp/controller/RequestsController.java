@@ -63,7 +63,8 @@ public class RequestsController {
         if (errors.hasErrors()) {
             return RequestsPresentation.outgoingErrors(search, errors, messageSource);
         }
-        return RequestsPresentation.outgoing(search, searchOutgoing(user, search), userReviews(user));
+        final PageModel<Booking> bookings = searchOutgoing(user, search);
+        return RequestsPresentation.outgoing(search, bookings, userReviews(user, bookings));
     }
 
     @RequestMapping(value = "/requests/incoming", method = RequestMethod.GET)
@@ -210,7 +211,9 @@ public class RequestsController {
                 search.getSortBy());
     }
 
-    private Map<Integer, List<Review>> userReviews(final BotecitoUserDetails user) {
-        return reviewService.findReviewsByBookingIds(user.getId());
+    private Map<Integer, List<Review>> userReviews(final BotecitoUserDetails user, final PageModel<Booking> bookings) {
+        final List<Integer> bookingIds =
+                bookings.getContent().stream().map(Booking::getId).toList();
+        return reviewService.findReviewsByBookingIds(user.getId(), bookingIds);
     }
 }

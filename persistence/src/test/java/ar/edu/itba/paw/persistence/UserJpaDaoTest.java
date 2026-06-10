@@ -56,8 +56,14 @@ public class UserJpaDaoTest {
         user.setCreatedAt(LocalDateTime.now());
 
         Users created = userDao.createUser(user);
+        em.flush();
+        em.clear();
 
         assertNotNull(created.getId());
+        Users persisted = em.find(Users.class, created.getId());
+        assertNotNull(persisted);
+        assertEquals("botecito.user@gmail.com", persisted.getEmail());
+        assertEquals("Botecito", persisted.getFirstName());
     }
 
     @Test

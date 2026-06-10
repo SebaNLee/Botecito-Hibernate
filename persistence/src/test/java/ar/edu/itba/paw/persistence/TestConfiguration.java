@@ -31,9 +31,12 @@ public class TestConfiguration {
         dataSource.setUser("ha");
         dataSource.setPassword("");
 
-        // With JDBC we did a 1:1 representation of Flyway migration in HSQLDB relative syntax (ENUMs -> VARCHARs)
-        // We now don't use Flyway to recreate the HSQLDB schema for testing, and instead use the @Entitys themselves
-        // So now for Hibernate, this is the reasonable workaround (no really elegant tho)
+        // With JDBC we did a 1:1 representation of Flyway migration in HSQLDB relative
+        // syntax (ENUMs -> VARCHARs)
+        // We now don't use Flyway to recreate the HSQLDB schema for testing, and
+        // instead use the @Entitys themselves
+        // So now for Hibernate, this is the reasonable workaround (no really elegant
+        // tho)
         try (Connection conn = dataSource.getConnection();
                 Statement stmt = conn.createStatement()) {
             for (final String type : PG_ENUM_TYPES) {
@@ -64,7 +67,12 @@ public class TestConfiguration {
     }
 
     @Bean
-    public PlatformTransactionManager transactionManager(final EntityManagerFactory emf) {
+    public PlatformTransactionManager transactionManager(
+            final LocalContainerEntityManagerFactoryBean entityManagerFactory) {
+        final EntityManagerFactory emf = entityManagerFactory.getObject();
+        if (emf == null) {
+            throw new IllegalStateException("EntityManagerFactory not initialized");
+        }
         return new JpaTransactionManager(emf);
     }
 }

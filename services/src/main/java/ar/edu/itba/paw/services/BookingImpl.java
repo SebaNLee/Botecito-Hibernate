@@ -2,6 +2,7 @@ package ar.edu.itba.paw.services;
 
 import static java.util.Map.entry;
 
+import ar.edu.itba.paw.models.booking.BookingBlockingStatuses;
 import ar.edu.itba.paw.models.dto.BookingQueryModel;
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.dto.SelfBlockCreate;
@@ -56,6 +57,7 @@ public class BookingImpl implements BookingService {
     private final ItemService itemService;
     private final UserService userService;
     private final MailService mailService;
+    private final AvailabilityService availabilityService;
 
     private static final int MIN_ANTICIPATION_MINUTES = 120;
     private static final int BOOKING_LOOKAHEAD_DAYS = 60;
@@ -73,13 +75,6 @@ public class BookingImpl implements BookingService {
 
     private static final EnumSet<BookingStatusEnum> AUTO_CANCEL_STATES = EnumSet.of(
             BookingStatusEnum.PENDING, BookingStatusEnum.ACCEPTED, BookingStatusEnum.PAID, BookingStatusEnum.REFUSED);
-
-    private static final EnumSet<BookingStatusEnum> BLOCKING_STATES = EnumSet.of(
-            BookingStatusEnum.PENDING,
-            BookingStatusEnum.ACCEPTED,
-            BookingStatusEnum.PAID,
-            BookingStatusEnum.REFUSED,
-            BookingStatusEnum.CONFIRMED);
 
     private static boolean isValidTransition(BookingStatusEnum source, BookingStatusEnum target) {
         var targets = VALID_TRANSITIONS.getOrDefault(source, EnumSet.noneOf(BookingStatusEnum.class));
@@ -184,7 +179,7 @@ public class BookingImpl implements BookingService {
                 .updatedAt(now)
                 .build();
 
-        boolean canInsert = bookingDao.canInsertBooking(booking, BLOCKING_STATES);
+        boolean canInsert = bookingDao.canInsertBooking(booking, BookingBlockingStatuses.collisionBlockingStates());
 
         if (canInsert) {
             bookingDao.insertBooking(booking);
@@ -227,6 +222,7 @@ public class BookingImpl implements BookingService {
     // Retorna una lista finita con cota superior (desde hoy hasta
     // BOOKING_LOOKAHEAD_DAYS) de bookings para un item. Los profes en la práctica
     // nos permitieron no paginarla por este motivo.
+    @Transactional(readOnly = true)
     public List<Booking> getUpcomingBookings(Item item) {
         LocalDateTime now = currentDateTime();
         return bookingDao.getUpcomingBookings(item, now, now.plusDays(BOOKING_LOOKAHEAD_DAYS));
@@ -401,7 +397,7 @@ public class BookingImpl implements BookingService {
     @Transactional(readOnly = true)
     public SelfBookingData getSelfBlocks(final int itemId, final int callerId, final LocalDate requestedDate) {
 
-        Item item = itemService.requireOwnedItem(itemId, callerId);
+        Item item = itemService.requireOwnedActiveItem(itemId, callerId);
         Version version = item.getLatestVersion();
 
         final String timezone = version.getTimezone();
@@ -424,7 +420,23 @@ public class BookingImpl implements BookingService {
                 ? requestedDate
                 : (offeredDates.isEmpty() ? null : offeredDates.get(0));
 
-        return new SelfBookingData(item, bookings, selfBlocks, offeredDates, blockedDates, selectedDate, timezone);
+        final var dayTimeline =
+                availabilityService.buildDayTimeline(selectedDate, availabilities, bookings, selfBlocks, timezone);
+        final boolean hasTimelineAvailability =
+                availabilityService.hasAvailabilityWindowsForDate(selectedDate, availabilities);
+
+        return new SelfBookingData(
+                item,
+                bookings,
+                selfBlocks,
+                offeredDates,
+                blockedDates,
+                selectedDate,
+                timezone,
+                dayTimeline,
+                availabilityService.listingCalendarToday(timezone),
+                availabilityService.listingCalendarMaxInclusive(timezone),
+                hasTimelineAvailability);
     }
 
     @Override
@@ -436,7 +448,7 @@ public class BookingImpl implements BookingService {
             final List<Integer> deletedBlockIds,
             final List<SelfBlockUpdate> updates,
             final List<SelfBlockCreate> creates) {
-        itemService.requireOwnedItem(itemId, callerId);
+        itemService.requireOwnedActiveItem(itemId, callerId);
         final String dateStr = date.toString();
         if (deletedBlockIds != null) {
             for (final Integer blockId : deletedBlockIds) {
@@ -538,7 +550,7 @@ public class BookingImpl implements BookingService {
 
         final Booking probe =
                 Booking.builder().version(version).start(utcStart).end(utcEnd).build();
-        if (!bookingDao.canUpdate(probe, bookingId, BLOCKING_STATES)) {
+        if (!bookingDao.canUpdate(probe, bookingId, BookingBlockingStatuses.collisionBlockingStates())) {
             throw new SelfBlockCollisionException();
         }
 
@@ -551,6 +563,7 @@ public class BookingImpl implements BookingService {
     // BOOKING_LOOKAHEAD_DAYS) de fechas con disponibilidad para un item. Los profes
     // en la práctica nos permitieron no paginarla por este motivo.
     private static List<LocalDate> buildOfferedDates(final List<Availability> availabilities, final String timezone) {
+        final List<Availability> windows = availabilities == null ? List.of() : availabilities;
         final ZoneId zone = ZoneId.of(timezone);
         final LocalDate today = LocalDate.now(zone);
         final LocalDate end = today.plusDays(BOOKING_LOOKAHEAD_DAYS);
@@ -559,7 +572,7 @@ public class BookingImpl implements BookingService {
         while (!cursor.isAfter(end)) {
             final DayOfWeek dow = cursor.getDayOfWeek();
             final boolean hasAvailability =
-                    availabilities.stream().anyMatch(a -> a.getWeekday().name().equals(dow.name()));
+                    windows.stream().anyMatch(a -> a.getWeekday().name().equals(dow.name()));
             if (hasAvailability) {
                 dates.add(cursor);
             }

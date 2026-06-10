@@ -17,20 +17,32 @@
     this.blocksLayer = root.querySelector("[data-timeline-blocks]");
     this.preview = root.querySelector("[data-timeline-preview]");
     this.previewLabel = root.querySelector("[data-timeline-preview-label]");
-    this.blockTemplate = root.querySelector("[data-availability-block-template]");
+    this.blockTemplate = root.querySelector(
+      "[data-availability-block-template]",
+    );
     this.saveForm = root.querySelector("[data-timeline-save-form]");
-    this.saveButton = this.saveForm ? this.saveForm.querySelector('button[type="submit"]') : null;
-    this.minDuration = parseInt(root.dataset.minDuration || MIN_DURATION_MINUTES, 10);
-    this.minSteps = Math.max(1, Math.ceil(this.minDuration / SLOT_STEP_MINUTES));
+    this.saveButton = this.saveForm
+      ? this.saveForm.querySelector('button[type="submit"]')
+      : null;
+    this.minDuration = parseInt(
+      root.dataset.minDuration || MIN_DURATION_MINUTES,
+      10,
+    );
+    this.minSteps = Math.max(
+      1,
+      Math.ceil(this.minDuration / SLOT_STEP_MINUTES),
+    );
     this.minSeparationSteps = Math.max(
       1,
       Math.ceil(
-        parseInt(root.dataset.minSeparation || MIN_SEPARATION_MINUTES, 10) / SLOT_STEP_MINUTES,
+        parseInt(root.dataset.minSeparation || MIN_SEPARATION_MINUTES, 10) /
+          SLOT_STEP_MINUTES,
       ),
     );
     this.deleteText = root.dataset.deleteText || "Delete";
     this.unsavedConfirmText =
-      root.dataset.unsavedConfirm || "You have unsaved changes. Leave this date without saving?";
+      root.dataset.unsavedConfirm ||
+      "You have unsaved changes. Leave this date without saving?";
     this.selectedDate = root.dataset.selectedDate || "";
     this.previewStart = null;
     this.dragState = null;
@@ -42,15 +54,19 @@
     var timeline = readTimelineFromDom(this.root);
     this.availableRanges = timeline.availableRanges;
     this.bookedRanges = timeline.bookedRanges;
-    this.selfBlocks = timeline.selfBlocks.map(function (block) {
-      return {
-        id: block.id,
-        start: parseTimeToStep(block.startTime, false),
-        end: parseTimeToStep(block.endTime, true),
-      };
-    }).filter(function (block) {
-      return block.start !== null && block.end !== null && block.end > block.start;
-    });
+    this.selfBlocks = timeline.selfBlocks
+      .map(function (block) {
+        return {
+          id: block.id,
+          start: parseTimeToStep(block.startTime, false),
+          end: parseTimeToStep(block.endTime, true),
+        };
+      })
+      .filter(function (block) {
+        return (
+          block.start !== null && block.end !== null && block.end > block.start
+        );
+      });
     this.initialSelfBlocks = this.selfBlocks.map(function (block) {
       return { id: block.id, start: block.start, end: block.end };
     });
@@ -115,11 +131,23 @@
   };
 
   ManageAvailabilityTimeline.prototype.renderBackgroundLayers = function () {
-    this.renderRangeLayer(this.availableLayer, this.availableRanges, "bg-primary/20 border border-primary/30");
-    this.renderRangeLayer(this.bookedLayer, this.bookedRanges, "bg-error/25 border border-error/35");
+    this.renderRangeLayer(
+      this.availableLayer,
+      this.availableRanges,
+      "bg-primary/20 border border-primary/30",
+    );
+    this.renderRangeLayer(
+      this.bookedLayer,
+      this.bookedRanges,
+      "bg-error/25 border border-error/35",
+    );
   };
 
-  ManageAvailabilityTimeline.prototype.renderRangeLayer = function (layer, ranges, className) {
+  ManageAvailabilityTimeline.prototype.renderRangeLayer = function (
+    layer,
+    ranges,
+    className,
+  ) {
     if (!layer) {
       return;
     }
@@ -132,7 +160,8 @@
         continue;
       }
       var segment = document.createElement("div");
-      segment.className = "absolute top-0 h-8 rounded-md pointer-events-none " + className;
+      segment.className =
+        "absolute top-0 h-8 rounded-md pointer-events-none " + className;
       segment.style.left = percent(start) + "%";
       segment.style.width = percent(end - start) + "%";
       layer.appendChild(segment);
@@ -141,7 +170,11 @@
 
   ManageAvailabilityTimeline.prototype.renderSelfBlocks = function () {
     var self = this;
-    if (!this.blocksLayer || !this.blockTemplate || !this.blockTemplate.content) {
+    if (
+      !this.blocksLayer ||
+      !this.blockTemplate ||
+      !this.blockTemplate.content
+    ) {
       return;
     }
 
@@ -154,21 +187,38 @@
       var range = sorted[i];
       var durationSteps = range.end - range.start;
       var blockFragment = this.blockTemplate.content.cloneNode(true);
-      var block = blockFragment.querySelector('[data-role="availability-block"]');
+      var block = blockFragment.querySelector(
+        '[data-role="availability-block"]',
+      );
       var leftHandle = blockFragment.querySelector('[data-role="left-handle"]');
-      var rightHandle = blockFragment.querySelector('[data-role="right-handle"]');
+      var rightHandle = blockFragment.querySelector(
+        '[data-role="right-handle"]',
+      );
       var leftPill = blockFragment.querySelector('[data-role="left-label"]');
       var rightPill = blockFragment.querySelector('[data-role="right-label"]');
-      var deleteButton = blockFragment.querySelector('[data-role="delete-button"]');
+      var deleteButton = blockFragment.querySelector(
+        '[data-role="delete-button"]',
+      );
 
-      if (!block || !leftHandle || !rightHandle || !leftPill || !rightPill || !deleteButton) {
+      if (
+        !block ||
+        !leftHandle ||
+        !rightHandle ||
+        !leftPill ||
+        !rightPill ||
+        !deleteButton
+      ) {
         continue;
       }
 
       block.style.left = percent(range.start) + "%";
       block.style.width = percent(range.end - range.start) + "%";
       block.setAttribute("data-block-id", String(range.id));
-      block.classList.remove("from-secondary", "to-secondary-container", "text-on-secondary");
+      block.classList.remove(
+        "from-secondary",
+        "to-secondary-container",
+        "text-on-secondary",
+      );
       block.classList.add(
         "bg-gradient-to-r",
         "from-warning",
@@ -186,16 +236,30 @@
       deleteButton.setAttribute("aria-label", self.deleteText);
       deleteButton.textContent = self.deleteText;
 
-      leftHandle.addEventListener("pointerdown", self.handleResizeStart.bind(self, range.id, "left"));
-      rightHandle.addEventListener("pointerdown", self.handleResizeStart.bind(self, range.id, "right"));
-      deleteButton.addEventListener("click", self.handleDelete.bind(self, range.id));
-      block.addEventListener("pointerdown", self.handleDragStart.bind(self, range.id));
+      leftHandle.addEventListener(
+        "pointerdown",
+        self.handleResizeStart.bind(self, range.id, "left"),
+      );
+      rightHandle.addEventListener(
+        "pointerdown",
+        self.handleResizeStart.bind(self, range.id, "right"),
+      );
+      deleteButton.addEventListener(
+        "click",
+        self.handleDelete.bind(self, range.id),
+      );
+      block.addEventListener(
+        "pointerdown",
+        self.handleDragStart.bind(self, range.id),
+      );
 
       this.blocksLayer.appendChild(blockFragment);
     }
   };
 
-  ManageAvailabilityTimeline.prototype.updatePreviewFromPointer = function (event) {
+  ManageAvailabilityTimeline.prototype.updatePreviewFromPointer = function (
+    event,
+  ) {
     if (!this.track) {
       this.clearPreview();
       return;
@@ -263,7 +327,10 @@
     event.preventDefault();
   };
 
-  ManageAvailabilityTimeline.prototype.handleDelete = function (blockId, event) {
+  ManageAvailabilityTimeline.prototype.handleDelete = function (
+    blockId,
+    event,
+  ) {
     if (event) {
       event.preventDefault();
       event.stopPropagation();
@@ -281,7 +348,10 @@
     this.updateSaveButtonState();
   };
 
-  ManageAvailabilityTimeline.prototype.handleDragStart = function (blockId, event) {
+  ManageAvailabilityTimeline.prototype.handleDragStart = function (
+    blockId,
+    event,
+  ) {
     if (event.button !== 0 || this.saving) {
       return;
     }
@@ -314,7 +384,11 @@
     event.stopPropagation();
   };
 
-  ManageAvailabilityTimeline.prototype.handleResizeStart = function (blockId, side, event) {
+  ManageAvailabilityTimeline.prototype.handleResizeStart = function (
+    blockId,
+    side,
+    event,
+  ) {
     if (event.button !== 0 || this.saving) {
       return;
     }
@@ -337,11 +411,16 @@
     event.stopPropagation();
   };
 
-  ManageAvailabilityTimeline.prototype.handleGlobalPointerMove = function (event) {
+  ManageAvailabilityTimeline.prototype.handleGlobalPointerMove = function (
+    event,
+  ) {
     if (!this.dragState || !this.track) {
       return;
     }
-    if (this.dragState.pointerId !== undefined && event.pointerId !== this.dragState.pointerId) {
+    if (
+      this.dragState.pointerId !== undefined &&
+      event.pointerId !== this.dragState.pointerId
+    ) {
       return;
     }
 
@@ -367,11 +446,16 @@
     event.preventDefault();
   };
 
-  ManageAvailabilityTimeline.prototype.handleGlobalPointerUp = function (event) {
+  ManageAvailabilityTimeline.prototype.handleGlobalPointerUp = function (
+    event,
+  ) {
     if (!this.dragState) {
       return;
     }
-    if (this.dragState.pointerId !== undefined && event.pointerId !== this.dragState.pointerId) {
+    if (
+      this.dragState.pointerId !== undefined &&
+      event.pointerId !== this.dragState.pointerId
+    ) {
       return;
     }
 
@@ -392,7 +476,11 @@
     this.updateSaveButtonState();
   };
 
-  ManageAvailabilityTimeline.prototype.applyMoveDrag = function (state, range, pointerStep) {
+  ManageAvailabilityTimeline.prototype.applyMoveDrag = function (
+    state,
+    range,
+    pointerStep,
+  ) {
     var duration = state.duration;
     var starts = [];
     for (var start = 0; start <= TOTAL_STEPS - duration; start++) {
@@ -400,7 +488,10 @@
         starts.push(start);
       }
     }
-    var snappedStart = nearestStep(starts, Math.round(pointerStep - state.offset));
+    var snappedStart = nearestStep(
+      starts,
+      Math.round(pointerStep - state.offset),
+    );
     if (snappedStart === null) {
       return;
     }
@@ -408,7 +499,10 @@
     range.end = snappedStart + duration;
   };
 
-  ManageAvailabilityTimeline.prototype.applyLeftResizeDrag = function (range, pointerStep) {
+  ManageAvailabilityTimeline.prototype.applyLeftResizeDrag = function (
+    range,
+    pointerStep,
+  ) {
     var maxStart = range.end - this.minSteps;
     var starts = [];
     for (var start = 0; start <= maxStart; start++) {
@@ -423,7 +517,10 @@
     range.start = snappedStart;
   };
 
-  ManageAvailabilityTimeline.prototype.applyRightResizeDrag = function (range, pointerStep) {
+  ManageAvailabilityTimeline.prototype.applyRightResizeDrag = function (
+    range,
+    pointerStep,
+  ) {
     var minEnd = range.start + this.minSteps;
     var ends = [];
     for (var end = minEnd; end <= TOTAL_STEPS; end++) {
@@ -461,22 +558,50 @@
     var i;
 
     for (i = 0; i < payload.deletes.length; i++) {
-      appendHiddenField(container, "deletedBlockIds[" + i + "]", payload.deletes[i]);
+      appendHiddenField(
+        container,
+        "deletedBlockIds[" + i + "]",
+        payload.deletes[i],
+      );
     }
     for (i = 0; i < payload.updates.length; i++) {
       var update = payload.updates[i];
-      appendHiddenField(container, "blockUpdates[" + i + "].bookingId", update.id);
-      appendHiddenField(container, "blockUpdates[" + i + "].startTime", update.startTime);
-      appendHiddenField(container, "blockUpdates[" + i + "].endTime", update.endTime);
+      appendHiddenField(
+        container,
+        "blockUpdates[" + i + "].bookingId",
+        update.id,
+      );
+      appendHiddenField(
+        container,
+        "blockUpdates[" + i + "].startTime",
+        update.startTime,
+      );
+      appendHiddenField(
+        container,
+        "blockUpdates[" + i + "].endTime",
+        update.endTime,
+      );
     }
     for (i = 0; i < payload.creates.length; i++) {
       var create = payload.creates[i];
-      appendHiddenField(container, "blockCreates[" + i + "].startTime", create.startTime);
-      appendHiddenField(container, "blockCreates[" + i + "].endTime", create.endTime);
+      appendHiddenField(
+        container,
+        "blockCreates[" + i + "].startTime",
+        create.startTime,
+      );
+      appendHiddenField(
+        container,
+        "blockCreates[" + i + "].endTime",
+        create.endTime,
+      );
     }
     for (i = 0; i < payload.blocks.length; i++) {
       var block = payload.blocks[i];
-      appendHiddenField(container, "blocks[" + i + "].startTime", block.startTime);
+      appendHiddenField(
+        container,
+        "blocks[" + i + "].startTime",
+        block.startTime,
+      );
       appendHiddenField(container, "blocks[" + i + "].endTime", block.endTime);
     }
   };
@@ -513,25 +638,28 @@
     return true;
   };
 
-  ManageAvailabilityTimeline.prototype.bindUnsavedNavigationGuard = function () {
-    var self = this;
-    var dateForm = document.querySelector("[data-manage-availability-date-form]");
-    if (dateForm) {
-      dateForm.addEventListener("submit", function (event) {
-        if (!self.confirmLeaveWithoutSaving()) {
-          event.preventDefault();
-        }
-      });
-    }
-
-    window.addEventListener("beforeunload", function (event) {
-      if (!self.shouldWarnBeforeLeaving()) {
-        return;
+  ManageAvailabilityTimeline.prototype.bindUnsavedNavigationGuard =
+    function () {
+      var self = this;
+      var dateForm = document.querySelector(
+        "[data-manage-availability-date-form]",
+      );
+      if (dateForm) {
+        dateForm.addEventListener("submit", function (event) {
+          if (!self.confirmLeaveWithoutSaving()) {
+            event.preventDefault();
+          }
+        });
       }
-      event.preventDefault();
-      event.returnValue = "";
-    });
-  };
+
+      window.addEventListener("beforeunload", function (event) {
+        if (!self.shouldWarnBeforeLeaving()) {
+          return;
+        }
+        event.preventDefault();
+        event.returnValue = "";
+      });
+    };
 
   ManageAvailabilityTimeline.prototype.buildChangesPayload = function () {
     var creates = [];
@@ -558,8 +686,16 @@
         creates.push({ startTime: startTime, endTime: endTime });
       } else {
         var initial = initialById[block.id];
-        if (!initial || initial.start !== block.start || initial.end !== block.end) {
-          updates.push({ id: block.id, startTime: startTime, endTime: endTime });
+        if (
+          !initial ||
+          initial.start !== block.start ||
+          initial.end !== block.end
+        ) {
+          updates.push({
+            id: block.id,
+            startTime: startTime,
+            endTime: endTime,
+          });
         }
       }
     }
@@ -571,12 +707,21 @@
       };
     });
 
-    return { deletes: deletes, creates: creates, updates: updates, blocks: blocks };
+    return {
+      deletes: deletes,
+      creates: creates,
+      updates: updates,
+      blocks: blocks,
+    };
   };
 
   ManageAvailabilityTimeline.prototype.hasUnsavedChanges = function () {
     var payload = this.buildChangesPayload();
-    return payload.deletes.length > 0 || payload.creates.length > 0 || payload.updates.length > 0;
+    return (
+      payload.deletes.length > 0 ||
+      payload.creates.length > 0 ||
+      payload.updates.length > 0
+    );
   };
 
   ManageAvailabilityTimeline.prototype.updateSaveButtonState = function () {
@@ -587,8 +732,17 @@
     this.saveButton.disabled = this.saving || !dirty;
   };
 
-  ManageAvailabilityTimeline.prototype.canPlaceRange = function (start, end, ignoreId) {
-    if (start < 0 || end > TOTAL_STEPS || end <= start || end - start < this.minSteps) {
+  ManageAvailabilityTimeline.prototype.canPlaceRange = function (
+    start,
+    end,
+    ignoreId,
+  ) {
+    if (
+      start < 0 ||
+      end > TOTAL_STEPS ||
+      end <= start ||
+      end - start < this.minSteps
+    ) {
       return false;
     }
     if (!this.rangeWithinAvailable(start, end)) {
@@ -602,14 +756,22 @@
       if (ignoreId !== null && block.id === ignoreId) {
         continue;
       }
-      if (!(end <= block.start - this.minSeparationSteps || start >= block.end + this.minSeparationSteps)) {
+      if (
+        !(
+          end <= block.start - this.minSeparationSteps ||
+          start >= block.end + this.minSeparationSteps
+        )
+      ) {
         return false;
       }
     }
     return true;
   };
 
-  ManageAvailabilityTimeline.prototype.rangeWithinAvailable = function (start, end) {
+  ManageAvailabilityTimeline.prototype.rangeWithinAvailable = function (
+    start,
+    end,
+  ) {
     if (this.availableRanges.length === 0) {
       return false;
     }
@@ -636,7 +798,10 @@
     return false;
   };
 
-  ManageAvailabilityTimeline.prototype.overlapsBookedRange = function (start, end) {
+  ManageAvailabilityTimeline.prototype.overlapsBookedRange = function (
+    start,
+    end,
+  ) {
     for (var i = 0; i < this.bookedRanges.length; i++) {
       var range = this.bookedRanges[i];
       var rangeStart = parseTimeToStep(range.startTime, false);
@@ -661,7 +826,9 @@
     return starts;
   };
 
-  ManageAvailabilityTimeline.prototype.isPointerInBlockedGap = function (pointerStep) {
+  ManageAvailabilityTimeline.prototype.isPointerInBlockedGap = function (
+    pointerStep,
+  ) {
     if (this.selfBlocks.length === 0) {
       return false;
     }
@@ -670,7 +837,10 @@
     });
     var first = sorted[0];
     if (pointerStep >= 0 && pointerStep < first.start) {
-      return this.gapCannotFitBlock(0, first.start - this.minSteps - this.minSeparationSteps);
+      return this.gapCannotFitBlock(
+        0,
+        first.start - this.minSteps - this.minSeparationSteps,
+      );
     }
     for (var i = 1; i < sorted.length; i++) {
       var left = sorted[i - 1];
@@ -692,11 +862,17 @@
     return false;
   };
 
-  ManageAvailabilityTimeline.prototype.gapCannotFitBlock = function (minStart, maxStart) {
+  ManageAvailabilityTimeline.prototype.gapCannotFitBlock = function (
+    minStart,
+    maxStart,
+  ) {
     return maxStart < minStart;
   };
 
-  ManageAvailabilityTimeline.prototype.gapCanFitBlock = function (minStart, maxStart) {
+  ManageAvailabilityTimeline.prototype.gapCanFitBlock = function (
+    minStart,
+    maxStart,
+  ) {
     if (maxStart < minStart) {
       return false;
     }
@@ -757,41 +933,54 @@
     );
   };
 
-  ManageAvailabilityTimeline.prototype.applyTimelineTickPositions = function () {
-    this.root.querySelectorAll("[data-tick-left-pct]").forEach(function (tick) {
-      var left = tick.getAttribute("data-tick-left-pct");
-      if (left != null && left !== "") {
-        tick.style.left = left + "%";
-      }
-    });
-  };
+  ManageAvailabilityTimeline.prototype.applyTimelineTickPositions =
+    function () {
+      this.root
+        .querySelectorAll("[data-tick-left-pct]")
+        .forEach(function (tick) {
+          var left = tick.getAttribute("data-tick-left-pct");
+          if (left != null && left !== "") {
+            tick.style.left = left + "%";
+          }
+        });
+    };
 
   function readTimelineFromDom(root) {
     var availableRanges = [];
     var bookedRanges = [];
     var selfBlocks = [];
     if (!root) {
-      return { availableRanges: availableRanges, bookedRanges: bookedRanges, selfBlocks: selfBlocks };
+      return {
+        availableRanges: availableRanges,
+        bookedRanges: bookedRanges,
+        selfBlocks: selfBlocks,
+      };
     }
-    root.querySelectorAll("[data-timeline-available-range]").forEach(function (node) {
-      availableRanges.push({
-        startTime: node.getAttribute("data-start") || "",
-        endTime: node.getAttribute("data-end") || "",
+    root
+      .querySelectorAll("[data-timeline-available-range]")
+      .forEach(function (node) {
+        availableRanges.push({
+          startTime: node.getAttribute("data-start") || "",
+          endTime: node.getAttribute("data-end") || "",
+        });
       });
-    });
-    root.querySelectorAll("[data-timeline-booked-range]").forEach(function (node) {
-      bookedRanges.push({
-        startTime: node.getAttribute("data-start") || "",
-        endTime: node.getAttribute("data-end") || "",
+    root
+      .querySelectorAll("[data-timeline-booked-range]")
+      .forEach(function (node) {
+        bookedRanges.push({
+          startTime: node.getAttribute("data-start") || "",
+          endTime: node.getAttribute("data-end") || "",
+        });
       });
-    });
-    root.querySelectorAll("[data-timeline-self-block]").forEach(function (node) {
-      selfBlocks.push({
-        id: parseInt(node.getAttribute("data-id") || "0", 10),
-        startTime: node.getAttribute("data-start") || "",
-        endTime: node.getAttribute("data-end") || "",
+    root
+      .querySelectorAll("[data-timeline-self-block]")
+      .forEach(function (node) {
+        selfBlocks.push({
+          id: parseInt(node.getAttribute("data-id") || "0", 10),
+          startTime: node.getAttribute("data-start") || "",
+          endTime: node.getAttribute("data-end") || "",
+        });
       });
-    });
     return {
       availableRanges: availableRanges,
       bookedRanges: bookedRanges,
@@ -828,7 +1017,11 @@
   }
 
   function formatRangeLabel(startStep, endStep) {
-    return formatBoundaryLabel(startStep, false) + " - " + formatBoundaryLabel(endStep, true);
+    return (
+      formatBoundaryLabel(startStep, false) +
+      " - " +
+      formatBoundaryLabel(endStep, true)
+    );
   }
 
   function formatBoundaryLabel(step, isEnd) {
@@ -861,7 +1054,10 @@
     for (var i = 1; i < candidates.length; i++) {
       var candidate = candidates[i];
       var distance = Math.abs(candidate - desired);
-      if (distance < bestDistance || (distance === bestDistance && candidate < best)) {
+      if (
+        distance < bestDistance ||
+        (distance === bestDistance && candidate < best)
+      ) {
         best = candidate;
         bestDistance = distance;
       }
@@ -874,7 +1070,9 @@
   }
 
   function padTime(hour, minute) {
-    return String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
+    return (
+      String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0")
+    );
   }
 
   function clamp(value, min, max) {
@@ -888,8 +1086,10 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("[data-manage-availability-timeline]").forEach(function (root) {
-      new ManageAvailabilityTimeline(root);
-    });
+    document
+      .querySelectorAll("[data-manage-availability-timeline]")
+      .forEach(function (root) {
+        new ManageAvailabilityTimeline(root);
+      });
   });
 })();

@@ -158,6 +158,34 @@ public final class TestUtils {
         return media;
     }
 
+    public static Report insertReport(
+            final EntityManager em,
+            final Users sender,
+            final Item item,
+            final ReportEnum reason,
+            final String description) {
+        final Report report = Report.builder()
+                .sender(sender)
+                .item(item)
+                .reason(reason)
+                .description(description)
+                .createdAt(LocalDateTime.now())
+                .build();
+        em.persist(report);
+        return report;
+    }
+
+    public static Subscription insertSubscription(
+            final EntityManager em, final Users subscriber, final Users subscribedTo) {
+        final Subscription sub = new Subscription();
+        sub.setId(new SubscriptionId(subscriber.getId(), subscribedTo.getId()));
+        sub.setSubscriber(subscriber);
+        sub.setSubscribedTo(subscribedTo);
+        sub.setCreatedAt(LocalDateTime.now());
+        em.persist(sub);
+        return sub;
+    }
+
     public static Booking createBooking(
             final Version version,
             final Users guest,

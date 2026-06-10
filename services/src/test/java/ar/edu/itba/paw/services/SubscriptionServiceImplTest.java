@@ -72,13 +72,12 @@ public class SubscriptionServiceImplTest {
 
     @Test
     public void testListSubscriptions() {
-        when(subscriptionDao.countSubscriptions(USER_ID)).thenReturn(1);
-        when(subscriptionDao.listSubscriptions(USER_ID, 1, 10)).thenReturn(List.of(new Users()));
+        PageModel<Users> expected = new PageModel<>(List.of(new Users()), 1, 10, 1);
+        when(subscriptionDao.listSubscriptions(USER_ID, 1, 10)).thenReturn(expected);
 
-        var result = subscriptionService.listSubscriptions(USER_ID, 1, 10);
+        PageModel<Users> result = subscriptionService.listSubscriptions(USER_ID, 1, 10);
 
-        assertNotNull(result);
-        assertEquals(1, result.getTotalItems());
+        assertSame(expected, result);
     }
 
     @Test

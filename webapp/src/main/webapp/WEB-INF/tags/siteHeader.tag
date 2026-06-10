@@ -47,7 +47,8 @@
             <spring:message code="nav.adminReports" />
           </a>
         </sec:authorize>
-        <a href="<c:url value='/settings' />" class="btn btn-outline btn-circle btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200" title="<sec:authentication property='name' />" aria-label="Settings">
+        <spring:message code="nav.settings" var="settingsAriaLabel" />
+        <a href="<c:url value='/settings' />" class="btn btn-outline btn-circle btn-sm border-outline-variant/40 bg-base-100 no-underline hover:bg-base-200" title="<sec:authentication property='name' />" aria-label="<c:out value='${settingsAriaLabel}' />">
           <span class="material-symbols-outlined text-xl">account_circle</span>
         </a>
       </sec:authorize>

@@ -24,6 +24,8 @@ public interface ItemService {
 
     Item requireOwnedItem(int itemId, int userId);
 
+    Item requireOwnedActiveItem(int itemId, int userId);
+
     // Rellena todos los datos que puede necesitar una version
     Version requireOwnedFullData(int itemId, int userId);
 

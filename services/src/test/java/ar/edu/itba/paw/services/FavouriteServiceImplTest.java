@@ -1,16 +1,18 @@
 package ar.edu.itba.paw.services;
 
-import static ar.edu.itba.paw.services.TestUtils.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static ar.edu.itba.paw.services.TestUtils.user;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import ar.edu.itba.paw.models.dto.PageModel;
 import ar.edu.itba.paw.models.entity.Item;
 import ar.edu.itba.paw.models.entity.ItemStatusEnum;
 import ar.edu.itba.paw.persistence.FavouriteDao;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -60,16 +62,6 @@ public class FavouriteServiceImplTest {
         when(favouriteDao.exists(USER_ID, ITEM_ID)).thenReturn(true);
 
         assertTrue(favouriteService.isFavourite(USER_ID, ITEM_ID));
-    }
-
-    @Test
-    public void testFavIds() {
-        var expected = Set.of(ITEM_ID);
-        when(favouriteDao.findFavouriteItemIds(USER_ID, List.of(ITEM_ID))).thenReturn(expected);
-
-        var result = favouriteService.findFavouriteItemIds(USER_ID, List.of(ITEM_ID));
-
-        assertEquals(expected, result);
     }
 
     @Test

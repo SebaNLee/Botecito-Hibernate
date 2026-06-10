@@ -43,6 +43,15 @@ public class ReviewJpaDao implements ReviewDao {
             + "WHERE r.target_type = CAST(:itemTargetType AS target_enum) AND v2.item_id = :itemId "
             + "ORDER BY r.created_at DESC, r.id DESC";
 
+    private static final String SQL_REVIEW_IDS_FOR_HOST = "SELECT r.id FROM review r "
+            + "INNER JOIN booking b ON r.booking_id = b.id "
+            + "INNER JOIN version v ON b.version_id = v.id "
+            + "INNER JOIN item i ON v.item_id = i.id "
+            + "WHERE r.target_type = CAST(:hostTargetType AS target_enum) "
+            + "AND i.host_id = :hostId "
+            + "AND r.sender_id <> :hostId "
+            + "ORDER BY r.created_at DESC, r.id DESC";
+
     private static final String REVIEW_FETCH_JPQL =
             "FROM Review r JOIN FETCH r.booking b LEFT JOIN FETCH r.sender WHERE r.id IN :ids "
                     + "ORDER BY r.createdAt DESC, r.id DESC";
@@ -82,28 +91,36 @@ public class ReviewJpaDao implements ReviewDao {
     }
 
     @Override
-    public List<Review> findReviewsBySender(final int senderUserId) {
+    public List<Review> findReviewsBySenderAndBookingIds(final int senderUserId, final Collection<Integer> bookingIds) {
+        if (bookingIds == null || bookingIds.isEmpty()) {
+            return List.of();
+        }
         return entityManager
-                .createQuery("SELECT r FROM Review r JOIN FETCH r.booking WHERE r.sender.id = :senderId", Review.class)
+                .createQuery(
+                        "SELECT r FROM Review r JOIN FETCH r.booking "
+                                + "WHERE r.sender.id = :senderId AND r.booking.id IN :bookingIds",
+                        Review.class)
                 .setParameter("senderId", senderUserId)
+                .setParameter("bookingIds", bookingIds)
                 .getResultList();
     }
 
     @Override
     public List<Review> findReviewsAboutHost(final int hostUserId, final int page, final int pageSize) {
-        final TypedQuery<Review> q = entityManager.createQuery(
-                "SELECT r FROM Review r "
-                        + "JOIN FETCH r.booking b "
-                        + "JOIN FETCH r.sender s "
-                        + "WHERE r.targetType = :target "
-                        + "  AND b.version.item.host.id = :hostId "
-                        + "  AND s.id <> :hostId "
-                        + "ORDER BY r.createdAt DESC, r.id DESC",
-                Review.class);
-        q.setParameter("target", TargetEnum.USER);
-        q.setParameter("hostId", hostUserId);
-        Paging.apply(q, page, pageSize);
-        return q.getResultList();
+        final Query reviewIdsQuery = entityManager.createNativeQuery(SQL_REVIEW_IDS_FOR_HOST);
+        reviewIdsQuery.setParameter("hostId", hostUserId);
+        reviewIdsQuery.setParameter("hostTargetType", TargetEnum.USER.name());
+        Paging.apply(reviewIdsQuery, page, pageSize);
+
+        final List<Integer> reviewIds = Paging.toIntegerIds(reviewIdsQuery.getResultList());
+        if (reviewIds.isEmpty()) {
+            return List.of();
+        }
+
+        return entityManager
+                .createQuery(REVIEW_FETCH_JPQL, Review.class)
+                .setParameter("ids", reviewIds)
+                .getResultList();
     }
 
     @Override

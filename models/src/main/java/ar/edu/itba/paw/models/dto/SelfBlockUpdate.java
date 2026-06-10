@@ -1,5 +1,6 @@
 package ar.edu.itba.paw.models.dto;
 
+import java.time.LocalTime;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -7,6 +8,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SelfBlockUpdate {
     private final int bookingId;
-    private final String startTime;
-    private final String endTime;
+    private final LocalTime startTime;
+    private final LocalTime endTime;
 }

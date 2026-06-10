@@ -9,9 +9,7 @@
     <version>1.0-SNAPSHOT</version>
   </parent>
 
-  <groupId>ar.edu.itba.paw</groupId>
   <artifactId>service-contracts</artifactId>
-  <version>1.0-SNAPSHOT</version>
 
   <name>service-contracts</name>
   <url>http://pawserver.it.itba.edu.ar/paw-2026a-11/</url>

@@ -36,7 +36,6 @@ public class PublishServiceImpl implements PublishService {
     private final UserService userService;
 
     @Override
-    @Transactional
     public void create(
             final int ownerId,
             final int typeId,
@@ -64,6 +63,7 @@ public class PublishServiceImpl implements PublishService {
 
         LOGGER.info("User {} created item: version {}", ownerId, version.getId());
 
+        // After itemService.create() commits; follower paging and mail enqueue stay out of the write transaction.
         sendPublishEmails(version);
     }
 
@@ -99,7 +99,7 @@ public class PublishServiceImpl implements PublishService {
             return false;
         }
 
-        if (bookingService.itemHasBookings(itemId)) {
+        if (bookingService.itemHasBookings(current.getItem())) {
             itemService.createNewVersion(
                     current,
                     typeId,

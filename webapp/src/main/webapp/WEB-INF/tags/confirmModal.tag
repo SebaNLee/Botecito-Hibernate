@@ -7,6 +7,8 @@
 <%@ attribute name="confirmColor" required="false" %>
 <%@ attribute name="icon" required="false" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<spring:message code="modal.close" var="modalCloseLabel" />
 
 <c:set var="confirmColorResolved" value="${not empty confirmColor ? confirmColor : 'danger'}" />
 <c:choose>
@@ -59,6 +61,6 @@
     </div>
   </div>
   <form method="dialog" class="modal-backdrop">
-    <button aria-label="close">close</button>
+    <button aria-label="<c:out value='${modalCloseLabel}' />">close</button>
   </form>
 </dialog>

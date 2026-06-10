@@ -102,8 +102,9 @@ public class BookingJpaDaoTest {
                 .createdAt(LocalDateTime.now())
                 .build();
         bookingDao.uploadPayment(proof);
-        em.flush();
 
+        em.flush();
+        em.clear();
         assertNotNull(em.find(PaymentProof.class, proof.getId()));
     }
 

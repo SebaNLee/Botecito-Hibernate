@@ -40,4 +40,17 @@ public class MarketplaceImplTest {
         assertSame(item, result.getContent().get(0));
         assertEquals(10, result.getTotalItems());
     }
+
+    @Test
+    public void searchMarketplaceReturnsEmptyPage() {
+        PageModel<Item> expected = new PageModel<>(List.of(), 1, 12, 0);
+        when(marketplaceDao.searchMarketplace(any())).thenReturn(expected);
+
+        PageModel<Item> result = marketplaceService.searchMarketplace(
+                null, null, null, null, null, null, null, null, null, null, null, null, null);
+
+        assertNotNull(result);
+        assertTrue(result.getContent().isEmpty());
+        assertEquals(0, result.getTotalItems());
+    }
 }

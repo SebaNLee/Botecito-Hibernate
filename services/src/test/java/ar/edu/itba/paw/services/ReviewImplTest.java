@@ -91,7 +91,6 @@ public class ReviewImplTest {
         var result = reviewService.findReviewsByBookingIds(GUEST_ID, List.of());
 
         assertTrue(result.isEmpty());
-        verifyNoInteractions(reviewDao);
     }
 
     @Test

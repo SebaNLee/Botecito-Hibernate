@@ -70,14 +70,7 @@ public class ReportJpaDaoTest {
         Item item = insertItem(em, host, ItemStatusEnum.ACTIVE);
         insertVersion(em, item, itemType, location, "Boat");
         em.flush();
-
-        Report report = Report.builder()
-                .sender(sender)
-                .item(item)
-                .reason(ReportEnum.INAPPROPRIATE)
-                .createdAt(LocalDateTime.now())
-                .build();
-        reportDao.create(report);
+        insertReport(em, sender, item, ReportEnum.INAPPROPRIATE, "Not ok");
         em.flush();
         em.clear();
 
@@ -96,13 +89,7 @@ public class ReportJpaDaoTest {
         insertVersion(em, item, itemType, location, "Boat");
         em.flush();
 
-        Report report = Report.builder()
-                .sender(sender)
-                .item(item)
-                .reason(ReportEnum.INAPPROPRIATE)
-                .createdAt(LocalDateTime.now())
-                .build();
-        reportDao.create(report);
+        Report report = insertReport(em, sender, item, ReportEnum.INAPPROPRIATE, "Not ok");
         em.flush();
         int reportId = report.getId();
 
@@ -110,7 +97,7 @@ public class ReportJpaDaoTest {
         em.flush();
         em.clear();
 
-        assertFalse(reportDao.findById(reportId).isPresent());
+        assertNull(em.find(Report.class, reportId));
     }
 
     @Test
@@ -119,20 +106,8 @@ public class ReportJpaDaoTest {
         insertVersion(em, item, itemType, location, "Boat");
         em.flush();
 
-        Report report1 = Report.builder()
-                .sender(sender)
-                .item(item)
-                .reason(ReportEnum.INAPPROPRIATE)
-                .createdAt(LocalDateTime.now())
-                .build();
-        Report report2 = Report.builder()
-                .sender(sender)
-                .item(item)
-                .reason(ReportEnum.SPAM)
-                .createdAt(LocalDateTime.now())
-                .build();
-        reportDao.create(report1);
-        reportDao.create(report2);
+        Report report1 = insertReport(em, sender, item, ReportEnum.INAPPROPRIATE, "Not ok");
+        Report report2 = insertReport(em, sender, item, ReportEnum.SPAM, "Spam");
         em.flush();
         int itemId = item.getId();
 
@@ -150,13 +125,7 @@ public class ReportJpaDaoTest {
         insertVersion(em, item, itemType, location, "Boat");
         em.flush();
 
-        Report report = Report.builder()
-                .sender(sender)
-                .item(item)
-                .reason(ReportEnum.INAPPROPRIATE)
-                .createdAt(LocalDateTime.now())
-                .build();
-        reportDao.create(report);
+        Report report = insertReport(em, sender, item, ReportEnum.INAPPROPRIATE, "Not ok");
         em.flush();
 
         assertTrue(reportDao.findById(report.getId()).isPresent());
@@ -168,13 +137,7 @@ public class ReportJpaDaoTest {
         insertVersion(em, item, itemType, location, "Boat");
         em.flush();
 
-        Report report = Report.builder()
-                .sender(sender)
-                .item(item)
-                .reason(ReportEnum.INAPPROPRIATE)
-                .createdAt(LocalDateTime.now())
-                .build();
-        reportDao.create(report);
+        Report report = insertReport(em, sender, item, ReportEnum.INAPPROPRIATE, "Not ok");
         em.flush();
 
         PageModel<Report> result = reportDao.searchReports(1, 12, "newest", item);
@@ -189,20 +152,8 @@ public class ReportJpaDaoTest {
         insertVersion(em, item, itemType, location, "Boat");
         em.flush();
 
-        Report report1 = Report.builder()
-                .sender(sender)
-                .item(item)
-                .reason(ReportEnum.INAPPROPRIATE)
-                .createdAt(LocalDateTime.now())
-                .build();
-        Report report2 = Report.builder()
-                .sender(sender)
-                .item(item)
-                .reason(ReportEnum.SPAM)
-                .createdAt(LocalDateTime.now())
-                .build();
-        reportDao.create(report1);
-        reportDao.create(report2);
+        insertReport(em, sender, item, ReportEnum.INAPPROPRIATE, "Not ok");
+        insertReport(em, sender, item, ReportEnum.SPAM, "Spam");
         em.flush();
 
         long count = reportDao.countReports(item);

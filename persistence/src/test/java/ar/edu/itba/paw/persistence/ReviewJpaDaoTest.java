@@ -69,7 +69,7 @@ public class ReviewJpaDaoTest {
         Version version = insertVersion(em, item, itemType, location, "Boat");
         Booking booking = insertBooking(em, version, guest, BookingStatusEnum.FINISHED);
         em.flush();
-        reviewDao.createReview(booking.getId(), guest.getId(), TargetEnum.ITEM, 4.5, "Great!");
+        insertReview(em, booking, guest, TargetEnum.ITEM, 4.5, "Great!");
         em.flush();
 
         Optional<Review> found =
@@ -84,8 +84,8 @@ public class ReviewJpaDaoTest {
         Version version = insertVersion(em, item, itemType, location, "Boat");
         Booking booking = insertBooking(em, version, guest, BookingStatusEnum.FINISHED);
         em.flush();
-        reviewDao.createReview(booking.getId(), guest.getId(), TargetEnum.ITEM, 4.0, "First");
-        reviewDao.createReview(booking.getId(), guest.getId(), TargetEnum.USER, 5.0, "Second");
+        insertReview(em, booking, guest, TargetEnum.ITEM, 4.0, "First");
+        insertReview(em, booking, guest, TargetEnum.USER, 5.0, "Second");
         em.flush();
 
         List<Review> reviews = reviewDao.findReviewsBySenderAndBookingIds(guest.getId(), List.of(booking.getId()));
@@ -99,7 +99,7 @@ public class ReviewJpaDaoTest {
         Version version = insertVersion(em, item, itemType, location, "Boat");
         Booking booking = insertBooking(em, version, guest, BookingStatusEnum.FINISHED);
         em.flush();
-        reviewDao.createReview(booking.getId(), guest.getId(), TargetEnum.USER, 5.0, "Great host!");
+        insertReview(em, booking, guest, TargetEnum.USER, 5.0, "Great host!");
         em.flush();
 
         List<Review> reviews = reviewDao.findReviewsAboutHost(host.getId(), 1, 12);
@@ -113,7 +113,7 @@ public class ReviewJpaDaoTest {
         Version version = insertVersion(em, item, itemType, location, "Boat");
         Booking booking = insertBooking(em, version, guest, BookingStatusEnum.FINISHED);
         em.flush();
-        reviewDao.createReview(booking.getId(), guest.getId(), TargetEnum.USER, 4.5, "Great host!");
+        insertReview(em, booking, guest, TargetEnum.USER, 4.5, "Great host!");
         em.flush();
 
         HostReviewStats stats = reviewDao.hostReviewStats(host.getId());
@@ -129,7 +129,7 @@ public class ReviewJpaDaoTest {
         Version version = insertVersion(em, item, itemType, location, "Boat");
         Booking booking = insertBooking(em, version, guest, BookingStatusEnum.FINISHED);
         em.flush();
-        reviewDao.createReview(booking.getId(), guest.getId(), TargetEnum.ITEM, 4.0, "Good!");
+        insertReview(em, booking, guest, TargetEnum.ITEM, 4.0, "Good!");
         em.flush();
 
         ReviewSummary summary = reviewDao.reviewSummaryForItem(item.getId());
@@ -147,8 +147,8 @@ public class ReviewJpaDaoTest {
         Booking booking1 = insertBooking(em, version1, guest, BookingStatusEnum.FINISHED);
         Booking booking2 = insertBooking(em, version2, guest, BookingStatusEnum.FINISHED);
         em.flush();
-        reviewDao.createReview(booking1.getId(), guest.getId(), TargetEnum.ITEM, 4.0, "Good");
-        reviewDao.createReview(booking2.getId(), guest.getId(), TargetEnum.ITEM, 5.0, "Great");
+        insertReview(em, booking1, guest, TargetEnum.ITEM, 4.0, "Good");
+        insertReview(em, booking2, guest, TargetEnum.ITEM, 5.0, "Great");
         em.flush();
 
         Map<Integer, ReviewSummary> result = reviewDao.reviewSummariesForItems(List.of(item1.getId(), item2.getId()));
@@ -164,10 +164,11 @@ public class ReviewJpaDaoTest {
         Version version = insertVersion(em, item, itemType, location, "Boat");
         Booking booking1 = insertBooking(em, version, guest, BookingStatusEnum.FINISHED);
         em.flush();
-        reviewDao.createReview(booking1.getId(), guest.getId(), TargetEnum.ITEM, 4.0, "Good");
+        insertReview(em, booking1, guest, TargetEnum.ITEM, 4.0, "Good");
+        em.flush();
         Booking booking2 = insertBooking(em, version, guest, BookingStatusEnum.FINISHED);
         em.flush();
-        reviewDao.createReview(booking2.getId(), guest.getId(), TargetEnum.ITEM, 5.0, "Great");
+        insertReview(em, booking2, guest, TargetEnum.ITEM, 5.0, "Great");
         em.flush();
 
         List<Review> reviews = reviewDao.findReviewsAboutItem(item.getId(), 1, 12);

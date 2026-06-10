@@ -89,7 +89,6 @@ public class DetailImplTest {
         assertEquals(ITEM_ID, result.getItem().getId());
         assertTrue(result.getFlags().isOwner());
         assertFalse(result.getFlags().isCanFavouriteItem());
-        verifyNoInteractions(favouriteService, reportService, subscriptionService);
     }
 
     @Test

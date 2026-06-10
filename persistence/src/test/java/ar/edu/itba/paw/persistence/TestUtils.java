@@ -176,9 +176,7 @@ public final class TestUtils {
     }
 
     public static Subscription insertSubscription(
-            final EntityManager em,
-            final Users subscriber,
-            final Users subscribedTo) {
+            final EntityManager em, final Users subscriber, final Users subscribedTo) {
         final Subscription sub = new Subscription();
         sub.setId(new SubscriptionId(subscriber.getId(), subscribedTo.getId()));
         sub.setSubscriber(subscriber);

@@ -295,7 +295,8 @@ public class ItemJpaDaoTest {
         em.flush();
 
         Version managed = em.find(Version.class, v.getId());
-        Availability availability = insertAvailability(em, managed, WeekdayEnum.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0));
+        Availability availability =
+                insertAvailability(em, managed, WeekdayEnum.MONDAY, LocalTime.of(9, 0), LocalTime.of(17, 0));
         em.flush();
         em.clear();
 
@@ -344,7 +345,7 @@ public class ItemJpaDaoTest {
         itemDao.removeVersionChildren(managed);
         em.flush();
         em.clear();
-        
+
         assertNull(em.find(Media.class, media.getId()));
     }
 

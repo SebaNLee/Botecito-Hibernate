@@ -56,7 +56,7 @@ public class SubscriptionJpaDaoTest {
         assertTrue(deleted);
         em.flush();
         em.clear();
-        
+
         assertNull(em.find(Subscription.class, new SubscriptionId(subscriber.getId(), publisher.getId())));
     }
 

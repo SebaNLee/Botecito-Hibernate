@@ -58,7 +58,7 @@ public class ReviewJpaDaoTest {
         assertEquals(4.5, created.get().getRating().doubleValue(), 0.01);
         em.flush();
         em.clear();
-        
+
         assertNotNull(em.find(Review.class, created.get().getId()));
     }
 

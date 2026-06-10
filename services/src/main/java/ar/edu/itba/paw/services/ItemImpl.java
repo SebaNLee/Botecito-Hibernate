@@ -102,7 +102,7 @@ public class ItemImpl implements ItemService {
         var media = version.getMedia();
 
         // Force hibernate to load the contents of collections
-        LOGGER.debug("Force-loading {} availabilities and {} media references.", avail.size(), media.size());
+        LOGGER.info("Force-loading {} availabilities and {} media references.", avail.size(), media.size());
 
         return version;
     }

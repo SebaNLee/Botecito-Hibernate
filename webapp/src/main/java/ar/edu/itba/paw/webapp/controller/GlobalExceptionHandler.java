@@ -89,7 +89,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ModelAndView handleMaxUploadSize(final HttpServletRequest request) {
-        LOGGER.debug("Max upload size exceeded");
+        LOGGER.info("Max upload size exceeded");
         return UploadLimitRedirects.exceededUploadDecision(request)
                 .map(UploadLimitRedirects::redirectWithToast)
                 .orElseGet(() -> postRedirect("/errors?status=" + HttpStatus.PAYLOAD_TOO_LARGE.value()));
